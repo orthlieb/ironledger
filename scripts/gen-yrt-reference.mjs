@@ -165,39 +165,59 @@ function renderOracles(oracles) {
   return out.join('\n') + '\n';
 }
 
-// ── main ──────────────────────────────────────────────────────────────────────
-const foes = (await readJson(path.join(YRT, 'foes/foes.json'))).foes;
-const moves = (await readJson(path.join(YRT, 'moves/moves.json'))).moves;
-const assetsFile = await readJson(path.join(YRT, 'assets/assets.json'));
-const oracleFiles = (await readdir(path.join(YRT, 'oracles'))).filter((f) => f.endsWith('.json'));
-const oracles = await Promise.all(oracleFiles.map((f) => readJson(path.join(YRT, 'oracles', f))));
+// ── build ─────────────────────────────────────────────────────────────────────
+/** Read the YRT JSON and render every reference file. Returns { name: content }.
+ *  Exported (with the render fns above) so tests can assert output invariants
+ *  without touching disk. */
+export async function buildReference() {
+  const foes = (await readJson(path.join(YRT, 'foes/foes.json'))).foes;
+  const moves = (await readJson(path.join(YRT, 'moves/moves.json'))).moves;
+  const assetsFile = await readJson(path.join(YRT, 'assets/assets.json'));
+  const oracleFiles = (await readdir(path.join(YRT, 'oracles'))).filter((f) => f.endsWith('.json'));
+  const oracles = await Promise.all(oracleFiles.map((f) => readJson(path.join(YRT, 'oracles', f))));
+  return {
+    files: {
+      'bestiary.md': renderBestiary(foes),
+      'moves.md': renderMoves(moves),
+      'assets.md': renderAssets(assetsFile.assets, assetsFile.rarities),
+      'oracles.md': renderOracles(oracles),
+    },
+    counts: {
+      foes: foes.length,
+      moves: moves.length,
+      assets: assetsFile.assets.length,
+      rarities: assetsFile.rarities?.length ?? 0,
+      oracles: oracles.length,
+    },
+  };
+}
 
-const files = {
-  'bestiary.md': renderBestiary(foes),
-  'moves.md': renderMoves(moves),
-  'assets.md': renderAssets(assetsFile.assets, assetsFile.rarities),
-  'oracles.md': renderOracles(oracles),
-};
+export const OUT_DIR = OUT;
 
-if (check) {
-  const stale = [];
-  for (const [name, body] of Object.entries(files)) {
-    const p = path.join(OUT, name);
-    const cur = existsSync(p) ? await readFile(p, 'utf8') : null;
-    if (cur !== body) stale.push(`extensions/yrt/reference/${name}`);
-  }
-  if (stale.length) {
-    console.error(
-      `✗ YRT reference is stale:\n  - ${stale.join('\n  - ')}\n  Run \`npm run gen:yrt-ref\` and commit.`,
+// ── CLI ─────────────────────────────────────────────────────────────────────
+const isMain = process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+if (isMain) {
+  const { files, counts } = await buildReference();
+  if (check) {
+    const stale = [];
+    for (const [name, body] of Object.entries(files)) {
+      const p = path.join(OUT, name);
+      const cur = existsSync(p) ? await readFile(p, 'utf8') : null;
+      if (cur !== body) stale.push(`extensions/yrt/reference/${name}`);
+    }
+    if (stale.length) {
+      console.error(
+        `✗ YRT reference is stale:\n  - ${stale.join('\n  - ')}\n  Run \`npm run gen:yrt-ref\` and commit.`,
+      );
+      process.exit(1);
+    }
+    console.log('✓ YRT reference up to date');
+  } else {
+    if (!existsSync(OUT)) await mkdir(OUT, { recursive: true });
+    await Promise.all(Object.entries(files).map(([n, b]) => writeFile(path.join(OUT, n), b)));
+    console.log(
+      `✓ wrote YRT reference (${counts.foes} foes, ${counts.moves} moves, ` +
+        `${counts.assets} assets + ${counts.rarities} rarities, ${counts.oracles} oracles)`,
     );
-    process.exit(1);
   }
-  console.log('✓ YRT reference up to date');
-} else {
-  if (!existsSync(OUT)) await mkdir(OUT, { recursive: true });
-  await Promise.all(Object.entries(files).map(([n, b]) => writeFile(path.join(OUT, n), b)));
-  console.log(
-    `✓ wrote YRT reference (${foes.length} foes, ${moves.length} moves, ` +
-      `${assetsFile.assets.length} assets + ${assetsFile.rarities?.length ?? 0} rarities, ${oracles.length} oracles)`,
-  );
 }
