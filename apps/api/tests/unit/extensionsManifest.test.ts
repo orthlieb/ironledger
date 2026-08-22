@@ -96,16 +96,14 @@ describe('extensions.manifest.json', () => {
     // and four Scene moves: Begin the Scene, Face Danger, Secure an Advantage,
     // Finish the Scene) = 55.
     expect(moveData.flatMap((f) => f.moves)).toHaveLength(55);
-    // 25 base + 23 delve + 12 yrt + 24 lodestar = 84 (sample is dev-only, stripped
+    // 25 base + 32 delve + 12 yrt + 24 lodestar = 93 (sample is dev-only, stripped
     // from `core`). Combat set (base Combat: Tactic, delve Combat: Event / Event
     // Method / Event Target, lodestar Combat: Battleground) + Story: Region (lodestar)
     // & yrtStoryRegion + Story: Clue + Magic: Mystic Effect + Scale: Magnitude
     // + Scale: Rank + Encounter: Ironlands + Character: Prelude Event (the former
     // Encounter Index & Prelude Event roll-tables, reborn as flat oracles) brought
     // lodestar to 24. (yrt dropped its Settlement Condition oracle, 13 → 12.)
-    // delve's 10 Threat tables (category + 9 advance) were consolidated into one
-    // two-step `threat` oracle, 32 → 23.
-    expect(oracleData).toHaveLength(84);
+    expect(oracleData).toHaveLength(93);
     expect(foeData.flatMap((f) => f.foes)).toHaveLength(82);
     expect(foeOverrides).toHaveLength(1);
     // Lodestar hides base End the Fight via a move override ("hide + add"):
@@ -169,7 +167,7 @@ describe('oracle visibility by enabled extension', () => {
 
   it('per-extension keyed oracle counts (drift guard)', () => {
     expect(oracleKeysFor('base')).toHaveLength(24);
-    expect(oracleKeysFor('delve')).toHaveLength(23);
+    expect(oracleKeysFor('delve')).toHaveLength(32);
     expect(oracleKeysFor('yrt')).toHaveLength(12);
     expect(oracleKeysFor('lodestar')).toHaveLength(24);
   });
@@ -186,10 +184,10 @@ describe('oracle visibility by enabled extension', () => {
     [false, false, true, 46],
     [false, true, false, 34],
     [false, true, true, 55],
-    [true, false, false, 47],
-    [true, false, true, 66],
-    [true, true, false, 57],
-    [true, true, true, 75],
+    [true, false, false, 56],
+    [true, false, true, 75],
+    [true, true, false, 66],
+    [true, true, true, 84],
   ])(
     'base + delve=%s yrt=%s lodestar=%s → %i visible oracles',
     (delve, yrt, lodestar, expected) => {

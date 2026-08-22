@@ -134,7 +134,16 @@ const ORACLE_KEY_SOURCE_FALLBACK: Record<string, CatalogueSource> = {
 	siteName: 'delve',
 	siteNatureDomain: 'delve',
 	siteNatureTheme: 'delve',
-	threat: 'delve',
+	threatBurgeoningConflict: 'delve',
+	threatCategory: 'delve',
+	threatCursedSite: 'delve',
+	threatEnvironmentalCalamity: 'delve',
+	threatMalignantPlague: 'delve',
+	threatPowerHungryMystic: 'delve',
+	threatRampagingCreature: 'delve',
+	threatRavagingHorde: 'delve',
+	threatSchemingLeader: 'delve',
+	threatZealousCult: 'delve',
 	trap: 'delve',
 };
 
