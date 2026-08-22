@@ -5,7 +5,7 @@
   "selectLabel": "Threat: Advance a Threat",
   "description": "A broad type of threat for your campaign. Roll twice to combine two into a more complex situation — e.g. Malignant Plague + Zealous Cult = a sect spreading a plague for a dark god.",
   "source": "delve",
-  "postamble": "Tie a threat to a vow you _Swear_ — the person, faction, or situation opposing you. _Advance a Threat_ shows how it acts; a match reveals a surprising twist (check _Action_ / _Theme_ or _Plot Twist_). Works as generic campaign trouble too.\n\n_Rolled in one step: category → its Advance table; “roll twice” gives two. Each Advance table is also available on its own._",
+  "postamble": "Tie a threat to a vow you _Swear_ — the person, faction, or situation opposing you. _Advance a Threat_ shows how it acts; a match reveals a surprising twist (check _Action_ / _Theme_ or _Plot Twist_). Works as generic campaign trouble too.",
   "data": [
     {
       "topRange": 10,
