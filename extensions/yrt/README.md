@@ -367,3 +367,19 @@ The **Touched** assets (level-gated abilities, exclusive group) and the ritual a
 | Oracles       | `oracles/*.json`      | 12 setting-specific oracle tables (settlement, region, Touched, mana, …) |
 | Foes          | `foes/foes.json`      | 24 Yrt-specific creatures, horrors, constructs, and NPCs                 |
 | Foe overrides | `foes/overrides.json` | Yrt addenda / hidden flags for 58 base & Delve foes                      |
+
+## Generated reference
+
+`extensions/yrt/reference/` holds a human-readable Markdown view of the YRT
+content — **bestiary.md, moves.md, assets.md, oracles.md** — generated from the
+JSON in this folder by `scripts/gen-yrt-reference.mjs`. It's the always-in-sync
+source for the worldbuilding wiki/garden; do **not** hand-edit it.
+
+```bash
+npm run gen:yrt-ref         # regenerate after changing any YRT JSON
+npm run gen:yrt-ref:check    # CI drift gate (fails if stale)
+```
+
+Foe editorial extras (`extras.yrt.natureNote` / `rework` / `caption`) live in
+`foes.json` and flow into the bestiary. App-internal DSL links (`move:` /
+`oracle:` / …) are rendered as plain labels in the reference.

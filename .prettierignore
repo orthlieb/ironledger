@@ -29,3 +29,6 @@ apps/web/src/lib/liveries.generated.css
 # Misc
 *.min.js
 *.min.css
+
+# Emitted verbatim by scripts/gen-yrt-reference.mjs; drift-checked via gen:yrt-ref:check.
+extensions/yrt/reference/

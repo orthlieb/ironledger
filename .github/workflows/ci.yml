@@ -68,6 +68,11 @@ jobs:
       - name: Liveries manifest up to date
         run: npm run gen:liveries:check
 
+      # The YRT reference (extensions/yrt/reference/*.md) is generated from the
+      # YRT JSON; fail if it's stale relative to the source.
+      - name: YRT reference up to date
+        run: npm run gen:yrt-ref:check
+
       - name: Check formatting (Prettier)
         run: npm run format:check
 
