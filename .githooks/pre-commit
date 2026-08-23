@@ -16,4 +16,19 @@ files=$(git diff --cached --name-only --diff-filter=ACMR)
 echo "$files" | xargs npx prettier --ignore-unknown --write
 echo "$files" | xargs git add --
 
+# extensions/yrt/foes/foes.json is GENERATED from the yrt-vault (canonical source).
+# If it's being committed and the vault is present, make sure it matches — this
+# catches a hand-edit that diverges from the vault. Skipped when the vault isn't
+# checked out (e.g. CI, or a clone without it).
+case "$files" in
+  *extensions/yrt/foes/foes.json*)
+    if [ -d "${YRT_VAULT:-$HOME/dev/yrt-vault}/Game/foes" ]; then
+      if ! npm run --silent gen:yrt-json:check; then
+        echo "  → foes.json is generated: edit the vault, run 'npm run gen:yrt-json', re-stage." >&2
+        exit 1
+      fi
+    fi
+    ;;
+esac
+
 exit 0

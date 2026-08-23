@@ -29,7 +29,9 @@
     "test": "npm run test --workspace=apps/api",
     "migrate": "npm run migrate --workspace=apps/api",
     "gen:yrt-ref": "node scripts/gen-yrt-reference.mjs",
-    "gen:yrt-ref:check": "node scripts/gen-yrt-reference.mjs --check"
+    "gen:yrt-ref:check": "node scripts/gen-yrt-reference.mjs --check",
+    "gen:yrt-json": "node scripts/gen-yrt-json.mjs",
+    "gen:yrt-json:check": "node scripts/gen-yrt-json.mjs --check"
   },
   "engines": {
     "node": ">=22.0.0",
