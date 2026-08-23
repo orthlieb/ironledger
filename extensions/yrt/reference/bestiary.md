@@ -3,6 +3,85 @@
 
 # YRT Bestiary
 
+## Preface
+
+Yrt is a world after a fall. The Unmade — the industrialised humans who came before — collapsed under an ecological catastrophe of their own making, and the manite they once mined and refined at industrial scale now bleeds untended from the wounds they left behind. Those wounds are called blight zones. The mana that seeps from them is unrefined, unstable, and dangerous, and the creatures, constructs, and people that have spent too long near them are this bestiary.
+
+There is no supernatural in Yrt. There are no souls, no ghosts, no spirits, no gods, no divine magic, no prophecy. Every "monster" is one of five things:
+
+- **A wild mana phenomenon** — a self-organising weather-system of unbound mana, drifting toward warmth or matter or other mana, with no maker and no mind.
+- **A mana-saturated body** — a corpse or organism that has soaked in a contaminated environment long enough that its tissues now respond to local mana rather than to its original biology.
+- **A pre-Fall artefact** — a piece of Unmade technology that still functions, still leaks, or still executes orders given to it by a chain of command that has been dead for centuries.
+- **A deliberately built construct** — a modern object, usually illegal or quietly tolerated, made by an artificer or order with the skill to bind matter to purpose. Most require a living handler nearby to function.
+- **An altered living person** — a human who has been changed, willingly or not, by mana exposure, surgical implant, or deliberate ritual.
+
+Folk belief in Yrt does not match the truth. Common Ironlanders still call mire forms "bog rots," tomb walkers "wights," and echoes "haunts," and the Conclave does not always correct them. The truth is for the party to discover.
+
+### The factions and what they want from mana
+
+**The Conclave** is the licensing authority for all legitimate magical practice in the western reaches. They run the refineries, control the supply chain, train the mages, and enforce the laws against unsanctioned mana use. The Conclave's primary refinement operation is at **Ravenna**, a vast blight site that has been worked for decades and is the source of most legally available manite in Freeport and the surrounding territories. Conclave mages are organised by specialty: **Vizion** (Amber-trained, sensory and compulsion work), **Verdant Keepers** (Verdant-trained, agricultural and biological), and various others.
+
+The **Pura Ecclesia** is a religious order with a strong Luminous and Azure orientation — wards, healing, sanctuary. Theologically they oppose the use of dead matter and the animation of the inert, which makes their one notable construct (see Vow Walker) a doctrinal contradiction they have learned to live with.
+
+The **Brotherhood** is an assassin guild. They do not use mana. They are not at war with the Conclave. They are professionals, hired by whoever pays, and they operate by mundane means — blade, poison, infiltration, knowledge. Recently, elements of the Brotherhood have entered into a quiet partnership with the Pura Ecclesia to set up a second refinement site at **Spero** and smuggle the product into Freeport, undercutting the Conclave's monopoly. The operation suffers from inexperience: their refinement technique is crude, and a non-trivial fraction of their shipments arrives **tainted with Black mana**. Black-tainted mana is dangerous to the user, traceable by the Conclave, and increasingly common in low-cost seeds circulating in Freeport's underworld.
+
+### Verdani and the recharge question
+
+**The Elves** are not mystical forest spirits and they call themselves the Verdani. They are humanoid populations who have lived for many generations in deep Verdant-saturated regions, and the cumulative mana exposure has changed them — they are now what the bestiary entries call _verdant-tainted humanoids_. They have an instinctive working relationship with Verdant mana that no Conclave-trained Keeper can match, and they can produce constructs (mask risen, greatmasks) of a kind no other group can replicate.
+
+Standard Conclave mages refill their pool by meditation: they absorb ambient **Gray** mana from the environment, at a rate of roughly +1 per hour of rest. All other colors must be purchased from Conclave depots.
+
+The Verdani are the exception.\*\* Through training, lifestyle, and possibly some degree of physical adaptation, a Verdani can perform a Verdant–Crimson photosynthesis: their Verdant cells capture sunlight in the manner of chlorophyll, and the resulting energy is stored as Crimson. A Keeper resting in direct sun recharges red and green mana directly, without paying the Conclave a copper. This is one of the reasons the Conclave keeps a careful eye on them.
+
+### The five mechanism families at a glance
+
+| Mechanism                     | Foes                                                                   |
+| ----------------------------- | ---------------------------------------------------------------------- |
+| Wild mana phenomena           | Mire Form, Wisp Walker, Drowning Eye, Locus, Witherwind, Carrion Mound |
+| Mana-saturated bodies         | Coldhusk, Bloater, Verdant Crawler                                     |
+| Pre-Fall artefacts            | The Whispering Stones, Echo, War Pile                                  |
+| Deliberately built constructs | Puppet Bones, Mask Risen, Greatmask, Vow Walker                        |
+| Altered living people         | Carrier, Tomb Walker, Blighted Guilder, Amber Schemer, The Tainted     |
+| Contaminated sites            | Rotwell                                                                |
+
+---
+
+## YRT Extended Mechanics
+
+Two optional mechanics extend the base Ironsworn foe rules. They are additive — they don't replace any core rules and can coexist on the same foe.
+
+### Escalating Harm
+
+Some foes deal more harm as the encounter wears on. Harm starts at 1 and increases by 1 on each **Miss** (use the Escalating Harm spinner). The cap equals the foe's effective rank. On a **Strong Hit** while enduring harm, you may reduce the harm by one.
+
+| Rank            | Harm cap |
+| --------------- | -------- |
+| 1 – Troublesome | 2        |
+| 2 – Dangerous   | 3        |
+| 3 – Formidable  | 4        |
+| 4 – Extreme     | 5        |
+| 5 – Epic        | 5        |
+
+_Foes: Necrotic Sea Hare_
+
+### Escalating Defense
+
+Some foes carry a Gray-mana defense that builds up on each miss, making progress progressively harder to mark. Defense starts at **0** and increases by **1** on each Miss. As it builds, each progress mark puts in fewer ticks. You can always mark progress — but the more the armor consolidates, the less each mark counts.
+
+- **On a Miss**, press **+** on the Escalating Defense spinner to increase defense by 1.
+- **You can still mark progress** at any time, but ticks per mark = `progressPerHit − currentDefense` (minimum 1).
+- The max defense = `progressPerHit − 1` for the foe's effective rank.
+
+| Rank            | progressPerHit | Max defense |
+| --------------- | -------------- | ----------- |
+| 1 – Troublesome | 12             | 11          |
+| 2 – Dangerous   | 8              | 7           |
+| 3 – Formidable  | 4              | 3           |
+| 4 – Extreme     | 2              | 1           |
+| 5 – Epic        | 1              | 0           |
+
+_Foes: Blighted Guilder, Tomb Walker._
+
 ## 1. Mire Form
 
 ![A mire form rises from the peat — a plant-construct using a preserved body as a pot, mouth fixed open as the spore vent.](../foes/images/mire-form.webp)
@@ -751,4 +830,48 @@ The creature feeds by dissolving organic matter — sediment detritus, waterlogg
 A single Necrotic Sea Hare attached to a foot is unpleasant and should be dealt with promptly. Several of them in a silted crossing you did not see until you were waist-deep in the water is a serious emergency.
 
 Removal requires getting clear of the water and treating the attachment site directly. Cold water slows but does not stop the process. Cutting the creature off while attached without treating the wound leaves contaminated mucus in the wound, which must be treated separately. Conclave records categorise the Necrotic Sea Hare as a contamination indicator rather than an active threat, which is technically accurate and practically unhelpful.
+
+## Cross-references
+
+### Mechanism families
+
+| Mechanism                     | Foes                                                                   |
+| ----------------------------- | ---------------------------------------------------------------------- |
+| Wild mana phenomena           | Mire Form, Wisp Walker, Drowning Eye, Locus, Witherwind, Carrion Mound |
+| Mana-saturated bodies         | Coldhusk, Bloater, Verdant Crawler, Ember Kite, Necrotic Sea Hare      |
+| Pre-Fall artefacts            | The Whispering Stones, Echo, War Pile                                  |
+| Deliberately built constructs | Puppet Bones, Mask Risen, Greatmask, Vow Walker                        |
+| Altered living people         | Carrier, Tomb Walker, Blighted Guilder, Amber Schemer, The Tainted     |
+| Contaminated sites            | Rotwell                                                                |
+
+### Faction associations
+
+| Faction                          | Foes they make, host, or hunt                                                                                                                                                                                                                                                                                                                                                             |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Conclave**                     | Ravenna refinement creates Blighted Guilders. Holds the Provost's War Pile in the deep vault. Catalogues Whispering Stones sites and dispatches Keepers against Verdant Crawlers, Rotwells, and Carrion Mounds. Hunts Carriers, Schemers, Tomb Walkers, and illegal Puppet Bones operators. Runs hospice programs for the Tainted. Uses Ember Kite sightings as contamination indicators. |
+| **Pura Ecclesia (Iron Wardens)** | Builds and operates Vow Walkers. Funds Tainted recovery programs through intermediaries as quiet penance for Spero's black-mana leaks.                                                                                                                                                                                                                                                    |
+| **Brotherhood**                  | Hires Puppet Bones operators for deniable wet work. Hunted by Vow Walkers. Partnered with the Ecclesia in the Spero refinement operation, which is the ultimate source of the Tainted, the Rotwells, and (indirectly) the Carrion Mounds.                                                                                                                                                 |
+| **Verdani**                      | Build Mask Risen and (rarely) Greatmasks. Do not interact with Verdant Crawlers but are not threatened by them. Harvest Ember Kite territory edges for Crimson-saturated fringe-wood used in mask-carving.                                                                                                                                                                                |
+| **Spero smugglers**              | Move Black-tainted mana into Freeport. Sometimes hire discharged Blighted Guilders. Their tainted seeds, when dumped at sea after a botched run, can produce Drowning Eyes. Their poorly refined product is the root cause of the Tainted, and abandoned caches contribute to Rotwell and Carrion Mound formation.                                                                        |
+
+### Recurring themes worth pulling on in play
+
+- **The handler problem.** Three modern constructs (Puppet Bones, Mask Risen, Vow Walker) imply a handler somewhere — usually the more interesting antagonist than the construct itself. The War Pile is a related but inverted case: its handlers have been dead for centuries, and it is still executing standing orders no one alive remembers giving. The Greatmask is a rarer case still: its handler is a _line_ of people, not an individual, and the line may be on the verge of dying out.
+
+- **The drift problem.** Five wild-mana phenomena (Mire Form, Wisp Walker, Drowning Eye, Locus, Witherwind) move toward something — warmth, mana flux, biomass. Tracking their movement is its own activity. So is luring them.
+
+- **The legacy problem.** Three pre-Fall remnants (Whispering Stones, Echo, War Pile) and one industrial-era contamination zone (Mire Form) imply a deep, shared history of mana misuse — first the blight that ended the Unmade's civilisation, then the resource wars that followed, then the long centuries of decay. Every region has its own version. The Conclave's catalogue of these sites is itself a McGuffin.
+
+- **The cost-of-power problem.** Four altered humans (Carrier, Tomb Walker, Blighted Guilder, Amber Schemer) and the Husk (in the main analysis) show what happens when people exceed safe mana use. They are warnings made flesh.
+
+- **The Spero subplot.** The Brotherhood–Ecclesia smuggling operation at Spero, plagued by Black-mana taint, shows up at the edges of several entries (Mire Form hook 3, Drowning Eye hook 3, Mask Risen hook 1, Blighted Guilder hook 2) and is the direct cause of several others (The Tainted, Rotwell, Carrion Mound). It can be played as ongoing background colour or escalated into a campaign-spine arc, depending on appetite — the Black-mana foes in particular are a slow-burn consequence that becomes more visible every season the operation continues.
+
+### Notes on duplicates and deletions
+
+- **Verdant Crawler vs Blood Thorn:** Both are Verdant-blight creatures that prey on the living. They are differentiable in play — Blood Thorn is sessile and feeds on blood through hollow thorns; Crawler is mobile and overgrows territory — but a GM should not deploy both in the same region without highlighting the difference. They occupy adjacent niches.
+- **Amber Schemer vs Husk (in main analysis):** Both are altered Amber users. Schemer is functional, social, and operating; Husk is a worst-case end-state of the same trajectory, no longer functional, no longer social. They can comfortably coexist as "before" and "after" stages of the same kind of person.
+- **Tomb Walker vs Vow Walker:** Both are armoured constructs / armoured persons that defend a charge. They are mechanically distinct (Tomb Walker is a living person in a rig; Vow Walker is an empty reliquary shell with a remote handler) and visually distinct (Tomb Walker is gaunt and human-shaped under armour; Vow Walker is upright, ceramic-masked, eerily steady). No conflict.
+- **The Tainted vs Husk vs Amber Schemer:** All three are altered living Ironlanders who have misused mana. They form a clear progression: Schemer (functional, operating, Amber-focused), Tainted (physically and cognitively degrading, Black-focused, still mostly themselves), Husk (end-stage, post-humanity). A party that meets all three across a campaign sees a coherent cautionary arc. They do not overlap mechanically in a single encounter.
+- **Carrion Mound vs Locus:** Deliberately inverted. A Locus _accretes_ matter and grows by pulling its surroundings in; a Carrion Mound _dissolves_ matter and grows by pulling its surroundings in. Visually and mechanically distinct despite the shared "slow-moving wild mana body" concept. Good paired encounter for GMs who want to teach players that wild mana isn't one thing.
+- **Rotwell vs Whispering Stones:** Both are contaminated sites rather than creatures. They are so different in flavour (a bad water source vs a circle of broadcasting stones) that no overlap risk exists — but they're worth naming together as the bestiary's two site-foes. A GM wanting a third in this niche could easily design one around Crimson or Luminous leakage.
 

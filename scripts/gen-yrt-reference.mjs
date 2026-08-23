@@ -67,8 +67,12 @@ const HEADER = (title) =>
 const bullets = (arr) => (arr || []).map((x) => `- ${clean(x)}`).join('\n');
 
 // ── Bestiary ────────────────────────────────────────────────────────────────
-function renderBestiary(foes) {
+// intro/outro are hand-authored framing (Preface + mechanics; cross-references)
+// from extensions/yrt/reference-notes/, wrapped around the generated foe entries
+// so the bestiary is a complete, single-sourced reference.
+function renderBestiary(foes, intro = '', outro = '') {
   const out = [HEADER('YRT Bestiary')];
+  if (intro.trim()) out.push(intro.trim(), '');
   foes.forEach((f, i) => {
     const yrt = f.extras?.yrt ?? {};
     const nature =
@@ -93,6 +97,7 @@ function renderBestiary(foes) {
     if (f.description) s.push(clean(f.description), '');
     out.push(s.join('\n'));
   });
+  if (outro.trim()) out.push(outro.trim(), '');
   return out.join('\n') + '\n';
 }
 
@@ -175,9 +180,15 @@ export async function buildReference() {
   const assetsFile = await readJson(path.join(YRT, 'assets/assets.json'));
   const oracleFiles = (await readdir(path.join(YRT, 'oracles'))).filter((f) => f.endsWith('.json'));
   const oracles = await Promise.all(oracleFiles.map((f) => readJson(path.join(YRT, 'oracles', f))));
+  // Hand-authored bestiary framing (Preface/mechanics + cross-references).
+  const note = async (n) => {
+    const p = path.join(YRT, 'reference-notes', n);
+    return existsSync(p) ? readFile(p, 'utf8') : '';
+  };
+  const [intro, outro] = await Promise.all([note('bestiary-intro.md'), note('bestiary-outro.md')]);
   return {
     files: {
-      'bestiary.md': renderBestiary(foes),
+      'bestiary.md': renderBestiary(foes, intro, outro),
       'moves.md': renderMoves(moves),
       'assets.md': renderAssets(assetsFile.assets, assetsFile.rarities),
       'oracles.md': renderOracles(oracles),
