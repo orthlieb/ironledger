@@ -478,14 +478,16 @@ When using this oracle to reveal the scale and purpose of a settlement, choose w
 - **Boundary lands:** Oray Hills, Profunda Forest, Verday Groves, Nebula Forest, Suda Forest, Seka Lands
 - **Remote lands:** Malperm Mtns, Pinna Mtns, Polvokovrita Gap, Dronitay Shelf, Teeth of Konoloy, Weirden Fen, Ravenna, Spero
 
-| Settled Lands | Boundary Lands | Remote Lands | Result |
-| --- | --- | --- | --- |
-| 15 | 20 | 25 | <strong>Stead</strong> — Tiny, self-sustaining settlement with a few family dwellings |
-| 25 | 35 | 50 | <strong>Camp</strong> — Temporary settlement for nomadic people, soldiers, or seasonal workers |
-| 30 | 60 | 75 | <strong>Outpost</strong> — Border or frontier settlement for defense, trade, or exploration |
-| 55 | 80 | 90 | <strong>Hamlet</strong> — Small settlement with a few homes, limited services, and informal leadership |
-| 85 | 95 | 98 | <strong>Village</strong> — Moderate-sized settlement with communal buildings and recognized leadership |
-| 100 | 100 | 100 | <strong>Hold</strong> — Large, fortified settlement with diverse trade skills and well-established leadership |
+**Population (YRT):** each rolled result carries an approximate head-count. Larger communities aren't rolled here — they're established places you set on the map: **Town** 600–2,500 (Termin, Sveba), **City** 2,500–6,000 (Ostrea, Piscis, Fluenti, Materton, Mons), **Capital** 6,000–10,000 (Typpe), and the **Freeport** (~15,900, sui generis — bigger than everything and fed by ship).
+
+| Settled Lands | Boundary Lands | Remote Lands | Result | Population |
+| --- | --- | --- | --- | --- |
+| 15 | 20 | 25 | <strong>Stead</strong> — Tiny, self-sustaining settlement with a few family dwellings | ~5–20 |
+| 25 | 35 | 50 | <strong>Camp</strong> — Temporary settlement for nomadic people, soldiers, or seasonal workers | ~20–200 (transient) |
+| 30 | 60 | 75 | <strong>Outpost</strong> — Border or frontier settlement for defense, trade, or exploration | 20–100 |
+| 55 | 80 | 90 | <strong>Hamlet</strong> — Small settlement with a few homes, limited services, and informal leadership | 20–100 |
+| 85 | 95 | 98 | <strong>Village</strong> — Moderate-sized settlement with communal buildings and recognized leadership | 100–600 |
+| 100 | 100 | 100 | <strong>Hold</strong> — Large, fortified settlement with diverse trade skills and well-established leadership | 600–2,500 |
 
 ## Story: Region
 

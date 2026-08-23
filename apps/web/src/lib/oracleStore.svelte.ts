@@ -388,10 +388,15 @@ export function buildTableHtml(
 		// narrow screens collapse to the active column + Result.
 		const cc = (i: number) =>
 			` class="oracle-range od-pick-col${activeIdx === i ? ' col-active' : ''}"`;
+		// Optional per-row population column (Settlement: Type) — only rendered when
+		// the table actually carries it, so other columnSelect oracles are unchanged.
+		const hasPop = table.some((e) => (e as Record<string, unknown>)['population'] != null);
 		let html =
 			'<table class="oracle-table"><thead><tr>' +
 			cols.map((c, i) => `<th${cc(i)}>${c.label}</th>`).join('') +
-			'<th>Result</th></tr></thead><tbody>';
+			'<th>Result</th>' +
+			(hasPop ? '<th class="oracle-pop-col">Population</th>' : '') +
+			'</tr></thead><tbody>';
 		const prev = cols.map(() => 0);
 		for (const entry of table) {
 			const r = entry as unknown as Record<string, number | string>;
@@ -403,7 +408,8 @@ export function buildTableHtml(
 					return `<td${cc(i)}>${lo === hi ? hi : `${lo}–${hi}`}</td>`;
 				})
 				.join('');
-			html += `<tr>${cells}<td>${r['value'] as string}</td></tr>`;
+			const popCell = hasPop ? `<td class="oracle-pop-col">${r['population'] ?? ''}</td>` : '';
+			html += `<tr>${cells}<td>${r['value'] as string}</td>${popCell}</tr>`;
 		}
 		return html + '</tbody></table>';
 	}
@@ -677,10 +683,13 @@ export function rollOracle(
 		const rows = table as unknown as Array<Record<string, number | string>>;
 		const found = rows.find((r) => roll <= (r[col.key] as number)) ?? rows[rows.length - 1];
 		const value = found['value'] as string;
+		// Optional per-row population (Settlement: Type) — reported alongside the result.
+		const pop = found['population'] as string | undefined;
+		const outcome = pop ? `${value} · <span class="oracle-pop">pop. ${pop}</span>` : value;
 		const html =
 			`<div class="roll-line">Roll (${col.label}): d100 → ${roll}</div>` +
-			`<div class="move-outcome">${value}</div>`;
-		return { roll, html, title, value };
+			`<div class="move-outcome">${outcome}</div>`;
+		return { roll, html, title, value: pop ? `${value} · pop. ${pop}` : value };
 	}
 
 	// ── yrtTouched — compound multi-roll ───────────────────────────────────

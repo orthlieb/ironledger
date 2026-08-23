@@ -3,7 +3,7 @@
   "title": "Settlement: Type",
   "category": "Settlement",
   "selectLabel": "Settlement: Type",
-  "description": "When using this oracle to reveal the scale and purpose of a settlement, choose whether the community is located in settled lands, boundary lands, or remote lands. If unsure, set the location based on the region:\n- **Settled lands:** Piscis, Ostrea, Collina, Freeport, Mons, Termin, Fluenti, Materton\n- **Boundary lands:** Oray Hills, Profunda Forest, Verday Groves, Nebula Forest, Suda Forest, Seka Lands\n- **Remote lands:** Malperm Mtns, Pinna Mtns, Polvokovrita Gap, Dronitay Shelf, Teeth of Konoloy, Weirden Fen, Ravenna, Spero",
+  "description": "When using this oracle to reveal the scale and purpose of a settlement, choose whether the community is located in settled lands, boundary lands, or remote lands. If unsure, set the location based on the region:\n- **Settled lands:** Piscis, Ostrea, Collina, Freeport, Mons, Termin, Fluenti, Materton\n- **Boundary lands:** Oray Hills, Profunda Forest, Verday Groves, Nebula Forest, Suda Forest, Seka Lands\n- **Remote lands:** Malperm Mtns, Pinna Mtns, Polvokovrita Gap, Dronitay Shelf, Teeth of Konoloy, Weirden Fen, Ravenna, Spero\n\n**Population (YRT):** each rolled result carries an approximate head-count. Larger communities aren't rolled here — they're established places you set on the map: **Town** 600–2,500 (Termin, Sveba), **City** 2,500–6,000 (Ostrea, Piscis, Fluenti, Materton, Mons), **Capital** 6,000–10,000 (Typpe), and the **Freeport** (~15,900, sui generis — bigger than everything and fed by ship).",
   "source": "yrt",
   "tableType": "columnSelect",
   "columns": [
@@ -25,36 +25,42 @@
       "settled": 15,
       "boundary": 20,
       "remote": 25,
+      "population": "~5–20",
       "value": "<strong>Stead</strong> — Tiny, self-sustaining settlement with a few family dwellings"
     },
     {
       "settled": 25,
       "boundary": 35,
       "remote": 50,
+      "population": "~20–200 (transient)",
       "value": "<strong>Camp</strong> — Temporary settlement for nomadic people, soldiers, or seasonal workers"
     },
     {
       "settled": 30,
       "boundary": 60,
       "remote": 75,
+      "population": "20–100",
       "value": "<strong>Outpost</strong> — Border or frontier settlement for defense, trade, or exploration"
     },
     {
       "settled": 55,
       "boundary": 80,
       "remote": 90,
+      "population": "20–100",
       "value": "<strong>Hamlet</strong> — Small settlement with a few homes, limited services, and informal leadership"
     },
     {
       "settled": 85,
       "boundary": 95,
       "remote": 98,
+      "population": "100–600",
       "value": "<strong>Village</strong> — Moderate-sized settlement with communal buildings and recognized leadership"
     },
     {
       "settled": 100,
       "boundary": 100,
       "remote": 100,
+      "population": "600–2,500",
       "value": "<strong>Hold</strong> — Large, fortified settlement with diverse trade skills and well-established leadership"
     }
   ]

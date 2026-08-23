@@ -150,10 +150,17 @@ function renderOracles(oracles) {
     if (o.description) s.push(clean(o.description), '');
     if (o.tableType === 'columnSelect' && o.columns?.length) {
       const cols = o.columns;
-      s.push(`| ${cols.map((c) => c.label).join(' | ')} | Result |`);
-      s.push(`| ${cols.map(() => '---').join(' | ')} | --- |`);
+      // Optional per-row population column (Settlement: Type).
+      const hasPop = o.data.some((row) => row.population != null);
+      const popHead = hasPop ? ' Population |' : '';
+      const popRule = hasPop ? ' --- |' : '';
+      s.push(`| ${cols.map((c) => c.label).join(' | ')} | Result |${popHead}`);
+      s.push(`| ${cols.map(() => '---').join(' | ')} | --- |${popRule}`);
       for (const row of o.data)
-        s.push(`| ${cols.map((c) => row[c.key] ?? '').join(' | ')} | ${clean(row.value)} |`);
+        s.push(
+          `| ${cols.map((c) => row[c.key] ?? '').join(' | ')} | ${clean(row.value)} |` +
+            (hasPop ? ` ${clean(row.population ?? '')} |` : ''),
+        );
     } else if (Array.isArray(o.data)) {
       s.push('| d100 | Result |', '| --- | --- |');
       let lo = 1;
