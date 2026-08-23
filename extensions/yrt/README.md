@@ -188,17 +188,16 @@ _Cast Conclave Ritual_ pairs with the Conclave-ritual assets' Difficulty Factors
 
 ## Yrt Foes
 
-> **`foes/foes.json` is GENERATED — do not hand-edit it.** The canonical source
-> for the bestiary is the private **yrt-vault** (`yrt-vault/Game/foes/*.md`), one
-> Markdown file per foe. Edit foes there in Obsidian, then run `npm run gen:yrt-json`
-> to regenerate `foes.json` (sorted by id), and commit the result. The mapping is
-> defined in `scripts/yrt-md.mjs` and proven lossless by
-> `apps/api/tests/unit/yrtMdRoundTrip.test.ts`. `npm run gen:yrt-json:check` fails
-> if `foes.json` has drifted from the vault. This generation is a **local** step
-> (CI has no access to the private vault); `foes.json` is validated in CI by the
-> app schema and tests as usual. To bootstrap the vault from scratch:
-> `node scripts/migrate-yrt-to-md.mjs`. Moves, assets, and oracles remain
-> hand-authored JSON in this repo — only foes are vault-canonical.
+> **`foes/foes.json` is maintained externally — do not hand-edit it.** The
+> canonical source for the bestiary is the private **yrt-vault** repo
+> (`yrt-vault/Game/foes/*.md`, one Markdown file per foe), and the vault owns the
+> sync: its `tooling/` writes `foes.json` into this repo (sorted by id). This repo
+> has **no build step** for it and no dependency on the vault — from ironledger's
+> side `foes.json` is just committed data, validated in CI by the app schema and
+> tests like any other. If you need to change a YRT foe, edit it in the vault and
+> run the vault's sync (`npm run sync` there); a hand-edit here will be overwritten
+> on the next sync. Moves, assets, and oracles remain hand-authored JSON in this
+> repo — only foes are vault-canonical.
 
 Yrt-specific foes are defined in `foes/foes.json`, using the same format as base Ironsworn and Delve foes (see [data-schema.md — Foes](../../docs/data-schema.md#foes)). Their IDs use the `yrt/` prefix:
 
