@@ -933,15 +933,25 @@
 		}
 		/* Collapsed = 2 columns; lock them 50/50 so switching pills doesn't resize
 		   the layout ("dancing" columns). Scoped to picker tables via
-		   :has(.od-pick-col) so single-column / twoStep tables are untouched. */
-		:global(.od-table-wrap .oracle-table:has(.od-pick-col)) {
+		   :has(.od-pick-col) so single-column / twoStep tables are untouched.
+		   Skip the lock when a Population column is present (Settlement: Type) —
+		   that table keeps three always-on columns, so a natural layout is right. */
+		:global(.od-table-wrap .oracle-table:has(.od-pick-col):not(:has(.oracle-pop-col))) {
 			table-layout: fixed;
 			width: 100%;
 		}
-		:global(.od-table-wrap .oracle-table:has(.od-pick-col) th),
-		:global(.od-table-wrap .oracle-table:has(.od-pick-col) td) {
+		:global(.od-table-wrap .oracle-table:has(.od-pick-col):not(:has(.oracle-pop-col)) th),
+		:global(.od-table-wrap .oracle-table:has(.od-pick-col):not(:has(.oracle-pop-col)) td) {
 			width: 50%;
 		}
+	}
+
+	/* Population column (Settlement: Type) — secondary info: dimmed, tabular,
+	   no wrap. Only ever present on a table that opts in via `.oracle-pop-col`. */
+	:global(.od-table-wrap .oracle-table .oracle-pop-col) {
+		font-variant-numeric: tabular-nums;
+		color: var(--text-muted);
+		white-space: nowrap;
 	}
 
 	/* Roll-number (range) columns — dimmed + monospaced, no wrap. Marked with

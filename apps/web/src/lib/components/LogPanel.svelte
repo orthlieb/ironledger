@@ -1407,6 +1407,12 @@
 	.entry-body :global(.roll-outcome-miss + .move-outcome) {
 		border-left-color: var(--color-danger, #ef4444);
 	}
+	/* Settlement: Type population tag appended to the rolled result. */
+	.entry-body :global(.move-outcome .oracle-pop) {
+		font-variant-numeric: tabular-nums;
+		color: var(--text-dimmer);
+		white-space: nowrap;
+	}
 	.entry-body :global(.move-outcome strong) {
 		color: var(--text);
 		font-weight: 600;
