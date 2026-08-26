@@ -2,7 +2,8 @@
  * expansion-toggles.spec.ts — Delve / YRT expansion toggles (v2).
  *
  * Verifies:
- *   • Both expansions default to ON (fresh storage).
+ *   • Both expansions read as ON at start — Delve via its manifest default,
+ *     YRT forced on for E2E (production ships YRT with defaultEnabled:false).
  *   • Disabling Delve hides Delve moves, oracles, foes, and the "+ Site" button.
  *   • Disabling YRT hides YRT moves, oracles, and foes.
  *   • find*-style resolution is NEVER filtered — a log link to a disabled-expansion
@@ -35,7 +36,11 @@ async function resetExpansionToggles(page: Page): Promise<void> {
 	await page.evaluate(
 		({ delveKey, yrtKey, lodestarKey }) => {
 			localStorage.removeItem(delveKey);
-			localStorage.removeItem(yrtKey);
+			// Production ships YRT with defaultEnabled:false, but these toggle tests
+			// exercise it as an enabled expansion — force it ON for E2E only. (The
+			// store reads 'on'/'off' from localStorage, falling back to the manifest
+			// default only when the key is absent.)
+			localStorage.setItem(yrtKey, 'on');
 			localStorage.removeItem(lodestarKey);
 		},
 		{ delveKey: DELVE_KEY, yrtKey: YRT_KEY, lodestarKey: LODESTAR_KEY },
