@@ -490,6 +490,45 @@
 									{/if}
 								</div>
 
+								<!-- Status toggle — Active / Vanquished. -->
+								<div class="fa-status-section">
+									<span class="fa-status-label">Status</span>
+									<SegmentedRadio
+										ariaLabel="Foe status"
+										labels="always"
+										value={activeEnc.vanquished ? 'vanquished' : 'active'}
+										onchange={(v) => update({ vanquished: v === 'vanquished' })}
+										options={[
+											{
+												value: 'active',
+												icon: swordSvg,
+												text: 'Active',
+												label: 'Mark active',
+												tone: 'go',
+											},
+											{
+												value: 'vanquished',
+												icon: skullSvg,
+												text: 'Vanquished',
+												label: 'Mark vanquished',
+												tone: 'stop',
+											},
+										]}
+									/>
+								</div>
+
+								<!-- Progress track -->
+								<div class="fa-section">
+									<ProgressTrackPanel
+										label="Progress track"
+										value={activeEnc.ticks}
+										color={natureColor}
+										step={progressTickVal}
+										showStep
+										onchange={handleTrackChange}
+									/>
+								</div>
+
 								<!-- Escalating harm -->
 								{#if foeExtraFlag(activeDef, 'yrt', 'escalates')}
 									<div class="fa-escalate-row">
@@ -516,6 +555,7 @@
 											>
 											<span class="fa-harm-cap">/ {harmCap}</span>
 										</div>
+										<span class="fa-escalate-hint">Increase for every miss.</span>
 									</div>
 								{/if}
 
@@ -543,49 +583,9 @@
 											>
 											<span class="fa-harm-cap">/ {defenseCap}</span>
 										</div>
+										<span class="fa-escalate-hint">Increase for every miss.</span>
 									</div>
 								{/if}
-
-								<!-- Status toggle — Active / Vanquished. Lives above
-								     the progress track (with a top separator) so the
-								     header can stay lean; mirrors the initiative
-								     line at the top of the Characters card. -->
-								<div class="fa-status-section">
-									<span class="fa-status-label">Status</span>
-									<SegmentedRadio
-										ariaLabel="Foe status"
-										labels="always"
-										value={activeEnc.vanquished ? 'vanquished' : 'active'}
-										onchange={(v) => update({ vanquished: v === 'vanquished' })}
-										options={[
-											{
-												value: 'active',
-												icon: swordSvg,
-												text: 'Active',
-												label: 'Mark active',
-												tone: 'go',
-											},
-											{
-												value: 'vanquished',
-												icon: skullSvg,
-												text: 'Vanquished',
-												label: 'Mark vanquished',
-												tone: 'stop',
-											},
-										]}
-									/>
-								</div>
-
-								<div class="fa-section">
-									<ProgressTrackPanel
-										label="Progress track"
-										value={activeEnc.ticks}
-										color={natureColor}
-										step={progressTickVal}
-										showStep
-										onchange={handleTrackChange}
-									/>
-								</div>
 							{:else}
 								<p class="fa-empty-mini">
 									Catalogue entry “{activeEnc.foeId}” isn’t available — combat controls disabled.
@@ -931,6 +931,7 @@
 
 	.fa-escalate-row {
 		display: flex;
+		flex-wrap: wrap;
 		align-items: center;
 		gap: 10px;
 		border-bottom: 1px solid #c3baa1;
@@ -942,6 +943,15 @@
 		font-weight: 600;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
+		color: var(--text-dimmer);
+	}
+	/* Hint under the Escalating Harm spinner — wraps to its own line. */
+	.fa-escalate-hint {
+		flex-basis: 100%;
+		margin-top: -4px;
+		font-family: var(--font-ui);
+		font-size: 0.62rem;
+		font-style: italic;
 		color: var(--text-dimmer);
 	}
 	.fa-escalate-ctrl {
