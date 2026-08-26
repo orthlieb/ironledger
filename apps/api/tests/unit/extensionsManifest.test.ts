@@ -45,8 +45,8 @@ const filesFor = (type: string) =>
 const load = (root: string, rel: string) => JSON.parse(readFileSync(resolve(root, rel), 'utf-8'));
 
 describe('extensions.manifest.json', () => {
-  it('registers base, delve, yrt, lodestar as the core, in order', () => {
-    expect(core.map((e) => e.id)).toEqual(['base', 'delve', 'yrt', 'lodestar']);
+  it('registers base, delve, lodestar, yrt as the core, in order', () => {
+    expect(core.map((e) => e.id)).toEqual(['base', 'delve', 'lodestar', 'yrt']);
     expect(core.map((e) => e.order)).toEqual([0, 10, 20, 30]);
   });
 

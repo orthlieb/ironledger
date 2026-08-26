@@ -254,61 +254,11 @@
       }
     },
     {
-      "id": "yrt",
-      "name": "YRT",
-      "description": "Yrt homebrew setting — mana, Touched, ritual cantrips, and the Yrt bestiary.",
-      "defaultEnabled": false,
-      "order": 20,
-      "supersedesOracles": {
-        "location": "yrtCityTownLocation",
-        "region": "yrtRegion",
-        "settlementType": "yrtSettlementType",
-        "storyRegion": "yrtStoryRegion"
-      },
-      "moveCategories": [
-        {
-          "key": "Yrt",
-          "icon": "foe-beast",
-          "color": "var(--color-touched)",
-          "order": 200
-        }
-      ],
-      "root": "extensions/yrt",
-      "provides": {
-        "assets": [
-          "assets/assets.json"
-        ],
-        "moves": [
-          "moves/moves.json"
-        ],
-        "oracles": [
-          "oracles/animal.json",
-          "oracles/city-town-location.json",
-          "oracles/freeport-denizen.json",
-          "oracles/mana-backlash.json",
-          "oracles/region.json",
-          "oracles/settlement-opportunity.json",
-          "oracles/settlement-peril.json",
-          "oracles/settlement-type.json",
-          "oracles/settlement-waypoint.json",
-          "oracles/story-region.json",
-          "oracles/touched-features.json",
-          "oracles/touched.json"
-        ],
-        "foes": [
-          "foes/foes.json"
-        ],
-        "foeOverrides": [
-          "foes/overrides.json"
-        ]
-      }
-    },
-    {
       "id": "lodestar",
       "name": "Lodestar",
       "description": "The Lodestar guide — bonus moves for solo play. Includes Follow a Path, which resolves a journey across familiar lands in a single roll.",
       "defaultEnabled": true,
-      "order": 30,
+      "order": 20,
       "suppressesOracles": [
         "charDisposition",
         "featureAspect",
@@ -366,6 +316,56 @@
           "oracles/settlement-type.json",
           "oracles/story-clue.json",
           "oracles/story-region.json"
+        ]
+      }
+    },
+    {
+      "id": "yrt",
+      "name": "YRT",
+      "description": "Yrt homebrew setting — mana, Touched, ritual cantrips, and the Yrt bestiary.",
+      "defaultEnabled": false,
+      "order": 30,
+      "supersedesOracles": {
+        "location": "yrtCityTownLocation",
+        "region": "yrtRegion",
+        "settlementType": "yrtSettlementType",
+        "storyRegion": "yrtStoryRegion"
+      },
+      "moveCategories": [
+        {
+          "key": "Yrt",
+          "icon": "foe-beast",
+          "color": "var(--color-touched)",
+          "order": 200
+        }
+      ],
+      "root": "extensions/yrt",
+      "provides": {
+        "assets": [
+          "assets/assets.json"
+        ],
+        "moves": [
+          "moves/moves.json"
+        ],
+        "oracles": [
+          "oracles/animal.json",
+          "oracles/city-town-location.json",
+          "oracles/freeport-denizen.json",
+          "oracles/mana-backlash.json",
+          "oracles/region.json",
+          "oracles/settlement-opportunity.json",
+          "oracles/settlement-peril.json",
+          "oracles/settlement-type.json",
+          "oracles/settlement-waypoint.json",
+          "oracles/story-region.json",
+          "oracles/touched-features.json",
+          "oracles/touched.json"
+        ],
+        "foes": [
+          "foes/foes.json"
+        ],
+        "foeOverrides": [
+          "foes/overrides.json"
         ]
       }
     },
