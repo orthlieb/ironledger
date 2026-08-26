@@ -326,7 +326,6 @@
       "defaultEnabled": false,
       "order": 30,
       "supersedesOracles": {
-        "location": "yrtCityTownLocation",
         "region": "yrtRegion",
         "settlementType": "yrtSettlementType",
         "storyRegion": "yrtStoryRegion"

@@ -7,8 +7,7 @@
   "supersedesOracles": {
     "region": "yrtRegion",
     "storyRegion": "yrtStoryRegion",
-    "settlementType": "yrtSettlementType",
-    "location": "yrtCityTownLocation"
+    "settlementType": "yrtSettlementType"
   },
   "moveCategories": [
     { "key": "Yrt", "icon": "foe-beast", "color": "var(--color-touched)", "order": 200 }
