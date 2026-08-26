@@ -805,14 +805,18 @@
 		}
 	}
 
-	/** Resolve the Landmark oracle for a Place. resolveOracleKey folds the
-	 *  extension supersessions in — YRT rewrites `location → yrtCityTownLocation`
-	 *  (nested / in-settlement), Lodestar rewrites `location → overlandLandmark`
-	 *  and `coastalWatersLocation → coastalWatersLandmark`; YRT wins over
-	 *  Lodestar (lower manifest order). Coastal vs overland is still a
-	 *  flow-context decision the client owns. */
+	/** Resolve the Landmark oracle for a Place. The in-settlement and freestanding
+	 *  cases are DIFFERENT oracles, not one superseded key:
+	 *   • nested (inside a settlement) → YRT's Settlement Landmark, a *standalone*
+	 *     oracle that complements — does not supersede — base `location`; falls
+	 *     back to base "Location" when YRT is off.
+	 *   • freestanding overland → base `location`, which Lodestar supersedes with
+	 *     its Overland Landmark (via resolveOracleKey).
+	 *   • coastal → base `coastalWatersLocation`, superseded by Lodestar.
+	 *  Because Settlement Landmark is separate, the two never collide and the
+	 *  result is independent of extension order. */
 	function placeLandmarkKey(nested: boolean): string {
-		if (nested) return resolveOracleKey('location');
+		if (nested) return isSourceEnabled('yrt') ? 'yrtCityTownLocation' : 'location';
 		if (_pendingPlaceLandmarkKind === 'coastal') return resolveOracleKey('coastalWatersLocation');
 		return resolveOracleKey('location');
 	}

@@ -3,12 +3,11 @@
   "name": "YRT",
   "description": "Yrt homebrew setting — mana, Touched, ritual cantrips, and the Yrt bestiary.",
   "defaultEnabled": false,
-  "order": 20,
+  "order": 30,
   "supersedesOracles": {
     "region": "yrtRegion",
     "storyRegion": "yrtStoryRegion",
-    "settlementType": "yrtSettlementType",
-    "location": "yrtCityTownLocation"
+    "settlementType": "yrtSettlementType"
   },
   "moveCategories": [
     { "key": "Yrt", "icon": "foe-beast", "color": "var(--color-touched)", "order": 200 }

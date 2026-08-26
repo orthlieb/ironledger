@@ -45,8 +45,8 @@ const filesFor = (type: string) =>
 const load = (root: string, rel: string) => JSON.parse(readFileSync(resolve(root, rel), 'utf-8'));
 
 describe('extensions.manifest.json', () => {
-  it('registers base, delve, yrt, lodestar as the core, in order', () => {
-    expect(core.map((e) => e.id)).toEqual(['base', 'delve', 'yrt', 'lodestar']);
+  it('registers base, delve, lodestar, yrt as the core, in order', () => {
+    expect(core.map((e) => e.id)).toEqual(['base', 'delve', 'lodestar', 'yrt']);
     expect(core.map((e) => e.order)).toEqual([0, 10, 20, 30]);
   });
 
@@ -175,18 +175,19 @@ describe('oracle visibility by enabled extension', () => {
   // base always on; each row toggles delve / yrt / lodestar. Counts net out
   // both `suppressesOracles` (pure hides) and `supersedesOracles` (implicit
   // hide of the base key being rewritten). YRT hides {region, storyRegion,
-  // settlementType, location} via supersedesOracles;
+  // settlementType} via supersedesOracles — its Settlement Landmark is a
+  // separate, complementary oracle, so YRT does NOT hide base Location.
   // Lodestar hides {featureAspect, featureFocus, charDisposition} via
   // suppressesOracles and {location, coastalWatersLocation} via supersedes;
   // union across enabled extensions.
   it.each([
     [false, false, false, 24],
     [false, false, true, 46],
-    [false, true, false, 34],
+    [false, true, false, 35],
     [false, true, true, 55],
     [true, false, false, 56],
     [true, false, true, 75],
-    [true, true, false, 66],
+    [true, true, false, 67],
     [true, true, true, 84],
   ])(
     'base + delve=%s yrt=%s lodestar=%s → %i visible oracles',
@@ -203,6 +204,10 @@ describe('oracle visibility by enabled extension', () => {
     // lodestar hides base Location and delve Feature Focus / Character Disposition.
     expect(effective(['base']).has('location')).toBe(true);
     expect(effective(['base', 'lodestar']).has('location')).toBe(false);
+    // YRT's Settlement Landmark is a SEPARATE, complementary oracle — it does not
+    // hide base Location; both stay visible when YRT (without Lodestar) is on.
+    expect(effective(['base', 'yrt']).has('location')).toBe(true);
+    expect(effective(['base', 'yrt']).has('yrtCityTownLocation')).toBe(true);
     expect(effective(['base', 'delve']).has('featureFocus')).toBe(true);
     expect(effective(['base', 'delve', 'lodestar']).has('featureFocus')).toBe(false);
     expect(effective(['base', 'delve']).has('charDisposition')).toBe(true);
