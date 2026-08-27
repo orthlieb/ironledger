@@ -68,12 +68,14 @@ async function waitForHome(page: Page) {
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
 
-/** Reset the expansion toggles to defaults (both on). */
+/** Reset toggles for E2E: Delve to its default (on), YRT forced on. Production
+ *  ships YRT with defaultEnabled:false, so removing the key would leave it off;
+ *  the "YRT on:" tests need it enabled, and the store reads 'on' as enabled. */
 async function resetToggles(page: Page): Promise<void> {
 	await page.evaluate(
 		({ d, y }) => {
 			localStorage.removeItem(d);
-			localStorage.removeItem(y);
+			localStorage.setItem(y, 'on');
 		},
 		{ d: DELVE_KEY, y: YRT_KEY },
 	);
