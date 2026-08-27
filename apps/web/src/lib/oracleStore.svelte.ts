@@ -560,9 +560,18 @@ export function buildTableHtml(
 	};
 
 	// A single value column keeps the space-saving multi-column layout for long
-	// lists (3 columns > 60 rows, 2 columns > 40, else 1).
+	// lists (3 columns > 60 rows, 2 columns > 40, else 1) — but cap at 2 columns
+	// on narrow screens, where a third d100|Result pair overflows a phone.
 	if (flatCols.length === 1 && flatCols[0].key === 'value') {
-		const perCol = table.length > 60 ? 3 : table.length > 40 ? 2 : 1;
+		const perCol = options?.narrow
+			? table.length > 40
+				? 2
+				: 1
+			: table.length > 60
+				? 3
+				: table.length > 40
+					? 2
+					: 1;
 		const rowsPer = Math.ceil(table.length / perCol);
 		let html =
 			'<table class="oracle-table"><thead><tr>' +

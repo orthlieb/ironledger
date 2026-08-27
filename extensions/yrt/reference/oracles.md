@@ -45,13 +45,13 @@ Determine the Touched animal type aspect of a character.
 
 | d100 | Result |
 | --- | --- |
-| 1 | Bear |
+| 1 | Bear [Ursine] |
 | 2 | Wolf |
 | 3 | Fox |
 | 4 | Deer / Doe |
 | 5 | Stag (elk) |
 | 6 | Horse |
-| 7 | Boar |
+| 7 | Boar [Porcine] |
 | 8 | Hare / Rabbit |
 | 9 | Badger |
 | 10 | Otter |
@@ -63,14 +63,14 @@ Determine the Touched animal type aspect of a character.
 | 16 | Weasel / Stoat |
 | 17 | Ferret |
 | 18 | Mink |
-| 19 | Mountain Lion / Puma |
-| 20 | Lynx |
+| 19 | Mountain Lion / Puma [Feline] |
+| 20 | Lynx [Feline] |
 | 21 | Dog (hound) |
-| 22 | Cat (domestic) |
-| 23 | Bull / Ox |
-| 24 | Goat |
+| 22 | Cat (domestic) [Feline] |
+| 23 | Bull / Ox [Bovine] |
+| 24 | Goat [Hircine] |
 | 25 | Ram / Sheep |
-| 26 | Pig / Swine |
+| 26 | Pig / Swine [Porcine] |
 | 27 | Donkey / Mule |
 | 28 | Deer (roe) |
 | 29 | Wolverine |
@@ -93,18 +93,18 @@ Determine the Touched animal type aspect of a character.
 | 46 | Lizard (common) |
 | 47 | Gecko |
 | 48 | Iguana |
-| 49 | Monitor Lizard |
+| 49 | Monitor Lizard [Varanine] |
 | 50 | Chameleon |
 | 51 | Crocodile / Caiman |
 | 52 | Alligator |
 | 53 | Tortoise |
 | 54 | Sea Turtle |
 | 55 | Snapping Turtle |
-| 56 | Salamander |
+| 56 | Salamander [Salamandrine] |
 | 57 | Frog (tree frog) |
 | 58 | Frog (bullfrog) |
 | 59 | Toad |
-| 60 | Newt |
+| 60 | Newt [Salamandrine] |
 | 61 | Salmon |
 | 62 | Trout |
 | 63 | Eel |
