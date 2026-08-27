@@ -5,8 +5,8 @@
       "name": "Touched, Salamandrine",
       "category": "Touched",
       "summary": "Salamandrine-touched: wounds that knit closed, skin that breathes underwater, and a slowed body that outlasts cold and hunger.",
-      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT \u2013 Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
-      "postamble": "Your touched value determines how many abilities you may use: Pure \u2014 none; Prime \u2014 1; Second \u2014 2; Third or Feral \u2014 all 3.",
+      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
+      "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
       "preconditions": [],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
@@ -69,7 +69,7 @@
           "id": "animalName",
           "type": "string",
           "label": "Animal",
-          "placeholder": "Animal\u2026"
+          "placeholder": "Animal…"
         }
       ],
       "source": "yrt",
@@ -79,9 +79,9 @@
       "id": "path/yrt-touched-feline",
       "name": "Touched, Feline",
       "category": "Touched",
-      "summary": "Feline-touched: night hunter\u2019s senses, impossible leaps, and predator stealth.",
-      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT \u2013 Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
-      "postamble": "Your touched value determines how many abilities you may use: Pure \u2014 none; Prime \u2014 1; Second \u2014 2; Third or Feral \u2014 all 3.",
+      "summary": "Feline-touched: night hunter’s senses, impossible leaps, and predator stealth.",
+      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
+      "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
       "preconditions": [],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
@@ -106,7 +106,7 @@
         },
         {
           "enabled": false,
-          "text": "You vanish into stillness like a hidden hunter. When you remain motionless or stalk slowly in cover and then [Secure an Advantage](move:secure-an-advantage) by relying on concealment, add +1. On a hit, you are not detected and take +1 momentum; on a strong hit, you may also improve your position (define a safe escape route, observe unnoticed, or set up an ally\u2019s next move).",
+          "text": "You vanish into stillness like a hidden hunter. When you remain motionless or stalk slowly in cover and then [Secure an Advantage](move:secure-an-advantage) by relying on concealment, add +1. On a hit, you are not detected and take +1 momentum; on a strong hit, you may also improve your position (define a safe escape route, observe unnoticed, or set up an ally’s next move).",
           "moves": ["move/secure-an-advantage"]
         }
       ],
@@ -144,7 +144,7 @@
           "id": "animalName",
           "type": "string",
           "label": "Animal",
-          "placeholder": "Animal\u2026"
+          "placeholder": "Animal…"
         }
       ],
       "source": "yrt",
@@ -155,8 +155,8 @@
       "name": "Touched, Porcine",
       "category": "Touched",
       "summary": "Porcine-touched: unerring nose for hidden threats, iron constitution, and an instinct for finding sustenance.",
-      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT \u2013 Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
-      "postamble": "Your touched value determines how many abilities you may use: Pure \u2014 none; Prime \u2014 1; Second \u2014 2; Third or Feral \u2014 all 3.",
+      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
+      "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
       "preconditions": [],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
@@ -219,7 +219,7 @@
           "id": "animalName",
           "type": "string",
           "label": "Animal",
-          "placeholder": "Animal\u2026"
+          "placeholder": "Animal…"
         }
       ],
       "source": "yrt",
@@ -230,8 +230,8 @@
       "name": "Touched, Bovine",
       "category": "Touched",
       "summary": "Bovine-touched: an unstoppable charge, an unbreakable will, and a voice that bends a room to silence.",
-      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT \u2013 Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
-      "postamble": "Your touched value determines how many abilities you may use: Pure \u2014 none; Prime \u2014 1; Second \u2014 2; Third or Feral \u2014 all 3.",
+      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
+      "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
       "preconditions": [],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
@@ -246,7 +246,7 @@
       "abilities": [
         {
           "enabled": false,
-          "text": "Your bulk and lowered horns turn forward motion into a shattering blow. When you [Strike](move:strike) or [Clash](move:clash) by charging \u2014 at speed, with armored shoulder, lowered horn, or full body weight \u2014 you may roll +iron (even if another stat would normally apply). On a strong hit, also deal +1 harm and your foe is thrown off-balance, knocked back, or driven from their footing.",
+          "text": "Your bulk and lowered horns turn forward motion into a shattering blow. When you [Strike](move:strike) or [Clash](move:clash) by charging — at speed, with armored shoulder, lowered horn, or full body weight — you may roll +iron (even if another stat would normally apply). On a strong hit, also deal +1 harm and your foe is thrown off-balance, knocked back, or driven from their footing.",
           "moves": ["move/strike", "move/clash"]
         },
         {
@@ -256,7 +256,7 @@
         },
         {
           "enabled": false,
-          "text": "Your lowing call settles arguments before they begin. When you [Compel](move:compel) by sheer force of voice or presence \u2014 a bellow, a quiet steady refusal, a rumbling commandment \u2014 add +1, and you may roll +iron (even if another stat would normally apply). On a strong hit, also take +1 momentum.",
+          "text": "Your lowing call settles arguments before they begin. When you [Compel](move:compel) by sheer force of voice or presence — a bellow, a quiet steady refusal, a rumbling commandment — add +1, and you may roll +iron (even if another stat would normally apply). On a strong hit, also take +1 momentum.",
           "moves": ["move/compel"]
         }
       ],
@@ -294,7 +294,7 @@
           "id": "animalName",
           "type": "string",
           "label": "Animal",
-          "placeholder": "Animal\u2026"
+          "placeholder": "Animal…"
         }
       ],
       "source": "yrt",
@@ -305,8 +305,8 @@
       "name": "Touched, Ursine",
       "category": "Touched",
       "summary": "Ursine-touched: looming presence that bends nerve, crushing strength behind every blow, and a body built to weather the longest winter.",
-      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT \u2013 Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
-      "postamble": "Your touched value determines how many abilities you may use: Pure \u2014 none; Prime \u2014 1; Second \u2014 2; Third or Feral \u2014 all 3.",
+      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
+      "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
       "preconditions": [],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
@@ -321,7 +321,7 @@
       "abilities": [
         {
           "enabled": false,
-          "text": "Your size and bearing draw every eye and bend the will of those who face you. When you [Compel](move:compel) or [Face Danger](move:face-danger) by intimidation \u2014 a roar, a bared claw, drawing yourself up to your full height \u2014 add +1, and you may roll +iron (even if another stat would normally apply). On a strong hit, also take +1 momentum as your sheer presence cows witness and foe alike.",
+          "text": "Your size and bearing draw every eye and bend the will of those who face you. When you [Compel](move:compel) or [Face Danger](move:face-danger) by intimidation — a roar, a bared claw, drawing yourself up to your full height — add +1, and you may roll +iron (even if another stat would normally apply). On a strong hit, also take +1 momentum as your sheer presence cows witness and foe alike.",
           "moves": ["move/compel", "move/face-danger"]
         },
         {
@@ -369,7 +369,7 @@
           "id": "animalName",
           "type": "string",
           "label": "Animal",
-          "placeholder": "Animal\u2026"
+          "placeholder": "Animal…"
         }
       ],
       "source": "yrt",
@@ -380,8 +380,8 @@
       "name": "Touched, Hircine",
       "category": "Touched",
       "summary": "Hircine-touched: surefooted on lethal heights, a gut that shrugs off poison and rot, and a wrongness of aspect that unsettles every room.",
-      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT \u2013 Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
-      "postamble": "Your touched value determines how many abilities you may use: Pure \u2014 none; Prime \u2014 1; Second \u2014 2; Third or Feral \u2014 all 3.",
+      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
+      "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
       "preconditions": [],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
@@ -396,7 +396,7 @@
       "abilities": [
         {
           "enabled": false,
-          "text": "Your footing holds where others fall. When you [Face Danger](move:face-danger) by traversing narrow, slick, steep, or precarious terrain \u2014 a ledge, a roof-peak, a fence-top, a beam over a drop \u2014 add +1, and you may roll +edge (even if another stat would normally apply). On a strong hit, you cross unhurried; take +1 momentum, or set the way for an ally who follows.",
+          "text": "Your footing holds where others fall. When you [Face Danger](move:face-danger) by traversing narrow, slick, steep, or precarious terrain — a ledge, a roof-peak, a fence-top, a beam over a drop — add +1, and you may roll +edge (even if another stat would normally apply). On a strong hit, you cross unhurried; take +1 momentum, or set the way for an ally who follows.",
           "moves": ["move/face-danger"]
         },
         {
@@ -406,7 +406,7 @@
         },
         {
           "enabled": false,
-          "text": "Your stare is wrong, your laugh is wrong, and the rut-stink of you fills a room. When you [Compel](move:compel) through menace, taboo, or sheer disquiet \u2014 a horizontal-pupil grin, a low bleating chuckle, the hircine reek that makes dogs whine \u2014 add +1, and you may roll +shadow (even if another stat would normally apply). On a strong hit, also take +1 momentum.",
+          "text": "Your stare is wrong, your laugh is wrong, and the rut-stink of you fills a room. When you [Compel](move:compel) through menace, taboo, or sheer disquiet — a horizontal-pupil grin, a low bleating chuckle, the hircine reek that makes dogs whine — add +1, and you may roll +shadow (even if another stat would normally apply). On a strong hit, also take +1 momentum.",
           "moves": ["move/compel"]
         }
       ],
@@ -444,11 +444,86 @@
           "id": "animalName",
           "type": "string",
           "label": "Animal",
-          "placeholder": "Animal\u2026"
+          "placeholder": "Animal…"
         }
       ],
       "source": "yrt",
       "icon": "asset-touched-hircine"
+    },
+    {
+      "id": "path/yrt-touched-varanine",
+      "name": "Touched, Varanine",
+      "category": "Touched",
+      "summary": "Varanine-touched: a patient ambush and a killing rush, a tongue that reads blood on the wind, and bony scale beneath the skin that turns a blow.",
+      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
+      "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
+      "preconditions": [],
+      "exclusiveGroup": "touched",
+      "abilityMaxByField": {
+        "touchedLevel": {
+          "pure": 0,
+          "prime": 1,
+          "second": 2,
+          "third": 3,
+          "feral": 3
+        }
+      },
+      "abilities": [
+        {
+          "enabled": false,
+          "text": "You wait without moving, then cross the ground in a heartbeat. When you [Secure an Advantage](move:secure-an-advantage) by lying in wait and rushing prey from ambush, add +1, and you may roll +iron (even if another stat would normally apply). On a strong hit, take +2 momentum, or seize the initiative outright.",
+          "moves": ["move/secure-an-advantage"]
+        },
+        {
+          "enabled": false,
+          "text": "You taste the air and read it. When you [Gather Information](move:gather-information) to track wounded prey, carrion, blood, or a quarry that passed this way, add +1, and you may roll +wits (even if another stat would normally apply). On a strong hit, you learn not just where they went, but how hurt, how afraid, and how far ahead.",
+          "moves": ["move/gather-information"]
+        },
+        {
+          "enabled": false,
+          "text": "Bony scales lie beneath your skin. When you [Endure Harm](move:endure-harm), add +1. On a strong hit, take +2 momentum as the blow skids off the armor beneath.",
+          "moves": ["move/endure-harm"]
+        }
+      ],
+      "customFields": [
+        {
+          "id": "touchedLevel",
+          "type": "dropdown",
+          "label": "Level",
+          "shortLabel": "Touched",
+          "default": "pure",
+          "options": [
+            {
+              "id": "pure",
+              "label": "Pure"
+            },
+            {
+              "id": "prime",
+              "label": "Prime"
+            },
+            {
+              "id": "second",
+              "label": "Second"
+            },
+            {
+              "id": "third",
+              "label": "Third"
+            },
+            {
+              "id": "feral",
+              "label": "Feral"
+            }
+          ]
+        },
+        {
+          "id": "animalName",
+          "type": "string",
+          "label": "Animal",
+          "placeholder": "Animal…"
+        }
+      ],
+      "source": "yrt",
+      "icon": "asset-touched-varanine"
     },
     {
       "id": "ritual/yrt-cantrip",
@@ -456,7 +531,7 @@
       "category": "Ritual",
       "summary": "Minor magical tricks: clean, light, warm, lock, and more.",
       "preamble": null,
-      "description": "You have learned minor magical tricks \u2014 small, reliable effects drawn from mana seeds. Choose 2 cantrips when you acquire this asset.\n\n**Limitations:** A cantrip cannot affect anything larger than you can hold in two hands, cannot last longer than 10 minutes or until dispelled (see level exceptions below), cannot reach farther than 10 paces (line of sight required), and cannot directly inflict harm in combat. Most cantrips take several seconds to cast, up to a few minutes for larger or more complex work.",
+      "description": "You have learned minor magical tricks — small, reliable effects drawn from mana seeds. Choose 2 cantrips when you acquire this asset.\n\n**Limitations:** A cantrip cannot affect anything larger than you can hold in two hands, cannot last longer than 10 minutes or until dispelled (see level exceptions below), cannot reach farther than 10 paces (line of sight required), and cannot directly inflict harm in combat. Most cantrips take several seconds to cast, up to a few minutes for larger or more complex work.",
       "cantrips": [
         {
           "key": "tidy-clean",
@@ -527,7 +602,7 @@
         },
         {
           "enabled": false,
-          "text": "Choose 2 additional cantrips from the list (6 total). Simple/touching cantrips (1 mana cost) are now free \u2014 they cost 0 mana."
+          "text": "Choose 2 additional cantrips from the list (6 total). Simple/touching cantrips (1 mana cost) are now free — they cost 0 mana."
         }
       ],
       "customFields": [
@@ -553,23 +628,23 @@
       "category": "Ritual",
       "summary": "Sense and interpret mana in a person, object, or area.",
       "preamble": null,
-      "description": "A basic ritual taught early to Neophytes and Disciples of the Conclave, allowing them to sense and interpret mana in a person, object, or area \u2014 \"detect magic,\" grounded in the color-coded manite system. It uses primarily Amber to read patterns, with Luminous to stabilize and Gray as a structural aid when needed.",
+      "description": "A basic ritual taught early to Neophytes and Disciples of the Conclave, allowing them to sense and interpret mana in a person, object, or area — \"detect magic,\" grounded in the color-coded manite system. It uses primarily Amber to read patterns, with Luminous to stabilize and Gray as a structural aid when needed.",
       "inspectionFactors": [
         {
           "key": "presence",
           "name": "Presence & Purity",
           "levels": [
-            "Simple ping \u2014 only learn whether any mana is present (yes/no).",
-            "Presence + rough purity \u2014 know if mana is stable, mixed, or corrupted.",
-            "Detailed purity \u2014 distinguish refined Conclave-grade, wild blight, or Black/corrupted signatures."
+            "Simple ping — only learn whether any mana is present (yes/no).",
+            "Presence + rough purity — know if mana is stable, mixed, or corrupted.",
+            "Detailed purity — distinguish refined Conclave-grade, wild blight, or Black/corrupted signatures."
           ]
         },
         {
           "key": "color",
           "name": "Color Resolution",
           "levels": [
-            "No color discrimination \u2014 sense only mana present vs. none.",
-            "Broad categories \u2014 structural (Gray), vital (Azure/Verdant), energetic (Crimson/Luminous), mental/decay (Amber/Black).",
+            "No color discrimination — sense only mana present vs. none.",
+            "Broad categories — structural (Gray), vital (Azure/Verdant), energetic (Crimson/Luminous), mental/decay (Amber/Black).",
             "Exact colors and proportions (e.g., mostly Gray with traces of Luminous and faint Amber residue)."
           ]
         },
@@ -577,36 +652,36 @@
           "key": "intensity",
           "name": "Intensity & Scale",
           "levels": [
-            "Crude strength sense \u2014 gut impression of weak/moderate/strong.",
-            "Rough magnitude and footprint \u2014 estimate radius/volume (localized charm, room-wide ward, residual field).",
-            "Detailed mapping \u2014 locate hotspots, weak points, anchor nodes, and strongest direction of effect."
+            "Crude strength sense — gut impression of weak/moderate/strong.",
+            "Rough magnitude and footprint — estimate radius/volume (localized charm, room-wide ward, residual field).",
+            "Detailed mapping — locate hotspots, weak points, anchor nodes, and strongest direction of effect."
           ]
         },
         {
           "key": "temporal",
           "name": "Temporal Insight",
           "levels": [
-            "No time sense \u2014 only perceive the current state.",
-            "Recent vs. old \u2014 tell if the effect is fresh, fading, or ancient, and whether it has been changed recently.",
-            "Event echoes \u2014 catch impressions of one or two key events: a recent casting, strong emotional imprint, or violent discharge."
+            "No time sense — only perceive the current state.",
+            "Recent vs. old — tell if the effect is fresh, fading, or ancient, and whether it has been changed recently.",
+            "Event echoes — catch impressions of one or two key events: a recent casting, strong emotional imprint, or violent discharge."
           ]
         },
         {
           "key": "structure",
           "name": "Structural / Intent Insight",
           "levels": [
-            "Broad function only \u2014 sense whether the effect is protective, harmful, sensory, healing, or corruptive.",
-            "Simple structure \u2014 identify seed-based effect, ritual pattern, crude infusion, or natural blight; educated guess at intended use.",
-            "Detailed structure \u2014 infer likely seed shapes, probable triggering conditions, and one or two concrete capabilities or limitations."
+            "Broad function only — sense whether the effect is protective, harmful, sensory, healing, or corruptive.",
+            "Simple structure — identify seed-based effect, ritual pattern, crude infusion, or natural blight; educated guess at intended use.",
+            "Detailed structure — infer likely seed shapes, probable triggering conditions, and one or two concrete capabilities or limitations."
           ]
         },
         {
           "key": "penetration",
           "name": "Penetration & Subtlety",
           "levels": [
-            "Superficial scan \u2014 easily blocked by wards or barriers; casting is unobtrusive (faint prickle at most).",
-            "Moderate penetration \u2014 read through basic concealment or light Luminous masking; sensitive targets may feel they are being looked at.",
-            "Deep probe \u2014 push through sophisticated wards or read mana in living bodies or sealed containers; obvious to other casters, may trigger alarms or backlash."
+            "Superficial scan — easily blocked by wards or barriers; casting is unobtrusive (faint prickle at most).",
+            "Moderate penetration — read through basic concealment or light Luminous masking; sensitive targets may feel they are being looked at.",
+            "Deep probe — push through sophisticated wards or read mana in living bodies or sealed containers; obvious to other casters, may trigger alarms or backlash."
           ]
         }
       ],
@@ -639,7 +714,7 @@
           }
         },
         "total": 5,
-        "resolution": "She commits 3 mana and Casts Conclave Ritual. She rolls 1d6[4] + 3 mana = 7 vs difficulty 5 and 1d10[9]. That is a weak hit \u2014 downgrade 2 factors (9 \u2212 7 = 2). She drops Penetration from 1 to 0 (losing the ability to see through masking) and Color from 1 to 0 (only learning whether mana is present, not its type). She still senses a stable mana presence, gets a rough footprint, and knows the shrine\u2019s effect is protective \u2014 enough to decide it\u2019s safe."
+        "resolution": "She commits 3 mana and Casts Conclave Ritual. She rolls 1d6[4] + 3 mana = 7 vs difficulty 5 and 1d10[9]. That is a weak hit — downgrade 2 factors (9 − 7 = 2). She drops Penetration from 1 to 0 (losing the ability to see through masking) and Color from 1 to 0 (only learning whether mana is present, not its type). She still senses a stable mana presence, gets a rough footprint, and knows the shrine’s effect is protective — enough to decide it’s safe."
       },
       "abilities": [
         {
@@ -694,18 +769,18 @@
           "key": "viewing",
           "name": "Viewing",
           "levels": [
-            "Limited \u2014 convincing only from straight on.",
-            "Half sphere \u2014 convincing from most angles.",
-            "Full sphere \u2014 convincing from all angles, top and bottom."
+            "Limited — convincing only from straight on.",
+            "Half sphere — convincing from most angles.",
+            "Full sphere — convincing from all angles, top and bottom."
           ]
         },
         {
           "key": "animation",
           "name": "Animation",
           "levels": [
-            "Static \u2014 no movement.",
-            "Small animated details \u2014 subtle motion. Requires red mana.",
-            "Full animation \u2014 lifelike movement. Requires red mana."
+            "Static — no movement.",
+            "Small animated details — subtle motion. Requires red mana.",
+            "Full animation — lifelike movement. Requires red mana."
           ]
         },
         {
@@ -720,19 +795,15 @@
         {
           "key": "size",
           "name": "Size",
-          "levels": [
-            "Small \u2014 deck of cards.",
-            "Medium \u2014 chest sized.",
-            "Large \u2014 horse sized."
-          ]
+          "levels": ["Small — deck of cards.", "Medium — chest sized.", "Large — horse sized."]
         },
         {
           "key": "detail",
           "name": "Detail",
           "levels": [
-            "Rough \u2014 obviously an illusion up close.",
+            "Rough — obviously an illusion up close.",
             "Passes casual inspection.",
-            "Lifelike \u2014 indistinguishable from real."
+            "Lifelike — indistinguishable from real."
           ]
         }
       ],
@@ -745,11 +816,11 @@
           },
           "viewing": {
             "score": 1,
-            "reason": "Half sphere \u2014 convincing from most angles."
+            "reason": "Half sphere — convincing from most angles."
           },
           "animation": {
             "score": 2,
-            "reason": "Full animation \u2014 lifelike hopping movement."
+            "reason": "Full animation — lifelike hopping movement."
           },
           "persistence": {
             "score": 0,
@@ -757,7 +828,7 @@
           },
           "size": {
             "score": 0,
-            "reason": "Small \u2014 deck of cards sized frog."
+            "reason": "Small — deck of cards sized frog."
           },
           "detail": {
             "score": 1,
@@ -765,7 +836,7 @@
           }
         },
         "total": 5,
-        "resolution": "You commit 4 mana and Cast Conclave Ritual. You roll 1d6[3] + 4 mana = 7 vs difficulty 5 and 1d10[8]. That is a weak hit \u2014 downgrade 1 factor (8 \u2212 7 = 1). You drop Detail from 1 to 0 (rough \u2014 obviously an illusion up close), hoping the guard focuses on the movement and sound rather than inspecting the frog closely."
+        "resolution": "You commit 4 mana and Cast Conclave Ritual. You roll 1d6[3] + 4 mana = 7 vs difficulty 5 and 1d10[8]. That is a weak hit — downgrade 1 factor (8 − 7 = 1). You drop Detail from 1 to 0 (rough — obviously an illusion up close), hoping the guard focuses on the movement and sound rather than inspecting the frog closely."
       },
       "abilities": [
         {
@@ -805,32 +876,32 @@
       "category": "Ritual",
       "summary": "Influence thoughts, emotions, and perceptions in a target's mind.",
       "preamble": null,
-      "description": "This ritual lets a caster influence thoughts, emotions, and perceptions in a target\u2019s mind. It is more dangerous than simple illusions, because it acts inside the mind rather than in the air. Amber mana interfaces tightly with the nervous system and sensory processing. It can project illusions, dampen fear or pain, or induce specific emotional states; extended or forceful use risks addiction, mindbreak, or erosion of identity.\n\n**Risks:** Repeated use on the same mind within a short period increases Resistance by +1 each time (max 2) and may create fragmented or contradictory memories. If you roll a miss on a compulsion with Depth 2 or Scope 2, mark a debility related to mental strain (sleeplessness, intrusive memories, emotional numbness). Unsanctioned deep control, if discovered by the Conclave, carries severe consequences.",
+      "description": "This ritual lets a caster influence thoughts, emotions, and perceptions in a target’s mind. It is more dangerous than simple illusions, because it acts inside the mind rather than in the air. Amber mana interfaces tightly with the nervous system and sensory processing. It can project illusions, dampen fear or pain, or induce specific emotional states; extended or forceful use risks addiction, mindbreak, or erosion of identity.\n\n**Risks:** Repeated use on the same mind within a short period increases Resistance by +1 each time (max 2) and may create fragmented or contradictory memories. If you roll a miss on a compulsion with Depth 2 or Scope 2, mark a debility related to mental strain (sleeplessness, intrusive memories, emotional numbness). Unsanctioned deep control, if discovered by the Conclave, carries severe consequences.",
       "inspectionFactors": [
         {
           "key": "depth",
           "name": "Depth",
           "levels": [
-            "Surface nudge \u2014 momentary distraction, fleeting doubt, slight calm.",
-            "Emotional steering \u2014 fear, trust, guilt, confidence for minutes.",
-            "Directive compulsion \u2014 you plant a specific urge or instruction."
+            "Surface nudge — momentary distraction, fleeting doubt, slight calm.",
+            "Emotional steering — fear, trust, guilt, confidence for minutes.",
+            "Directive compulsion — you plant a specific urge or instruction."
           ]
         },
         {
           "key": "clarity",
           "name": "Clarity",
           "levels": [
-            "Vague impression \u2014 a feeling they can second-guess.",
-            "Convincing emotion or thought \u2014 they think it is their own.",
-            "Overriding priority \u2014 it dominates other concerns while it lasts."
+            "Vague impression — a feeling they can second-guess.",
+            "Convincing emotion or thought — they think it is their own.",
+            "Overriding priority — it dominates other concerns while it lasts."
           ]
         },
         {
           "key": "scope",
           "name": "Scope",
           "levels": [
-            "Single emotional axis \u2014 fear, calm, curiosity, etc.",
-            "Emotion plus a simple belief (\u201cyou can trust me,\u201d \u201cthey are watching\u201d).",
+            "Single emotional axis — fear, calm, curiosity, etc.",
+            "Emotion plus a simple belief (“you can trust me,” “they are watching”).",
             "Emotion plus a specific, framed memory or interpretation."
           ]
         },
@@ -838,7 +909,7 @@
           "key": "duration",
           "name": "Duration",
           "levels": [
-            "Seconds \u2014 enough to slip a question past their guard.",
+            "Seconds — enough to slip a question past their guard.",
             "Minutes.",
             "Up to an hour or until jolted (pain, shock, another caster)."
           ]
@@ -847,18 +918,18 @@
           "key": "resistance",
           "name": "Resistance",
           "levels": [
-            "Willing / unsuspecting \u2014 they want to talk, or think you are helping.",
-            "Guarded / anxious \u2014 afraid, suspicious, but not trained.",
-            "Hardened \u2014 Brotherhood-trained, fanatic, or currently terrified."
+            "Willing / unsuspecting — they want to talk, or think you are helping.",
+            "Guarded / anxious — afraid, suspicious, but not trained.",
+            "Hardened — Brotherhood-trained, fanatic, or currently terrified."
           ]
         },
         {
           "key": "subtlety",
           "name": "Subtlety",
           "levels": [
-            "Crude push \u2014 they feel pushed, may notice something is off.",
-            "Gentle guidance \u2014 they rationalize it as their own reaction.",
-            "Seamless masking \u2014 memories fill in naturally; they are sure it was all their idea."
+            "Crude push — they feel pushed, may notice something is off.",
+            "Gentle guidance — they rationalize it as their own reaction.",
+            "Seamless masking — memories fill in naturally; they are sure it was all their idea."
           ]
         }
       ],
@@ -867,19 +938,19 @@
         "factors": {
           "depth": {
             "score": 1,
-            "reason": "Emotional steering \u2014 calm them and build trust."
+            "reason": "Emotional steering — calm them and build trust."
           },
           "clarity": {
             "score": 1,
-            "reason": "Convincing \u2014 they think it is their own feeling."
+            "reason": "Convincing — they think it is their own feeling."
           },
           "scope": {
             "score": 1,
-            "reason": "Emotion + simple belief: \u201cyou can trust me.\u201d"
+            "reason": "Emotion + simple belief: “you can trust me.”"
           },
           "duration": {
             "score": 1,
-            "reason": "Minutes \u2014 long enough for a conversation."
+            "reason": "Minutes — long enough for a conversation."
           },
           "resistance": {
             "score": 1,
@@ -887,11 +958,11 @@
           },
           "subtlety": {
             "score": 1,
-            "reason": "Gentle guidance \u2014 they rationalize it."
+            "reason": "Gentle guidance — they rationalize it."
           }
         },
         "total": 6,
-        "resolution": "You commit 5 mana and Cast Conclave Ritual. You roll 1d6[3] + 5 mana = 8 vs difficulty 6 and 1d10[9]. That is a weak hit \u2014 downgrade 1 factor (9 \u2212 8 = 1). You drop Subtlety from 1 to 0 (crude push). The witness calms down and talks freely, but afterward feels uneasy \u2014 something about the conversation felt off, and they may later question why they were so open with a stranger."
+        "resolution": "You commit 5 mana and Cast Conclave Ritual. You roll 1d6[3] + 5 mana = 8 vs difficulty 6 and 1d10[9]. That is a weak hit — downgrade 1 factor (9 − 8 = 1). You drop Subtlety from 1 to 0 (crude push). The witness calms down and talks freely, but afterward feels uneasy — something about the conversation felt off, and they may later question why they were so open with a stranger."
       },
       "abilities": [
         {
@@ -930,7 +1001,7 @@
       "name": "Bittercraft",
       "category": "Path",
       "summary": "Detect the venomous work of others, brew contact and ingestion toxins from plant extracts, and deploy them on blades, arrows, or in food and drink.",
-      "preamble": "You have trained in the lore of plants, poisons, and their antidotes \u2014 whether as a herbalist, assassin, or apothecary.",
+      "preamble": "You have trained in the lore of plants, poisons, and their antidotes — whether as a herbalist, assassin, or apothecary.",
       "abilities": [
         {
           "enabled": true,
@@ -944,7 +1015,7 @@
         },
         {
           "enabled": false,
-          "text": "When you **deploy** a poison \u2014 by coating a weapon, slipping it into food or drink, or applying it by contact \u2014 spend 1 dose. The move you make to deliver it (typically [Strike](move:strike) or [Clash](move:clash) in combat, [Secure an Advantage](move:secure-an-advantage) in stealth) resolves the poison alongside its normal effect:\n- **Strong hit**: the poison takes hold at full potency. In combat, your weapon also deals **+1 harm**; the coating is consumed by the attempt and must be re-applied outside combat. In stealth, the target succumbs by potency \u2014 soporific incapacitates, debilitating sickens for the next scene, lethal kills per the fiction's pace.\n- **Weak hit**: the poison lands but with a complication \u2014 the target gets one last act, leaves a telltale, or fights through it. No bonus harm.\n- **Miss**: the dose is wasted; the move's normal miss outcome applies.\n\nA **flawed** poison (Craft weak-hit telltale) takes **-1** on the deploy roll.",
+          "text": "When you **deploy** a poison — by coating a weapon, slipping it into food or drink, or applying it by contact — spend 1 dose. The move you make to deliver it (typically [Strike](move:strike) or [Clash](move:clash) in combat, [Secure an Advantage](move:secure-an-advantage) in stealth) resolves the poison alongside its normal effect:\n- **Strong hit**: the poison takes hold at full potency. In combat, your weapon also deals **+1 harm**; the coating is consumed by the attempt and must be re-applied outside combat. In stealth, the target succumbs by potency — soporific incapacitates, debilitating sickens for the next scene, lethal kills per the fiction's pace.\n- **Weak hit**: the poison lands but with a complication — the target gets one last act, leaves a telltale, or fights through it. No bonus harm.\n- **Miss**: the dose is wasted; the move's normal miss outcome applies.\n\nA **flawed** poison (Craft weak-hit telltale) takes **-1** on the deploy roll.",
           "moves": ["move/strike", "move/clash", "move/secure-an-advantage"]
         }
       ],
@@ -954,7 +1025,7 @@
           "type": "markdown",
           "label": "Notes",
           "position": "bottom",
-          "placeholder": "Recipes, taught poisons, contacts\u2026 (**bold**, *italic*, # heading, - list)"
+          "placeholder": "Recipes, taught poisons, contacts… (**bold**, *italic*, # heading, - list)"
         },
         {
           "id": "doses",
@@ -974,21 +1045,21 @@
       "name": "Quillwise",
       "category": "Path",
       "summary": "Document forger: mimic handwriting, replicate seals and official papers, and detect the fakes of others.",
-      "preamble": "You have trained in the art of copying documents \u2014 identifying paper types, ink composition, and handwriting characteristics.",
+      "preamble": "You have trained in the art of copying documents — identifying paper types, ink composition, and handwriting characteristics.",
       "abilities": [
         {
           "enabled": true,
-          "text": "When you [Craft an Item](move:craft), you can forge a handwritten document \u2014 a letter, note, or simple written message \u2014 you are forging a person's handwriting. On a **strong hit**, the forgery withstands casual inspection. On a **weak hit**, there is a subtle inconsistency that someone familiar with the original may notice, or the work takes longer than expected.",
+          "text": "When you [Craft an Item](move:craft), you can forge a handwritten document — a letter, note, or simple written message — you are forging a person's handwriting. On a **strong hit**, the forgery withstands casual inspection. On a **weak hit**, there is a subtle inconsistency that someone familiar with the original may notice, or the work takes longer than expected.",
           "moves": ["move/craft"]
         },
         {
           "enabled": false,
-          "text": "When you [Gather Information](move:gather-information) to examine a document for signs of forgery or tampering \u2014 inspecting paper, ink, seals, or handwriting \u2014 add +1. On a **strong hit**, you determine its authenticity and, if forged, identify clues to the forger's methods and habits. On a **weak hit**, you determine its authenticity.",
+          "text": "When you [Gather Information](move:gather-information) to examine a document for signs of forgery or tampering — inspecting paper, ink, seals, or handwriting — add +1. On a **strong hit**, you determine its authenticity and, if forged, identify clues to the forger's methods and habits. On a **weak hit**, you determine its authenticity.",
           "moves": ["move/gather-information"]
         },
         {
           "enabled": false,
-          "text": "When you [Craft an Item](move:craft), you can forge an official document \u2014 stamped credentials, sealed correspondence, or institutional papers \u2014 the forgery may include formal seals, signatures, and official formatting. On a **strong hit**, the document passes even official scrutiny.",
+          "text": "When you [Craft an Item](move:craft), you can forge an official document — stamped credentials, sealed correspondence, or institutional papers — the forgery may include formal seals, signatures, and official formatting. On a **strong hit**, the document passes even official scrutiny.",
           "moves": ["move/craft"]
         }
       ],
@@ -1002,7 +1073,7 @@
       "name": "Nemezo",
       "assetId": "combat/cutthroat",
       "xpCost": 5,
-      "description": "A double-edged dagger forged from the steel of a Conclave foreman's crown, with a small amber inset at the pommel. The blade alone is ordinary steel; the danger lives in the sheath \u2014 a plain leather exterior over a luminous-lined interior holding a small reservoir of volatile Black mana. Drawn from the sheath, the lower inches of the blade carry a thin necrotic coat. Wounds dealt by Nemezo refuse to heal: flesh blackens around the entry, the corruption spreads, and the dying is unhurried. Treat Heal moves as -1 against harm dealt by this dagger until the Black is cleansed.",
+      "description": "A double-edged dagger forged from the steel of a Conclave foreman's crown, with a small amber inset at the pommel. The blade alone is ordinary steel; the danger lives in the sheath — a plain leather exterior over a luminous-lined interior holding a small reservoir of volatile Black mana. Drawn from the sheath, the lower inches of the blade carry a thin necrotic coat. Wounds dealt by Nemezo refuse to heal: flesh blackens around the entry, the corruption spreads, and the dying is unhurried. Treat Heal moves as -1 against harm dealt by this dagger until the Black is cleansed.",
       "source": "yrt"
     }
   ],
