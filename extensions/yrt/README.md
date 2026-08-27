@@ -188,16 +188,12 @@ _Cast Conclave Ritual_ pairs with the Conclave-ritual assets' Difficulty Factors
 
 ## Yrt Foes
 
-> **`foes/foes.json` is maintained externally — do not hand-edit it.** The
-> canonical source for the bestiary is the private **yrt-vault** repo
-> (`yrt-vault/Game/foes/*.md`, one Markdown file per foe), and the vault owns the
-> sync: its `tooling/` writes `foes.json` into this repo (sorted by id). This repo
-> has **no build step** for it and no dependency on the vault — from ironledger's
-> side `foes.json` is just committed data, validated in CI by the app schema and
-> tests like any other. If you need to change a YRT foe, edit it in the vault and
-> run the vault's sync (`npm run sync` there); a hand-edit here will be overwritten
-> on the next sync. Moves, assets, and oracles remain hand-authored JSON in this
-> repo — only foes are vault-canonical.
+> **`foes/foes.json` is hand-authored here.** It is the canonical source for the
+> YRT bestiary, like `moves/`, `assets/` and `oracles/` — edit it in this repo.
+> The private **yrt-vault** repo renders a read-only Markdown view of it, one note
+> per foe with the illustrations from `foes/images/`, using its own `npm run ref`.
+> That view is generated from this repo and is never written back; nothing here
+> depends on the vault.
 
 Yrt-specific foes are defined in `foes/foes.json`, using the same format as base Ironsworn and Delve foes (see [data-schema.md — Foes](../../docs/data-schema.md#foes)). Their IDs use the `yrt/` prefix:
 
