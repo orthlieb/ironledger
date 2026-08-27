@@ -6,12 +6,11 @@
       "category": "Touched",
       "summary": "Salamandrine-touched: wounds that knit closed, skin that breathes underwater, and a slowed body that outlasts cold and hunger.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
-      "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
+      "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
       "preconditions": [],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touchedLevel": {
-          "pure": 0,
           "prime": 1,
           "second": 2,
           "third": 3,
@@ -21,17 +20,17 @@
       "abilities": [
         {
           "enabled": false,
-          "text": "Your flesh regrows where others scar. When you [Heal](move:heal) yourself or are healed by another, add +1. On a strong hit, also take +1 momentum as torn skin knits closed and even deep wounds mend without a trace.",
+          "text": "**Regrowth.** Your flesh regrows where others scar. When you [Heal](move:heal) yourself or are healed by another, add +1. On a strong hit, also take +1 momentum as torn skin knits closed and even deep wounds mend without a trace.",
           "moves": ["move/heal"]
         },
         {
           "enabled": false,
-          "text": "Your skin drinks breath from the water itself. You cannot drown while conscious. When you [Face Danger](move:face-danger) or [Secure an Advantage](move:secure-an-advantage) by swimming, diving, or moving through flooded, marshy, or drowned places, add +1. On a strong hit, also take +1 momentum as you slip through the water as easily as others walk dry land.",
+          "text": "**Waterlung.** Your skin drinks breath from the water itself. You cannot drown while conscious. When you [Face Danger](move:face-danger) or [Secure an Advantage](move:secure-an-advantage) by swimming, diving, or moving through flooded, marshy, or drowned places, add +1. On a strong hit, also take +1 momentum as you slip through the water as easily as others walk dry land.",
           "moves": ["move/face-danger", "move/secure-an-advantage"]
         },
         {
           "enabled": false,
-          "text": "Your cold blood slows to outlast what would kill another. When you [Face Danger](move:face-danger) by stilling your body to endure cold, hunger, or thirst, add +1 and you may roll +heart (even if another stat would normally apply). On a strong hit, envision how your torpor carries you through; take +1 momentum, or restore +1 health as your slowed body mends itself.",
+          "text": "**Cold Torpor.** Your cold blood slows to outlast what would kill another. When you [Face Danger](move:face-danger) by stilling your body to endure cold, hunger, or thirst, add +1 and you may roll +heart (even if another stat would normally apply). On a strong hit, envision how your torpor carries you through; take +1 momentum, or restore +1 health as your slowed body mends itself.",
           "moves": ["move/face-danger"]
         }
       ],
@@ -41,12 +40,8 @@
           "type": "dropdown",
           "label": "Level",
           "shortLabel": "Touched",
-          "default": "pure",
+          "default": "prime",
           "options": [
-            {
-              "id": "pure",
-              "label": "Pure"
-            },
             {
               "id": "prime",
               "label": "Prime"
@@ -81,12 +76,11 @@
       "category": "Touched",
       "summary": "Feline-touched: night hunter’s senses, impossible leaps, and predator stealth.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
-      "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
+      "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
       "preconditions": [],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touchedLevel": {
-          "pure": 0,
           "prime": 1,
           "second": 2,
           "third": 3,
@@ -96,17 +90,17 @@
       "abilities": [
         {
           "enabled": false,
-          "text": "You move with the senses and poise of a night hunter. When you [Gather Information](move:gather-information) in darkness, dim light, or heavy shadow, add +1. On a strong hit, also take +1 momentum as your night sight and feline awareness reveal more than others can see.",
+          "text": "**Night Eyes.** You move with the senses and poise of a night hunter. When you [Gather Information](move:gather-information) in darkness, dim light, or heavy shadow, add +1. On a strong hit, also take +1 momentum as your night sight and feline awareness reveal more than others can see.",
           "moves": ["move/gather-information"]
         },
         {
           "enabled": false,
-          "text": "Your leaps and landings defy human limits. When you [Face Danger](move:face-danger) by jumping, climbing, or risking a fall, add +1 and roll +edge (even if another stat would normally apply). On a strong hit, you land sure-footed; take +1 momentum or inflict +1 harm if your leap carries you into the attack.",
+          "text": "**Cat's Grace.** Your leaps and landings defy human limits. When you [Face Danger](move:face-danger) by jumping, climbing, or risking a fall, add +1 and roll +edge (even if another stat would normally apply). On a strong hit, you land sure-footed; take +1 momentum or inflict +1 harm if your leap carries you into the attack.",
           "moves": ["move/face-danger"]
         },
         {
           "enabled": false,
-          "text": "You vanish into stillness like a hidden hunter. When you remain motionless or stalk slowly in cover and then [Secure an Advantage](move:secure-an-advantage) by relying on concealment, add +1. On a hit, you are not detected and take +1 momentum; on a strong hit, you may also improve your position (define a safe escape route, observe unnoticed, or set up an ally’s next move).",
+          "text": "**Stalk and Pounce.** You vanish into stillness like a hidden hunter. When you remain motionless or stalk slowly in cover and then [Secure an Advantage](move:secure-an-advantage) by relying on concealment, add +1. On a hit, you are not detected and take +1 momentum; on a strong hit, you may also improve your position (define a safe escape route, observe unnoticed, or set up an ally’s next move).",
           "moves": ["move/secure-an-advantage"]
         }
       ],
@@ -116,12 +110,8 @@
           "type": "dropdown",
           "label": "Level",
           "shortLabel": "Touched",
-          "default": "pure",
+          "default": "prime",
           "options": [
-            {
-              "id": "pure",
-              "label": "Pure"
-            },
             {
               "id": "prime",
               "label": "Prime"
@@ -156,12 +146,11 @@
       "category": "Touched",
       "summary": "Porcine-touched: unerring nose for hidden threats, iron constitution, and an instinct for finding sustenance.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
-      "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
+      "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
       "preconditions": [],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touchedLevel": {
-          "pure": 0,
           "prime": 1,
           "second": 2,
           "third": 3,
@@ -171,17 +160,17 @@
       "abilities": [
         {
           "enabled": false,
-          "text": "You have a powerful sense of smell. When you [Gather Information](move:gather-information) to detect hidden threats, ambushes, or track a scent, add +1. On a strong hit, also take +1 momentum as your snout allows you to follow the scent to greater clues.",
+          "text": "**Keen Nose.** You have a powerful sense of smell. When you [Gather Information](move:gather-information) to detect hidden threats, ambushes, or track a scent, add +1. On a strong hit, also take +1 momentum as your snout allows you to follow the scent to greater clues.",
           "moves": ["move/gather-information"]
         },
         {
           "enabled": false,
-          "text": "Your thick hide and dense body absorb punishment others cannot weather. When you [Endure Harm](move:endure-harm), add +1. On a strong hit, take +2 momentum instead of +1 as your stubborn constitution shrugs off the blow.",
+          "text": "**Thick Hide.** Your thick hide and dense body absorb punishment others cannot weather. When you [Endure Harm](move:endure-harm), add +1. On a strong hit, take +2 momentum instead of +1 as your stubborn constitution shrugs off the blow.",
           "moves": ["move/endure-harm"]
         },
         {
           "enabled": false,
-          "text": "Your rooting instinct finds sustenance where others see only wasteland. When you [Resupply](move:resupply) in the wilderness or desperate conditions, add +1. On a strong hit, take +2 supply instead of +1.",
+          "text": "**Rooting.** Your rooting instinct finds sustenance where others see only wasteland. When you [Resupply](move:resupply) in the wilderness or desperate conditions, add +1. On a strong hit, take +2 supply instead of +1.",
           "moves": ["move/resupply"]
         }
       ],
@@ -191,12 +180,8 @@
           "type": "dropdown",
           "label": "Level",
           "shortLabel": "Touched",
-          "default": "pure",
+          "default": "prime",
           "options": [
-            {
-              "id": "pure",
-              "label": "Pure"
-            },
             {
               "id": "prime",
               "label": "Prime"
@@ -231,12 +216,11 @@
       "category": "Touched",
       "summary": "Bovine-touched: an unstoppable charge, an unbreakable will, and a voice that bends a room to silence.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
-      "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
+      "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
       "preconditions": [],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touchedLevel": {
-          "pure": 0,
           "prime": 1,
           "second": 2,
           "third": 3,
@@ -246,17 +230,17 @@
       "abilities": [
         {
           "enabled": false,
-          "text": "Your bulk and lowered horns turn forward motion into a shattering blow. When you [Strike](move:strike) or [Clash](move:clash) by charging — at speed, with armored shoulder, lowered horn, or full body weight — you may roll +iron (even if another stat would normally apply). On a strong hit, also deal +1 harm and your foe is thrown off-balance, knocked back, or driven from their footing.",
+          "text": "**Gore.** Your bulk and lowered horns turn forward motion into a shattering blow. When you [Strike](move:strike) or [Clash](move:clash) by charging — at speed, with armored shoulder, lowered horn, or full body weight — you may roll +iron (even if another stat would normally apply). On a strong hit, also deal +1 harm and your foe is thrown off-balance, knocked back, or driven from their footing.",
           "moves": ["move/strike", "move/clash"]
         },
         {
           "enabled": false,
-          "text": "Your nerve does not break easily. When you [Endure Stress](move:endure-stress), add +1. On a strong hit, take +2 momentum instead of +1 as your unflappable temper carries you through.",
+          "text": "**Steady Nerve.** Your nerve does not break easily. When you [Endure Stress](move:endure-stress), add +1. On a strong hit, take +2 momentum instead of +1 as your unflappable temper carries you through.",
           "moves": ["move/endure-stress"]
         },
         {
           "enabled": false,
-          "text": "Your lowing call settles arguments before they begin. When you [Compel](move:compel) by sheer force of voice or presence — a bellow, a quiet steady refusal, a rumbling commandment — add +1, and you may roll +iron (even if another stat would normally apply). On a strong hit, also take +1 momentum.",
+          "text": "**Bellow.** Your lowing call settles arguments before they begin. When you [Compel](move:compel) by sheer force of voice or presence — a bellow, a quiet steady refusal, a rumbling commandment — add +1, and you may roll +iron (even if another stat would normally apply). On a strong hit, also take +1 momentum.",
           "moves": ["move/compel"]
         }
       ],
@@ -266,12 +250,8 @@
           "type": "dropdown",
           "label": "Level",
           "shortLabel": "Touched",
-          "default": "pure",
+          "default": "prime",
           "options": [
-            {
-              "id": "pure",
-              "label": "Pure"
-            },
             {
               "id": "prime",
               "label": "Prime"
@@ -306,12 +286,11 @@
       "category": "Touched",
       "summary": "Ursine-touched: looming presence that bends nerve, crushing strength behind every blow, and a body built to weather the longest winter.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
-      "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
+      "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
       "preconditions": [],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touchedLevel": {
-          "pure": 0,
           "prime": 1,
           "second": 2,
           "third": 3,
@@ -321,17 +300,17 @@
       "abilities": [
         {
           "enabled": false,
-          "text": "Your size and bearing draw every eye and bend the will of those who face you. When you [Compel](move:compel) or [Face Danger](move:face-danger) by intimidation — a roar, a bared claw, drawing yourself up to your full height — add +1, and you may roll +iron (even if another stat would normally apply). On a strong hit, also take +1 momentum as your sheer presence cows witness and foe alike.",
+          "text": "**Looming Presence.** Your size and bearing draw every eye and bend the will of those who face you. When you [Compel](move:compel) or [Face Danger](move:face-danger) by intimidation — a roar, a bared claw, drawing yourself up to your full height — add +1, and you may roll +iron (even if another stat would normally apply). On a strong hit, also take +1 momentum as your sheer presence cows witness and foe alike.",
           "moves": ["move/compel", "move/face-danger"]
         },
         {
           "enabled": false,
-          "text": "Your bulk and reach turn blows into bone-shakers. When you [Strike](move:strike) or [Clash](move:clash) with a heavy weapon or unarmed strength, you may roll +iron (even if another stat would normally apply). On a strong hit, also deal +1 harm as the weight of you carries through the blow.",
+          "text": "**Maul.** Your bulk and reach turn blows into bone-shakers. When you [Strike](move:strike) or [Clash](move:clash) with a heavy weapon or unarmed strength, you may roll +iron (even if another stat would normally apply). On a strong hit, also deal +1 harm as the weight of you carries through the blow.",
           "moves": ["move/strike", "move/clash"]
         },
         {
           "enabled": false,
-          "text": "You make a den and weather cold and want as if seasons were a passing chill. When you [Make Camp](move:make-camp), add +1. On a strong hit, take +2 momentum instead of +1, and you may also restore +1 health as your body's reserves and the warmth of your den do their work.",
+          "text": "**Denmaker.** You make a den and weather cold and want as if seasons were a passing chill. When you [Make Camp](move:make-camp), add +1. On a strong hit, take +2 momentum instead of +1, and you may also restore +1 health as your body's reserves and the warmth of your den do their work.",
           "moves": ["move/make-camp"]
         }
       ],
@@ -341,12 +320,8 @@
           "type": "dropdown",
           "label": "Level",
           "shortLabel": "Touched",
-          "default": "pure",
+          "default": "prime",
           "options": [
-            {
-              "id": "pure",
-              "label": "Pure"
-            },
             {
               "id": "prime",
               "label": "Prime"
@@ -381,12 +356,11 @@
       "category": "Touched",
       "summary": "Hircine-touched: surefooted on lethal heights, a gut that shrugs off poison and rot, and a wrongness of aspect that unsettles every room.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
-      "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
+      "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
       "preconditions": [],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touchedLevel": {
-          "pure": 0,
           "prime": 1,
           "second": 2,
           "third": 3,
@@ -396,17 +370,17 @@
       "abilities": [
         {
           "enabled": false,
-          "text": "Your footing holds where others fall. When you [Face Danger](move:face-danger) by traversing narrow, slick, steep, or precarious terrain — a ledge, a roof-peak, a fence-top, a beam over a drop — add +1, and you may roll +edge (even if another stat would normally apply). On a strong hit, you cross unhurried; take +1 momentum, or set the way for an ally who follows.",
+          "text": "**Surefoot.** Your footing holds where others fall. When you [Face Danger](move:face-danger) by traversing narrow, slick, steep, or precarious terrain — a ledge, a roof-peak, a fence-top, a beam over a drop — add +1, and you may roll +edge (even if another stat would normally apply). On a strong hit, you cross unhurried; take +1 momentum, or set the way for an ally who follows.",
           "moves": ["move/face-danger"]
         },
         {
           "enabled": false,
-          "text": "Your gut chews through what would sicken others. When you [Endure Harm](move:endure-harm) from poison, tainted food, foul water, fume, blight, or mana-sickness, add +1. On a strong hit, take +2 momentum instead of +1 as your stomach turns over and goes on.",
+          "text": "**Iron Gut.** Your gut chews through what would sicken others. When you [Endure Harm](move:endure-harm) from poison, tainted food, foul water, fume, blight, or mana-sickness, add +1. On a strong hit, take +2 momentum instead of +1 as your stomach turns over and goes on.",
           "moves": ["move/endure-harm"]
         },
         {
           "enabled": false,
-          "text": "Your stare is wrong, your laugh is wrong, and the rut-stink of you fills a room. When you [Compel](move:compel) through menace, taboo, or sheer disquiet — a horizontal-pupil grin, a low bleating chuckle, the hircine reek that makes dogs whine — add +1, and you may roll +shadow (even if another stat would normally apply). On a strong hit, also take +1 momentum.",
+          "text": "**Unsettling Aspect.** Your stare is wrong, your laugh is wrong, and the rut-stink of you fills a room. When you [Compel](move:compel) through menace, taboo, or sheer disquiet — a horizontal-pupil grin, a low bleating chuckle, the hircine reek that makes dogs whine — add +1, and you may roll +shadow (even if another stat would normally apply). On a strong hit, also take +1 momentum.",
           "moves": ["move/compel"]
         }
       ],
@@ -416,12 +390,8 @@
           "type": "dropdown",
           "label": "Level",
           "shortLabel": "Touched",
-          "default": "pure",
+          "default": "prime",
           "options": [
-            {
-              "id": "pure",
-              "label": "Pure"
-            },
             {
               "id": "prime",
               "label": "Prime"
@@ -456,12 +426,11 @@
       "category": "Touched",
       "summary": "Varanine-touched: a patient ambush and a killing rush, a tongue that reads blood on the wind, and bony scale beneath the skin that turns a blow.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
-      "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.",
+      "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
       "preconditions": [],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touchedLevel": {
-          "pure": 0,
           "prime": 1,
           "second": 2,
           "third": 3,
@@ -471,17 +440,17 @@
       "abilities": [
         {
           "enabled": false,
-          "text": "You wait without moving, then cross the ground in a heartbeat. When you [Secure an Advantage](move:secure-an-advantage) by lying in wait and rushing prey from ambush, add +1, and you may roll +iron (even if another stat would normally apply). On a strong hit, take +2 momentum, or seize the initiative outright.",
+          "text": "**Ambush Predator.** You wait without moving, then cross the ground in a heartbeat. When you [Secure an Advantage](move:secure-an-advantage) by lying in wait and rushing prey from ambush, add +1, and you may roll +iron (even if another stat would normally apply). On a strong hit, take +2 momentum, or seize the initiative outright.",
           "moves": ["move/secure-an-advantage"]
         },
         {
           "enabled": false,
-          "text": "You taste the air and read it. When you [Gather Information](move:gather-information) to track wounded prey, carrion, blood, or a quarry that passed this way, add +1, and you may roll +wits (even if another stat would normally apply). On a strong hit, you learn not just where they went, but how hurt, how afraid, and how far ahead.",
+          "text": "**Bloodscent.** You taste the air and read it. When you [Gather Information](move:gather-information) to track wounded prey, carrion, blood, or a quarry that passed this way, add +1, and you may roll +wits (even if another stat would normally apply). On a strong hit, you learn not just where they went, but how hurt, how afraid, and how far ahead.",
           "moves": ["move/gather-information"]
         },
         {
           "enabled": false,
-          "text": "Bony scales lie beneath your skin. When you [Endure Harm](move:endure-harm), add +1. On a strong hit, take +2 momentum as the blow skids off the armor beneath.",
+          "text": "**Osteoderm.** Bony scales lie beneath your skin. When you [Endure Harm](move:endure-harm), add +1. On a strong hit, take +2 momentum as the blow skids off the armor beneath.",
           "moves": ["move/endure-harm"]
         }
       ],
@@ -491,12 +460,8 @@
           "type": "dropdown",
           "label": "Level",
           "shortLabel": "Touched",
-          "default": "pure",
+          "default": "prime",
           "options": [
-            {
-              "id": "pure",
-              "label": "Pure"
-            },
             {
               "id": "prime",
               "label": "Prime"
@@ -593,16 +558,16 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "When you perform a cantrip, [Cast Conclave Ritual](move:cast-conclave-ritual) with a base difficulty of 1. Add +1 if cast at range, and +1 if cast under stress (e.g. in combat or while being watched). On a **strong hit**, the cantrip works as intended; take +1 momentum. On a **weak hit**, the cantrip works but choose one: it is weaker or shorter than intended, it draws unwanted attention, or you suffer -1 spirit from the strain. On a **miss**, the cantrip misfires; [Pay the Price](move:pay-the-price).",
+          "text": "**Cantrips.** When you perform a cantrip, [Cast Conclave Ritual](move:cast-conclave-ritual) with a base difficulty of 1. Add +1 if cast at range, and +1 if cast under stress (e.g. in combat or while being watched). On a **strong hit**, the cantrip works as intended; take +1 momentum. On a **weak hit**, the cantrip works but choose one: it is weaker or shorter than intended, it draws unwanted attention, or you suffer -1 spirit from the strain. On a **miss**, the cantrip misfires; [Pay the Price](move:pay-the-price).",
           "moves": ["move/cast-conclave-ritual", "move/pay-the-price"]
         },
         {
           "enabled": false,
-          "text": "Choose 2 additional cantrips from the list (4 total). Your cantrips now last up to 1 hour or until you dismiss them."
+          "text": "**Wider Repertoire.** Choose 2 additional cantrips from the list (4 total). Your cantrips now last up to 1 hour or until you dismiss them."
         },
         {
           "enabled": false,
-          "text": "Choose 2 additional cantrips from the list (6 total). Simple/touching cantrips (1 mana cost) are now free — they cost 0 mana."
+          "text": "**Effortless Casting.** Choose 2 additional cantrips from the list (6 total). Simple/touching cantrips (1 mana cost) are now free — they cost 0 mana."
         }
       ],
       "customFields": [
@@ -719,16 +684,16 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "You can perform an Arcane Inspection to sense and interpret mana in a person, object, or area. Record the total difficulty by summing the difficulty factors and [Cast Conclave Ritual](move:cast-conclave-ritual).",
+          "text": "**Arcane Inspection.** You can perform an Arcane Inspection to sense and interpret mana in a person, object, or area. Record the total difficulty by summing the difficulty factors and [Cast Conclave Ritual](move:cast-conclave-ritual).",
           "moves": ["move/cast-conclave-ritual"]
         },
         {
           "enabled": false,
-          "text": "As above, but the spell difficulty is reduced by 2 (minimum 0) given mastery of the inspection skill."
+          "text": "**Practiced Inspection.** As above, but the spell difficulty is reduced by 2 (minimum 0) given mastery of the inspection skill."
         },
         {
           "enabled": false,
-          "text": "As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0)."
+          "text": "**Master Inspection.** As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0)."
         }
       ],
       "customFields": [
@@ -841,16 +806,16 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "You can cast illusion spells to deceive others. Choose what you want to create, record the total difficulty by summing the difficulty factors, and [Cast Conclave Ritual](move:cast-conclave-ritual).",
+          "text": "**Illusion.** You can cast illusion spells to deceive others. Choose what you want to create, record the total difficulty by summing the difficulty factors, and [Cast Conclave Ritual](move:cast-conclave-ritual).",
           "moves": ["move/cast-conclave-ritual"]
         },
         {
           "enabled": false,
-          "text": "As above, but the spell difficulty is reduced by 2 (minimum 0) given mastery of the illusionist skill."
+          "text": "**Adept Illusion.** As above, but the spell difficulty is reduced by 2 (minimum 0) given mastery of the illusionist skill."
         },
         {
           "enabled": false,
-          "text": "As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0)."
+          "text": "**Master Illusion.** As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0)."
         }
       ],
       "customFields": [
@@ -967,16 +932,16 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "You can cast compulsion spells to influence thoughts, emotions, and perceptions. Decide the effect you want, record the total difficulty by summing the difficulty factors, and [Cast Conclave Ritual](move:cast-conclave-ritual). You must spend at least 1 mana.",
+          "text": "**Compulsion.** You can cast compulsion spells to influence thoughts, emotions, and perceptions. Decide the effect you want, record the total difficulty by summing the difficulty factors, and [Cast Conclave Ritual](move:cast-conclave-ritual). You must spend at least 1 mana.",
           "moves": ["move/cast-conclave-ritual"]
         },
         {
           "enabled": false,
-          "text": "As above, but the spell difficulty is reduced by 2 (minimum 0) given mastery of the compulsion skill."
+          "text": "**Adept Compulsion.** As above, but the spell difficulty is reduced by 2 (minimum 0) given mastery of the compulsion skill."
         },
         {
           "enabled": false,
-          "text": "As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0)."
+          "text": "**Master Compulsion.** As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0)."
         }
       ],
       "customFields": [
@@ -1005,17 +970,17 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "When you [Gather Information](move:gather-information) to examine food, drink, a coated weapon, or a victim's symptoms to detect or identify a poison, add +1. On a **strong hit**, you can also prepare an antidote if you have at least 1 supply. The victim may [Heal](move:heal) from the poison with +1 added to their roll. On a **weak hit**, you identify the poison and its effects.",
+          "text": "**Taste for Poison.** When you [Gather Information](move:gather-information) to examine food, drink, a coated weapon, or a victim's symptoms to detect or identify a poison, add +1. On a **strong hit**, you can also prepare an antidote if you have at least 1 supply. The victim may [Heal](move:heal) from the poison with +1 added to their roll. On a **weak hit**, you identify the poison and its effects.",
           "moves": ["move/gather-information", "move/heal"]
         },
         {
           "enabled": false,
-          "text": "When you [Craft an Item](move:craft), you are creating a poison from foraged plants or gathered extracts. Choose a potency and a delivery method.\n- **Potency:** soporific (induces sleep), debilitating (sickens and weakens), or lethal (kills if untreated).\n- **Delivery:** contact (applied to skin or a wound) or ingestion (slipped into food or drink).\n\nOn a **strong hit**, add one dose. On a **weak hit**, add your dose, and if you choose a telltale flaw, the poison has a noticeable odor, taste, or color.\n\n*Narrative: You must have been taught the crafting of a specific poison by another poisoner.*",
+          "text": "**Brew Poison.** When you [Craft an Item](move:craft), you are creating a poison from foraged plants or gathered extracts. Choose a potency and a delivery method.\n- **Potency:** soporific (induces sleep), debilitating (sickens and weakens), or lethal (kills if untreated).\n- **Delivery:** contact (applied to skin or a wound) or ingestion (slipped into food or drink).\n\nOn a **strong hit**, add one dose. On a **weak hit**, add your dose, and if you choose a telltale flaw, the poison has a noticeable odor, taste, or color.\n\n*Narrative: You must have been taught the crafting of a specific poison by another poisoner.*",
           "moves": ["move/craft"]
         },
         {
           "enabled": false,
-          "text": "When you **deploy** a poison — by coating a weapon, slipping it into food or drink, or applying it by contact — spend 1 dose. The move you make to deliver it (typically [Strike](move:strike) or [Clash](move:clash) in combat, [Secure an Advantage](move:secure-an-advantage) in stealth) resolves the poison alongside its normal effect:\n- **Strong hit**: the poison takes hold at full potency. In combat, your weapon also deals **+1 harm**; the coating is consumed by the attempt and must be re-applied outside combat. In stealth, the target succumbs by potency — soporific incapacitates, debilitating sickens for the next scene, lethal kills per the fiction's pace.\n- **Weak hit**: the poison lands but with a complication — the target gets one last act, leaves a telltale, or fights through it. No bonus harm.\n- **Miss**: the dose is wasted; the move's normal miss outcome applies.\n\nA **flawed** poison (Craft weak-hit telltale) takes **-1** on the deploy roll.",
+          "text": "**Envenom.** When you **deploy** a poison — by coating a weapon, slipping it into food or drink, or applying it by contact — spend 1 dose. The move you make to deliver it (typically [Strike](move:strike) or [Clash](move:clash) in combat, [Secure an Advantage](move:secure-an-advantage) in stealth) resolves the poison alongside its normal effect:\n- **Strong hit**: the poison takes hold at full potency. In combat, your weapon also deals **+1 harm**; the coating is consumed by the attempt and must be re-applied outside combat. In stealth, the target succumbs by potency — soporific incapacitates, debilitating sickens for the next scene, lethal kills per the fiction's pace.\n- **Weak hit**: the poison lands but with a complication — the target gets one last act, leaves a telltale, or fights through it. No bonus harm.\n- **Miss**: the dose is wasted; the move's normal miss outcome applies.\n\nA **flawed** poison (Craft weak-hit telltale) takes **-1** on the deploy roll.",
           "moves": ["move/strike", "move/clash", "move/secure-an-advantage"]
         }
       ],
@@ -1049,17 +1014,17 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "When you [Craft an Item](move:craft), you can forge a handwritten document — a letter, note, or simple written message — you are forging a person's handwriting. On a **strong hit**, the forgery withstands casual inspection. On a **weak hit**, there is a subtle inconsistency that someone familiar with the original may notice, or the work takes longer than expected.",
+          "text": "**Forge a Hand.** When you [Craft an Item](move:craft), you can forge a handwritten document — a letter, note, or simple written message — you are forging a person's handwriting. On a **strong hit**, the forgery withstands casual inspection. On a **weak hit**, there is a subtle inconsistency that someone familiar with the original may notice, or the work takes longer than expected.",
           "moves": ["move/craft"]
         },
         {
           "enabled": false,
-          "text": "When you [Gather Information](move:gather-information) to examine a document for signs of forgery or tampering — inspecting paper, ink, seals, or handwriting — add +1. On a **strong hit**, you determine its authenticity and, if forged, identify clues to the forger's methods and habits. On a **weak hit**, you determine its authenticity.",
+          "text": "**Detect Forgery.** When you [Gather Information](move:gather-information) to examine a document for signs of forgery or tampering — inspecting paper, ink, seals, or handwriting — add +1. On a **strong hit**, you determine its authenticity and, if forged, identify clues to the forger's methods and habits. On a **weak hit**, you determine its authenticity.",
           "moves": ["move/gather-information"]
         },
         {
           "enabled": false,
-          "text": "When you [Craft an Item](move:craft), you can forge an official document — stamped credentials, sealed correspondence, or institutional papers — the forgery may include formal seals, signatures, and official formatting. On a **strong hit**, the document passes even official scrutiny.",
+          "text": "**Forge Officialdom.** When you [Craft an Item](move:craft), you can forge an official document — stamped credentials, sealed correspondence, or institutional papers — the forgery may include formal seals, signatures, and official formatting. On a **strong hit**, the document passes even official scrutiny.",
           "moves": ["move/craft"]
         }
       ],
