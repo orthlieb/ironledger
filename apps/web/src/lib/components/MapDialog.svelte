@@ -63,6 +63,7 @@
 		DEFAULT_MARKER_COLOR,
 		DEFAULT_MARKER_ICON,
 		gridDimsForAspect,
+		haloColor,
 		mapGlyphInner,
 		resolveMapIcon,
 		snapResolutionForZoom,
@@ -1337,6 +1338,7 @@
 						{#each mapState.markers as m (m.id)}
 							{@const ic = resolveMapIcon(m.icon)}
 							{@const color = m.color || DEFAULT_MARKER_COLOR}
+							{@const halo = haloColor(color)}
 							{@const isDragging =
 								dragState?.id === m.id && dragState.moved && dragPreview !== null}
 							{@const mx = isDragging && dragPreview ? dragPreview.x : m.x}
@@ -1405,7 +1407,7 @@
 									<circle
 										r={ICON_SIZE / 2 - 0.04}
 										fill={color}
-										stroke="#fff"
+										stroke={halo}
 										stroke-width="2"
 										paint-order="stroke"
 										vector-effect="non-scaling-stroke"
@@ -1416,6 +1418,7 @@
 										<text
 											class="mp-marker-label"
 											fill={color}
+											style="--halo:{halo}"
 											vector-effect="non-scaling-stroke"
 											y={(ICON_SIZE * (ic?.raster ? RASTER_ICON_SCALE : 1)) / 2 + LABEL_GAP}
 											>{m.label}</text
@@ -1424,6 +1427,7 @@
 										<text
 											class="mp-marker-label mp-marker-label--centered"
 											fill={color}
+											style="--halo:{halo}"
 											vector-effect="non-scaling-stroke"
 											y="0">{m.label}</text
 										>
@@ -2356,7 +2360,11 @@
 		font-weight: 600;
 		text-anchor: middle;
 		paint-order: stroke fill;
-		stroke: #fff;
+		/* Halo colour is set inline per marker via `--halo` (haloColor of
+		   the label colour): white behind a dark label, black behind a
+		   light one so it never vanishes on a light map. Falls back to
+		   white when `--halo` is absent. */
+		stroke: var(--halo, #fff);
 		stroke-width: 2;
 		stroke-linejoin: round;
 	}

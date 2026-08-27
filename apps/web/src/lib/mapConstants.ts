@@ -141,6 +141,43 @@ export function safeMarkerColor(color: string | undefined | null): string {
 }
 
 /**
+ * Pick a legible halo / backing colour (white or black) for a glyph or label
+ * drawn in `color`, by perceived luminance: a dark mark gets a white halo, a
+ * light mark — which would otherwise vanish against a white or light map — gets
+ * a black one. Mirrors `contrastText` in dice.ts, but lives here so the map
+ * path doesn't pull in dice.ts's dice-box / audio dependencies. Accepts the
+ * same colour forms as `safeMarkerColor`; unparseable input falls back to a
+ * white halo (the legacy hardcoded behaviour).
+ */
+export function haloColor(color: string | undefined | null): string {
+	const c = safeMarkerColor(color);
+	let r: number, g: number, b: number;
+	if (c[0] === '#') {
+		const h = c.slice(1);
+		const full =
+			h.length === 3 || h.length === 4
+				? h
+						.slice(0, 3)
+						.split('')
+						.map((x) => x + x)
+						.join('')
+				: h.slice(0, 6);
+		r = parseInt(full.slice(0, 2), 16);
+		g = parseInt(full.slice(2, 4), 16);
+		b = parseInt(full.slice(4, 6), 16);
+	} else {
+		const parts = c.match(/[\d.]+%?/g);
+		if (!parts || parts.length < 3) return '#ffffff';
+		const chan = (s: string) =>
+			s.endsWith('%') ? Math.round((parseFloat(s) / 100) * 255) : parseFloat(s);
+		[r, g, b] = [chan(parts[0]), chan(parts[1]), chan(parts[2])];
+	}
+	if (Number.isNaN(r + g + b)) return '#ffffff';
+	const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+	return luminance > 0.6 ? '#000000' : '#ffffff';
+}
+
+/**
  * Build the inner SVG markup for a map-icon glyph coloured to `color`,
  * for dropping inside `<svg viewBox={ic.viewBox}>…</svg>` via `{@html}`.
  *
@@ -172,9 +209,10 @@ export function mapGlyphInner(
 	halo = false,
 ): string {
 	const c = safeMarkerColor(color);
+	const halo_ = halo ? haloColor(c) : '';
 	if (!ic.raster) {
 		const haloAttrs = halo
-			? ' stroke="#fff" stroke-width="2" stroke-linejoin="round" paint-order="stroke" vector-effect="non-scaling-stroke"'
+			? ` stroke="${halo_}" stroke-width="2" stroke-linejoin="round" paint-order="stroke" vector-effect="non-scaling-stroke"`
 			: '';
 		return `<g fill="${c}"${haloAttrs}>${ic.inner}</g>`;
 	}
@@ -195,7 +233,7 @@ export function mapGlyphInner(
 	const backingChain = halo
 		? `<feMorphology in="SourceAlpha" operator="dilate" radius="${rDilate}" result="grown"/>` +
 			`<feMorphology in="grown" operator="erode" radius="${rErode}" result="fillmask"/>` +
-			`<feFlood flood-color="#ffffff" result="wf"/>` +
+			`<feFlood flood-color="${halo_}" result="wf"/>` +
 			`<feComposite in="wf" in2="fillmask" operator="in" result="backing"/>`
 		: '';
 	const mergeBacking = halo ? '<feMergeNode in="backing"/>' : '';
