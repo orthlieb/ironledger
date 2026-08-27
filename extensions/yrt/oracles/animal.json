@@ -8,7 +8,7 @@
   "data": [
     {
       "topRange": 1,
-      "value": "Bear"
+      "value": "Bear [Ursine]"
     },
     {
       "topRange": 2,
@@ -32,7 +32,7 @@
     },
     {
       "topRange": 7,
-      "value": "Boar"
+      "value": "Boar [Porcine]"
     },
     {
       "topRange": 8,
@@ -80,11 +80,11 @@
     },
     {
       "topRange": 19,
-      "value": "Mountain Lion / Puma"
+      "value": "Mountain Lion / Puma [Feline]"
     },
     {
       "topRange": 20,
-      "value": "Lynx"
+      "value": "Lynx [Feline]"
     },
     {
       "topRange": 21,
@@ -92,15 +92,15 @@
     },
     {
       "topRange": 22,
-      "value": "Cat (domestic)"
+      "value": "Cat (domestic) [Feline]"
     },
     {
       "topRange": 23,
-      "value": "Bull / Ox"
+      "value": "Bull / Ox [Bovine]"
     },
     {
       "topRange": 24,
-      "value": "Goat"
+      "value": "Goat [Hircine]"
     },
     {
       "topRange": 25,
@@ -108,7 +108,7 @@
     },
     {
       "topRange": 26,
-      "value": "Pig / Swine"
+      "value": "Pig / Swine [Porcine]"
     },
     {
       "topRange": 27,
@@ -200,7 +200,7 @@
     },
     {
       "topRange": 49,
-      "value": "Monitor Lizard"
+      "value": "Monitor Lizard [Varanine]"
     },
     {
       "topRange": 50,
@@ -228,7 +228,7 @@
     },
     {
       "topRange": 56,
-      "value": "Salamander"
+      "value": "Salamander [Salamandrine]"
     },
     {
       "topRange": 57,
@@ -244,7 +244,7 @@
     },
     {
       "topRange": 60,
-      "value": "Newt"
+      "value": "Newt [Salamandrine]"
     },
     {
       "topRange": 61,
