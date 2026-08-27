@@ -10,11 +10,11 @@ Salamandrine-touched: wounds that knit closed, skin that breathes underwater, an
 
 You have been touched by YRT and exhibit animal traits. Roll on the YRT – Touched oracle to determine the extent and conditions of your nature.
 
-- ◯ Your flesh regrows where others scar. When you Heal yourself or are healed by another, add +1. On a strong hit, also take +1 momentum as torn skin knits closed and even deep wounds mend without a trace.
-- ◯ Your skin drinks breath from the water itself. You cannot drown while conscious. When you Face Danger or Secure an Advantage by swimming, diving, or moving through flooded, marshy, or drowned places, add +1. On a strong hit, also take +1 momentum as you slip through the water as easily as others walk dry land.
-- ◯ Your cold blood slows to outlast what would kill another. When you Face Danger by stilling your body to endure cold, hunger, or thirst, add +1 and you may roll +heart (even if another stat would normally apply). On a strong hit, envision how your torpor carries you through; take +1 momentum, or restore +1 health as your slowed body mends itself.
+- ◯ **Regrowth.** Your flesh regrows where others scar. When you Heal yourself or are healed by another, add +1. On a strong hit, also take +1 momentum as torn skin knits closed and even deep wounds mend without a trace.
+- ◯ **Waterlung.** Your skin drinks breath from the water itself. You cannot drown while conscious. When you Face Danger or Secure an Advantage by swimming, diving, or moving through flooded, marshy, or drowned places, add +1. On a strong hit, also take +1 momentum as you slip through the water as easily as others walk dry land.
+- ◯ **Cold Torpor.** Your cold blood slows to outlast what would kill another. When you Face Danger by stilling your body to endure cold, hunger, or thirst, add +1 and you may roll +heart (even if another stat would normally apply). On a strong hit, envision how your torpor carries you through; take +1 momentum, or restore +1 health as your slowed body mends itself.
 
-Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.
+Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.
 
 ## Touched, Feline
 *Touched*
@@ -23,11 +23,11 @@ Feline-touched: night hunter’s senses, impossible leaps, and predator stealth.
 
 You have been touched by YRT and exhibit animal traits. Roll on the YRT – Touched oracle to determine the extent and conditions of your nature.
 
-- ◯ You move with the senses and poise of a night hunter. When you Gather Information in darkness, dim light, or heavy shadow, add +1. On a strong hit, also take +1 momentum as your night sight and feline awareness reveal more than others can see.
-- ◯ Your leaps and landings defy human limits. When you Face Danger by jumping, climbing, or risking a fall, add +1 and roll +edge (even if another stat would normally apply). On a strong hit, you land sure-footed; take +1 momentum or inflict +1 harm if your leap carries you into the attack.
-- ◯ You vanish into stillness like a hidden hunter. When you remain motionless or stalk slowly in cover and then Secure an Advantage by relying on concealment, add +1. On a hit, you are not detected and take +1 momentum; on a strong hit, you may also improve your position (define a safe escape route, observe unnoticed, or set up an ally’s next move).
+- ◯ **Night Eyes.** You move with the senses and poise of a night hunter. When you Gather Information in darkness, dim light, or heavy shadow, add +1. On a strong hit, also take +1 momentum as your night sight and feline awareness reveal more than others can see.
+- ◯ **Cat's Grace.** Your leaps and landings defy human limits. When you Face Danger by jumping, climbing, or risking a fall, add +1 and roll +edge (even if another stat would normally apply). On a strong hit, you land sure-footed; take +1 momentum or inflict +1 harm if your leap carries you into the attack.
+- ◯ **Stalk and Pounce.** You vanish into stillness like a hidden hunter. When you remain motionless or stalk slowly in cover and then Secure an Advantage by relying on concealment, add +1. On a hit, you are not detected and take +1 momentum; on a strong hit, you may also improve your position (define a safe escape route, observe unnoticed, or set up an ally’s next move).
 
-Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.
+Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.
 
 ## Touched, Porcine
 *Touched*
@@ -36,11 +36,11 @@ Porcine-touched: unerring nose for hidden threats, iron constitution, and an ins
 
 You have been touched by YRT and exhibit animal traits. Roll on the YRT – Touched oracle to determine the extent and conditions of your nature.
 
-- ◯ You have a powerful sense of smell. When you Gather Information to detect hidden threats, ambushes, or track a scent, add +1. On a strong hit, also take +1 momentum as your snout allows you to follow the scent to greater clues.
-- ◯ Your thick hide and dense body absorb punishment others cannot weather. When you Endure Harm, add +1. On a strong hit, take +2 momentum instead of +1 as your stubborn constitution shrugs off the blow.
-- ◯ Your rooting instinct finds sustenance where others see only wasteland. When you Resupply in the wilderness or desperate conditions, add +1. On a strong hit, take +2 supply instead of +1.
+- ◯ **Keen Nose.** You have a powerful sense of smell. When you Gather Information to detect hidden threats, ambushes, or track a scent, add +1. On a strong hit, also take +1 momentum as your snout allows you to follow the scent to greater clues.
+- ◯ **Thick Hide.** Your thick hide and dense body absorb punishment others cannot weather. When you Endure Harm, add +1. On a strong hit, take +2 momentum instead of +1 as your stubborn constitution shrugs off the blow.
+- ◯ **Rooting.** Your rooting instinct finds sustenance where others see only wasteland. When you Resupply in the wilderness or desperate conditions, add +1. On a strong hit, take +2 supply instead of +1.
 
-Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.
+Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.
 
 ## Touched, Bovine
 *Touched*
@@ -49,11 +49,11 @@ Bovine-touched: an unstoppable charge, an unbreakable will, and a voice that ben
 
 You have been touched by YRT and exhibit animal traits. Roll on the YRT – Touched oracle to determine the extent and conditions of your nature.
 
-- ◯ Your bulk and lowered horns turn forward motion into a shattering blow. When you Strike or Clash by charging — at speed, with armored shoulder, lowered horn, or full body weight — you may roll +iron (even if another stat would normally apply). On a strong hit, also deal +1 harm and your foe is thrown off-balance, knocked back, or driven from their footing.
-- ◯ Your nerve does not break easily. When you Endure Stress, add +1. On a strong hit, take +2 momentum instead of +1 as your unflappable temper carries you through.
-- ◯ Your lowing call settles arguments before they begin. When you Compel by sheer force of voice or presence — a bellow, a quiet steady refusal, a rumbling commandment — add +1, and you may roll +iron (even if another stat would normally apply). On a strong hit, also take +1 momentum.
+- ◯ **Gore.** Your bulk and lowered horns turn forward motion into a shattering blow. When you Strike or Clash by charging — at speed, with armored shoulder, lowered horn, or full body weight — you may roll +iron (even if another stat would normally apply). On a strong hit, also deal +1 harm and your foe is thrown off-balance, knocked back, or driven from their footing.
+- ◯ **Steady Nerve.** Your nerve does not break easily. When you Endure Stress, add +1. On a strong hit, take +2 momentum instead of +1 as your unflappable temper carries you through.
+- ◯ **Bellow.** Your lowing call settles arguments before they begin. When you Compel by sheer force of voice or presence — a bellow, a quiet steady refusal, a rumbling commandment — add +1, and you may roll +iron (even if another stat would normally apply). On a strong hit, also take +1 momentum.
 
-Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.
+Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.
 
 ## Touched, Ursine
 *Touched*
@@ -62,11 +62,11 @@ Ursine-touched: looming presence that bends nerve, crushing strength behind ever
 
 You have been touched by YRT and exhibit animal traits. Roll on the YRT – Touched oracle to determine the extent and conditions of your nature.
 
-- ◯ Your size and bearing draw every eye and bend the will of those who face you. When you Compel or Face Danger by intimidation — a roar, a bared claw, drawing yourself up to your full height — add +1, and you may roll +iron (even if another stat would normally apply). On a strong hit, also take +1 momentum as your sheer presence cows witness and foe alike.
-- ◯ Your bulk and reach turn blows into bone-shakers. When you Strike or Clash with a heavy weapon or unarmed strength, you may roll +iron (even if another stat would normally apply). On a strong hit, also deal +1 harm as the weight of you carries through the blow.
-- ◯ You make a den and weather cold and want as if seasons were a passing chill. When you Make Camp, add +1. On a strong hit, take +2 momentum instead of +1, and you may also restore +1 health as your body's reserves and the warmth of your den do their work.
+- ◯ **Looming Presence.** Your size and bearing draw every eye and bend the will of those who face you. When you Compel or Face Danger by intimidation — a roar, a bared claw, drawing yourself up to your full height — add +1, and you may roll +iron (even if another stat would normally apply). On a strong hit, also take +1 momentum as your sheer presence cows witness and foe alike.
+- ◯ **Maul.** Your bulk and reach turn blows into bone-shakers. When you Strike or Clash with a heavy weapon or unarmed strength, you may roll +iron (even if another stat would normally apply). On a strong hit, also deal +1 harm as the weight of you carries through the blow.
+- ◯ **Denmaker.** You make a den and weather cold and want as if seasons were a passing chill. When you Make Camp, add +1. On a strong hit, take +2 momentum instead of +1, and you may also restore +1 health as your body's reserves and the warmth of your den do their work.
 
-Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.
+Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.
 
 ## Touched, Hircine
 *Touched*
@@ -75,47 +75,60 @@ Hircine-touched: surefooted on lethal heights, a gut that shrugs off poison and 
 
 You have been touched by YRT and exhibit animal traits. Roll on the YRT – Touched oracle to determine the extent and conditions of your nature.
 
-- ◯ Your footing holds where others fall. When you Face Danger by traversing narrow, slick, steep, or precarious terrain — a ledge, a roof-peak, a fence-top, a beam over a drop — add +1, and you may roll +edge (even if another stat would normally apply). On a strong hit, you cross unhurried; take +1 momentum, or set the way for an ally who follows.
-- ◯ Your gut chews through what would sicken others. When you Endure Harm from poison, tainted food, foul water, fume, blight, or mana-sickness, add +1. On a strong hit, take +2 momentum instead of +1 as your stomach turns over and goes on.
-- ◯ Your stare is wrong, your laugh is wrong, and the rut-stink of you fills a room. When you Compel through menace, taboo, or sheer disquiet — a horizontal-pupil grin, a low bleating chuckle, the hircine reek that makes dogs whine — add +1, and you may roll +shadow (even if another stat would normally apply). On a strong hit, also take +1 momentum.
+- ◯ **Surefoot.** Your footing holds where others fall. When you Face Danger by traversing narrow, slick, steep, or precarious terrain — a ledge, a roof-peak, a fence-top, a beam over a drop — add +1, and you may roll +edge (even if another stat would normally apply). On a strong hit, you cross unhurried; take +1 momentum, or set the way for an ally who follows.
+- ◯ **Iron Gut.** Your gut chews through what would sicken others. When you Endure Harm from poison, tainted food, foul water, fume, blight, or mana-sickness, add +1. On a strong hit, take +2 momentum instead of +1 as your stomach turns over and goes on.
+- ◯ **Unsettling Aspect.** Your stare is wrong, your laugh is wrong, and the rut-stink of you fills a room. When you Compel through menace, taboo, or sheer disquiet — a horizontal-pupil grin, a low bleating chuckle, the hircine reek that makes dogs whine — add +1, and you may roll +shadow (even if another stat would normally apply). On a strong hit, also take +1 momentum.
 
-Your touched value determines how many abilities you may use: Pure — none; Prime — 1; Second — 2; Third or Feral — all 3.
+Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.
+
+## Touched, Varanine
+*Touched*
+
+Varanine-touched: a patient ambush and a killing rush, a tongue that reads blood on the wind, and bony scale beneath the skin that turns a blow.
+
+You have been touched by YRT and exhibit animal traits. Roll on the YRT – Touched oracle to determine the extent and conditions of your nature.
+
+- ◯ **Ambush Predator.** You wait without moving, then cross the ground in a heartbeat. When you Secure an Advantage by lying in wait and rushing prey from ambush, add +1, and you may roll +iron (even if another stat would normally apply). On a strong hit, take +2 momentum, or seize the initiative outright.
+- ◯ **Bloodscent.** You taste the air and read it. When you Gather Information to track wounded prey, carrion, blood, or a quarry that passed this way, add +1, and you may roll +wits (even if another stat would normally apply). On a strong hit, you learn not just where they went, but how hurt, how afraid, and how far ahead.
+- ◯ **Osteoderm.** Bony scales lie beneath your skin. When you Endure Harm, add +1. On a strong hit, take +2 momentum as the blow skids off the armor beneath.
+
+Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.
 
 ## Cantrip
 *Ritual*
 
 Minor magical tricks: clean, light, warm, lock, and more.
 
-- **◉** When you perform a cantrip, Cast Conclave Ritual with a base difficulty of 1. Add +1 if cast at range, and +1 if cast under stress (e.g. in combat or while being watched). On a **strong hit**, the cantrip works as intended; take +1 momentum. On a **weak hit**, the cantrip works but choose one: it is weaker or shorter than intended, it draws unwanted attention, or you suffer -1 spirit from the strain. On a **miss**, the cantrip misfires; Pay the Price.
-- ◯ Choose 2 additional cantrips from the list (4 total). Your cantrips now last up to 1 hour or until you dismiss them.
-- ◯ Choose 2 additional cantrips from the list (6 total). Simple/touching cantrips (1 mana cost) are now free — they cost 0 mana.
+- **◉** **Cantrips.** When you perform a cantrip, Cast Conclave Ritual with a base difficulty of 1. Add +1 if cast at range, and +1 if cast under stress (e.g. in combat or while being watched). On a **strong hit**, the cantrip works as intended; take +1 momentum. On a **weak hit**, the cantrip works but choose one: it is weaker or shorter than intended, it draws unwanted attention, or you suffer -1 spirit from the strain. On a **miss**, the cantrip misfires; Pay the Price.
+- ◯ **Wider Repertoire.** Choose 2 additional cantrips from the list (4 total). Your cantrips now last up to 1 hour or until you dismiss them.
+- ◯ **Effortless Casting.** Choose 2 additional cantrips from the list (6 total). Simple/touching cantrips (1 mana cost) are now free — they cost 0 mana.
 
 ## Arcane Inspection
 *Ritual*
 
 Sense and interpret mana in a person, object, or area.
 
-- **◉** You can perform an Arcane Inspection to sense and interpret mana in a person, object, or area. Record the total difficulty by summing the difficulty factors and Cast Conclave Ritual.
-- ◯ As above, but the spell difficulty is reduced by 2 (minimum 0) given mastery of the inspection skill.
-- ◯ As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0).
+- **◉** **Arcane Inspection.** You can perform an Arcane Inspection to sense and interpret mana in a person, object, or area. Record the total difficulty by summing the difficulty factors and Cast Conclave Ritual.
+- ◯ **Practiced Inspection.** As above, but the spell difficulty is reduced by 2 (minimum 0) given mastery of the inspection skill.
+- ◯ **Master Inspection.** As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0).
 
 ## Illusion
 *Ritual*
 
 Create visual, auditory, and physical illusions to deceive.
 
-- **◉** You can cast illusion spells to deceive others. Choose what you want to create, record the total difficulty by summing the difficulty factors, and Cast Conclave Ritual.
-- ◯ As above, but the spell difficulty is reduced by 2 (minimum 0) given mastery of the illusionist skill.
-- ◯ As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0).
+- **◉** **Illusion.** You can cast illusion spells to deceive others. Choose what you want to create, record the total difficulty by summing the difficulty factors, and Cast Conclave Ritual.
+- ◯ **Adept Illusion.** As above, but the spell difficulty is reduced by 2 (minimum 0) given mastery of the illusionist skill.
+- ◯ **Master Illusion.** As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0).
 
 ## Compulsion
 *Ritual*
 
 Influence thoughts, emotions, and perceptions in a target's mind.
 
-- **◉** You can cast compulsion spells to influence thoughts, emotions, and perceptions. Decide the effect you want, record the total difficulty by summing the difficulty factors, and Cast Conclave Ritual. You must spend at least 1 mana.
-- ◯ As above, but the spell difficulty is reduced by 2 (minimum 0) given mastery of the compulsion skill.
-- ◯ As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0).
+- **◉** **Compulsion.** You can cast compulsion spells to influence thoughts, emotions, and perceptions. Decide the effect you want, record the total difficulty by summing the difficulty factors, and Cast Conclave Ritual. You must spend at least 1 mana.
+- ◯ **Adept Compulsion.** As above, but the spell difficulty is reduced by 2 (minimum 0) given mastery of the compulsion skill.
+- ◯ **Master Compulsion.** As above, but the spell difficulty is reduced by 4 instead of 2 (minimum 0).
 
 ## Bittercraft
 *Path*
@@ -124,15 +137,15 @@ Detect the venomous work of others, brew contact and ingestion toxins from plant
 
 You have trained in the lore of plants, poisons, and their antidotes — whether as a herbalist, assassin, or apothecary.
 
-- **◉** When you Gather Information to examine food, drink, a coated weapon, or a victim's symptoms to detect or identify a poison, add +1. On a **strong hit**, you can also prepare an antidote if you have at least 1 supply. The victim may Heal from the poison with +1 added to their roll. On a **weak hit**, you identify the poison and its effects.
-- ◯ When you Craft an Item, you are creating a poison from foraged plants or gathered extracts. Choose a potency and a delivery method.
+- **◉** **Taste for Poison.** When you Gather Information to examine food, drink, a coated weapon, or a victim's symptoms to detect or identify a poison, add +1. On a **strong hit**, you can also prepare an antidote if you have at least 1 supply. The victim may Heal from the poison with +1 added to their roll. On a **weak hit**, you identify the poison and its effects.
+- ◯ **Brew Poison.** When you Craft an Item, you are creating a poison from foraged plants or gathered extracts. Choose a potency and a delivery method.
 - **Potency:** soporific (induces sleep), debilitating (sickens and weakens), or lethal (kills if untreated).
 - **Delivery:** contact (applied to skin or a wound) or ingestion (slipped into food or drink).
 
 On a **strong hit**, add one dose. On a **weak hit**, add your dose, and if you choose a telltale flaw, the poison has a noticeable odor, taste, or color.
 
 *Narrative: You must have been taught the crafting of a specific poison by another poisoner.*
-- ◯ When you **deploy** a poison — by coating a weapon, slipping it into food or drink, or applying it by contact — spend 1 dose. The move you make to deliver it (typically Strike or Clash in combat, Secure an Advantage in stealth) resolves the poison alongside its normal effect:
+- ◯ **Envenom.** When you **deploy** a poison — by coating a weapon, slipping it into food or drink, or applying it by contact — spend 1 dose. The move you make to deliver it (typically Strike or Clash in combat, Secure an Advantage in stealth) resolves the poison alongside its normal effect:
 - **Strong hit**: the poison takes hold at full potency. In combat, your weapon also deals **+1 harm**; the coating is consumed by the attempt and must be re-applied outside combat. In stealth, the target succumbs by potency — soporific incapacitates, debilitating sickens for the next scene, lethal kills per the fiction's pace.
 - **Weak hit**: the poison lands but with a complication — the target gets one last act, leaves a telltale, or fights through it. No bonus harm.
 - **Miss**: the dose is wasted; the move's normal miss outcome applies.
@@ -146,9 +159,9 @@ Document forger: mimic handwriting, replicate seals and official papers, and det
 
 You have trained in the art of copying documents — identifying paper types, ink composition, and handwriting characteristics.
 
-- **◉** When you Craft an Item, you can forge a handwritten document — a letter, note, or simple written message — you are forging a person's handwriting. On a **strong hit**, the forgery withstands casual inspection. On a **weak hit**, there is a subtle inconsistency that someone familiar with the original may notice, or the work takes longer than expected.
-- ◯ When you Gather Information to examine a document for signs of forgery or tampering — inspecting paper, ink, seals, or handwriting — add +1. On a **strong hit**, you determine its authenticity and, if forged, identify clues to the forger's methods and habits. On a **weak hit**, you determine its authenticity.
-- ◯ When you Craft an Item, you can forge an official document — stamped credentials, sealed correspondence, or institutional papers — the forgery may include formal seals, signatures, and official formatting. On a **strong hit**, the document passes even official scrutiny.
+- **◉** **Forge a Hand.** When you Craft an Item, you can forge a handwritten document — a letter, note, or simple written message — you are forging a person's handwriting. On a **strong hit**, the forgery withstands casual inspection. On a **weak hit**, there is a subtle inconsistency that someone familiar with the original may notice, or the work takes longer than expected.
+- ◯ **Detect Forgery.** When you Gather Information to examine a document for signs of forgery or tampering — inspecting paper, ink, seals, or handwriting — add +1. On a **strong hit**, you determine its authenticity and, if forged, identify clues to the forger's methods and habits. On a **weak hit**, you determine its authenticity.
+- ◯ **Forge Officialdom.** When you Craft an Item, you can forge an official document — stamped credentials, sealed correspondence, or institutional papers — the forgery may include formal seals, signatures, and official formatting. On a **strong hit**, the document passes even official scrutiny.
 
 ## Rarities
 
