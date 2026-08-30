@@ -1535,7 +1535,10 @@
 				>
 					{#if ic}
 						<svg class="mp-pile-icon" viewBox={ic.viewBox} aria-hidden="true">
-							{@html mapGlyphInner(ic, m.color || DEFAULT_MARKER_COLOR, `pile-${m.id}`)}
+							<!-- halo=true: same contrast glow as the map/picker so a
+							     light-coloured marker icon stays legible on the menu's
+							     `--bg-control` background. -->
+							{@html mapGlyphInner(ic, m.color || DEFAULT_MARKER_COLOR, `pile-${m.id}`, true)}
 						</svg>
 					{:else}
 						<span class="mp-pile-icon-fallback" style="background:{m.color || DEFAULT_MARKER_COLOR}"
