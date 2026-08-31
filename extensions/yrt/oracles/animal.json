@@ -5,406 +5,516 @@
   "selectLabel": "Character: Touched Aspect",
   "description": "Determine the Touched animal type aspect of a character.",
   "source": "yrt",
+  "columns": [
+    {
+      "key": "value",
+      "label": "Animal"
+    },
+    {
+      "key": "group",
+      "label": "Group"
+    }
+  ],
   "data": [
     {
       "topRange": 1,
-      "value": "Bear [Ursine]"
+      "value": "Bear",
+      "group": "Ursine"
     },
     {
       "topRange": 2,
-      "value": "Wolf"
+      "value": "Wolf",
+      "group": "Lupine"
     },
     {
       "topRange": 3,
-      "value": "Fox"
+      "value": "Fox",
+      "group": "Vulpine"
     },
     {
       "topRange": 4,
-      "value": "Deer / Doe"
+      "value": "Deer / Doe",
+      "group": "Cervine"
     },
     {
       "topRange": 5,
-      "value": "Stag (elk)"
+      "value": "Stag (elk)",
+      "group": "Cervine"
     },
     {
       "topRange": 6,
-      "value": "Horse"
+      "value": "Horse",
+      "group": "Equine"
     },
     {
       "topRange": 7,
-      "value": "Boar [Porcine]"
+      "value": "Boar",
+      "group": "Porcine"
     },
     {
       "topRange": 8,
-      "value": "Hare / Rabbit"
+      "value": "Hare / Rabbit",
+      "group": "Leporine"
     },
     {
       "topRange": 9,
-      "value": "Badger"
+      "value": "Badger",
+      "group": "Musteline"
     },
     {
       "topRange": 10,
-      "value": "Otter"
+      "value": "Otter",
+      "group": "Musteline"
     },
     {
       "topRange": 11,
-      "value": "Rat"
+      "value": "Rat",
+      "group": "Murine"
     },
     {
       "topRange": 12,
-      "value": "Mouse"
+      "value": "Mouse",
+      "group": "Murine"
     },
     {
       "topRange": 13,
-      "value": "Bat"
+      "value": "Bat",
+      "group": "Chiropteran"
     },
     {
       "topRange": 14,
-      "value": "Mole"
+      "value": "Mole",
+      "group": "Talpine"
     },
     {
       "topRange": 15,
-      "value": "Hedgehog"
+      "value": "Hedgehog",
+      "group": "Erinaceine"
     },
     {
       "topRange": 16,
-      "value": "Weasel / Stoat"
+      "value": "Weasel / Stoat",
+      "group": "Musteline"
     },
     {
       "topRange": 17,
-      "value": "Ferret"
+      "value": "Ferret",
+      "group": "Musteline"
     },
     {
       "topRange": 18,
-      "value": "Mink"
+      "value": "Mink",
+      "group": "Musteline"
     },
     {
       "topRange": 19,
-      "value": "Mountain Lion / Puma [Feline]"
+      "value": "Mountain Lion / Puma",
+      "group": "Feline"
     },
     {
       "topRange": 20,
-      "value": "Lynx [Feline]"
+      "value": "Lynx",
+      "group": "Feline"
     },
     {
       "topRange": 21,
-      "value": "Dog (hound)"
+      "value": "Dog (hound)",
+      "group": "Canine"
     },
     {
       "topRange": 22,
-      "value": "Cat (domestic) [Feline]"
+      "value": "Cat (domestic)",
+      "group": "Feline"
     },
     {
       "topRange": 23,
-      "value": "Bull / Ox [Bovine]"
+      "value": "Bull / Ox",
+      "group": "Bovine"
     },
     {
       "topRange": 24,
-      "value": "Goat [Hircine]"
+      "value": "Goat",
+      "group": "Hircine"
     },
     {
       "topRange": 25,
-      "value": "Ram / Sheep"
+      "value": "Ram / Sheep",
+      "group": "Ovine"
     },
     {
       "topRange": 26,
-      "value": "Pig / Swine [Porcine]"
+      "value": "Pig / Swine",
+      "group": "Porcine"
     },
     {
       "topRange": 27,
-      "value": "Donkey / Mule"
+      "value": "Donkey / Mule",
+      "group": "Equine"
     },
     {
       "topRange": 28,
-      "value": "Deer (roe)"
+      "value": "Deer (roe)",
+      "group": "Cervine"
     },
     {
       "topRange": 29,
-      "value": "Wolverine"
+      "value": "Wolverine",
+      "group": "Musteline"
     },
     {
       "topRange": 30,
-      "value": "Porcupine"
+      "value": "Porcupine",
+      "group": "Hystricine"
     },
     {
       "topRange": 31,
-      "value": "Owl"
+      "value": "Owl",
+      "group": "Strigine"
     },
     {
       "topRange": 32,
-      "value": "Hawk / Falcon"
+      "value": "Hawk / Falcon",
+      "group": "Accipitrine"
     },
     {
       "topRange": 33,
-      "value": "Eagle"
+      "value": "Eagle",
+      "group": "Aquiline"
     },
     {
       "topRange": 34,
-      "value": "Raven / Crow"
+      "value": "Raven / Crow",
+      "group": "Corvine"
     },
     {
       "topRange": 35,
-      "value": "Magpie"
+      "value": "Magpie",
+      "group": "Corvine"
     },
     {
       "topRange": 36,
-      "value": "Heron"
+      "value": "Heron",
+      "group": "Ardeine"
     },
     {
       "topRange": 37,
-      "value": "Crane"
+      "value": "Crane",
+      "group": "Gruine"
     },
     {
       "topRange": 38,
-      "value": "Woodpecker"
+      "value": "Woodpecker",
+      "group": "Picine"
     },
     {
       "topRange": 39,
-      "value": "Sparrow / Finch"
+      "value": "Sparrow / Finch",
+      "group": "Passerine"
     },
     {
       "topRange": 40,
-      "value": "Vulture"
+      "value": "Vulture",
+      "group": "Vulturine"
     },
     {
       "topRange": 41,
-      "value": "Viper / Adder"
+      "value": "Viper / Adder",
+      "group": "Viperine"
     },
     {
       "topRange": 42,
-      "value": "Grass Snake"
+      "value": "Grass Snake",
+      "group": "Colubrine"
     },
     {
       "topRange": 43,
-      "value": "King Snake"
+      "value": "King Snake",
+      "group": "Colubrine"
     },
     {
       "topRange": 44,
-      "value": "Boa Constrictor"
+      "value": "Boa Constrictor",
+      "group": "Boine"
     },
     {
       "topRange": 45,
-      "value": "Cobra"
+      "value": "Cobra",
+      "group": "Elapine"
     },
     {
       "topRange": 46,
-      "value": "Lizard (common)"
+      "value": "Lizard (common)",
+      "group": "Lacertine"
     },
     {
       "topRange": 47,
-      "value": "Gecko"
+      "value": "Gecko",
+      "group": "Gekkonine"
     },
     {
       "topRange": 48,
-      "value": "Iguana"
+      "value": "Iguana",
+      "group": "Iguanine"
     },
     {
       "topRange": 49,
-      "value": "Monitor Lizard [Varanine]"
+      "value": "Monitor Lizard",
+      "group": "Varanine"
     },
     {
       "topRange": 50,
-      "value": "Chameleon"
+      "value": "Chameleon",
+      "group": "Chamaeleonine"
     },
     {
       "topRange": 51,
-      "value": "Crocodile / Caiman"
+      "value": "Crocodile / Caiman",
+      "group": "Crocodilian"
     },
     {
       "topRange": 52,
-      "value": "Alligator"
+      "value": "Alligator",
+      "group": "Crocodilian"
     },
     {
       "topRange": 53,
-      "value": "Tortoise"
+      "value": "Tortoise",
+      "group": "Testudine"
     },
     {
       "topRange": 54,
-      "value": "Sea Turtle"
+      "value": "Sea Turtle",
+      "group": "Cheloniine"
     },
     {
       "topRange": 55,
-      "value": "Snapping Turtle"
+      "value": "Snapping Turtle",
+      "group": "Chelydrine"
     },
     {
       "topRange": 56,
-      "value": "Salamander [Salamandrine]"
+      "value": "Salamander",
+      "group": "Salamandrine"
     },
     {
       "topRange": 57,
-      "value": "Frog (tree frog)"
+      "value": "Frog (tree frog)",
+      "group": "Hyline"
     },
     {
       "topRange": 58,
-      "value": "Frog (bullfrog)"
+      "value": "Frog (bullfrog)",
+      "group": "Ranine"
     },
     {
       "topRange": 59,
-      "value": "Toad"
+      "value": "Toad",
+      "group": "Bufonine"
     },
     {
       "topRange": 60,
-      "value": "Newt [Salamandrine]"
+      "value": "Newt",
+      "group": "Salamandrine"
     },
     {
       "topRange": 61,
-      "value": "Salmon"
+      "value": "Salmon",
+      "group": "Salmonine"
     },
     {
       "topRange": 62,
-      "value": "Trout"
+      "value": "Trout",
+      "group": "Salmonine"
     },
     {
       "topRange": 63,
-      "value": "Eel"
+      "value": "Eel",
+      "group": "Anguilline"
     },
     {
       "topRange": 64,
-      "value": "Pike"
+      "value": "Pike",
+      "group": "Esocine"
     },
     {
       "topRange": 65,
-      "value": "Carp"
+      "value": "Carp",
+      "group": "Cyprinine"
     },
     {
       "topRange": 66,
-      "value": "Catfish"
+      "value": "Catfish",
+      "group": "Silurine"
     },
     {
       "topRange": 67,
-      "value": "Perch"
+      "value": "Perch",
+      "group": "Percine"
     },
     {
       "topRange": 68,
-      "value": "Bass"
+      "value": "Bass",
+      "group": "Percine"
     },
     {
       "topRange": 69,
-      "value": "Shark"
+      "value": "Shark",
+      "group": "Selachian"
     },
     {
       "topRange": 70,
-      "value": "Ray / Skate"
+      "value": "Ray / Skate",
+      "group": "Rajine"
     },
     {
       "topRange": 71,
-      "value": "Octopus"
+      "value": "Octopus",
+      "group": "Octopodine"
     },
     {
       "topRange": 72,
-      "value": "Squid"
+      "value": "Squid",
+      "group": "Teuthine"
     },
     {
       "topRange": 73,
-      "value": "Crab"
+      "value": "Crab",
+      "group": "Brachyuran"
     },
     {
       "topRange": 74,
-      "value": "Lobster / Crayfish"
+      "value": "Lobster / Crayfish",
+      "group": "Astacine"
     },
     {
       "topRange": 75,
-      "value": "Shrimp / Prawn"
+      "value": "Shrimp / Prawn",
+      "group": "Caridean"
     },
     {
       "topRange": 76,
-      "value": "Beetle (stag beetle)"
+      "value": "Beetle (stag beetle)",
+      "group": "Lucanine"
     },
     {
       "topRange": 77,
-      "value": "Beetle (scarab)"
+      "value": "Beetle (scarab)",
+      "group": "Scarabaeine"
     },
     {
       "topRange": 78,
-      "value": "Praying Mantis"
+      "value": "Praying Mantis",
+      "group": "Mantine"
     },
     {
       "topRange": 79,
-      "value": "Wasp / Hornet"
+      "value": "Wasp / Hornet",
+      "group": "Vespine"
     },
     {
       "topRange": 80,
-      "value": "Bee (honeybee)"
+      "value": "Bee (honeybee)",
+      "group": "Apine"
     },
     {
       "topRange": 81,
-      "value": "Moth"
+      "value": "Moth",
+      "group": "Heteroceran"
     },
     {
       "topRange": 82,
-      "value": "Butterfly"
+      "value": "Butterfly",
+      "group": "Rhopaloceran"
     },
     {
       "topRange": 83,
-      "value": "Ant"
+      "value": "Ant",
+      "group": "Formicine"
     },
     {
       "topRange": 84,
-      "value": "Termite"
+      "value": "Termite",
+      "group": "Isopteran"
     },
     {
       "topRange": 85,
-      "value": "Dragonfly"
+      "value": "Dragonfly",
+      "group": "Odonate"
     },
     {
       "topRange": 86,
-      "value": "Grasshopper / Locust"
+      "value": "Grasshopper / Locust",
+      "group": "Acridine"
     },
     {
       "topRange": 87,
-      "value": "Firefly / Glowworm"
+      "value": "Firefly / Glowworm",
+      "group": "Lampyrine"
     },
     {
       "topRange": 88,
-      "value": "Cockroach"
+      "value": "Cockroach",
+      "group": "Blattine"
     },
     {
       "topRange": 89,
-      "value": "Fly (horsefly)"
+      "value": "Fly (horsefly)",
+      "group": "Tabanine"
     },
     {
       "topRange": 90,
-      "value": "Mosquito"
+      "value": "Mosquito",
+      "group": "Culicine"
     },
     {
       "topRange": 91,
-      "value": "Spider (wolf spider)"
+      "value": "Spider (wolf spider)",
+      "group": "Lycosine"
     },
     {
       "topRange": 92,
-      "value": "Spider (orb-weaver)"
+      "value": "Spider (orb-weaver)",
+      "group": "Araneine"
     },
     {
       "topRange": 93,
-      "value": "Scorpion"
+      "value": "Scorpion",
+      "group": "Scorpionine"
     },
     {
       "topRange": 94,
-      "value": "Centipede"
+      "value": "Centipede",
+      "group": "Chilopod"
     },
     {
       "topRange": 95,
-      "value": "Millipede"
+      "value": "Millipede",
+      "group": "Diplopod"
     },
     {
       "topRange": 96,
-      "value": "Tick / Mite"
+      "value": "Tick / Mite",
+      "group": "Acarine"
     },
     {
       "topRange": 97,
-      "value": "Leech"
+      "value": "Leech",
+      "group": "Hirudinean"
     },
     {
       "topRange": 98,
-      "value": "Earthworm"
+      "value": "Earthworm",
+      "group": "Lumbricine"
     },
     {
       "topRange": 99,
-      "value": "Snail / Slug"
+      "value": "Snail / Slug",
+      "group": "Gastropod"
     },
     {
       "topRange": 100,
-      "value": "Jellyfish"
+      "value": "Jellyfish",
+      "group": "Scyphozoan"
     }
   ]
 }
