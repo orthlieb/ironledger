@@ -17,6 +17,47 @@ only on CI hardware you can't inspect, an infrastructure regression.
 In those cases: say so explicitly, name the failing job + line, and
 ask what to do. Silence is not an option.
 
+## Standing order — bump catalogue count tests when content changes
+
+`apps/api/tests/unit/extensionsManifest.test.ts` is the **single** place
+with hard-coded counts of catalogue content. They are deliberate drift
+guards. Any time you **add or remove** a content item under
+`apps/api/data/{assets,moves,oracles,foes}/` or
+`extensions/*/{assets,moves,oracles,foes}/`, update the matching
+assertion(s) **in the same branch** — the "CI / Test & Build" job goes
+red otherwise (as it did when the "Touched, Varanine" asset took the
+count 90 → 91 unbumped, staying red across four merges).
+
+After any content-pack edit, run:
+
+```
+npx vitest run apps/api/tests/unit/extensionsManifest.test.ts
+```
+
+and update every count it flags **on purpose** — confirm the new number
+is the one you intended, don't just paste what the runner reports. Map of
+item → assertion(s) to bump:
+
+| Added / removed…                                  | Bump these assertions                                                                                                                                                                                                                                         |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| an **asset** (`assets[]`)                         | merged `assets` total (`reproduces the expected merged catalogue counts`)                                                                                                                                                                                     |
+| an asset **rarity** (`rarities[]`)                | merged `rarities` total                                                                                                                                                                                                                                       |
+| a **move** (`moves[]`)                            | merged `moves` total                                                                                                                                                                                                                                          |
+| an **oracle** file (one with a `key`)             | merged `oracles` total **+** the owning source's row in `per-extension keyed oracle counts (drift guard)` **+** every row of the `base + delve=… yrt=… lodestar=…` visible-oracle `it.each` table where that source is enabled (base is always on → all rows) |
+| a **foe** (`foes[]`)                              | merged `foes` total                                                                                                                                                                                                                                           |
+| a **foe-override** file                           | `foeOverrides` total                                                                                                                                                                                                                                          |
+| a **move-override** file                          | `moveOverrides` total (and, if it hides a base move, the visible-oracle table is unaffected but re-check the move total)                                                                                                                                      |
+| a **delve table** file                            | `delve` (delveTables) total                                                                                                                                                                                                                                   |
+| a `suppressesOracles` / `supersedesOracles` entry | the visible-oracle `it.each` table (net hides change) and, when a specific key flips, `suppression hides/supplants the expected keys`                                                                                                                         |
+
+Notes:
+
+- `oracle-order.json` carries no `key`, so it's excluded from oracle counts.
+- The **sample** extension is dev-only and stripped from `core`; its items
+  do **not** count toward any of these totals.
+- Keep the explanatory `//` comment above each count in sync (it records
+  the per-source breakdown) so the next person's bump is auditable.
+
 ## App-level scroll architecture
 
 The viewport itself (`html` and `body`) **never** scrolls. `app.css` sets
