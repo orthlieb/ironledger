@@ -25,7 +25,12 @@
 	import DialogHeader from './DialogHeader.svelte';
 	import MapIconPicker from './MapIconPicker.svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
-	import { DEFAULT_MARKER_COLOR, mapGlyphInner, resolveMapIcon } from '$lib/mapConstants.js';
+	import {
+		DEFAULT_MARKER_COLOR,
+		haloPaddedViewBox,
+		mapGlyphInner,
+		resolveMapIcon,
+	} from '$lib/mapConstants.js';
 	import { updateMarker, removeMarker, type MapMarker } from '$lib/mapStore.svelte.js';
 	import { getLinkableEntities, resolveEntity } from '$lib/mapEntityLinks.js';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
@@ -411,7 +416,7 @@
 							<span class="mp-props-label">Icon</span>
 							<button class="mp-sel-icon-btn" onclick={openIconPicker} aria-label="Change icon">
 								{#if draftIcon}
-									<svg viewBox={draftIcon.viewBox} aria-hidden="true">
+									<svg viewBox={haloPaddedViewBox(draftIcon)} aria-hidden="true">
 										<!-- 'proportional' halo so the preview glow matches the
 										     map's weight at this larger button size, not a faint
 										     hairline. -->

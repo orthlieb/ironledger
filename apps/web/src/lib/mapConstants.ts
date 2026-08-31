@@ -270,6 +270,26 @@ export function mapGlyphInner(
 	);
 }
 
+/**
+ * viewBox for an off-map preview `<svg>` that renders a `'proportional'` halo,
+ * expanded so the glow — which extends outside the icon outline — isn't clipped
+ * by the tight icon viewBox. Pad each side by the halo's outward reach: half the
+ * proportional stroke for vectors, the backing's dilate growth for rasters. The
+ * icon renders a touch smaller inside the same box, with the whole glow visible.
+ *
+ * Map markers keep the raw `ic.viewBox`: their fixed 2px non-scaling stroke
+ * barely leaves the outline, so no padding is needed there.
+ */
+export function haloPaddedViewBox(ic: MapIcon): string {
+	const [x, y, w, h] = ic.viewBox.split(/\s+/).map(Number);
+	const maxDim = Math.max(w || 0, h || 0);
+	// Vector: the proportional stroke is centred, so it reaches maxDim·RATIO/2
+	// outside the outline; +2% keeps the anti-aliased edge clear of the viewport.
+	// Raster: the silhouette backing grows by up to the dilate radius (maxDim·6%).
+	const pad = ic.raster ? maxDim * 0.06 : maxDim * (VECTOR_HALO_STROKE_RATIO / 2 + 0.02);
+	return `${x - pad} ${y - pad} ${w + 2 * pad} ${h + 2 * pad}`;
+}
+
 /** Downscale target for uploaded background images. Anything larger on its
  *  longest side is resized before we base64-encode into localStorage.
  *  2000px is high enough for a full-screen hex map on a 4K display and

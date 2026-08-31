@@ -8,7 +8,12 @@
  * render sites, so their shape is worth locking down.
  */
 import { describe, it, expect } from 'vitest';
-import { safeMarkerColor, mapGlyphInner, haloColor } from '../../src/lib/mapConstants.js';
+import {
+	safeMarkerColor,
+	mapGlyphInner,
+	haloColor,
+	haloPaddedViewBox,
+} from '../../src/lib/mapConstants.js';
 import type { MapIcon } from '../../src/lib/generated/mapIconManifest.js';
 
 const vector: MapIcon = {
@@ -121,6 +126,32 @@ describe('mapGlyphInner — vector icons', () => {
 		const out = mapGlyphInner(vector, '"/><script>', 'x3');
 		expect(out).toContain('fill="#000000"');
 		expect(out).not.toContain('<script>');
+	});
+});
+
+describe('haloPaddedViewBox — room for the proportional glow', () => {
+	it('expands a vector viewBox past the outer stroke reach so the glow is not clipped', () => {
+		// vector viewBox 0 0 24 24 → maxDim 24. Proportional stroke = 24*0.16 = 3.84,
+		// outer reach = 1.92. Pad each side = 24*(0.08+0.02) = 2.4 > 1.92 → clear.
+		const [x, y, w, h] = haloPaddedViewBox(vector).split(/\s+/).map(Number);
+		const pad = -x; // raw x was 0
+		expect(pad).toBeCloseTo(2.4, 5);
+		expect(pad).toBeGreaterThan((24 * 0.16) / 2); // exceeds the outer stroke reach
+		expect(w).toBeCloseTo(24 + 2 * pad, 5);
+		expect(h).toBeCloseTo(24 + 2 * pad, 5);
+		expect(y).toBeCloseTo(-pad, 5);
+	});
+
+	it('honours a non-zero viewBox origin', () => {
+		const off = { ...vector, viewBox: '10 20 100 100' };
+		const [x, y] = haloPaddedViewBox(off).split(/\s+/).map(Number);
+		expect(x).toBeCloseTo(10 - 100 * 0.1, 5);
+		expect(y).toBeCloseTo(20 - 100 * 0.1, 5);
+	});
+
+	it('pads raster viewBoxes by the backing dilate growth', () => {
+		const [x] = haloPaddedViewBox(raster).split(/\s+/).map(Number); // 0 0 221 235 → maxDim 235
+		expect(-x).toBeCloseTo(235 * 0.06, 5);
 	});
 });
 
