@@ -64,6 +64,7 @@
 		DEFAULT_MARKER_ICON,
 		gridDimsForAspect,
 		haloColor,
+		haloPaddedViewBox,
 		mapGlyphInner,
 		resolveMapIcon,
 		snapResolutionForZoom,
@@ -1534,11 +1535,17 @@
 					aria-label={m.label || '(no name)'}
 				>
 					{#if ic}
-						<svg class="mp-pile-icon" viewBox={ic.viewBox} aria-hidden="true">
-							<!-- halo=true: same contrast glow as the map/picker so a
-							     light-coloured marker icon stays legible on the menu's
-							     `--bg-control` background. -->
-							{@html mapGlyphInner(ic, m.color || DEFAULT_MARKER_COLOR, `pile-${m.id}`, true)}
+						<svg class="mp-pile-icon" viewBox={haloPaddedViewBox(ic)} aria-hidden="true">
+							<!-- 'proportional' halo: same contrast glow as the map, sized
+							     to the icon so it isn't a faint hairline at the pile menu's
+							     larger icon size; keeps a light-coloured marker icon legible
+							     on the menu's `--bg-control` background. -->
+							{@html mapGlyphInner(
+								ic,
+								m.color || DEFAULT_MARKER_COLOR,
+								`pile-${m.id}`,
+								'proportional',
+							)}
 						</svg>
 					{:else}
 						<span class="mp-pile-icon-fallback" style="background:{m.color || DEFAULT_MARKER_COLOR}"
