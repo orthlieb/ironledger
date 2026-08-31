@@ -177,6 +177,14 @@ export function haloColor(color: string | undefined | null): string {
 	return luminance > 0.6 ? '#000000' : '#ffffff';
 }
 
+/** Proportional-halo stroke width, as a fraction of the icon's viewBox max
+ *  dimension. Used only by the `'proportional'` halo mode (off-map previews).
+ *  Tuned to the map marker's ~17% glow-to-icon ratio so a picker/pile/preview
+ *  icon carries the same visual weight the marker has on the map. The stroke is
+ *  centred on the outline, so ~half sits outside — comparable to the raster
+ *  backing's `maxDim * 0.06` outward growth. */
+const VECTOR_HALO_STROKE_RATIO = 0.16;
+
 /**
  * Build the inner SVG markup for a map-icon glyph coloured to `color`,
  * for dropping inside `<svg viewBox={ic.viewBox}>…</svg>` via `{@html}`.
@@ -206,14 +214,29 @@ export function mapGlyphInner(
 	ic: MapIcon,
 	color: string | undefined | null,
 	uid: string,
-	halo = false,
+	halo: boolean | 'proportional' = false,
 ): string {
 	const c = safeMarkerColor(color);
 	const halo_ = halo ? haloColor(c) : '';
 	if (!ic.raster) {
-		const haloAttrs = halo
-			? ` stroke="${halo_}" stroke-width="2" stroke-linejoin="round" paint-order="stroke" vector-effect="non-scaling-stroke"`
-			: '';
+		// `true` → a fixed 2 device-px stroke (`non-scaling-stroke`): map markers
+		// render at a constant ~11px on screen (their group cancels zoom), so a
+		// fixed weight reads the same everywhere and stays crisp.
+		//
+		// `'proportional'` → a stroke sized in viewBox units, so it scales WITH
+		// the icon. Off-map previews (icon picker, pile menu, marker-properties
+		// preview) draw icons ~3–4× larger than a marker; a fixed 2px there reads
+		// as a thin, faint outline (~5% of the icon vs the map's ~17%). Sizing the
+		// stroke to the icon's own box (matching the raster feMorphology backing,
+		// which is already proportional) restores the map's visual weight.
+		let haloAttrs = '';
+		if (halo === 'proportional') {
+			const [, , vbW, vbH] = ic.viewBox.split(/\s+/).map(Number);
+			const sw = Math.max(1, Math.max(vbW || 0, vbH || 0) * VECTOR_HALO_STROKE_RATIO);
+			haloAttrs = ` stroke="${halo_}" stroke-width="${sw}" stroke-linejoin="round" paint-order="stroke"`;
+		} else if (halo) {
+			haloAttrs = ` stroke="${halo_}" stroke-width="2" stroke-linejoin="round" paint-order="stroke" vector-effect="non-scaling-stroke"`;
+		}
 		return `<g fill="${c}"${haloAttrs}>${ic.inner}</g>`;
 	}
 	// Raster: tint via the alpha channel, with an optional white silhouette

@@ -135,12 +135,13 @@
 								aria-label={ic.label}
 							>
 								<svg viewBox={ic.viewBox} aria-hidden="true">
-									<!-- halo=true so each preview carries the same contrast
-									     glow the marker gets on the map (haloColor of the
-									     chosen colour): white behind a dark icon, black behind
-									     a light one — keeps every icon legible on the tile's
-									     `--bg-control` background in both themes. -->
-									{@html mapGlyphInner(ic, selectedColor, `pick-${key}`, true)}
+									<!-- 'proportional' halo: the same contrast glow the marker
+									     gets on the map (haloColor of the chosen colour — white
+									     behind a dark icon, black behind a light one), but sized
+									     to the icon so it doesn't read as a faint hairline at the
+									     picker's larger tile size. Keeps every icon legible on
+									     the tile's `--bg-control` background in both themes. -->
+									{@html mapGlyphInner(ic, selectedColor, `pick-${key}`, 'proportional')}
 								</svg>
 							</button>
 						{/each}

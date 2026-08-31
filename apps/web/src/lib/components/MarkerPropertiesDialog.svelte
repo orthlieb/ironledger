@@ -412,7 +412,10 @@
 							<button class="mp-sel-icon-btn" onclick={openIconPicker} aria-label="Change icon">
 								{#if draftIcon}
 									<svg viewBox={draftIcon.viewBox} aria-hidden="true">
-										{@html mapGlyphInner(draftIcon, draftColor, 'props-preview', true)}
+										<!-- 'proportional' halo so the preview glow matches the
+										     map's weight at this larger button size, not a faint
+										     hairline. -->
+										{@html mapGlyphInner(draftIcon, draftColor, 'props-preview', 'proportional')}
 									</svg>
 								{:else}
 									<span class="mp-sel-icon-none" aria-hidden="true">Aa</span>
