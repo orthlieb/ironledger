@@ -25,7 +25,13 @@
 	import { mapListState, initMap } from '$lib/mapStore.svelte.js';
 	import { sessionLog } from '$lib/log.svelte.js';
 	import { parseStorySource } from '$lib/aiSerialize.js';
+	import { tooltip } from '$lib/actions/tooltip.js';
 	import type { ExportSelection } from '$lib/exportSelection.js';
+	import charactersIconSvg from '$icons/Characters.svg?raw';
+	import expeditionsIconSvg from '$icons/Expeditions.svg?raw';
+	import villageIconSvg from '$icons/village.svg?raw';
+	import treasureMapIconSvg from '$icons/treasure-map.svg?raw';
+	import logIconSvg from '$icons/log.svg?raw';
 
 	let {
 		open = $bindable(false),
@@ -108,8 +114,10 @@
 	const connTotal = $derived(comms.length + npcsL.length + placesL.length);
 
 	// A category is eligible only when it has something to export. Empty ones
-	// are hidden and excluded from the master so "Everything" can still read as
-	// a complete backup when, say, the account has no characters yet.
+	// render disabled (greyed, "none yet", non-interactive) and are excluded
+	// from the master so "Everything" can still read as a complete backup when,
+	// say, the account has no characters yet — while the capability stays
+	// visible so it's never mistaken for missing.
 	const eligible = $derived({
 		char: chars.length > 0,
 		exp: exps.length > 0,
@@ -265,7 +273,7 @@
 						class:open={openRows.has('char')}
 						class:partial={charState === 'mixed'}
 						style="--cat:#5aa467"
-						class:exd-hidden={!eligible.char}
+						class:exd-disabled={!eligible.char}
 					>
 						<div class="exd-rowhead">
 							<button
@@ -285,17 +293,7 @@
 									></span
 								>
 							</button>
-							<span class="exd-swatch" aria-hidden="true"
-								><svg
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 4-6 8-6s8 2 8 6" /></svg
-								></span
-							>
+							<span class="exd-swatch" aria-hidden="true">{@html charactersIconSvg}</span>
 							<button
 								type="button"
 								class="exd-rowmain"
@@ -304,11 +302,13 @@
 								<span class="exd-rowname">Characters</span>
 							</button>
 							<span class="exd-count"
-								>{charState === 'off'
-									? '—'
-									: charState === 'mixed'
-										? `${selChars.size} / ${chars.length}`
-										: chars.length}</span
+								>{!eligible.char
+									? 'none yet'
+									: charState === 'off'
+										? '—'
+										: charState === 'mixed'
+											? `${selChars.size} / ${chars.length}`
+											: chars.length}</span
 							>
 							<button
 								type="button"
@@ -359,7 +359,7 @@
 						class:open={openRows.has('exp')}
 						class:partial={expState === 'mixed'}
 						style="--cat:#e4aa28"
-						class:exd-hidden={!eligible.exp}
+						class:exd-disabled={!eligible.exp}
 					>
 						<div class="exd-rowhead">
 							<button
@@ -379,17 +379,7 @@
 									></span
 								>
 							</button>
-							<span class="exd-swatch" aria-hidden="true"
-								><svg
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									><path d="M3 6l6-3 6 3 6-3v15l-6 3-6-3-6 3z" /><path d="M9 3v15M15 6v15" /></svg
-								></span
-							>
+							<span class="exd-swatch" aria-hidden="true">{@html expeditionsIconSvg}</span>
 							<button
 								type="button"
 								class="exd-rowmain"
@@ -398,11 +388,13 @@
 								<span class="exd-rowname">Expeditions</span>
 							</button>
 							<span class="exd-count"
-								>{expState === 'off'
-									? '—'
-									: expState === 'mixed'
-										? `${selExps.size} / ${exps.length}`
-										: exps.length}</span
+								>{!eligible.exp
+									? 'none yet'
+									: expState === 'off'
+										? '—'
+										: expState === 'mixed'
+											? `${selExps.size} / ${exps.length}`
+											: exps.length}</span
 							>
 							<button
 								type="button"
@@ -455,7 +447,7 @@
 						class:open={openRows.has('conn')}
 						class:partial={connState === 'mixed'}
 						style="--cat:#d06840"
-						class:exd-hidden={!eligible.conn}
+						class:exd-disabled={!eligible.conn}
 					>
 						<div class="exd-rowhead">
 							<button
@@ -475,31 +467,19 @@
 									></span
 								>
 							</button>
-							<span class="exd-swatch" aria-hidden="true"
-								><svg
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									><circle cx="6" cy="7" r="2.4" /><circle cx="18" cy="7" r="2.4" /><circle
-										cx="12"
-										cy="18"
-										r="2.4"
-									/><path d="M7.8 8.6l3 7.4M16.2 8.6l-3 7.4M8 7h8" /></svg
-								></span
-							>
+							<span class="exd-swatch" aria-hidden="true">{@html villageIconSvg}</span>
 							<button type="button" class="exd-rowmain" onclick={() => toggleRow('conn')}>
 								<span class="exd-rowname">Connections</span>
 								<span class="exd-rowsub">communities · NPCs · places</span>
 							</button>
 							<span class="exd-count"
-								>{connState === 'off'
-									? '—'
-									: connState === 'mixed'
-										? `${connCount} / ${connTotal}`
-										: connTotal}</span
+								>{!eligible.conn
+									? 'none yet'
+									: connState === 'off'
+										? '—'
+										: connState === 'mixed'
+											? `${connCount} / ${connTotal}`
+											: connTotal}</span
 							>
 							<button
 								type="button"
@@ -571,7 +551,7 @@
 						class:open={openRows.has('map')}
 						class:partial={mapState === 'mixed'}
 						style="--cat:#3e9cb5"
-						class:exd-hidden={!eligible.map}
+						class:exd-disabled={!eligible.map}
 					>
 						<div class="exd-rowhead">
 							<button
@@ -591,17 +571,7 @@
 									></span
 								>
 							</button>
-							<span class="exd-swatch" aria-hidden="true"
-								><svg
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									><path d="M9 4L3 6v14l6-2 6 2 6-2V4l-6 2-6-2z" /><path d="M9 4v14M15 6v14" /></svg
-								></span
-							>
+							<span class="exd-swatch" aria-hidden="true">{@html treasureMapIconSvg}</span>
 							<button
 								type="button"
 								class="exd-rowmain"
@@ -610,11 +580,13 @@
 								<span class="exd-rowname">Maps</span>
 							</button>
 							<span class="exd-count"
-								>{mapState === 'off'
-									? '—'
-									: mapState === 'mixed'
-										? `${selMaps.size} / ${maps.length}`
-										: maps.length}</span
+								>{!eligible.map
+									? 'none yet'
+									: mapState === 'off'
+										? '—'
+										: mapState === 'mixed'
+											? `${selMaps.size} / ${maps.length}`
+											: maps.length}</span
 							>
 							<button
 								type="button"
@@ -663,7 +635,7 @@
 					</div>
 
 					<!-- Session Log -->
-					<div class="exd-row" class:exd-hidden={!eligible.log} style="--cat:#a46fb0">
+					<div class="exd-row" class:exd-disabled={!eligible.log} style="--cat:#a46fb0">
 						<div class="exd-rowhead">
 							<button
 								type="button"
@@ -682,17 +654,7 @@
 									></span
 								>
 							</button>
-							<span class="exd-swatch" aria-hidden="true"
-								><svg
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									><path d="M5 4h11l3 3v13H5z" /><path d="M8 10h8M8 14h6" /></svg
-								></span
-							>
+							<span class="exd-swatch" aria-hidden="true">{@html logIconSvg}</span>
 							<span class="exd-rowmain static">
 								<span class="exd-rowname">Session Log</span>
 								<span class="exd-rowsub"
@@ -706,11 +668,13 @@
 									<button
 										type="button"
 										class:on={logMode === 'all'}
+										use:tooltip={'Every log entry — rolls, moves, notes and story beats'}
 										onclick={() => (logMode = 'all')}>All</button
 									>
 									<button
 										type="button"
 										class:on={logMode === 'stories'}
+										use:tooltip={`Only AI Storyteller narrative beats (${storyCount} of ${logEntries.length})`}
 										onclick={() => (logMode = 'stories')}>Stories</button
 									>
 								</div>
@@ -848,8 +812,11 @@
 	:global(.exd-row) {
 		border-radius: 9px;
 	}
-	:global(.exd-row.exd-hidden) {
-		display: none;
+	:global(.exd-row.exd-disabled) {
+		opacity: 0.5;
+	}
+	:global(.exd-row.exd-disabled .exd-rowhead) {
+		pointer-events: none;
 	}
 	:global(.exd-row + .exd-row) {
 		margin-top: 1px;
@@ -930,8 +897,12 @@
 		border: 1px solid color-mix(in srgb, var(--cat) 32%, transparent);
 	}
 	:global(.exd-swatch svg) {
-		width: 17px;
-		height: 17px;
+		width: 18px;
+		height: 18px;
+		/* App tab icons are fill-based with no fill attr (default black) — tint
+		   them to the category hue like the tabs do. currentColor comes from the
+		   swatch's `color`. */
+		fill: currentColor;
 	}
 
 	:global(.exd-rowmain) {
