@@ -19,18 +19,6 @@ import { settleHome } from './helpers/home';
 const CHAR_AREA = '.home-area--characters';
 const ZIP_INPUT = 'input[type="file"][accept=".zip,application/zip"]';
 
-/** value → visible label for the export Content <Select> (bits-ui). */
-const CONTENT_LABEL: Record<string, string> = {
-	everything: 'Everything',
-	character: 'Current Character',
-	'all-characters': 'All Characters',
-	log: 'Session Log',
-	stories: 'Stories',
-	communities: 'Connections',
-	expeditions: 'Expeditions',
-	map: 'All Maps',
-};
-
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -46,18 +34,30 @@ async function gotoHome(page: import('@playwright/test').Page) {
 	await settleHome(page);
 }
 
-/** Open Hamburger → Export dialog, pick a content option from the bits-ui
- *  <Select> (portalled items, matched by their visible label). */
-async function openExportDialog(page: import('@playwright/test').Page, content: string) {
+/** Open Hamburger → Export. The dialog is a single filter+checklist that opens
+ *  with every item selected and Zip as the default format. */
+async function openExportDialog(page: import('@playwright/test').Page) {
 	await page.locator('.hamburger-btn').click();
 	await page.locator('.hm-item', { hasText: /Export/ }).click();
-	await expect(page.locator('.export-dialog')).toBeVisible();
-	await page.locator('.export-dialog #export-content').click();
-	await page
-		.locator('.bui-select-content .bui-select-item', {
-			hasText: new RegExp(`^${CONTENT_LABEL[content]}$`),
-		})
-		.click();
+	await expect(page.locator('.exd-dialog')).toBeVisible();
+}
+
+/** Create one character via the switcher (name-first confirm dialog), unless a
+ *  character tab already exists. Gives the export checklist something to hold. */
+async function seedCharacter(page: import('@playwright/test').Page, name = 'Export Seed') {
+	const hasChar = await page
+		.locator(`${CHAR_AREA} .ca-tab`)
+		.first()
+		.isVisible()
+		.catch(() => false);
+	if (hasChar) return;
+	await page.locator(`${CHAR_AREA} .ca-hdr-combobox`).click();
+	await page.locator('.mp-cmd-item--action', { hasText: /New character/i }).click();
+	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+	await page.locator('.confirm-modal .co-input').first().fill(name);
+	await page.locator('.confirm-modal .btn-primary').click();
+	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
+	await expect(page.locator(`${CHAR_AREA} .ca-tab`).first()).toBeVisible({ timeout: 8_000 });
 }
 
 /** Pack a {manifest, data} payload into the .zip bundle the importer accepts. */
@@ -119,97 +119,44 @@ test.beforeAll(async () => {
 // ---------------------------------------------------------------------------
 
 test.describe('Export dialog', () => {
+	// The dialog is a checklist of what exists, and Export is disabled when
+	// nothing is selected — so seed one character to have something to export.
 	test.beforeEach(async ({ page }) => {
 		await gotoHome(page);
+		await seedCharacter(page);
 	});
 
-	test('opens and lists all content options', async ({ page }) => {
-		await openExportDialog(page, 'character');
-		// Re-open the Content select and check each option is offered (by label).
-		// 'foes' isn't an export option — foes ship inside an Everything export.
-		await page.locator('.export-dialog #export-content').click();
-		for (const val of [
-			'character',
-			'all-characters',
-			'log',
-			'communities',
-			'expeditions',
-			'everything',
-		]) {
-			await expect(
-				page.locator('.bui-select-content .bui-select-item', {
-					hasText: new RegExp(`^${CONTENT_LABEL[val]}$`),
-				}),
-			).toHaveCount(1);
-		}
-		await page.keyboard.press('Escape');
-	});
-
-	// Format selector visibility was inverted: Everything and Session Log are
-	// the only content types with a meaningful Markdown rendering, so they
-	// expose the JSON/Markdown choice. All other content types (character,
-	// all-characters, communities, expeditions) are JSON-only — the picker
-	// hides the Format field and force-resets format='json' on change
-	// (see HamburgerMenu.svelte:126,135).
-	test('shows format selector when Everything is chosen', async ({ page }) => {
-		await openExportDialog(page, 'everything');
-		await expect(page.locator('.ed-label:has-text("Format")')).toBeVisible();
-	});
-
-	test('shows format selector when Session Log is chosen', async ({ page }) => {
-		await openExportDialog(page, 'log');
-		await expect(page.locator('.ed-label:has-text("Format")')).toBeVisible();
-	});
-
-	test('hides format selector for JSON-only content types', async ({ page }) => {
-		await openExportDialog(page, 'all-characters');
-		await expect(page.locator('.ed-label:has-text("Format")')).not.toBeVisible();
+	test('opens as a searchable checklist with Select all and both formats', async ({ page }) => {
+		await openExportDialog(page);
+		await expect(page.locator('.exd-search')).toBeVisible();
+		await expect(page.locator('.exd-selectall')).toBeVisible();
+		// Both output formats are always offered (no per-content-type hiding).
+		await expect(page.locator('.exd-segbtn', { hasText: /^Zip archive/ })).toBeVisible();
+		await expect(page.locator('.exd-segbtn', { hasText: /^Markdown/ })).toBeVisible();
 	});
 
 	test('Cancel closes the dialog without exporting', async ({ page }) => {
-		await openExportDialog(page, 'everything');
-		await page.locator('.export-dialog .ed-footer .btn:not(.btn-primary)').click();
-		await expect(page.locator('.export-dialog')).not.toBeVisible();
+		await openExportDialog(page);
+		await page.locator('.exd-footer .btn:not(.btn-primary)').click();
+		await expect(page.locator('.exd-dialog')).not.toBeVisible();
 	});
 
 	test('Everything export downloads a .zip with correct name pattern', async ({ page }) => {
-		await openExportDialog(page, 'everything');
+		await openExportDialog(page);
 		const [download] = await Promise.all([
 			page.waitForEvent('download'),
-			page.locator('.export-dialog .btn-primary').click(),
+			page.locator('.exd-dialog .btn-primary').click(),
 		]);
 		expect(download.suggestedFilename()).toMatch(
 			/^ironledger-export-\d{4}-\d{2}-\d{2}_\d{4}\.zip$/,
 		);
 	});
 
-	test('All Characters export downloads a .zip file', async ({ page }) => {
-		// All Characters is JSON-only — no format selector.
-		await openExportDialog(page, 'all-characters');
-		// all-characters is JSON-only — there is no Format segmented control to
-		// click (the picker auto-pins exportFormat to 'json' on change).
-		const [download] = await Promise.all([
-			page.waitForEvent('download'),
-			page.locator('.export-dialog .btn-primary').click(),
-		]);
-		expect(download.suggestedFilename()).toMatch(/^all-characters-.*\.zip$/);
-	});
-
-	test('Session Log Markdown export downloads a .md file', async ({ page }) => {
-		await openExportDialog(page, 'log');
-		await page.locator('.ed-seg-btn:has-text("Markdown")').click();
-		const [download] = await Promise.all([
-			page.waitForEvent('download'),
-			page.locator('.export-dialog .btn-primary').click(),
-		]);
-		expect(download.suggestedFilename()).toMatch(/^session-log-.*\.md$/);
-	});
-
 	test('exported Everything zip has correct manifest + body structure', async ({ page }) => {
-		await openExportDialog(page, 'everything');
+		await openExportDialog(page);
 		const [download] = await Promise.all([
 			page.waitForEvent('download'),
-			page.locator('.export-dialog .btn-primary').click(),
+			page.locator('.exd-dialog .btn-primary').click(),
 		]);
 		// The export is a zip: manifest.json + a body JSON file it points at.
 		const entries = unzipSync(new Uint8Array(await downloadBuffer(download)));
@@ -218,13 +165,11 @@ test.describe('Export dialog', () => {
 
 		expect(manifest.type).toBe('everything');
 		expect(manifest.app).toBe('Iron Ledger');
+		// The seeded character is present; session always is; foes never are
+		// (transient, Markdown-only). Empty categories are simply omitted.
 		expect(Array.isArray(data.characters)).toBe(true);
-		expect(Array.isArray(data.log)).toBe(true);
-		expect(Array.isArray(data.communities)).toBe(true);
-		expect(Array.isArray(data.npcs)).toBe(true);
-		expect(Array.isArray(data.expeditions)).toBe(true);
+		expect(data.characters.length).toBeGreaterThan(0);
 		expect(data.session).toBeDefined();
-		// Foes are transient and Markdown-only — never in the export body.
 		expect(data.foes).toBeUndefined();
 	});
 });
@@ -433,27 +378,30 @@ test.describe('Import / Export — portrait round-trip', () => {
 		// Let the portrait PUT + the 1500 ms character auto-save settle.
 		await page.waitForTimeout(2_400);
 
-		// ── Export the current character — the portrait becomes an images/ file ─
-		await openExportDialog(page, 'character');
+		// ── Export everything — the portrait becomes an images/ file, referenced
+		//    from the character inside the Everything body. ─
+		await openExportDialog(page);
 		const [download] = await Promise.all([
 			page.waitForEvent('download'),
-			page.locator('.export-dialog .btn-primary').click(),
+			page.locator('.exd-dialog .btn-primary').click(),
 		]);
 		const entries = unzipSync(new Uint8Array(await downloadBuffer(download)));
 		const manifest = JSON.parse(strFromU8(entries['manifest.json']));
-		const bodyName = manifest.body ?? 'character.json';
+		const bodyName = manifest.body ?? 'everything.json';
 		const body = JSON.parse(strFromU8(entries[bodyName]));
+		const char = body.characters[0];
 		// Self-contained: portrait bytes live in an images/ entry, referenced by
 		// portraitFile — NOT an inline data: URL, and no etag in the file.
-		expect(body.data.portraitFile).toMatch(/^images\//);
-		expect(entries[body.data.portraitFile]).toBeDefined();
-		expect(body.data.portrait).toBeUndefined();
-		expect(body.data.portraitEtag).toBeUndefined();
+		expect(char.data.portraitFile).toMatch(/^images\//);
+		expect(entries[char.data.portraitFile]).toBeDefined();
+		expect(char.data.portrait).toBeUndefined();
+		expect(char.data.portraitEtag).toBeUndefined();
 
 		// ── Re-import under a unique name — portrait must come back from the blob endpoint ──
 		const uniqueName = `Roundtrip ${Date.now()}`;
-		body.name = uniqueName; // outer display name
-		body.data.name = uniqueName; // inner data.name — what the switcher renders
+		char.name = uniqueName; // outer display name
+		char.data.name = uniqueName; // inner data.name — what the switcher renders
+		body.characters = [char];
 		const reentries: Record<string, Uint8Array> = { ...entries };
 		reentries[bodyName] = strToU8(JSON.stringify(body));
 		await page.locator(ZIP_INPUT).setInputFiles({
@@ -540,10 +488,10 @@ test.describe('Import / Export — Place ↔ settlement re-linking', () => {
 		// Export everything and inspect the body: the place must carry
 		// withinSettlementName === "Havenport" (proving import resolved the link)
 		// and must NOT carry a raw withinSettlementId.
-		await openExportDialog(page, 'everything');
+		await openExportDialog(page);
 		const [download] = await Promise.all([
 			page.waitForEvent('download'),
-			page.locator('.export-dialog .btn-primary').click(),
+			page.locator('.exd-dialog .btn-primary').click(),
 		]);
 		const entries = unzipSync(new Uint8Array(await downloadBuffer(download)));
 		const manifest = JSON.parse(strFromU8(entries['manifest.json']));

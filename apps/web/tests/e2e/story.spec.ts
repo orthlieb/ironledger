@@ -16,7 +16,6 @@
  * hooks.client.ts).
  */
 import { test, expect, type Page } from '@playwright/test';
-import { readFileSync } from 'node:fs';
 import { resetAll, resetLog } from './helpers/reset';
 
 const PROSE_A = '**Beepalache** crept forward.\n\nThe *Blood Thorn* stirred and did not wake.';
@@ -208,45 +207,5 @@ test.describe('AI story generation', () => {
 		await expect(named.locator('.entry-body strong')).toHaveText('Beepalache');
 		await expect(named.locator('.entry-body em')).toHaveText('turned back'); // the edit persisted
 		await expect(named.locator('.entry-regen-btn')).toHaveCount(1); // has a payload
-	});
-
-	test('Stories export writes markdown of story entries only', async ({ page }) => {
-		await inject(page, 'A mundane note', '<p>Nothing special.</p>', 'plain-2');
-		await inject(
-			page,
-			'First Tale',
-			'<p>one</p>',
-			'story-a',
-			storySource('log a', 'The **first** tale.'),
-		);
-		await inject(
-			page,
-			'Second Tale',
-			'<p>two</p>',
-			'story-b',
-			storySource('log b', 'The *second* tale.'),
-		);
-
-		await page.locator('button[aria-label="Menu"]').click();
-		await page.locator('.hm-item', { hasText: /Export/ }).click();
-		const dialog = page.locator('.export-dialog');
-		await expect(dialog).toBeVisible();
-		// .ed-select is a bits-ui <Select> (button trigger + portalled popup),
-		// not a native <select>: open it and pick the "Stories" option.
-		await dialog.locator('.ed-select').click();
-		await page.locator('.bui-select-content .bui-select-item', { hasText: 'Stories' }).click();
-
-		const [download] = await Promise.all([
-			page.waitForEvent('download'),
-			dialog.locator('.ed-footer button.btn-primary').click(),
-		]);
-		expect(download.suggestedFilename()).toMatch(/^stories-.*\.md$/);
-		const md = readFileSync(await download.path(), 'utf8');
-
-		expect(md).toContain('## First Tale');
-		expect(md).toContain('The **first** tale.');
-		expect(md).toContain('## Second Tale');
-		expect(md).toContain('The *second* tale.');
-		expect(md).not.toContain('A mundane note'); // non-story entries excluded
 	});
 });
