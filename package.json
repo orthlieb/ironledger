@@ -9,7 +9,7 @@
     "packages/shared"
   ],
   "scripts": {
-    "dev": "lsof -ti :3000 | xargs kill -9; npm run dev --workspace=apps/api",
+    "dev": "node scripts/kill-port.mjs 3000 && npm run dev --workspace=apps/api",
     "dev:web": "npm run dev --workspace=apps/web",
     "build": "npm run build --workspace=apps/api && npm run build --workspace=apps/web",
     "build:api": "npm run build --workspace=apps/api",
