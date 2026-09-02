@@ -31,11 +31,10 @@
 	import villageIconSvg from '$icons/village.svg?raw';
 	import treasureMapIconSvg from '$icons/treasure-map.svg?raw';
 	import logIconSvg from '$icons/log.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 
 	const CHECK =
 		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>';
-	const CARET =
-		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
 
 	let {
 		open = $bindable(false),
@@ -158,7 +157,6 @@
 	// ── search + selection ────────────────────────────────────────────────────
 	let q = $state('');
 	let sel = $state(new Set<string>());
-	let openCats = $state(new Set<Cat>());
 	let format = $state<'zip' | 'md'>('zip');
 	let touched = $state(false);
 	let exportBtnEl = $state<HTMLButtonElement | null>(null);
@@ -172,23 +170,19 @@
 		if (item.cat === 'log' && 'session log entries'.includes(query)) return true;
 		return false;
 	}
-	// Categories with their filtered items; empty categories drop out while a
-	// search is active but stay (empty) otherwise so the structure is stable.
-	const view = $derived(
-		catalog
-			.map((c) => ({ ...c, items: c.items.filter(matches) }))
-			.filter(
-				(c) => c.items.length > 0 || (!query && c.items.length === 0 && rawCount(c.key) === 0),
-			),
+	// One flat list of every item (catalogue order), each carrying its
+	// category's icon/colour so a row is self-identifying without section
+	// headers — a single searchable checklist like the Moves/Oracles pickers.
+	type Row = Item & { icon: string; color: string; catLabel: string };
+	const allItems = $derived<Row[]>(
+		catalog.flatMap((c) =>
+			c.items.map((i) => ({ ...i, icon: c.icon, color: c.color, catLabel: c.label })),
+		),
 	);
-	function rawCount(cat: Cat): number {
-		return catalog.find((c) => c.key === cat)?.items.length ?? 0;
-	}
-
-	const filteredItems = $derived(view.flatMap((c) => c.items));
-	const filteredKeys = $derived(filteredItems.map((i) => i.key));
-	const allItemKeys = $derived(catalog.flatMap((c) => c.items.map((i) => i.key)));
-	const itemByKey = $derived(new Map(catalog.flatMap((c) => c.items).map((i) => [i.key, i])));
+	const filtered = $derived(allItems.filter(matches));
+	const filteredKeys = $derived(filtered.map((i) => i.key));
+	const allItemKeys = $derived(allItems.map((i) => i.key));
+	const itemByKey = $derived(new Map(allItems.map((i) => [i.key, i])));
 
 	type Tri = 'on' | 'off' | 'mixed';
 	function triOf(keys: string[]): Tri {
@@ -208,7 +202,6 @@
 			q = '';
 			format = 'zip';
 			touched = false;
-			openCats = new Set(catalog.map((c) => c.key));
 		});
 	});
 	$effect(() => {
@@ -233,24 +226,13 @@
 		else keys.forEach((k) => n.add(k));
 		commit(n);
 	}
-	function toggleCat(cat: Cat) {
-		const c = view.find((x) => x.key === cat);
-		if (c) toggleKeys(c.items.map((i) => i.key));
-	}
-	function toggleCollapse(cat: Cat) {
-		const n = new Set(openCats);
-		if (n.has(cat)) n.delete(cat);
-		else n.add(cat);
-		openCats = n;
-	}
-
 	const anySelected = $derived(selectedCount > 0);
 	const isEverything = $derived(allItemKeys.length > 0 && allItemKeys.every((k) => sel.has(k)));
 
 	function idsOf(cat: Cat, sub?: Item['sub']): string[] {
 		return [...sel]
 			.map((k) => itemByKey.get(k))
-			.filter((i): i is Item => !!i && i.cat === cat && (sub ? i.sub === sub : true))
+			.filter((i): i is Row => !!i && i.cat === cat && (sub ? i.sub === sub : true))
 			.map((i) => i.id);
 	}
 
@@ -303,14 +285,17 @@
 			/>
 
 			<div class="exd-toolbar">
-				<input
-					bind:this={searchEl}
-					class="exd-search"
-					type="search"
-					placeholder="Search everything…"
-					aria-label="Search items to export"
-					bind:value={q}
-				/>
+				<div class="exd-search-field">
+					<span class="exd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+					<input
+						bind:this={searchEl}
+						class="exd-search"
+						type="search"
+						placeholder="Search everything…"
+						aria-label="Search items to export"
+						bind:value={q}
+					/>
+				</div>
 				<button
 					type="button"
 					class="exd-selectall"
@@ -319,75 +304,27 @@
 				>
 					<span class="exd-cb" data-state={selectAllState} aria-hidden="true">{@html CHECK}</span>
 					<span class="exd-selectall-label"
-						>Select all{query ? ` (${filteredItems.length} shown)` : ''}</span
+						>Select all{query ? ` (${filtered.length} shown)` : ''}</span
 					>
 					<span class="exd-selectall-count">{selectedCount} selected</span>
 				</button>
 			</div>
 
 			<div class="exd-list">
-				{#each view as cat (cat.key)}
-					{@const catKeys = cat.items.map((i) => i.key)}
-					{@const catState = triOf(catKeys)}
-					{#if cat.atomic}
-						<!-- Session Log — atomic; the header row is the toggle. -->
-						<button type="button" class="exd-cathead exd-atomic" onclick={() => toggleCat(cat.key)}>
-							<span class="exd-cb" data-state={catState} aria-hidden="true">{@html CHECK}</span>
-							<span class="exd-swatch" style="--cat:{cat.color}" aria-hidden="true"
-								>{@html cat.icon}</span
-							>
-							<span class="exd-cathead-label">{cat.label}</span>
-							<span class="exd-count">{cat.items[0]?.name ?? '—'}</span>
-						</button>
-					{:else}
-						<div class="exd-group" class:open={openCats.has(cat.key)}>
-							<div class="exd-cathead">
-								<button
-									type="button"
-									class="exd-cbwrap"
-									onclick={() => toggleCat(cat.key)}
-									aria-label={`Select all ${cat.label}`}
-								>
-									<span class="exd-cb" data-state={catState} aria-hidden="true">{@html CHECK}</span>
-								</button>
-								<span class="exd-swatch" style="--cat:{cat.color}" aria-hidden="true"
-									>{@html cat.icon}</span
-								>
-								<button
-									type="button"
-									class="exd-cathead-main"
-									onclick={() => toggleCollapse(cat.key)}
-								>
-									<span class="exd-cathead-label">{cat.label}</span>
-									<span class="exd-count">{cat.items.length}</span>
-								</button>
-								<button
-									type="button"
-									class="exd-caret"
-									onclick={() => toggleCollapse(cat.key)}
-									aria-label={openCats.has(cat.key) ? 'Collapse' : 'Expand'}>{@html CARET}</button
-								>
-							</div>
-							{#if openCats.has(cat.key)}
-								<div class="exd-items">
-									{#each cat.items as item (item.key)}
-										<button type="button" class="exd-item" onclick={() => toggleItem(item.key)}>
-											<span
-												class="exd-cb sm"
-												data-state={sel.has(item.key) ? 'on' : 'off'}
-												aria-hidden="true">{@html CHECK}</span
-											>
-											<span class="exd-item-name"
-												>{item.name}{#if item.tag}<span class="exd-tag">{item.tag}</span>{/if}</span
-											>
-										</button>
-									{/each}
-								</div>
-							{/if}
-						</div>
-					{/if}
+				{#each filtered as item (item.key)}
+					<button type="button" class="exd-item" onclick={() => toggleItem(item.key)}>
+						<span class="exd-cb sm" data-state={sel.has(item.key) ? 'on' : 'off'} aria-hidden="true"
+							>{@html CHECK}</span
+						>
+						<span class="exd-rowicon" style="--cat:{item.color}" aria-hidden="true"
+							>{@html item.icon}</span
+						>
+						<span class="exd-item-name"
+							>{item.name}{#if item.tag}<span class="exd-tag">{item.tag}</span>{/if}</span
+						>
+					</button>
 				{/each}
-				{#if view.length === 0}
+				{#if filtered.length === 0}
 					<p class="exd-empty">No items match “{q}”.</p>
 				{/if}
 			</div>
@@ -471,21 +408,45 @@
 		gap: 6px;
 		border-bottom: 1px solid var(--border);
 	}
-	:global(.exd-search) {
-		font: inherit;
-		font-size: 13px;
+	:global(.exd-search-field) {
+		display: flex;
+		align-items: center;
+		gap: 8px;
 		background: var(--bg-inset);
 		border: 1px solid var(--border);
 		border-radius: 7px;
-		padding: 8px 11px;
+		padding: 0 11px;
+	}
+	:global(.exd-search-field:focus-within) {
+		outline: 2px solid var(--text-accent);
+		outline-offset: 1px;
+	}
+	:global(.exd-search-icon) {
+		display: grid;
+		place-items: center;
+		color: var(--text-dimmer);
+		flex: none;
+	}
+	:global(.exd-search-icon svg) {
+		width: 14px;
+		height: 14px;
+		fill: currentColor;
+	}
+	:global(.exd-search) {
+		flex: 1;
+		min-width: 0;
+		font: inherit;
+		font-size: 13px;
+		background: transparent;
+		border: 0;
+		padding: 8px 0;
 		color: var(--text);
+	}
+	:global(.exd-search:focus-visible) {
+		outline: none;
 	}
 	:global(.exd-search::placeholder) {
 		color: var(--text-dimmer);
-	}
-	:global(.exd-search:focus-visible) {
-		outline: 2px solid var(--text-accent);
-		outline-offset: 1px;
 	}
 	:global(.exd-selectall) {
 		display: flex;
@@ -517,61 +478,6 @@
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		flex: 1;
-	}
-	:global(.exd-group) {
-		border-radius: 8px;
-	}
-	:global(.exd-cathead) {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		padding: 8px 8px;
-		border-radius: 8px;
-	}
-	:global(.exd-cathead:hover),
-	:global(.exd-atomic:hover) {
-		background: var(--bg-hover);
-	}
-	:global(.exd-atomic) {
-		display: flex;
-		align-items: center;
-		gap: 10px;
-		width: 100%;
-		background: transparent;
-		border: 0;
-		cursor: pointer;
-		color: var(--text);
-		font: inherit;
-		text-align: left;
-	}
-	:global(.exd-cathead-main) {
-		flex: 1;
-		min-width: 0;
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		background: transparent;
-		border: 0;
-		padding: 0;
-		cursor: pointer;
-		color: var(--text);
-		font: inherit;
-		text-align: left;
-	}
-	:global(.exd-cathead-label) {
-		font-weight: 600;
-		font-size: 13.5px;
-		flex: 1;
-	}
-
-	:global(.exd-cbwrap) {
-		border: 0;
-		background: transparent;
-		padding: 0;
-		cursor: pointer;
-		display: grid;
-		place-items: center;
-		flex: none;
 	}
 	:global(.exd-cb) {
 		width: 20px;
@@ -614,63 +520,23 @@
 		background: var(--bg-page);
 	}
 
-	:global(.exd-swatch) {
-		width: 28px;
-		height: 28px;
-		border-radius: 8px;
+	:global(.exd-rowicon) {
+		width: 22px;
+		height: 22px;
+		border-radius: 6px;
 		display: grid;
 		place-items: center;
 		flex: none;
 		color: var(--cat);
 		background: color-mix(in srgb, var(--cat) 15%, var(--bg-card));
-		border: 1px solid color-mix(in srgb, var(--cat) 32%, transparent);
+		border: 1px solid color-mix(in srgb, var(--cat) 30%, transparent);
 	}
-	:global(.exd-swatch svg) {
-		width: 17px;
-		height: 17px;
+	:global(.exd-rowicon svg) {
+		width: 13px;
+		height: 13px;
 		fill: currentColor;
 	}
 
-	:global(.exd-count) {
-		font-family: var(--font-mono);
-		font-variant-numeric: tabular-nums;
-		font-size: 12px;
-		color: var(--text-muted);
-		background: var(--bg-control);
-		border: 1px solid var(--border);
-		border-radius: 999px;
-		padding: 2px 9px;
-		white-space: nowrap;
-		flex: none;
-	}
-
-	:global(.exd-caret) {
-		border: 0;
-		background: transparent;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		padding: 4px;
-		border-radius: 6px;
-		flex: none;
-		display: grid;
-		place-items: center;
-		transition: transform 0.16s ease;
-	}
-	:global(.exd-caret svg) {
-		width: 13px;
-		height: 13px;
-	}
-	:global(.exd-group.open .exd-caret) {
-		transform: rotate(90deg);
-		color: var(--text-muted);
-	}
-
-	:global(.exd-items) {
-		display: flex;
-		flex-direction: column;
-		gap: 1px;
-		padding: 0 8px 6px 46px;
-	}
 	:global(.exd-item) {
 		display: flex;
 		align-items: center;
