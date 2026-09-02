@@ -511,18 +511,14 @@
 	:global(.exd-search-row) {
 		display: flex;
 		align-items: center;
-		gap: 8px;
+		gap: 6px;
 	}
 	:global(.exd-search-field) {
 		flex: 1;
 		min-width: 0;
+		position: relative;
 		display: flex;
 		align-items: center;
-		gap: 8px;
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 7px;
-		padding: 0 11px;
 	}
 	:global(.exd-filter-toggle) {
 		font-family: var(--font-ui);
@@ -590,33 +586,30 @@
 		height: 15px;
 		fill: currentColor;
 	}
-	:global(.exd-search-field:focus-within) {
-		outline: 2px solid var(--text-accent);
-		outline-offset: 1px;
-	}
 	:global(.exd-search-icon) {
-		display: grid;
-		place-items: center;
+		position: absolute;
+		left: 8px;
+		width: 13px;
+		height: 13px;
+		display: inline-flex;
+		pointer-events: none;
 		color: var(--text-dimmer);
-		flex: none;
 	}
 	:global(.exd-search-icon svg) {
-		width: 14px;
-		height: 14px;
+		width: 13px;
+		height: 13px;
 		fill: currentColor;
 	}
 	:global(.exd-search) {
 		flex: 1;
 		min-width: 0;
-		font: inherit;
-		font-size: 13px;
-		background: transparent;
-		border: 0;
-		padding: 8px 0;
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
 		color: var(--text);
-	}
-	:global(.exd-search:focus-visible) {
-		outline: none;
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		padding: 5px 8px 5px 28px;
 	}
 	:global(.exd-search::placeholder) {
 		color: var(--text-dimmer);
