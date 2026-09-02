@@ -184,7 +184,7 @@ Determine the region of the Yrt world where an event or location is situated. Re
 | --- | --- |
 | 1–7 | Piscis |
 | 8–14 | Ostrea |
-| 15–21 | Collina |
+| 15–21 | Collima |
 | 22–28 | Freeport |
 | 29–35 | Mons |
 | 36–42 | Termin |
@@ -200,7 +200,7 @@ Determine the region of the Yrt world where an event or location is situated. Re
 | 88–89 | Pinna Mtns |
 | 90–91 | Polvokovrita Gap |
 | 92–93 | Dronitay Shelf |
-| 94–95 | Teeth of Konoloy |
+| 94–95 | Teeth of Kolonoy |
 | 96–97 | Weirden Fen |
 | 98–99 | Ravenna |
 | 100 | Spero |
@@ -474,9 +474,9 @@ Suffer a mana-specific backlash cost when magic goes wrong in the Yrt setting.
 ## Settlement: Type
 
 When using this oracle to reveal the scale and purpose of a settlement, choose whether the community is located in settled lands, boundary lands, or remote lands. If unsure, set the location based on the region:
-- **Settled lands:** Piscis, Ostrea, Collina, Freeport, Mons, Termin, Fluenti, Materton
+- **Settled lands:** Piscis, Ostrea, Collima, Freeport, Mons, Termin, Fluenti, Materton
 - **Boundary lands:** Oray Hills, Profunda Forest, Verday Groves, Nebula Forest, Suda Forest, Seka Lands
-- **Remote lands:** Malperm Mtns, Pinna Mtns, Polvokovrita Gap, Dronitay Shelf, Teeth of Konoloy, Weirden Fen, Ravenna, Spero
+- **Remote lands:** Malperm Mtns, Pinna Mtns, Polvokovrita Gap, Dronitay Shelf, Teeth of Kolonoy, Weirden Fen, Ravenna, Spero
 
 **Population (YRT):** each rolled result carries an approximate head-count. Larger communities aren't rolled here — they're established places you set on the map: **Town** 600–2,500 (Termin, Sveba), **City** 2,500–6,000 (Ostrea, Piscis, Fluenti, Materton, Mons), **Capital** 6,000–10,000 (Typpe), and the **Freeport** (~15,900, sui generis — bigger than everything and fed by ship).
 
@@ -497,7 +497,7 @@ Determine the region of the Yrt world where a story element is situated. Regions
 | --- | --- |
 | 1–7 | Piscis |
 | 8–14 | Ostrea |
-| 15–21 | Collina |
+| 15–21 | Collima |
 | 22–28 | Freeport |
 | 29–35 | Mons |
 | 36–42 | Termin |
@@ -513,7 +513,7 @@ Determine the region of the Yrt world where a story element is situated. Regions
 | 88–89 | Pinna Mtns |
 | 90–91 | Polvokovrita Gap |
 | 92–93 | Dronitay Shelf |
-| 94–95 | Teeth of Konoloy |
+| 94–95 | Teeth of Kolonoy |
 | 96–97 | Weirden Fen |
 | 98–99 | Ravenna |
 | 100 | Spero |
