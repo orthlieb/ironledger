@@ -2,13 +2,14 @@
 	/**
 	 * ExportDialog — comprehensive export as a familiar filter + checklist.
 	 *
-	 * One search field filters every exportable item at once; a "Select all"
-	 * checkbox in the upper-left toggles all *currently-filtered* rows. Below,
-	 * a single scrolling checklist groups items under collapsible category
-	 * headers (Characters, Expeditions, Connections, Maps, Session Log); each
-	 * header carries a tri-state checkbox that selects/clears its whole group.
-	 * A Zip / Markdown segment and a live summary complete it. On Export it
-	 * emits an `ExportSelection`; the home route assembles the payload.
+	 * A single flat, searchable checklist of every exportable item — like the
+	 * Moves/Oracles pickers, but with a checkbox per row for multi-select. A
+	 * search field plus category filter pills narrow the list; a "Select all"
+	 * checkbox in the upper-left toggles all *currently-filtered* rows. Each row
+	 * carries a small category-tinted icon + type tag so it is self-identifying
+	 * without section headers. A Zip / Markdown segment and a live summary
+	 * complete it. On Export it emits an `ExportSelection`; the home route
+	 * assembles the payload.
 	 *
 	 * Reads the entity stores directly for the item lists and calls `initMap()`
 	 * on open for the maps. Styles are `:global` because bits-ui portals
@@ -157,9 +158,9 @@
 	// ── search + selection ────────────────────────────────────────────────────
 	let q = $state('');
 	let sel = $state(new Set<string>());
+	let activeCats = $state(new Set<Cat>());
 	let format = $state<'zip' | 'md'>('zip');
 	let touched = $state(false);
-	let exportBtnEl = $state<HTMLButtonElement | null>(null);
 	let searchEl = $state<HTMLInputElement | null>(null);
 
 	const query = $derived(q.trim().toLowerCase());
@@ -179,7 +180,13 @@
 			c.items.map((i) => ({ ...i, icon: c.icon, color: c.color, catLabel: c.label })),
 		),
 	);
-	const filtered = $derived(allItems.filter(matches));
+	// Category filter pills narrow the list to the chosen categories (empty =
+	// all); the search narrows further. `filtered` (and therefore Select all)
+	// always reflects both.
+	const pillCats = $derived(catalog.filter((c) => c.items.length > 0));
+	const filtered = $derived(
+		allItems.filter((i) => (activeCats.size === 0 || activeCats.has(i.cat)) && matches(i)),
+	);
 	const filteredKeys = $derived(filtered.map((i) => i.key));
 	const allItemKeys = $derived(allItems.map((i) => i.key));
 	const itemByKey = $derived(new Map(allItems.map((i) => [i.key, i])));
@@ -200,6 +207,7 @@
 		void initMap().catch(() => {});
 		untrack(() => {
 			q = '';
+			activeCats = new Set();
 			format = 'zip';
 			touched = false;
 		});
@@ -225,6 +233,12 @@
 		if (all) keys.forEach((k) => n.delete(k));
 		else keys.forEach((k) => n.add(k));
 		commit(n);
+	}
+	function togglePill(cat: Cat) {
+		const n = new Set(activeCats);
+		if (n.has(cat)) n.delete(cat);
+		else n.add(cat);
+		activeCats = n;
 	}
 	const anySelected = $derived(selectedCount > 0);
 	const isEverything = $derived(allItemKeys.length > 0 && allItemKeys.every((k) => sel.has(k)));
@@ -296,6 +310,22 @@
 						bind:value={q}
 					/>
 				</div>
+				{#if pillCats.length > 1}
+					<div class="exd-pills" role="group" aria-label="Filter by type">
+						{#each pillCats as c (c.key)}
+							<button
+								type="button"
+								class="exd-pill"
+								class:active={activeCats.has(c.key)}
+								style="--ccolor:{c.color}"
+								aria-pressed={activeCats.has(c.key)}
+								onclick={() => togglePill(c.key)}
+							>
+								{c.label} <span class="exd-pill-n">{c.items.length}</span>
+							</button>
+						{/each}
+					</div>
+				{/if}
 				<button
 					type="button"
 					class="exd-selectall"
@@ -304,7 +334,9 @@
 				>
 					<span class="exd-cb" data-state={selectAllState} aria-hidden="true">{@html CHECK}</span>
 					<span class="exd-selectall-label"
-						>Select all{query ? ` (${filtered.length} shown)` : ''}</span
+						>Select all{filtered.length < allItems.length
+							? ` (${filtered.length} shown)`
+							: ''}</span
 					>
 					<span class="exd-selectall-count">{selectedCount} selected</span>
 				</button>
@@ -361,14 +393,8 @@
 			</div>
 
 			<div class="exd-footer">
-				<button type="button" class="exd-btn" onclick={() => (open = false)}>Cancel</button>
-				<button
-					type="button"
-					class="exd-btn primary"
-					bind:this={exportBtnEl}
-					disabled={!anySelected}
-					onclick={doExport}
-				>
+				<button type="button" class="btn" onclick={() => (open = false)}>Cancel</button>
+				<button type="button" class="btn btn-primary" disabled={!anySelected} onclick={doExport}>
 					{isEverything ? 'Export Everything' : 'Export Selection'}
 				</button>
 			</div>
@@ -448,6 +474,43 @@
 	:global(.exd-search::placeholder) {
 		color: var(--text-dimmer);
 	}
+	:global(.exd-pills) {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px;
+	}
+	:global(.exd-pill) {
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		font-weight: 600;
+		letter-spacing: 0.02em;
+		color: var(--ccolor, var(--text-dimmer));
+		background: transparent;
+		border: 1px solid color-mix(in srgb, var(--ccolor, var(--border)) 40%, transparent);
+		border-radius: 999px;
+		padding: 3px 10px;
+		cursor: pointer;
+		white-space: nowrap;
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		transition:
+			background 0.12s,
+			border-color 0.12s;
+	}
+	:global(.exd-pill:hover) {
+		background: color-mix(in srgb, var(--ccolor) 12%, transparent);
+	}
+	:global(.exd-pill.active) {
+		background: color-mix(in srgb, var(--ccolor) 18%, transparent);
+		border-color: var(--ccolor);
+	}
+	:global(.exd-pill-n) {
+		font-family: var(--font-mono);
+		font-variant-numeric: tabular-nums;
+		opacity: 0.8;
+	}
+
 	:global(.exd-selectall) {
 		display: flex;
 		align-items: center;
@@ -642,27 +705,5 @@
 		background: var(--bg-card);
 		border-top: 1px solid var(--border);
 	}
-	:global(.exd-btn) {
-		font: inherit;
-		font-size: 13.5px;
-		font-weight: 500;
-		border-radius: 8px;
-		padding: 9px 16px;
-		cursor: pointer;
-		border: 1px solid var(--border-mid);
-		background: var(--bg-control);
-		color: var(--text);
-	}
-	:global(.exd-btn:hover) {
-		background: var(--bg-hover);
-	}
-	:global(.exd-btn.primary) {
-		background: var(--text-accent);
-		border-color: var(--text-accent);
-		color: var(--bg-page);
-	}
-	:global(.exd-btn.primary:disabled) {
-		opacity: 0.45;
-		cursor: not-allowed;
-	}
+	/* Cancel / Export use the app's standard .btn / .btn-primary (app.css). */
 </style>
