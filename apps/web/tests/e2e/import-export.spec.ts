@@ -19,6 +19,28 @@ import { settleHome } from './helpers/home';
 const CHAR_AREA = '.home-area--characters';
 const ZIP_INPUT = 'input[type="file"][accept=".zip,application/zip"]';
 
+// The ImportDialog surfaces progress + result. A clean import lands on the
+// "done" stage with the ✓ badge; a rejected archive (too large, bad JSON,
+// over the item/nesting caps) lands on the "error" stage with the message in
+// its `.imd-errlist`.
+const IMD_DONE_OK = '.imd-badge--ok';
+const IMD_ERRLIST = '.imd-errlist';
+
+/** Assert the ImportDialog reached a clean success (done, no issues). */
+async function expectImportOk(page: import('@playwright/test').Page, timeout = 5_000) {
+	await expect(page.locator(IMD_DONE_OK)).toBeVisible({ timeout });
+}
+
+/** Assert the ImportDialog failed and its error list mentions `text`. */
+async function expectImportError(
+	page: import('@playwright/test').Page,
+	text: string | RegExp,
+	timeout = 5_000,
+) {
+	await expect(page.locator(IMD_ERRLIST)).toBeVisible({ timeout });
+	await expect(page.locator(IMD_ERRLIST)).toContainText(text, { timeout });
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -190,7 +212,7 @@ test.describe('Import — happy path', () => {
 			1,
 		);
 		await uploadImport(page, payload);
-		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
+		await expectImportOk(page);
 	});
 
 	test('imports a valid log JSON without errors', async ({ page }) => {
@@ -200,7 +222,7 @@ test.describe('Import — happy path', () => {
 			1,
 		);
 		await uploadImport(page, payload);
-		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
+		await expectImportOk(page);
 	});
 });
 
@@ -219,8 +241,7 @@ test.describe('Import — security', () => {
 		// string compresses to almost nothing, so the zip itself stays tiny).
 		const big = makeManifest('log', ['x'.repeat(6 * 1024 * 1024)], 1);
 		await uploadImport(page, big, 'huge.json');
-		await expect(page.locator('.error-bar')).toBeVisible({ timeout: 5_000 });
-		await expect(page.locator('.error-bar-msg')).toContainText('too large');
+		await expectImportError(page, 'too large');
 	});
 
 	test('rejects a zip whose body is not valid JSON with a user-friendly error', async ({
@@ -237,8 +258,7 @@ test.describe('Import — security', () => {
 			mimeType: 'application/zip',
 			buffer: Buffer.from(bad),
 		});
-		await expect(page.locator('.error-bar')).toBeVisible({ timeout: 5_000 });
-		await expect(page.locator('.error-bar-msg')).toContainText('not valid JSON');
+		await expectImportError(page, 'not valid JSON');
 	});
 
 	test('silently drops __proto__ keys — no prototype pollution', async ({ page }) => {
@@ -255,7 +275,7 @@ test.describe('Import — security', () => {
 			1,
 		);
 		await uploadImport(page, poisoned);
-		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
+		await expectImportOk(page);
 		const polluted = await page.evaluate(() => (({}) as Record<string, unknown>).isAdmin);
 		expect(polluted).toBeUndefined();
 	});
@@ -274,7 +294,7 @@ test.describe('Import — security', () => {
 			1,
 		);
 		await uploadImport(page, payload);
-		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
+		await expectImportOk(page);
 		const xssRan = await page.evaluate(
 			() => (window as unknown as Record<string, unknown>).__xss_test,
 		);
@@ -295,7 +315,7 @@ test.describe('Import — security', () => {
 			1,
 		);
 		await uploadImport(page, payload);
-		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
+		await expectImportOk(page);
 		await page.waitForTimeout(500);
 		const handlerRan = await page.evaluate(
 			() => (window as unknown as Record<string, unknown>).__onerror_test,
@@ -315,10 +335,7 @@ test.describe('Import — security', () => {
 			1001,
 		);
 		await uploadImport(page, payload);
-		await expect(page.locator('.error-bar')).toBeVisible({ timeout: 10_000 });
-		await expect(page.locator('.error-bar-msg')).toContainText('too many items', {
-			timeout: 5_000,
-		});
+		await expectImportError(page, 'too many items', 10_000);
 	});
 
 	test('rejects JSON with excessive nesting depth', async ({ page }) => {
@@ -326,8 +343,93 @@ test.describe('Import — security', () => {
 		for (let i = 0; i < 15; i++) deep = { child: deep };
 		const payload = makeManifest('character', { name: 'Deep', data: { nested: deep } }, 1);
 		await uploadImport(page, payload);
-		await expect(page.locator('.error-bar')).toBeVisible({ timeout: 5_000 });
-		await expect(page.locator('.error-bar-msg')).toContainText('deeply nested');
+		await expectImportError(page, 'deeply nested');
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Import dialog — stages (progress → done / error / review)
+//
+// The ImportDialog is the user-facing surface for every import. These tests
+// pin its three terminal stages directly: a clean archive lands on "done", a
+// malformed one lands on "error", and a mixed archive pauses on the validate
+// "review" stage so the user can choose to import just the valid rows.
+// ---------------------------------------------------------------------------
+
+test.describe('Import dialog', () => {
+	test.beforeEach(async ({ page }) => {
+		await gotoHome(page);
+	});
+
+	test('well-formatted archive → done stage with a success summary', async ({ page }) => {
+		const payload = makeManifest('character', { name: 'Wayfarer', data: { edge: 1 } }, 1);
+		await uploadImport(page, payload);
+		// Done stage: green ✓ badge, "Import complete", and a summary line.
+		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.imd-state-title')).toContainText('Import complete');
+		await expect(page.locator('.imd-state-sub')).toContainText('1 character');
+		// No issue list on a clean import.
+		await expect(page.locator(IMD_ERRLIST)).toHaveCount(0);
+	});
+
+	test('badly-formatted archive → error stage listing the problem', async ({ page }) => {
+		const bad = zipSync({
+			'manifest.json': strToU8(
+				JSON.stringify({ app: 'Iron Ledger', version: '1.0.0', type: 'log', body: 'data.json' }),
+			),
+			'data.json': strToU8('{ not json ]['),
+		});
+		await page.locator(ZIP_INPUT).setInputFiles({
+			name: 'broken.zip',
+			mimeType: 'application/zip',
+			buffer: Buffer.from(bad),
+		});
+		await expect(page.locator('.imd-badge--err')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.imd-state-title')).toContainText('Import failed');
+		await expectImportError(page, 'not valid JSON');
+	});
+
+	test('mixed archive → review stage, then imports only the valid rows', async ({ page }) => {
+		// Two communities: one valid, one with a blank name (invalid). The
+		// validate pass drops the nameless one and pauses for confirmation.
+		const payload = makeManifest('communities', {
+			communities: [
+				{ id: 'c-good', name: 'Havenport' },
+				{ id: 'c-bad', name: '   ' },
+			],
+			npcs: [],
+			places: [],
+		});
+		await uploadImport(page, payload);
+
+		// Review stage: one item flagged, one still importable.
+		await expect(page.locator('.imd-state-title')).toContainText('couldn’t be read', {
+			timeout: 5_000,
+		});
+		await expect(page.locator('.imd-state-sub')).toContainText('1 valid item');
+		await expect(page.locator(IMD_ERRLIST)).toContainText('missing or invalid name');
+
+		// Confirm: import the one valid community.
+		await page.locator('.imd-footer .btn-primary', { hasText: /Import 1 valid item/ }).click();
+
+		// Lands on done-with-issues: warn badge, the skipped row still listed.
+		await expect(page.locator('.imd-badge--warn')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.imd-state-sub')).toContainText('1 connection');
+	});
+
+	test('review stage → Cancel imports nothing', async ({ page }) => {
+		const payload = makeManifest('communities', {
+			communities: [{ id: 'c-bad', name: '' }],
+			npcs: [],
+			places: [],
+		});
+		await uploadImport(page, payload);
+		await expect(page.locator('.imd-state-title')).toContainText('couldn’t be read', {
+			timeout: 5_000,
+		});
+		// Cancel returns to the chooser (idle) without applying anything.
+		await page.locator('.imd-footer .btn', { hasText: /^Cancel$/ }).click();
+		await expect(page.locator('.imd-drop')).toBeVisible({ timeout: 5_000 });
 	});
 });
 
@@ -409,7 +511,9 @@ test.describe('Import / Export — portrait round-trip', () => {
 			mimeType: 'application/zip',
 			buffer: Buffer.from(zipSync(reentries)),
 		});
-		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
+		await expectImportOk(page);
+		// Dismiss the ImportDialog so it doesn't cover the switcher below.
+		await page.locator('.imd-footer .btn-primary', { hasText: /Done/ }).click();
 
 		// Select the freshly imported character from the switcher, open Background.
 		await page.locator(`${CHAR_AREA} .ca-hdr-combobox`).click();
@@ -479,7 +583,7 @@ test.describe('Import / Export — Place ↔ settlement re-linking', () => {
 			2,
 		);
 		await uploadImport(page, payload);
-		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
+		await expectImportOk(page);
 
 		// Reload so the stores refetch from the server — the imported entities are
 		// now persisted with their final ids and the resolved parent link.

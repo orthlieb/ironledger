@@ -368,6 +368,46 @@ section that carries user-visible rows participates in collision detection
 (see below); only the session log entries are always appended (deduplicated
 internally by entry id).
 
+### The import dialog
+
+Import runs behind the **`ImportDialog`** (`$lib/components/ImportDialog.svelte`),
+which the Hamburger → Import… action opens and the page's `runImport()` drives
+through a small set of stages:
+
+| Stage         | When                                                    | What the user sees                                           |
+| ------------- | ------------------------------------------------------- | ------------------------------------------------------------ |
+| **idle**      | Dialog just opened.                                     | Drop zone + "choose a file".                                 |
+| **importing** | Reading + applying the archive.                         | Spinner.                                                     |
+| **review**    | The validate pass dropped one or more rows (see below). | ⚠ list of unreadable rows + "Import the _N_ valid items?".   |
+| **done**      | Finished (cleanly, or with skipped rows).               | ✓ summary; a warn badge + issue list when rows were skipped. |
+| **error**     | A structural `ImportError` aborted the whole archive.   | ⚠ the readable error message; "Choose another file".         |
+
+A drag-and-drop onto the page and the starter-seed both feed the same
+`runImport()`; the seed path runs **silently** (no dialog), importing whatever
+is valid and logging the rest.
+
+### Validate, then confirm (partial import)
+
+Before anything is applied, every incoming row is **shape-checked without
+mutating state**: a row is valid when it is an object with a non-empty
+`name` (expeditions also need a `type`). Invalid rows are collected with a
+reason and dropped from the incoming arrays.
+
+- If **no** rows were dropped, import proceeds straight to collision handling.
+- If **some** rows were dropped, the dialog pauses on the **review** stage,
+  lists what could not be read, and offers to import the remaining valid rows.
+  Choosing **Cancel** applies nothing; choosing **Import _N_ valid items**
+  continues with just the valid rows and reports them as skipped on the
+  **done** stage.
+
+This is distinct from a structural `ImportError` (see [Limits and
+filters](#limits-and-filters)): a bad row is skippable and the rest can still
+import, whereas a structural failure aborts the whole archive with no mutation.
+
+Errors that occur **while applying** an individual row (a store call throwing)
+are likewise caught per row, collected, and reported on the **done** stage —
+one failed entity never aborts the others.
+
 ### Collision resolution
 
 Imports are scanned up front against the current data, **matching by
@@ -558,9 +598,12 @@ through this pipeline:
 | Log HTML                | `sanitizeLogHtml()` strips `<script>` blocks, `on*=` event handlers, and `javascript:` URLs before any entry is rendered. |
 
 Any violated limit throws an `ImportError`. That is caught at the import call
-site, surfaced to the user as a readable message, and **aborts the import with
-no mutation of existing state** — a malformed or hostile file can never
-partially apply.
+site, surfaced on the dialog's **error** stage as a readable message, and
+**aborts the import with no mutation of existing state** — a malformed or
+hostile file can never partially apply. (This is a whole-archive abort;
+individual rows that merely fail the shape check are handled by the
+[validate-then-confirm flow](#validate-then-confirm-partial-import), which can
+import the rest.)
 
 The end-to-end behavior here (happy-path round-trips, collision strategies,
 and the security limits) is covered by
