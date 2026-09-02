@@ -1575,9 +1575,15 @@
 		const charSet = new Set(sel.characters);
 		const expSet = new Set(sel.expeditions);
 		const mapSet = new Set(sel.maps);
+		const commSet = new Set(sel.communities);
+		const npcSet = new Set(sel.npcs);
+		const placeSet = new Set(sel.places);
 		const selChars = chars.filter((c) => charSet.has(c.id));
 		const selExps = expeditions.filter((e) => expSet.has(e.id));
-		const wantConn = sel.communities || sel.npcs || sel.places;
+		const selComms = communities.filter((c) => commSet.has(c.id));
+		const selNpcs = npcs.filter((n) => npcSet.has(n.id));
+		const selPlaces = places.filter((p) => placeSet.has(p.id));
+		const wantConn = selComms.length > 0 || selNpcs.length > 0 || selPlaces.length > 0;
 
 		// ── Markdown ──────────────────────────────────────────────────────────
 		if (sel.format === 'md') {
@@ -1598,19 +1604,19 @@
 			payload.characters = await Promise.all(selChars.map(embedCharForExport));
 			count += selChars.length;
 		}
-		if (sel.communities) {
+		if (selComms.length) {
 			payload.communities = await Promise.all(
-				communities.map((c) => embedEntityForExport('communities', c)),
+				selComms.map((c) => embedEntityForExport('communities', c)),
 			);
-			count += communities.length;
+			count += selComms.length;
 		}
-		if (sel.npcs) {
-			payload.npcs = await Promise.all(npcs.map((n) => embedEntityForExport('npcs', n)));
-			count += npcs.length;
+		if (selNpcs.length) {
+			payload.npcs = await Promise.all(selNpcs.map((n) => embedEntityForExport('npcs', n)));
+			count += selNpcs.length;
 		}
-		if (sel.places) {
-			payload.places = await Promise.all(places.map((p) => embedEntityForExport('places', p)));
-			count += places.length;
+		if (selPlaces.length) {
+			payload.places = await Promise.all(selPlaces.map((p) => embedEntityForExport('places', p)));
+			count += selPlaces.length;
 		}
 		if (selExps.length) {
 			payload.expeditions = await Promise.all(

@@ -3,20 +3,22 @@
 //
 // The structured choice the comprehensive Export dialog (ExportDialog.svelte)
 // emits and the home route (handleExportSelection) consumes. Each list holds
-// the ids to include ([] = none); connections are three booleans by sub-type;
-// `log` picks the log scope; `format` the output kind.
+// the ids to include ([] = none); `log` is the whole session log on/off;
+// `format` the output kind.
 // =============================================================================
 
 export type ExportSelection = {
-	/** Character ids to include ([] = none). */
+	/** Character ids to include. */
 	characters: string[];
-	/** Expedition ids to include ([] = none). */
+	/** Expedition ids to include. */
 	expeditions: string[];
-	/** Connections, split by sub-type. */
-	communities: boolean;
-	npcs: boolean;
-	places: boolean;
-	/** Map ids to include ([] = none). */
+	/** Community ids to include. */
+	communities: string[];
+	/** NPC ids to include. */
+	npcs: string[];
+	/** Place ids to include. */
+	places: string[];
+	/** Map ids to include. */
 	maps: string[];
 	/** Whether to include the session log. */
 	log: boolean;

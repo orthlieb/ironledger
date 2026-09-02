@@ -1,17 +1,18 @@
 <script lang="ts">
 	/**
-	 * ExportDialog — comprehensive, multi-select export picker.
+	 * ExportDialog — comprehensive export as a familiar filter + checklist.
 	 *
-	 * Replaces the old single-`<Select>` export dialog. "Everything" is a
-	 * tri-state master; below it, five category rows (Characters, Expeditions,
-	 * Connections, Maps, Session Log) each carry a checkbox, a live count, and
-	 * an expander to cherry-pick individual items. A Zip / Markdown segment and
-	 * a live summary round it out. On Export it emits a `selection` object; the
-	 * home route (handleExportSelection) assembles the payload from it.
+	 * One search field filters every exportable item at once; a "Select all"
+	 * checkbox in the upper-left toggles all *currently-filtered* rows. Below,
+	 * a single scrolling checklist groups items under collapsible category
+	 * headers (Characters, Expeditions, Connections, Maps, Session Log); each
+	 * header carries a tri-state checkbox that selects/clears its whole group.
+	 * A Zip / Markdown segment and a live summary complete it. On Export it
+	 * emits an `ExportSelection`; the home route assembles the payload.
 	 *
-	 * Reads the entity stores directly for counts/items and calls `initMap()`
-	 * on open so the map list is populated. Styles are `:global` because
-	 * bits-ui portals Dialog.Content out of this component's scope.
+	 * Reads the entity stores directly for the item lists and calls `initMap()`
+	 * on open for the maps. Styles are `:global` because bits-ui portals
+	 * Dialog.Content out of this component's scope.
 	 */
 	import { untrack } from 'svelte';
 	import { Dialog, ToggleGroup } from 'bits-ui';
@@ -25,12 +26,16 @@
 	import { mapListState, initMap } from '$lib/mapStore.svelte.js';
 	import { sessionLog } from '$lib/log.svelte.js';
 	import type { ExportSelection } from '$lib/exportSelection.js';
-	import ExportItemFilter from './ExportItemFilter.svelte';
 	import charactersIconSvg from '$icons/Characters.svg?raw';
 	import expeditionsIconSvg from '$icons/Expeditions.svg?raw';
 	import villageIconSvg from '$icons/village.svg?raw';
 	import treasureMapIconSvg from '$icons/treasure-map.svg?raw';
 	import logIconSvg from '$icons/log.svg?raw';
+
+	const CHECK =
+		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>';
+	const CARET =
+		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg>';
 
 	let {
 		open = $bindable(false),
@@ -49,166 +54,233 @@
 	const maps = $derived(mapListState.maps);
 	const logEntries = $derived(sessionLog.entries);
 
-	// Item lists for the searchable per-category filters.
-	const charItems = $derived(chars.map((c) => ({ id: c.id, name: c.name || 'Unnamed' })));
-	const expItems = $derived(
-		exps.map((e) => ({ id: e.id, name: e.name || 'Unnamed', tag: e.type })),
-	);
-	const mapItems = $derived(maps.map((m) => ({ id: m.id, name: m.name || 'Untitled Map' })));
+	type Item = {
+		key: string;
+		cat: Cat;
+		sub?: 'community' | 'npc' | 'place';
+		id: string;
+		name: string;
+		tag?: string;
+	};
+	type Cat = 'char' | 'exp' | 'conn' | 'map' | 'log';
+	type Category = {
+		key: Cat;
+		label: string;
+		icon: string;
+		color: string;
+		atomic?: boolean;
+		items: Item[];
+	};
 
-	// ── selection state ─────────────────────────────────────────────────────
-	let selChars = $state(new Set<string>());
-	let selExps = $state(new Set<string>());
-	let selComm = $state(true);
-	let selNpc = $state(true);
-	let selPlace = $state(true);
-	let selMaps = $state(new Set<string>());
-	let selLog = $state(true);
+	const catalog = $derived<Category[]>([
+		{
+			key: 'char',
+			label: 'Characters',
+			icon: charactersIconSvg,
+			color: '#5aa467',
+			items: chars.map((c) => ({
+				key: `char:${c.id}`,
+				cat: 'char',
+				id: c.id,
+				name: c.name || 'Unnamed',
+			})),
+		},
+		{
+			key: 'exp',
+			label: 'Expeditions',
+			icon: expeditionsIconSvg,
+			color: '#e4aa28',
+			items: exps.map((e) => ({
+				key: `exp:${e.id}`,
+				cat: 'exp',
+				id: e.id,
+				name: e.name || 'Unnamed',
+				tag: e.type,
+			})),
+		},
+		{
+			key: 'conn',
+			label: 'Connections',
+			icon: villageIconSvg,
+			color: '#d06840',
+			items: [
+				...comms.map((c) => ({
+					key: `conn:community:${c.id}`,
+					cat: 'conn' as const,
+					sub: 'community' as const,
+					id: c.id,
+					name: c.name || 'Unnamed',
+					tag: 'community',
+				})),
+				...npcsL.map((n) => ({
+					key: `conn:npc:${n.id}`,
+					cat: 'conn' as const,
+					sub: 'npc' as const,
+					id: n.id,
+					name: n.name || 'Unnamed',
+					tag: 'npc',
+				})),
+				...placesL.map((p) => ({
+					key: `conn:place:${p.id}`,
+					cat: 'conn' as const,
+					sub: 'place' as const,
+					id: p.id,
+					name: p.name || 'Unnamed',
+					tag: 'place',
+				})),
+			],
+		},
+		{
+			key: 'map',
+			label: 'Maps',
+			icon: treasureMapIconSvg,
+			color: '#3e9cb5',
+			items: maps.map((m) => ({
+				key: `map:${m.id}`,
+				cat: 'map',
+				id: m.id,
+				name: m.name || 'Untitled Map',
+			})),
+		},
+		{
+			key: 'log',
+			label: 'Session Log',
+			icon: logIconSvg,
+			color: '#a46fb0',
+			atomic: true,
+			items:
+				logEntries.length > 0
+					? [{ key: 'log', cat: 'log', id: 'all', name: `${logEntries.length} entries` }]
+					: [],
+		},
+	]);
+
+	// ── search + selection ────────────────────────────────────────────────────
+	let q = $state('');
+	let sel = $state(new Set<string>());
+	let openCats = $state(new Set<Cat>());
 	let format = $state<'zip' | 'md'>('zip');
-	let openRows = $state(new Set<string>());
+	let touched = $state(false);
 	let exportBtnEl = $state<HTMLButtonElement | null>(null);
-	// Whether the user has explicitly touched the Maps row this session — gates
-	// the async-map follow effect below.
-	let mapsTouched = $state(false);
+	let searchEl = $state<HTMLInputElement | null>(null);
 
-	// Reset to "Everything" when the dialog opens. `untrack` the body so this
-	// fires ONLY on the open transition, not whenever a store it reads changes
-	// (which would otherwise wipe the user's picks the instant maps finish
-	// loading).
+	const query = $derived(q.trim().toLowerCase());
+	function matches(item: Item): boolean {
+		if (!query) return true;
+		if (item.name.toLowerCase().includes(query)) return true;
+		if (item.tag?.toLowerCase().includes(query)) return true;
+		if (item.cat === 'log' && 'session log entries'.includes(query)) return true;
+		return false;
+	}
+	// Categories with their filtered items; empty categories drop out while a
+	// search is active but stay (empty) otherwise so the structure is stable.
+	const view = $derived(
+		catalog
+			.map((c) => ({ ...c, items: c.items.filter(matches) }))
+			.filter(
+				(c) => c.items.length > 0 || (!query && c.items.length === 0 && rawCount(c.key) === 0),
+			),
+	);
+	function rawCount(cat: Cat): number {
+		return catalog.find((c) => c.key === cat)?.items.length ?? 0;
+	}
+
+	const filteredItems = $derived(view.flatMap((c) => c.items));
+	const filteredKeys = $derived(filteredItems.map((i) => i.key));
+	const allItemKeys = $derived(catalog.flatMap((c) => c.items.map((i) => i.key)));
+	const itemByKey = $derived(new Map(catalog.flatMap((c) => c.items).map((i) => [i.key, i])));
+
+	type Tri = 'on' | 'off' | 'mixed';
+	function triOf(keys: string[]): Tri {
+		if (keys.length === 0) return 'off';
+		const n = keys.filter((k) => sel.has(k)).length;
+		return n === 0 ? 'off' : n === keys.length ? 'on' : 'mixed';
+	}
+	const selectAllState = $derived(triOf(filteredKeys));
+	const selectedCount = $derived(sel.size);
+
+	// Reset filter/format on open; seed "everything" (and keep following the
+	// catalog while untouched, so late-loading maps join the default set).
 	$effect(() => {
 		if (!open) return;
 		void initMap().catch(() => {});
 		untrack(() => {
-			selChars = new Set(chars.map((c) => c.id));
-			selExps = new Set(exps.map((e) => e.id));
-			selComm = selNpc = selPlace = true;
-			selMaps = new Set(maps.map((m) => m.id));
-			selLog = logEntries.length > 0;
+			q = '';
 			format = 'zip';
-			openRows = new Set();
-			mapsTouched = false;
+			touched = false;
+			openCats = new Set(catalog.map((c) => c.key));
 		});
 	});
-
-	// Maps load lazily (initMap on open), so `maps` is usually still empty at
-	// reset. While the user hasn't touched the Maps row, keep it following the
-	// list as it arrives so "Everything" really includes every map.
 	$effect(() => {
-		if (open && !mapsTouched) {
-			selMaps = new Set(maps.map((m) => m.id));
-		}
+		if (open && !touched) sel = new Set(allItemKeys);
 	});
 
-	type TriState = 'on' | 'off' | 'mixed';
-	function tri(sel: number, total: number): TriState {
-		if (total === 0 || sel === 0) return sel > 0 ? 'on' : 'off';
-		return sel === total ? 'on' : 'mixed';
+	// ── toggles ─────────────────────────────────────────────────────────────
+	function commit(next: Set<string>) {
+		touched = true;
+		sel = next;
+	}
+	function toggleItem(key: string) {
+		const n = new Set(sel);
+		if (n.has(key)) n.delete(key);
+		else n.add(key);
+		commit(n);
+	}
+	function toggleKeys(keys: string[]) {
+		const all = keys.length > 0 && keys.every((k) => sel.has(k));
+		const n = new Set(sel);
+		if (all) keys.forEach((k) => n.delete(k));
+		else keys.forEach((k) => n.add(k));
+		commit(n);
+	}
+	function toggleCat(cat: Cat) {
+		const c = view.find((x) => x.key === cat);
+		if (c) toggleKeys(c.items.map((i) => i.key));
+	}
+	function toggleCollapse(cat: Cat) {
+		const n = new Set(openCats);
+		if (n.has(cat)) n.delete(cat);
+		else n.add(cat);
+		openCats = n;
 	}
 
-	const charState = $derived(tri(selChars.size, chars.length));
-	const expState = $derived(tri(selExps.size, exps.length));
-	const connSel = $derived((selComm ? 1 : 0) + (selNpc ? 1 : 0) + (selPlace ? 1 : 0));
-	const connState = $derived<TriState>(connSel === 0 ? 'off' : connSel === 3 ? 'on' : 'mixed');
-	const mapState = $derived(tri(selMaps.size, maps.length));
-	const logState = $derived<TriState>(selLog ? 'on' : 'off');
+	const anySelected = $derived(selectedCount > 0);
+	const isEverything = $derived(allItemKeys.length > 0 && allItemKeys.every((k) => sel.has(k)));
 
-	// connection sub-counts included
-	const connCount = $derived(
-		(selComm ? comms.length : 0) + (selNpc ? npcsL.length : 0) + (selPlace ? placesL.length : 0),
-	);
-	const connTotal = $derived(comms.length + npcsL.length + placesL.length);
-
-	// A category is eligible only when it has something to export. Empty ones
-	// render disabled (greyed, "none yet", non-interactive) and are excluded
-	// from the master so "Everything" can still read as a complete backup when,
-	// say, the account has no characters yet — while the capability stays
-	// visible so it's never mistaken for missing.
-	const eligible = $derived({
-		char: chars.length > 0,
-		exp: exps.length > 0,
-		conn: connTotal > 0,
-		map: maps.length > 0,
-		log: logEntries.length > 0,
-	});
-	const activeStates = $derived(
-		[
-			eligible.char ? charState : null,
-			eligible.exp ? expState : null,
-			eligible.conn ? connState : null,
-			eligible.map ? mapState : null,
-			eligible.log ? logState : null,
-		].filter((s): s is TriState => s !== null),
-	);
-	const masterState = $derived<TriState>(
-		activeStates.length === 0 || activeStates.every((s) => s === 'off')
-			? 'off'
-			: activeStates.every((s) => s === 'on')
-				? 'on'
-				: 'mixed',
-	);
-
-	const anySelected = $derived(masterState !== 'off');
-
-	// ── toggles ───────────────────────────────────────────────────────────────
-	function toggleMaster() {
-		mapsTouched = true;
-		if (masterState === 'on') {
-			selChars = new Set();
-			selExps = new Set();
-			selComm = selNpc = selPlace = false;
-			selMaps = new Set();
-			selLog = false;
-		} else {
-			selChars = new Set(chars.map((c) => c.id));
-			selExps = new Set(exps.map((e) => e.id));
-			selComm = selNpc = selPlace = true;
-			selMaps = new Set(maps.map((m) => m.id));
-			selLog = true;
-		}
-	}
-	function toggleAllOf(kind: 'char' | 'exp' | 'map') {
-		if (kind === 'char')
-			selChars = charState === 'on' ? new Set() : new Set(chars.map((c) => c.id));
-		if (kind === 'exp') selExps = expState === 'on' ? new Set() : new Set(exps.map((e) => e.id));
-		if (kind === 'map') {
-			mapsTouched = true;
-			selMaps = mapState === 'on' ? new Set() : new Set(maps.map((m) => m.id));
-		}
-	}
-	function toggleConn() {
-		const on = connState === 'on';
-		selComm = selNpc = selPlace = !on;
-	}
-	function toggleRow(id: string) {
-		const next = new Set(openRows);
-		if (next.has(id)) next.delete(id);
-		else next.add(id);
-		openRows = next;
+	function idsOf(cat: Cat, sub?: Item['sub']): string[] {
+		return [...sel]
+			.map((k) => itemByKey.get(k))
+			.filter((i): i is Item => !!i && i.cat === cat && (sub ? i.sub === sub : true))
+			.map((i) => i.id);
 	}
 
 	function doExport() {
 		if (!anySelected) return;
 		onexport({
-			characters: [...selChars],
-			expeditions: [...selExps],
-			communities: selComm,
-			npcs: selNpc,
-			places: selPlace,
-			maps: [...selMaps],
-			log: selLog,
+			characters: idsOf('char'),
+			expeditions: idsOf('exp'),
+			communities: idsOf('conn', 'community'),
+			npcs: idsOf('conn', 'npc'),
+			places: idsOf('conn', 'place'),
+			maps: idsOf('map'),
+			log: sel.has('log'),
 			format,
 		});
 		open = false;
 	}
 
-	// summary phrases
+	// summary: "N characters · M connections · …"
 	const summaryParts = $derived.by(() => {
 		const p: string[] = [];
-		if (charState !== 'off') p.push(`${selChars.size} character${selChars.size === 1 ? '' : 's'}`);
-		if (expState !== 'off') p.push(`${selExps.size} expedition${selExps.size === 1 ? '' : 's'}`);
-		if (connState !== 'off') p.push(`${connCount} connection${connCount === 1 ? '' : 's'}`);
-		if (mapState !== 'off') p.push(`${selMaps.size} map${selMaps.size === 1 ? '' : 's'}`);
-		if (logState !== 'off') p.push(`${logEntries.length} log entries`);
+		const chN = idsOf('char').length;
+		const exN = idsOf('exp').length;
+		const coN = idsOf('conn').length;
+		const maN = idsOf('map').length;
+		if (chN) p.push(`${chN} character${chN === 1 ? '' : 's'}`);
+		if (exN) p.push(`${exN} expedition${exN === 1 ? '' : 's'}`);
+		if (coN) p.push(`${coN} connection${coN === 1 ? '' : 's'}`);
+		if (maN) p.push(`${maN} map${maN === 1 ? '' : 's'}`);
+		if (sel.has('log')) p.push(`${logEntries.length} log entries`);
 		return p;
 	});
 </script>
@@ -219,8 +291,9 @@
 		<Dialog.Content
 			class="exd-dialog"
 			onOpenAutoFocus={(e) => {
+				// Focus the search field on open (CLAUDE.md focus rule: search-first).
 				e.preventDefault();
-				setTimeout(() => exportBtnEl?.focus(), 0);
+				setTimeout(() => searchEl?.focus(), 0);
 			}}
 		>
 			<DialogHeader
@@ -229,427 +302,124 @@
 				radius="10px 10px 0 0"
 			/>
 
-			<div class="exd-body">
-				<div class="exd-seclabel">Include</div>
-
-				<!-- master -->
+			<div class="exd-toolbar">
+				<input
+					bind:this={searchEl}
+					class="exd-search"
+					type="search"
+					placeholder="Search everything…"
+					aria-label="Search items to export"
+					bind:value={q}
+				/>
 				<button
 					type="button"
-					class="exd-master"
-					class:on={masterState !== 'off'}
-					aria-pressed={masterState === 'on'}
-					onclick={toggleMaster}
+					class="exd-selectall"
+					aria-pressed={selectAllState === 'on'}
+					onclick={() => toggleKeys(filteredKeys)}
 				>
-					<span class="exd-cb" data-state={masterState} aria-hidden="true">
-						<svg
-							viewBox="0 0 24 24"
-							fill="none"
-							stroke="currentColor"
-							stroke-width="3.2"
-							stroke-linecap="round"
-							stroke-linejoin="round"><path d="M4 12l5 5L20 6" /></svg
-						>
-					</span>
-					<span class="exd-master-title">
-						Everything
-						<span class="exd-master-sub">
-							{masterState === 'on'
-								? '— a complete backup'
-								: masterState === 'off'
-									? '— nothing selected'
-									: '— a partial export'}
-						</span>
-					</span>
+					<span class="exd-cb" data-state={selectAllState} aria-hidden="true">{@html CHECK}</span>
+					<span class="exd-selectall-label"
+						>Select all{query ? ` (${filteredItems.length} shown)` : ''}</span
+					>
+					<span class="exd-selectall-count">{selectedCount} selected</span>
 				</button>
+			</div>
 
-				<div class="exd-rows">
-					<!-- Characters -->
-					<div
-						class="exd-row"
-						class:open={openRows.has('char')}
-						class:partial={charState === 'mixed'}
-						style="--cat:#5aa467"
-						class:exd-disabled={!eligible.char}
-					>
-						<div class="exd-rowhead">
-							<button
-								type="button"
-								class="exd-cbwrap"
-								onclick={() => toggleAllOf('char')}
-								aria-label="Toggle characters"
+			<div class="exd-list">
+				{#each view as cat (cat.key)}
+					{@const catKeys = cat.items.map((i) => i.key)}
+					{@const catState = triOf(catKeys)}
+					{#if cat.atomic}
+						<!-- Session Log — atomic; the header row is the toggle. -->
+						<button type="button" class="exd-cathead exd-atomic" onclick={() => toggleCat(cat.key)}>
+							<span class="exd-cb" data-state={catState} aria-hidden="true">{@html CHECK}</span>
+							<span class="exd-swatch" style="--cat:{cat.color}" aria-hidden="true"
+								>{@html cat.icon}</span
 							>
-								<span class="exd-cb" data-state={charState} aria-hidden="true"
-									><svg
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="3.2"
-										stroke-linecap="round"
-										stroke-linejoin="round"><path d="M4 12l5 5L20 6" /></svg
-									></span
+							<span class="exd-cathead-label">{cat.label}</span>
+							<span class="exd-count">{cat.items[0]?.name ?? '—'}</span>
+						</button>
+					{:else}
+						<div class="exd-group" class:open={openCats.has(cat.key)}>
+							<div class="exd-cathead">
+								<button
+									type="button"
+									class="exd-cbwrap"
+									onclick={() => toggleCat(cat.key)}
+									aria-label={`Select all ${cat.label}`}
 								>
-							</button>
-							<span class="exd-swatch" aria-hidden="true">{@html charactersIconSvg}</span>
-							<button
-								type="button"
-								class="exd-rowmain"
-								onclick={() => chars.length && toggleRow('char')}
-							>
-								<span class="exd-rowname">Characters</span>
-							</button>
-							<span class="exd-count"
-								>{!eligible.char
-									? 'none yet'
-									: charState === 'off'
-										? '—'
-										: charState === 'mixed'
-											? `${selChars.size} / ${chars.length}`
-											: chars.length}</span
-							>
-							<button
-								type="button"
-								class="exd-caret"
-								class:ghost={chars.length === 0}
-								onclick={() => toggleRow('char')}
-								aria-label="Show characters"
-							>
-								<svg
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2.4"
-									stroke-linecap="round"
-									stroke-linejoin="round"><path d="M9 6l6 6-6 6" /></svg
+									<span class="exd-cb" data-state={catState} aria-hidden="true">{@html CHECK}</span>
+								</button>
+								<span class="exd-swatch" style="--cat:{cat.color}" aria-hidden="true"
+									>{@html cat.icon}</span
 								>
-							</button>
+								<button
+									type="button"
+									class="exd-cathead-main"
+									onclick={() => toggleCollapse(cat.key)}
+								>
+									<span class="exd-cathead-label">{cat.label}</span>
+									<span class="exd-count">{cat.items.length}</span>
+								</button>
+								<button
+									type="button"
+									class="exd-caret"
+									onclick={() => toggleCollapse(cat.key)}
+									aria-label={openCats.has(cat.key) ? 'Collapse' : 'Expand'}>{@html CARET}</button
+								>
+							</div>
+							{#if openCats.has(cat.key)}
+								<div class="exd-items">
+									{#each cat.items as item (item.key)}
+										<button type="button" class="exd-item" onclick={() => toggleItem(item.key)}>
+											<span
+												class="exd-cb sm"
+												data-state={sel.has(item.key) ? 'on' : 'off'}
+												aria-hidden="true">{@html CHECK}</span
+											>
+											<span class="exd-item-name"
+												>{item.name}{#if item.tag}<span class="exd-tag">{item.tag}</span>{/if}</span
+											>
+										</button>
+									{/each}
+								</div>
+							{/if}
 						</div>
-						<div class="exd-sublist">
-							<ExportItemFilter
-								items={charItems}
-								bind:selected={selChars}
-								placeholder="Search characters…"
-							/>
-						</div>
-					</div>
-
-					<!-- Expeditions -->
-					<div
-						class="exd-row"
-						class:open={openRows.has('exp')}
-						class:partial={expState === 'mixed'}
-						style="--cat:#e4aa28"
-						class:exd-disabled={!eligible.exp}
-					>
-						<div class="exd-rowhead">
-							<button
-								type="button"
-								class="exd-cbwrap"
-								onclick={() => toggleAllOf('exp')}
-								aria-label="Toggle expeditions"
-							>
-								<span class="exd-cb" data-state={expState} aria-hidden="true"
-									><svg
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="3.2"
-										stroke-linecap="round"
-										stroke-linejoin="round"><path d="M4 12l5 5L20 6" /></svg
-									></span
-								>
-							</button>
-							<span class="exd-swatch" aria-hidden="true">{@html expeditionsIconSvg}</span>
-							<button
-								type="button"
-								class="exd-rowmain"
-								onclick={() => exps.length && toggleRow('exp')}
-							>
-								<span class="exd-rowname">Expeditions</span>
-							</button>
-							<span class="exd-count"
-								>{!eligible.exp
-									? 'none yet'
-									: expState === 'off'
-										? '—'
-										: expState === 'mixed'
-											? `${selExps.size} / ${exps.length}`
-											: exps.length}</span
-							>
-							<button
-								type="button"
-								class="exd-caret"
-								class:ghost={exps.length === 0}
-								onclick={() => toggleRow('exp')}
-								aria-label="Show expeditions"
-							>
-								<svg
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2.4"
-									stroke-linecap="round"
-									stroke-linejoin="round"><path d="M9 6l6 6-6 6" /></svg
-								>
-							</button>
-						</div>
-						<div class="exd-sublist">
-							<ExportItemFilter
-								items={expItems}
-								bind:selected={selExps}
-								placeholder="Search expeditions…"
-							/>
-						</div>
-					</div>
-
-					<!-- Connections -->
-					<div
-						class="exd-row"
-						class:open={openRows.has('conn')}
-						class:partial={connState === 'mixed'}
-						style="--cat:#d06840"
-						class:exd-disabled={!eligible.conn}
-					>
-						<div class="exd-rowhead">
-							<button
-								type="button"
-								class="exd-cbwrap"
-								onclick={toggleConn}
-								aria-label="Toggle connections"
-							>
-								<span class="exd-cb" data-state={connState} aria-hidden="true"
-									><svg
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="3.2"
-										stroke-linecap="round"
-										stroke-linejoin="round"><path d="M4 12l5 5L20 6" /></svg
-									></span
-								>
-							</button>
-							<span class="exd-swatch" aria-hidden="true">{@html villageIconSvg}</span>
-							<button type="button" class="exd-rowmain" onclick={() => toggleRow('conn')}>
-								<span class="exd-rowname">Connections</span>
-								<span class="exd-rowsub">communities · NPCs · places</span>
-							</button>
-							<span class="exd-count"
-								>{!eligible.conn
-									? 'none yet'
-									: connState === 'off'
-										? '—'
-										: connState === 'mixed'
-											? `${connCount} / ${connTotal}`
-											: connTotal}</span
-							>
-							<button
-								type="button"
-								class="exd-caret"
-								onclick={() => toggleRow('conn')}
-								aria-label="Show connection types"
-							>
-								<svg
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2.4"
-									stroke-linecap="round"
-									stroke-linejoin="round"><path d="M9 6l6 6-6 6" /></svg
-								>
-							</button>
-						</div>
-						<div class="exd-sublist">
-							<button type="button" class="exd-subitem" onclick={() => (selComm = !selComm)}>
-								<span class="exd-cb sm" data-state={selComm ? 'on' : 'off'} aria-hidden="true"
-									><svg
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="3.2"
-										stroke-linecap="round"
-										stroke-linejoin="round"><path d="M4 12l5 5L20 6" /></svg
-									></span
-								>
-								<span class="exd-subname">Communities</span><span class="exd-subcount"
-									>{comms.length}</span
-								>
-							</button>
-							<button type="button" class="exd-subitem" onclick={() => (selNpc = !selNpc)}>
-								<span class="exd-cb sm" data-state={selNpc ? 'on' : 'off'} aria-hidden="true"
-									><svg
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="3.2"
-										stroke-linecap="round"
-										stroke-linejoin="round"><path d="M4 12l5 5L20 6" /></svg
-									></span
-								>
-								<span class="exd-subname">NPCs</span><span class="exd-subcount">{npcsL.length}</span
-								>
-							</button>
-							<button type="button" class="exd-subitem" onclick={() => (selPlace = !selPlace)}>
-								<span class="exd-cb sm" data-state={selPlace ? 'on' : 'off'} aria-hidden="true"
-									><svg
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="3.2"
-										stroke-linecap="round"
-										stroke-linejoin="round"><path d="M4 12l5 5L20 6" /></svg
-									></span
-								>
-								<span class="exd-subname">Places</span><span class="exd-subcount"
-									>{placesL.length}</span
-								>
-							</button>
-						</div>
-					</div>
-
-					<!-- Maps -->
-					<div
-						class="exd-row"
-						class:open={openRows.has('map')}
-						class:partial={mapState === 'mixed'}
-						style="--cat:#3e9cb5"
-						class:exd-disabled={!eligible.map}
-					>
-						<div class="exd-rowhead">
-							<button
-								type="button"
-								class="exd-cbwrap"
-								onclick={() => toggleAllOf('map')}
-								aria-label="Toggle maps"
-							>
-								<span class="exd-cb" data-state={mapState} aria-hidden="true"
-									><svg
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="3.2"
-										stroke-linecap="round"
-										stroke-linejoin="round"><path d="M4 12l5 5L20 6" /></svg
-									></span
-								>
-							</button>
-							<span class="exd-swatch" aria-hidden="true">{@html treasureMapIconSvg}</span>
-							<button
-								type="button"
-								class="exd-rowmain"
-								onclick={() => maps.length && toggleRow('map')}
-							>
-								<span class="exd-rowname">Maps</span>
-							</button>
-							<span class="exd-count"
-								>{!eligible.map
-									? 'none yet'
-									: mapState === 'off'
-										? '—'
-										: mapState === 'mixed'
-											? `${selMaps.size} / ${maps.length}`
-											: maps.length}</span
-							>
-							<button
-								type="button"
-								class="exd-caret"
-								class:ghost={maps.length === 0}
-								onclick={() => toggleRow('map')}
-								aria-label="Show maps"
-							>
-								<svg
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2.4"
-									stroke-linecap="round"
-									stroke-linejoin="round"><path d="M9 6l6 6-6 6" /></svg
-								>
-							</button>
-						</div>
-						<div class="exd-sublist">
-							<ExportItemFilter
-								items={mapItems}
-								bind:selected={selMaps}
-								onchange={() => (mapsTouched = true)}
-								placeholder="Search maps…"
-							/>
-						</div>
-					</div>
-
-					<!-- Session Log — whole log, include or not -->
-					<div class="exd-row" class:exd-disabled={!eligible.log} style="--cat:#a46fb0">
-						<div class="exd-rowhead">
-							<button
-								type="button"
-								class="exd-cbwrap"
-								onclick={() => (selLog = !selLog)}
-								aria-label="Toggle session log"
-							>
-								<span class="exd-cb" data-state={logState} aria-hidden="true"
-									><svg
-										viewBox="0 0 24 24"
-										fill="none"
-										stroke="currentColor"
-										stroke-width="3.2"
-										stroke-linecap="round"
-										stroke-linejoin="round"><path d="M4 12l5 5L20 6" /></svg
-									></span
-								>
-							</button>
-							<span class="exd-swatch" aria-hidden="true">{@html logIconSvg}</span>
-							<button type="button" class="exd-rowmain" onclick={() => (selLog = !selLog)}>
-								<span class="exd-rowname">Session Log</span>
-							</button>
-							<span class="exd-count">{!eligible.log ? 'none yet' : logEntries.length}</span>
-							<button class="exd-caret ghost" tabindex="-1" aria-hidden="true">
-								<svg
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2.4"
-									stroke-linecap="round"
-									stroke-linejoin="round"><path d="M9 6l6 6-6 6" /></svg
-								>
-							</button>
-						</div>
-					</div>
-				</div>
-
-				<div class="exd-seclabel">Format</div>
-				<div class="exd-fmt">
-					<ToggleGroup.Root
-						type="single"
-						value={format}
-						onValueChange={(v) => v && (format = v as 'zip' | 'md')}
-						class="exd-seg"
-						aria-label="Export format"
-					>
-						<ToggleGroup.Item value="zip" class="exd-segbtn">
-							<strong>Zip archive</strong>
-							<span>Complete · re-importable · images &amp; map art</span>
-						</ToggleGroup.Item>
-						<ToggleGroup.Item value="md" class="exd-segbtn">
-							<strong>Markdown</strong>
-							<span>Readable · not re-importable · adds foe bestiary</span>
-						</ToggleGroup.Item>
-					</ToggleGroup.Root>
-					{#if format === 'md'}
-						<p class="exd-fmtnote">
-							Markdown is a human-readable snapshot — it can’t be re-imported, and it’s the only
-							export that includes the foe bestiary.
-						</p>
 					{/if}
-				</div>
+				{/each}
+				{#if view.length === 0}
+					<p class="exd-empty">No items match “{q}”.</p>
+				{/if}
+			</div>
+
+			<div class="exd-fmt">
+				<ToggleGroup.Root
+					type="single"
+					value={format}
+					onValueChange={(v) => v && (format = v as 'zip' | 'md')}
+					class="exd-seg"
+					aria-label="Export format"
+				>
+					<ToggleGroup.Item value="zip" class="exd-segbtn">
+						<strong>Zip archive</strong>
+						<span>Complete · re-importable · images &amp; map art</span>
+					</ToggleGroup.Item>
+					<ToggleGroup.Item value="md" class="exd-segbtn">
+						<strong>Markdown</strong>
+						<span>Readable · not re-importable · adds foe bestiary</span>
+					</ToggleGroup.Item>
+				</ToggleGroup.Root>
 			</div>
 
 			<div class="exd-summary">
 				{#if !anySelected}
 					<span class="exd-sum-lead">Nothing selected</span>
-				{:else if masterState === 'on'}
+				{:else if isEverything}
 					<span class="exd-sum-lead">Everything</span>
-					<span class="exd-sum-detail">— characters, expeditions, connections, maps &amp; log</span>
+					<span class="exd-sum-detail">— a complete backup</span>
 				{:else}
-					<span class="exd-sum-lead">Exporting</span>
-					<span class="exd-sum-detail">{summaryParts.join(' · ')}</span>
+					<span class="exd-sum-lead">{selectedCount} items</span>
+					<span class="exd-sum-detail">— {summaryParts.join(' · ')}</span>
 				{/if}
 			</div>
 
@@ -662,7 +432,7 @@
 					disabled={!anySelected}
 					onclick={doExport}
 				>
-					{masterState === 'on' ? 'Export Everything' : 'Export Selection'}
+					{isEverything ? 'Export Everything' : 'Export Selection'}
 				</button>
 			</div>
 		</Dialog.Content>
@@ -692,75 +462,106 @@
 		z-index: 81;
 		overflow: hidden;
 	}
-	:global(.exd-body) {
-		padding: 4px 6px 6px;
-		overflow-y: auto;
-		overscroll-behavior: contain;
-	}
-	:global(.exd-seclabel) {
-		font-size: 10.5px;
-		text-transform: uppercase;
-		letter-spacing: 0.14em;
-		color: var(--text-dimmer);
-		font-weight: 700;
-		padding: 12px 12px 4px;
-	}
 
-	:global(.exd-master) {
-		display: flex;
-		align-items: center;
-		gap: 12px;
-		width: calc(100% - 12px);
-		margin: 2px 6px;
-		padding: 12px;
-		border: 1px solid var(--border);
-		border-radius: 9px;
-		background: var(--bg-inset);
-		color: var(--text);
-		cursor: pointer;
-		text-align: left;
-		font: inherit;
-	}
-	:global(.exd-master.on) {
-		border-color: color-mix(in srgb, var(--text-accent) 55%, var(--border));
-		background: var(--accent-dim);
-	}
-	:global(.exd-master-title) {
-		font-weight: 700;
-		font-size: 15px;
-	}
-	:global(.exd-master-sub) {
-		color: var(--text-muted);
-		font-size: 12px;
-		font-weight: 400;
-	}
-
-	:global(.exd-rows) {
+	/* toolbar: search + select-all */
+	:global(.exd-toolbar) {
+		padding: 10px 12px 6px;
 		display: flex;
 		flex-direction: column;
-		padding: 2px 6px 4px;
+		gap: 6px;
+		border-bottom: 1px solid var(--border);
 	}
-	:global(.exd-row) {
-		border-radius: 9px;
+	:global(.exd-search) {
+		font: inherit;
+		font-size: 13px;
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
+		border-radius: 7px;
+		padding: 8px 11px;
+		color: var(--text);
 	}
-	:global(.exd-row.exd-disabled) {
-		opacity: 0.5;
+	:global(.exd-search::placeholder) {
+		color: var(--text-dimmer);
 	}
-	:global(.exd-row.exd-disabled .exd-rowhead) {
-		pointer-events: none;
+	:global(.exd-search:focus-visible) {
+		outline: 2px solid var(--text-accent);
+		outline-offset: 1px;
 	}
-	:global(.exd-row + .exd-row) {
-		margin-top: 1px;
-	}
-	:global(.exd-rowhead) {
+	:global(.exd-selectall) {
 		display: flex;
 		align-items: center;
 		gap: 10px;
-		padding: 9px 10px;
-		border-radius: 9px;
+		background: transparent;
+		border: 0;
+		padding: 4px 2px;
+		cursor: pointer;
+		color: var(--text);
+		font: inherit;
+		text-align: left;
 	}
-	:global(.exd-rowhead:hover) {
+	:global(.exd-selectall-label) {
+		font-weight: 600;
+		font-size: 13px;
+	}
+	:global(.exd-selectall-count) {
+		margin-left: auto;
+		font-family: var(--font-mono);
+		font-variant-numeric: tabular-nums;
+		font-size: 12px;
+		color: var(--text-muted);
+	}
+
+	/* checklist */
+	:global(.exd-list) {
+		padding: 4px 6px 6px;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		flex: 1;
+	}
+	:global(.exd-group) {
+		border-radius: 8px;
+	}
+	:global(.exd-cathead) {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		padding: 8px 8px;
+		border-radius: 8px;
+	}
+	:global(.exd-cathead:hover),
+	:global(.exd-atomic:hover) {
 		background: var(--bg-hover);
+	}
+	:global(.exd-atomic) {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		width: 100%;
+		background: transparent;
+		border: 0;
+		cursor: pointer;
+		color: var(--text);
+		font: inherit;
+		text-align: left;
+	}
+	:global(.exd-cathead-main) {
+		flex: 1;
+		min-width: 0;
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		background: transparent;
+		border: 0;
+		padding: 0;
+		cursor: pointer;
+		color: var(--text);
+		font: inherit;
+		text-align: left;
+	}
+	:global(.exd-cathead-label) {
+		font-weight: 600;
+		font-size: 13.5px;
+		flex: 1;
 	}
 
 	:global(.exd-cbwrap) {
@@ -797,16 +598,13 @@
 		width: 11px;
 		height: 11px;
 	}
-	:global(.exd-cb[data-state='on']) {
+	:global(.exd-cb[data-state='on']),
+	:global(.exd-cb[data-state='mixed']) {
 		background: var(--text-accent);
 		border-color: var(--text-accent);
 	}
 	:global(.exd-cb[data-state='on'] svg) {
 		opacity: 1;
-	}
-	:global(.exd-cb[data-state='mixed']) {
-		background: var(--text-accent);
-		border-color: var(--text-accent);
 	}
 	:global(.exd-cb[data-state='mixed']::after) {
 		content: '';
@@ -817,8 +615,8 @@
 	}
 
 	:global(.exd-swatch) {
-		width: 30px;
-		height: 30px;
+		width: 28px;
+		height: 28px;
 		border-radius: 8px;
 		display: grid;
 		place-items: center;
@@ -828,38 +626,9 @@
 		border: 1px solid color-mix(in srgb, var(--cat) 32%, transparent);
 	}
 	:global(.exd-swatch svg) {
-		width: 18px;
-		height: 18px;
-		/* App tab icons are fill-based with no fill attr (default black) — tint
-		   them to the category hue like the tabs do. currentColor comes from the
-		   swatch's `color`. */
+		width: 17px;
+		height: 17px;
 		fill: currentColor;
-	}
-
-	:global(.exd-rowmain) {
-		flex: 1;
-		min-width: 0;
-		border: 0;
-		background: transparent;
-		padding: 0;
-		text-align: left;
-		cursor: pointer;
-		color: var(--text);
-		font: inherit;
-		display: flex;
-		flex-direction: column;
-		gap: 1px;
-	}
-	:global(.exd-rowmain.static) {
-		cursor: default;
-	}
-	:global(.exd-rowname) {
-		font-weight: 500;
-		font-size: 14.5px;
-	}
-	:global(.exd-rowsub) {
-		color: var(--text-muted);
-		font-size: 12px;
 	}
 
 	:global(.exd-count) {
@@ -873,10 +642,6 @@
 		padding: 2px 9px;
 		white-space: nowrap;
 		flex: none;
-	}
-	:global(.exd-row.partial .exd-count) {
-		color: var(--text-accent);
-		border-color: color-mix(in srgb, var(--text-accent) 40%, var(--border));
 	}
 
 	:global(.exd-caret) {
@@ -895,24 +660,18 @@
 		width: 13px;
 		height: 13px;
 	}
-	:global(.exd-row.open .exd-caret) {
+	:global(.exd-group.open .exd-caret) {
 		transform: rotate(90deg);
 		color: var(--text-muted);
 	}
-	:global(.exd-caret.ghost) {
-		visibility: hidden;
-	}
 
-	:global(.exd-sublist) {
-		display: none;
+	:global(.exd-items) {
+		display: flex;
 		flex-direction: column;
 		gap: 1px;
-		padding: 2px 12px 8px 52px;
+		padding: 0 8px 6px 46px;
 	}
-	:global(.exd-row.open .exd-sublist) {
-		display: flex;
-	}
-	:global(.exd-subitem) {
+	:global(.exd-item) {
 		display: flex;
 		align-items: center;
 		gap: 10px;
@@ -926,10 +685,10 @@
 		text-align: left;
 		width: 100%;
 	}
-	:global(.exd-subitem:hover) {
+	:global(.exd-item:hover) {
 		background: var(--bg-hover);
 	}
-	:global(.exd-subname) {
+	:global(.exd-item-name) {
 		flex: 1;
 		font-size: 13px;
 	}
@@ -942,14 +701,18 @@
 		padding: 0 5px;
 		text-transform: capitalize;
 	}
-	:global(.exd-subcount) {
-		font-family: var(--font-mono);
-		font-size: 11px;
+	:global(.exd-empty) {
+		font-size: 12.5px;
 		color: var(--text-dimmer);
+		text-align: center;
+		padding: 24px 0;
+		margin: 0;
 	}
 
+	/* format */
 	:global(.exd-fmt) {
-		padding: 4px 12px 10px;
+		padding: 8px 12px 10px;
+		border-top: 1px solid var(--border);
 	}
 	:global(.exd-seg) {
 		display: grid;
@@ -987,12 +750,6 @@
 	}
 	:global(.exd-segbtn[data-state='on'] strong) {
 		color: var(--text-accent);
-	}
-	:global(.exd-fmtnote) {
-		margin: 8px 2px 0;
-		font-size: 11.5px;
-		color: var(--text-dimmer);
-		line-height: 1.4;
 	}
 
 	:global(.exd-summary) {
