@@ -26,11 +26,9 @@
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 
-	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
-	import { tooltip } from '$lib/actions/tooltip.js';
+	import FilterBar from '$lib/components/FilterBar.svelte';
 
 	// ---------------------------------------------------------------------------
 	// Internal state
@@ -232,17 +230,6 @@
 	// ---------------------------------------------------------------------------
 	// Helpers
 	// ---------------------------------------------------------------------------
-	function toggleCategory(cat: string) {
-		const next = new Set(activeCategories);
-		if (next.has(cat)) next.delete(cat);
-		else next.add(cat);
-		activeCategories = next;
-	}
-
-	function clearFilters() {
-		search = '';
-		activeCategories = new Set();
-	}
 </script>
 
 <!-- =========================================================================
@@ -273,53 +260,14 @@
 
 				<!-- Controls -->
 				<div class="od-controls">
-					<!-- Search row -->
-					<div class="od-search-row">
-						<div class="od-search-field">
-							<span class="od-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-							<input
-								bind:this={searchInputEl}
-								class="od-search"
-								type="search"
-								placeholder="Search oracles…"
-								bind:value={search}
-								aria-label="Search oracles"
-							/>
-						</div>
-						<!-- Category filter toggle -->
-						<button
-							class="od-filter-toggle"
-							class:od-filter-toggle--active={activeCategories.size > 0}
-							onclick={() => (filtersOpen = !filtersOpen)}
-							aria-expanded={filtersOpen}
-						>
-							Filters{#if activeCategories.size > 0}&nbsp;<span class="od-filter-badge"
-									>{activeCategories.size}</span
-								>{/if}
-							{filtersOpen ? '▲' : '▼'}
-						</button>
-					</div>
-					{#if filtersOpen}
-						<div class="od-filter-panel">
-							<div class="od-filter-chips">
-								{#each categories as cat (cat)}
-									<button
-										class="od-group-tag"
-										class:od-group-tag--active={activeCategories.has(cat)}
-										style:--gcolor={categoryColor(cat)}
-										onclick={() => toggleCategory(cat)}>{cat}</button
-									>
-								{/each}
-							</div>
-							<button
-								class="od-clear-btn"
-								use:tooltip={'Clear all filters'}
-								onclick={clearFilters}
-								disabled={activeCategories.size === 0}
-								aria-label="Clear all filters">{@html clearFiltersSvg}</button
-							>
-						</div>
-					{/if}
+					<FilterBar
+						bind:search
+						bind:active={activeCategories}
+						bind:filtersOpen
+						bind:inputEl={searchInputEl}
+						placeholder="Search oracles…"
+						categories={categories.map((c) => ({ key: c, label: c, color: categoryColor(c) }))}
+					/>
 				</div>
 
 				<!-- Tile grid -->
@@ -540,157 +488,6 @@
 		display: flex;
 		flex-direction: column;
 		gap: 6px;
-	}
-
-	:global(.od-search-row) {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
-	:global(.od-search-field) {
-		flex: 1;
-		min-width: 0;
-		position: relative;
-		display: flex;
-		align-items: center;
-	}
-	:global(.od-search-icon) {
-		position: absolute;
-		left: 8px;
-		width: 13px;
-		height: 13px;
-		display: inline-flex;
-		pointer-events: none;
-		color: var(--text-dimmer);
-	}
-	:global(.od-search-icon svg) {
-		width: 100%;
-		height: 100%;
-		fill: currentColor;
-	}
-
-	:global(.od-search) {
-		flex: 1;
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		color: var(--text);
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		padding: 5px 8px 5px 28px;
-		min-width: 0;
-	}
-	:global(.od-search:focus) {
-		outline: none;
-		border-color: var(--focus-ring);
-		box-shadow: 0 0 0 2px var(--accent-glow);
-	}
-
-	:global(.od-clear-btn) {
-		position: absolute;
-		bottom: 6px;
-		right: 6px;
-		background: transparent;
-		border: none;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		padding: 3px 4px;
-		border-radius: 3px;
-		display: flex;
-		align-items: center;
-		transition:
-			color 0.12s,
-			opacity 0.12s;
-	}
-	:global(.od-clear-btn:hover:not(:disabled)) {
-		color: var(--text);
-	}
-	:global(.od-clear-btn:disabled) {
-		opacity: 0.25;
-		cursor: not-allowed;
-	}
-	:global(.od-clear-btn svg) {
-		width: 16px;
-		height: 16px;
-		fill: currentColor;
-	}
-
-	:global(.od-filter-toggle) {
-		display: flex;
-		align-items: center;
-		gap: 4px;
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		font-weight: 600;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-		color: var(--text-dimmer);
-		background: transparent;
-		border: 1px solid var(--border);
-		border-radius: 12px;
-		padding: 3px 10px;
-		cursor: pointer;
-		transition:
-			border-color 0.1s,
-			color 0.1s;
-	}
-	:global(.od-filter-toggle:hover) {
-		color: var(--text);
-		border-color: var(--border-mid);
-	}
-	:global(.od-filter-toggle--active) {
-		color: var(--accent);
-		border-color: var(--accent);
-	}
-	:global(.od-filter-badge) {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		min-width: 16px;
-		height: 16px;
-		padding: 0 4px;
-		border-radius: 8px;
-		background: var(--accent);
-		color: var(--bg);
-		font-size: 0.6rem;
-		font-weight: 700;
-	}
-	:global(.od-filter-panel) {
-		position: relative;
-		padding: 6px 8px;
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 6px;
-	}
-	:global(.od-filter-chips) {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 4px;
-		padding-right: 26px;
-	}
-	:global(.od-group-tag) {
-		font-family: var(--font-ui);
-		font-size: 0.65rem;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--gcolor, var(--text-dimmer));
-		background: transparent;
-		border: 1px solid color-mix(in srgb, var(--gcolor, var(--border)) 40%, transparent);
-		border-radius: 10px;
-		padding: 2px 8px;
-		cursor: pointer;
-		white-space: nowrap;
-		transition:
-			background 0.12s,
-			color 0.12s;
-	}
-	:global(.od-group-tag:hover) {
-		background: color-mix(in srgb, var(--gcolor, var(--border)) 12%, transparent);
-	}
-	:global(.od-group-tag--active) {
-		background: color-mix(in srgb, var(--gcolor, var(--border)) 18%, transparent);
-		border-color: var(--gcolor, var(--border));
 	}
 
 	/* ── Scrollable body ─────────────────────────────────────────────────── */
