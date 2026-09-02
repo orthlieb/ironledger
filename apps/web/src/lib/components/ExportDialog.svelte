@@ -24,9 +24,8 @@
 	import { getPlaces } from '$lib/placeStore.svelte.js';
 	import { mapListState, initMap } from '$lib/mapStore.svelte.js';
 	import { sessionLog } from '$lib/log.svelte.js';
-	import { parseStorySource } from '$lib/aiSerialize.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
 	import type { ExportSelection } from '$lib/exportSelection.js';
+	import ExportItemFilter from './ExportItemFilter.svelte';
 	import charactersIconSvg from '$icons/Characters.svg?raw';
 	import expeditionsIconSvg from '$icons/Expeditions.svg?raw';
 	import villageIconSvg from '$icons/village.svg?raw';
@@ -49,7 +48,13 @@
 	const placesL = $derived(getPlaces());
 	const maps = $derived(mapListState.maps);
 	const logEntries = $derived(sessionLog.entries);
-	const storyCount = $derived(logEntries.filter((e) => parseStorySource(e.source) != null).length);
+
+	// Item lists for the searchable per-category filters.
+	const charItems = $derived(chars.map((c) => ({ id: c.id, name: c.name || 'Unnamed' })));
+	const expItems = $derived(
+		exps.map((e) => ({ id: e.id, name: e.name || 'Unnamed', tag: e.type })),
+	);
+	const mapItems = $derived(maps.map((m) => ({ id: m.id, name: m.name || 'Untitled Map' })));
 
 	// ── selection state ─────────────────────────────────────────────────────
 	let selChars = $state(new Set<string>());
@@ -58,7 +63,7 @@
 	let selNpc = $state(true);
 	let selPlace = $state(true);
 	let selMaps = $state(new Set<string>());
-	let logMode = $state<'all' | 'stories' | 'none'>('all');
+	let selLog = $state(true);
 	let format = $state<'zip' | 'md'>('zip');
 	let openRows = $state(new Set<string>());
 	let exportBtnEl = $state<HTMLButtonElement | null>(null);
@@ -78,7 +83,7 @@
 			selExps = new Set(exps.map((e) => e.id));
 			selComm = selNpc = selPlace = true;
 			selMaps = new Set(maps.map((m) => m.id));
-			logMode = logEntries.length > 0 ? 'all' : 'none';
+			selLog = logEntries.length > 0;
 			format = 'zip';
 			openRows = new Set();
 			mapsTouched = false;
@@ -105,7 +110,7 @@
 	const connSel = $derived((selComm ? 1 : 0) + (selNpc ? 1 : 0) + (selPlace ? 1 : 0));
 	const connState = $derived<TriState>(connSel === 0 ? 'off' : connSel === 3 ? 'on' : 'mixed');
 	const mapState = $derived(tri(selMaps.size, maps.length));
-	const logState = $derived<TriState>(logMode === 'none' ? 'off' : 'on');
+	const logState = $derived<TriState>(selLog ? 'on' : 'off');
 
 	// connection sub-counts included
 	const connCount = $derived(
@@ -152,13 +157,13 @@
 			selExps = new Set();
 			selComm = selNpc = selPlace = false;
 			selMaps = new Set();
-			logMode = 'none';
+			selLog = false;
 		} else {
 			selChars = new Set(chars.map((c) => c.id));
 			selExps = new Set(exps.map((e) => e.id));
 			selComm = selNpc = selPlace = true;
 			selMaps = new Set(maps.map((m) => m.id));
-			logMode = 'all';
+			selLog = true;
 		}
 	}
 	function toggleAllOf(kind: 'char' | 'exp' | 'map') {
@@ -169,12 +174,6 @@
 			mapsTouched = true;
 			selMaps = mapState === 'on' ? new Set() : new Set(maps.map((m) => m.id));
 		}
-	}
-	function toggleItem(set: Set<string>, id: string): Set<string> {
-		const next = new Set(set);
-		if (next.has(id)) next.delete(id);
-		else next.add(id);
-		return next;
 	}
 	function toggleConn() {
 		const on = connState === 'on';
@@ -196,7 +195,7 @@
 			npcs: selNpc,
 			places: selPlace,
 			maps: [...selMaps],
-			log: logMode,
+			log: selLog,
 			format,
 		});
 		open = false;
@@ -209,10 +208,7 @@
 		if (expState !== 'off') p.push(`${selExps.size} expedition${selExps.size === 1 ? '' : 's'}`);
 		if (connState !== 'off') p.push(`${connCount} connection${connCount === 1 ? '' : 's'}`);
 		if (mapState !== 'off') p.push(`${selMaps.size} map${selMaps.size === 1 ? '' : 's'}`);
-		if (logState !== 'off')
-			p.push(
-				logMode === 'stories' ? `${storyCount} story beats` : `${logEntries.length} log entries`,
-			);
+		if (logState !== 'off') p.push(`${logEntries.length} log entries`);
 		return p;
 	});
 </script>
@@ -328,28 +324,11 @@
 							</button>
 						</div>
 						<div class="exd-sublist">
-							{#each chars as c (c.id)}
-								<button
-									type="button"
-									class="exd-subitem"
-									onclick={() => (selChars = toggleItem(selChars, c.id))}
-								>
-									<span
-										class="exd-cb sm"
-										data-state={selChars.has(c.id) ? 'on' : 'off'}
-										aria-hidden="true"
-										><svg
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="3.2"
-											stroke-linecap="round"
-											stroke-linejoin="round"><path d="M4 12l5 5L20 6" /></svg
-										></span
-									>
-									<span class="exd-subname">{c.name || 'Unnamed'}</span>
-								</button>
-							{/each}
+							<ExportItemFilter
+								items={charItems}
+								bind:selected={selChars}
+								placeholder="Search characters…"
+							/>
 						</div>
 					</div>
 
@@ -414,30 +393,11 @@
 							</button>
 						</div>
 						<div class="exd-sublist">
-							{#each exps as e (e.id)}
-								<button
-									type="button"
-									class="exd-subitem"
-									onclick={() => (selExps = toggleItem(selExps, e.id))}
-								>
-									<span
-										class="exd-cb sm"
-										data-state={selExps.has(e.id) ? 'on' : 'off'}
-										aria-hidden="true"
-										><svg
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="3.2"
-											stroke-linecap="round"
-											stroke-linejoin="round"><path d="M4 12l5 5L20 6" /></svg
-										></span
-									>
-									<span class="exd-subname"
-										>{e.name || 'Unnamed'}<span class="exd-tag">{e.type}</span></span
-									>
-								</button>
-							{/each}
+							<ExportItemFilter
+								items={expItems}
+								bind:selected={selExps}
+								placeholder="Search expeditions…"
+							/>
 						</div>
 					</div>
 
@@ -606,41 +566,22 @@
 							</button>
 						</div>
 						<div class="exd-sublist">
-							{#each maps as m (m.id)}
-								<button
-									type="button"
-									class="exd-subitem"
-									onclick={() => {
-										mapsTouched = true;
-										selMaps = toggleItem(selMaps, m.id);
-									}}
-								>
-									<span
-										class="exd-cb sm"
-										data-state={selMaps.has(m.id) ? 'on' : 'off'}
-										aria-hidden="true"
-										><svg
-											viewBox="0 0 24 24"
-											fill="none"
-											stroke="currentColor"
-											stroke-width="3.2"
-											stroke-linecap="round"
-											stroke-linejoin="round"><path d="M4 12l5 5L20 6" /></svg
-										></span
-									>
-									<span class="exd-subname">{m.name || 'Untitled Map'}</span>
-								</button>
-							{/each}
+							<ExportItemFilter
+								items={mapItems}
+								bind:selected={selMaps}
+								onchange={() => (mapsTouched = true)}
+								placeholder="Search maps…"
+							/>
 						</div>
 					</div>
 
-					<!-- Session Log -->
+					<!-- Session Log — whole log, include or not -->
 					<div class="exd-row" class:exd-disabled={!eligible.log} style="--cat:#a46fb0">
 						<div class="exd-rowhead">
 							<button
 								type="button"
 								class="exd-cbwrap"
-								onclick={() => (logMode = logMode === 'none' ? 'all' : 'none')}
+								onclick={() => (selLog = !selLog)}
 								aria-label="Toggle session log"
 							>
 								<span class="exd-cb" data-state={logState} aria-hidden="true"
@@ -655,30 +596,20 @@
 								>
 							</button>
 							<span class="exd-swatch" aria-hidden="true">{@html logIconSvg}</span>
-							<span class="exd-rowmain static">
+							<button type="button" class="exd-rowmain" onclick={() => (selLog = !selLog)}>
 								<span class="exd-rowname">Session Log</span>
-								<span class="exd-rowsub"
-									>{logMode === 'stories'
-										? `${storyCount} story beats`
-										: `${logEntries.length} entries`}</span
+							</button>
+							<span class="exd-count">{!eligible.log ? 'none yet' : logEntries.length}</span>
+							<button class="exd-caret ghost" tabindex="-1" aria-hidden="true">
+								<svg
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2.4"
+									stroke-linecap="round"
+									stroke-linejoin="round"><path d="M9 6l6 6-6 6" /></svg
 								>
-							</span>
-							{#if logState !== 'off'}
-								<div class="exd-logseg" role="group" aria-label="Log scope">
-									<button
-										type="button"
-										class:on={logMode === 'all'}
-										use:tooltip={'Every log entry — rolls, moves, notes and story beats'}
-										onclick={() => (logMode = 'all')}>All</button
-									>
-									<button
-										type="button"
-										class:on={logMode === 'stories'}
-										use:tooltip={`Only AI Storyteller narrative beats (${storyCount} of ${logEntries.length})`}
-										onclick={() => (logMode = 'stories')}>Stories</button
-									>
-								</div>
-							{/if}
+							</button>
 						</div>
 					</div>
 				</div>
@@ -1015,31 +946,6 @@
 		font-family: var(--font-mono);
 		font-size: 11px;
 		color: var(--text-dimmer);
-	}
-
-	:global(.exd-logseg) {
-		display: inline-flex;
-		gap: 2px;
-		background: var(--bg-control);
-		border: 1px solid var(--border);
-		border-radius: 7px;
-		padding: 2px;
-		flex: none;
-	}
-	:global(.exd-logseg button) {
-		font: inherit;
-		font-size: 12px;
-		border: 0;
-		background: transparent;
-		color: var(--text-muted);
-		padding: 3px 10px;
-		border-radius: 5px;
-		cursor: pointer;
-	}
-	:global(.exd-logseg button.on) {
-		background: var(--text-accent);
-		color: var(--bg-page);
-		font-weight: 500;
 	}
 
 	:global(.exd-fmt) {

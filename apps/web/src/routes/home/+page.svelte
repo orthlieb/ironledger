@@ -83,8 +83,7 @@
 		formatTicks,
 	} from '$lib/exportSerialize.js';
 	import type { ExportSelection } from '$lib/exportSelection.js';
-	import { parseStorySource } from '$lib/aiSerialize.js';
-	import { logToMarkdown, storiesToMarkdown } from '$lib/exportMarkdown.js';
+	import { logToMarkdown } from '$lib/exportMarkdown.js';
 	import {
 		buildMapZipEntries,
 		importMapZip,
@@ -1583,25 +1582,9 @@
 		// ── Markdown ──────────────────────────────────────────────────────────
 		if (sel.format === 'md') {
 			const onlyLog =
-				selChars.length === 0 &&
-				selExps.length === 0 &&
-				!wantConn &&
-				mapSet.size === 0 &&
-				sel.log !== 'none';
+				selChars.length === 0 && selExps.length === 0 && !wantConn && mapSet.size === 0 && sel.log;
 			if (onlyLog) {
-				if (sel.log === 'stories') {
-					downloadFile(
-						`stories-${stamp}.md`,
-						storiesToMarkdown(sessionLog.entries),
-						'text/markdown',
-					);
-				} else {
-					downloadFile(
-						`session-log-${stamp}.md`,
-						logToMarkdown(sessionLog.entries),
-						'text/markdown',
-					);
-				}
+				downloadFile(`session-log-${stamp}.md`, logToMarkdown(sessionLog.entries), 'text/markdown');
 				return;
 			}
 			await exportMarkdownZip(stamp);
@@ -1635,12 +1618,10 @@
 			);
 			count += selExps.length;
 		}
-		if (sel.log !== 'none') {
+		if (sel.log) {
 			const entries = [...sessionLog.entries].reverse();
-			const logEntries =
-				sel.log === 'stories' ? entries.filter((e) => parseStorySource(e.source) != null) : entries;
-			payload.log = logEntries;
-			count += logEntries.length;
+			payload.log = entries;
+			count += entries.length;
 		}
 		payload.session = { activeCharId, activeFoeId, activeExpeditionId };
 

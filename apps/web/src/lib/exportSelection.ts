@@ -18,8 +18,8 @@ export type ExportSelection = {
 	places: boolean;
 	/** Map ids to include ([] = none). */
 	maps: string[];
-	/** Session-log scope: everything, story beats only, or excluded. */
-	log: 'all' | 'stories' | 'none';
+	/** Whether to include the session log. */
+	log: boolean;
 	/** Output format: zip bundle (re-importable) or markdown snapshot. */
 	format: 'zip' | 'md';
 };
