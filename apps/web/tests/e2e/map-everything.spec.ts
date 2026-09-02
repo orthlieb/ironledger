@@ -109,13 +109,12 @@ async function downloadBuffer(download: Download): Promise<Buffer> {
 async function exportEverythingZip(page: Page): Promise<Buffer> {
 	await page.locator('.hamburger-btn').click();
 	await page.locator('.hm-item', { hasText: /Export/ }).click();
-	await expect(page.locator('.export-dialog')).toBeVisible();
-	await page.locator('.export-dialog #export-content').click();
-	await page.locator('.bui-select-content .bui-select-item', { hasText: /^Everything$/ }).click();
-	await page.locator('.export-dialog .ed-seg-btn', { hasText: /^Zip$/ }).click();
+	await expect(page.locator('.exd-dialog')).toBeVisible();
+	// The dialog opens with every item selected and Zip as the default format,
+	// so "Export Everything" is one click.
 	const [download] = await Promise.all([
 		page.waitForEvent('download'),
-		page.locator('.export-dialog .btn-primary').click(),
+		page.locator('.exd-dialog .btn-primary').click(),
 	]);
 	return downloadBuffer(download);
 }

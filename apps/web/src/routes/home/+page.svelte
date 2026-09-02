@@ -82,7 +82,8 @@
 		slugify,
 		formatTicks,
 	} from '$lib/exportSerialize.js';
-	import { logToMarkdown, storiesToMarkdown } from '$lib/exportMarkdown.js';
+	import type { ExportSelection } from '$lib/exportSelection.js';
+	import { logToMarkdown } from '$lib/exportMarkdown.js';
 	import {
 		buildMapZipEntries,
 		importMapZip,
@@ -561,14 +562,13 @@
 	function handleMenuAction(e: Event) {
 		const detail = (e as CustomEvent).detail as {
 			action: string;
-			content?: string;
-			format?: string;
+			selection?: ExportSelection;
 		};
 		if (detail.action === 'import') {
 			importError = '';
 			importInput?.click();
-		} else if (detail.action === 'export' && detail.content && detail.format) {
-			void handleExport(detail.content, detail.format).catch((err) =>
+		} else if (detail.action === 'export' && detail.selection) {
+			void handleExportSelection(detail.selection).catch((err) =>
 				console.error('[home] export failed', err),
 			);
 		}
@@ -1503,7 +1503,7 @@
 		return expeditions.find((e) => e.id === id)?.name || undefined; // journey | site
 	}
 
-	async function collectMapEntries(): Promise<{
+	async function collectMapEntries(mapIdFilter?: Set<string>): Promise<{
 		mapFiles: Record<string, Uint8Array>;
 		count: number;
 		mdLines: string[];
@@ -1515,7 +1515,10 @@
 		const listBody = (await listRes.json()) as {
 			maps?: Array<{ id: string; name: string; updatedAt: string }>;
 		};
-		const mapsList = Array.isArray(listBody.maps) ? listBody.maps : [];
+		let mapsList = Array.isArray(listBody.maps) ? listBody.maps : [];
+		// Restrict to the selected maps when the caller passes an id filter
+		// (the comprehensive export's per-map selection); undefined = all maps.
+		if (mapIdFilter) mapsList = mapsList.filter((m) => mapIdFilter.has(m.id));
 		for (const summary of mapsList) {
 			const detailRes = await fetch(`/api/session/maps/${summary.id}`);
 			if (!detailRes.ok) continue;
@@ -1562,105 +1565,80 @@
 		return { mapFiles, count: mapsList.length, mdLines };
 	}
 
-	async function handleExport(content: string, format: string) {
+	// Comprehensive export — build the payload from the dialog's selection.
+	// Zip fully honours the selection (per-category and per-item); Markdown is
+	// still whole-campaign except for a log-only pick (per-category markdown
+	// filtering is a follow-up). Foes are never in the JSON — transient
+	// encounters — so they surface only in the Markdown bundle.
+	async function handleExportSelection(sel: ExportSelection) {
 		const stamp = makeTimestamp();
-		if (content === 'everything') {
-			if (format === 'md') {
-				await exportMarkdownZip(stamp);
-			} else {
-				const payload = {
-					characters: await Promise.all(chars.map(embedCharForExport)),
-					log: [...sessionLog.entries].reverse(),
-					communities: await Promise.all(
-						communities.map((c) => embedEntityForExport('communities', c)),
-					),
-					npcs: await Promise.all(npcs.map((n) => embedEntityForExport('npcs', n))),
-					places: await Promise.all(places.map((p) => embedEntityForExport('places', p))),
-					expeditions: await Promise.all(
-						expeditions.map((e) => embedEntityForExport('expeditions', e)),
-					),
-					session: { activeCharId, activeFoeId, activeExpeditionId },
-				};
-				// Foes are intentionally NOT in the JSON: encounters are transient
-				// (they vary session to session and are routinely deleted) and import
-				// never restored them. They appear in the Markdown export only — see
-				// foes.md in exportMarkdownZip.
-				const count =
-					chars.length +
-					sessionLog.entries.length +
-					communities.length +
-					npcs.length +
-					places.length +
-					expeditions.length;
-				// Maps ride along as nested `maps/<id>/…` dirs (markers +
-				// background bytes) so an Everything export is a complete backup.
-				const { mapFiles } = await collectMapEntries();
-				await exportZip('everything', payload, count, `ironledger-export-${stamp}.zip`, mapFiles);
-			}
-		} else if (content === 'character') {
-			const char = chars.find((c) => c.id === activeCharId);
-			if (!char) return;
-			const safeName = char.name.replace(/[^a-z0-9]/gi, '-').toLowerCase() || 'character';
-			await exportZip('character', await embedCharForExport(char), 1, `${safeName}.zip`);
-		} else if (content === 'all-characters') {
-			const payload = await Promise.all(chars.map(embedCharForExport));
-			await exportZip('all-characters', payload, chars.length, `all-characters-${stamp}.zip`);
-		} else if (content === 'log') {
-			if (format === 'json') {
-				const entries = [...sessionLog.entries].reverse();
-				exportJson('log', entries, entries.length, `session-log-${stamp}.json`);
-			} else
+		const charSet = new Set(sel.characters);
+		const expSet = new Set(sel.expeditions);
+		const mapSet = new Set(sel.maps);
+		const commSet = new Set(sel.communities);
+		const npcSet = new Set(sel.npcs);
+		const placeSet = new Set(sel.places);
+		const selChars = chars.filter((c) => charSet.has(c.id));
+		const selExps = expeditions.filter((e) => expSet.has(e.id));
+		const selComms = communities.filter((c) => commSet.has(c.id));
+		const selNpcs = npcs.filter((n) => npcSet.has(n.id));
+		const selPlaces = places.filter((p) => placeSet.has(p.id));
+		const wantConn = selComms.length > 0 || selNpcs.length > 0 || selPlaces.length > 0;
+
+		// ── Markdown ──────────────────────────────────────────────────────────
+		if (sel.format === 'md') {
+			const onlyLog =
+				selChars.length === 0 && selExps.length === 0 && !wantConn && mapSet.size === 0 && sel.log;
+			if (onlyLog) {
 				downloadFile(`session-log-${stamp}.md`, logToMarkdown(sessionLog.entries), 'text/markdown');
-		} else if (content === 'stories') {
-			downloadFile(`stories-${stamp}.md`, storiesToMarkdown(sessionLog.entries), 'text/markdown');
-		} else if (content === 'communities') {
-			await exportZip(
-				'communities',
-				{
-					communities: await Promise.all(
-						communities.map((c) => embedEntityForExport('communities', c)),
-					),
-					npcs: await Promise.all(npcs.map((n) => embedEntityForExport('npcs', n))),
-					places: await Promise.all(places.map((p) => embedEntityForExport('places', p))),
-				},
-				communities.length + npcs.length + places.length,
-				`communities-${stamp}.zip`,
-			);
-		} else if (content === 'expeditions') {
-			await exportZip(
-				'expeditions',
-				await Promise.all(expeditions.map((e) => embedEntityForExport('expeditions', e))),
-				expeditions.length,
-				`expeditions-${stamp}.zip`,
-			);
-		} else if (content === 'map') {
-			// PNG stays "active map only" — one PNG per file is the sane
-			// interpretation and the map dialog owns the SVG element.
-			// Route through MapDialog for that case.
-			if (format === 'png') {
-				document.dispatchEvent(new CustomEvent('ironledger:export-map', { detail: { format } }));
 				return;
 			}
-			// Zip → bundle EVERY map into a single archive. Each map lands
-			// under `maps/<mapId>/` with the same manifest.json + map.json
-			// + optional background.jpg that `exportMapZip()` produces for
-			// a single map, plus a top-level `maps.md` index. The same
-			// `maps/<id>/…` dirs are reused inside the Everything bundle.
-			const { mapFiles, count: mapCount, mdLines } = await collectMapEntries();
-			const zipFiles: Record<string, Uint8Array> = {
-				...mapFiles,
-				'manifest.json': strToU8(JSON.stringify({ type: 'all-maps', count: mapCount }, null, 2)),
-				'maps.md': strToU8(mdLines.join('\n').trimEnd()),
-			};
-			const bytes = zipSync(zipFiles);
-			const blob = new Blob([bytes as BlobPart], { type: 'application/zip' });
-			const url = URL.createObjectURL(blob);
-			const a = document.createElement('a');
-			a.href = url;
-			a.download = `maps-${stamp}.zip`;
-			a.click();
-			URL.revokeObjectURL(url);
+			await exportMarkdownZip(stamp);
+			return;
 		}
+
+		// ── Zip (re-importable; merges by whichever keys are present) ───────────
+		const payload: Record<string, unknown> = {};
+		let count = 0;
+		if (selChars.length) {
+			payload.characters = await Promise.all(selChars.map(embedCharForExport));
+			count += selChars.length;
+		}
+		if (selComms.length) {
+			payload.communities = await Promise.all(
+				selComms.map((c) => embedEntityForExport('communities', c)),
+			);
+			count += selComms.length;
+		}
+		if (selNpcs.length) {
+			payload.npcs = await Promise.all(selNpcs.map((n) => embedEntityForExport('npcs', n)));
+			count += selNpcs.length;
+		}
+		if (selPlaces.length) {
+			payload.places = await Promise.all(selPlaces.map((p) => embedEntityForExport('places', p)));
+			count += selPlaces.length;
+		}
+		if (selExps.length) {
+			payload.expeditions = await Promise.all(
+				selExps.map((e) => embedEntityForExport('expeditions', e)),
+			);
+			count += selExps.length;
+		}
+		if (sel.log) {
+			const entries = [...sessionLog.entries].reverse();
+			payload.log = entries;
+			count += entries.length;
+		}
+		payload.session = { activeCharId, activeFoeId, activeExpeditionId };
+
+		// Selected maps ride along as nested `maps/<id>/…` dirs (markers +
+		// background bytes). No id filter → every map; here we pass the picked set.
+		const { mapFiles } = mapSet.size
+			? await collectMapEntries(mapSet)
+			: { mapFiles: {} as Record<string, Uint8Array> };
+		count += mapSet.size;
+
+		await exportZip('everything', payload, count, `ironledger-export-${stamp}.zip`, mapFiles);
 	}
 </script>
 
