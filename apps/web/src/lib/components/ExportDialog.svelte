@@ -33,6 +33,8 @@
 	import treasureMapIconSvg from '$icons/treasure-map.svg?raw';
 	import logIconSvg from '$icons/log.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
+	import { tooltip } from '$lib/actions/tooltip.js';
 
 	const CHECK =
 		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>';
@@ -159,6 +161,7 @@
 	let q = $state('');
 	let sel = $state(new Set<string>());
 	let activeCats = $state(new Set<Cat>());
+	let filtersOpen = $state(false);
 	let format = $state<'zip' | 'md'>('zip');
 	let touched = $state(false);
 	let searchEl = $state<HTMLInputElement | null>(null);
@@ -208,6 +211,7 @@
 		untrack(() => {
 			q = '';
 			activeCats = new Set();
+			filtersOpen = false;
 			format = 'zip';
 			touched = false;
 		});
@@ -239,6 +243,9 @@
 		if (n.has(cat)) n.delete(cat);
 		else n.add(cat);
 		activeCats = n;
+	}
+	function clearFilters() {
+		activeCats = new Set();
 	}
 	const anySelected = $derived(selectedCount > 0);
 	const isEverything = $derived(allItemKeys.length > 0 && allItemKeys.every((k) => sel.has(k)));
@@ -299,31 +306,56 @@
 			/>
 
 			<div class="exd-toolbar">
-				<div class="exd-search-field">
-					<span class="exd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-					<input
-						bind:this={searchEl}
-						class="exd-search"
-						type="search"
-						placeholder="Search everything…"
-						aria-label="Search items to export"
-						bind:value={q}
-					/>
+				<div class="exd-search-row">
+					<div class="exd-search-field">
+						<span class="exd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
+						<input
+							bind:this={searchEl}
+							class="exd-search"
+							type="search"
+							placeholder="Search everything…"
+							aria-label="Search items to export"
+							bind:value={q}
+						/>
+					</div>
+					{#if pillCats.length > 1}
+						<button
+							type="button"
+							class="exd-filter-toggle"
+							class:active={activeCats.size > 0}
+							onclick={() => (filtersOpen = !filtersOpen)}
+							aria-expanded={filtersOpen}
+							>Filters{#if activeCats.size > 0}&nbsp;<span class="exd-filter-badge"
+									>{activeCats.size}</span
+								>{/if}
+							{filtersOpen ? '▲' : '▼'}</button
+						>
+					{/if}
 				</div>
-				{#if pillCats.length > 1}
-					<div class="exd-pills" role="group" aria-label="Filter by type">
-						{#each pillCats as c (c.key)}
-							<button
-								type="button"
-								class="exd-pill"
-								class:active={activeCats.has(c.key)}
-								style="--ccolor:{c.color}"
-								aria-pressed={activeCats.has(c.key)}
-								onclick={() => togglePill(c.key)}
-							>
-								{c.label} <span class="exd-pill-n">{c.items.length}</span>
-							</button>
-						{/each}
+				{#if filtersOpen && pillCats.length > 1}
+					<div class="exd-filter-panel">
+						<div class="exd-pills" role="group" aria-label="Filter by type">
+							{#each pillCats as c (c.key)}
+								<button
+									type="button"
+									class="exd-pill"
+									class:active={activeCats.has(c.key)}
+									style="--ccolor:{c.color}"
+									aria-pressed={activeCats.has(c.key)}
+									onclick={() => togglePill(c.key)}
+								>
+									{c.label} <span class="exd-pill-n">{c.items.length}</span>
+								</button>
+							{/each}
+						</div>
+						<button
+							type="button"
+							class="exd-clear"
+							onclick={clearFilters}
+							disabled={activeCats.size === 0}
+							use:tooltip={'Clear all filters'}
+							aria-label="Clear all filters">{@html clearFiltersSvg}</button
+						>
 					</div>
 				{/if}
 				<button
@@ -415,7 +447,10 @@
 		left: 50%;
 		transform: translate(-50%, -50%);
 		width: min(94vw, 460px);
-		max-height: 88dvh;
+		/* Fixed height so filtering (which changes the item count) never resizes
+		   the dialog and makes it jump as it re-centres — the list scrolls
+		   inside instead. */
+		height: min(640px, 88dvh);
 		display: flex;
 		flex-direction: column;
 		background: var(--bg-card);
@@ -434,7 +469,14 @@
 		gap: 6px;
 		border-bottom: 1px solid var(--border);
 	}
+	:global(.exd-search-row) {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
 	:global(.exd-search-field) {
+		flex: 1;
+		min-width: 0;
 		display: flex;
 		align-items: center;
 		gap: 8px;
@@ -442,6 +484,72 @@
 		border: 1px solid var(--border);
 		border-radius: 7px;
 		padding: 0 11px;
+	}
+	:global(.exd-filter-toggle) {
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		padding: 5px 11px;
+		border-radius: 999px;
+		border: 1px solid var(--border);
+		background: transparent;
+		color: var(--text-dimmer);
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		gap: 5px;
+		flex: none;
+		transition:
+			border-color 0.1s,
+			color 0.1s;
+	}
+	:global(.exd-filter-toggle:hover) {
+		color: var(--text-muted);
+		border-color: var(--border-mid);
+	}
+	:global(.exd-filter-toggle.active) {
+		color: var(--text-accent);
+		border-color: color-mix(in srgb, var(--text-accent) 50%, var(--border));
+	}
+	:global(.exd-filter-badge) {
+		font-family: var(--font-mono);
+		font-variant-numeric: tabular-nums;
+		font-size: 0.66rem;
+		background: var(--text-accent);
+		color: var(--bg-page);
+		border-radius: 999px;
+		padding: 0 5px;
+		line-height: 1.5;
+	}
+	:global(.exd-filter-panel) {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+	}
+	:global(.exd-clear) {
+		flex: none;
+		background: transparent;
+		border: 0;
+		color: var(--text-dimmer);
+		cursor: pointer;
+		padding: 3px;
+		border-radius: 6px;
+		display: grid;
+		place-items: center;
+	}
+	:global(.exd-clear:hover:not(:disabled)) {
+		color: var(--text-accent);
+	}
+	:global(.exd-clear:disabled) {
+		opacity: 0.35;
+		cursor: default;
+	}
+	:global(.exd-clear svg) {
+		width: 15px;
+		height: 15px;
+		fill: currentColor;
 	}
 	:global(.exd-search-field:focus-within) {
 		outline: 2px solid var(--text-accent);
@@ -475,6 +583,7 @@
 		color: var(--text-dimmer);
 	}
 	:global(.exd-pills) {
+		flex: 1;
 		display: flex;
 		flex-wrap: wrap;
 		gap: 6px;
