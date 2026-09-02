@@ -13,7 +13,7 @@
  */
 import { test, expect, type Download } from '@playwright/test';
 import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
-import { resetAll } from './helpers/reset';
+import { resetAll, getTestToken } from './helpers/reset';
 import { settleHome } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
@@ -431,6 +431,41 @@ test.describe('Import dialog', () => {
 		await page.locator('.imd-footer .btn', { hasText: /^Cancel$/ }).click();
 		await expect(page.locator('.imd-drop')).toBeVisible({ timeout: 5_000 });
 	});
+
+	// The per-category "Connections" export writes the body file as a full
+	// { manifest, data } envelope (not the bare payload). This used to import
+	// zero rows while reporting success ("Nothing new to import"). Guard it.
+	test('wrapped-body connections archive imports its rows (not a no-op)', async ({ page }) => {
+		const inner = {
+			manifest: { app: 'Iron Ledger', version: '1.0.0', type: 'communities', count: 2 },
+			data: {
+				communities: [{ id: 'c-wrap', name: 'Wrapped Reach' }],
+				npcs: [],
+				places: [{ id: 'p-wrap', name: 'Wrapped Hollow' }],
+			},
+		};
+		const wrapped = zipSync({
+			'manifest.json': strToU8(
+				JSON.stringify({
+					app: 'Iron Ledger',
+					version: '1.0.0',
+					type: 'communities',
+					count: 2,
+					body: 'communities.json',
+				}),
+			),
+			'communities.json': strToU8(JSON.stringify(inner)),
+		});
+		await page.locator(ZIP_INPUT).setInputFiles({
+			name: 'communities.zip',
+			mimeType: 'application/zip',
+			buffer: Buffer.from(wrapped),
+		});
+		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 5_000 });
+		// The rows landed — summary counts them, not "Nothing new to import".
+		await expect(page.locator('.imd-state-sub')).toContainText('2 connections');
+		await expect(page.locator('.imd-state-sub')).not.toContainText('Nothing new');
+	});
 });
 
 // ---------------------------------------------------------------------------
@@ -605,5 +640,234 @@ test.describe('Import / Export — Place ↔ settlement re-linking', () => {
 		expect(deep).toBeDefined();
 		expect(deep?.withinSettlementName).toBe('Havenport');
 		expect(deep?.withinSettlementId).toBeUndefined();
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Full round-trip — export one of every entity type through the real export
+// dialog, wipe the account, re-import the produced zip, and verify each type
+// came back with its data intact (including the place → settlement re-link).
+//
+// This exercises the ACTUAL exporter → importer contract end to end (not a
+// hand-built fixture), so a body-shape drift between the two — the class of
+// bug that made a real communities export silently import nothing — fails
+// here immediately.
+// ---------------------------------------------------------------------------
+
+const V1 = 'http://127.0.0.1:3000/api/v1';
+
+test.describe('Import / Export — full round-trip', () => {
+	// Distinctive ids/names so we can assert each survived and re-linked.
+	const COMMUNITY_ID = 'rt-comm-1';
+
+	test.beforeAll(async () => {
+		await resetAll();
+		const tok = await getTestToken();
+		const h = { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' };
+
+		// One of each entity type, each with a distinctive field to assert on.
+		await fetch(`${V1}/characters`, {
+			method: 'POST',
+			headers: h,
+			body: JSON.stringify({
+				name: 'Rook Vanguard',
+				data: { stats: { edge: 3, heart: 1, iron: 2, shadow: 2, wits: 1 }, momentum: 7 },
+			}),
+		}).then((r) => expect(r.ok, 'seed character').toBeTruthy());
+
+		await fetch(`${V1}/session/communities`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify({
+				communities: [
+					{
+						id: COMMUNITY_ID,
+						name: 'Bellmark',
+						region: 'The Deep Wilds',
+						location: '',
+						locationDescription: '',
+						trouble: 'Failing harvest',
+						notes: '',
+						createdAt: Date.now(),
+					},
+				],
+			}),
+		}).then((r) => expect(r.ok, 'seed community').toBeTruthy());
+
+		await fetch(`${V1}/session/npcs`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify({
+				npcs: [
+					{
+						id: 'rt-npc-1',
+						name: 'Old Salt',
+						role: 'Harbor guide',
+						goal: '',
+						descriptor: '',
+						relationship: 'friendly',
+						location: '',
+						notes: '',
+						createdAt: Date.now(),
+					},
+				],
+			}),
+		}).then((r) => expect(r.ok, 'seed npc').toBeTruthy());
+
+		// Place nested inside the community by id — the export lifts this to a
+		// name reference, the import must re-resolve it to the new community id.
+		await fetch(`${V1}/session/places`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify({
+				places: [
+					{
+						id: 'rt-place-1',
+						name: 'The Sunken Hall',
+						region: 'The Deep Wilds',
+						location: '',
+						locationDescription: 'A drowned temple',
+						trouble: '',
+						notes: '',
+						situationalNotes: '',
+						withinSettlementId: COMMUNITY_ID,
+						createdAt: Date.now(),
+					},
+				],
+			}),
+		}).then((r) => expect(r.ok, 'seed place').toBeTruthy());
+
+		await fetch(`${V1}/session/expeditions`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify({
+				expeditions: [
+					{
+						id: 'rt-journey-1',
+						type: 'journey',
+						name: 'The Long Road',
+						objective: 'Reach the coast',
+						difficulty: 'dangerous',
+						ticks: 8,
+						notes: '',
+						complete: false,
+					},
+					{
+						id: 'rt-site-1',
+						type: 'site',
+						name: 'Barrowdeep',
+						theme: 'Ravaged',
+						domain: 'Barrow',
+						difficulty: 'formidable',
+						ticks: 0,
+						denizens: [],
+						notes: '',
+						complete: false,
+					},
+				],
+			}),
+		}).then((r) => expect(r.ok, 'seed expeditions').toBeTruthy());
+
+		await fetch(`${V1}/session/log`, {
+			method: 'POST',
+			headers: h,
+			body: JSON.stringify({
+				id: '11111111-1111-4111-8111-111111111111',
+				title: 'Round-trip Marker',
+				html: '<div>A distinctive log line.</div>',
+				ts: new Date().toISOString(),
+			}),
+		}).then((r) => expect(r.ok, 'seed log').toBeTruthy());
+	});
+
+	test('export everything, wipe, re-import, and every type returns intact', async ({ page }) => {
+		await gotoHome(page);
+
+		// 1. Export everything through the real dialog (opens fully selected).
+		await openExportDialog(page);
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.exd-dialog .btn-primary').click(),
+		]);
+		const zipBytes = await downloadBuffer(download);
+		expect(zipBytes.length).toBeGreaterThan(0);
+
+		// 2. Wipe the account and confirm it's empty on a fresh load.
+		await resetAll();
+		await gotoHome(page);
+		const empty = await page.evaluate(async () => {
+			const s = await fetch('/api/session', { credentials: 'include' }).then((r) => r.json());
+			const chars = await fetch('/api/characters', { credentials: 'include' }).then((r) =>
+				r.json(),
+			);
+			return {
+				chars: chars.length,
+				communities: (s.communities ?? []).length,
+				npcs: (s.npcs ?? []).length,
+				places: (s.places ?? []).length,
+				expeditions: (s.expeditions ?? []).length,
+			};
+		});
+		expect(empty).toEqual({ chars: 0, communities: 0, npcs: 0, places: 0, expeditions: 0 });
+
+		// 3. Re-import the produced zip.
+		await page.locator(ZIP_INPUT).setInputFiles({
+			name: 'roundtrip.zip',
+			mimeType: 'application/zip',
+			buffer: zipBytes,
+		});
+		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 10_000 });
+		await expect(page.locator('.imd-errlist')).toHaveCount(0);
+
+		// 4. Verify every type came back with its data intact.
+		const state = await page.evaluate(async () => {
+			const s = await fetch('/api/session', { credentials: 'include' }).then((r) => r.json());
+			const chars = await fetch('/api/characters', { credentials: 'include' }).then((r) =>
+				r.json(),
+			);
+			const log = await fetch('/api/session/log?limit=100', { credentials: 'include' }).then((r) =>
+				r.json(),
+			);
+			return {
+				chars,
+				communities: s.communities ?? [],
+				npcs: s.npcs ?? [],
+				places: s.places ?? [],
+				expeditions: s.expeditions ?? [],
+				log: Array.isArray(log) ? log : (log.entries ?? []),
+			};
+		});
+
+		// Character — name + a distinctive stat.
+		const rook = state.chars.find((c: { name: string }) => c.name === 'Rook Vanguard');
+		expect(rook, 'character round-tripped').toBeDefined();
+		expect(rook.data?.stats?.edge).toBe(3);
+
+		// Community — name + region.
+		const bellmark = state.communities.find((c: { name: string }) => c.name === 'Bellmark');
+		expect(bellmark, 'community round-tripped').toBeDefined();
+		expect(bellmark.region).toBe('The Deep Wilds');
+
+		// NPC.
+		expect(state.npcs.find((n: { name: string }) => n.name === 'Old Salt')).toBeDefined();
+
+		// Place — present AND re-linked to the community's NEW id (not the old one).
+		const hall = state.places.find((p: { name: string }) => p.name === 'The Sunken Hall');
+		expect(hall, 'place round-tripped').toBeDefined();
+		expect(hall.withinSettlementId, 'place re-linked to community').toBe(bellmark.id);
+
+		// Expeditions — both types with their discriminating fields.
+		const journey = state.expeditions.find((e: { name: string }) => e.name === 'The Long Road');
+		const site = state.expeditions.find((e: { name: string }) => e.name === 'Barrowdeep');
+		expect(journey?.type).toBe('journey');
+		expect(journey?.difficulty).toBe('dangerous');
+		expect(site?.type).toBe('site');
+		expect(site?.domain).toBe('Barrow');
+
+		// Log — the distinctive entry is back.
+		expect(
+			state.log.some((e: { title?: string }) => e.title === 'Round-trip Marker'),
+			'log entry round-tripped',
+		).toBeTruthy();
 	});
 });
