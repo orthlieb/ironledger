@@ -4,10 +4,11 @@
 	 *
 	 * A single flat, searchable checklist of every exportable item — like the
 	 * Moves/Oracles pickers, but with a checkbox per row for multi-select. A
-	 * search field plus category filter pills narrow the list; a "Select all"
-	 * checkbox in the upper-left toggles all *currently-filtered* rows. Each row
-	 * carries a small category-tinted icon + type tag so it is self-identifying
-	 * without section headers. A Zip / Markdown segment and a live summary
+	 * search field plus sub-type filter pills (Sites / Scenes / Journeys,
+	 * Communities / Places / NPCs, Characters, Maps, Session Log) narrow the
+	 * list; a "Select all" checkbox in the upper-left toggles all
+	 * *currently-filtered* rows. Each row carries its bare entity icon + type
+	 * tag so it is self-identifying. A Zip / Markdown segment and a live summary
 	 * complete it. On Export it emits an `ExportSelection`; the home route
 	 * assembles the payload.
 	 *
@@ -27,9 +28,8 @@
 	import { mapListState, initMap } from '$lib/mapStore.svelte.js';
 	import { sessionLog } from '$lib/log.svelte.js';
 	import type { ExportSelection } from '$lib/exportSelection.js';
+	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import charactersIconSvg from '$icons/Characters.svg?raw';
-	import expeditionsIconSvg from '$icons/Expeditions.svg?raw';
-	import villageIconSvg from '$icons/village.svg?raw';
 	import treasureMapIconSvg from '$icons/treasure-map.svg?raw';
 	import logIconSvg from '$icons/log.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
@@ -56,6 +56,7 @@
 	const maps = $derived(mapListState.maps);
 	const logEntries = $derived(sessionLog.entries);
 
+	type Cat = 'char' | 'exp' | 'conn' | 'map' | 'log';
 	type Item = {
 		key: string;
 		cat: Cat;
@@ -64,22 +65,19 @@
 		name: string;
 		tag?: string;
 	};
-	type Cat = 'char' | 'exp' | 'conn' | 'map' | 'log';
-	type Category = {
-		key: Cat;
-		label: string;
-		icon: string;
-		color: string;
-		atomic?: boolean;
-		items: Item[];
-	};
+	// A facet is one filter pill = one sub-type: Characters, each expedition
+	// type (Sites / Scenes / Journeys), each connection kind (Communities /
+	// Places / NPCs), Maps, Session Log. Each carries its own entity icon +
+	// colour, which its rows inherit so the flat list is self-identifying.
+	type Facet = { key: string; label: string; color: string; icon: string; items: Item[] };
+	const K = ENTITY_KIND_META;
 
-	const catalog = $derived<Category[]>([
+	const facets = $derived<Facet[]>([
 		{
 			key: 'char',
 			label: 'Characters',
-			icon: charactersIconSvg,
 			color: '#5aa467',
+			icon: charactersIconSvg,
 			items: chars.map((c) => ({
 				key: `char:${c.id}`,
 				cat: 'char',
@@ -88,55 +86,97 @@
 			})),
 		},
 		{
-			key: 'exp',
-			label: 'Expeditions',
-			icon: expeditionsIconSvg,
-			color: '#e4aa28',
-			items: exps.map((e) => ({
-				key: `exp:${e.id}`,
-				cat: 'exp',
-				id: e.id,
-				name: e.name || 'Unnamed',
-				tag: e.type,
+			key: 'exp:site',
+			label: 'Sites',
+			color: K.site.color,
+			icon: K.site.icon,
+			items: exps
+				.filter((e) => e.type === 'site')
+				.map((e) => ({
+					key: `exp:${e.id}`,
+					cat: 'exp',
+					id: e.id,
+					name: e.name || 'Unnamed',
+					tag: 'site',
+				})),
+		},
+		{
+			key: 'exp:scene',
+			label: 'Scenes',
+			color: K.scene.color,
+			icon: K.scene.icon,
+			items: exps
+				.filter((e) => e.type === 'scene')
+				.map((e) => ({
+					key: `exp:${e.id}`,
+					cat: 'exp',
+					id: e.id,
+					name: e.name || 'Unnamed',
+					tag: 'scene',
+				})),
+		},
+		{
+			key: 'exp:journey',
+			label: 'Journeys',
+			color: K.journey.color,
+			icon: K.journey.icon,
+			items: exps
+				.filter((e) => e.type === 'journey')
+				.map((e) => ({
+					key: `exp:${e.id}`,
+					cat: 'exp',
+					id: e.id,
+					name: e.name || 'Unnamed',
+					tag: 'journey',
+				})),
+		},
+		{
+			key: 'conn:community',
+			label: 'Communities',
+			color: K.community.color,
+			icon: K.community.icon,
+			items: comms.map((c) => ({
+				key: `conn:community:${c.id}`,
+				cat: 'conn',
+				sub: 'community',
+				id: c.id,
+				name: c.name || 'Unnamed',
+				tag: 'community',
 			})),
 		},
 		{
-			key: 'conn',
-			label: 'Connections',
-			icon: villageIconSvg,
-			color: '#d06840',
-			items: [
-				...comms.map((c) => ({
-					key: `conn:community:${c.id}`,
-					cat: 'conn' as const,
-					sub: 'community' as const,
-					id: c.id,
-					name: c.name || 'Unnamed',
-					tag: 'community',
-				})),
-				...npcsL.map((n) => ({
-					key: `conn:npc:${n.id}`,
-					cat: 'conn' as const,
-					sub: 'npc' as const,
-					id: n.id,
-					name: n.name || 'Unnamed',
-					tag: 'npc',
-				})),
-				...placesL.map((p) => ({
-					key: `conn:place:${p.id}`,
-					cat: 'conn' as const,
-					sub: 'place' as const,
-					id: p.id,
-					name: p.name || 'Unnamed',
-					tag: 'place',
-				})),
-			],
+			key: 'conn:place',
+			label: 'Places',
+			color: K.place.color,
+			icon: K.place.icon,
+			items: placesL.map((p) => ({
+				key: `conn:place:${p.id}`,
+				cat: 'conn',
+				sub: 'place',
+				id: p.id,
+				name: p.name || 'Unnamed',
+				tag: 'place',
+			})),
+		},
+		{
+			key: 'conn:npc',
+			label: 'NPCs',
+			color: K.npc.color,
+			icon: K.npc.icon,
+			items: npcsL.map((n) => ({
+				key: `conn:npc:${n.id}`,
+				cat: 'conn',
+				sub: 'npc',
+				id: n.id,
+				name: n.name || 'Unnamed',
+				tag: 'npc',
+			})),
 		},
 		{
 			key: 'map',
 			label: 'Maps',
-			icon: treasureMapIconSvg,
 			color: '#3e9cb5',
+			icon: treasureMapIconSvg,
 			items: maps.map((m) => ({
 				key: `map:${m.id}`,
 				cat: 'map',
@@ -147,9 +187,8 @@
 		{
 			key: 'log',
 			label: 'Session Log',
-			icon: logIconSvg,
 			color: '#a46fb0',
-			atomic: true,
+			icon: logIconSvg,
 			items:
 				logEntries.length > 0
 					? [{ key: 'log', cat: 'log', id: 'all', name: `${logEntries.length} entries` }]
@@ -160,7 +199,7 @@
 	// ── search + selection ────────────────────────────────────────────────────
 	let q = $state('');
 	let sel = $state(new Set<string>());
-	let activeCats = $state(new Set<Cat>());
+	let activeFacets = $state(new Set<string>());
 	let filtersOpen = $state(false);
 	let format = $state<'zip' | 'md'>('zip');
 	let touched = $state(false);
@@ -174,21 +213,21 @@
 		if (item.cat === 'log' && 'session log entries'.includes(query)) return true;
 		return false;
 	}
-	// One flat list of every item (catalogue order), each carrying its
-	// category's icon/colour so a row is self-identifying without section
-	// headers — a single searchable checklist like the Moves/Oracles pickers.
-	type Row = Item & { icon: string; color: string; catLabel: string };
+	// One flat list of every item (facet order), each carrying its facet's
+	// icon/colour + key so a row is self-identifying without section headers —
+	// a single searchable checklist like the Moves/Oracles pickers.
+	type Row = Item & { icon: string; color: string; facet: string };
 	const allItems = $derived<Row[]>(
-		catalog.flatMap((c) =>
-			c.items.map((i) => ({ ...i, icon: c.icon, color: c.color, catLabel: c.label })),
+		facets.flatMap((f) =>
+			f.items.map((i) => ({ ...i, icon: f.icon, color: f.color, facet: f.key })),
 		),
 	);
-	// Category filter pills narrow the list to the chosen categories (empty =
-	// all); the search narrows further. `filtered` (and therefore Select all)
-	// always reflects both.
-	const pillCats = $derived(catalog.filter((c) => c.items.length > 0));
+	// Sub-type filter pills narrow the list to the chosen facets (empty = all);
+	// the search narrows further. `filtered` (and therefore Select all) always
+	// reflects both.
+	const pillFacets = $derived(facets.filter((f) => f.items.length > 0));
 	const filtered = $derived(
-		allItems.filter((i) => (activeCats.size === 0 || activeCats.has(i.cat)) && matches(i)),
+		allItems.filter((i) => (activeFacets.size === 0 || activeFacets.has(i.facet)) && matches(i)),
 	);
 	const filteredKeys = $derived(filtered.map((i) => i.key));
 	const allItemKeys = $derived(allItems.map((i) => i.key));
@@ -210,7 +249,7 @@
 		void initMap().catch(() => {});
 		untrack(() => {
 			q = '';
-			activeCats = new Set();
+			activeFacets = new Set();
 			filtersOpen = false;
 			format = 'zip';
 			touched = false;
@@ -238,14 +277,14 @@
 		else keys.forEach((k) => n.add(k));
 		commit(n);
 	}
-	function togglePill(cat: Cat) {
-		const n = new Set(activeCats);
-		if (n.has(cat)) n.delete(cat);
-		else n.add(cat);
-		activeCats = n;
+	function togglePill(facet: string) {
+		const n = new Set(activeFacets);
+		if (n.has(facet)) n.delete(facet);
+		else n.add(facet);
+		activeFacets = n;
 	}
 	function clearFilters() {
-		activeCats = new Set();
+		activeFacets = new Set();
 	}
 	const anySelected = $derived(selectedCount > 0);
 	const isEverything = $derived(allItemKeys.length > 0 && allItemKeys.every((k) => sel.has(k)));
@@ -318,33 +357,33 @@
 							bind:value={q}
 						/>
 					</div>
-					{#if pillCats.length > 1}
+					{#if pillFacets.length > 1}
 						<button
 							type="button"
 							class="exd-filter-toggle"
-							class:active={activeCats.size > 0}
+							class:active={activeFacets.size > 0}
 							onclick={() => (filtersOpen = !filtersOpen)}
 							aria-expanded={filtersOpen}
-							>Filters{#if activeCats.size > 0}&nbsp;<span class="exd-filter-badge"
-									>{activeCats.size}</span
+							>Filters{#if activeFacets.size > 0}&nbsp;<span class="exd-filter-badge"
+									>{activeFacets.size}</span
 								>{/if}
 							{filtersOpen ? '▲' : '▼'}</button
 						>
 					{/if}
 				</div>
-				{#if filtersOpen && pillCats.length > 1}
+				{#if filtersOpen && pillFacets.length > 1}
 					<div class="exd-filter-panel">
 						<div class="exd-pills" role="group" aria-label="Filter by type">
-							{#each pillCats as c (c.key)}
+							{#each pillFacets as f (f.key)}
 								<button
 									type="button"
 									class="exd-pill"
-									class:active={activeCats.has(c.key)}
-									style="--ccolor:{c.color}"
-									aria-pressed={activeCats.has(c.key)}
-									onclick={() => togglePill(c.key)}
+									class:active={activeFacets.has(f.key)}
+									style="--ccolor:{f.color}"
+									aria-pressed={activeFacets.has(f.key)}
+									onclick={() => togglePill(f.key)}
 								>
-									{c.label} <span class="exd-pill-n">{c.items.length}</span>
+									{f.label} <span class="exd-pill-n">{f.items.length}</span>
 								</button>
 							{/each}
 						</div>
@@ -352,7 +391,7 @@
 							type="button"
 							class="exd-clear"
 							onclick={clearFilters}
-							disabled={activeCats.size === 0}
+							disabled={activeFacets.size === 0}
 							use:tooltip={'Clear all filters'}
 							aria-label="Clear all filters">{@html clearFiltersSvg}</button
 						>
@@ -692,20 +731,19 @@
 		background: var(--bg-page);
 	}
 
+	/* Bare entity icon (no rounded-rectangle chrome), tinted to its sub-type —
+	   like the entity combobox lists items. */
 	:global(.exd-rowicon) {
-		width: 22px;
-		height: 22px;
-		border-radius: 6px;
+		width: 20px;
+		height: 20px;
 		display: grid;
 		place-items: center;
 		flex: none;
 		color: var(--cat);
-		background: color-mix(in srgb, var(--cat) 15%, var(--bg-card));
-		border: 1px solid color-mix(in srgb, var(--cat) 30%, transparent);
 	}
 	:global(.exd-rowicon svg) {
-		width: 13px;
-		height: 13px;
+		width: 18px;
+		height: 18px;
 		fill: currentColor;
 	}
 
