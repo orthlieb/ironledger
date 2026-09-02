@@ -383,7 +383,7 @@
 									aria-pressed={activeFacets.has(f.key)}
 									onclick={() => togglePill(f.key)}
 								>
-									{f.label} <span class="exd-pill-n">{f.items.length}</span>
+									{f.label}
 								</button>
 							{/each}
 						</div>
@@ -422,9 +422,7 @@
 						<span class="exd-rowicon" style="--cat:{item.color}" aria-hidden="true"
 							>{@html item.icon}</span
 						>
-						<span class="exd-item-name"
-							>{item.name}{#if item.tag}<span class="exd-tag">{item.tag}</span>{/if}</span
-						>
+						<span class="exd-item-name">{item.name}</span>
 					</button>
 				{/each}
 				{#if filtered.length === 0}
@@ -647,11 +645,6 @@
 		background: color-mix(in srgb, var(--ccolor) 18%, transparent);
 		border-color: var(--ccolor);
 	}
-	:global(.exd-pill-n) {
-		font-family: var(--font-mono);
-		font-variant-numeric: tabular-nums;
-		opacity: 0.8;
-	}
 
 	:global(.exd-selectall) {
 		display: flex;
@@ -761,15 +754,6 @@
 	:global(.exd-item-name) {
 		flex: 1;
 		font-size: 13px;
-	}
-	:global(.exd-tag) {
-		font-size: 10px;
-		color: var(--text-dimmer);
-		margin-left: 6px;
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		padding: 0 5px;
-		text-transform: capitalize;
 	}
 	:global(.exd-empty) {
 		font-size: 12.5px;
