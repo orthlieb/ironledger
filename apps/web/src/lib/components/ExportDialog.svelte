@@ -629,9 +629,10 @@
 	}
 	:global(.exd-pill) {
 		font-family: var(--font-ui);
-		font-size: 0.68rem;
+		font-size: 0.66rem;
 		font-weight: 600;
-		letter-spacing: 0.02em;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
 		color: var(--ccolor, var(--text-dimmer));
 		background: transparent;
 		border: 1px solid color-mix(in srgb, var(--ccolor, var(--border)) 40%, transparent);
