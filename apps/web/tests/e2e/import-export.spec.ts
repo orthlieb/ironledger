@@ -128,7 +128,7 @@ test.describe('Export dialog', () => {
 
 	test('opens as a searchable checklist with Select all and both formats', async ({ page }) => {
 		await openExportDialog(page);
-		await expect(page.locator('.exd-search')).toBeVisible();
+		await expect(page.locator('.fb-input')).toBeVisible();
 		await expect(page.locator('.exd-selectall')).toBeVisible();
 		// Both output formats are always offered (no per-content-type hiding).
 		await expect(page.locator('.exd-segbtn', { hasText: /^Zip archive/ })).toBeVisible();

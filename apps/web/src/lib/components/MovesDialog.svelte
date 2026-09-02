@@ -41,12 +41,11 @@
 	import { rollDie, animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
 	import { playMissScream, preloadMissScream } from '$lib/diceSound.js';
 
-	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	import diceD6RawSvg from '$icons/dice-d6-light.svg?raw';
 	import diceD10RawSvg from '$icons/dice-d10-light.svg?raw';
 	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
+	import FilterBar from '$lib/components/FilterBar.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { loadAssets, findAsset } from '$lib/assetStore.svelte.js';
 	import { getRelevantAbilities } from '$lib/assetMatcherStore.svelte.js';
@@ -527,18 +526,6 @@
 	// ---------------------------------------------------------------------------
 	// Helpers
 	// ---------------------------------------------------------------------------
-	function toggleCategory(cat: string) {
-		const next = new Set(activeCategories);
-		if (next.has(cat)) next.delete(cat);
-		else next.add(cat);
-		activeCategories = next;
-	}
-
-	function clearFilters() {
-		search = '';
-		activeCategories = new Set();
-	}
-
 	/** Group filtered moves by category, optionally hiding disabled ones. */
 	function movesByCategory(cat: string): MoveDefinition[] {
 		return filteredMoves().filter((m) => {
@@ -1046,96 +1033,62 @@
 
 				<!-- Controls -->
 				<div class="md-controls">
-					<div class="md-search-row">
-						<div class="md-search-field">
-							<span class="md-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-							<input
-								bind:this={searchInputEl}
-								class="md-search"
-								type="search"
-								placeholder="Search moves…"
-								bind:value={search}
-								aria-label="Search moves"
-							/>
-						</div>
-						<button
-							class="md-filter-toggle"
-							class:md-filter-toggle--active={activeCategories.size > 0}
-							onclick={() => (filtersOpen = !filtersOpen)}
-							aria-expanded={filtersOpen}
-							>Filters{#if activeCategories.size > 0}&nbsp;<span class="md-filter-badge"
-									>{activeCategories.size}</span
-								>{/if}
-							{filtersOpen ? '▲' : '▼'}</button
-						>
-						<button
-							class="md-hide-disabled-btn"
-							class:md-hide-disabled-btn--active={hideDisabled}
-							use:tooltip={hideDisabled ? 'Show all moves' : 'Hide unavailable moves'}
-							onclick={() => (hideDisabled = !hideDisabled)}
-							aria-label={hideDisabled ? 'Show all moves' : 'Hide unavailable moves'}
-						>
-							{#if hideDisabled}
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									width="16"
-									height="16"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									><path
-										d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
-									/><path
-										d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"
-									/><line x1="1" y1="1" x2="23" y2="23" /><path
-										d="M14.12 14.12a3 3 0 1 1-4.24-4.24"
-									/></svg
-								>
-							{:else}
-								<svg
-									xmlns="http://www.w3.org/2000/svg"
-									width="16"
-									height="16"
-									viewBox="0 0 24 24"
-									fill="none"
-									stroke="currentColor"
-									stroke-width="2"
-									stroke-linecap="round"
-									stroke-linejoin="round"
-									><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle
-										cx="12"
-										cy="12"
-										r="3"
-									/></svg
-								>
-							{/if}
-						</button>
-					</div>
-
-					{#if filtersOpen}
-						<div class="md-filter-panel">
-							<div class="md-filter-chips">
-								{#each categories as cat (cat)}
-									<button
-										class="md-cat-tag"
-										class:md-cat-tag--active={activeCategories.has(cat)}
-										style:--ccolor={catColor(cat)}
-										onclick={() => toggleCategory(cat)}>{cat}</button
-									>
-								{/each}
-							</div>
+					<FilterBar
+						bind:search
+						bind:active={activeCategories}
+						bind:filtersOpen
+						bind:inputEl={searchInputEl}
+						placeholder="Search moves…"
+						categories={categories.map((c) => ({ key: c, label: c, color: catColor(c) }))}
+					>
+						{#snippet trailing()}
 							<button
-								class="md-clear-btn"
-								use:tooltip={'Clear all filters'}
-								onclick={clearFilters}
-								disabled={activeCategories.size === 0}
-								aria-label="Clear all filters">{@html clearFiltersSvg}</button
+								class="md-hide-disabled-btn"
+								class:md-hide-disabled-btn--active={hideDisabled}
+								use:tooltip={hideDisabled ? 'Show all moves' : 'Hide unavailable moves'}
+								onclick={() => (hideDisabled = !hideDisabled)}
+								aria-label={hideDisabled ? 'Show all moves' : 'Hide unavailable moves'}
 							>
-						</div>
-					{/if}
+								{#if hideDisabled}
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										width="16"
+										height="16"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										><path
+											d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94"
+										/><path
+											d="M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19"
+										/><line x1="1" y1="1" x2="23" y2="23" /><path
+											d="M14.12 14.12a3 3 0 1 1-4.24-4.24"
+										/></svg
+									>
+								{:else}
+									<svg
+										xmlns="http://www.w3.org/2000/svg"
+										width="16"
+										height="16"
+										viewBox="0 0 24 24"
+										fill="none"
+										stroke="currentColor"
+										stroke-width="2"
+										stroke-linecap="round"
+										stroke-linejoin="round"
+										><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" /><circle
+											cx="12"
+											cy="12"
+											r="3"
+										/></svg
+									>
+								{/if}
+							</button>
+						{/snippet}
+					</FilterBar>
 				</div>
 
 				<!-- Tile grid grouped by category -->
@@ -1800,78 +1753,6 @@
 		flex-direction: column;
 		gap: 6px;
 	}
-	.md-search-row {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
-	.md-search-field {
-		flex: 1;
-		min-width: 0;
-		position: relative;
-		display: flex;
-		align-items: center;
-	}
-	.md-search-icon {
-		position: absolute;
-		left: 8px;
-		width: 13px;
-		height: 13px;
-		display: inline-flex;
-		pointer-events: none;
-		color: var(--text-dimmer);
-	}
-	.md-search-icon :global(svg) {
-		width: 100%;
-		height: 100%;
-		fill: currentColor;
-	}
-
-	.md-search {
-		flex: 1;
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		color: var(--text);
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		padding: 5px 8px 5px 28px;
-		min-width: 0;
-	}
-	.md-search:focus {
-		outline: none;
-		border-color: var(--focus-ring);
-		box-shadow: 0 0 0 2px var(--accent-glow);
-	}
-	.md-clear-btn {
-		position: absolute;
-		bottom: 6px;
-		right: 6px;
-		background: transparent;
-		border: none;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		padding: 3px 4px;
-		border-radius: 3px;
-		display: flex;
-		align-items: center;
-		transition:
-			color 0.12s,
-			opacity 0.12s;
-	}
-	.md-clear-btn:hover:not(:disabled) {
-		color: var(--text);
-	}
-	.md-clear-btn:disabled {
-		opacity: 0.25;
-		cursor: not-allowed;
-	}
-	.md-clear-btn :global(svg) {
-		width: 16px;
-		height: 16px;
-		fill: currentColor;
-	}
-
 	.md-hide-disabled-btn {
 		background: transparent;
 		border: 1px solid transparent;
@@ -1892,88 +1773,6 @@
 	}
 	.md-hide-disabled-btn--active {
 		color: var(--text-accent);
-	}
-
-	/* ── Filter toggle button ───────────────────────────────────────────── */
-	.md-filter-toggle {
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		font-weight: 600;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-		padding: 3px 10px;
-		border-radius: 12px;
-		border: 1px solid var(--border);
-		background: transparent;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		transition:
-			border-color 0.1s,
-			color 0.1s;
-		display: flex;
-		align-items: center;
-		gap: 4px;
-		flex-shrink: 0;
-	}
-	.md-filter-toggle:hover,
-	.md-filter-toggle[aria-expanded='true'] {
-		border-color: var(--text-muted);
-		color: var(--text-muted);
-	}
-	.md-filter-toggle--active {
-		border-color: var(--focus-ring);
-		color: var(--text);
-	}
-	.md-filter-badge {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		min-width: 16px;
-		height: 16px;
-		padding: 0 4px;
-		border-radius: 8px;
-		background: var(--focus-ring);
-		color: var(--bg-card);
-		font-size: 0.65rem;
-		font-weight: 700;
-		line-height: 1;
-	}
-	.md-filter-panel {
-		position: relative;
-		padding: 6px 8px;
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 6px;
-	}
-	.md-filter-chips {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 4px;
-		padding-right: 26px;
-	}
-	.md-cat-tag {
-		font-family: var(--font-ui);
-		font-size: 0.6rem;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--ccolor, var(--text-dimmer));
-		background: transparent;
-		border: 1px solid color-mix(in srgb, var(--ccolor, var(--border)) 40%, transparent);
-		border-radius: 10px;
-		padding: 2px 8px;
-		cursor: pointer;
-		white-space: nowrap;
-		transition:
-			background 0.12s,
-			color 0.12s;
-	}
-	.md-cat-tag:hover {
-		background: color-mix(in srgb, var(--ccolor, var(--border)) 12%, transparent);
-	}
-	.md-cat-tag--active {
-		background: color-mix(in srgb, var(--ccolor, var(--border)) 18%, transparent);
-		border-color: var(--ccolor, var(--border));
 	}
 
 	/* ── Scrollable body ─────────────────────────────────────────────────── */

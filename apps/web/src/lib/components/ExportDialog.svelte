@@ -19,6 +19,7 @@
 	import { untrack } from 'svelte';
 	import { Dialog, ToggleGroup } from 'bits-ui';
 	import DialogHeader from './DialogHeader.svelte';
+	import FilterBar from './FilterBar.svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { getCharacters } from '$lib/characterStore.svelte.js';
 	import { getExpeditions } from '$lib/expeditionStore.svelte.js';
@@ -32,9 +33,6 @@
 	import charactersIconSvg from '$icons/Characters.svg?raw';
 	import treasureMapIconSvg from '$icons/treasure-map.svg?raw';
 	import logIconSvg from '$icons/log.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
-	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
-	import { tooltip } from '$lib/actions/tooltip.js';
 
 	const CHECK =
 		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>';
@@ -277,15 +275,6 @@
 		else keys.forEach((k) => n.add(k));
 		commit(n);
 	}
-	function togglePill(facet: string) {
-		const n = new Set(activeFacets);
-		if (n.has(facet)) n.delete(facet);
-		else n.add(facet);
-		activeFacets = n;
-	}
-	function clearFilters() {
-		activeFacets = new Set();
-	}
 	const anySelected = $derived(selectedCount > 0);
 	const isEverything = $derived(allItemKeys.length > 0 && allItemKeys.every((k) => sel.has(k)));
 
@@ -345,58 +334,16 @@
 			/>
 
 			<div class="exd-toolbar">
-				<div class="exd-search-row">
-					<div class="exd-search-field">
-						<span class="exd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-						<input
-							bind:this={searchEl}
-							class="exd-search"
-							type="search"
-							placeholder="Search everything…"
-							aria-label="Search items to export"
-							bind:value={q}
-						/>
-					</div>
-					{#if pillFacets.length > 1}
-						<button
-							type="button"
-							class="exd-filter-toggle"
-							class:active={activeFacets.size > 0}
-							onclick={() => (filtersOpen = !filtersOpen)}
-							aria-expanded={filtersOpen}
-							>Filters{#if activeFacets.size > 0}&nbsp;<span class="exd-filter-badge"
-									>{activeFacets.size}</span
-								>{/if}
-							{filtersOpen ? '▲' : '▼'}</button
-						>
-					{/if}
-				</div>
-				{#if filtersOpen && pillFacets.length > 1}
-					<div class="exd-filter-panel">
-						<div class="exd-pills" role="group" aria-label="Filter by type">
-							{#each pillFacets as f (f.key)}
-								<button
-									type="button"
-									class="exd-pill"
-									class:active={activeFacets.has(f.key)}
-									style="--ccolor:{f.color}"
-									aria-pressed={activeFacets.has(f.key)}
-									onclick={() => togglePill(f.key)}
-								>
-									{f.label}
-								</button>
-							{/each}
-						</div>
-						<button
-							type="button"
-							class="exd-clear"
-							onclick={clearFilters}
-							disabled={activeFacets.size === 0}
-							use:tooltip={'Clear all filters'}
-							aria-label="Clear all filters">{@html clearFiltersSvg}</button
-						>
-					</div>
-				{/if}
+				<FilterBar
+					bind:search={q}
+					bind:active={activeFacets}
+					bind:filtersOpen
+					bind:inputEl={searchEl}
+					placeholder="Search everything…"
+					categories={pillFacets.length > 1
+						? pillFacets.map((f) => ({ key: f.key, label: f.label, color: f.color }))
+						: []}
+				/>
 				<button
 					type="button"
 					class="exd-selectall"
@@ -506,146 +453,6 @@
 		gap: 6px;
 		border-bottom: 1px solid var(--border);
 	}
-	:global(.exd-search-row) {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-	}
-	:global(.exd-search-field) {
-		flex: 1;
-		min-width: 0;
-		position: relative;
-		display: flex;
-		align-items: center;
-	}
-	:global(.exd-filter-toggle) {
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		font-weight: 600;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-		padding: 5px 11px;
-		border-radius: 999px;
-		border: 1px solid var(--border);
-		background: transparent;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		display: flex;
-		align-items: center;
-		gap: 5px;
-		flex: none;
-		transition:
-			border-color 0.1s,
-			color 0.1s;
-	}
-	:global(.exd-filter-toggle:hover) {
-		color: var(--text-muted);
-		border-color: var(--border-mid);
-	}
-	:global(.exd-filter-toggle.active) {
-		color: var(--text-accent);
-		border-color: color-mix(in srgb, var(--text-accent) 50%, var(--border));
-	}
-	:global(.exd-filter-badge) {
-		font-family: var(--font-mono);
-		font-variant-numeric: tabular-nums;
-		font-size: 0.66rem;
-		background: var(--text-accent);
-		color: var(--bg-page);
-		border-radius: 999px;
-		padding: 0 5px;
-		line-height: 1.5;
-	}
-	:global(.exd-filter-panel) {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-	:global(.exd-clear) {
-		flex: none;
-		background: transparent;
-		border: 0;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		padding: 3px;
-		border-radius: 6px;
-		display: grid;
-		place-items: center;
-	}
-	:global(.exd-clear:hover:not(:disabled)) {
-		color: var(--text-accent);
-	}
-	:global(.exd-clear:disabled) {
-		opacity: 0.35;
-		cursor: default;
-	}
-	:global(.exd-clear svg) {
-		width: 15px;
-		height: 15px;
-		fill: currentColor;
-	}
-	:global(.exd-search-icon) {
-		position: absolute;
-		left: 8px;
-		width: 13px;
-		height: 13px;
-		display: inline-flex;
-		pointer-events: none;
-		color: var(--text-dimmer);
-	}
-	:global(.exd-search-icon svg) {
-		width: 13px;
-		height: 13px;
-		fill: currentColor;
-	}
-	:global(.exd-search) {
-		flex: 1;
-		min-width: 0;
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		color: var(--text);
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 4px;
-		padding: 5px 8px 5px 28px;
-	}
-	:global(.exd-search::placeholder) {
-		color: var(--text-dimmer);
-	}
-	:global(.exd-pills) {
-		flex: 1;
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-	}
-	:global(.exd-pill) {
-		font-family: var(--font-ui);
-		font-size: 0.66rem;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--ccolor, var(--text-dimmer));
-		background: transparent;
-		border: 1px solid color-mix(in srgb, var(--ccolor, var(--border)) 40%, transparent);
-		border-radius: 999px;
-		padding: 3px 10px;
-		cursor: pointer;
-		white-space: nowrap;
-		display: inline-flex;
-		align-items: center;
-		gap: 5px;
-		transition:
-			background 0.12s,
-			border-color 0.12s;
-	}
-	:global(.exd-pill:hover) {
-		background: color-mix(in srgb, var(--ccolor) 12%, transparent);
-	}
-	:global(.exd-pill.active) {
-		background: color-mix(in srgb, var(--ccolor) 18%, transparent);
-		border-color: var(--ccolor);
-	}
-
 	:global(.exd-selectall) {
 		display: flex;
 		align-items: center;
