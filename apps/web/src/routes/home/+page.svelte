@@ -61,13 +61,13 @@
 	import ExpeditionsArea from '$lib/components/v2/ExpeditionsArea.svelte';
 	import CommunitiesArea from '$lib/components/v2/CommunitiesArea.svelte';
 	import ImportCollisionDialog from '$lib/components/ImportCollisionDialog.svelte';
+	import ImportDialog from '$lib/components/ImportDialog.svelte';
 	import MapOwnerConflictDialog from '$lib/components/MapOwnerConflictDialog.svelte';
 	import {
 		normaliseName,
 		type CollisionItems,
 		type CollisionStrategy,
 	} from '$lib/components/importCollision.js';
-	import ErrorBar from '$lib/components/ErrorBar.svelte';
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { triggerAction, appendLog, sessionLog } from '$lib/log.svelte.js';
@@ -76,7 +76,6 @@
 	import {
 		makeTimestamp,
 		downloadFile,
-		exportJson,
 		exportZip,
 		b64ToU8,
 		slugify,
@@ -226,7 +225,22 @@
 	let mapConflictRef = $state<{
 		open(names: string[]): Promise<'replace' | 'skip'>;
 	} | null>(null);
-	let importError = $state('');
+	// Import dialog: progress + all-errors report + "apply the valid rows?" review.
+	let importDialogOpen = $state(false);
+	let importStage = $state<'idle' | 'importing' | 'review' | 'done' | 'error'>('idle');
+	let importSummary = $state('');
+	let importErrors = $state<string[]>([]);
+	let importValidCount = $state(0);
+	/** Resolver for the `review` pause — settled by the dialog's decision. */
+	let reviewResolve: ((proceed: boolean) => void) | null = null;
+	// Dismissing the dialog (✕/Escape) mid-review counts as "cancel" so the
+	// awaiting runImport settles instead of hanging.
+	$effect(() => {
+		if (!importDialogOpen && reviewResolve) {
+			reviewResolve(false);
+			reviewResolve = null;
+		}
+	});
 
 	/** Track mobile breakpoint reactively. */
 	$effect(() => {
@@ -351,14 +365,8 @@
 				const file = new File([blob], 'ironlands-starter.zip', {
 					type: 'application/zip',
 				});
-				// Wait a microtask so the file input is definitely in the DOM (it's
-				// bound near the bottom of the template).
-				await Promise.resolve();
-				if (!importInput) return;
-				const dt = new DataTransfer();
-				dt.items.add(file);
-				importInput.files = dt.files;
-				importInput.dispatchEvent(new Event('change', { bubbles: true }));
+				// Import quietly — no dialog for the first-run starter seed.
+				await runImport(file, { silent: true });
 			} catch (err) {
 				console.warn('[seed-starter] auto-import failed', err);
 			}
@@ -565,8 +573,10 @@
 			selection?: ExportSelection;
 		};
 		if (detail.action === 'import') {
-			importError = '';
-			importInput?.click();
+			importStage = 'idle';
+			importErrors = [];
+			importSummary = '';
+			importDialogOpen = true;
 		} else if (detail.action === 'export' && detail.selection) {
 			void handleExportSelection(detail.selection).catch((err) =>
 				console.error('[home] export failed', err),
@@ -579,10 +589,34 @@
 	// bare-JSON exports are no longer supported — anyone with an older
 	// file can re-export from the previous session or hand-wrap the JSON
 	// into a `{ manifest.json + <type>.json + images/ }` zip.
-	async function onImportFile(e: Event) {
+	/** Thin adapter for the hidden <input> / page-drop path. */
+	function onImportFile(e: Event) {
 		const file = (e.target as HTMLInputElement).files?.[0];
-		if (!file) return;
-		importError = '';
+		if (file) void runImport(file);
+	}
+
+	/**
+	 * Import a `.zip`, driving the ImportDialog (progress → done/error). Applies
+	 * the payload resiliently: a failure on one row is collected and reported
+	 * alongside the rest rather than aborting the whole import. `silent` (used by
+	 * the first-run starter seed) skips the dialog and logs instead.
+	 */
+	async function runImport(file: File, opts: { silent?: boolean } = {}) {
+		const silent = opts.silent === true;
+		const errors: string[] = [];
+		const step = async (label: string, fn: () => unknown | Promise<unknown>) => {
+			try {
+				await fn();
+			} catch (e) {
+				errors.push(`${label}: ${e instanceof Error ? e.message : String(e)}`);
+			}
+		};
+		importErrors = [];
+		importSummary = '';
+		if (!silent) {
+			importStage = 'importing';
+			importDialogOpen = true;
+		}
 		try {
 			const bytes = new Uint8Array(await file.arrayBuffer());
 			// Map zips are a different beast (manifest.type === 'map',
@@ -591,6 +625,10 @@
 			// running the full parseImportZip pipeline.
 			if (await isMapZip(bytes)) {
 				await importMapZip(file);
+				if (!silent) {
+					importSummary = 'Map imported.';
+					importStage = 'done';
+				}
 				return;
 			}
 			const parsed = parseImportZip(bytes) as Record<string, unknown>;
@@ -707,6 +745,69 @@
 				}
 			} else {
 				incomingCharacters = [parsed as ImportableChar];
+			}
+
+			// ── Validate ──────────────────────────────────────────────────
+			// Shape-check every incoming row WITHOUT applying anything, collecting
+			// all problems up front. A row is valid when it's an object with a
+			// non-empty name (expeditions also need a type). Invalid rows are
+			// dropped from the incoming arrays; if any were dropped we pause on
+			// the `review` state and let the user decide whether to import the
+			// rest (the starter-seed path imports the valid rows silently).
+			const validErrors: string[] = [];
+			function keepValid<T extends { name?: unknown; type?: unknown }>(
+				rows: T[],
+				kind: string,
+				needsType = false,
+			): T[] {
+				return rows.filter((r, i) => {
+					const rec = r as { name?: unknown; type?: unknown } | null;
+					const named =
+						!!rec &&
+						typeof rec === 'object' &&
+						typeof rec.name === 'string' &&
+						rec.name.trim() !== '';
+					const label = named ? `“${(rec as { name: string }).name}”` : `#${i + 1}`;
+					if (!named) {
+						validErrors.push(`${kind} ${label}: missing or invalid name`);
+						return false;
+					}
+					if (needsType && typeof rec!.type !== 'string') {
+						validErrors.push(`${kind} ${label}: missing type`);
+						return false;
+					}
+					return true;
+				});
+			}
+			incomingCharacters = keepValid(incomingCharacters, 'Character');
+			incomingCommunities = keepValid(incomingCommunities, 'Community');
+			incomingNpcs = keepValid(incomingNpcs, 'NPC');
+			incomingPlaces = keepValid(incomingPlaces, 'Place');
+			incomingExpeditions = keepValid(incomingExpeditions, 'Expedition', true);
+
+			if (validErrors.length > 0) {
+				const validCount =
+					incomingCharacters.length +
+					incomingCommunities.length +
+					incomingNpcs.length +
+					incomingPlaces.length +
+					incomingExpeditions.length;
+				if (silent) {
+					// Starter seed: import whatever's valid, note the rest.
+					for (const e of validErrors) console.warn('[import]', e);
+				} else {
+					importErrors = validErrors;
+					importValidCount = validCount;
+					importStage = 'review';
+					const proceed = await new Promise<boolean>((r) => (reviewResolve = r));
+					reviewResolve = null;
+					if (!proceed) {
+						importStage = 'idle';
+						if (importInput) importInput.value = '';
+						return;
+					}
+					importStage = 'importing';
+				}
 			}
 
 			const collisions: CollisionItems = {
@@ -874,24 +975,32 @@
 			if (parsed.manifest && parsed.data) {
 				const m = parsed.manifest as { type: string };
 				if (m.type === 'character' || m.type === 'all-characters') {
-					for (const entry of incomingCharacters) await importChar(entry);
+					for (const entry of incomingCharacters)
+						await step(`Character “${entry.name}”`, () => importChar(entry));
 				} else if (m.type === 'log') {
 					const entries = parsed.data as Array<Record<string, unknown>>;
-					for (const entry of entries) appendSafeLog(entry);
+					for (const entry of entries)
+						await step(`Log entry “${String(entry.title ?? '')}”`, () => appendSafeLog(entry));
 				} else if (m.type === 'communities') {
 					for (const c of incomingCommunities)
-						await importEntityRow(
-							c,
-							'communities',
-							existingCommunityByName,
-							addCommunity,
-							updateCommunity,
+						await step(`Community “${c.name}”`, () =>
+							importEntityRow(
+								c,
+								'communities',
+								existingCommunityByName,
+								addCommunity,
+								updateCommunity,
+							),
 						);
 					for (const n of incomingNpcs)
-						await importEntityRow(n, 'npcs', existingNpcByName, addNpc, updateNpc);
+						await step(`NPC “${n.name}”`, () =>
+							importEntityRow(n, 'npcs', existingNpcByName, addNpc, updateNpc),
+						);
 					relinkPlaces(incomingPlaces);
 					for (const pl of incomingPlaces)
-						await importEntityRow(pl, 'places', existingPlaceByName, addPlace, updatePlace);
+						await step(`Place “${pl.name}”`, () =>
+							importEntityRow(pl, 'places', existingPlaceByName, addPlace, updatePlace),
+						);
 				} else if (m.type === 'expeditions') {
 					for (const exp of incomingExpeditions) {
 						const byName =
@@ -900,25 +1009,35 @@
 								: exp.type === 'scene'
 									? existingSceneByName
 									: existingJourneyByName;
-						await importEntityRow(exp, 'expeditions', byName, addExpedition, updateExpedition);
+						await step(`Expedition “${exp.name}”`, () =>
+							importEntityRow(exp, 'expeditions', byName, addExpedition, updateExpedition),
+						);
 					}
 				} else if (m.type === 'everything') {
-					for (const entry of incomingCharacters) await importChar(entry);
+					for (const entry of incomingCharacters)
+						await step(`Character “${entry.name}”`, () => importChar(entry));
 					const d = parsed.data as { log?: Array<Record<string, unknown>> };
-					for (const entry of d.log ?? []) appendSafeLog(entry);
+					for (const entry of d.log ?? [])
+						await step(`Log entry “${String(entry.title ?? '')}”`, () => appendSafeLog(entry));
 					for (const c of incomingCommunities)
-						await importEntityRow(
-							c,
-							'communities',
-							existingCommunityByName,
-							addCommunity,
-							updateCommunity,
+						await step(`Community “${c.name}”`, () =>
+							importEntityRow(
+								c,
+								'communities',
+								existingCommunityByName,
+								addCommunity,
+								updateCommunity,
+							),
 						);
 					for (const n of incomingNpcs)
-						await importEntityRow(n, 'npcs', existingNpcByName, addNpc, updateNpc);
+						await step(`NPC “${n.name}”`, () =>
+							importEntityRow(n, 'npcs', existingNpcByName, addNpc, updateNpc),
+						);
 					relinkPlaces(incomingPlaces);
 					for (const pl of incomingPlaces)
-						await importEntityRow(pl, 'places', existingPlaceByName, addPlace, updatePlace);
+						await step(`Place “${pl.name}”`, () =>
+							importEntityRow(pl, 'places', existingPlaceByName, addPlace, updatePlace),
+						);
 					for (const exp of incomingExpeditions) {
 						const byName =
 							exp.type === 'site'
@@ -926,29 +1045,56 @@
 								: exp.type === 'scene'
 									? existingSceneByName
 									: existingJourneyByName;
-						await importEntityRow(exp, 'expeditions', byName, addExpedition, updateExpedition);
+						await step(`Expedition “${exp.name}”`, () =>
+							importEntityRow(exp, 'expeditions', byName, addExpedition, updateExpedition),
+						);
 					}
 					// Restore bundled maps (markers + backgrounds) from the nested
-					// `maps/<id>/…` dirs, re-linking each to its owner entity by
-					// name now that the entity rows above have landed with their new
-					// ids. Unzips the raw bytes here rather than threading them
-					// through parseImportZip (which only surfaces the JSON body +
-					// portrait images). Best-effort: a map failure never aborts the
-					// entity import that already landed above.
-					try {
-						await restoreBundledMaps(unzipSync(bytes));
-					} catch {
-						/* non-fatal — entities imported fine */
-					}
+					// `maps/<id>/…` dirs, re-linking each to its owner entity by name.
+					await step('Maps', () => restoreBundledMaps(unzipSync(bytes)));
 				}
 			} else {
-				for (const entry of incomingCharacters) await importChar(entry);
+				for (const entry of incomingCharacters)
+					await step(`Character “${entry.name}”`, () => importChar(entry));
 			}
+
+			// ── Report ────────────────────────────────────────────────────
+			const connCount = incomingCommunities.length + incomingNpcs.length + incomingPlaces.length;
+			const logCount =
+				(parsed.manifest as { type?: string } | undefined)?.type === 'log'
+					? Array.isArray(parsed.data)
+						? parsed.data.length
+						: 0
+					: Array.isArray((parsed.data as { log?: unknown })?.log)
+						? (parsed.data as { log: unknown[] }).log.length
+						: 0;
+			const parts: string[] = [];
+			if (incomingCharacters.length)
+				parts.push(
+					`${incomingCharacters.length} character${incomingCharacters.length === 1 ? '' : 's'}`,
+				);
+			if (connCount) parts.push(`${connCount} connection${connCount === 1 ? '' : 's'}`);
+			if (incomingExpeditions.length)
+				parts.push(
+					`${incomingExpeditions.length} expedition${incomingExpeditions.length === 1 ? '' : 's'}`,
+				);
+			if (logCount) parts.push(`${logCount} log entries`);
+			importSummary =
+				(parts.length ? `Imported ${parts.join(' · ')}.` : 'Nothing new to import.') +
+				(validErrors.length ? ` ${validErrors.length} skipped.` : '');
+			importErrors = [...validErrors, ...errors];
+			if (!silent) importStage = 'done';
 		} catch (err) {
-			importError =
+			const msg =
 				err instanceof ImportError
 					? err.message
-					: 'Could not import. Make sure the file is a valid Iron Ledger JSON export.';
+					: 'Could not import. Make sure the file is a valid Iron Ledger export.';
+			if (silent) {
+				console.warn('[import]', msg);
+			} else {
+				importErrors = [msg];
+				importStage = 'error';
+			}
 		} finally {
 			if (importInput) importInput.value = '';
 		}
@@ -1651,12 +1797,23 @@
      export format switched to zip. -->
 <input bind:this={importInput} type="file" accept=".zip,application/zip" style="display: none" />
 
-<!-- Top-level error bar — shows import failures from sanitization, parsing,
-     or post-parse validation. Selecting Import from the menu opens the file
-     picker directly; any failure surfaces here. -->
-<div class="error-bar-host">
-	<ErrorBar message={importError} onDismiss={() => (importError = '')} />
-</div>
+<!-- Import dialog — file chooser → progress → validation review (apply the
+     valid rows?) → done / error. Replaces the old file-picker + error bar;
+     drives its stages from runImport(). -->
+<ImportDialog
+	bind:open={importDialogOpen}
+	stage={importStage}
+	summary={importSummary}
+	errors={importErrors}
+	validCount={importValidCount}
+	onfile={(file) => void runImport(file)}
+	onreview={(proceed) => reviewResolve?.(proceed)}
+	onreset={() => {
+		importStage = 'idle';
+		importErrors = [];
+		importSummary = '';
+	}}
+/>
 
 <!-- ID-collision prompt — surfaces only when an import's NPC/community/expedition
      ids clash with the active session. onImportFile awaits its open() promise
@@ -1839,14 +1996,6 @@
 	:global(.app-main) {
 		max-width: none;
 		padding: 0;
-	}
-
-	/* ── Top-level error bar host (margin only; styles live in ErrorBar) ───── */
-	.error-bar-host {
-		margin: 8px var(--page-gutter, 10px) 0;
-	}
-	.error-bar-host:empty {
-		display: none;
 	}
 
 	/* ── Desktop layout ──────────────────────────────────────────────────────── */

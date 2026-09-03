@@ -150,6 +150,24 @@ export function parseImportZip(bytes: Uint8Array): unknown {
 	// legacy JSON imports already produce.
 	body = reassemblePortraits(body, entries);
 
+	// Some exports write the body file as a full `{ manifest, data }` envelope
+	// (the same shape as manifest.json) rather than the bare payload — e.g. the
+	// per-category "Connections" / "Expeditions" zips. Unwrap one level so the
+	// rest of the pipeline always sees the raw payload as `data`; otherwise the
+	// dispatch reads `parsed.data.communities` off the envelope, finds nothing,
+	// and reports a successful import of zero rows. A bare character body is
+	// `{ name, data }` — it has `data` but no `manifest` — so this only fires on
+	// the doubly-wrapped form.
+	if (
+		body !== null &&
+		typeof body === 'object' &&
+		!Array.isArray(body) &&
+		'manifest' in body &&
+		'data' in body
+	) {
+		body = (body as { data: unknown }).data;
+	}
+
 	// Wrap the reassembled body with the same manifest/data envelope
 	// legacy JSON imports use, so the rest of the pipeline is unchanged.
 	const envelope = { manifest, data: body };

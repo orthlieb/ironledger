@@ -173,6 +173,45 @@ describe('parseImportZip — happy path', () => {
 		expect(result.data.characters[0]).not.toHaveProperty('__proto__');
 		expect(({} as Record<string, unknown>).polluted).toBeUndefined();
 	});
+
+	// The per-category exports (Connections / Expeditions) write the body file
+	// as a FULL `{ manifest, data }` envelope, not the bare payload. parseImportZip
+	// must unwrap that extra level so the dispatch reads real rows off `data` —
+	// otherwise it finds `data.communities === undefined` and imports nothing
+	// while reporting success. Regression guard for that silent-drop bug.
+	it('unwraps a body that is itself a { manifest, data } envelope', () => {
+		const inner = {
+			manifest: { app: 'Iron Ledger', version: '1.0.0', type: 'communities', count: 2 },
+			data: {
+				communities: [{ id: 'c1', name: 'Havenport' }],
+				npcs: [],
+				places: [{ id: 'p1', name: 'The Deep' }],
+			},
+		};
+		const zip = buildZip({
+			'manifest.json': manifest({ type: 'communities', count: 2 }),
+			'communities.json': strToU8(JSON.stringify(inner)),
+		});
+		const result = parseImportZip(zip) as {
+			data: { communities: unknown[]; places: unknown[]; npcs: unknown[] };
+		};
+		// data is the INNER payload, not the whole envelope.
+		expect(result.data).not.toHaveProperty('manifest');
+		expect(result.data.communities).toHaveLength(1);
+		expect(result.data.places).toHaveLength(1);
+	});
+
+	// A bare character body is `{ name, data }` — it has `data` but no
+	// `manifest`, so the unwrap must NOT fire and swallow the real payload.
+	it('does not unwrap a bare { name, data } character body', () => {
+		const zip = buildZip({
+			'manifest.json': manifest({ type: 'character', count: 1 }),
+			'character.json': strToU8(JSON.stringify({ name: 'Wayfarer', data: { edge: 2 } })),
+		});
+		const result = parseImportZip(zip) as { data: { name: string; data: unknown } };
+		expect(result.data.name).toBe('Wayfarer');
+		expect(result.data.data).toEqual({ edge: 2 });
+	});
 });
 
 // ---------------------------------------------------------------------------

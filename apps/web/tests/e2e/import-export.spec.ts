@@ -13,11 +13,33 @@
  */
 import { test, expect, type Download } from '@playwright/test';
 import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
-import { resetAll } from './helpers/reset';
+import { resetAll, getTestToken } from './helpers/reset';
 import { settleHome } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
 const ZIP_INPUT = 'input[type="file"][accept=".zip,application/zip"]';
+
+// The ImportDialog surfaces progress + result. A clean import lands on the
+// "done" stage with the ✓ badge; a rejected archive (too large, bad JSON,
+// over the item/nesting caps) lands on the "error" stage with the message in
+// its `.imd-errlist`.
+const IMD_DONE_OK = '.imd-badge--ok';
+const IMD_ERRLIST = '.imd-errlist';
+
+/** Assert the ImportDialog reached a clean success (done, no issues). */
+async function expectImportOk(page: import('@playwright/test').Page, timeout = 5_000) {
+	await expect(page.locator(IMD_DONE_OK)).toBeVisible({ timeout });
+}
+
+/** Assert the ImportDialog failed and its error list mentions `text`. */
+async function expectImportError(
+	page: import('@playwright/test').Page,
+	text: string | RegExp,
+	timeout = 5_000,
+) {
+	await expect(page.locator(IMD_ERRLIST)).toBeVisible({ timeout });
+	await expect(page.locator(IMD_ERRLIST)).toContainText(text, { timeout });
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -190,7 +212,7 @@ test.describe('Import — happy path', () => {
 			1,
 		);
 		await uploadImport(page, payload);
-		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
+		await expectImportOk(page);
 	});
 
 	test('imports a valid log JSON without errors', async ({ page }) => {
@@ -200,7 +222,7 @@ test.describe('Import — happy path', () => {
 			1,
 		);
 		await uploadImport(page, payload);
-		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
+		await expectImportOk(page);
 	});
 });
 
@@ -219,8 +241,7 @@ test.describe('Import — security', () => {
 		// string compresses to almost nothing, so the zip itself stays tiny).
 		const big = makeManifest('log', ['x'.repeat(6 * 1024 * 1024)], 1);
 		await uploadImport(page, big, 'huge.json');
-		await expect(page.locator('.error-bar')).toBeVisible({ timeout: 5_000 });
-		await expect(page.locator('.error-bar-msg')).toContainText('too large');
+		await expectImportError(page, 'too large');
 	});
 
 	test('rejects a zip whose body is not valid JSON with a user-friendly error', async ({
@@ -237,8 +258,7 @@ test.describe('Import — security', () => {
 			mimeType: 'application/zip',
 			buffer: Buffer.from(bad),
 		});
-		await expect(page.locator('.error-bar')).toBeVisible({ timeout: 5_000 });
-		await expect(page.locator('.error-bar-msg')).toContainText('not valid JSON');
+		await expectImportError(page, 'not valid JSON');
 	});
 
 	test('silently drops __proto__ keys — no prototype pollution', async ({ page }) => {
@@ -255,7 +275,7 @@ test.describe('Import — security', () => {
 			1,
 		);
 		await uploadImport(page, poisoned);
-		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
+		await expectImportOk(page);
 		const polluted = await page.evaluate(() => (({}) as Record<string, unknown>).isAdmin);
 		expect(polluted).toBeUndefined();
 	});
@@ -274,7 +294,7 @@ test.describe('Import — security', () => {
 			1,
 		);
 		await uploadImport(page, payload);
-		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
+		await expectImportOk(page);
 		const xssRan = await page.evaluate(
 			() => (window as unknown as Record<string, unknown>).__xss_test,
 		);
@@ -295,7 +315,7 @@ test.describe('Import — security', () => {
 			1,
 		);
 		await uploadImport(page, payload);
-		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
+		await expectImportOk(page);
 		await page.waitForTimeout(500);
 		const handlerRan = await page.evaluate(
 			() => (window as unknown as Record<string, unknown>).__onerror_test,
@@ -315,10 +335,7 @@ test.describe('Import — security', () => {
 			1001,
 		);
 		await uploadImport(page, payload);
-		await expect(page.locator('.error-bar')).toBeVisible({ timeout: 10_000 });
-		await expect(page.locator('.error-bar-msg')).toContainText('too many items', {
-			timeout: 5_000,
-		});
+		await expectImportError(page, 'too many items', 10_000);
 	});
 
 	test('rejects JSON with excessive nesting depth', async ({ page }) => {
@@ -326,8 +343,128 @@ test.describe('Import — security', () => {
 		for (let i = 0; i < 15; i++) deep = { child: deep };
 		const payload = makeManifest('character', { name: 'Deep', data: { nested: deep } }, 1);
 		await uploadImport(page, payload);
-		await expect(page.locator('.error-bar')).toBeVisible({ timeout: 5_000 });
-		await expect(page.locator('.error-bar-msg')).toContainText('deeply nested');
+		await expectImportError(page, 'deeply nested');
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Import dialog — stages (progress → done / error / review)
+//
+// The ImportDialog is the user-facing surface for every import. These tests
+// pin its three terminal stages directly: a clean archive lands on "done", a
+// malformed one lands on "error", and a mixed archive pauses on the validate
+// "review" stage so the user can choose to import just the valid rows.
+// ---------------------------------------------------------------------------
+
+test.describe('Import dialog', () => {
+	test.beforeEach(async ({ page }) => {
+		await gotoHome(page);
+	});
+
+	test('well-formatted archive → done stage with a success summary', async ({ page }) => {
+		const payload = makeManifest('character', { name: 'Wayfarer', data: { edge: 1 } }, 1);
+		await uploadImport(page, payload);
+		// Done stage: green ✓ badge, "Import complete", and a summary line.
+		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.imd-state-title')).toContainText('Import complete');
+		await expect(page.locator('.imd-state-sub')).toContainText('1 character');
+		// No issue list on a clean import.
+		await expect(page.locator(IMD_ERRLIST)).toHaveCount(0);
+	});
+
+	test('badly-formatted archive → error stage listing the problem', async ({ page }) => {
+		const bad = zipSync({
+			'manifest.json': strToU8(
+				JSON.stringify({ app: 'Iron Ledger', version: '1.0.0', type: 'log', body: 'data.json' }),
+			),
+			'data.json': strToU8('{ not json ]['),
+		});
+		await page.locator(ZIP_INPUT).setInputFiles({
+			name: 'broken.zip',
+			mimeType: 'application/zip',
+			buffer: Buffer.from(bad),
+		});
+		await expect(page.locator('.imd-badge--err')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.imd-state-title')).toContainText('Import failed');
+		await expectImportError(page, 'not valid JSON');
+	});
+
+	test('mixed archive → review stage, then imports only the valid rows', async ({ page }) => {
+		// Two communities: one valid, one with a blank name (invalid). The
+		// validate pass drops the nameless one and pauses for confirmation.
+		const payload = makeManifest('communities', {
+			communities: [
+				{ id: 'c-good', name: 'Havenport' },
+				{ id: 'c-bad', name: '   ' },
+			],
+			npcs: [],
+			places: [],
+		});
+		await uploadImport(page, payload);
+
+		// Review stage: one item flagged, one still importable.
+		await expect(page.locator('.imd-state-title')).toContainText('couldn’t be read', {
+			timeout: 5_000,
+		});
+		await expect(page.locator('.imd-state-sub')).toContainText('1 valid item');
+		await expect(page.locator(IMD_ERRLIST)).toContainText('missing or invalid name');
+
+		// Confirm: import the one valid community.
+		await page.locator('.imd-footer .btn-primary', { hasText: /Import 1 valid item/ }).click();
+
+		// Lands on done-with-issues: warn badge, the skipped row still listed.
+		await expect(page.locator('.imd-badge--warn')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.imd-state-sub')).toContainText('1 connection');
+	});
+
+	test('review stage → Cancel imports nothing', async ({ page }) => {
+		const payload = makeManifest('communities', {
+			communities: [{ id: 'c-bad', name: '' }],
+			npcs: [],
+			places: [],
+		});
+		await uploadImport(page, payload);
+		await expect(page.locator('.imd-state-title')).toContainText('couldn’t be read', {
+			timeout: 5_000,
+		});
+		// Cancel returns to the chooser (idle) without applying anything.
+		await page.locator('.imd-footer .btn', { hasText: /^Cancel$/ }).click();
+		await expect(page.locator('.imd-drop')).toBeVisible({ timeout: 5_000 });
+	});
+
+	// The per-category "Connections" export writes the body file as a full
+	// { manifest, data } envelope (not the bare payload). This used to import
+	// zero rows while reporting success ("Nothing new to import"). Guard it.
+	test('wrapped-body connections archive imports its rows (not a no-op)', async ({ page }) => {
+		const inner = {
+			manifest: { app: 'Iron Ledger', version: '1.0.0', type: 'communities', count: 2 },
+			data: {
+				communities: [{ id: 'c-wrap', name: 'Wrapped Reach' }],
+				npcs: [],
+				places: [{ id: 'p-wrap', name: 'Wrapped Hollow' }],
+			},
+		};
+		const wrapped = zipSync({
+			'manifest.json': strToU8(
+				JSON.stringify({
+					app: 'Iron Ledger',
+					version: '1.0.0',
+					type: 'communities',
+					count: 2,
+					body: 'communities.json',
+				}),
+			),
+			'communities.json': strToU8(JSON.stringify(inner)),
+		});
+		await page.locator(ZIP_INPUT).setInputFiles({
+			name: 'communities.zip',
+			mimeType: 'application/zip',
+			buffer: Buffer.from(wrapped),
+		});
+		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 5_000 });
+		// The rows landed — summary counts them, not "Nothing new to import".
+		await expect(page.locator('.imd-state-sub')).toContainText('2 connections');
+		await expect(page.locator('.imd-state-sub')).not.toContainText('Nothing new');
 	});
 });
 
@@ -409,7 +546,9 @@ test.describe('Import / Export — portrait round-trip', () => {
 			mimeType: 'application/zip',
 			buffer: Buffer.from(zipSync(reentries)),
 		});
-		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
+		await expectImportOk(page);
+		// Dismiss the ImportDialog so it doesn't cover the switcher below.
+		await page.locator('.imd-footer .btn-primary', { hasText: /Done/ }).click();
 
 		// Select the freshly imported character from the switcher, open Background.
 		await page.locator(`${CHAR_AREA} .ca-hdr-combobox`).click();
@@ -479,7 +618,7 @@ test.describe('Import / Export — Place ↔ settlement re-linking', () => {
 			2,
 		);
 		await uploadImport(page, payload);
-		await expect(page.locator('.error-bar')).not.toBeVisible({ timeout: 5_000 });
+		await expectImportOk(page);
 
 		// Reload so the stores refetch from the server — the imported entities are
 		// now persisted with their final ids and the resolved parent link.
@@ -501,5 +640,234 @@ test.describe('Import / Export — Place ↔ settlement re-linking', () => {
 		expect(deep).toBeDefined();
 		expect(deep?.withinSettlementName).toBe('Havenport');
 		expect(deep?.withinSettlementId).toBeUndefined();
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Full round-trip — export one of every entity type through the real export
+// dialog, wipe the account, re-import the produced zip, and verify each type
+// came back with its data intact (including the place → settlement re-link).
+//
+// This exercises the ACTUAL exporter → importer contract end to end (not a
+// hand-built fixture), so a body-shape drift between the two — the class of
+// bug that made a real communities export silently import nothing — fails
+// here immediately.
+// ---------------------------------------------------------------------------
+
+const V1 = 'http://127.0.0.1:3000/api/v1';
+
+test.describe('Import / Export — full round-trip', () => {
+	// Distinctive ids/names so we can assert each survived and re-linked.
+	const COMMUNITY_ID = 'rt-comm-1';
+
+	test.beforeAll(async () => {
+		await resetAll();
+		const tok = await getTestToken();
+		const h = { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' };
+
+		// One of each entity type, each with a distinctive field to assert on.
+		await fetch(`${V1}/characters`, {
+			method: 'POST',
+			headers: h,
+			body: JSON.stringify({
+				name: 'Rook Vanguard',
+				data: { stats: { edge: 3, heart: 1, iron: 2, shadow: 2, wits: 1 }, momentum: 7 },
+			}),
+		}).then((r) => expect(r.ok, 'seed character').toBeTruthy());
+
+		await fetch(`${V1}/session/communities`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify({
+				communities: [
+					{
+						id: COMMUNITY_ID,
+						name: 'Bellmark',
+						region: 'The Deep Wilds',
+						location: '',
+						locationDescription: '',
+						trouble: 'Failing harvest',
+						notes: '',
+						createdAt: Date.now(),
+					},
+				],
+			}),
+		}).then((r) => expect(r.ok, 'seed community').toBeTruthy());
+
+		await fetch(`${V1}/session/npcs`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify({
+				npcs: [
+					{
+						id: 'rt-npc-1',
+						name: 'Old Salt',
+						role: 'Harbor guide',
+						goal: '',
+						descriptor: '',
+						relationship: 'friendly',
+						location: '',
+						notes: '',
+						createdAt: Date.now(),
+					},
+				],
+			}),
+		}).then((r) => expect(r.ok, 'seed npc').toBeTruthy());
+
+		// Place nested inside the community by id — the export lifts this to a
+		// name reference, the import must re-resolve it to the new community id.
+		await fetch(`${V1}/session/places`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify({
+				places: [
+					{
+						id: 'rt-place-1',
+						name: 'The Sunken Hall',
+						region: 'The Deep Wilds',
+						location: '',
+						locationDescription: 'A drowned temple',
+						trouble: '',
+						notes: '',
+						situationalNotes: '',
+						withinSettlementId: COMMUNITY_ID,
+						createdAt: Date.now(),
+					},
+				],
+			}),
+		}).then((r) => expect(r.ok, 'seed place').toBeTruthy());
+
+		await fetch(`${V1}/session/expeditions`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify({
+				expeditions: [
+					{
+						id: 'rt-journey-1',
+						type: 'journey',
+						name: 'The Long Road',
+						objective: 'Reach the coast',
+						difficulty: 'dangerous',
+						ticks: 8,
+						notes: '',
+						complete: false,
+					},
+					{
+						id: 'rt-site-1',
+						type: 'site',
+						name: 'Barrowdeep',
+						theme: 'Ravaged',
+						domain: 'Barrow',
+						difficulty: 'formidable',
+						ticks: 0,
+						denizens: [],
+						notes: '',
+						complete: false,
+					},
+				],
+			}),
+		}).then((r) => expect(r.ok, 'seed expeditions').toBeTruthy());
+
+		await fetch(`${V1}/session/log`, {
+			method: 'POST',
+			headers: h,
+			body: JSON.stringify({
+				id: '11111111-1111-4111-8111-111111111111',
+				title: 'Round-trip Marker',
+				html: '<div>A distinctive log line.</div>',
+				ts: new Date().toISOString(),
+			}),
+		}).then((r) => expect(r.ok, 'seed log').toBeTruthy());
+	});
+
+	test('export everything, wipe, re-import, and every type returns intact', async ({ page }) => {
+		await gotoHome(page);
+
+		// 1. Export everything through the real dialog (opens fully selected).
+		await openExportDialog(page);
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.exd-dialog .btn-primary').click(),
+		]);
+		const zipBytes = await downloadBuffer(download);
+		expect(zipBytes.length).toBeGreaterThan(0);
+
+		// 2. Wipe the account and confirm it's empty on a fresh load.
+		await resetAll();
+		await gotoHome(page);
+		const empty = await page.evaluate(async () => {
+			const s = await fetch('/api/session', { credentials: 'include' }).then((r) => r.json());
+			const chars = await fetch('/api/characters', { credentials: 'include' }).then((r) =>
+				r.json(),
+			);
+			return {
+				chars: chars.length,
+				communities: (s.communities ?? []).length,
+				npcs: (s.npcs ?? []).length,
+				places: (s.places ?? []).length,
+				expeditions: (s.expeditions ?? []).length,
+			};
+		});
+		expect(empty).toEqual({ chars: 0, communities: 0, npcs: 0, places: 0, expeditions: 0 });
+
+		// 3. Re-import the produced zip.
+		await page.locator(ZIP_INPUT).setInputFiles({
+			name: 'roundtrip.zip',
+			mimeType: 'application/zip',
+			buffer: zipBytes,
+		});
+		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 10_000 });
+		await expect(page.locator('.imd-errlist')).toHaveCount(0);
+
+		// 4. Verify every type came back with its data intact.
+		const state = await page.evaluate(async () => {
+			const s = await fetch('/api/session', { credentials: 'include' }).then((r) => r.json());
+			const chars = await fetch('/api/characters', { credentials: 'include' }).then((r) =>
+				r.json(),
+			);
+			const log = await fetch('/api/session/log?limit=100', { credentials: 'include' }).then((r) =>
+				r.json(),
+			);
+			return {
+				chars,
+				communities: s.communities ?? [],
+				npcs: s.npcs ?? [],
+				places: s.places ?? [],
+				expeditions: s.expeditions ?? [],
+				log: Array.isArray(log) ? log : (log.entries ?? []),
+			};
+		});
+
+		// Character — name + a distinctive stat.
+		const rook = state.chars.find((c: { name: string }) => c.name === 'Rook Vanguard');
+		expect(rook, 'character round-tripped').toBeDefined();
+		expect(rook.data?.stats?.edge).toBe(3);
+
+		// Community — name + region.
+		const bellmark = state.communities.find((c: { name: string }) => c.name === 'Bellmark');
+		expect(bellmark, 'community round-tripped').toBeDefined();
+		expect(bellmark.region).toBe('The Deep Wilds');
+
+		// NPC.
+		expect(state.npcs.find((n: { name: string }) => n.name === 'Old Salt')).toBeDefined();
+
+		// Place — present AND re-linked to the community's NEW id (not the old one).
+		const hall = state.places.find((p: { name: string }) => p.name === 'The Sunken Hall');
+		expect(hall, 'place round-tripped').toBeDefined();
+		expect(hall.withinSettlementId, 'place re-linked to community').toBe(bellmark.id);
+
+		// Expeditions — both types with their discriminating fields.
+		const journey = state.expeditions.find((e: { name: string }) => e.name === 'The Long Road');
+		const site = state.expeditions.find((e: { name: string }) => e.name === 'Barrowdeep');
+		expect(journey?.type).toBe('journey');
+		expect(journey?.difficulty).toBe('dangerous');
+		expect(site?.type).toBe('site');
+		expect(site?.domain).toBe('Barrow');
+
+		// Log — the distinctive entry is back.
+		expect(
+			state.log.some((e: { title?: string }) => e.title === 'Round-trip Marker'),
+			'log entry round-tripped',
+		).toBeTruthy();
 	});
 });

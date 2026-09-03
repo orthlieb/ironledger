@@ -260,7 +260,13 @@ export async function seedNpc(name = 'Seed NPC', token?: string): Promise<string
 
 /**
  * Wipe ALL persistent data for the test user in one shot:
- *   characters · foe encounters · expeditions · communities · NPCs · session log
+ *   characters · foe encounters · expeditions · communities · NPCs · session log · maps
+ *
+ * Maps are included because they persist server-side and count against a
+ * per-user cap; leaving them behind lets successive runs accumulate maps until
+ * an import that bundles them hits the limit (a 422 that surfaces as a spurious
+ * "Maps couldn't be imported" issue). Map suites that need a blank slate get it
+ * for free; they may still call clearAllMaps() explicitly (idempotent).
  *
  * Pass a pre-fetched token to skip the redundant login round-trip when you
  * already have one (e.g. from auth.setup.ts).
@@ -271,4 +277,6 @@ export async function resetAll(token?: string): Promise<void> {
 	await resetCharacters(tok);
 	// Session collections and log are each a single atomic write — safe to parallelize.
 	await Promise.all([resetFoes(tok), resetExpeditions(tok), resetCommunities(tok), resetLog(tok)]);
+	// Maps are their own resource (background + markers) — clear last.
+	await clearAllMaps(tok);
 }

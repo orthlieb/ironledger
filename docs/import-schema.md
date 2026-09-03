@@ -77,7 +77,7 @@ Import dispatches **solely on `manifest.type`**.
 | `character`      | Current Character | `{ name, data }`                                                                                | `character.json`        | `<slug-of-name>.zip`            |
 | `all-characters` | All Characters    | `Array<{ name, data }>`                                                                         | `characters.json`       | `all-characters-<stamp>.zip`    |
 | `communities`    | Connections       | `{ communities: Community[], npcs: Npc[], places: Place[] }`                                    | `communities.json`      | `communities-<stamp>.zip`       |
-| `expeditions`    | Expeditions       | `Array<Expedition>` (Journey \| Site)                                                           | `expeditions.json`      | `expeditions-<stamp>.zip`       |
+| `expeditions`    | Expeditions       | `Array<Expedition>` (Journey \| Site \| Scene)                                                  | `expeditions.json`      | `expeditions-<stamp>.zip`       |
 | `everything`     | Everything        | `{ characters, log, communities, npcs, places, expeditions, session }` (foes are Markdown-only) | `everything.json`       | `ironledger-export-<stamp>.zip` |
 | `log`            | Session Log       | `Array<LogEntry>` (oldest-first)                                                                | _(no zip — plain JSON)_ | `session-log-<stamp>.json`      |
 
@@ -142,15 +142,24 @@ allocated; nothing is overwritten). Imported character data is run through
 
 ## Expeditions
 
-`type: "expeditions"` — `data` is an array of `Expedition` objects. An
-expedition is either a **Journey** or a **Site** (discriminated by its `type`
-field); Sites additionally carry `theme`, `domain`, `difficulty`, a `denizens`
-array, and the rolled `currentFeature` / `currentDanger`. See the `Journey`
-and `Site` interfaces in `apps/web/src/lib/types.ts` for the full field list.
+`type: "expeditions"` — `data` is an array of `Expedition` objects,
+discriminated by their own `type` field into three kinds:
+
+- **Journey** — `name`, `difficulty`, `ticks` (progress track), and the usual
+  notes/complete/portrait fields.
+- **Site** (Delve) — a Journey plus `theme`, `domain`, a `denizens` array, and
+  the rolled `currentFeature` / `currentDanger`.
+- **Scene** (Lodestar Scene Challenge) — a Journey plus `objective`,
+  `consequences`, and `countdownFilled` (0–4 filled countdown segments).
+
+See the `Journey`, `Site`, and `Scene` interfaces in
+`apps/web/src/lib/types.ts` for the full field list. As with connections, the
+whole object round-trips — the `"…"` below is the rest of each kind's field
+set, not dropped fields.
 
 ```json
 {
-  "manifest": { "…": "…", "type": "expeditions", "count": 2 },
+  "manifest": { "…": "…", "type": "expeditions", "count": 3 },
   "data": [
     {
       "id": "…",
@@ -167,6 +176,17 @@ and `Site` interfaces in `apps/web/src/lib/types.ts` for the full field list.
       "theme": "…",
       "domain": "…",
       "denizens": ["…"],
+      "...": "…"
+    },
+    {
+      "id": "…",
+      "type": "scene",
+      "name": "Escape the Collapsing Vault",
+      "difficulty": "dangerous",
+      "ticks": 8,
+      "objective": "…",
+      "consequences": "…",
+      "countdownFilled": 2,
       "...": "…"
     }
   ]
@@ -230,6 +250,30 @@ Community named for its Hobbits); a **Place** captures a fixed location worth
 remembering, whether inside a community (a specific tavern) or out in the
 world (Mt. Doom). See [communities.md](communities.md) for the full
 distinction.
+
+> **The whole entity round-trips — the JSON above is abridged, not a
+> whitelist.** Export takes a full `$state.snapshot()` of each row and import
+> stores the row as-is (minus the poison keys), so every field a live entity
+> carries survives, including any this doc doesn't spell out. The `"…"` in the
+> examples stands in for the rest of the field set, not for fields that get
+> dropped.
+
+The examples above show only the always-present core. The following
+**extension fields are optional** — populated when the owning extension is
+enabled, absent (or empty) otherwise — and, per the round-trip rule above,
+they export and import exactly like any other field:
+
+| Entity        | Extension        | Optional fields                                                                          |
+| ------------- | ---------------- | ---------------------------------------------------------------------------------------- |
+| **Community** | Lodestar         | `type`, `condition`, `firstLook`, `disposition`, `projects`, `culturalTouchstones` (six) |
+| **Community** | (always)         | `locationDescription`, `situationalNotes`                                                |
+| **NPC**       | Lodestar / Delve | `firstLook`, `activity`, `disposition`, `situationalNotes`                               |
+| **Place**     | (always)         | `locationDescription`, `situationalNotes`, `withinSettlementId` / `withinSettlementName` |
+
+`Place` currently shares the `Community` field set (it renders in the same
+card), but is stored as its own entity kind so future place-specific fields
+don't need a schema shuffle. `Place.trouble` is deprecated (kept for
+back-compat, shown only if populated).
 
 > **A Place's parent settlement is carried by name.** A live `Place` links
 > to its parent `Community` by `withinSettlementId`, but ids are minted
@@ -361,12 +405,168 @@ re-applied on import).
 
 ---
 
+## Field reference & populating oracles
+
+Every field below round-trips through export/import (a whole-object copy,
+per the round-trip rule in [Connections](#connections-communities--npcs--places)).
+The **Oracle** column names the catalogue oracle that fills a field when the
+user rolls it during creation or on the card — by **Title** (`key`) — and its
+**source**: **base** (Ironsworn classic, always on), **Delve**, **Lodestar**,
+or **YRT**. Fields marked **—** are user-entered, mechanical, or generated
+(uuids, timestamps), never oracle-rolled. `resolveOracleKey` means an enabled
+expansion can supersede the base oracle; that's noted inline. The oracle
+wiring lives in
+[`CommunitiesArea.svelte`](../apps/web/src/lib/components/v2/CommunitiesArea.svelte)
+and [`ExpeditionsArea.svelte`](../apps/web/src/lib/components/v2/ExpeditionsArea.svelte);
+the concept→oracle resolution in
+[`characterConcept.ts`](../apps/web/src/lib/characterConcept.ts).
+
+### Community (`communities[]`)
+
+| Key                   | Contains                                      | Oracle                                                                                                                                                            |
+| --------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | uuid                                          | — (generated)                                                                                                                                                     |
+| `name`                | Settlement name                               | **Settlement: Name** (`settlementName`) or **Settlement: Quick Name Generator** (`settlementNameQuick`), base                                                     |
+| `region`              | Ironlands region (Flooded Lands, Havens…)     | **Location: Region** (`region`), base; YRT replaces with its own **Location: Region** (`yrtRegion`)                                                               |
+| `location`            | The settlement's setting / landmark           | **Location** (`location`) or **Location: Coastal Waters** (`coastalWatersLocation`); Lodestar supersedes with **Overland Landmark** / **Coastal Waters Landmark** |
+| `locationDescription` | Descriptive detail of the location            | **Location: Descriptor** (`locationDescriptor`), base                                                                                                             |
+| `trouble`             | The settlement's current trouble              | **Settlement: Troubles** (`settlementTrouble`), base                                                                                                              |
+| `type`                | Settlement size / kind                        | **Settlement: Type** (`settlementType`), **Lodestar** (YRT `yrtSettlementType`)                                                                                   |
+| `condition`           | Current condition                             | **Settlement: Condition** (`settlementCondition`), **Lodestar**                                                                                                   |
+| `firstLook`           | At-a-glance impression                        | **Settlement: First Look** (`settlementFirstLook`), **Lodestar**                                                                                                  |
+| `disposition`         | Disposition toward the party                  | **Settlement: Disposition** (`settlementDisposition`), **Lodestar**                                                                                               |
+| `projects`            | What the settlement is working on             | **Settlement: Projects** (`settlementProjects`), **Lodestar**                                                                                                     |
+| `culturalTouchstones` | Cultural flavor                               | **Settlement: Cultural Touchstones** (`settlementCulturalTouchstones`), **Lodestar**                                                                              |
+| `notes`               | Long-form description (Description tab)       | —                                                                                                                                                                 |
+| `situationalNotes`    | Short situational notes (Core tab)            | —                                                                                                                                                                 |
+| `portraitEtag`        | Portrait content-hash (blob store)            | —                                                                                                                                                                 |
+| `imageUrl`            | _@deprecated_ inline base64 portrait (import) | —                                                                                                                                                                 |
+| `createdAt`           | creation timestamp                            | —                                                                                                                                                                 |
+
+The six Lodestar fields (`type` … `culturalTouchstones`) are the "Lodestar
+settlement suite" — each backed by a `Settlement: …` Lodestar oracle.
+
+### NPC (`npcs[]`)
+
+| Key                         | Contains                                                                      | Oracle                                                                                                                  |
+| --------------------------- | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `id`                        | uuid                                                                          | —                                                                                                                       |
+| `name`                      | Character name                                                                | **Character: Name** sets — Ironlander (`namesIronlander`, default) + Elf / Giant / Varou / Troll (`namesOther_*`), base |
+| `role`                      | Community role / occupation                                                   | **Character: Role** (`characterRole`), base                                                                             |
+| `goal`                      | Current goal                                                                  | **Character: Goal** (`characterGoal`), base                                                                             |
+| `descriptor`                | Revealed details / trait                                                      | **Character: Revealed Details** (`characterDescriptor`), base                                                           |
+| `firstLook`                 | At-a-glance impression                                                        | **Character: First Look** (`characterFirstLook`), **Lodestar**                                                          |
+| `activity`                  | What they were doing when met                                                 | **Character: Activity** (`charActivity`), **Delve**                                                                     |
+| `disposition`               | Disposition toward the party                                                  | **Character: Disposition** — `lodestarCharacterDisposition` (**Lodestar**) or `charDisposition` (**Delve**)             |
+| `relationship`              | friendly / neutral / hostile (UI toggle)                                      | —                                                                                                                       |
+| `location`                  | Where they're found                                                           | —                                                                                                                       |
+| `notes`                     | Long-form description; YRT **Touched** (`yrtTouched`) writes a breakdown here | (YRT, when rolled)                                                                                                      |
+| `situationalNotes`          | Short situational notes                                                       | —                                                                                                                       |
+| `deceased`                  | alive (absent / false) vs deceased                                            | —                                                                                                                       |
+| `portraitEtag` / `imageUrl` | portrait (blob / _@deprecated_ inline)                                        | —                                                                                                                       |
+| `createdAt`                 | timestamp                                                                     | —                                                                                                                       |
+
+### Place (`places[]`)
+
+| Key                          | Contains                                                 | Oracle                                                                                                                                                                                                                                                          |
+| ---------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                         | uuid                                                     | —                                                                                                                                                                                                                                                               |
+| `name`                       | Place name                                               | — (user-entered)                                                                                                                                                                                                                                                |
+| `region`                     | Region                                                   | **Location: Region** (`region`); **inherited from parent settlement** when nested                                                                                                                                                                               |
+| `location`                   | The landmark — _what it is_                              | Freestanding: **Location** (`location`) / **Location: Coastal Waters** (`coastalWatersLocation`), Lodestar → **Overland Landmark** / **Coastal Waters Landmark**. Nested: YRT **Location: Settlement Landmark** (`yrtCityTownLocation`), else base **Location** |
+| `locationDescription`        | Landmark detail                                          | **Location: Descriptor** (`locationDescriptor`), base                                                                                                                                                                                                           |
+| `withinSettlementId`         | Parent Community id (live only)                          | — (link)                                                                                                                                                                                                                                                        |
+| `withinSettlementName`       | Parent name — export / import only                       | — (relink bridge)                                                                                                                                                                                                                                               |
+| `trouble`                    | _@deprecated_ — Places no longer roll Settlement Trouble | —                                                                                                                                                                                                                                                               |
+| `notes` / `situationalNotes` | descriptions                                             | —                                                                                                                                                                                                                                                               |
+| `portraitEtag` / `imageUrl`  | portrait                                                 | —                                                                                                                                                                                                                                                               |
+| `createdAt`                  | timestamp                                                | —                                                                                                                                                                                                                                                               |
+
+### Expeditions (`expeditions[]`)
+
+**Journey** (`type: "journey"`) — `id`, `name` (user-entered), `difficulty`,
+`ticks`, `notes`, `complete`, `portraitEtag` / `imageUrl`, `createdAt`. No
+oracle-driven fields.
+
+**Site** (`type: "site"`, Delve):
+
+| Key                                           | Contains              | Oracle                                                            |
+| --------------------------------------------- | --------------------- | ----------------------------------------------------------------- |
+| `name`                                        | Site name             | **Delve Site: Name (Template)** (`siteName`), base                |
+| `theme`                                       | Delve theme           | **Delve Site: Theme** (`siteNatureTheme`), base                   |
+| `domain`                                      | Delve domain          | **Delve Site: Domain** (`siteNatureDomain`), base                 |
+| `currentFeature`                              | last-rolled feature   | Combined **Feature** table for the site's theme + domain (Delve)  |
+| `currentDanger`                               | last-rolled danger    | Combined **Danger** table for theme + domain (Delve)              |
+| `denizens[]`                                  | 12-row denizen matrix | Delve **denizen** tables (theme + domain), via the Denizen dialog |
+| `objective`                                   | the site's objective  | —                                                                 |
+| `difficulty` / `ticks` / `notes` / `complete` | mechanical            | —                                                                 |
+
+**Scene** (`type: "scene"`, Lodestar Scene Challenge) — `name`, `objective`,
+`consequences`, `countdownFilled` (0–4), `difficulty` (rank), `ticks`,
+`notes`, `complete`. All user-entered or mechanical; no per-field oracle.
+
+### Character (`{ name, data }`)
+
+`name` comes from the **Character: Name** oracles; `data` is the full
+persisted blob (stats — point-buy, not rolled; momentum / health / spirit /
+supply; experience; initiative; vows; owned assets; debilities;
+`globalValues`; portrait). Stats and tracks are mechanical, not
+oracle-populated. Full field list mirrors `Character.data` in `types.ts`.
+
+### Session-log entry (`log[]`)
+
+`id`, `title`, `html`, `ts`, `note?`, `source?`, `roll?` — these are the
+**recorded results** of oracle / move rolls, not fields an oracle fills. See
+[Session log](#session-log) for the shape.
+
+---
+
 ## Import behavior
 
 Import dispatches by `manifest.type` (see the export-types table). Every
 section that carries user-visible rows participates in collision detection
 (see below); only the session log entries are always appended (deduplicated
 internally by entry id).
+
+### The import dialog
+
+Import runs behind the **`ImportDialog`** (`$lib/components/ImportDialog.svelte`),
+which the Hamburger → Import… action opens and the page's `runImport()` drives
+through a small set of stages:
+
+| Stage         | When                                                    | What the user sees                                           |
+| ------------- | ------------------------------------------------------- | ------------------------------------------------------------ |
+| **idle**      | Dialog just opened.                                     | Drop zone + "choose a file".                                 |
+| **importing** | Reading + applying the archive.                         | Spinner.                                                     |
+| **review**    | The validate pass dropped one or more rows (see below). | ⚠ list of unreadable rows + "Import the _N_ valid items?".   |
+| **done**      | Finished (cleanly, or with skipped rows).               | ✓ summary; a warn badge + issue list when rows were skipped. |
+| **error**     | A structural `ImportError` aborted the whole archive.   | ⚠ the readable error message; "Choose another file".         |
+
+A drag-and-drop onto the page and the starter-seed both feed the same
+`runImport()`; the seed path runs **silently** (no dialog), importing whatever
+is valid and logging the rest.
+
+### Validate, then confirm (partial import)
+
+Before anything is applied, every incoming row is **shape-checked without
+mutating state**: a row is valid when it is an object with a non-empty
+`name` (expeditions also need a `type`). Invalid rows are collected with a
+reason and dropped from the incoming arrays.
+
+- If **no** rows were dropped, import proceeds straight to collision handling.
+- If **some** rows were dropped, the dialog pauses on the **review** stage,
+  lists what could not be read, and offers to import the remaining valid rows.
+  Choosing **Cancel** applies nothing; choosing **Import _N_ valid items**
+  continues with just the valid rows and reports them as skipped on the
+  **done** stage.
+
+This is distinct from a structural `ImportError` (see [Limits and
+filters](#limits-and-filters)): a bad row is skippable and the rest can still
+import, whereas a structural failure aborts the whole archive with no mutation.
+
+Errors that occur **while applying** an individual row (a store call throwing)
+are likewise caught per row, collected, and reported on the **done** stage —
+one failed entity never aborts the others.
 
 ### Collision resolution
 
@@ -558,9 +758,12 @@ through this pipeline:
 | Log HTML                | `sanitizeLogHtml()` strips `<script>` blocks, `on*=` event handlers, and `javascript:` URLs before any entry is rendered. |
 
 Any violated limit throws an `ImportError`. That is caught at the import call
-site, surfaced to the user as a readable message, and **aborts the import with
-no mutation of existing state** — a malformed or hostile file can never
-partially apply.
+site, surfaced on the dialog's **error** stage as a readable message, and
+**aborts the import with no mutation of existing state** — a malformed or
+hostile file can never partially apply. (This is a whole-archive abort;
+individual rows that merely fail the shape check are handled by the
+[validate-then-confirm flow](#validate-then-confirm-partial-import), which can
+import the rest.)
 
 The end-to-end behavior here (happy-path round-trips, collision strategies,
 and the security limits) is covered by
