@@ -356,7 +356,6 @@
 							? ` (${filtered.length} shown)`
 							: ''}</span
 					>
-					<span class="exd-selectall-count">{selectedCount} selected</span>
 				</button>
 			</div>
 
@@ -468,13 +467,6 @@
 	:global(.exd-selectall-label) {
 		font-weight: 600;
 		font-size: 13px;
-	}
-	:global(.exd-selectall-count) {
-		margin-left: auto;
-		font-family: var(--font-mono);
-		font-variant-numeric: tabular-nums;
-		font-size: 12px;
-		color: var(--text-muted);
 	}
 
 	/* checklist */
