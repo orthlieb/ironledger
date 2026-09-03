@@ -77,7 +77,7 @@ Import dispatches **solely on `manifest.type`**.
 | `character`      | Current Character | `{ name, data }`                                                                                | `character.json`        | `<slug-of-name>.zip`            |
 | `all-characters` | All Characters    | `Array<{ name, data }>`                                                                         | `characters.json`       | `all-characters-<stamp>.zip`    |
 | `communities`    | Connections       | `{ communities: Community[], npcs: Npc[], places: Place[] }`                                    | `communities.json`      | `communities-<stamp>.zip`       |
-| `expeditions`    | Expeditions       | `Array<Expedition>` (Journey \| Site)                                                           | `expeditions.json`      | `expeditions-<stamp>.zip`       |
+| `expeditions`    | Expeditions       | `Array<Expedition>` (Journey \| Site \| Scene)                                                  | `expeditions.json`      | `expeditions-<stamp>.zip`       |
 | `everything`     | Everything        | `{ characters, log, communities, npcs, places, expeditions, session }` (foes are Markdown-only) | `everything.json`       | `ironledger-export-<stamp>.zip` |
 | `log`            | Session Log       | `Array<LogEntry>` (oldest-first)                                                                | _(no zip — plain JSON)_ | `session-log-<stamp>.json`      |
 
@@ -142,15 +142,24 @@ allocated; nothing is overwritten). Imported character data is run through
 
 ## Expeditions
 
-`type: "expeditions"` — `data` is an array of `Expedition` objects. An
-expedition is either a **Journey** or a **Site** (discriminated by its `type`
-field); Sites additionally carry `theme`, `domain`, `difficulty`, a `denizens`
-array, and the rolled `currentFeature` / `currentDanger`. See the `Journey`
-and `Site` interfaces in `apps/web/src/lib/types.ts` for the full field list.
+`type: "expeditions"` — `data` is an array of `Expedition` objects,
+discriminated by their own `type` field into three kinds:
+
+- **Journey** — `name`, `difficulty`, `ticks` (progress track), and the usual
+  notes/complete/portrait fields.
+- **Site** (Delve) — a Journey plus `theme`, `domain`, a `denizens` array, and
+  the rolled `currentFeature` / `currentDanger`.
+- **Scene** (Lodestar Scene Challenge) — a Journey plus `objective`,
+  `consequences`, and `countdownFilled` (0–4 filled countdown segments).
+
+See the `Journey`, `Site`, and `Scene` interfaces in
+`apps/web/src/lib/types.ts` for the full field list. As with connections, the
+whole object round-trips — the `"…"` below is the rest of each kind's field
+set, not dropped fields.
 
 ```json
 {
-  "manifest": { "…": "…", "type": "expeditions", "count": 2 },
+  "manifest": { "…": "…", "type": "expeditions", "count": 3 },
   "data": [
     {
       "id": "…",
@@ -167,6 +176,17 @@ and `Site` interfaces in `apps/web/src/lib/types.ts` for the full field list.
       "theme": "…",
       "domain": "…",
       "denizens": ["…"],
+      "...": "…"
+    },
+    {
+      "id": "…",
+      "type": "scene",
+      "name": "Escape the Collapsing Vault",
+      "difficulty": "dangerous",
+      "ticks": 8,
+      "objective": "…",
+      "consequences": "…",
+      "countdownFilled": 2,
       "...": "…"
     }
   ]
@@ -230,6 +250,30 @@ Community named for its Hobbits); a **Place** captures a fixed location worth
 remembering, whether inside a community (a specific tavern) or out in the
 world (Mt. Doom). See [communities.md](communities.md) for the full
 distinction.
+
+> **The whole entity round-trips — the JSON above is abridged, not a
+> whitelist.** Export takes a full `$state.snapshot()` of each row and import
+> stores the row as-is (minus the poison keys), so every field a live entity
+> carries survives, including any this doc doesn't spell out. The `"…"` in the
+> examples stands in for the rest of the field set, not for fields that get
+> dropped.
+
+The examples above show only the always-present core. The following
+**extension fields are optional** — populated when the owning extension is
+enabled, absent (or empty) otherwise — and, per the round-trip rule above,
+they export and import exactly like any other field:
+
+| Entity        | Extension        | Optional fields                                                                          |
+| ------------- | ---------------- | ---------------------------------------------------------------------------------------- |
+| **Community** | Lodestar         | `type`, `condition`, `firstLook`, `disposition`, `projects`, `culturalTouchstones` (six) |
+| **Community** | (always)         | `locationDescription`, `situationalNotes`                                                |
+| **NPC**       | Lodestar / Delve | `firstLook`, `activity`, `disposition`, `situationalNotes`                               |
+| **Place**     | (always)         | `locationDescription`, `situationalNotes`, `withinSettlementId` / `withinSettlementName` |
+
+`Place` currently shares the `Community` field set (it renders in the same
+card), but is stored as its own entity kind so future place-specific fields
+don't need a schema shuffle. `Place.trouble` is deprecated (kept for
+back-compat, shown only if populated).
 
 > **A Place's parent settlement is carried by name.** A live `Place` links
 > to its parent `Community` by `withinSettlementId`, but ids are minted
