@@ -44,7 +44,6 @@ export default defineConfig({
           // Unit tests must never touch the network or file system.
           // If they do, it means they're not really unit tests.
           pool: 'forks', // isolate each file in a separate process
-          poolOptions: { forks: { singleFork: false } },
           env: testEnv,
         },
       },
@@ -57,7 +56,7 @@ export default defineConfig({
           // Integration tests run sequentially — they share a real DB
           // and parallel execution causes constraint violations.
           pool: 'forks',
-          poolOptions: { forks: { singleFork: true } },
+          fileParallelism: false,
           // Give DB operations time to complete
           testTimeout: 15000,
           hookTimeout: 30000,
@@ -71,7 +70,7 @@ export default defineConfig({
           environment: 'node',
           env: testEnv,
           pool: 'forks',
-          poolOptions: { forks: { singleFork: true } },
+          fileParallelism: false,
           testTimeout: 20000,
           hookTimeout: 30000,
           setupFiles: ['tests/e2e/setup.ts'],
