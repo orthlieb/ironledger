@@ -112,6 +112,126 @@
 		return color.startsWith('#') ? color.slice(0, 7).toLowerCase() : color;
 	}
 
+	// ─── Recently-picked colours (MRU swatch row) ──────────────────────────
+	// The picker's swatch row is a most-recently-used list: each committed
+	// colour jumps to the front, deduped, capped, and persisted in
+	// localStorage so it survives across sessions. Seeded with the eight
+	// tabletop hues so first-time users still get a useful row.
+	const RECENTS_KEY = 'il:recentMarkerColors';
+	const RECENTS_MAX = 10;
+	const SEED_SWATCHES = [
+		'#e63946',
+		'#f4a261',
+		'#e9c46a',
+		'#2a9d8f',
+		'#457b9d',
+		'#8e44ad',
+		'#111111',
+		'#f1faee',
+	];
+
+	function loadRecents(): string[] {
+		try {
+			const raw = localStorage.getItem(RECENTS_KEY);
+			const arr = raw ? (JSON.parse(raw) as unknown) : null;
+			if (Array.isArray(arr) && arr.every((x) => typeof x === 'string')) {
+				const clean = arr.map(normalizeHex).filter((c) => /^#[0-9a-f]{6}$/.test(c));
+				if (clean.length) return clean.slice(0, RECENTS_MAX);
+			}
+		} catch {
+			/* private mode / SSR / bad JSON — fall back to the seed */
+		}
+		return [...SEED_SWATCHES];
+	}
+
+	let recents = $state<string[]>(loadRecents());
+
+	/** Move `hex` to the front of the MRU list, dedupe, cap, persist, and
+	 *  reflect it into the live Pickr swatch row. */
+	function recordRecent(hex: string) {
+		const c = normalizeHex(hex);
+		if (!/^#[0-9a-f]{6}$/.test(c)) return;
+		recents = [c, ...recents.filter((x) => x !== c)].slice(0, RECENTS_MAX);
+		try {
+			localStorage.setItem(RECENTS_KEY, JSON.stringify(recents));
+		} catch {
+			/* persistence is best-effort */
+		}
+		syncPickrSwatches(recents);
+	}
+
+	/** Rebuild Pickr's swatch row from `list` using only its public API. */
+	function syncPickrSwatches(list: string[]) {
+		const p = pickr;
+		if (!p) return;
+		try {
+			// removeSwatch(0) returns false once empty; cap the loop as a guard.
+			for (let i = 0; i < RECENTS_MAX + 4 && p.removeSwatch(0); i++);
+			for (const c of list) p.addSwatch(c);
+		} catch {
+			/* Pickr swatch API race — non-fatal, the row just lags one open */
+		}
+	}
+
+	// ─── RGB read-out (copyable + pastable) ────────────────────────────────
+	// Lives in the dialog body, not the picker popover: an <input> there is
+	// inside bits-ui's focus trap (so it's clickable / typable / pastable)
+	// and picks up our own theme + dark mode. Pickr's portalled popover can
+	// do neither.
+	/** `#rrggbb` → `r, g, b` for the read-out (the "RGB" label supplies the
+	 *  context, so the `rgb( )` wrapper is dropped to keep it compact); '' if
+	 *  not a hex colour. */
+	function hexToRgbString(hex: string): string {
+		const h = normalizeHex(hex).replace('#', '');
+		if (!/^[0-9a-f]{6}$/.test(h)) return '';
+		const r = parseInt(h.slice(0, 2), 16);
+		const g = parseInt(h.slice(2, 4), 16);
+		const b = parseInt(h.slice(4, 6), 16);
+		return `${r}, ${g}, ${b}`;
+	}
+
+	/** Parse a pasted/typed colour — `rgb(r,g,b)`, `r,g,b`, `#rgb`, `#rrggbb`
+	 *  (with or without the `#`) — to a normalised `#rrggbb`, or null. */
+	function parseColorInput(input: string): string | null {
+		const s = input.trim();
+		const rgb = s.match(/^(?:rgb\s*\(\s*)?(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)?$/i);
+		if (rgb) {
+			const parts = [rgb[1], rgb[2], rgb[3]].map(Number);
+			if (parts.every((n) => n >= 0 && n <= 255)) {
+				return '#' + parts.map((n) => n.toString(16).padStart(2, '0')).join('');
+			}
+			return null;
+		}
+		const hx = s.replace(/^#/, '');
+		if (/^[0-9a-f]{3}$/i.test(hx)) {
+			return normalizeHex('#' + hx.replace(/./g, (c) => c + c));
+		}
+		if (/^[0-9a-f]{6}$/i.test(hx)) return normalizeHex('#' + hx);
+		return null;
+	}
+
+	/** Commit a value from the RGB field: apply to the draft + live marker +
+	 *  Pickr, and record it. Returns false when the text isn't a colour so
+	 *  the caller can snap the field back to the current value. */
+	function applyRgbInput(raw: string): boolean {
+		const hex = parseColorInput(raw);
+		if (!hex || !draft) return false;
+		draft.color = hex;
+		applyDraftLive();
+		try {
+			pickr?.setColor(hex, true);
+		} catch {
+			/* Pickr may be mid-teardown — draft already holds the value */
+		}
+		recordRecent(hex);
+		return true;
+	}
+
+	function onRgbChange(e: Event) {
+		const el = e.target as HTMLInputElement;
+		if (!applyRgbInput(el.value)) el.value = hexToRgbString(draftColor); // reject → restore
+	}
+
 	/** Normalise a rotation to `[0, 360)` for display + storage. `undefined`
 	 *  → 0 (default rotation for legacy markers). Non-finite → 0 so a stray
 	 *  NaN doesn't invalidate the SVG transform. */
@@ -140,6 +260,10 @@
 		// colour" bug. External colour syncs go through the second
 		// `$effect` below via `pickr.setColor(c, true)`.
 		const initialColor = untrack(() => selectedColor);
+		// Snapshot the MRU list at creation — `untrack` so reading it here
+		// doesn't make `recents` a dependency of this effect (which would
+		// destroy + recreate the picker every time a colour is recorded).
+		const initialSwatches = untrack(() => [...recents]);
 		const instance = Pickr.create({
 			el: anchor,
 			container,
@@ -151,28 +275,20 @@
 			useAsButton: true,
 			theme: 'nano',
 			default: initialColor,
-			// Pickr's built-in swatch row — same eight tabletop-friendly
-			// hues the old preset strip carried before the native input
-			// took over. Keeps common picks one tap away without opening
-			// the wheel.
-			swatches: [
-				'#e63946',
-				'#f4a261',
-				'#e9c46a',
-				'#2a9d8f',
-				'#457b9d',
-				'#8e44ad',
-				'#111111',
-				'#f1faee',
-			],
+			// Swatch row = the most-recently-used colours (see recordRecent).
+			// Seeded with the eight tabletop hues; each commit reorders it.
+			swatches: initialSwatches,
 			components: {
 				preview: true,
 				opacity: false,
 				hue: true,
-				// No HEXA readout / text input / Save / Cancel row —
-				// pick from the swatches or drag the wheel + hue and
-				// we auto-close on release. The dialog's own Cancel
-				// button restores the pre-open snapshot.
+				// No text field / Save row inside the popover: a text input
+				// there can't receive keyboard focus (bits-ui traps focus in
+				// the dialog, and Pickr portals the popover to <body>, outside
+				// that scope) and would carry Pickr's own light theme. The
+				// editable, themeable, pastable RGB field lives in the dialog
+				// body instead (see the RGB row). Pick from a swatch or drag
+				// the wheel + hue; we auto-close on release.
 				interaction: {
 					hex: false,
 					input: false,
@@ -189,23 +305,20 @@
 			draft.color = normalizeHex(c.toHEXA().toString());
 			applyDraftLive();
 			// Pickr only refreshes the trigger chip's `--pcr-color` inside
-			// applyColor(), which normally fires on Save. We removed the
-			// Save button (save: false), so nudge applyColor() ourselves
-			// on every live change — otherwise the chip keeps showing
-			// the previous colour while the marker icon has already moved
-			// on. Guarded with a try/catch because applyColor emits 'save'
-			// which some Pickr versions choke on when save UI is disabled.
+			// applyColor(), which normally fires on Save. We removed the Save
+			// button (save: false), so nudge applyColor() ourselves on every
+			// live change. Guarded with try/catch because applyColor emits
+			// 'save', which some Pickr versions choke on when save UI is off.
 			try {
 				instance.applyColor(true);
 			} catch {
 				/* known: applyColor's save-emit path when save:false */
 			}
 		});
-		// Auto-dismiss the popover once the user has "committed" a colour:
-		// clicking a swatch is a single-tap commit; wheel/hue dragging
-		// commits when the pointer is released (`changestop`). The Save
-		// button is gone, so this is the only signal we have.
+		// Auto-dismiss once the user commits: a swatch tap is a single-tap
+		// commit; wheel/hue dragging commits on pointer release (changestop).
 		instance.on('swatchselect', () => {
+			if (draft) recordRecent(draft.color);
 			try {
 				instance.hide();
 			} catch {
@@ -213,6 +326,7 @@
 			}
 		});
 		instance.on('changestop', () => {
+			if (draft) recordRecent(draft.color);
 			try {
 				instance.hide();
 			} catch {
@@ -428,30 +542,6 @@
 							</button>
 						</label>
 
-						<label class="mp-props-field mp-props-field--color">
-							<span class="mp-props-label">Colour</span>
-							<button
-								type="button"
-								class="mp-sel-color-btn"
-								style="color: {draftColor}"
-								bind:this={pickrAnchor}
-								aria-label="Icon colour"
-							>
-								<svg viewBox="0 0 640 640" aria-hidden="true">
-									<g
-										fill="currentColor"
-										stroke="#fff"
-										stroke-width="2"
-										stroke-linejoin="round"
-										paint-order="stroke"
-										vector-effect="non-scaling-stroke"
-									>
-										{@html paletteInner}
-									</g>
-								</svg>
-							</button>
-						</label>
-
 						<label class="mp-props-field mp-props-field--angle">
 							<span class="mp-props-label">Angle</span>
 							<div class="mp-sel-angle" role="group" aria-label="Marker rotation">
@@ -484,6 +574,43 @@
 									aria-label="Rotate clockwise">+</button
 								>
 							</div>
+						</label>
+
+						<label class="mp-props-field mp-props-field--color">
+							<span class="mp-props-label">Colour</span>
+							<button
+								type="button"
+								class="mp-sel-color-btn"
+								style="color: {draftColor}"
+								bind:this={pickrAnchor}
+								aria-label="Icon colour"
+							>
+								<svg viewBox="0 0 640 640" aria-hidden="true">
+									<g
+										fill="currentColor"
+										stroke="#fff"
+										stroke-width="2"
+										stroke-linejoin="round"
+										paint-order="stroke"
+										vector-effect="non-scaling-stroke"
+									>
+										{@html paletteInner}
+									</g>
+								</svg>
+							</button>
+						</label>
+
+						<label class="mp-props-field mp-props-field--rgb">
+							<span class="mp-props-label">RGB</span>
+							<input
+								class="mp-rgb-input"
+								type="text"
+								spellcheck="false"
+								autocomplete="off"
+								value={hexToRgbString(draftColor)}
+								onchange={onRgbChange}
+								aria-label="Icon colour as RGB — select to copy, or paste to set"
+							/>
 						</label>
 					</div>
 
