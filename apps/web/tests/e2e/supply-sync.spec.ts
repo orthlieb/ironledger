@@ -150,7 +150,9 @@ function makeCharManifest(name: string, supply: number) {
 }
 
 /** Upload a character as the `.zip` bundle the importer now expects (manifest
- *  + body file), through the hidden file input. */
+ *  + body file), through the hidden file input. Waits for the ImportDialog to
+ *  reach `done` and dismisses it — its overlay would otherwise intercept every
+ *  subsequent click. */
 async function uploadImport(page: Page, payload: { manifest: object; data: unknown }) {
 	const manifest = { ...payload.manifest, body: 'character.json' };
 	const zip = zipSync({
@@ -162,6 +164,8 @@ async function uploadImport(page: Page, payload: { manifest: object; data: unkno
 		mimeType: 'application/zip',
 		buffer: Buffer.from(zip),
 	});
+	await page.locator('.imd-footer .btn-primary', { hasText: /Done/ }).click();
+	await expect(page.locator('.imd-overlay')).toHaveCount(0);
 }
 
 // ---------------------------------------------------------------------------
