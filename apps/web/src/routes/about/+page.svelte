@@ -396,13 +396,13 @@
 				<h3 class="starter-card-title">{headingText('YRT')}</h3>
 				<p class="starter-caption">
 					A world unmade and struggling to be reborn — a regional map with thirteen settlements and
-					eighteen places already pinned across the ashes. The Church of YRT's domain is yours to
+					twenty-two places already pinned across the ashes. The Church of YRT's domain is yours to
 					people with the faithful and the heretic alike. Download the zip and load it via the
 					menu's <strong>Import Data</strong> in the app.
 				</p>
 				<a class="starter-download" href="/about/yrt-starter.zip" download>
 					<span class="starter-download-label">Download the YRT starter</span>
-					<span class="starter-download-hint">yrt-starter.zip · ~530 KB</span>
+					<span class="starter-download-hint">yrt-starter.zip · ~540 KB</span>
 				</a>
 			</div>
 		</div>
