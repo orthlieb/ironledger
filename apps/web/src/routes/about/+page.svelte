@@ -11,6 +11,7 @@
 	import mapSvg from '$icons/treasure-map.svg?raw';
 	import angleLeftSvg from '$icons/angle-left-solid-full.svg?raw';
 	import angleRightSvg from '$icons/angle-right-solid-full.svg?raw';
+	import compassRoseSvg from '$icons/compass-rose.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import emblaCarouselSvelte from 'embla-carousel-svelte';
 	import Autoplay from 'embla-carousel-autoplay';
@@ -369,19 +370,42 @@
 	</div>
 </section>
 
-<!-- ── Starter Ironlands ─────────────────────────────────────────── -->
+<!-- ── Starter worlds ────────────────────────────────────────────── -->
 <section class="starter-section">
 	<div class="starter-section-inner">
-		<h2 class="section-heading">{headingText('Get the Starter Ironlands')}</h2>
-		<p class="starter-caption">
-			A hand-drawn regional map with a handful of named places pinned across it — a scaffold to
-			build your own saga on. No characters, no communities; you write the people. Download the zip
-			and load it via the menu's <strong>Import Data</strong> in the app.
-		</p>
-		<a class="starter-download" href="/about/ironlands-starter.zip" download>
-			<span class="starter-download-label">Download the Starter Ironlands</span>
-			<span class="starter-download-hint">ironlands-starter.zip · ~1.1 MB</span>
-		</a>
+		<h2 class="section-heading">{headingText('Get a Starter World')}</h2>
+		<div class="starter-grid">
+			<div class="starter-card">
+				<div class="starter-emblem" aria-hidden="true">{@html compassRoseSvg}</div>
+				<h3 class="starter-card-title">{headingText('Ironsworn')}</h3>
+				<p class="starter-caption">
+					A hand-drawn regional map with a handful of named places pinned across it — a scaffold to
+					build your own saga on. No characters, no communities; you write the people. Download the
+					zip and load it via the menu's <strong>Import Data</strong> in the app.
+				</p>
+				<a class="starter-download" href="/about/ironlands-starter.zip" download>
+					<span class="starter-download-label">Download the Ironlands starter</span>
+					<span class="starter-download-hint">ironlands-starter.zip · ~1.1 MB</span>
+				</a>
+			</div>
+
+			<div class="starter-card">
+				<div class="starter-emblem starter-emblem--img" aria-hidden="true">
+					<img src="/about/yrt.png" alt="" />
+				</div>
+				<h3 class="starter-card-title">{headingText('YRT')}</h3>
+				<p class="starter-caption">
+					A world unmade and struggling to be reborn — a regional map with thirteen settlements and
+					eighteen places already pinned across the ashes. The Church of YRT's domain is yours to
+					people with the faithful and the heretic alike. Download the zip and load it via the
+					menu's <strong>Import Data</strong> in the app.
+				</p>
+				<a class="starter-download" href="/about/yrt-starter.zip" download>
+					<span class="starter-download-label">Download the YRT starter</span>
+					<span class="starter-download-hint">yrt-starter.zip · ~530 KB</span>
+				</a>
+			</div>
+		</div>
 	</div>
 </section>
 
@@ -533,26 +557,77 @@
 		border-top: 1px solid var(--border);
 	}
 
-	/* Starter Ironlands download — sits just above the systems / attribution
-	   sections. Big single call-to-action link so a visitor can grab the zip
+	/* Starter worlds — sits just above the systems / attribution sections.
+	   Two cards (Ironsworn + YRT) side by side on desktop, stacked on mobile,
+	   each a self-contained call-to-action so a visitor can grab either zip
 	   without hunting for it. */
 	.starter-section-inner {
-		max-width: 720px;
+		max-width: 900px;
 		margin: 0 auto;
 		text-align: center;
+	}
+	.starter-grid {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 1.5rem;
+		align-items: stretch;
+	}
+	.starter-card {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 0.9rem;
+		box-sizing: border-box;
+		height: 100%;
+		padding: 1.75rem 1.5rem;
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: 12px;
+	}
+	/* Emblem medallion — a parchment coin so the black line-art marks (the
+	   Ironsworn compass rose, the Church of YRT tree) read on any theme. */
+	.starter-emblem {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 76px;
+		height: 76px;
+		border-radius: 50%;
+		background: #f4efe4;
+		border: 1px solid color-mix(in srgb, var(--text-accent) 30%, transparent);
+		box-shadow: inset 0 0 0 1px #ffffff40;
+		color: #1c1a17;
+	}
+	.starter-emblem :global(svg) {
+		width: 52px;
+		height: 52px;
+	}
+	.starter-emblem--img img {
+		width: 64px;
+		height: 64px;
+		object-fit: contain;
+	}
+	.starter-card-title {
+		font-family: var(--font-display);
+		font-size: 1.1rem;
+		font-weight: 700;
+		letter-spacing: 0.05em;
+		color: var(--text-accent);
+		margin: 0;
 	}
 	.starter-caption {
 		font-family: var(--font-ui);
 		font-size: 0.95rem;
 		color: var(--text-muted);
 		line-height: 1.6;
-		margin: 0 0 1.5rem;
+		margin: 0;
 	}
 	.starter-download {
 		display: inline-flex;
 		flex-direction: column;
 		align-items: center;
 		gap: 4px;
+		margin-top: auto;
 		padding: 14px 28px;
 		background: color-mix(in srgb, var(--text-accent) 10%, transparent);
 		color: var(--text-accent);
@@ -567,6 +642,11 @@
 	.starter-download:hover {
 		background: color-mix(in srgb, var(--text-accent) 18%, transparent);
 		border-color: color-mix(in srgb, var(--text-accent) 65%, transparent);
+	}
+	@media (max-width: 640px) {
+		.starter-grid {
+			grid-template-columns: 1fr;
+		}
 	}
 	.starter-download-label {
 		font-size: 0.95rem;
