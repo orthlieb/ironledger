@@ -28,7 +28,7 @@
       "addendum": "In YRT: a mundane big cat. No changes needed."
     },
     "delve/chitter": {
-      "addendum": "In YRT: a blight-adapted giant insect. Verdant drives the scale-up, Azure the chitin regeneration and digestive-slurry vomit, faint Amber the twittering call used for spatial mapping. Grey-brown carapace, yellowish vomit."
+      "addendum": "In YRT: a blight-adapted giant insect. Azure drives the scale-up, chitin regeneration, and digestive-slurry vomit; faint Amber the twittering call used for spatial mapping. Grey-brown carapace, yellowish vomit."
     },
     "delve/circle-of-stones": {
       "present": false,
@@ -103,7 +103,7 @@
       "addendum": "In YRT: it's a bear."
     },
     "ironsworn/boar": {
-      "addendum": "In YRT: an oversized aggressive pig. If the size wants explaining, mild Verdant in the local environment produces oversized wildlife generally — the same explanation covers elder beasts, gnarls, and mammoths in the same region."
+      "addendum": "In YRT: an oversized aggressive pig. If the size wants explaining, mild Azure in the local environment produces oversized wildlife generally — the same explanation covers elder beasts, gnarls, and mammoths in the same region."
     },
     "ironsworn/bonewalker": {
       "present": false,
@@ -119,7 +119,7 @@
       "addendum": "In YRT: humans."
     },
     "ironsworn/elder-beast": {
-      "addendum": "In YRT: oversized wolves, bears, or boars gestated near a stable long-standing blight zone. Verdant drives the size and longevity; trace Crimson gives the red-glowing eyes. The 'avatars of the old gods, long-lived as trees' is folk belief."
+      "addendum": "In YRT: oversized wolves, bears, or boars gestated near a stable long-standing blight zone. Azure drives the size and longevity; trace Crimson gives the red-glowing eyes. The 'avatars of the old gods, long-lived as trees' is folk belief."
     },
     "ironsworn/elf": {
       "addendum": "In YRT, called the Verdani — a humanoid species shaped over generations by sustained deep Verdant exposure, historically tied to farms, bio-preserves, and the great mana estates of the pre-scarcity era. Once widespread wherever green mana reservoirs flourished; now rare, holding the remaining preserves they tend. 'Binding animals to aid in defence' is skilled Verdant and Amber use: long-term training reinforced by scent-compulsion seeds. Wooden masks contain Amber-tuning channels. The Conclave dislikes their Mask-Risen practice but has not stopped it."
@@ -132,10 +132,10 @@
       "addendum": "In YRT: a blight-adapted grazer bred by the Verdani. Gray gives the scaled hide for protection; faint Luminous explains the pale-eye glow. An unusual species, not supernatural."
     },
     "ironsworn/giant": {
-      "addendum": "In YRT: an unusually tall humanoid species, or a mountain-adapted subculture of humans. If you want biological flavour, regional Verdant exposure produces larger humans over generations — same explanation as elder beasts."
+      "addendum": "In YRT: an unusually tall humanoid species, or a mountain-adapted subculture of humans. If you want biological flavour, regional Azure exposure produces larger humans over generations — same explanation as elder beasts."
     },
     "ironsworn/harrow-spider": {
-      "addendum": "In YRT: a giant spider — Verdant-tinted gigantism, otherwise a normal arachnid. Iridescent black eyes come from trace Amber/Gray in the lens tissue, not functionally magical."
+      "addendum": "In YRT: a giant spider — Azure-tinted gigantism, otherwise a normal arachnid. Iridescent black eyes come from trace Amber/Gray in the lens tissue, not functionally magical."
     },
     "ironsworn/haunt": {
       "present": false,
