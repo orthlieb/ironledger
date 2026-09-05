@@ -40,10 +40,14 @@ vi.mock('../../src/config.js', () => ({
 // ---------------------------------------------------------------------------
 
 const resendSendMock = vi.fn();
+// vitest 5 changed how a mock factory's exports are materialized: a
+// `vi.fn().mockImplementation(() => ({...}))` binding no longer survives
+// as a constructor at the `new Resend(...)` call site. A real class does.
 vi.mock('resend', () => ({
-  Resend: vi.fn().mockImplementation(() => ({
-    emails: { send: resendSendMock },
-  })),
+  Resend: class MockResend {
+    emails = { send: resendSendMock };
+    constructor(_apiKey?: string) {}
+  },
 }));
 
 const smtpSendMock = vi.fn();
