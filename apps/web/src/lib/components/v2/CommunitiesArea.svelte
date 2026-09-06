@@ -31,7 +31,13 @@
 	} from '$lib/communityStore.svelte.js';
 	import { getNpcs, persistNpcsNow, addNpc, removeNpc } from '$lib/npcStore.svelte.js';
 	import { createDebouncedSave } from '$lib/debouncedSave.js';
-	import { getPlaces, persistPlacesNow, addPlace, removePlace } from '$lib/placeStore.svelte.js';
+	import {
+		getPlaces,
+		persistPlacesNow,
+		addPlace,
+		removePlace,
+		updatePlaceLocal,
+	} from '$lib/placeStore.svelte.js';
 	import type { Community, Npc, Place, NpcRelationship } from '$lib/types.js';
 	import Select from '$lib/components/Select.svelte';
 	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
@@ -856,8 +862,20 @@
 	async function confirmDeleteEntry() {
 		if (!activeEntry) return;
 		const id = activeEntry.id;
-		if (activeEntry.kind === 'community') await removeCommunity(id);
-		else if (activeEntry.kind === 'npc') await removeNpc(id);
+		if (activeEntry.kind === 'community') {
+			await removeCommunity(id);
+			// Orphan cleanup: any place nested inside this settlement now points
+			// at a community that's gone — its Within dropdown would show blank
+			// and its "go to parent" jump would land nowhere. Clear the link so
+			// those places become freestanding rather than dangling. (Region,
+			// which was inherited from the parent, is left as-is — it's still a
+			// valid place to be.)
+			const orphans = getPlaces().filter((p) => p.withinSettlementId === id);
+			if (orphans.length > 0) {
+				for (const p of orphans) updatePlaceLocal({ ...p, withinSettlementId: undefined });
+				await persistPlacesNow();
+			}
+		} else if (activeEntry.kind === 'npc') await removeNpc(id);
 		else await removePlace(id);
 		if (activeEntryId === id) activeEntryId = null;
 		// Return to the list on narrow layouts after deleting the open entry.
