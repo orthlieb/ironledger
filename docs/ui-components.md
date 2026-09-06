@@ -1017,7 +1017,8 @@ Notes:
 ### Progress pattern (long-running work)
 
 Use bits-ui `Progress` for any operation the user has to wait
-through. `ImportDialog` is the reference implementation.
+through — but only once the wait is real. `ImportDialog` is the
+reference implementation.
 
 ```svelte
 <Progress.Root
@@ -1061,6 +1062,44 @@ fill yourself as a child — the library ships no styling. Both
 classes cross into a bits-ui component, so both need `:global`
 per the class-scoping rule above.
 
+**Hold the bar back for ~5s.** Most runs finish well inside that
+and are better served by the spinner alone: a bar that appears
+and vanishes reads as a glitch, and one that fills instantly
+tells the user nothing they didn't already know. Past the
+threshold the wait is real and they want a fraction.
+
+The delay belongs to the _dialog_, not to whoever does the work —
+it's a presentation decision, and keeping it there leaves the
+progress state honest (`total` is always the true count, never
+withheld to fake a hidden bar).
+
+```ts
+const BAR_DELAY_MS = 5000;
+let barReady = $state(false);
+
+// Reads `stage` and nothing else on purpose: `progress` changes on
+// every unit of work, and tracking it here would restart the timer
+// forever so the bar would never appear.
+$effect(() => {
+  if (stage !== 'importing') {
+    barReady = false;
+    return;
+  }
+  const t = setTimeout(() => (barReady = true), BAR_DELAY_MS);
+  return () => clearTimeout(t);
+});
+```
+
+That `$effect` dependency note is the whole trap. An effect
+tracks what it _reads_, so read only the phase flag; a stray read
+of the progress object turns the timer into a treadmill.
+
+The remaining rough edge is a run that finishes just past the
+threshold, which flashes the bar for a moment. Don't fix it by
+holding the dialog open for a minimum display time — delaying a
+completed result to protect an animation is a worse trade than
+the flash.
+
 **State shape.** One nullable object, owned by whoever does the
 work:
 
@@ -1074,7 +1113,11 @@ let progress = $state<{ done: number; total: number; label: string } | null>(nul
 - `total: 0` — running, count not yet known. Pass
   `value={null}` to `Progress.Root` for the indeterminate state,
   or fall back to a spinner as `ImportDialog` does.
-- `total > 0` — determinate. Show `done of total` plus `label`.
+- `total > 0` — determinate, and shown once `barReady`.
+
+Keep ticking the state while the bar is hidden. The counter costs
+nothing, and gating the _work_ on the bar's visibility would mean
+the bar arrives with nothing to show.
 
 Reassign rather than mutate (`progress = { ...progress, done:
 progress.done + 1 }`) so reactivity is unambiguous at a glance.

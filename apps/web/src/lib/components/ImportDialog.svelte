@@ -7,8 +7,9 @@
 	 * chooser, a progress spinner, and a success or error report.
 	 *
 	 *   idle      → drop zone + "Choose file"
-	 *   importing → determinate bar once the host knows the row count, spinner
-	 *               while it is still unpacking and does not
+	 *   importing → spinner; promoted to a determinate bar only once the work
+	 *               has been running BAR_DELAY_MS, so a fast import never
+	 *               flashes one
 	 *   done      → ✓ + summary
 	 *   error     → ⚠ + the ImportError message + "Choose another file"
 	 */
@@ -51,6 +52,25 @@
 	let fileEl = $state<HTMLInputElement | null>(null);
 	let dragOver = $state(false);
 
+	/** Hold the bar back this long. Most imports finish well inside it and are
+	 *  better served by the spinner alone — a bar that appears and vanishes
+	 *  reads as a glitch, and one that fills instantly tells you nothing. Past
+	 *  this the wait is real and the user wants a fraction, not a spinner. */
+	const BAR_DELAY_MS = 5000;
+	let barReady = $state(false);
+
+	// Reads `stage` and nothing else on purpose: `progress` changes on every
+	// row, and tracking it here would restart the timer forever so the bar
+	// would never appear.
+	$effect(() => {
+		if (stage !== 'importing') {
+			barReady = false;
+			return;
+		}
+		const t = setTimeout(() => (barReady = true), BAR_DELAY_MS);
+		return () => clearTimeout(t);
+	});
+
 	function pick(file: File | null | undefined) {
 		if (file) onfile(file);
 	}
@@ -78,7 +98,7 @@
 			<div class="imd-body">
 				{#if stage === 'importing'}
 					<div class="imd-state">
-						{#if progress && progress.total > 0}
+						{#if barReady && progress && progress.total > 0}
 							<Progress.Root
 								value={progress.done}
 								max={progress.total}
