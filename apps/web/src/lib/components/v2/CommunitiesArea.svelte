@@ -214,6 +214,10 @@
 	// Combobox switcher + gear-options refs (mirrors Chars/Foes/Exp).
 	let entryPickerOpen = $state(false);
 	let entryOptionsRef = $state<{ open(): void; close(): void } | null>(null);
+	// Kind-filter chip row in the switcher popover — 'all' by default so the
+	// list looks the same as before; picking a chip narrows to that kind
+	// (the search input then filters within that subset).
+	let entryKindFilter = $state<'all' | EntryKind>('all');
 
 	// Name-first drafts for the three New * dialogs.
 	let newCommunityName = $state<string>('');
@@ -273,6 +277,22 @@
 				(a.data.name ?? '').localeCompare(b.data.name ?? '', undefined, { sensitivity: 'base' }),
 			),
 	);
+
+	/** Popover list after the kind-filter chip. `all` returns sortedEntries
+	 *  unchanged so the pre-chip behaviour is preserved. */
+	const visibleEntries = $derived<Entry[]>(
+		entryKindFilter === 'all'
+			? sortedEntries
+			: sortedEntries.filter((e) => e.kind === entryKindFilter),
+	);
+	/** Counts for the kind-chip row — rendered as the trailing number on
+	 *  each chip so the user sees how many entries the filter would show. */
+	const kindCounts = $derived({
+		all: sortedEntries.length,
+		community: sortedEntries.filter((e) => e.kind === 'community').length,
+		npc: sortedEntries.filter((e) => e.kind === 'npc').length,
+		place: sortedEntries.filter((e) => e.kind === 'place').length,
+	});
 
 	$effect(() => {
 		if (!activeEntryId && entries.length > 0) activeEntryId = entries[0].id;
@@ -891,9 +911,28 @@
 								<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
 								<Command.Input class="mp-cmd-search" placeholder="Search connections…" autofocus />
 							</div>
+							<div class="cm-kind-chips" role="tablist" aria-label="Filter by connection kind">
+								{#each [{ key: 'all', label: 'All', color: undefined }, { key: 'community', label: 'Settlements', color: accentFor('community') }, { key: 'npc', label: 'NPCs', color: accentFor('npc') }, { key: 'place', label: 'Places', color: accentFor('place') }] as chip (chip.key)}
+									{@const active = entryKindFilter === chip.key}
+									<button
+										type="button"
+										role="tab"
+										aria-selected={active}
+										class="cm-kind-chip"
+										class:cm-kind-chip--active={active}
+										style={chip.color ? `--chip-accent: ${chip.color};` : ''}
+										onclick={() => (entryKindFilter = chip.key as 'all' | EntryKind)}
+									>
+										<span class="cm-kind-chip-label">{chip.label}</span>
+										<span class="cm-kind-chip-count"
+											>{kindCounts[chip.key as keyof typeof kindCounts]}</span
+										>
+									</button>
+								{/each}
+							</div>
 							<Command.List class="mp-cmd-list">
 								<Command.Empty class="mp-cmd-empty">No matching connections.</Command.Empty>
-								{#each sortedEntries as entry (entry.id)}
+								{#each visibleEntries as entry (entry.id)}
 									{@const n = entry.data.name || `Unnamed ${kindLabelSingular(entry.kind)}`}
 									{@const accent = accentFor(entry.kind)}
 									<Command.Item
@@ -2124,6 +2163,60 @@
 	}
 	:global(.cm-cmd-type-icon svg path) {
 		fill: currentColor;
+	}
+
+	/* Kind-filter chip row above the popover list. Compact pills — All /
+	   Settlements / NPCs / Places — with a trailing count. Active chip
+	   picks up the kind's accent colour as `--chip-accent`. */
+	:global(.cm-kind-chips) {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 4px;
+		padding: 6px 8px 4px;
+		border-bottom: 1px solid var(--border);
+	}
+	:global(.cm-kind-chip) {
+		display: inline-flex;
+		align-items: center;
+		gap: 6px;
+		padding: 3px 8px;
+		font: inherit;
+		font-size: 0.72rem;
+		line-height: 1.2;
+		color: var(--text-muted);
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
+		border-radius: 999px;
+		cursor: pointer;
+		transition:
+			background 0.12s,
+			border-color 0.12s,
+			color 0.12s;
+	}
+	:global(.cm-kind-chip:hover) {
+		color: var(--text);
+		background: var(--bg-hover);
+	}
+	:global(.cm-kind-chip--active) {
+		color: var(--text);
+		background: color-mix(in srgb, var(--chip-accent, var(--text-accent)) 14%, var(--bg-card));
+		border-color: var(--chip-accent, var(--text-accent));
+	}
+	:global(.cm-kind-chip-count) {
+		display: inline-block;
+		min-width: 1.4em;
+		padding: 0 5px;
+		text-align: center;
+		font-size: 0.66rem;
+		font-variant-numeric: tabular-nums;
+		color: var(--text-dimmer);
+		background: var(--bg-card);
+		border: 1px solid var(--border);
+		border-radius: 999px;
+	}
+	:global(.cm-kind-chip--active .cm-kind-chip-count) {
+		color: var(--text);
+		border-color: color-mix(in srgb, var(--chip-accent, var(--text-accent)) 40%, var(--border));
 	}
 
 	/* "Also randomize" checklist inside the New * dialogs — one column,
