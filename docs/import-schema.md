@@ -725,7 +725,7 @@ through this pipeline:
    payload exceeds the file-size limit.
 2. **Decompress** — `fflate.unzipSync`. A malformed archive is reported
    as a friendly import error, not a crash. Total decompressed size is
-   also capped (`MAX_BYTES × 4`) so a zip bomb — small compressed size,
+   also capped (`MAX_DECOMPRESSED`) so a zip bomb — small compressed size,
    enormous unpacked payload — is rejected.
 3. **Locate the body** — read `manifest.json` (must exist and be valid
    JSON), find the body file (`manifest.body` pointer or the first
@@ -747,12 +747,12 @@ through this pipeline:
 
 | Guard                   | Limit / behavior                                                                                                          |
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Outer file size         | **5 MB** max (`MAX_BYTES`) on the raw `.zip` bytes.                                                                       |
-| Total decompressed size | **20 MB** max (`MAX_BYTES × 4`) — zip-bomb guard.                                                                         |
-| Body file size          | **5 MB** max (`MAX_BYTES`) on the unpacked `<type>.json`.                                                                 |
+| Outer file size         | **20 MB** max (`MAX_BYTES`) on the raw `.zip` bytes.                                                                      |
+| Total decompressed size | **40 MB** max (`MAX_DECOMPRESSED`) — zip-bomb guard.                                                                      |
+| Body file size          | **20 MB** max (`MAX_BYTES`) on the unpacked `<type>.json`.                                                                |
 | Nesting depth           | **12** levels max (`MAX_DEPTH`).                                                                                          |
 | Array length            | **1000** items max per array (`MAX_ARRAY_ITEMS`).                                                                         |
-| String length           | Capped at the file-size limit (`MAX_STR_LEN = MAX_BYTES`, 5 MB) — large enough for a single re-embedded portrait.         |
+| String length           | Capped at the file-size limit (`MAX_STR_LEN = MAX_BYTES`, 20 MB) — large enough for a single re-embedded portrait.        |
 | Prototype pollution     | Keys `__proto__`, `constructor`, `prototype` are stripped from every object (the `POISON_KEYS` set).                      |
 | Missing portrait file   | Silently dropped — the entity imports without a portrait rather than aborting the whole zip.                              |
 | Log HTML                | `sanitizeLogHtml()` strips `<script>` blocks, `on*=` event handlers, and `javascript:` URLs before any entry is rendered. |

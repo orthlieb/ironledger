@@ -257,17 +257,16 @@ describe('parseImportZip — error handling', () => {
 	});
 
 	it('rejects an oversized zip', () => {
-		const huge = new Uint8Array(6 * 1024 * 1024); // 6 MB > 5 MB cap
+		const huge = new Uint8Array(21 * 1024 * 1024); // 21 MB > 20 MB cap
 		expect(() => parseImportZip(huge)).toThrowError(/too large/i);
 	});
 
 	it('rejects a zip whose decompressed contents exceed the bomb cap', () => {
-		// The bomb cap is 4 × MAX_BYTES (5 MB) = 20 MB total decompressed.
-		// Build a zip small enough to slip past the outer 5 MB file-size
-		// guard but that unpacks to ~27 MB. `zipSync` at level 9 crushes
-		// all-zero bytes down to a few kB, giving us the classic zip-bomb
-		// shape.
-		const bigChunk = new Uint8Array(9 * 1024 * 1024); // 9 MB of zeros — very compressible
+		// MAX_DECOMPRESSED is 40 MB. Build a zip small enough to slip past
+		// the outer 20 MB file-size guard but that unpacks to ~45 MB.
+		// `zipSync` at level 9 crushes all-zero bytes down to a few kB,
+		// giving us the classic zip-bomb shape.
+		const bigChunk = new Uint8Array(15 * 1024 * 1024); // 15 MB of zeros — very compressible
 		const zip = zipSync(
 			{
 				'manifest.json': manifest({ type: 'everything' }),
@@ -278,7 +277,7 @@ describe('parseImportZip — error handling', () => {
 			},
 			{ level: 9 },
 		);
-		expect(zip.length).toBeLessThan(5 * 1024 * 1024); // sanity: outer cap wouldn't catch it
+		expect(zip.length).toBeLessThan(20 * 1024 * 1024); // sanity: outer cap wouldn't catch it
 		expect(() => parseImportZip(zip)).toThrowError(/decompresses to more than/i);
 	});
 });

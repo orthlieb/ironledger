@@ -12,7 +12,7 @@
 //   • XSS via log HTML     — script tags and event-handler attrs removed
 //   • DoS via huge payloads — file-size, depth, and array-length limits
 //   • Invalid JSON          — caught and re-thrown as ImportError (user-facing)
-//   • Zip bomb              — total decompressed payload bounded by MAX_BYTES
+//   • Zip bomb              — total decompressed payload bounded by MAX_DECOMPRESSED
 //
 // SQL injection is NOT a concern here: the API layer uses Drizzle ORM with
 // parameterized queries, and data is stored as JSONB blobs, never interpolated
@@ -33,7 +33,12 @@ export class ImportError extends Error {
 // Limits
 // ---------------------------------------------------------------------------
 
-const MAX_BYTES = 5 * 1024 * 1024; // 5 MB — enough for any real campaign
+// 20 MB — a campaign's text is a few hundred kB; the rest is artwork. The YRT
+// starter alone carries 31 illustrated locations, and a 5 MB ceiling forced
+// those down to 800px. Individual images stay bounded by the API's own
+// MAX_IMAGE_DATA_URL_LEN (~900 KB decoded), so this caps the archive, not the
+// picture.
+const MAX_BYTES = 20 * 1024 * 1024;
 const MAX_DEPTH = 12; // manifest → data → object → field → …
 const MAX_ARRAY_ITEMS = 1000; // generous upper bound
 // Matches MAX_BYTES: entity images (NPC/community avatars) are stored inline as
@@ -42,6 +47,13 @@ const MAX_ARRAY_ITEMS = 1000; // generous upper bound
 // payload, so the per-string guard just forbids a string larger than the
 // largest legal file rather than rejecting a valid image.
 const MAX_STR_LEN = MAX_BYTES;
+
+// Zip-bomb guard on the total decompressed payload. Set independently of
+// MAX_BYTES rather than as a multiple of it: a legitimate archive is mostly
+// already-compressed images (which unpack ~1:1) plus one JSON body that is
+// itself capped at MAX_BYTES, so 2 × the file cap is the honest ceiling for a
+// real export and anything past it is an attack or a mistake.
+const MAX_DECOMPRESSED = 40 * 1024 * 1024;
 
 /** Keys that trigger prototype pollution if assigned to a plain object. */
 const POISON_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -131,9 +143,9 @@ export function parseImportZip(bytes: Uint8Array): unknown {
 	let total = 0;
 	for (const bytes of Object.values(entries)) {
 		total += bytes.length;
-		if (total > MAX_BYTES * 4) {
+		if (total > MAX_DECOMPRESSED) {
 			throw new ImportError(
-				`Zip decompresses to more than ${(MAX_BYTES * 4) / 1024 / 1024} MB — rejecting.`,
+				`Zip decompresses to more than ${MAX_DECOMPRESSED / 1024 / 1024} MB — rejecting.`,
 			);
 		}
 	}

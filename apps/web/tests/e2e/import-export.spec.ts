@@ -235,11 +235,11 @@ test.describe('Import — security', () => {
 		await gotoHome(page);
 	});
 
-	test('rejects files over 5 MB with a user-friendly error', async ({ page }) => {
+	test('rejects files over 20 MB with a user-friendly error', async ({ page }) => {
 		// The pad must live inside `data` so it lands in the zip's decompressed
 		// body file — that's what the size cap measures (a highly-repetitive
 		// string compresses to almost nothing, so the zip itself stays tiny).
-		const big = makeManifest('log', ['x'.repeat(6 * 1024 * 1024)], 1);
+		const big = makeManifest('log', ['x'.repeat(21 * 1024 * 1024)], 1);
 		await uploadImport(page, big, 'huge.json');
 		await expectImportError(page, 'too large');
 	});
