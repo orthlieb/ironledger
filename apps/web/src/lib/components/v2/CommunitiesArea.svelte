@@ -72,6 +72,7 @@
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
@@ -214,10 +215,21 @@
 	// Combobox switcher + gear-options refs (mirrors Chars/Foes/Exp).
 	let entryPickerOpen = $state(false);
 	let entryOptionsRef = $state<{ open(): void; close(): void } | null>(null);
-	// Kind-filter chip row in the switcher popover — 'all' by default so the
-	// list looks the same as before; picking a chip narrows to that kind
-	// (the search input then filters within that subset).
-	let entryKindFilter = $state<'all' | EntryKind>('all');
+	// Kind-filter pill row in the switcher popover — multi-select set of kinds
+	// currently allowed through. Empty set = show all (default). The pills
+	// mirror the FilterBar look used by Moves / Oracles / Export dialogs
+	// (uppercase, colour-tinted border, filled on active); a clear button on
+	// the right resets the set.
+	let entryKindFilter = $state<Set<EntryKind>>(new Set<EntryKind>());
+	function toggleKindFilter(kind: EntryKind) {
+		const next = new Set(entryKindFilter);
+		if (next.has(kind)) next.delete(kind);
+		else next.add(kind);
+		entryKindFilter = next;
+	}
+	function clearKindFilter() {
+		entryKindFilter = new Set<EntryKind>();
+	}
 
 	// Name-first drafts for the three New * dialogs.
 	let newCommunityName = $state<string>('');
@@ -278,21 +290,12 @@
 			),
 	);
 
-	/** Popover list after the kind-filter chip. `all` returns sortedEntries
-	 *  unchanged so the pre-chip behaviour is preserved. */
+	/** Popover list after the kind-filter pills. Empty filter set = show all. */
 	const visibleEntries = $derived<Entry[]>(
-		entryKindFilter === 'all'
+		entryKindFilter.size === 0
 			? sortedEntries
-			: sortedEntries.filter((e) => e.kind === entryKindFilter),
+			: sortedEntries.filter((e) => entryKindFilter.has(e.kind)),
 	);
-	/** Counts for the kind-chip row — rendered as the trailing number on
-	 *  each chip so the user sees how many entries the filter would show. */
-	const kindCounts = $derived({
-		all: sortedEntries.length,
-		community: sortedEntries.filter((e) => e.kind === 'community').length,
-		npc: sortedEntries.filter((e) => e.kind === 'npc').length,
-		place: sortedEntries.filter((e) => e.kind === 'place').length,
-	});
 
 	$effect(() => {
 		if (!activeEntryId && entries.length > 0) activeEntryId = entries[0].id;
@@ -911,24 +914,26 @@
 								<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
 								<Command.Input class="mp-cmd-search" placeholder="Search connections…" autofocus />
 							</div>
-							<div class="cm-kind-chips" role="tablist" aria-label="Filter by connection kind">
-								{#each [{ key: 'all', label: 'All', color: undefined }, { key: 'community', label: 'Settlements', color: accentFor('community') }, { key: 'npc', label: 'NPCs', color: accentFor('npc') }, { key: 'place', label: 'Places', color: accentFor('place') }] as chip (chip.key)}
-									{@const active = entryKindFilter === chip.key}
+							<div class="cm-kind-pills" role="group" aria-label="Filter by connection kind">
+								{#each [{ key: 'community' as EntryKind, label: 'Settlements' }, { key: 'npc' as EntryKind, label: 'NPCs' }, { key: 'place' as EntryKind, label: 'Places' }] as pill (pill.key)}
+									{@const active = entryKindFilter.has(pill.key)}
 									<button
 										type="button"
-										role="tab"
-										aria-selected={active}
-										class="cm-kind-chip"
-										class:cm-kind-chip--active={active}
-										style={chip.color ? `--chip-accent: ${chip.color};` : ''}
-										onclick={() => (entryKindFilter = chip.key as 'all' | EntryKind)}
+										class="cm-kind-pill"
+										class:active
+										style:--pcolor={accentFor(pill.key)}
+										aria-pressed={active}
+										onclick={() => toggleKindFilter(pill.key)}>{pill.label}</button
 									>
-										<span class="cm-kind-chip-label">{chip.label}</span>
-										<span class="cm-kind-chip-count"
-											>{kindCounts[chip.key as keyof typeof kindCounts]}</span
-										>
-									</button>
 								{/each}
+								<button
+									type="button"
+									class="cm-kind-clear"
+									onclick={clearKindFilter}
+									disabled={entryKindFilter.size === 0}
+									use:tooltip={'Clear filters'}
+									aria-label="Clear filters">{@html clearFiltersSvg}</button
+								>
 							</div>
 							<Command.List class="mp-cmd-list">
 								<Command.Empty class="mp-cmd-empty">No matching connections.</Command.Empty>
@@ -2165,58 +2170,64 @@
 		fill: currentColor;
 	}
 
-	/* Kind-filter chip row above the popover list. Compact pills — All /
-	   Settlements / NPCs / Places — with a trailing count. Active chip
-	   picks up the kind's accent colour as `--chip-accent`. */
-	:global(.cm-kind-chips) {
+	/* Kind-filter pill row above the popover list — mirrors the FilterBar
+	   pattern used by Moves / Oracles / Export dialogs: uppercase small caps,
+	   colour-tinted border, filled when active. Multi-select (empty = show
+	   all); the trailing clear button empties the set. */
+	:global(.cm-kind-pills) {
 		display: flex;
 		flex-wrap: wrap;
-		gap: 4px;
+		align-items: center;
+		gap: 6px;
 		padding: 6px 8px 4px;
 		border-bottom: 1px solid var(--border);
 	}
-	:global(.cm-kind-chip) {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 3px 8px;
-		font: inherit;
-		font-size: 0.72rem;
-		line-height: 1.2;
-		color: var(--text-muted);
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
+	:global(.cm-kind-pill) {
+		font-family: var(--font-ui);
+		font-size: 0.66rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--pcolor, var(--text-dimmer));
+		background: transparent;
+		border: 1px solid color-mix(in srgb, var(--pcolor, var(--border)) 40%, transparent);
 		border-radius: 999px;
+		padding: 3px 10px;
 		cursor: pointer;
+		white-space: nowrap;
 		transition:
 			background 0.12s,
-			border-color 0.12s,
-			color 0.12s;
+			border-color 0.12s;
 	}
-	:global(.cm-kind-chip:hover) {
-		color: var(--text);
-		background: var(--bg-hover);
+	:global(.cm-kind-pill:hover) {
+		background: color-mix(in srgb, var(--pcolor) 12%, transparent);
 	}
-	:global(.cm-kind-chip--active) {
-		color: var(--text);
-		background: color-mix(in srgb, var(--chip-accent, var(--text-accent)) 14%, var(--bg-card));
-		border-color: var(--chip-accent, var(--text-accent));
+	:global(.cm-kind-pill.active) {
+		background: color-mix(in srgb, var(--pcolor) 18%, transparent);
+		border-color: var(--pcolor);
 	}
-	:global(.cm-kind-chip-count) {
-		display: inline-block;
-		min-width: 1.4em;
-		padding: 0 5px;
-		text-align: center;
-		font-size: 0.66rem;
-		font-variant-numeric: tabular-nums;
+	:global(.cm-kind-clear) {
+		margin-left: auto;
+		background: transparent;
+		border: 0;
 		color: var(--text-dimmer);
-		background: var(--bg-card);
-		border: 1px solid var(--border);
-		border-radius: 999px;
+		cursor: pointer;
+		padding: 3px;
+		border-radius: 6px;
+		display: grid;
+		place-items: center;
 	}
-	:global(.cm-kind-chip--active .cm-kind-chip-count) {
-		color: var(--text);
-		border-color: color-mix(in srgb, var(--chip-accent, var(--text-accent)) 40%, var(--border));
+	:global(.cm-kind-clear:hover:not(:disabled)) {
+		color: var(--text-accent);
+	}
+	:global(.cm-kind-clear:disabled) {
+		opacity: 0.35;
+		cursor: default;
+	}
+	:global(.cm-kind-clear svg) {
+		width: 15px;
+		height: 15px;
+		fill: currentColor;
 	}
 
 	/* "Also randomize" checklist inside the New * dialogs — one column,
