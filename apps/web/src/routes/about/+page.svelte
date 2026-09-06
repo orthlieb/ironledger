@@ -395,7 +395,7 @@
 				</div>
 				<h3 class="starter-card-title">{headingText('YRT')}</h3>
 				<p class="starter-caption">
-					A world unmade and struggling to be reborn — a regional map with thirteen settlements and
+					A world unmade and struggling to be reborn — a regional map with fifteen settlements and
 					twenty-two places already pinned across the ashes. The Church of YRT's domain is yours to
 					people with the faithful and the heretic alike. Download the zip and load it via the
 					menu's <strong>Import Data</strong> in the app.
