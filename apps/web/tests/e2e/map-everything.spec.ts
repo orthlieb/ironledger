@@ -269,7 +269,7 @@ test.describe('Everything export/import — maps ride along + re-link to owner',
 		await importZip(page, everythingZipWithOwnedMap('Solo Owner', 'Replacement Marker'));
 
 		await expect(page.locator('.moc-dialog')).toBeVisible({ timeout: 8_000 });
-		await page.locator('.moc-radio', { hasText: /Replace the owner/ }).click();
+		await page.locator('.moc-radio', { hasText: /Replace the existing map/ }).click();
 		await page.locator('.moc-footer button', { hasText: /^Continue$/ }).click();
 		await expect(page.locator('.moc-dialog')).not.toBeVisible({ timeout: 5_000 });
 
