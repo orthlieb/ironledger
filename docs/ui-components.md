@@ -1014,6 +1014,122 @@ Notes:
   state variable and read it inside `onOpenChange` (see
   `ConfirmDialog._closeIntent`).
 
+### Progress pattern (long-running work)
+
+Use bits-ui `Progress` for any operation the user has to wait
+through. `ImportDialog` is the reference implementation.
+
+```svelte
+<Progress.Root
+  value={progress.done}
+  max={progress.total}
+  class="imd-bar"
+  aria-label="Import progress"
+>
+  <div
+    class="imd-bar-fill"
+    style="width: {Math.round((progress.done / progress.total) * 100)}%"
+  ></div>
+</Progress.Root>
+```
+
+```css
+:global(.imd-bar) {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+:global(.imd-bar-fill) {
+  height: 100%;
+  background: var(--text-accent);
+  border-radius: inherit;
+  transition: width 0.18s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  :global(.imd-bar-fill) {
+    transition: none;
+  }
+}
+```
+
+`Progress.Root` renders one element and owns the ARIA
+(`role="progressbar"`, the value/max attributes). You draw the
+fill yourself as a child — the library ships no styling. Both
+classes cross into a bits-ui component, so both need `:global`
+per the class-scoping rule above.
+
+**State shape.** One nullable object, owned by whoever does the
+work:
+
+```ts
+let progress = $state<{ done: number; total: number; label: string } | null>(null);
+```
+
+- `null` — not running. Callers that drive the same code path
+  headlessly (the first-run starter seed) leave it null and pay
+  none of the cost below.
+- `total: 0` — running, count not yet known. Pass
+  `value={null}` to `Progress.Root` for the indeterminate state,
+  or fall back to a spinner as `ImportDialog` does.
+- `total > 0` — determinate. Show `done of total` plus `label`.
+
+Reassign rather than mutate (`progress = { ...progress, done:
+progress.done + 1 }`) so reactivity is unambiguous at a glance.
+
+**Instrument one funnel, not every call site.** If the work
+already routes through a single helper — `ImportDialog`'s host
+runs every row through `step(label, fn)` — put the label set and
+the tick there. Set the label _before_ the unit runs so it reads
+as "doing this now", and increment _after_ it lands.
+
+**Never let `done` overshoot `total`.** Derive the total from the
+same list the loop walks, not from a parallel count of what you
+think is in the payload. A bar that sticks at 96% or reads
+"71 of 68" is worse than no bar.
+
+#### Two traps, both about paint
+
+**Synchronous work cannot be animated.** If a phase blocks the
+main thread — `fflate.unzipSync` then `JSON.parse` over a 20 MB
+archive, say — nothing repaints until it returns, so no bar can
+move through it. Don't fake one. Instead:
+
+1. Set the indeterminate state and open the dialog.
+2. Hand the browser a frame _before_ the blocking call, or the
+   dialog paints blank (or not at all) on a large input:
+   `await new Promise((r) => requestAnimationFrame(() => r(null)));`
+3. Go determinate once the blocking phase returns a count.
+
+If a phase is both slow and blocking often enough to matter, the
+fix is a Web Worker, not a smaller input cap.
+
+**Awaiting is not the same as yielding.** A loop whose units hit
+the network repaints fine — `fetch` yields a macrotask. A loop
+whose units resolve synchronously (appending log entries) chains
+microtasks only, and the browser never gets to paint: the bar
+jumps 0 → 100 at the end. Give up a real macrotask on a time
+threshold rather than every iteration, which would add ~4ms per
+unit:
+
+```ts
+let lastPaint = 0;
+const paint = async () => {
+  const now = performance.now();
+  if (now - lastPaint < 50) return;
+  lastPaint = now;
+  await new Promise((r) => setTimeout(r, 0));
+};
+```
+
+**Disable the dismiss control while the work runs.** Cancel is
+disabled at `stage === 'importing'` in `ImportDialog` — there is
+no rollback, so offering an out that doesn't undo anything is a
+lie. If the operation ever becomes abortable, the button becomes
+a real cancel.
+
 ### CLAUDE.md dialog rules — apply where?
 
 The iOS-safe `<dialog>` rules in [`CLAUDE.md`](../CLAUDE.md) (no
@@ -1030,13 +1146,14 @@ consumer of a shared dialog primitive is migrated, keep them.
 Reserve class prefixes so it's obvious at a glance which
 primitive a class belongs to:
 
-| Prefix          | Primitive                            | Example use                                                      |
-| --------------- | ------------------------------------ | ---------------------------------------------------------------- |
-| `cm-*`          | `AlertDialog` (Confirm)              | `.cm-overlay`, `.cm-header`, `.cm-actions`                       |
-| `mp-combobox-*` | `Popover.Trigger` combobox shell     | `.mp-combobox`, `.mp-combobox-value`, `-caret`                   |
-| `mp-cmd-*`      | `Popover + Command` popover body     | `.mp-cmd-popover`, `.mp-cmd-search`, `.mp-cmd-item`              |
-| `bui-select-*`  | `<Select>` wrapper (bits-ui)         | `.bui-select-trigger`, `.bui-select-content`, `.bui-select-item` |
-| `hm-*`          | `DropdownMenu` (title-bar hamburger) | `.hm-menu`, `.hm-item`, `.hm-sep`, `.hm-item--danger`            |
+| Prefix          | Primitive                             | Example use                                                      |
+| --------------- | ------------------------------------- | ---------------------------------------------------------------- |
+| `cm-*`          | `AlertDialog` (Confirm)               | `.cm-overlay`, `.cm-header`, `.cm-actions`                       |
+| `mp-combobox-*` | `Popover.Trigger` combobox shell      | `.mp-combobox`, `.mp-combobox-value`, `-caret`                   |
+| `mp-cmd-*`      | `Popover + Command` popover body      | `.mp-cmd-popover`, `.mp-cmd-search`, `.mp-cmd-item`              |
+| `bui-select-*`  | `<Select>` wrapper (bits-ui)          | `.bui-select-trigger`, `.bui-select-content`, `.bui-select-item` |
+| `hm-*`          | `DropdownMenu` (title-bar hamburger)  | `.hm-menu`, `.hm-item`, `.hm-sep`, `.hm-item--danger`            |
+| `imd-*`         | `ImportDialog` (incl. its `Progress`) | `.imd-bar`, `.imd-bar-fill`, `.imd-state`, `.imd-spinner`        |
 
 New primitives get a fresh prefix keyed to their surface — pick
 one that's short and searchable. Don't stack unrelated bits-ui
