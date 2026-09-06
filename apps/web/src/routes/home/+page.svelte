@@ -230,6 +230,9 @@
 	let importStage = $state<'idle' | 'importing' | 'review' | 'done' | 'error'>('idle');
 	let importSummary = $state('');
 	let importErrors = $state<string[]>([]);
+	/** Live import progress for the dialog's bar. `total` 0 = row count not
+	 *  known yet (still unpacking), which the dialog shows as a spinner. */
+	let importProgress = $state<{ done: number; total: number; label: string } | null>(null);
 	let importValidCount = $state(0);
 	/** Resolver for the `review` pause — settled by the dialog's decision. */
 	let reviewResolve: ((proceed: boolean) => void) | null = null;
@@ -604,18 +607,39 @@
 	async function runImport(file: File, opts: { silent?: boolean } = {}) {
 		const silent = opts.silent === true;
 		const errors: string[] = [];
+		// Unpacking is synchronous and blocks paint, but applying rows is not:
+		// every unit of work goes through step(), so that is where the bar
+		// advances. Rows that hit the network yield on their own; rows that
+		// don't (log entries) would starve paint through a microtask-only
+		// chain, so give the browser a macrotask when enough time has passed.
+		let lastPaint = 0;
+		const paint = async () => {
+			const now = performance.now();
+			if (now - lastPaint < 50) return;
+			lastPaint = now;
+			await new Promise((r) => setTimeout(r, 0));
+		};
 		const step = async (label: string, fn: () => unknown | Promise<unknown>) => {
+			if (importProgress) {
+				importProgress = { ...importProgress, label };
+				await paint();
+			}
 			try {
 				await fn();
 			} catch (e) {
 				errors.push(`${label}: ${e instanceof Error ? e.message : String(e)}`);
 			}
+			if (importProgress) {
+				importProgress = { ...importProgress, done: importProgress.done + 1 };
+			}
 		};
 		importErrors = [];
 		importSummary = '';
+		importProgress = null;
 		if (!silent) {
 			importStage = 'importing';
 			importDialogOpen = true;
+			importProgress = { done: 0, total: 0, label: 'Reading the archive…' };
 		}
 		try {
 			const bytes = new Uint8Array(await file.arrayBuffer());
@@ -631,6 +655,10 @@
 				}
 				return;
 			}
+			// parseImportZip unzips and parses synchronously, so nothing repaints
+			// until it returns. Hand the browser a frame first or the dialog
+			// opens blank on a large archive.
+			if (!silent) await new Promise((r) => requestAnimationFrame(() => r(null)));
 			const parsed = parseImportZip(bytes) as Record<string, unknown>;
 
 			// Wait for the mount's store loads to settle before touching any
@@ -972,6 +1000,31 @@
 				}
 			}
 
+			// Row count for the bar. Mirrors exactly what the dispatch below
+			// walks, so `done` can never overshoot `total`: only an
+			// `everything` bundle carries a log or bundled maps, and the maps
+			// restore is one step however many it holds.
+			if (importProgress) {
+				const t = (parsed.manifest as { type?: string } | undefined)?.type;
+				const logRows =
+					t === 'log'
+						? Array.isArray(parsed.data)
+							? parsed.data.length
+							: 0
+						: t === 'everything'
+							? ((parsed.data as { log?: unknown[] })?.log?.length ?? 0)
+							: 0;
+				const total =
+					incomingCharacters.length +
+					incomingCommunities.length +
+					incomingNpcs.length +
+					incomingPlaces.length +
+					incomingExpeditions.length +
+					logRows +
+					(t === 'everything' ? 1 : 0); // the bundled-maps step
+				importProgress = { done: 0, total, label: importProgress.label };
+			}
+
 			if (parsed.manifest && parsed.data) {
 				const m = parsed.manifest as { type: string };
 				if (m.type === 'character' || m.type === 'all-characters') {
@@ -1083,6 +1136,7 @@
 				(parts.length ? `Imported ${parts.join(' · ')}.` : 'Nothing new to import.') +
 				(validErrors.length ? ` ${validErrors.length} skipped.` : '');
 			importErrors = [...validErrors, ...errors];
+			importProgress = null;
 			if (!silent) importStage = 'done';
 		} catch (err) {
 			const msg =
@@ -1093,6 +1147,7 @@
 				console.warn('[import]', msg);
 			} else {
 				importErrors = [msg];
+				importProgress = null;
 				importStage = 'error';
 			}
 		} finally {
@@ -1822,12 +1877,14 @@
 	summary={importSummary}
 	errors={importErrors}
 	validCount={importValidCount}
+	progress={importProgress}
 	onfile={(file) => void runImport(file)}
 	onreview={(proceed) => reviewResolve?.(proceed)}
 	onreset={() => {
 		importStage = 'idle';
 		importErrors = [];
 		importSummary = '';
+		importProgress = null;
 	}}
 />
 

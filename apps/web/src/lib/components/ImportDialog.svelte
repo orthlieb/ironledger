@@ -7,11 +7,12 @@
 	 * chooser, a progress spinner, and a success or error report.
 	 *
 	 *   idle      → drop zone + "Choose file"
-	 *   importing → spinner
+	 *   importing → determinate bar once the host knows the row count, spinner
+	 *               while it is still unpacking and does not
 	 *   done      → ✓ + summary
 	 *   error     → ⚠ + the ImportError message + "Choose another file"
 	 */
-	import { Dialog } from 'bits-ui';
+	import { Dialog, Progress } from 'bits-ui';
 	import DialogHeader from './DialogHeader.svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
@@ -21,6 +22,7 @@
 		summary = '',
 		errors = [],
 		validCount = 0,
+		progress = null,
 		onfile,
 		onreview,
 		onreset,
@@ -35,6 +37,10 @@
 		errors?: string[];
 		/** Number of valid rows offered on the `review` stage. */
 		validCount?: number;
+		/** Live import progress. `total` of 0 means the row count isn't known
+		 *  yet (the archive is still being unpacked) and the bar runs
+		 *  indeterminate. Null outside the `importing` stage. */
+		progress?: { done: number; total: number; label: string } | null;
 		onfile: (file: File) => void;
 		/** Answer the `review` prompt: apply the valid rows, or cancel. */
 		onreview: (proceed: boolean) => void;
@@ -72,9 +78,28 @@
 			<div class="imd-body">
 				{#if stage === 'importing'}
 					<div class="imd-state">
-						<span class="imd-spinner" aria-hidden="true"></span>
-						<p class="imd-state-title">Importing…</p>
-						<p class="imd-state-sub">Reading the archive and applying its contents.</p>
+						{#if progress && progress.total > 0}
+							<Progress.Root
+								value={progress.done}
+								max={progress.total}
+								class="imd-bar"
+								aria-label="Import progress"
+							>
+								<div
+									class="imd-bar-fill"
+									style="width: {Math.round((progress.done / progress.total) * 100)}%"
+								></div>
+							</Progress.Root>
+							<p class="imd-state-title">
+								Importing {progress.done} of {progress.total}
+							</p>
+						{:else}
+							<span class="imd-spinner" aria-hidden="true"></span>
+							<p class="imd-state-title">Importing…</p>
+						{/if}
+						<p class="imd-state-sub imd-state-sub--ellipsis">
+							{progress?.label || 'Reading the archive and applying its contents.'}
+						</p>
 					</div>
 				{:else if stage === 'review'}
 					<div class="imd-state">
@@ -354,6 +379,28 @@
 		text-align: left;
 	}
 
+	:global(.imd-bar) {
+		width: 100%;
+		height: 8px;
+		border-radius: 999px;
+		background: var(--bg-inset);
+		border: 1px solid var(--border);
+		overflow: hidden;
+	}
+	:global(.imd-bar-fill) {
+		height: 100%;
+		background: var(--text-accent);
+		border-radius: inherit;
+		transition: width 0.18s ease-out;
+	}
+	/* One long entity name must not stretch the dialog. */
+	:global(.imd-state-sub--ellipsis) {
+		max-width: 100%;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
 	:global(.imd-spinner) {
 		width: 30px;
 		height: 30px;
@@ -370,6 +417,9 @@
 	@media (prefers-reduced-motion: reduce) {
 		:global(.imd-spinner) {
 			animation-duration: 2s;
+		}
+		:global(.imd-bar-fill) {
+			transition: none;
 		}
 	}
 
