@@ -516,6 +516,11 @@ export function removeMarker(id: string): void {
 	const idx = mapState.markers.findIndex((m) => m.id === id);
 	if (idx < 0) return;
 	mapState.markers.splice(idx, 1);
+	// Prune the cross-map back-reference index NOW so an entity card's
+	// "📍 on map" chip disappears immediately, rather than lingering until
+	// (or if) the server refresh in persistMarkers lands. Clicking a stale
+	// chip would open the map to a marker that no longer exists.
+	pruneEntityMarkerIndex(id);
 	void persistMarkers();
 }
 
@@ -627,7 +632,13 @@ let _indexLoadPromise: Promise<void> | null = null;
  *  a stale index is better than crashing an entity card. */
 export function loadEntityMarkerIndex(force = false): Promise<void> {
 	if (entityMarkerIndexState.loaded && !force) return Promise.resolve();
-	if (_indexLoadPromise) return _indexLoadPromise;
+	if (_indexLoadPromise) {
+		// A non-forced caller is happy with whatever load is already running.
+		// A forced caller (post-mutation refresh) is NOT — the in-flight fetch
+		// may have started before the mutation committed, so piggybacking on it
+		// would leave a stale index. Chain a fresh fetch after it settles.
+		return force ? _indexLoadPromise.then(() => loadEntityMarkerIndex(true)) : _indexLoadPromise;
+	}
 	entityMarkerIndexState.loading = true;
 	_indexLoadPromise = (async () => {
 		try {
@@ -651,6 +662,22 @@ export function loadEntityMarkerIndex(force = false): Promise<void> {
  *  in-flight promise guard in `loadEntityMarkerIndex`. */
 export function refreshEntityMarkerIndex(): void {
 	void loadEntityMarkerIndex(true);
+}
+
+/** Drop every back-reference to `markerId` from the in-memory index so entity
+ *  cards stop showing a chip for a marker that was just deleted. Reassigns the
+ *  `index` object (and omits entities left with no refs) so Svelte reactivity
+ *  fires. No-op until the index has been loaded once. */
+function pruneEntityMarkerIndex(markerId: string): void {
+	if (!entityMarkerIndexState.loaded) return;
+	const next: Record<string, EntityMarkerRef[]> = {};
+	let changed = false;
+	for (const [entityId, refs] of Object.entries(entityMarkerIndexState.index)) {
+		const kept = refs.filter((r) => r.markerId !== markerId);
+		if (kept.length !== refs.length) changed = true;
+		if (kept.length > 0) next[entityId] = kept;
+	}
+	if (changed) entityMarkerIndexState.index = next;
 }
 
 /** Read a subset of the index for one entity. Returns [] when the index
