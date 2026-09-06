@@ -113,6 +113,9 @@ export const admin = {
 
 	deleteUser: (id: string) => request<void>(`/api/admin/users/${id}`, { method: 'DELETE' }),
 
+	clearUserData: (id: string) =>
+		request<void>(`/api/admin/users/${id}/clear-data`, { method: 'POST' }),
+
 	setRole: (id: string, role: 'user' | 'admin') =>
 		request<void>(`/api/admin/users/${id}`, {
 			method: 'PATCH',

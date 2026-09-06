@@ -225,6 +225,71 @@ export async function deleteUser(userId: string, adminId: string, ip?: string): 
 }
 
 // ---------------------------------------------------------------------------
+// Clear a user's game data — keep the account
+// ---------------------------------------------------------------------------
+
+/**
+ * Wipe all of a user's game data while keeping the account itself: characters,
+ * the entity collections (communities, NPCs, places, expeditions, foe
+ * encounters — all rows of `user_entities`), the session log, campaign maps
+ * (markers ride in the row; background bytes are the user's `portrait_blobs`),
+ * and every portrait. Runs as one transaction so a failure leaves the data
+ * intact rather than half-wiped.
+ *
+ * Deliberately preserved: the `users` row and auth (login/tokens/role), the
+ * user's AI config/keys, and their theme/preferences — none of which live in
+ * the tables below. `user_data` is reset to empty rather than deleted so the
+ * user keeps a valid row (its `session_state` only held now-dangling active
+ * selections).
+ */
+export async function clearUserData(userId: string, adminId: string, ip?: string): Promise<void> {
+  const db = requireAdminDb();
+
+  // Fetch the target email up front for the audit trail + a 404 if unknown.
+  const [target] = await db
+    .select({ email: users.email })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  if (!target) {
+    throw Object.assign(new Error('User not found'), { code: 'NOT_FOUND', statusCode: 404 });
+  }
+
+  await db.transaction(async (tx) => {
+    await tx.delete(characters).where(eq(characters.userId, userId));
+    await tx.execute(sql`DELETE FROM user_entities WHERE user_id = ${userId}::uuid`);
+    await tx.execute(sql`DELETE FROM session_log_entries WHERE user_id = ${userId}::uuid`);
+    // maps carry their markers in-row; delete maps before the blobs their
+    // background_hash points at.
+    await tx.execute(sql`DELETE FROM maps WHERE user_id = ${userId}::uuid`);
+    await tx.execute(sql`DELETE FROM user_entity_portraits WHERE user_id = ${userId}::uuid`);
+    await tx.execute(sql`DELETE FROM portrait_blobs WHERE user_id = ${userId}::uuid`);
+    // Keep the user_data row; blank the legacy collection columns + the
+    // active-selection pointers so nothing dangles.
+    await tx.execute(sql`
+      UPDATE user_data
+      SET encounters = '[]'::jsonb,
+          expeditions = '[]'::jsonb,
+          communities = '[]'::jsonb,
+          npcs = '[]'::jsonb,
+          session_state = '{}'::jsonb,
+          updated_at = now()
+      WHERE user_id = ${userId}::uuid
+    `);
+  });
+
+  void logEvent(
+    adminId,
+    'admin_clear_user_data',
+    {
+      targetUserId: userId,
+      targetEmail: target.email,
+    },
+    ip,
+  ).catch(console.error);
+}
+
+// ---------------------------------------------------------------------------
 // Set user role (promote/demote)
 // ---------------------------------------------------------------------------
 

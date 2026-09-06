@@ -213,6 +213,51 @@ describe('deleteUser', () => {
 });
 
 // ---------------------------------------------------------------------------
+// clearUserData
+// ---------------------------------------------------------------------------
+
+describe('clearUserData', () => {
+  it('wipes game data but keeps the account, auth, and role', async () => {
+    const targetId = await seedUser({ email: TARGET_EMAIL });
+    await seedCharacter(targetId, 'Doomed Char');
+    await seedUserData(targetId, [{ id: 'f1' }, { id: 'f2' }], [{ id: 'e1' }]);
+    await seedRefreshToken(targetId);
+
+    await admin.clearUserData(targetId, adminId, '203.0.113.9');
+
+    // Account + auth preserved.
+    const [stillThere] = await adminDb!.select().from(users).where(eq(users.id, targetId)).limit(1);
+    expect(stillThere).toBeTruthy();
+    const tokens = await adminDb!
+      .select()
+      .from(refreshTokens)
+      .where(eq(refreshTokens.userId, targetId));
+    expect(tokens.length).toBe(1);
+
+    // Game data wiped — characters gone, collection columns blanked.
+    const chars = await adminDb!.select().from(characters).where(eq(characters.userId, targetId));
+    expect(chars.length).toBe(0);
+    const [ud] = await adminDb!.select().from(userData).where(eq(userData.userId, targetId));
+    expect(ud?.encounters).toEqual([]);
+    expect(ud?.expeditions).toEqual([]);
+
+    await tick();
+    const evt = await lastEvent('admin_clear_user_data');
+    expect(evt).toBeTruthy();
+    expect(evt.userId).toBe(adminId);
+    expect((evt.metadata as { targetEmail: string }).targetEmail).toBe(TARGET_EMAIL);
+  });
+
+  it('throws NOT_FOUND for an unknown id', async () => {
+    const err = await admin
+      .clearUserData('00000000-0000-0000-0000-000000000000', adminId)
+      .catch((e: unknown) => e as Error & { code?: string; statusCode?: number });
+    expect(err.code).toBe('NOT_FOUND');
+    expect(err.statusCode).toBe(404);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // setUserRole
 // ---------------------------------------------------------------------------
 
