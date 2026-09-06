@@ -1,17 +1,20 @@
 <script lang="ts">
 	/**
 	 * MapOwnerConflictDialog — shown during an "Everything" import when one or
-	 * more bundled maps re-link (by owner name) to an entity that ALREADY owns
-	 * a map in the current session. One map per owner is allowed, so the user
-	 * picks a single strategy for all such conflicts:
+	 * more bundled maps collide with a map already in the session, either
+	 * because their owner (community / place / expedition) already owns a map
+	 * or because a standalone map of the same name already exists. One map per
+	 * owner is allowed and names should stay unique, so the user picks a
+	 * single strategy for all such conflicts:
 	 *
-	 *   • 'replace' — overwrite each owner's existing map with the imported one
+	 *   • 'replace' — overwrite each existing map with the imported one
 	 *                 (markers + background + settings replaced in place).
-	 *   • 'skip'    — leave existing owned maps untouched; import the incoming
-	 *                 copies as standalone (unlinked) maps instead. Safe default.
+	 *   • 'skip'    — leave existing maps untouched; import the incoming
+	 *                 copies as separate standalone maps instead. Safe default.
 	 *
-	 * Maps whose owner has no map yet re-link silently and never appear here.
-	 * Promise-based, mirroring ImportCollisionDialog: `await ref.open(names)`.
+	 * Maps whose owner has no map yet — and standalone maps whose name doesn't
+	 * collide — re-link/create silently and never appear here. Promise-based,
+	 * mirroring ImportCollisionDialog: `await ref.open(names)`.
 	 */
 	import { Dialog, RadioGroup } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
@@ -53,14 +56,12 @@
 	<Dialog.Portal>
 		<Dialog.Overlay class="moc-overlay" />
 		<Dialog.Content class="moc-dialog">
-			<DialogHeader title={headingText('Owner already has a map')} onclose={() => settle('skip')} />
+			<DialogHeader title={headingText('Map already exists')} onclose={() => settle('skip')} />
 
 			<div class="moc-body">
 				<p class="moc-lead">
 					<strong>{names.length} imported map{names.length === 1 ? '' : 's'}</strong>
-					belong{names.length === 1 ? 's' : ''} to
-					{names.length === 1 ? 'an owner that' : 'owners that'}
-					already {names.length === 1 ? 'has' : 'have'} a map:
+					{names.length === 1 ? 'matches' : 'match'} a map already in this session:
 				</p>
 
 				<p class="moc-names">
@@ -84,8 +85,8 @@
 						<span class="moc-radio-body">
 							<span class="moc-radio-title">Keep existing, import as standalone</span>
 							<span class="moc-radio-help">
-								Leave each owner's current map untouched; bring the incoming maps in as separate,
-								unlinked maps. Safest choice.
+								Leave each current map untouched; bring the incoming maps in as separate, unlinked
+								maps. Safest choice.
 							</span>
 						</span>
 					</label>
@@ -95,10 +96,10 @@
 							<span class="moc-radio-dot"></span>
 						</RadioGroup.Item>
 						<span class="moc-radio-body">
-							<span class="moc-radio-title">Replace the owner's map</span>
+							<span class="moc-radio-title">Replace the existing map</span>
 							<span class="moc-radio-help">
-								Overwrite each owner's existing map — markers, background and settings — with the
-								imported version.
+								Overwrite each existing map — markers, background and settings — with the imported
+								version.
 							</span>
 						</span>
 					</label>

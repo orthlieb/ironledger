@@ -1125,15 +1125,24 @@
 			ownerIdByKey.set(key(e.type === 'site' ? 'site' : 'journey', e.name), e.id);
 
 		// Which owners already have a map (and its id) — for conflict detection.
+		// Also: standalone maps already present, keyed by normalised name, so a
+		// re-import of the same regional map replaces instead of duplicating.
 		const ownedMapId = new Map<string, string>();
+		const standaloneMapIdByName = new Map<string, string>();
 		try {
 			const res = await fetch('/api/session/maps');
 			if (res.ok) {
 				const body = (await res.json()) as {
-					maps?: Array<{ id: string; ownerKind: MapOwnerKind | null; ownerId: string | null }>;
+					maps?: Array<{
+						id: string;
+						name: string;
+						ownerKind: MapOwnerKind | null;
+						ownerId: string | null;
+					}>;
 				};
 				for (const m of body.maps ?? []) {
 					if (m.ownerKind && m.ownerId) ownedMapId.set(`${m.ownerKind}:${m.ownerId}`, m.id);
+					else if (m.name) standaloneMapIdByName.set(normaliseName(m.name), m.id);
 				}
 			}
 		} catch {
@@ -1160,7 +1169,14 @@
 					continue;
 				}
 			}
-			standalone.push({ body, background });
+			// Standalone (or unresolved-owner) map: dedupe against an existing
+			// standalone map with the same name so re-imports replace instead
+			// of duplicating.
+			const existingMapId = body.name
+				? standaloneMapIdByName.get(normaliseName(body.name))
+				: undefined;
+			if (existingMapId) conflicts.push({ body, background, existingMapId });
+			else standalone.push({ body, background });
 		}
 
 		// One decision covers every owned-map conflict in the file.

@@ -119,6 +119,39 @@ async function exportEverythingZip(page: Page): Promise<Buffer> {
 	return downloadBuffer(download);
 }
 
+/** A minimal Everything zip whose only content is one STANDALONE map (no
+ *  owner) named `mapName`, carrying a single marker. Used to prove the
+ *  standalone-map dedupe path: re-import of the same name must not
+ *  duplicate. */
+function everythingZipWithStandaloneMap(mapName: string, markerLabel: string): Buffer {
+	const files: Record<string, Uint8Array> = {
+		'manifest.json': strToU8(
+			JSON.stringify({
+				app: 'Iron Ledger',
+				version: '1.0.0',
+				type: 'everything',
+				body: 'everything.json',
+				count: 0,
+			}),
+		),
+		'everything.json': strToU8(JSON.stringify({})),
+		'maps/m1/manifest.json': strToU8(
+			JSON.stringify({ app: 'Iron Ledger', version: '1.0.0', type: 'map' }),
+		),
+		'maps/m1/map.json': strToU8(
+			JSON.stringify({
+				name: mapName,
+				markers: [
+					{ id: 'x', x: 5, y: 5, label: markerLabel, icon: 'misc/marker', color: '#457b9d' },
+				],
+				settings: {},
+				// deliberately no ownerKind / ownerName — standalone map.
+			}),
+		),
+	};
+	return Buffer.from(zipSync(files));
+}
+
 /** A minimal Everything zip whose only content is one map owned (by name) by
  *  `ownerName`, carrying a single marker. Entity arrays are empty, so import
  *  raises no entity-name collision — isolating the owned-map conflict path. */
@@ -269,7 +302,7 @@ test.describe('Everything export/import — maps ride along + re-link to owner',
 		await importZip(page, everythingZipWithOwnedMap('Solo Owner', 'Replacement Marker'));
 
 		await expect(page.locator('.moc-dialog')).toBeVisible({ timeout: 8_000 });
-		await page.locator('.moc-radio', { hasText: /Replace the owner/ }).click();
+		await page.locator('.moc-radio', { hasText: /Replace the existing map/ }).click();
 		await page.locator('.moc-footer button', { hasText: /^Continue$/ }).click();
 		await expect(page.locator('.moc-dialog')).not.toBeVisible({ timeout: 5_000 });
 
@@ -285,5 +318,42 @@ test.describe('Everything export/import — maps ride along + re-link to owner',
 			)
 			.toBe(true);
 		expect(await fetchMaps()).toHaveLength(1);
+	});
+});
+
+test.describe('Everything import — standalone map dedupes by name (regression)', () => {
+	test('re-import of the same standalone map prompts to Replace, does not duplicate', async ({
+		page,
+	}) => {
+		await resetAll();
+		await clearAllMaps();
+		expect(await fetchMaps()).toHaveLength(0);
+
+		await page.goto('/home');
+		await waitForHome(page);
+
+		// 1st import: fresh session, no prompt — the standalone map is created.
+		await importZip(page, everythingZipWithStandaloneMap('Regional Overview', 'First Marker'));
+		await expect.poll(async () => (await fetchMaps()).length, { timeout: 10_000 }).toBe(1);
+
+		// Close the ImportDialog before the 2nd upload so its overlay doesn't
+		// linger and race the next import cycle.
+		await page.locator('.imd-footer .btn-primary', { hasText: /Done/ }).click();
+		await expect(page.locator('.imd-overlay')).toHaveCount(0);
+
+		// 2nd import: dedupe fires and surfaces the Map-already-exists prompt.
+		await importZip(page, everythingZipWithStandaloneMap('Regional Overview', 'Second Marker'));
+
+		await expect(page.locator('.moc-dialog')).toBeVisible({ timeout: 8_000 });
+		await page.locator('.moc-radio', { hasText: /Replace the existing map/ }).click();
+		await page.locator('.moc-footer button', { hasText: /^Continue$/ }).click();
+		await expect(page.locator('.moc-dialog')).not.toBeVisible({ timeout: 5_000 });
+
+		// Still exactly one map — and its marker was replaced in place, not
+		// added alongside the first.
+		await expect.poll(async () => (await fetchMaps()).length, { timeout: 10_000 }).toBe(1);
+		const maps = await fetchMaps();
+		expect(maps[0].markers.some((k) => k.label === 'Second Marker')).toBeTruthy();
+		expect(maps[0].markers.some((k) => k.label === 'First Marker')).toBeFalsy();
 	});
 });
