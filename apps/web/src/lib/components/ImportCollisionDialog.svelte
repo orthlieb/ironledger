@@ -75,7 +75,7 @@
 			out.push({ label: items.npcs.length === 1 ? 'NPC' : 'NPCs', names: items.npcs });
 		if (items.places.length > 0)
 			out.push({
-				label: items.places.length === 1 ? 'Place' : 'Places',
+				label: items.places.length === 1 ? 'Landmark' : 'Landmarks',
 				names: items.places,
 			});
 		if (items.journeys.length > 0)

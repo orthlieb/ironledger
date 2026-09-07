@@ -45,8 +45,10 @@
 		dialogOpen = false;
 	}
 
-	const kindLabel = $derived(kind === 'npc' ? 'NPC' : kind === 'place' ? 'Place' : 'Settlement');
-	const kindLabelLc = $derived(kind === 'npc' ? 'NPC' : kind === 'place' ? 'place' : 'community');
+	const kindLabel = $derived(kind === 'npc' ? 'NPC' : kind === 'place' ? 'Landmark' : 'Settlement');
+	const kindLabelLc = $derived(
+		kind === 'npc' ? 'NPC' : kind === 'place' ? 'landmark' : 'community',
+	);
 </script>
 
 <Dialog.Root bind:open={dialogOpen}>

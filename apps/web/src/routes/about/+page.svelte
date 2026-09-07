@@ -11,7 +11,6 @@
 	import mapSvg from '$icons/treasure-map.svg?raw';
 	import angleLeftSvg from '$icons/angle-left-solid-full.svg?raw';
 	import angleRightSvg from '$icons/angle-right-solid-full.svg?raw';
-	import compassRoseSvg from '$icons/compass-rose.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import emblaCarouselSvelte from 'embla-carousel-svelte';
 	import Autoplay from 'embla-carousel-autoplay';
@@ -97,8 +96,8 @@
 		},
 		{
 			icon: villageSvg,
-			title: 'Connections, NPCs & Places',
-			body: "The Ironlands are not empty. Track the settlements you've found, the people you've met, the ones who owe you a favour, and the specific places that anchor your saga — an inn, a shrine, a ruin on the horizon. Oracle-powered random generation for names and locations — or build them by hand, if you're that kind of hero.",
+			title: 'Connections, NPCs & Landmarks',
+			body: "The Ironlands are not empty. Track the settlements you've found, the people you've met, the ones who owe you a favour, and the landmarks that anchor your saga — an inn, a shrine, a ruin on the horizon. Oracle-powered random generation for names and locations — or build them by hand, if you're that kind of hero.",
 			color: 'var(--color-health)',
 		},
 		{
@@ -376,7 +375,9 @@
 		<h2 class="section-heading">{headingText('Get a Starter World')}</h2>
 		<div class="starter-grid">
 			<div class="starter-card">
-				<div class="starter-emblem" aria-hidden="true">{@html compassRoseSvg}</div>
+				<div class="starter-emblem starter-emblem--img" aria-hidden="true">
+					<img src="/about/ironsworn.png" alt="" />
+				</div>
 				<h3 class="starter-card-title">{headingText('Ironsworn')}</h3>
 				<p class="starter-caption">
 					A hand-drawn regional map with a handful of named places pinned across it — a scaffold to
