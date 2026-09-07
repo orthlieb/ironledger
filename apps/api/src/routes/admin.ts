@@ -126,6 +126,23 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
     },
   );
 
+  // ── POST /users/:id/clear-data ── Wipe game data, keep the account ──────
+  server.post(
+    '/users/:id/clear-data',
+    {
+      schema: {
+        params: userIdParam,
+      },
+    },
+    async (req, reply) => {
+      await adminService
+        .clearUserData(req.params.id, req.user!.id, req.ip)
+        .catch(handleError(reply));
+      if (reply.sent) return;
+      return reply.status(204).send();
+    },
+  );
+
   // ── PATCH /users/:id/role ── Promote/demote user ────────────────────────
   server.patch(
     '/users/:id/role',

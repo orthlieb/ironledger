@@ -427,6 +427,10 @@ export async function deleteMap(mapId: string): Promise<void> {
 		const res = await fetch(`/api/session/maps/${mapId}`, { method: 'DELETE' });
 		if (!res.ok) throw new Error(`Server returned ${res.status}`);
 		mapListState.maps = mapListState.maps.filter((m) => m.id !== mapId);
+		// The map row took all its markers with it — drop every back-reference
+		// to this map so entity cards don't keep chips pointing at a map (and
+		// markers) that are gone.
+		pruneEntityMarkerRefs((r) => r.mapId === mapId);
 		if (mapId === mapState.activeId) {
 			const next = mapListState.maps[0];
 			if (next) {
@@ -516,6 +520,11 @@ export function removeMarker(id: string): void {
 	const idx = mapState.markers.findIndex((m) => m.id === id);
 	if (idx < 0) return;
 	mapState.markers.splice(idx, 1);
+	// Prune the cross-map back-reference index NOW so an entity card's
+	// "📍 on map" chip disappears immediately, rather than lingering until
+	// (or if) the server refresh in persistMarkers lands. Clicking a stale
+	// chip would open the map to a marker that no longer exists.
+	pruneEntityMarkerRefs((r) => r.markerId === id);
 	void persistMarkers();
 }
 
@@ -562,9 +571,14 @@ export async function setBackground(dataUrl: string, aspect?: number): Promise<v
  *  itself stays; use deleteMap to remove the whole map. */
 export async function clearMap(): Promise<void> {
 	if (!mapState.activeId) return;
+	const activeId = mapState.activeId;
 	// Optimistic — clear locally first.
 	mapState.markers = [];
 	mapState.backgroundHash = '';
+	// Every marker on this map is gone; drop their back-references so entity
+	// cards don't keep dangling chips. (clearMap PUTs directly, bypassing
+	// persistMarkers' refresh, so prune here.)
+	pruneEntityMarkerRefs((r) => r.mapId === activeId);
 	try {
 		await Promise.all([
 			fetch(`/api/session/maps/${mapState.activeId}/background`, { method: 'DELETE' }),
@@ -584,7 +598,10 @@ export async function clearMap(): Promise<void> {
  *  legacy marker data (bare-slug `icon` values that predate the manifest)
  *  without losing the uploaded map. */
 export async function clearMarkers(): Promise<void> {
+	const activeId = mapState.activeId;
 	mapState.markers = [];
+	// Instant chip cleanup; persistMarkers' server refresh is the backstop.
+	if (activeId) pruneEntityMarkerRefs((r) => r.mapId === activeId);
 	await persistMarkers();
 }
 
@@ -627,7 +644,13 @@ let _indexLoadPromise: Promise<void> | null = null;
  *  a stale index is better than crashing an entity card. */
 export function loadEntityMarkerIndex(force = false): Promise<void> {
 	if (entityMarkerIndexState.loaded && !force) return Promise.resolve();
-	if (_indexLoadPromise) return _indexLoadPromise;
+	if (_indexLoadPromise) {
+		// A non-forced caller is happy with whatever load is already running.
+		// A forced caller (post-mutation refresh) is NOT — the in-flight fetch
+		// may have started before the mutation committed, so piggybacking on it
+		// would leave a stale index. Chain a fresh fetch after it settles.
+		return force ? _indexLoadPromise.then(() => loadEntityMarkerIndex(true)) : _indexLoadPromise;
+	}
 	entityMarkerIndexState.loading = true;
 	_indexLoadPromise = (async () => {
 		try {
@@ -651,6 +674,23 @@ export function loadEntityMarkerIndex(force = false): Promise<void> {
  *  in-flight promise guard in `loadEntityMarkerIndex`. */
 export function refreshEntityMarkerIndex(): void {
 	void loadEntityMarkerIndex(true);
+}
+
+/** Drop back-references matching `shouldDrop` from the in-memory index so
+ *  entity cards stop showing chips for markers that no longer exist — a single
+ *  deleted marker, or every marker on a deleted map. Reassigns the `index`
+ *  (omitting entities left with no refs) so Svelte reactivity fires. No-op
+ *  until the index has been loaded once. */
+function pruneEntityMarkerRefs(shouldDrop: (ref: EntityMarkerRef) => boolean): void {
+	if (!entityMarkerIndexState.loaded) return;
+	const next: Record<string, EntityMarkerRef[]> = {};
+	let changed = false;
+	for (const [entityId, refs] of Object.entries(entityMarkerIndexState.index)) {
+		const kept = refs.filter((r) => !shouldDrop(r));
+		if (kept.length !== refs.length) changed = true;
+		if (kept.length > 0) next[entityId] = kept;
+	}
+	if (changed) entityMarkerIndexState.index = next;
 }
 
 /** Read a subset of the index for one entity. Returns [] when the index

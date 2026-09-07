@@ -131,6 +131,8 @@
 	let deleteTarget: AdminUser | null = $state(null);
 	let promoteTarget: AdminUser | null = $state(null);
 	let suspendTarget: AdminUser | null = $state(null);
+	let clearDataTarget: AdminUser | null = $state(null);
+	let clearingData = $state(false);
 
 	async function confirmDelete() {
 		if (!deleteTarget) return;
@@ -142,6 +144,25 @@
 		} catch (err) {
 			error = err instanceof Error ? err.message : 'Delete failed';
 			deleteTarget = null;
+		}
+	}
+
+	// ── Clear a user's game data (keep the account) ────────────────────────
+	async function confirmClearData() {
+		if (!clearDataTarget || clearingData) return;
+		clearingData = true;
+		try {
+			await admin.clearUserData(clearDataTarget.id);
+			clearDataTarget = null;
+			// Counts (characters / encounters / expeditions) changed — refresh
+			// the row data + totals so the table reflects the wipe.
+			users = await admin.listUsers();
+			stats = await admin.getStats();
+		} catch (err) {
+			error = err instanceof Error ? err.message : 'Clear data failed';
+			clearDataTarget = null;
+		} finally {
+			clearingData = false;
 		}
 	}
 
@@ -870,6 +891,13 @@
 												{user.isActive ? 'Suspend' : 'Unsuspend'}
 											</button>
 											<button
+												class="btn btn-icon btn-warn"
+												use:tooltip={'Clear game data (characters, connections, expeditions, foes, maps, log) — keeps the account'}
+												onclick={() => (clearDataTarget = user)}
+											>
+												Clear data
+											</button>
+											<button
 												class="btn btn-icon btn-danger"
 												use:tooltip={'Delete user and all data'}
 												onclick={() => (deleteTarget = user)}
@@ -1408,6 +1436,43 @@
 			<div class="modal-actions">
 				<button class="btn" onclick={() => (deleteTarget = null)}>Cancel</button>
 				<button class="btn btn-danger" onclick={confirmDelete}>Delete</button>
+			</div>
+		</div>
+	</div>
+{/if}
+
+<!-- Clear-user-data confirmation dialog -->
+{#if clearDataTarget}
+	<!-- svelte-ignore a11y_no_static_element_interactions -->
+	<div
+		class="modal-backdrop"
+		onclick={() => !clearingData && (clearDataTarget = null)}
+		onkeydown={(e) => e.key === 'Escape' && !clearingData && (clearDataTarget = null)}
+	>
+		<div
+			class="modal card"
+			onclick={(e) => e.stopPropagation()}
+			onkeydown={(e) => e.stopPropagation()}
+			role="dialog"
+			aria-modal="true"
+			tabindex="-1"
+		>
+			<h3>Clear Game Data</h3>
+			<p>
+				Permanently wipe all game data for <strong>{clearDataTarget.email}</strong>: characters,
+				connections (communities, NPCs, places), expeditions, foes, campaign maps &amp; markers, the
+				session log, and portraits. This cannot be undone.
+			</p>
+			<p>
+				The account itself is <strong>kept</strong> — login, AI keys, and theme/preferences are preserved.
+			</p>
+			<div class="modal-actions">
+				<button class="btn" disabled={clearingData} onclick={() => (clearDataTarget = null)}
+					>Cancel</button
+				>
+				<button class="btn btn-danger" disabled={clearingData} onclick={confirmClearData}>
+					{clearingData ? 'Clearing…' : 'Clear data'}
+				</button>
 			</div>
 		</div>
 	</div>
