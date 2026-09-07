@@ -52,6 +52,12 @@ export interface MapMarker {
 	 *  Format: "kind:id" (e.g. "place:abc123"). Bare-click on a linked
 	 *  marker jumps to the entity in the sheet. */
 	entityId?: string;
+	/** Export/import-only: the linked entity's NAME, written into `map.json`
+	 *  beside `entityId` on export and used by the importer to re-resolve the
+	 *  link across id regeneration (ids are minted per-account on a merge, so
+	 *  the raw `entityId` uuid wouldn't survive). Never persisted server-side —
+	 *  the importer strips it once the link is re-resolved. */
+	entityName?: string;
 	/** Rotation applied to the marker (icon + label) in degrees, clockwise
 	 *  around the marker's anchor point. Optional so pre-rotation markers
 	 *  still parse; the render path treats undefined as 0°. */

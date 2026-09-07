@@ -91,7 +91,8 @@
 		populateMap,
 		type MapZipBody,
 	} from '$lib/mapExport.js';
-	import type { MapOwnerKind } from '$lib/mapStore.svelte.js';
+	import type { MapOwnerKind, MapMarker } from '$lib/mapStore.svelte.js';
+	import { resolveEntity, parseEntityId, formatEntityId } from '$lib/mapEntityLinks.js';
 
 	/** Peek a zip's manifest.json to see if this is a per-map bundle.
 	 *  Cheap enough (only unzips into an entries dict + parses one small
@@ -648,7 +649,7 @@
 			// so they get their own importer. Peek the manifest before
 			// running the full parseImportZip pipeline.
 			if (await isMapZip(bytes)) {
-				await importMapZip(file);
+				await importMapZip(file, relinkMarkersByName);
 				if (!silent) {
 					importSummary = 'Map imported.';
 					importStage = 'done';
@@ -1167,6 +1168,39 @@
 	 *     that map in place) or Skip (import as standalone).
 	 *   • owner unknown / no match → import as a standalone map.
 	 */
+	/** Re-resolve imported markers' entity links BY NAME against the current
+	 *  entity stores. The raw `entityId` uuid came from the exporting account,
+	 *  so after id regeneration / a merge it's meaningless; the exporter stamps
+	 *  each linked marker with `entityName`, and we map (kind, name) → the
+	 *  entity's current id. A name that resolves → the live id; one that doesn't
+	 *  (entity not imported, or skipped) → drop the dead link so the pin
+	 *  survives as a plain annotation. Legacy exports (no `entityName`) keep
+	 *  their link only if the raw id still resolves (same-account restore).
+	 *  `entityName` is always stripped — it never persists server-side. Shared
+	 *  by the Everything-restore and standalone-map-import paths. */
+	function relinkMarkersByName(markers: MapMarker[]): MapMarker[] {
+		const key = (kind: MapOwnerKind, name: string) => `${kind}:${normaliseName(name)}`;
+		const idByName = new Map<string, string>();
+		for (const c of communities) idByName.set(key('community', c.name), c.id);
+		for (const p of places) idByName.set(key('place', p.name), p.id);
+		for (const e of expeditions)
+			idByName.set(key(e.type === 'site' ? 'site' : 'journey', e.name), e.id);
+		return markers.map((raw) => {
+			const { entityName, ...m } = raw;
+			const parsed = parseEntityId(m.entityId);
+			if (!parsed) return m; // no / malformed link — nothing to resolve
+			if (typeof entityName === 'string' && entityName.trim() !== '') {
+				const newId = idByName.get(key(parsed.kind as MapOwnerKind, entityName));
+				if (newId) return { ...m, entityId: formatEntityId(parsed.kind, newId) };
+				const { entityId: _drop, ...noLink } = m;
+				return noLink; // named entity absent on this account → drop the link
+			}
+			if (resolveEntity(m.entityId)) return m; // same-account restore
+			const { entityId: _drop, ...noLink } = m;
+			return noLink;
+		});
+	}
+
 	async function restoreBundledMaps(entries: Record<string, Uint8Array>): Promise<void> {
 		const bundled = parseBundledMaps(entries);
 		if (bundled.length === 0) return;
@@ -1178,6 +1212,10 @@
 		for (const p of places) ownerIdByKey.set(key('place', p.name), p.id);
 		for (const e of expeditions)
 			ownerIdByKey.set(key(e.type === 'site' ? 'site' : 'journey', e.name), e.id);
+
+		// Re-resolve each marker's entity link BY NAME (see relinkMarkersByName),
+		// the same way the map's owner is relinked above.
+		for (const b of bundled) b.body.markers = relinkMarkersByName(b.body.markers);
 
 		// Which owners already have a map (and its id) — for conflict detection.
 		// Also: standalone maps already present, keyed by normalised name, so a
@@ -1757,10 +1795,18 @@
 				detail.ownerKind && detail.ownerId
 					? mapOwnerName(detail.ownerKind, detail.ownerId)
 					: undefined;
+			// Stamp each linked marker with its entity's NAME so the importer can
+			// re-resolve the link across id regeneration (the raw entityId uuid is
+			// meaningless on another account / after a merge). Mirrors ownerName.
+			const markersWithNames = detail.markers.map((m) => {
+				const entityId = (m as { entityId?: string }).entityId;
+				const ent = entityId ? resolveEntity(entityId) : null;
+				return ent ? { ...m, entityName: ent.name } : m;
+			});
 			const entries = await buildMapZipEntries({
 				name: detail.name,
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
-				markers: detail.markers as any,
+				markers: markersWithNames as any,
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				settings: detail.settings as any,
 				backgroundUrl: bgUrl,

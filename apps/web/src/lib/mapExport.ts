@@ -196,7 +196,10 @@ function bytesToJpegDataUrl(bytes: Uint8Array): string {
  * `MapImportError` with a user-readable message on any validation
  * failure — bad envelope, wrong type, malformed markers, etc.
  */
-export async function importMapZip(file: File): Promise<string> {
+export async function importMapZip(
+	file: File,
+	relinkMarkers?: (markers: MapMarker[]) => MapMarker[],
+): Promise<string> {
 	if (!file) throw new MapImportError('No file selected.');
 	let buf: ArrayBuffer;
 	try {
@@ -234,6 +237,10 @@ export async function importMapZip(file: File): Promise<string> {
 	} catch {
 		throw new MapImportError('map.json is not valid JSON.');
 	}
+	// Let the caller (which has the entity stores) re-resolve marker→entity
+	// links by name across id regeneration; without it the markers keep the
+	// exporting account's ids. Optional so this lib stays store-agnostic.
+	if (relinkMarkers) body.markers = relinkMarkers(body.markers);
 	return applyMapImport(body, entries['background.jpg']);
 }
 
