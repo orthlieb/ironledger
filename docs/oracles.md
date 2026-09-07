@@ -41,6 +41,25 @@ Every oracle file exports one object:
 `data` entries are **sorted ascending** by `topRange`.
 The algorithm selects the **first** entry whose `topRange ≥ roll`.
 
+#### Capability tags — `tags`
+
+An oracle may declare an optional `"tags": [...]` array so features can gather
+oracles **by role** instead of hard-coding keys:
+
+```jsonc
+{ "key": "overlandLandmark", "title": "Location: Overland Landmark", …, "tags": ["landmark"] }
+```
+
+Currently used tag:
+
+- **`landmark`** — a point-of-interest / location oracle offered in the **New
+  Landmark** randomiser's oracle dropdown. Any oracle that adds this tag joins
+  the list automatically (via `getOraclesByTag('landmark')`), which filters to
+  the currently _visible_ oracles — so a base oracle and the expansion oracle
+  that supersedes it never both appear. An extension can publish its own
+  landmark table (e.g. an underdark or planar landmark) simply by tagging it;
+  no app code changes.
+
 ### Display order
 
 `oracle-order.json` maps `key → sort weight` (decimal, allowing fine-grained insertion):

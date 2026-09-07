@@ -47,6 +47,7 @@
 	import {
 		loadOracles,
 		getOracles,
+		getOraclesByTag,
 		rollOracle,
 		findOracle,
 		rollFromRangeTable,
@@ -210,12 +211,16 @@
 	// or the Settlement Landmark table (Marketplace / Docks / …) when nested.
 	let newPlaceDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let _pendingPlace: Place | null = null;
-	// A Place is a location (Landmark), not a settlement. It's either freestanding
-	// (Overland / Coastal Landmark) or nested inside a settlement (Settlement
-	// Landmark), selected by the optional `withinSettlementId` parent link. Region
-	// is auto (base/YRT) or inherited from the parent settlement.
-	let _pendingPlaceLandmarkKind = $state<'inland' | 'coastal'>('inland');
+	// A Landmark is a location. Which oracle rolls its location is the user's
+	// choice from every *visible* landmark-tagged oracle — base Location /
+	// Coastal Waters, Lodestar's Overland / Coastal Waters Landmark, YRT's
+	// Settlement Landmark, and any extension that tags its own. The parent
+	// settlement (optional `withinSettlementId`) only affects region, not which
+	// landmark oracle is offered.
+	const landmarkOracles = $derived(getOraclesByTag('landmark'));
+	let _pendingPlaceLandmarkOracle = $state<string>('');
 	let _pendingPlaceWithin = $state<string>('');
+	let newPlaceRollRegion = $state(true);
 	let newPlaceRollLandmark = $state(true);
 	let newPlaceRollDescription = $state(true);
 
@@ -818,8 +823,13 @@
 		};
 		newPlaceName = '';
 		_pendingPlaceWithin = '';
-		_pendingPlaceLandmarkKind = 'inland';
 		await loadOracles();
+		// Default to the first visible landmark oracle (overland / base Location),
+		// or keep the prior pick if it's still a valid option.
+		const opts = landmarkOracles;
+		if (!opts.some((o) => o.key === _pendingPlaceLandmarkOracle)) {
+			_pendingPlaceLandmarkOracle = opts[0]?.key ?? '';
+		}
 		newPlaceDialogRef?.open();
 	}
 
@@ -835,22 +845,6 @@
 		}
 	}
 
-	/** Resolve the Landmark oracle for a Place. The in-settlement and freestanding
-	 *  cases are DIFFERENT oracles, not one superseded key:
-	 *   • nested (inside a settlement) → YRT's Settlement Landmark, a *standalone*
-	 *     oracle that complements — does not supersede — base `location`; falls
-	 *     back to base "Location" when YRT is off.
-	 *   • freestanding overland → base `location`, which Lodestar supersedes with
-	 *     its Overland Landmark (via resolveOracleKey).
-	 *   • coastal → base `coastalWatersLocation`, superseded by Lodestar.
-	 *  Because Settlement Landmark is separate, the two never collide and the
-	 *  result is independent of extension order. */
-	function placeLandmarkKey(nested: boolean): string {
-		if (nested) return isSourceEnabled('yrt') ? 'yrtCityTownLocation' : 'location';
-		if (_pendingPlaceLandmarkKind === 'coastal') return resolveOracleKey('coastalWatersLocation');
-		return resolveOracleKey('location');
-	}
-
 	async function _commitPlace() {
 		if (!_pendingPlace) return;
 		const pl = _pendingPlace;
@@ -861,15 +855,17 @@
 			: undefined;
 		pl.withinSettlementId = _pendingPlaceWithin || undefined;
 		const rolled: Array<[string, string]> = [];
-		// Region: inherit from the parent settlement when nested, else roll.
+		// Region: inherit from the parent settlement when nested; otherwise roll
+		// only when the Region box is checked.
 		if (parent) {
 			pl.region = parent.region;
-		} else {
+		} else if (newPlaceRollRegion) {
 			pl.region = rollOracle(resolveOracleKey('region'), oracles).value ?? '';
 			rolled.push(['Region', pl.region]);
 		}
-		if (newPlaceRollLandmark) {
-			pl.location = rollOracle(placeLandmarkKey(!!parent), oracles).value ?? '';
+		// Landmark: roll the chosen landmark oracle when the box is checked.
+		if (newPlaceRollLandmark && _pendingPlaceLandmarkOracle) {
+			pl.location = rollOracle(_pendingPlaceLandmarkOracle, oracles).value ?? '';
 			rolled.push(['Landmark', pl.location]);
 		}
 		if (newPlaceRollDescription) {
@@ -1726,24 +1722,27 @@
 			/>
 		</div>
 
-		{#if !_pendingPlaceWithin}
-			<div class="np-field">
-				<label class="ns-label" for="np-loc">Landmark oracle</label>
-				<Select
-					id="np-loc"
-					class="ea-ns-select"
-					bind:value={_pendingPlaceLandmarkKind}
-					options={[
-						{ value: 'inland', label: 'Overland' },
-						{ value: 'coastal', label: 'Coastal Waters' },
-					]}
-				/>
-			</div>
-		{/if}
+		<div class="np-field">
+			<label class="ns-label" for="np-loc">Landmark oracle</label>
+			<Select
+				id="np-loc"
+				class="ea-ns-select"
+				disabled={!newPlaceRollLandmark}
+				bind:value={_pendingPlaceLandmarkOracle}
+				options={landmarkOracles.map((o) => ({ value: o.key, label: o.selectLabel || o.title }))}
+			/>
+		</div>
 	</div>
 
 	<div class="nn-randomize">
 		<span class="nn-randomize-label">Also randomize</span>
+		<Checkbox
+			class="nn-check"
+			checked={newPlaceRollRegion}
+			onCheckedChange={(v) => (newPlaceRollRegion = !!v)}
+		>
+			<span class="nn-check-label">Region</span>
+		</Checkbox>
 		<Checkbox
 			class="nn-check"
 			checked={newPlaceRollLandmark}
