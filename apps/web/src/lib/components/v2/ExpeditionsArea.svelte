@@ -63,6 +63,7 @@
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 	import checkSvg from '$icons/circle-check-solid-full.svg?raw';
 	import locationSvg from '$icons/location-dot-solid-full.svg?raw';
 	import iconMapSvg from '$icons/compass-rose.svg?raw';
@@ -151,6 +152,20 @@
 	let newSiteDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let expPickerOpen = $state(false);
 	let expOptionsRef = $state<{ open(): void; close(): void } | null>(null);
+	// Type-filter pill row in the switcher popover — multi-select set of
+	// expedition types currently allowed through. Empty set = show all
+	// (default). Mirrors the Connections popover's kind-filter pills.
+	type ExpKind = 'journey' | 'site' | 'scene';
+	let expTypeFilter = $state<Set<ExpKind>>(new Set<ExpKind>());
+	function toggleExpTypeFilter(kind: ExpKind) {
+		const next = new Set(expTypeFilter);
+		if (next.has(kind)) next.delete(kind);
+		else next.add(kind);
+		expTypeFilter = next;
+	}
+	function clearExpTypeFilter() {
+		expTypeFilter = new Set<ExpKind>();
+	}
 	let mapDialogRef = $state<{
 		open(target?: { mapId?: string; markerId?: string; promptUpload?: boolean }): void;
 		close(): void;
@@ -205,6 +220,12 @@
 	/** Popover list sorted A→Z. Command doesn't sort — pre-sort here. */
 	const sortedExpeditions = $derived(
 		expeditions.slice().sort((a, b) => expDisplayName(a).localeCompare(expDisplayName(b))),
+	);
+	/** Popover list after the type-filter pills. Empty filter set = show all. */
+	const visibleExpeditions = $derived(
+		expTypeFilter.size === 0
+			? sortedExpeditions
+			: sortedExpeditions.filter((e) => expTypeFilter.has(e.type as ExpKind)),
 	);
 
 	/** Back-references for the active expedition, if any. Empty until the
@@ -706,9 +727,30 @@
 								<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
 								<Command.Input class="mp-cmd-search" placeholder="Search expeditions…" autofocus />
 							</div>
+							<div class="ea-kind-pills" role="group" aria-label="Filter by expedition type">
+								{#each [{ key: 'journey' as ExpKind, label: 'Journeys', color: JOURNEY_COLOR }, { key: 'site' as ExpKind, label: 'Sites', color: SITE_COLOR }, { key: 'scene' as ExpKind, label: 'Scenes', color: SCENE_COLOR }] as pill (pill.key)}
+									{@const active = expTypeFilter.has(pill.key)}
+									<button
+										type="button"
+										class="ea-kind-pill"
+										class:active
+										style:--pcolor={pill.color}
+										aria-pressed={active}
+										onclick={() => toggleExpTypeFilter(pill.key)}>{pill.label}</button
+									>
+								{/each}
+								<button
+									type="button"
+									class="ea-kind-clear"
+									onclick={clearExpTypeFilter}
+									disabled={expTypeFilter.size === 0}
+									use:tooltip={'Clear filters'}
+									aria-label="Clear filters">{@html clearFiltersSvg}</button
+								>
+							</div>
 							<Command.List class="mp-cmd-list">
 								<Command.Empty class="mp-cmd-empty">No matching expeditions.</Command.Empty>
-								{#each sortedExpeditions as exp (exp.id)}
+								{#each visibleExpeditions as exp (exp.id)}
 									{@const n = expDisplayName(exp)}
 									{@const typeIcon =
 										exp.type === 'site'
@@ -1617,6 +1659,65 @@
 	:global(.ea-hdr-combobox) {
 		flex: 1 1 auto;
 		min-width: 0;
+	}
+
+	/* Type-filter pill row above the popover list — mirrors the Connections
+	   popover (Journeys / Sites / Scenes). Uppercase small caps, colour-tinted
+	   border, filled ~18% when active; trailing clear button on the right. */
+	:global(.ea-kind-pills) {
+		display: flex;
+		flex-wrap: wrap;
+		align-items: center;
+		gap: 6px;
+		padding: 6px 8px 4px;
+		border-bottom: 1px solid var(--border);
+	}
+	:global(.ea-kind-pill) {
+		font-family: var(--font-ui);
+		font-size: 0.66rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--pcolor, var(--text-dimmer));
+		background: transparent;
+		border: 1px solid color-mix(in srgb, var(--pcolor, var(--border)) 40%, transparent);
+		border-radius: 999px;
+		padding: 3px 10px;
+		cursor: pointer;
+		white-space: nowrap;
+		transition:
+			background 0.12s,
+			border-color 0.12s;
+	}
+	:global(.ea-kind-pill:hover) {
+		background: color-mix(in srgb, var(--pcolor) 12%, transparent);
+	}
+	:global(.ea-kind-pill.active) {
+		background: color-mix(in srgb, var(--pcolor) 18%, transparent);
+		border-color: var(--pcolor);
+	}
+	:global(.ea-kind-clear) {
+		margin-left: auto;
+		background: transparent;
+		border: 0;
+		color: var(--text-dimmer);
+		cursor: pointer;
+		padding: 3px;
+		border-radius: 6px;
+		display: grid;
+		place-items: center;
+	}
+	:global(.ea-kind-clear:hover:not(:disabled)) {
+		color: var(--text-accent);
+	}
+	:global(.ea-kind-clear:disabled) {
+		opacity: 0.35;
+		cursor: default;
+	}
+	:global(.ea-kind-clear svg) {
+		width: 15px;
+		height: 15px;
+		fill: currentColor;
 	}
 	/* Header +/plain icon button (used for the per-expedition Map btn) —
 	   matches Characters' Vow/Asset shape. */
