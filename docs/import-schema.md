@@ -568,6 +568,35 @@ Errors that occur **while applying** an individual row (a store call throwing)
 are likewise caught per row, collected, and reported on the **done** stage —
 one failed entity never aborts the others.
 
+### Link resolution (name-based re-linking)
+
+Entity ids are minted **per account**, so a raw id inside one export is
+meaningless on another ledger (and even on the same ledger after a merge
+regenerates ids). Every cross-entity link is therefore exported **by name**
+and re-resolved to the current id on import — matching lower-cased + trimmed,
+the same way collisions match. Three links use this scheme:
+
+| Link                          | Field on the live entity          | Exported as                   | Re-resolved on import                                                                                                    |
+| ----------------------------- | --------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Place → parent settlement** | `Place.withinSettlementId`        | `withinSettlementName`        | `relinkPlaces()` → the community's current id (after communities land)                                                   |
+| **Map → owner entity**        | map `ownerKind` + `ownerId`       | `ownerKind` + `ownerName`     | matched to the owner's current id; unmatched → the map imports standalone                                                |
+| **Marker → entity**           | `marker.entityId` (`"kind:uuid"`) | `entityId` **+** `entityName` | `(kind, entityName)` → the entity's current id; unresolved → the link is dropped and the pin stays as a plain annotation |
+
+Notes:
+
+- The **importing account must already hold the target entity** (by name) for
+  the link to reconnect — which is why the Everything bundle re-links after all
+  entities are applied. A partial import that brings a map/marker without its
+  target leaves the pin unlinked (never dangling at a foreign id).
+- `withinSettlementName`, `ownerName`, and the marker `entityName` are
+  **export/import-only** — they are stripped once resolved and never persisted
+  server-side.
+- A **legacy export** (no `entityName` on a marker) keeps the raw `entityId`
+  only when it still resolves to a live entity — i.e. a same-account restore
+  where ids were preserved; otherwise the stale link is dropped.
+- The re-link runs on both the **Everything** restore and a **standalone map**
+  (`type: "map"`) import.
+
 ### Collision resolution
 
 Imports are scanned up front against the current data, **matching by

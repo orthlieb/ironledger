@@ -52,6 +52,12 @@ export interface MapMarker {
 	 *  Format: "kind:id" (e.g. "place:abc123"). Bare-click on a linked
 	 *  marker jumps to the entity in the sheet. */
 	entityId?: string;
+	/** Export/import-only: the linked entity's NAME, written into `map.json`
+	 *  beside `entityId` on export and used by the importer to re-resolve the
+	 *  link across id regeneration (ids are minted per-account on a merge, so
+	 *  the raw `entityId` uuid wouldn't survive). Never persisted server-side —
+	 *  the importer strips it once the link is re-resolved. */
+	entityName?: string;
 	/** Rotation applied to the marker (icon + label) in degrees, clockwise
 	 *  around the marker's anchor point. Optional so pre-rotation markers
 	 *  still parse; the render path treats undefined as 0°. */
@@ -442,6 +448,55 @@ export async function deleteMap(mapId: string): Promise<void> {
 	} catch (err) {
 		mapState.error = err instanceof Error ? err.message : 'Failed to delete map';
 	}
+}
+
+/** Unlink — do NOT delete — every marker that points at `entityId`, across
+ *  all maps. Called when that entity is deleted: the pins survive as plain
+ *  annotations (label / icon / colour intact) but shed the now-dead link, so
+ *  clicking one no longer tries to open a connection that's gone. `entityId`
+ *  is the formatted `"kind:uuid"` a marker stores. Best-effort per map. */
+export async function unlinkEntityFromMaps(entityId: string): Promise<void> {
+	if (!entityId) return;
+	// Need current back-references — the entity was just removed, so load the
+	// index if it isn't already in memory.
+	if (!entityMarkerIndexState.loaded) await loadEntityMarkerIndex();
+	const refs = entityMarkerIndexState.index[entityId];
+	if (!refs || refs.length === 0) return;
+
+	const strip = (m: MapMarker): MapMarker => {
+		if (m.entityId !== entityId) return m;
+		const { entityId: _dropped, ...rest } = m;
+		return rest;
+	};
+
+	for (const mapId of [...new Set(refs.map((r) => r.mapId))]) {
+		if (mapId === mapState.activeId) {
+			// Active map: mutate in place + persist (persist also refreshes the index).
+			mapState.markers = mapState.markers.map(strip);
+			await persistMarkers();
+		} else {
+			// Other map: fetch its markers, strip the link, PUT back.
+			try {
+				const res = await fetch(`/api/session/maps/${mapId}`);
+				if (!res.ok) continue;
+				const body = (await res.json()) as { markers?: MapMarker[] };
+				const markers = (body.markers ?? []).map(strip);
+				const put = await fetch(`/api/session/maps/${mapId}/markers`, {
+					method: 'PUT',
+					headers: { 'Content-Type': 'application/json' },
+					body: JSON.stringify({ markers }),
+				});
+				if (!put.ok) throw new Error(`Server returned ${put.status}`);
+			} catch {
+				/* best-effort — a failed map keeps its link; the index refresh
+				   below still reflects the real server state */
+			}
+		}
+	}
+
+	// Drop the now-stale back-references locally, then reconcile from server.
+	pruneEntityMarkerRefs((r) => r.entityId === entityId);
+	if (entityMarkerIndexState.loaded) refreshEntityMarkerIndex();
 }
 
 // ---------------------------------------------------------------------------

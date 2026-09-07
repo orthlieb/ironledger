@@ -13,7 +13,7 @@
  */
 import { test, expect, type Download } from '@playwright/test';
 import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
-import { resetAll, getTestToken } from './helpers/reset';
+import { resetAll, getTestToken, seedCommunity } from './helpers/reset';
 import { settleHome } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
@@ -546,6 +546,14 @@ test.describe('Import / Export — portrait round-trip', () => {
 			mimeType: 'application/zip',
 			buffer: Buffer.from(zipSync(reentries)),
 		});
+		// Re-importing into the same (non-wiped) account, the bundled default
+		// map name-collides with the one already present → the owner-conflict
+		// prompt. This test only cares about the portrait, so Skip it.
+		const mapConflict = page.locator('.moc-dialog');
+		await mapConflict.waitFor({ state: 'visible', timeout: 8_000 }).then(
+			() => mapConflict.locator('.moc-footer .btn', { hasText: /^Skip$/ }).click(),
+			() => {}, // no conflict prompt — nothing to dismiss
+		);
 		await expectImportOk(page);
 		// Dismiss the ImportDialog so it doesn't cover the switcher below.
 		await page.locator('.imd-footer .btn-primary', { hasText: /Done/ }).click();
@@ -869,5 +877,127 @@ test.describe('Import / Export — full round-trip', () => {
 			state.log.some((e: { title?: string }) => e.title === 'Round-trip Marker'),
 			'log entry round-tripped',
 		).toBeTruthy();
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Marker → entity link re-resolution on import
+//
+// A map marker's entityId is "kind:uuid" from the exporting account. On
+// import the exporter's uuid is meaningless once the entity's id differs
+// (a merge, or a cross-account restore), so the exporter stamps each linked
+// marker with the entity's NAME and the importer re-resolves (kind, name) →
+// the live id. Verified via the server's entity-marker index.
+// ---------------------------------------------------------------------------
+
+test.describe('Import — marker entity re-link', () => {
+	test.beforeEach(async () => {
+		await resetAll();
+	});
+
+	test('a map marker re-links to a same-named entity, not the exported id', async ({ page }) => {
+		// Seed a community with a KNOWN server id + name, then load so the store
+		// holds it (the importer resolves marker links against the live stores).
+		const commId = await seedCommunity('Relink Haven');
+		await gotoHome(page);
+
+		// A standalone map zip whose one marker points at a FOREIGN community id
+		// but carries the resolvable entityName.
+		const mapZip = zipSync({
+			'manifest.json': strToU8(
+				JSON.stringify({ app: 'Iron Ledger', version: '1.0.0', type: 'map', body: 'map.json' }),
+			),
+			'map.json': strToU8(
+				JSON.stringify({
+					name: 'Relink Test Map',
+					markers: [
+						{
+							id: 'mk-relink-1',
+							x: 5,
+							y: 5,
+							label: 'Haven pin',
+							icon: 'settlement',
+							entityId: 'community:00000000-dead-4000-8000-000000000000',
+							entityName: 'Relink Haven',
+						},
+					],
+					settings: {},
+				}),
+			),
+		});
+		await page.locator(ZIP_INPUT).setInputFiles({
+			name: 'relink.zip',
+			mimeType: 'application/zip',
+			buffer: Buffer.from(mapZip),
+		});
+		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 5_000 });
+
+		// The marker now points at the SEEDED community's id — not the foreign one.
+		const index = await page.evaluate(async () => {
+			const res = await fetch('/api/session/maps/entity-markers', { credentials: 'include' });
+			return (await res.json()) as { index?: Record<string, unknown> };
+		});
+		const keys = Object.keys(index.index ?? {});
+		expect(keys).toContain(`community:${commId}`);
+		expect(keys).not.toContain('community:00000000-dead-4000-8000-000000000000');
+	});
+
+	test('an unresolvable marker link is dropped (pin kept, no dead link)', async ({ page }) => {
+		await gotoHome(page); // no matching community seeded
+		const mapZip = zipSync({
+			'manifest.json': strToU8(
+				JSON.stringify({ app: 'Iron Ledger', version: '1.0.0', type: 'map', body: 'map.json' }),
+			),
+			'map.json': strToU8(
+				JSON.stringify({
+					name: 'Orphan Link Map',
+					markers: [
+						{
+							id: 'mk-orphan-1',
+							x: 3,
+							y: 3,
+							label: 'Ghost pin',
+							icon: 'settlement',
+							entityId: 'community:11111111-dead-4000-8000-000000000000',
+							entityName: 'Nonexistent Town',
+						},
+					],
+					settings: {},
+				}),
+			),
+		});
+		await page.locator(ZIP_INPUT).setInputFiles({
+			name: 'orphan.zip',
+			mimeType: 'application/zip',
+			buffer: Buffer.from(mapZip),
+		});
+		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 5_000 });
+
+		// No entity-marker back-references at all — the dead link was dropped,
+		// but the pin itself survived (the map has one marker).
+		const state = await page.evaluate(async () => {
+			const index = await fetch('/api/session/maps/entity-markers', {
+				credentials: 'include',
+			}).then((r) => r.json());
+			const maps = await fetch('/api/session/maps', { credentials: 'include' }).then((r) =>
+				r.json(),
+			);
+			const detailId = (maps.maps ?? []).find(
+				(m: { name?: string }) => m.name === 'Orphan Link Map',
+			)?.id;
+			const detail = detailId
+				? await fetch(`/api/session/maps/${detailId}`, { credentials: 'include' }).then((r) =>
+						r.json(),
+					)
+				: null;
+			return {
+				indexKeys: Object.keys(index.index ?? {}),
+				markerCount: Array.isArray(detail?.markers) ? detail.markers.length : 0,
+				firstMarkerHasEntity: !!detail?.markers?.[0]?.entityId,
+			};
+		});
+		expect(state.indexKeys).not.toContain('community:11111111-dead-4000-8000-000000000000');
+		expect(state.markerCount).toBe(1); // pin kept
+		expect(state.firstMarkerHasEntity).toBe(false); // link dropped
 	});
 });
