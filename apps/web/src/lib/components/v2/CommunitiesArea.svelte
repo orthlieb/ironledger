@@ -808,7 +808,7 @@
 	async function addNewPlace() {
 		_pendingPlace = {
 			id: crypto.randomUUID(),
-			name: 'New Place',
+			name: 'New Landmark',
 			region: '',
 			location: '',
 			locationDescription: '',
@@ -877,7 +877,7 @@
 			rolled.push(['Descriptor', pl.locationDescription]);
 		}
 		if (newPlaceName.trim()) pl.name = newPlaceName.trim();
-		logCreateRolls(`New Place — ${pl.name}`, rolled);
+		logCreateRolls(`New Landmark — ${pl.name}`, rolled);
 		await addPlace(pl);
 		activeEntryId = pl.id;
 		activeTab = 'core';
@@ -940,7 +940,7 @@
 								<Command.Input class="mp-cmd-search" placeholder="Search connections…" autofocus />
 							</div>
 							<div class="cm-kind-pills" role="group" aria-label="Filter by connection kind">
-								{#each [{ key: 'community' as EntryKind, label: 'Settlements' }, { key: 'npc' as EntryKind, label: 'NPCs' }, { key: 'place' as EntryKind, label: 'Places' }] as pill (pill.key)}
+								{#each [{ key: 'community' as EntryKind, label: 'Settlements' }, { key: 'npc' as EntryKind, label: 'NPCs' }, { key: 'place' as EntryKind, label: 'Landmarks' }] as pill (pill.key)}
 									{@const active = entryKindFilter.has(pill.key)}
 									<button
 										type="button"
@@ -1021,14 +1021,14 @@
 								</Command.Item>
 								<Command.Item
 									class="mp-cmd-item mp-cmd-item--action"
-									value="+ New Place"
+									value="+ New Landmark"
 									onSelect={() => {
 										entryPickerOpen = false;
 										void addNewPlace();
 									}}
 								>
 									<span class="mp-cmd-check" aria-hidden="true"></span>
-									<span class="mp-cmd-item-name">+ New Place…</span>
+									<span class="mp-cmd-item-name">+ New Landmark…</span>
 								</Command.Item>
 							</Command.List>
 						</Command.Root>
@@ -1073,7 +1073,7 @@
 			<p class="cm-empty-text">
 				There are people and places to <s>plunder</s> discover. Pick
 				<strong>+ New Settlement…</strong>, <strong>+ New NPC…</strong>, or
-				<strong>+ New Place…</strong> from the switcher above to begin.
+				<strong>+ New Landmark…</strong> from the switcher above to begin.
 			</p>
 		</div>
 	{:else}
@@ -1223,15 +1223,15 @@
 									{@const here = places.filter((p) => p.withinSettlementId === s.id)}
 									{#if here.length > 0}
 										<div class="cm-field-row cm-field-row--places">
-											<span class="cm-field-label">Places</span>
+											<span class="cm-field-label">Landmarks</span>
 											<div class="cm-mapref-chips">
 												{#each here as p (p.id)}
 													<button
 														class="cm-mapref-chip"
 														type="button"
 														onclick={() => (activeEntryId = p.id)}
-														use:tooltip={'Go to this place'}
-														><span class="cm-mapref-name">{p.name || 'Untitled place'}</span
+														use:tooltip={'Go to this landmark'}
+														><span class="cm-mapref-name">{p.name || 'Untitled landmark'}</span
 														></button
 													>
 												{/each}
@@ -1680,7 +1680,7 @@
      trouble doesn't map to inns, forests, ruins, etc). -->
 <ConfirmDialog
 	bind:this={newPlaceDialogRef}
-	title="New Place"
+	title="New Landmark"
 	draggable
 	confirmLabel="Create"
 	confirmClass="btn-primary"
@@ -1701,7 +1701,7 @@
 					class="co-input"
 					type="text"
 					bind:value={newPlaceName}
-					placeholder="Place name"
+					placeholder="Landmark name"
 				/>
 				<button
 					class="btn btn-icon ea-dice-btn"

@@ -144,7 +144,7 @@
 		},
 		{
 			key: 'conn:place',
-			label: 'Places',
+			label: 'Landmarks',
 			color: K.place.color,
 			icon: K.place.icon,
 			items: placesL.map((p) => ({

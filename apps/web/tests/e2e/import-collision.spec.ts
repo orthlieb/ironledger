@@ -304,7 +304,7 @@ test.describe('Import collision dialog (name-based)', () => {
 		await expect(dialog.locator('.icd-group-label')).toHaveText([
 			'Settlements',
 			'NPCs',
-			'Place',
+			'Landmark',
 			'Journey',
 			'Site',
 		]);
@@ -315,7 +315,7 @@ test.describe('Import collision dialog (name-based)', () => {
 			dialog.locator('.icd-group').filter({ hasText: 'NPCs' }).locator('.icd-name'),
 		).toHaveText(['Old Vala', 'Brokk the Smith']);
 		await expect(
-			dialog.locator('.icd-group').filter({ hasText: 'Place' }).locator('.icd-name'),
+			dialog.locator('.icd-group').filter({ hasText: 'Landmark' }).locator('.icd-name'),
 		).toHaveText(['The Silver Fish']);
 		await expect(
 			dialog.locator('.icd-group').filter({ hasText: 'Journey' }).locator('.icd-name'),

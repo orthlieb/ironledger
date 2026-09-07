@@ -1,4 +1,9 @@
-# Communities, NPCs & Places
+# Communities, NPCs & Landmarks
+
+> **Naming.** The third connection kind is called a **Landmark** in the UI (its
+> canon name). Its stored kind, API segment, marker-link prefix, and export key
+> are all still `place`/`places` — the rename is user-facing only, so code and
+> data below use `place`.
 
 > **⚠️ v2 note.** The standalone `CommunityCard` / `NpcCard` components were merged into **`apps/web/src/lib/components/v2/CommunitiesArea.svelte`** in the v2 rewrite. The card-component references below are retired v1 names; the data model + behaviour still apply.
 
@@ -6,11 +11,11 @@ The Connections deck holds three distinct kinds of entry, each capturing a diffe
 
 - **Community** — a **people** anchored to a location: a settlement, city, town, outpost, castle, nomad band. Named for the group, not the ground under their feet. Hobbiton.
 - **NPC** — an individual person: named, motivated, sometimes bonded, sometimes dangerous. Bilbo.
-- **Place** — a **fixed location** worth remembering, inside a community or somewhere in the surrounding world. An inn, a market stall, a shrine, a ruin, a peak on the horizon. Mt. Doom.
+- **Landmark** — a **fixed location** worth remembering, inside a community or somewhere in the surrounding world. An inn, a market stall, a shrine, a ruin, a peak on the horizon. Mt. Doom. (Stored kind: `place`.)
 
 All three are oracle-driven where useful, and free-form everywhere else.
 
-> **Place vs Site**: a Place (a Connection) is a fixed feature you want to remember. A Site is a Delve-mechanic expedition with progress ticks and denizen tables — you delve INTO a Site to explore it. Different concepts, different storage.
+> **Landmark vs Site**: a Landmark (a Connection) is a fixed feature you want to remember. A Site is a Delve-mechanic expedition with progress ticks and denizen tables — you delve INTO a Site to explore it. Different concepts, different storage.
 
 ---
 
@@ -73,7 +78,7 @@ Communities share the same `notes` + `situationalNotes` split but with the
 Description / Trouble framing: `notes` is the long-form description of the
 place, `situationalNotes` is conditions and aspects of the current trouble.
 
-### Place
+### Landmark (`Place` type)
 
 ```typescript
 // apps/web/src/lib/types.ts
@@ -92,7 +97,7 @@ interface Place {
 }
 ```
 
-Places share Community's field shape today so the same card renders both. They live in their own entity kind (`user_entities.kind = 'place'`) so future divergence (place-specific fields like `parentCommunityId`, `terrain`, etc.) doesn't require a schema shuffle. The Settlement: Troubles oracle is intentionally NOT wired for places — "Trouble" is a freeform text field, since a wayside inn or a peak don't have that kind of settlement-scale trouble concept.
+Landmarks share Community's field shape today so the same card renders both. They live in their own entity kind (`user_entities.kind = 'place'`) so future divergence (place-specific fields like `parentCommunityId`, `terrain`, etc.) doesn't require a schema shuffle. The Settlement: Troubles oracle is intentionally NOT wired for landmarks — "Trouble" is a freeform text field, since a wayside inn or a peak don't have that kind of settlement-scale trouble concept.
 
 #### When to reach for a Place vs a Community
 

@@ -1,8 +1,8 @@
 /**
- * places.spec.ts — Places (v2): add and delete places in the Connections deck.
+ * places.spec.ts — Landmarks (v2): add and delete places in the Connections deck.
  *
- * Places are a third kind of Connection entry alongside communities and NPCs,
- * created from the same header combobox ("+ New Place…") and sharing the
+ * Landmarks are a third kind of Connection entry alongside communities and NPCs,
+ * created from the same header combobox ("+ New Landmark…") and sharing the
  * CommunitiesArea card. The live entry count is on `.cm-header-actions`
  * (`data-entry-count`); deletion is via the header gear → options dialog.
  *
@@ -31,7 +31,7 @@ async function entryCount(page: Page): Promise<number> {
 	return Number((await page.locator(CM_ACTIONS).getAttribute('data-entry-count')) ?? '0');
 }
 
-async function openNew(page: Page, kind: 'Settlement' | 'NPC' | 'Place') {
+async function openNew(page: Page, kind: 'Settlement' | 'NPC' | 'Landmark') {
 	await page.locator(CM_COMBOBOX).click();
 	await page.locator('.mp-cmd-item--action', { hasText: new RegExp(`New ${kind}`, 'i') }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
@@ -40,7 +40,7 @@ async function openNew(page: Page, kind: 'Settlement' | 'NPC' | 'Place') {
 /** Create a connection of the given kind via Random; it becomes the active entry. */
 // New-* dialogs are name-first: Create is disabled until named. Roll a name
 // from the dice (or fill one) then commit.
-async function createViaRandom(page: Page, kind: 'Settlement' | 'NPC' | 'Place') {
+async function createViaRandom(page: Page, kind: 'Settlement' | 'NPC' | 'Landmark') {
 	await openNew(page, kind);
 	await page.locator('.confirm-modal [aria-label="Random name"]').first().click();
 	await page.locator('.confirm-modal button:has-text("Create")').click();
@@ -56,7 +56,7 @@ async function deleteActive(page: Page) {
 	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 }
 
-test.describe('Places (v2)', () => {
+test.describe('Landmarks (v2)', () => {
 	test.beforeAll(async () => {
 		await resetCommunities();
 	});
@@ -66,30 +66,30 @@ test.describe('Places (v2)', () => {
 		await waitForConnectionsLoaded(page);
 	});
 
-	test('the switcher opens the New Place dialog', async ({ page }) => {
-		await openNew(page, 'Place');
-		await expect(page.locator('.confirm-modal .cm-title')).toContainText('New Place');
+	test('the switcher opens the New Landmark dialog', async ({ page }) => {
+		await openNew(page, 'Landmark');
+		await expect(page.locator('.confirm-modal .cm-title')).toContainText('New Landmark');
 		await page.keyboard.press('Escape');
 	});
 
 	test('can add a place via Random', async ({ page }) => {
 		const before = await entryCount(page);
-		await createViaRandom(page, 'Place');
+		await createViaRandom(page, 'Landmark');
 		expect(await entryCount(page)).toBe(before + 1);
 	});
 
 	test('can add a place via Create', async ({ page }) => {
 		const before = await entryCount(page);
-		await openNew(page, 'Place');
-		await page.locator('.confirm-modal .co-input').first().fill('E2E Place');
+		await openNew(page, 'Landmark');
+		await page.locator('.confirm-modal .co-input').first().fill('E2E Landmark');
 		await page.locator('.confirm-modal button:has-text("Create")').click();
 		await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 3_000 });
 		expect(await entryCount(page)).toBe(before + 1);
 	});
 
-	test('Escape closes the New Place dialog without creating', async ({ page }) => {
+	test('Escape closes the New Landmark dialog without creating', async ({ page }) => {
 		const before = await entryCount(page);
-		await openNew(page, 'Place');
+		await openNew(page, 'Landmark');
 		await page.keyboard.press('Escape');
 		await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 3_000 });
 		expect(await entryCount(page)).toBe(before);
@@ -98,12 +98,12 @@ test.describe('Places (v2)', () => {
 	test('a place has no Settlement Trouble dice button', async ({ page }) => {
 		// The community trouble-oracle dice button is community-only; it must
 		// NOT appear when the active connection is a place.
-		await createViaRandom(page, 'Place');
+		await createViaRandom(page, 'Landmark');
 		await expect(page.locator(`${CM_AREA} .cm-dice-btn`)).toHaveCount(0);
 	});
 
 	test('can delete a place', async ({ page }) => {
-		await createViaRandom(page, 'Place');
+		await createViaRandom(page, 'Landmark');
 		const before = await entryCount(page);
 		await deleteActive(page);
 		expect(await entryCount(page)).toBe(before - 1);

@@ -36,7 +36,7 @@ export const ENTITY_LINK_KINDS: Record<
 	{ label: string; prefix: string; order: number }
 > = {
 	community: { label: 'Settlement', prefix: '◈', order: 0 },
-	place: { label: 'Place', prefix: '●', order: 1 },
+	place: { label: 'Landmark', prefix: '●', order: 1 },
 	journey: { label: 'Journey', prefix: '↗', order: 2 },
 	site: { label: 'Site', prefix: '▲', order: 3 },
 };

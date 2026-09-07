@@ -57,10 +57,12 @@ export const ENTITY_KIND_META: Record<EntityKind, EntityKindMeta> = {
 		labelPlural: 'Settlements',
 	},
 	place: {
+		// `kind` stays 'place' everywhere (DB, API, marker links, exports);
+		// only the user-facing label reads "Landmark" — its canon name.
 		color: '#4AA0C8',
 		icon: locationSvg,
-		label: 'Place',
-		labelPlural: 'Places',
+		label: 'Landmark',
+		labelPlural: 'Landmarks',
 	},
 	npc: {
 		color: '#C848A8',

@@ -466,7 +466,9 @@ settlement suite" — each backed by a `Settlement: …` Lodestar oracle.
 | `portraitEtag` / `imageUrl` | portrait (blob / _@deprecated_ inline)                                        | —                                                                                                                       |
 | `createdAt`                 | timestamp                                                                     | —                                                                                                                       |
 
-### Place (`places[]`)
+### Landmark (`places[]`)
+
+_UI name is "Landmark"; the stored kind + body key stay `place` / `places`._
 
 | Key                          | Contains                                                 | Oracle                                                                                                                                                                                                                                                          |
 | ---------------------------- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
