@@ -56,6 +56,7 @@
 		loadEntityMarkerIndex,
 		mapListState,
 		markersForEntity,
+		unlinkEntityFromMaps,
 		type EntityMarkerRef,
 	} from '$lib/mapStore.svelte.js';
 	import { formatEntityId } from '$lib/mapEntityLinks.js';
@@ -578,7 +579,13 @@
 	async function confirmDeleteExp() {
 		if (!activeExp) return;
 		const id = activeExp.id;
+		const type = activeExp.type;
 		await removeExpedition(id);
+		// Journeys and sites can be marker targets (scenes can't). Unlink any
+		// markers that pointed here so their pins stay but shed the dead link.
+		if (type === 'journey' || type === 'site') {
+			await unlinkEntityFromMaps(formatEntityId(type, id));
+		}
 		if (activeExpId === id) activeExpId = null;
 	}
 

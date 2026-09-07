@@ -64,6 +64,7 @@
 		loadEntityMarkerIndex,
 		mapListState,
 		markersForEntity,
+		unlinkEntityFromMaps,
 		type EntityMarkerRef,
 	} from '$lib/mapStore.svelte.js';
 	import { formatEntityId } from '$lib/mapEntityLinks.js';
@@ -898,8 +899,14 @@
 				for (const p of orphans) updatePlaceLocal({ ...p, withinSettlementId: undefined });
 				await persistPlacesNow();
 			}
+			// Any map marker linked to this community loses its target — unlink
+			// it (the pin stays as a plain annotation).
+			await unlinkEntityFromMaps(formatEntityId('community', id));
 		} else if (activeEntry.kind === 'npc') await removeNpc(id);
-		else await removePlace(id);
+		else {
+			await removePlace(id);
+			await unlinkEntityFromMaps(formatEntityId('place', id));
+		}
 		if (activeEntryId === id) activeEntryId = null;
 		// Return to the list on narrow layouts after deleting the open entry.
 	}
