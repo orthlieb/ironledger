@@ -58,6 +58,12 @@ export interface OracleFile {
 	 *  `source` (the owning expansion). E.g. "Location", "Character", "Threat".
 	 *  Falls back to "Other" when absent. */
 	category?: string;
+	/** Free-form capability tags an oracle opts into so the app can gather it by
+	 *  role without hard-coding keys. `"landmark"` marks a point-of-interest /
+	 *  location oracle offered in the New Landmark randomiser — base Location,
+	 *  Lodestar's Overland/Coastal Landmark, YRT's Settlement Landmark, and any
+	 *  extension oracle that adds the tag. */
+	tags?: string[];
 	selectLabel: string;
 	description?: string;
 	/** Guidance shown *below* the table (vs `description`, shown above). Used for
@@ -250,6 +256,16 @@ export function getVisibleOracles(): OracleFile[] {
 /** Visible sources after expansion filtering. */
 export function getVisibleOracleSources(): CatalogueSource[] {
 	return getOracleSources().filter((s) => isSourceEnabled(s));
+}
+
+/** Oracles that carry a given capability tag AND are currently visible (source
+ *  enabled + not superseded/suppressed). Used to gather e.g. every "landmark"
+ *  point-of-interest oracle for the New Landmark randomiser without hard-coding
+ *  keys — so an extension that tags its own oracle joins the list for free.
+ *  Supersession is already handled by getVisibleOracles(), so a base oracle and
+ *  the expansion oracle that replaces it never both appear. */
+export function getOraclesByTag(tag: string): OracleFile[] {
+	return getVisibleOracles().filter((o) => o.tags?.includes(tag));
 }
 
 /** Look up a single oracle by key. Never filtered — log entries and direct opens must always resolve. */

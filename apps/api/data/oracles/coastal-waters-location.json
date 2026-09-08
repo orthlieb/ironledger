@@ -74,5 +74,6 @@
       "topRange": 100,
       "value": "Anomaly"
     }
-  ]
+  ],
+  "tags": ["landmark"]
 }

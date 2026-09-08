@@ -19,15 +19,19 @@
 	import { RadioGroup } from 'bits-ui';
 
 	import iconHeart from '$icons/icon-heart.svg?raw';
-	import iconSkull from '$icons/skull-crossbones-solid-full.svg?raw';
-	import iconSword from '$icons/sword-solid-full.svg?raw';
+	import iconSkull from '$icons/skull-crossbones-solid.svg?raw';
+	import iconSword from '$icons/sword-solid.svg?raw';
 	import iconShield from '$icons/shield-halved-solid.svg?raw';
 	import iconEye from '$icons/eye-solid.svg?raw';
 	import iconMoon from '$icons/moon-solid.svg?raw';
 	import iconSun from '$icons/sun-solid.svg?raw';
 	import iconDice from '$icons/dice-d10-light.svg?raw';
 	import iconNote from '$icons/note-sticky-solid.svg?raw';
-	import iconSackDollar from '$icons/sack-dollar-solid-full.svg?raw';
+	import iconSackDollar from '$icons/sack-dollar-solid.svg?raw';
+	import chevronDownSvg from '$icons/chevron-down-solid.svg?raw';
+	import chevronRightSvg from '$icons/chevron-right-solid.svg?raw';
+	import xmarkSvg from '$icons/xmark-solid.svg?raw';
+	import gripSvg from '$icons/grip-vertical-solid.svg?raw';
 	import iconMana from '$icons/icon-mana.svg?raw';
 	import iconPuppet from '$icons/puppet-solid.svg?raw';
 	import iconGolem from '$icons/rock-golem.svg?raw';
@@ -280,7 +284,7 @@
 	<!-- Header. use:draggable makes the header a drag handle when the card
 	     is inside a <dialog>; the action is a safe no-op otherwise. -->
 	<div class="asset-header" use:draggable>
-		<span class="drag-grip" aria-hidden="true">⠿</span>
+		<span class="drag-grip" aria-hidden="true">{@html gripSvg}</span>
 
 		<div class="asset-name-group">
 			<span class="asset-name-icon" aria-hidden="true">{@html assetIcon(definition)}</span>
@@ -306,7 +310,7 @@
 
 		{#if onClose}
 			<button class="asset-close" onclick={onClose} use:tooltip={'Close'} aria-label="Close"
-				>✕</button
+				>{@html xmarkSvg}</button
 			>
 		{/if}
 	</div>
@@ -445,7 +449,9 @@
 					onclick={() => (selectionsOpen = !selectionsOpen)}
 					aria-expanded={selectionsOpen}
 				>
-					<span class="selections-toggle-chevron">{selectionsOpen ? '▼' : '▶'}</span>
+					<span class="selections-toggle-chevron"
+						>{@html selectionsOpen ? chevronDownSvg : chevronRightSvg}</span
+					>
 					<span class="selections-toggle-label">{selectableLabel}</span>
 					<span class="selections-tally">{knownKeys.length}/{totalSlots}</span>
 				</button>
@@ -489,7 +495,8 @@
 					onclick={() => (factorsOpen = !factorsOpen)}
 					aria-expanded={factorsOpen}
 				>
-					<span class="factors-chevron">{factorsOpen ? '▼' : '▶'}</span>
+					<span class="factors-chevron">{@html factorsOpen ? chevronDownSvg : chevronRightSvg}</span
+					>
 					<span class="factors-toggle-label">Difficulty Factors</span>
 					<span class="factors-tally">({inspectionFactors.length} factors)</span>
 				</button>
@@ -885,6 +892,12 @@
 	}
 
 	/* ---- Dialog-mode X close button (upper right of header) ---- */
+	.asset-close :global(svg) {
+		width: 0.72rem;
+		height: 0.72rem;
+		fill: currentColor;
+		display: block;
+	}
 	.asset-close {
 		background: transparent;
 		border: none;
@@ -1039,9 +1052,15 @@
 	}
 
 	.factors-chevron {
-		font-size: 0.5rem;
 		color: var(--text-dimmer);
 		flex-shrink: 0;
+		display: inline-flex;
+	}
+	.factors-chevron :global(svg) {
+		width: 0.5rem;
+		height: 0.5rem;
+		fill: currentColor;
+		display: block;
 	}
 
 	.factors-toggle-label {
@@ -1381,9 +1400,15 @@
 	}
 
 	.selections-toggle-chevron {
-		font-size: 0.5rem;
 		color: var(--text-dimmer);
 		flex-shrink: 0;
+		display: inline-flex;
+	}
+	.selections-toggle-chevron :global(svg) {
+		width: 0.5rem;
+		height: 0.5rem;
+		fill: currentColor;
+		display: block;
 	}
 
 	.selections-toggle-label {

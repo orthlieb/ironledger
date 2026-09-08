@@ -8,8 +8,10 @@
 	 * Clicking an eligible tile shows an "Add X?" confirm dialog.
 	 */
 	import type { AssetCategory, AssetDefinition, CharacterData } from '$lib/types.js';
-	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import clearFiltersSvg from '$icons/filter-circle-xmark-solid.svg?raw';
+	import chevronUpSvg from '$icons/chevron-up-solid.svg?raw';
+	import chevronDownSvg from '$icons/chevron-down-solid.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
 	import { getVisibleAssets, isAssetsLoading, findAsset } from '$lib/assetStore.svelte.js';
 	import { firstPreconditionFailure, type Precondition } from '$lib/preconditions.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
@@ -190,7 +192,8 @@
 						>Filters{#if activeCategories.size > 0}&nbsp;<span class="ap-filter-badge"
 								>{activeCategories.size}</span
 							>{/if}
-						{filtersOpen ? '▲' : '▼'}</button
+						<span class="ap-filter-chev">{@html filtersOpen ? chevronUpSvg : chevronDownSvg}</span
+						></button
 					>
 				</div>
 				{#if filtersOpen}
@@ -369,6 +372,15 @@
 		align-items: center;
 		gap: 4px;
 		flex-shrink: 0;
+	}
+	.ap-filter-chev {
+		display: inline-flex;
+	}
+	.ap-filter-chev :global(svg) {
+		width: 0.6rem;
+		height: 0.6rem;
+		fill: currentColor;
+		display: block;
 	}
 	:global(.ap-filter-toggle:hover) {
 		color: var(--text);

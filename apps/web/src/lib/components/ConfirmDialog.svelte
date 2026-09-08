@@ -24,6 +24,8 @@
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { draggable as dragAction } from '$lib/actions/draggable.js';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
+	import gripSvg from '$icons/grip-vertical-solid.svg?raw';
+	import xmarkSvg from '$icons/xmark-solid.svg?raw';
 
 	let {
 		title,
@@ -137,12 +139,12 @@
 		>
 			<div class="cm-header" use:dragAction={draggable}>
 				{#if draggable}
-					<span class="drag-grip" aria-hidden="true">⠿</span>
+					<span class="drag-grip" aria-hidden="true">{@html gripSvg}</span>
 				{/if}
 				<AlertDialog.Title class="cm-title">{headingText(title)}</AlertDialog.Title>
 				{#if !showCancelButton}
 					<button class="cm-close-btn" type="button" onclick={handleDismiss} aria-label="Close"
-						>✕</button
+						>{@html xmarkSvg}</button
 					>
 				{/if}
 			</div>
@@ -241,6 +243,12 @@
 		transition:
 			opacity 0.15s,
 			color 0.15s;
+	}
+	:global(.confirm-modal .cm-close-btn svg) {
+		width: 0.74rem;
+		height: 0.74rem;
+		fill: currentColor;
+		display: block;
 	}
 	:global(.confirm-modal .cm-close-btn:hover) {
 		opacity: 1;

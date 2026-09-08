@@ -50,14 +50,14 @@
 	import MapOptionsDialog from './MapOptionsDialog.svelte';
 	import MarkerPropertiesDialog from './MarkerPropertiesDialog.svelte';
 	import { mapSettings } from '$lib/mapSettingsStore.svelte.js';
-	import iconExpandSvg from '$icons/expand-solid-full.svg?raw';
-	import iconZoomInSvg from '$icons/magnifying-glass-plus-solid-full.svg?raw';
-	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid-full.svg?raw';
-	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
+	import iconExpandSvg from '$icons/expand-solid.svg?raw';
+	import iconZoomInSvg from '$icons/magnifying-glass-plus-solid.svg?raw';
+	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid.svg?raw';
+	import iconGearSvg from '$icons/gear-solid.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import { Dialog, Popover, Command } from 'bits-ui';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
 		DEFAULT_MAP_ASPECT,
@@ -2057,6 +2057,12 @@
 		line-height: 1;
 		cursor: pointer;
 	}
+	:global(.mp-sel-angle-step svg) {
+		width: 9px;
+		height: 9px;
+		fill: currentColor;
+		display: block;
+	}
 	:global(.mp-sel-angle-step:hover) {
 		background: color-mix(in srgb, var(--text-accent) 12%, transparent);
 		color: var(--text);
@@ -2596,11 +2602,16 @@
 		border-color: var(--text-accent);
 		color: var(--text-accent);
 	}
-	:global(.mp-goto-arrow svg) {
+	/* The ↗ upper-right arrow glyph — same jump affordance as a nested
+	   landmark's "go to parent settlement" button (.cm-within-jump). */
+	:global(.mp-goto-arrow) {
 		display: block;
+	}
+	:global(.mp-goto-arrow svg) {
 		width: 13px;
 		height: 13px;
 		fill: currentColor;
+		display: block;
 	}
 	:global(.mp-props-label) {
 		font-family: var(--font-ui);

@@ -22,7 +22,7 @@
 		type MapIcon,
 	} from '$lib/generated/mapIconManifest.js';
 	import { mapGlyphInner, haloPaddedViewBox } from '$lib/mapConstants.js';
-	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
 
 	let {
 		open = $bindable(false),

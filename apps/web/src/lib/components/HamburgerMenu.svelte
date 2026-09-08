@@ -12,6 +12,7 @@
 	 */
 
 	import { DropdownMenu } from 'bits-ui';
+	import chevronRightSvg from '$icons/chevron-right-solid.svg?raw';
 	import ExportDialog from './ExportDialog.svelte';
 	import type { ExportSelection } from '$lib/exportSelection.js';
 	import { viewMode, setViewMode, VIEW_MODES, type ViewMode } from '$lib/viewModeStore.svelte.js';
@@ -94,7 +95,7 @@
 				<DropdownMenu.Sub>
 					<DropdownMenu.SubTrigger class="hm-item hm-item--sub">
 						View
-						<span class="hm-sub-arrow" aria-hidden="true">▸</span>
+						<span class="hm-sub-arrow" aria-hidden="true">{@html chevronRightSvg}</span>
 					</DropdownMenu.SubTrigger>
 					<DropdownMenu.SubContent class="hm-menu hm-submenu" sideOffset={4}>
 						{#each VIEW_MODES as m (m)}
@@ -241,9 +242,16 @@
 		gap: 12px;
 	}
 	:global(.hm-sub-arrow) {
-		font-size: 0.7rem;
 		color: var(--text-dimmer);
 		flex-shrink: 0;
+		display: inline-flex;
+		margin-left: auto;
+	}
+	:global(.hm-sub-arrow svg) {
+		width: 0.6rem;
+		height: 0.6rem;
+		fill: currentColor;
+		display: block;
 	}
 	:global(.hm-item--sub[data-highlighted] .hm-sub-arrow) {
 		color: var(--text-accent);

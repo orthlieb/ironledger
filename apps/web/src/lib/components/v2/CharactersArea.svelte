@@ -66,7 +66,7 @@
 	import { Dialog, Popover, Command, Tabs } from 'bits-ui';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import CharacterOptionsDialog from '$lib/components/CharacterOptionsDialog.svelte';
 	import VowCard from '$lib/components/VowCard.svelte';
@@ -86,22 +86,22 @@
 	import iconHealth from '$icons/icon-health.svg?raw';
 	import iconSpirit from '$icons/icon-spirit.svg?raw';
 	import iconSupply from '$icons/icon-supply.svg?raw';
-	import iconStar from '$icons/star-solid-full.svg?raw';
-	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
-	import swordSvg from '$icons/sword-solid-full.svg?raw';
+	import iconStar from '$icons/star-solid.svg?raw';
+	import iconGearSvg from '$icons/gear-solid.svg?raw';
+	import swordSvg from '$icons/sword-solid.svg?raw';
 	import gemSvg from '$icons/gem-solid.svg?raw';
-	import linkSvg from '$icons/link-solid-full.svg?raw';
+	import linkSvg from '$icons/link-solid.svg?raw';
 	// Counter icons — same map as v1 AssetCard.COUNTER_ICONS. The asset
 	// definition's customField.icon string keys into this map.
 	import iconHeart from '$icons/icon-heart.svg?raw';
-	import iconSkull from '$icons/skull-crossbones-solid-full.svg?raw';
+	import iconSkull from '$icons/skull-crossbones-solid.svg?raw';
 	import iconShield from '$icons/shield-halved-solid.svg?raw';
 	import iconEye from '$icons/eye-solid.svg?raw';
 	import iconMoon from '$icons/moon-solid.svg?raw';
 	import iconSun from '$icons/sun-solid.svg?raw';
 	import iconDice from '$icons/dice-d10-light.svg?raw';
 	import iconNote from '$icons/note-sticky-solid.svg?raw';
-	import iconSackDollar from '$icons/sack-dollar-solid-full.svg?raw';
+	import iconSackDollar from '$icons/sack-dollar-solid.svg?raw';
 	import iconMana from '$icons/icon-mana.svg?raw';
 	import iconPuppet from '$icons/puppet-solid.svg?raw';
 	import iconGolem from '$icons/rock-golem.svg?raw';

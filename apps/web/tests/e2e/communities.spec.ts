@@ -230,6 +230,45 @@ test.describe('Connections area (v2)', () => {
 		await page.keyboard.press('Escape');
 	});
 
+	test('New Landmark: oracle dropdown is dynamic, persists with a settlement, gates on its checkbox', async ({
+		page,
+	}) => {
+		// Seed a settlement so it can be picked as the parent below.
+		await openNew(page, 'Settlement');
+		await fillAndCreate(page, 'Parent Hold');
+
+		await openNew(page, 'Landmark');
+		const dialog = page.locator('.confirm-modal');
+		await expect(dialog).toBeVisible();
+
+		// Region is now an "Also randomize" checkbox (previously it rolled with
+		// no toggle at all).
+		await expect(dialog.locator('.nn-check-label', { hasText: /^Region$/ })).toHaveCount(1);
+
+		// Landmark-oracle dropdown is populated dynamically from tagged oracles.
+		const loc = dialog.locator('#np-loc');
+		await expect(loc).toBeVisible();
+		await loc.click();
+		await expect(page.locator('.bui-select-item').first()).toBeVisible();
+		await expect(
+			page.locator('.bui-select-item', { hasText: /Landmark|Location/ }).first(),
+		).toBeVisible();
+		await page.keyboard.press('Escape'); // close the option list
+
+		// Choosing a Within settlement must NOT hide the landmark-oracle dropdown.
+		await dialog.locator('#np-within').click();
+		await page.locator('.bui-select-item').nth(1).click(); // first real settlement
+		await expect(loc).toBeVisible();
+		await expect(dialog.locator('.bui-select-trigger')).toHaveCount(2);
+
+		// The landmark oracle is active only while the Landmark box is checked.
+		await expect(loc).toBeEnabled();
+		await dialog.getByRole('checkbox', { name: 'Landmark', exact: true }).click(); // uncheck
+		await expect(loc).toBeDisabled();
+
+		await page.keyboard.press('Escape');
+	});
+
 	test('can add a place via Create', async ({ page }) => {
 		const before = await entryCount(page);
 		await openNew(page, 'Landmark');

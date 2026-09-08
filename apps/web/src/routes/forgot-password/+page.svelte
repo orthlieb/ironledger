@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
 	import swordSvg from '$icons/sharp-axe.svg?raw';
+	import arrowLeftSvg from '$icons/arrow-left-solid.svg?raw';
 	import { browser } from '$app/environment';
 
 	let { form, data }: { form: ActionData; data: PageData } = $props();
@@ -52,7 +53,7 @@
 					hour.
 				</div>
 				<p class="auth-info muted">No sign of it? The seer suggests checking your spam folder.</p>
-				<p class="auth-link"><a href="/login">← Back to sign in</a></p>
+				<p class="auth-link"><a href="/login">{@html arrowLeftSvg} Back to sign in</a></p>
 			{:else}
 				{#if form?.error}
 					<div class="error-msg">{form.error}</div>

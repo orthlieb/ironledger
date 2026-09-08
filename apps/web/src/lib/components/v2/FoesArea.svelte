@@ -40,11 +40,11 @@
 	import FoePickerDialog from '$lib/components/FoePickerDialog.svelte';
 	import FoeOptionsDialog from '$lib/components/FoeOptionsDialog.svelte';
 	import Lightbox from '$lib/components/Lightbox.svelte';
-	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
-	import swordSvg from '$icons/sword-solid-full.svg?raw';
-	import skullSvg from '$icons/skull-crossbones-solid-full.svg?raw';
+	import iconGearSvg from '$icons/gear-solid.svg?raw';
+	import swordSvg from '$icons/sword-solid.svg?raw';
+	import skullSvg from '$icons/skull-crossbones-solid.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
 	import { Popover, Command, Tabs } from 'bits-ui';
 	import foesIconSvg from '$icons/Foes.svg?raw';

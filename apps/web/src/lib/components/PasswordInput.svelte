@@ -1,6 +1,6 @@
 <script lang="ts">
-	import eyeSvg from '$icons/eye.svg?raw';
-	import eyeSlashSvg from '$icons/eye-slash.svg?raw';
+	import eyeSvg from '$icons/eye-solid.svg?raw';
+	import eyeSlashSvg from '$icons/eye-slash-solid.svg?raw';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	interface Props {

@@ -19,6 +19,7 @@
 	import type { LayoutData } from '../$types';
 	import ErrorBar from '$lib/components/ErrorBar.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
+	import rotateRightSvg from '$icons/arrow-rotate-right-solid.svg?raw';
 	import { RadioGroup, Tabs } from 'bits-ui';
 
 	let { data }: { data: LayoutData } = $props();
@@ -1067,7 +1068,9 @@
 							{/each}
 						</div>
 						<button class="btn btn-icon" onclick={() => void loadLogs()} disabled={logLoading}>
-							{logLoading ? 'Loading…' : '↻ Refresh'}
+							{#if logLoading}Loading…{:else}<span class="admin-refresh-ico"
+									>{@html rotateRightSvg}</span
+								> Refresh{/if}
 						</button>
 						<button
 							class="btn btn-icon btn-danger"

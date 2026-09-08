@@ -10,6 +10,6 @@
     "settlementType": "yrtSettlementType"
   },
   "moveCategories": [
-    { "key": "Yrt", "icon": "foe-beast", "color": "var(--color-touched)", "order": 200 }
+    { "key": "Yrt", "icon": "yrt-tree", "color": "var(--color-touched)", "order": 200 }
   ]
 }

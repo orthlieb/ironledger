@@ -14,8 +14,10 @@
 	 */
 	import type { Snippet } from 'svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
-	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
-	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
+	import clearFiltersSvg from '$icons/filter-circle-xmark-solid.svg?raw';
+	import chevronUpSvg from '$icons/chevron-up-solid.svg?raw';
+	import chevronDownSvg from '$icons/chevron-down-solid.svg?raw';
 
 	let {
 		search = $bindable(''),
@@ -69,7 +71,8 @@
 				onclick={() => (filtersOpen = !filtersOpen)}
 				aria-expanded={filtersOpen}
 				>Filters{#if active.size > 0}&nbsp;<span class="fb-badge">{active.size}</span>{/if}
-				{filtersOpen ? '▲' : '▼'}</button
+				<span class="fb-toggle-chev">{@html filtersOpen ? chevronUpSvg : chevronDownSvg}</span
+				></button
 			>
 		{/if}
 		{@render trailing?.()}
@@ -166,6 +169,15 @@
 		transition:
 			border-color 0.1s,
 			color 0.1s;
+	}
+	.fb-toggle-chev {
+		display: inline-flex;
+	}
+	.fb-toggle-chev :global(svg) {
+		width: 0.6rem;
+		height: 0.6rem;
+		fill: currentColor;
+		display: block;
 	}
 	.fb-toggle:hover {
 		color: var(--text-muted);

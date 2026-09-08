@@ -306,5 +306,6 @@
       "topRange": 100,
       "value": "Ruined Building"
     }
-  ]
+  ],
+  "tags": ["landmark"]
 }
