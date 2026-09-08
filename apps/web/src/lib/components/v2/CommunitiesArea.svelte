@@ -1794,6 +1794,15 @@
 		width: auto;
 		min-width: 0;
 	}
+	/* Match the Within / Landmark-oracle dropdowns to the Name field's height:
+	   same font size + vertical padding, and drop the 30px min-height floor so
+	   their box comes out identical to `.co-input`. Scoped to this dialog. */
+	.np-form :global(.bui-select-trigger) {
+		font-size: 0.9rem;
+		padding-top: 6px;
+		padding-bottom: 6px;
+		min-height: 0;
+	}
 	/* Map field — the chip strip lives inside a `.cm-field-row` in
 	   the Core tab now (previously a header-level band). One chip per
 	   marker referencing this community/place; hover surfaces the
