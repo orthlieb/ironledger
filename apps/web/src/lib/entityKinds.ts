@@ -17,7 +17,7 @@
 
 import hutSvg from '$icons/hut.svg?raw';
 import farmerSvg from '$icons/farmer.svg?raw';
-import locationDotSvg from '$icons/location-dot.svg?raw';
+import locationDotSvg from '$icons/location-dot-solid-full.svg?raw';
 import journeySvg from '$icons/journey.svg?raw';
 import dungeonGateSvg from '$icons/dungeon-gate.svg?raw';
 import hourglassSvg from '$icons/hourglass-clock-solid-full.svg?raw';
