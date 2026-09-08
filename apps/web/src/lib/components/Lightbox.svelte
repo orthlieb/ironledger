@@ -15,6 +15,7 @@
 	 */
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { Dialog } from 'bits-ui';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 
 	let {
 		src,
@@ -30,6 +31,12 @@
 	// so we simply seed to `true` and route any close (Escape, backdrop) back
 	// through `onclose`.
 	let dialogOpen = $state(true);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 </script>
 
 <Dialog.Root
@@ -41,8 +48,8 @@
 	<Dialog.Portal>
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-		<Dialog.Overlay class="lb-overlay" onclick={onclose} />
-		<Dialog.Content class="lightbox">
+		<Dialog.Overlay class="lb-overlay" style="z-index: {overlayZ(stackDepth)}" onclick={onclose} />
+		<Dialog.Content class="lightbox" style="z-index: {contentZ(stackDepth)}">
 			<img class="lb-img" {src} {alt} />
 			<button
 				type="button"
@@ -57,13 +64,12 @@
 
 <style>
 	/* bits-ui portals Content + Overlay to <body>, so scope every rule
-	   globally — Svelte's CSS pruning can't see through the portal. */
+	   globally. z-index is set inline via dialogStack — see <script>. */
 	:global(.lb-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #000000c0;
 		backdrop-filter: blur(2px);
-		z-index: 80;
 	}
 	:global(.lightbox) {
 		position: fixed;
@@ -72,7 +78,6 @@
 		transform: translate(-50%, -50%);
 		background: transparent;
 		outline: none;
-		z-index: 81;
 	}
 
 	:global(.lb-img) {

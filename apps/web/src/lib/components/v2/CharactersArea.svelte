@@ -64,6 +64,7 @@
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
 	import { assetIcon } from '$lib/iconRegistry.js';
 	import { Dialog, Popover, Command, Tabs } from 'bits-ui';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
@@ -148,6 +149,12 @@
 	let dialogOpen = $state(false);
 	let dialogEl = $state<HTMLElement | null>(null);
 	let pickerOpen = $state(false);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 
 	// Asset dialog (add + edit modes). Edits accumulate in a local draft so
 	// Cancel/X never mutate the live character. On OK / Add the parent
@@ -1441,10 +1448,15 @@
 			}}
 		>
 			<Dialog.Portal>
-				<Dialog.Overlay class="ca-asset-overlay" onclick={closeAssetDialog} />
+				<Dialog.Overlay
+					class="ca-asset-overlay"
+					style="z-index: {overlayZ(stackDepth)}"
+					onclick={closeAssetDialog}
+				/>
 				<Dialog.Content
 					bind:ref={dialogEl}
 					class="ca-asset-dialog"
+					style="z-index: {contentZ(stackDepth)}"
 					onkeydown={(e) => {
 						// Enter = OK/Add (the primary action). Skip when the user is
 						// typing into a textarea (markdown notes), in which case
@@ -2254,14 +2266,13 @@
 	   This avoids a flex chain (`display: flex` + `min-height: 0` children)
 	   that collapsed the dialog to a thin line on iOS Safari. */
 	/* bits-ui portals Content + Overlay to <body>; scope everything
-	   globally. Overlay 80 / content 81 matches the modal z-index tier. */
+	   globally. z-index is set inline via dialogStack — see <script>. */
 	:global(.ca-asset-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000060;
 		backdrop-filter: blur(1px);
 		animation: ca-asset-backdrop-in 0.5s ease-out;
-		z-index: 80;
 	}
 	:global(.ca-asset-dialog) {
 		background: transparent;
@@ -2274,7 +2285,6 @@
 		top: 50%;
 		left: 50%;
 		transform: translate(-50%, -50%);
-		z-index: 81;
 		/* Scale-fade in from the clicked asset tab's centre. Origin CSS
 		   custom properties are stamped inline by showDialogFromOrigin(). */
 		animation: ca-asset-open 0.5s cubic-bezier(0.16, 1, 0.3, 1);

@@ -18,6 +18,7 @@
 	 */
 	import { untrack } from 'svelte';
 	import { Dialog, ToggleGroup } from 'bits-ui';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import DialogHeader from './DialogHeader.svelte';
 	import FilterBar from './FilterBar.svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
@@ -44,6 +45,15 @@
 		open?: boolean;
 		onexport: (sel: ExportSelection) => void;
 	} = $props();
+
+	// Stack-aware z-indexing so any dialog (e.g. a ConfirmDialog) opened
+	// on top of the exporter fully covers it.
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!open) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 
 	// ── live data ───────────────────────────────────────────────────────────
 	const chars = $derived(getCharacters());
@@ -318,9 +328,10 @@
 
 <Dialog.Root bind:open>
 	<Dialog.Portal>
-		<Dialog.Overlay class="exd-overlay" />
+		<Dialog.Overlay class="exd-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="exd-dialog"
+			style="z-index: {contentZ(stackDepth)}"
 			onOpenAutoFocus={(e) => {
 				// Focus the search field on open (CLAUDE.md focus rule: search-first).
 				e.preventDefault();
@@ -418,11 +429,12 @@
 </Dialog.Root>
 
 <style>
+	/* z-index for .exd-overlay / .exd-dialog is set inline via dialogStack
+	   — see <script>. */
 	:global(.exd-overlay) {
 		position: fixed;
 		inset: 0;
 		background: rgba(0, 0, 0, 0.5);
-		z-index: 80;
 	}
 	:global(.exd-dialog) {
 		position: fixed;
@@ -440,7 +452,6 @@
 		border: 1px solid var(--border-mid);
 		border-radius: 10px;
 		box-shadow: 0 22px 60px -14px rgba(0, 0, 0, 0.7);
-		z-index: 81;
 		overflow: hidden;
 	}
 

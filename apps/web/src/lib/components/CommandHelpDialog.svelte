@@ -16,8 +16,15 @@
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 
 	let dialogOpen = $state(false);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 	let contentEl = $state<HTMLElement | null>(null);
 	/** Verb to highlight and scroll into view — set by open(focus). Cleared
 	 *  automatically after ~2.5s so a re-open without focus is unhighlighted. */
@@ -154,8 +161,8 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="ch-overlay" />
-		<Dialog.Content bind:ref={contentEl} class="ch-dialog">
+		<Dialog.Overlay class="ch-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Content bind:ref={contentEl} class="ch-dialog" style="z-index: {contentZ(stackDepth)}">
 			<DialogHeader title={headingText('Command Bar')} onclose={close} />
 
 			<div class="ch-body">
@@ -191,13 +198,12 @@
 <style>
 	/* bits-ui portals Content + Overlay to <body> — scope everything
 	   globally so Svelte's CSS pruning can see through the portal.
-	   Overlay 80 / content 81 matches the modal z-index tier. */
+	   z-index is set inline via dialogStack — see <script>. */
 	:global(.ch-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000060;
 		backdrop-filter: blur(1px);
-		z-index: 80;
 	}
 	:global(.ch-dialog) {
 		position: fixed;
@@ -214,7 +220,6 @@
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-		z-index: 81;
 	}
 
 	:global(.ch-body) {

@@ -18,6 +18,7 @@
 
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { Dialog } from 'bits-ui';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import Checkbox from '$lib/components/Checkbox.svelte';
 	import {
@@ -57,6 +58,12 @@
 	import type { CharacterData } from '$lib/types.js';
 
 	let dialogOpen = $state(false);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 	// Bound so `onOpenAutoFocus` can land the caret on the primary
 	// Start button per the CLAUDE.md dialog focus rule (no search field
 	// here; Start is the affirmative default).
@@ -362,9 +369,10 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="story-overlay" />
+		<Dialog.Overlay class="story-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="story-dialog"
+			style="z-index: {contentZ(stackDepth)}"
 			onOpenAutoFocus={(e) => {
 				e.preventDefault();
 				setTimeout(() => startBtnEl?.focus(), 0);
@@ -487,7 +495,7 @@
 
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
-	   globally. Overlay 80 / content 81 matches the modal z-index tier.
+	   globally. z-index is set inline via dialogStack — see <script>.
 	   Class prefix is `.stry-*` (not `.sd-*`) to avoid colliding with
 	   SettingsDialog's global `.sd-*` selectors. */
 	:global(.story-overlay) {
@@ -495,7 +503,6 @@
 		inset: 0;
 		background: #00000060;
 		backdrop-filter: blur(1px);
-		z-index: 80;
 	}
 	:global(.story-dialog) {
 		display: flex;
@@ -514,7 +521,6 @@
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-		z-index: 81;
 	}
 
 	:global(.stry-body) {

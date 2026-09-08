@@ -12,6 +12,7 @@
 	 * the component fully self-contained.)
 	 */
 	import { Dialog } from 'bits-ui';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
@@ -44,6 +45,12 @@
 
 	let iconSearch = $state('');
 	let iconSearchInputEl = $state<HTMLInputElement | null>(null);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!open) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 
 	// Reset the search filter each time the picker opens.
 	$effect(() => {
@@ -78,9 +85,10 @@
 
 <Dialog.Root bind:open>
 	<Dialog.Portal>
-		<Dialog.Overlay class="mp-icon-overlay" />
+		<Dialog.Overlay class="mp-icon-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="mp-icon-dialog"
+			style="z-index: {contentZ(stackDepth)}"
 			onOpenAutoFocus={(e) => {
 				// Focus the search input on open (CLAUDE.md focus rule).
 				e.preventDefault();

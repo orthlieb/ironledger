@@ -32,6 +32,7 @@
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { draggable } from '$lib/actions/draggable.js';
 	import { Dialog, RadioGroup } from 'bits-ui';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
@@ -56,6 +57,12 @@
 	// Dialog state
 	// ---------------------------------------------------------------------------
 	let dialogOpen = $state(false);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 	// Search input ref for the CLAUDE.md dialog focus rule.
 	let searchInputEl = $state<HTMLInputElement | null>(null);
 	let view = $state<'picker' | 'confirm'>('picker');
@@ -222,9 +229,10 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="foe-overlay" />
+		<Dialog.Overlay class="foe-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="foe-dialog"
+			style="z-index: {contentZ(stackDepth)}"
 			aria-label="Foe Picker"
 			onOpenAutoFocus={(e) => {
 				// Picker view: focus the search input (CLAUDE.md focus rule).
@@ -488,13 +496,12 @@
 
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
-	   globally. Overlay 80 / content 81 matches the modal z-index tier. */
+	   globally. z-index is set inline via dialogStack — see <script>. */
 	:global(.foe-overlay) {
 		position: fixed;
 		inset: 0;
 		background: rgba(0, 0, 0, 0.6);
 		backdrop-filter: blur(2px);
-		z-index: 80;
 	}
 	:global(.foe-dialog) {
 		display: flex;
@@ -512,7 +519,6 @@
 		box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
 		overflow: hidden;
 		outline: none;
-		z-index: 81;
 	}
 
 	/* ── Picker: header — mirrors AssetPicker .picker-header ────────────── */

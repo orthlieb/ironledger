@@ -15,6 +15,7 @@
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import Select from '$lib/components/Select.svelte';
 	import {
 		type AiProvider,
@@ -29,6 +30,12 @@
 	} from '$lib/aiSettings.svelte.js';
 
 	let dialogOpen = $state(false);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 	// First composer field — CLAUDE.md dialog focus rule targets the
 	// API key input (the primary reason to open this dialog).
 	let keyInputEl = $state<HTMLInputElement | null>(null);
@@ -116,9 +123,10 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="ac-overlay" />
+		<Dialog.Overlay class="ac-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="ac-dialog"
+			style="z-index: {contentZ(stackDepth)}"
 			onOpenAutoFocus={(e) => {
 				e.preventDefault();
 				setTimeout(() => keyInputEl?.focus(), 0);
@@ -219,13 +227,12 @@
 
 <style>
 	/* bits-ui portals Content + Overlay to <body> — scope everything
-	   globally. Overlay 80 / content 81 matches the modal z-index tier. */
+	   globally. z-index is set inline via dialogStack — see <script>. */
 	:global(.ac-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000060;
 		backdrop-filter: blur(1px);
-		z-index: 80;
 	}
 	:global(.ac-dialog) {
 		display: flex;
@@ -244,7 +251,6 @@
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-		z-index: 81;
 	}
 
 	:global(.ac-body) {

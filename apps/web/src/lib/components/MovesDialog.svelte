@@ -44,6 +44,7 @@
 	import diceD6RawSvg from '$icons/dice-d6-light.svg?raw';
 	import diceD10RawSvg from '$icons/dice-d10-light.svg?raw';
 	import { Dialog } from 'bits-ui';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import FilterBar from '$lib/components/FilterBar.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
@@ -72,6 +73,12 @@
 	// (portal, overlay, Escape, focus trap). The `open()` / `close()`
 	// public methods just flip this.
 	let dialogOpen = $state(false);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 	// Ref to the picker view's search input so `onOpenAutoFocus` can
 	// land the caret there when the dialog opens in picker mode. The
 	// default focus-trap otherwise lands on the DialogHeader's ✕
@@ -1011,9 +1018,10 @@
      ========================================================================= -->
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="md-overlay" />
+		<Dialog.Overlay class="md-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="moves-dialog"
+			style="z-index: {contentZ(stackDepth)}"
 			onOpenAutoFocus={(e) => {
 				// bits-ui's default focus-trap lands on the first tabbable
 				// descendant — the DialogHeader's ✕ button. In picker view
@@ -1700,14 +1708,13 @@
 			0 0 0 1px var(--border-mid);
 		outline: none;
 		overflow: hidden;
-		z-index: 81;
 	}
+	/* z-index is set inline via dialogStack — see <script>. */
 	:global(.md-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000060;
 		backdrop-filter: blur(1px);
-		z-index: 80;
 	}
 
 	/* ── Header ─────────────────────────────────────────────────────────── */

@@ -14,6 +14,7 @@
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { Dialog } from 'bits-ui';
 	import DialogHeader from './DialogHeader.svelte';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 
 	interface Props {
@@ -25,6 +26,12 @@
 	let { name, kind, oncommit, ondelete }: Props = $props();
 
 	let dialogOpen = $state(false);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 	let deleteConfirmRef = $state<{ open(): void; close(): void } | null>(null);
 	let nameInputEl = $state<HTMLInputElement | null>(null);
 
@@ -53,9 +60,10 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="co-overlay" />
+		<Dialog.Overlay class="co-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="co-dialog"
+			style="z-index: {contentZ(stackDepth)}"
 			onOpenAutoFocus={(e) => {
 				e.preventDefault();
 				setTimeout(() => nameInputEl?.focus(), 0);
