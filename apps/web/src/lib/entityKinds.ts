@@ -17,7 +17,7 @@
 
 import hutSvg from '$icons/hut.svg?raw';
 import farmerSvg from '$icons/farmer.svg?raw';
-import locationSvg from '$icons/location.svg?raw';
+import locationDotSvg from '$icons/location-dot.svg?raw';
 import journeySvg from '$icons/journey.svg?raw';
 import dungeonGateSvg from '$icons/dungeon-gate.svg?raw';
 import hourglassSvg from '$icons/hourglass-clock-solid-full.svg?raw';
@@ -60,7 +60,7 @@ export const ENTITY_KIND_META: Record<EntityKind, EntityKindMeta> = {
 		// `kind` stays 'place' everywhere (DB, API, marker links, exports);
 		// only the user-facing label reads "Landmark" — its canon name.
 		color: '#4AA0C8',
-		icon: locationSvg,
+		icon: locationDotSvg,
 		label: 'Landmark',
 		labelPlural: 'Landmarks',
 	},
