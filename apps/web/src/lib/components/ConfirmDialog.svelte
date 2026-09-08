@@ -23,6 +23,7 @@
 	import { AlertDialog } from 'bits-ui';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { draggable as dragAction } from '$lib/actions/draggable.js';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 
 	let {
 		title,
@@ -114,14 +115,25 @@
 		}
 		open = next;
 	}
+
+	// Stack-aware z-indexing — a confirm shown over another dialog fully
+	// covers it (matching the dialogStack contract).
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!open) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 </script>
 
 <AlertDialog.Root bind:open {onOpenChange}>
 	<AlertDialog.Portal to={portalTo}>
-		<AlertDialog.Overlay class="cm-overlay" />
+		<AlertDialog.Overlay class="cm-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<AlertDialog.Content
 			class="confirm-modal"
-			style="--accent: {accentColor}{width ? `; width: ${width}` : ''}"
+			style="--accent: {accentColor}; z-index: {contentZ(stackDepth)}{width
+				? `; width: ${width}`
+				: ''}"
 		>
 			<div class="cm-header" use:dragAction={draggable}>
 				{#if draggable}
@@ -161,18 +173,16 @@
 	/* Classes are threaded through bits-ui components, so scope with
 	   :global(...) — Svelte's CSS pruning can't see class names
 	   passed to a foreign component's rendered root. */
-	/* Overlay + content sit ONE tier above the standard 80/81 modal tier
-	 * so a Confirm opened from inside another modal (e.g. the asset
-	 * dialog's "Delete Asset" confirm) reliably stacks on top instead of
-	 * relying on portal DOM-append order. Popovers and menus (at 90+)
-	 * still win, which is correct — a picker opened from inside a
-	 * confirm dialog must beat the confirm. */
+	/* Overlay + content z-index is assigned inline by dialogStack so any
+	 * dialog opened later fully covers what's beneath — regardless of the
+	 * base tier. See <script>. Popovers/menus (at 90+) still win by design,
+	 * which is correct: a picker opened from inside a confirm must beat
+	 * the confirm. */
 	:global(.cm-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000050;
 		backdrop-filter: blur(1px);
-		z-index: 82;
 	}
 	/* Standard neutral dialog surface — matches every other bits-ui
 	   Dialog in the app. The `--accent` prop only surfaces as a 3px
@@ -194,7 +204,6 @@
 		box-shadow: 0 12px 40px #00000060;
 		outline: none;
 		overflow: hidden;
-		z-index: 83;
 	}
 
 	/* Header (title + optional ✕) — matches DialogHeader so every

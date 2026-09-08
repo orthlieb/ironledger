@@ -34,6 +34,7 @@
 	import { Dialog, RadioGroup } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import type { CollisionItems, CollisionStrategy } from './importCollision.js';
 
 	let dialogOpen = $state(false);
@@ -117,6 +118,14 @@
 		resolver?.('cancel');
 		resolver = null;
 	}
+
+	// Stack-aware z-indexing so this covers the underlying ImportDialog.
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 </script>
 
 <Dialog.Root
@@ -132,8 +141,8 @@
 	}}
 >
 	<Dialog.Portal>
-		<Dialog.Overlay class="icd-overlay" />
-		<Dialog.Content class="icd-dialog">
+		<Dialog.Overlay class="icd-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Content class="icd-dialog" style="z-index: {contentZ(stackDepth)}">
 			<DialogHeader title={headingText('Items already exist')} onclose={cancel} />
 
 			<div class="icd-body">
@@ -218,13 +227,12 @@
 
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
-	   globally. Overlay 80 / content 81 matches the modal z-index tier. */
+	   globally. z-index is set inline via dialogStack — see <script>. */
 	:global(.icd-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000050;
 		backdrop-filter: blur(1px);
-		z-index: 80;
 	}
 	:global(.icd-dialog) {
 		position: fixed;
@@ -242,7 +250,6 @@
 			0 0 0 1px var(--border-mid);
 		overscroll-behavior: contain;
 		outline: none;
-		z-index: 81;
 	}
 
 	:global(.icd-body) {

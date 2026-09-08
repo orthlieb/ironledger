@@ -27,6 +27,7 @@
 	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
 
 	import { Dialog } from 'bits-ui';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import FilterBar from '$lib/components/FilterBar.svelte';
 
@@ -34,6 +35,12 @@
 	// Internal state
 	// ---------------------------------------------------------------------------
 	let dialogOpen = $state(false);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 	let searchInputEl = $state<HTMLInputElement | null>(null);
 	let view = $state<'picker' | 'detail'>('picker');
 	let selectedKey = $state<string | null>(null);
@@ -237,9 +244,10 @@
      ========================================================================= -->
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="oracles-overlay" />
+		<Dialog.Overlay class="oracles-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="oracles-dialog"
+			style="z-index: {contentZ(stackDepth)}"
 			onOpenAutoFocus={(e) => {
 				// In picker view, jump the caret straight to the search
 				// input; detail view keeps default focus (Back/Roll button).
@@ -447,13 +455,12 @@
 
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
-	   globally. Overlay 80 / content 81 matches the modal z-index tier. */
+	   globally. z-index is set inline via dialogStack — see <script>. */
 	:global(.oracles-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000060;
 		backdrop-filter: blur(1px);
-		z-index: 80;
 	}
 	:global(.oracles-dialog) {
 		display: flex;
@@ -476,7 +483,6 @@
 			0 0 0 1px var(--border-mid);
 		outline: none;
 		overflow: hidden;
-		z-index: 81;
 	}
 
 	/* ── Header ─────────────────────────────────────────────────────────── */

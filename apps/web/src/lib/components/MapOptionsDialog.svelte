@@ -19,6 +19,7 @@
 
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { Dialog } from 'bits-ui';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import DialogHeader from './DialogHeader.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import Checkbox from './Checkbox.svelte';
@@ -39,6 +40,12 @@
 	let { onReplaceBackground }: Props = $props();
 
 	let dialogOpen = $state(false);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 	let clearMarkersDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let deleteMapDialogRef = $state<{ open(): void; close(): void } | null>(null);
 
@@ -117,8 +124,8 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="mo-overlay" />
-		<Dialog.Content class="mo-dialog">
+		<Dialog.Overlay class="mo-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Content class="mo-dialog" style="z-index: {contentZ(stackDepth)}">
 			<DialogHeader title={headingText('Map Options')} onclose={close} radius="8px 8px 0 0" />
 
 			<div class="mo-body">
@@ -293,15 +300,13 @@
 </ConfirmDialog>
 
 <style>
-	/* Nested inside MapDialog (which is also on bits-ui Dialog now).
-	   MapDialog uses overlay 80 / content 81; this dialog needs to
-	   render above it, so overlay 82 / content 83 puts it one tier
-	   higher without breaking the modal budget for anything else. */
+	/* z-index is set inline via dialogStack — see <script>. Opens over
+	   MapDialog when triggered from inside it; the stack primitive puts
+	   this one tier above whatever's underneath. */
 	:global(.mo-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000060;
-		z-index: 82;
 	}
 	:global(.mo-dialog) {
 		position: fixed;
@@ -319,7 +324,6 @@
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-		z-index: 83;
 	}
 	:global(.mo-body) {
 		max-height: calc(82vh - 4rem);

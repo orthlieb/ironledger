@@ -20,6 +20,7 @@
 	 */
 	import { untrack } from 'svelte';
 	import { Dialog, Popover, Command } from 'bits-ui';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import Pickr from '@simonwep/pickr';
 	import '@simonwep/pickr/dist/themes/nano.min.css';
 	import DialogHeader from './DialogHeader.svelte';
@@ -77,6 +78,12 @@
 	// which is where the parent clears its selection.
 	const markerId = $derived(selectedMarker?.id ?? null);
 	let propsDialogOpen = $state(false);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!propsDialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 
 	/** Linkable entities sorted A-Z for stable presentation. Command
 	 *  will filter this list by input text via each Item's `value`
@@ -504,8 +511,12 @@
 		}}
 	>
 		<Dialog.Portal>
-			<Dialog.Overlay class="mp-props-overlay" />
-			<Dialog.Content class="mp-props-dialog" interactOutsideBehavior="ignore">
+			<Dialog.Overlay class="mp-props-overlay" style="z-index: {overlayZ(stackDepth)}" />
+			<Dialog.Content
+				class="mp-props-dialog"
+				style="z-index: {contentZ(stackDepth)}"
+				interactOutsideBehavior="ignore"
+			>
 				<DialogHeader
 					title={headingText('Edit Marker')}
 					onclose={cancelDraft}

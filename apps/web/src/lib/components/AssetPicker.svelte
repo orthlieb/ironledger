@@ -14,6 +14,7 @@
 	import { firstPreconditionFailure, type Precondition } from '$lib/preconditions.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { Dialog } from 'bits-ui';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { assetIcon } from '$lib/iconRegistry.js';
@@ -53,6 +54,12 @@
 	// CLAUDE.md dialog focus rule.
 	let dialogOpen = $state(true);
 	let searchInputEl = $state<HTMLInputElement | null>(null);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 
 	// ---------------------------------------------------------------------------
 	// Precondition checking
@@ -149,9 +156,10 @@
 	}}
 >
 	<Dialog.Portal>
-		<Dialog.Overlay class="picker-overlay" />
+		<Dialog.Overlay class="picker-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="picker-dialog"
+			style="z-index: {contentZ(stackDepth)}"
 			onOpenAutoFocus={(e) => {
 				e.preventDefault();
 				setTimeout(() => searchInputEl?.focus(), 0);
@@ -269,12 +277,12 @@
 	   Portals Content + Overlay to <body>; scope everything globally.
 	   Overlay 80 / content 81 matches the modal z-index tier.
 	   ================================================================ */
+	/* z-index is set inline via dialogStack — see <script>. */
 	:global(.picker-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000055;
 		backdrop-filter: blur(2px);
-		z-index: 80;
 	}
 	:global(.picker-dialog) {
 		display: flex;
@@ -293,7 +301,6 @@
 			0 0 0 1px var(--border-mid);
 		outline: none;
 		overflow: hidden;
-		z-index: 81;
 	}
 
 	/* ---- Controls: category tabs + search — pinned, never scrolls ---- */

@@ -12,6 +12,7 @@
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { Dialog } from 'bits-ui';
 	import DialogHeader from './DialogHeader.svelte';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 
 	interface Props {
@@ -27,6 +28,12 @@
 	let { name, oncommit, ondelete }: Props = $props();
 
 	let dialogOpen = $state(false);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 	let deleteConfirmRef = $state<{ open(): void; close(): void } | null>(null);
 	let nameInputEl = $state<HTMLInputElement | null>(null);
 
@@ -54,9 +61,10 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="co-overlay" />
+		<Dialog.Overlay class="co-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="co-dialog"
+			style="z-index: {contentZ(stackDepth)}"
 			onOpenAutoFocus={(e) => {
 				// Land in the rename input — that's the primary action.
 				// setTimeout(0) so bits-ui finishes its own focus routine first.
@@ -114,12 +122,13 @@
 </ConfirmDialog>
 
 <style>
+	/* z-index for .co-overlay / .co-dialog is set inline via dialogStack —
+	   see the <script> of each *OptionsDialog that uses this class. */
 	:global(.co-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000050;
 		backdrop-filter: blur(1px);
-		z-index: 80;
 	}
 	:global(.co-dialog) {
 		position: fixed;
@@ -137,7 +146,6 @@
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-		z-index: 81;
 		overflow: hidden;
 	}
 	:global(.co-body) {

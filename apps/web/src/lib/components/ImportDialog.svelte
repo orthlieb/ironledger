@@ -16,6 +16,7 @@
 	import { Dialog, Progress } from 'bits-ui';
 	import DialogHeader from './DialogHeader.svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 
 	let {
 		open = $bindable(false),
@@ -52,6 +53,15 @@
 	let fileEl = $state<HTMLInputElement | null>(null);
 	let dragOver = $state(false);
 
+	// Stack-aware z-indexing so a subsequent modal (MapOwnerConflict /
+	// ImportCollision) covers this dialog completely.
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!open) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
+
 	/** Hold the bar back this long. Most imports finish well inside it and are
 	 *  better served by the spinner alone — a bar that appears and vanishes
 	 *  reads as a glitch, and one that fills instantly tells you nothing. Past
@@ -87,8 +97,8 @@
 
 <Dialog.Root bind:open>
 	<Dialog.Portal>
-		<Dialog.Overlay class="imd-overlay" />
-		<Dialog.Content class="imd-dialog">
+		<Dialog.Overlay class="imd-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Content class="imd-dialog" style="z-index: {contentZ(stackDepth)}">
 			<DialogHeader
 				title={headingText('Import')}
 				onclose={() => (open = false)}
@@ -267,11 +277,12 @@
 </Dialog.Root>
 
 <style>
+	/* z-index is set inline via dialogStack, not here — see the top of the
+	   <script> block. */
 	:global(.imd-overlay) {
 		position: fixed;
 		inset: 0;
 		background: rgba(0, 0, 0, 0.5);
-		z-index: 80;
 	}
 	:global(.imd-dialog) {
 		position: fixed;
@@ -285,7 +296,6 @@
 		border: 1px solid var(--border-mid);
 		border-radius: 10px;
 		box-shadow: 0 22px 60px -14px rgba(0, 0, 0, 0.7);
-		z-index: 81;
 		overflow: hidden;
 	}
 	:global(.imd-body) {

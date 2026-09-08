@@ -10,6 +10,7 @@
 	import { appendLog } from '$lib/log.svelte.js';
 	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import { renderNote } from '$lib/markdown.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
@@ -17,6 +18,12 @@
 	// Internal state
 	// ---------------------------------------------------------------------------
 	let dialogOpen = $state(false);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 	let textareaEl = $state<HTMLTextAreaElement | null>(null);
 	let noteText = $state('');
 
@@ -55,9 +62,10 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="nd-overlay" />
+		<Dialog.Overlay class="nd-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="notes-dialog"
+			style="z-index: {contentZ(stackDepth)}"
 			onOpenAutoFocus={(e) => {
 				// Focus the textarea directly instead of the header's ✕
 				// close button (bits-ui's default first-tabbable behavior).
@@ -93,14 +101,12 @@
 <style>
 	/* bits-ui portals Content + Overlay to <body>, so every selector
 	   below needs :global() — Svelte's CSS pruning can't see through
-	   the portal. Overlay 80 / content 81 matches the modal z-index
-	   tier documented in ui-components.md. */
+	   the portal. z-index is set inline via dialogStack — see <script>. */
 	:global(.nd-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000060;
 		backdrop-filter: blur(1px);
-		z-index: 80;
 	}
 	:global(.notes-dialog) {
 		display: flex;
@@ -117,7 +123,6 @@
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-		z-index: 81;
 	}
 
 	:global(.nd-body) {

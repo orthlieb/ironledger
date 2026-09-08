@@ -19,6 +19,7 @@
 
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import { Dialog } from 'bits-ui';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import diceD10Svg from '$icons/dice-d10-light.svg?raw';
 
@@ -54,6 +55,12 @@
 	// Component state
 	// ---------------------------------------------------------------------------
 	let dialogOpen = $state(false);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 	let selectedStat = $state<StatKey | null>(null);
 	let adds = $state(0);
 	let rolling = $state(false);
@@ -193,8 +200,8 @@
      ========================================================================= -->
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="dice-overlay" />
-		<Dialog.Content class="dice-dialog">
+		<Dialog.Overlay class="dice-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Content class="dice-dialog" style="z-index: {contentZ(stackDepth)}">
 			<DialogHeader title={headingText('Roll Dice')} onclose={close} />
 
 			<div class="dice-body">
@@ -310,13 +317,12 @@
 
 <style>
 	/* bits-ui portals Content + Overlay to <body> — scope everything
-	   globally. Overlay 80 / content 81 matches the modal z-index tier. */
+	   globally. z-index is set inline via dialogStack — see <script>. */
 	:global(.dice-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000060;
 		backdrop-filter: blur(1px);
-		z-index: 80;
 	}
 	:global(.dice-dialog) {
 		display: flex;
@@ -333,7 +339,6 @@
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-		z-index: 81;
 	}
 
 	/* ── Header ── */

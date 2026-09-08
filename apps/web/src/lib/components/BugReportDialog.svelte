@@ -17,12 +17,19 @@
 
 	import { Dialog } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 
 	const BUG_EMAIL = 'bugs@ironledger.org';
 
 	let { user }: { user?: { email?: string; displayName?: string } | null } = $props();
 
 	let dialogOpen = $state(false);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 	// First composer field — the CLAUDE.md dialog focus rule targets
 	// the "what were you trying to do" textarea on open.
 	let doingEl = $state<HTMLTextAreaElement | null>(null);
@@ -148,9 +155,10 @@
 	}}
 >
 	<Dialog.Portal>
-		<Dialog.Overlay class="bug-overlay" />
+		<Dialog.Overlay class="bug-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="bug-dialog"
+			style="z-index: {contentZ(stackDepth)}"
 			onOpenAutoFocus={(e) => {
 				e.preventDefault();
 				setTimeout(() => doingEl?.focus(), 0);
@@ -238,13 +246,12 @@
 
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
-	   globally. Overlay 80 / content 81 matches the modal z-index tier. */
+	   globally. z-index is set inline via dialogStack — see <script>. */
 	:global(.bug-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000050;
 		backdrop-filter: blur(1px);
-		z-index: 80;
 	}
 	:global(.bug-dialog) {
 		display: flex;
@@ -262,7 +269,6 @@
 			0 12px 40px #00000060,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-		z-index: 81;
 	}
 
 	:global(.bg-body) {

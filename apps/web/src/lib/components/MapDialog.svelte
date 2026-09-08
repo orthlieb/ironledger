@@ -56,6 +56,7 @@
 	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import { Dialog, Popover, Command } from 'bits-ui';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
@@ -103,6 +104,12 @@
 	//   - the keyboard handler's "is the dialog actually open?" guard
 	// bits-ui exposes `bind:ref` on `Dialog.Content` for exactly this.
 	let dialogOpen = $state(false);
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 	let dialogEl = $state<HTMLElement | null>(null);
 	let optionsDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let fileInputEl = $state<HTMLInputElement | null>(null);
@@ -1038,8 +1045,8 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="mp-overlay" />
-		<Dialog.Content bind:ref={dialogEl} class="mp-dialog">
+		<Dialog.Overlay class="mp-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Content bind:ref={dialogEl} class="mp-dialog" style="z-index: {contentZ(stackDepth)}">
 			<DialogHeader title={headingText('Edit Map')} onclose={close} />
 
 			<div class="mp-toolbar">
@@ -1578,13 +1585,12 @@
 
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
-	   globally. Overlay 80 / content 81 matches the modal z-index tier. */
+	   globally. z-index is set inline via dialogStack — see <script>. */
 	:global(.mp-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000060;
 		backdrop-filter: blur(1px);
-		z-index: 80;
 	}
 	:global(.mp-dialog) {
 		display: flex;
@@ -1610,7 +1616,6 @@
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-		z-index: 81;
 	}
 	@media (max-width: 640px) {
 		/* Lift the CSS safety-net so the JS `isMobile → fraction 0.9`
@@ -2516,11 +2521,12 @@
 	   (overlay 82 / content 83) so it sits above the outer MapDialog
 	   without breaking the app's shared z-index budget. Layout is
 	   vertical: header, form body, destructive-action footer. */
+	/* z-index for .mp-props-* is set inline by MarkerPropertiesDialog
+	   via dialogStack. */
 	:global(.mp-props-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000060;
-		z-index: 82;
 	}
 	:global(.mp-props-dialog) {
 		position: fixed;
@@ -2538,7 +2544,6 @@
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-		z-index: 83;
 		overflow: hidden;
 	}
 	:global(.mp-props-body) {
@@ -2688,11 +2693,11 @@
 	   the icon grid stacks correctly when opened from the props
 	   dialog's Icon button. Still one tier above nothing else in
 	   the app so the shared modal budget stays intact. */
+	/* z-index for .mp-icon-* is set inline by MapIconPicker via dialogStack. */
 	:global(.mp-icon-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000060;
-		z-index: 84;
 	}
 	:global(.mp-icon-dialog) {
 		position: fixed;
@@ -2711,7 +2716,6 @@
 			0 16px 48px #00000070,
 			0 0 0 1px var(--border-mid);
 		outline: none;
-		z-index: 85;
 	}
 	/* Search row modelled on FoePickerDialog's `.fd-search-*` — a
 	   .field wrapper positions the magnifying-glass icon absolutely
