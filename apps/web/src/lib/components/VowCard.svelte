@@ -8,10 +8,10 @@
 	import SegmentedRadio from './SegmentedRadio.svelte';
 	import { difficultyBadgeStyle } from '$lib/badgeStyles.js';
 	// (Renaming lives in VowOptionsDialog now — no inline header edit.)
-	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
-	import linkSolidSvg from '$icons/link-solid-full.svg?raw';
-	import linkBrokenSvg from '$icons/link-broken-solid-full.svg?raw';
-	import checkSvg from '$icons/circle-check-solid-full.svg?raw';
+	import iconGearSvg from '$icons/gear-solid.svg?raw';
+	import linkSolidSvg from '$icons/link-solid.svg?raw';
+	import linkBrokenSvg from '$icons/link-broken-solid.svg?raw';
+	import checkSvg from '$icons/circle-check-solid.svg?raw';
 	import chevronDownSvg from '$icons/chevron-down-solid.svg?raw';
 	import chevronRightSvg from '$icons/chevron-right-solid.svg?raw';
 	import plusSvg from '$icons/plus-solid.svg?raw';

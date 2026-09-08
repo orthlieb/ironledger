@@ -40,8 +40,8 @@
 	import chevronDownSvg from '$icons/chevron-down-solid.svg?raw';
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
 	import FoeImageCarousel from '$lib/components/FoeImageCarousel.svelte';
-	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import clearFiltersSvg from '$icons/filter-circle-xmark-solid.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
 	import { foeIcon } from '$lib/iconRegistry.js';
 
 	// ---------------------------------------------------------------------------

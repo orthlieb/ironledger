@@ -19,15 +19,15 @@
 	import { RadioGroup } from 'bits-ui';
 
 	import iconHeart from '$icons/icon-heart.svg?raw';
-	import iconSkull from '$icons/skull-crossbones-solid-full.svg?raw';
-	import iconSword from '$icons/sword-solid-full.svg?raw';
+	import iconSkull from '$icons/skull-crossbones-solid.svg?raw';
+	import iconSword from '$icons/sword-solid.svg?raw';
 	import iconShield from '$icons/shield-halved-solid.svg?raw';
 	import iconEye from '$icons/eye-solid.svg?raw';
 	import iconMoon from '$icons/moon-solid.svg?raw';
 	import iconSun from '$icons/sun-solid.svg?raw';
 	import iconDice from '$icons/dice-d10-light.svg?raw';
 	import iconNote from '$icons/note-sticky-solid.svg?raw';
-	import iconSackDollar from '$icons/sack-dollar-solid-full.svg?raw';
+	import iconSackDollar from '$icons/sack-dollar-solid.svg?raw';
 	import chevronDownSvg from '$icons/chevron-down-solid.svg?raw';
 	import chevronRightSvg from '$icons/chevron-right-solid.svg?raw';
 	import xmarkSvg from '$icons/xmark-solid.svg?raw';

@@ -30,11 +30,11 @@
 	import { renderNote } from '$lib/markdown.js';
 	import { parseStorySource } from '$lib/aiSerialize.js';
 	import { sanitizeLogHtml, sanitizeNoteHtml } from '$lib/sanitize.js';
-	import trashSvg from '$icons/trash-solid-full.svg?raw';
-	import penSvg from '$icons/pen-to-square-solid-full.svg?raw';
-	import anglesLeftSvg from '$icons/angles-left-solid-full.svg?raw';
-	import anglesRightSvg from '$icons/angles-right-solid-full.svg?raw';
-	import broomWideSvg from '$icons/broom-wide-solid-full.svg?raw';
+	import trashSvg from '$icons/trash-solid.svg?raw';
+	import penSvg from '$icons/pen-to-square-solid.svg?raw';
+	import anglesLeftSvg from '$icons/angles-left-solid.svg?raw';
+	import anglesRightSvg from '$icons/angles-right-solid.svg?raw';
+	import broomWideSvg from '$icons/broom-wide-solid.svg?raw';
 	import logIconSvg from '$icons/log.svg?raw';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import StoryDialog from './StoryDialog.svelte';

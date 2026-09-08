@@ -61,12 +61,12 @@
 	} from '$lib/mapStore.svelte.js';
 	import { formatEntityId } from '$lib/mapEntityLinks.js';
 	import { createMapOwnerActions, fmtCoord } from '$lib/mapOwnerActions.js';
-	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
+	import iconGearSvg from '$icons/gear-solid.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
-	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
-	import checkSvg from '$icons/circle-check-solid-full.svg?raw';
-	import locationSvg from '$icons/location-dot-solid-full.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
+	import clearFiltersSvg from '$icons/filter-circle-xmark-solid.svg?raw';
+	import checkSvg from '$icons/circle-check-solid.svg?raw';
+	import locationSvg from '$icons/location-dot-solid.svg?raw';
 	import iconMapSvg from '$icons/compass-rose.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
 	import { Tabs, Popover, Command } from 'bits-ui';

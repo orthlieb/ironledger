@@ -40,25 +40,25 @@
         },
         {
           "key": "Combat",
-          "icon": "sword-solid-full",
+          "icon": "sword-solid",
           "color": "var(--color-iron)",
           "order": 60
         },
         {
           "key": "Suffer",
-          "icon": "heart-pulse-solid-full",
+          "icon": "heart-pulse-solid",
           "color": "var(--color-danger, #ef4444)",
           "order": 70
         },
         {
           "key": "Failure",
-          "icon": "face-head-bandage",
+          "icon": "face-head-bandage-solid",
           "color": "var(--text-dimmer)",
           "order": 90
         },
         {
           "key": "Threat",
-          "icon": "skull-crossbones-solid-full",
+          "icon": "skull-crossbones-solid",
           "color": "#C0392B",
           "order": 100
         },
@@ -82,7 +82,7 @@
         },
         {
           "key": "Location",
-          "icon": "location-dot",
+          "icon": "location-dot-solid",
           "color": "var(--color-edge)"
         },
         {
@@ -97,22 +97,22 @@
         },
         {
           "key": "Combat",
-          "icon": "sword-solid-full",
+          "icon": "sword-solid",
           "color": "var(--color-iron)"
         },
         {
           "key": "Scale",
-          "icon": "scale-unbalanced-solid-full",
+          "icon": "scale-unbalanced-solid",
           "color": "#2E86AB"
         },
         {
           "key": "Magic",
-          "icon": "wand-sparkles-solid-full",
+          "icon": "wand-sparkles-solid",
           "color": "#9B59B6"
         },
         {
           "key": "Story",
-          "icon": "book-solid-full",
+          "icon": "book-solid",
           "color": "#8E7CC3"
         },
         {
@@ -190,12 +190,12 @@
         },
         {
           "key": "Monstrosity",
-          "icon": "dragon-solid-full",
+          "icon": "dragon-solid",
           "color": "#8E4C8E"
         },
         {
           "key": "Threat",
-          "icon": "skull-crossbones-solid-full",
+          "icon": "skull-crossbones-solid",
           "color": "#C0392B"
         }
       ],
@@ -271,7 +271,7 @@
       "moveCategories": [
         {
           "key": "Scene",
-          "icon": "hourglass-clock-solid-full",
+          "icon": "hourglass-clock-solid",
           "color": "#7E57C2",
           "order": 25
         }

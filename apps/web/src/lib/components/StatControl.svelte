@@ -10,7 +10,7 @@
 	import brainSvg from '$icons/brain.svg?raw';
 	import fistSvg from '$icons/fist.svg?raw';
 	import shadowSvg from '$icons/shadow.svg?raw';
-	import rabbitSvg from '$icons/rabbit-running-solid-full.svg?raw';
+	import rabbitSvg from '$icons/rabbit-running-solid.svg?raw';
 	import heartSvg from '$icons/icon-heart.svg?raw';
 	import { tooltip as tooltipAction } from '$lib/actions/tooltip.js';
 

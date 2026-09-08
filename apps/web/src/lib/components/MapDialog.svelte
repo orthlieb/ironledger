@@ -50,14 +50,14 @@
 	import MapOptionsDialog from './MapOptionsDialog.svelte';
 	import MarkerPropertiesDialog from './MarkerPropertiesDialog.svelte';
 	import { mapSettings } from '$lib/mapSettingsStore.svelte.js';
-	import iconExpandSvg from '$icons/expand-solid-full.svg?raw';
-	import iconZoomInSvg from '$icons/magnifying-glass-plus-solid-full.svg?raw';
-	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid-full.svg?raw';
-	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
+	import iconExpandSvg from '$icons/expand-solid.svg?raw';
+	import iconZoomInSvg from '$icons/magnifying-glass-plus-solid.svg?raw';
+	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid.svg?raw';
+	import iconGearSvg from '$icons/gear-solid.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import { Dialog, Popover, Command } from 'bits-ui';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
 		DEFAULT_MAP_ASPECT,

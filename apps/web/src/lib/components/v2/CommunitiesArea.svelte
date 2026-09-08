@@ -70,18 +70,18 @@
 	} from '$lib/mapStore.svelte.js';
 	import { formatEntityId } from '$lib/mapEntityLinks.js';
 	import { createMapOwnerActions, fmtCoord } from '$lib/mapOwnerActions.js';
-	import iconGearSvg from '$icons/gear-solid-full.svg?raw';
+	import iconGearSvg from '$icons/gear-solid.svg?raw';
 	import iconMapSvg from '$icons/compass-rose.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
-	import heartPulseSvg from '$icons/heart-pulse-solid-full.svg?raw';
-	import skullSvg from '$icons/skull-crossbones-solid-full.svg?raw';
+	import heartPulseSvg from '$icons/heart-pulse-solid.svg?raw';
+	import skullSvg from '$icons/skull-crossbones-solid.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
 	import villageIconSvg from '$icons/village.svg?raw';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
 	import gotoSvg from '$icons/arrow-up-right-from-square-solid.svg?raw';
-	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
+	import clearFiltersSvg from '$icons/filter-circle-xmark-solid.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();

@@ -36,10 +36,10 @@
 	import { getLinkableEntities, resolveEntity } from '$lib/mapEntityLinks.js';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
-	import iconAngleSvg from '$icons/angle-solid-full.svg?raw';
-	import iconPaletteSvg from '$icons/palette-solid-full.svg?raw';
+	import iconAngleSvg from '$icons/angle-solid.svg?raw';
+	import iconPaletteSvg from '$icons/palette-solid.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
 	import plusSvg from '$icons/plus-solid.svg?raw';
 	import minusSvg from '$icons/minus-solid.svg?raw';
 	import gotoSvg from '$icons/arrow-up-right-from-square-solid.svg?raw';

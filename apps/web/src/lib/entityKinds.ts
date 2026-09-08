@@ -17,10 +17,10 @@
 
 import hutSvg from '$icons/hut.svg?raw';
 import farmerSvg from '$icons/farmer.svg?raw';
-import locationDotSvg from '$icons/location-dot-solid-full.svg?raw';
+import locationDotSvg from '$icons/location-dot-solid.svg?raw';
 import journeySvg from '$icons/journey.svg?raw';
 import dungeonGateSvg from '$icons/dungeon-gate.svg?raw';
-import hourglassSvg from '$icons/hourglass-clock-solid-full.svg?raw';
+import hourglassSvg from '$icons/hourglass-clock-solid.svg?raw';
 
 /** All first-class entity kinds users can create or link. Order = the
  *  canonical order the rails render / pickers list. */

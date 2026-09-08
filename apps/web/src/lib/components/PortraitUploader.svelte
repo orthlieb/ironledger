@@ -23,7 +23,7 @@
 	import { cropImageFile } from '$lib/imageCrop.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import Lightbox from '$lib/components/Lightbox.svelte';
-	import trashSvg from '$icons/trash-solid-full.svg?raw';
+	import trashSvg from '$icons/trash-solid.svg?raw';
 
 	let {
 		endpoint,
