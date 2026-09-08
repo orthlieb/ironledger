@@ -19,6 +19,7 @@
 	import { Dialog, RadioGroup } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 
 	type Strategy = 'replace' | 'skip';
 
@@ -44,6 +45,15 @@
 		resolver = null;
 		r?.(s);
 	}
+
+	// Stack-aware z-indexing so this dialog fully covers the underlying
+	// ImportDialog when it opens during the maps-restoration phase.
+	let stackDepth = $state(1);
+	$effect(() => {
+		if (!dialogOpen) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 </script>
 
 <Dialog.Root
@@ -54,8 +64,8 @@
 	}}
 >
 	<Dialog.Portal>
-		<Dialog.Overlay class="moc-overlay" />
-		<Dialog.Content class="moc-dialog">
+		<Dialog.Overlay class="moc-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Content class="moc-dialog" style="z-index: {contentZ(stackDepth)}">
 			<DialogHeader title={headingText('Map already exists')} onclose={() => settle('skip')} />
 
 			<div class="moc-body">
@@ -117,12 +127,12 @@
 </Dialog.Root>
 
 <style>
+	/* z-index set inline via dialogStack — see <script>. */
 	:global(.moc-overlay) {
 		position: fixed;
 		inset: 0;
 		background: #00000050;
 		backdrop-filter: blur(1px);
-		z-index: 80;
 	}
 	:global(.moc-dialog) {
 		position: fixed;
@@ -140,7 +150,6 @@
 			0 0 0 1px var(--border-mid);
 		overscroll-behavior: contain;
 		outline: none;
-		z-index: 81;
 	}
 	:global(.moc-body) {
 		padding: 14px 18px 4px;
