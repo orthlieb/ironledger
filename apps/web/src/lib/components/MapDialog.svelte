@@ -2596,11 +2596,12 @@
 		border-color: var(--text-accent);
 		color: var(--text-accent);
 	}
-	:global(.mp-goto-arrow svg) {
+	/* The ↗ upper-right arrow glyph — same jump affordance as a nested
+	   landmark's "go to parent settlement" button (.cm-within-jump). */
+	:global(.mp-goto-arrow) {
 		display: block;
-		width: 13px;
-		height: 13px;
-		fill: currentColor;
+		font-size: 0.95rem;
+		line-height: 1;
 	}
 	:global(.mp-props-label) {
 		font-family: var(--font-ui);

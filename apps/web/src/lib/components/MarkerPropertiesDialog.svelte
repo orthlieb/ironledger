@@ -39,7 +39,6 @@
 	import iconAngleSvg from '$icons/angle-solid-full.svg?raw';
 	import iconPaletteSvg from '$icons/palette-solid-full.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
-	import iconArrowRightSvg from '$icons/arrow-right-solid-full.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
 
 	let {
@@ -743,7 +742,7 @@
 										onClose?.();
 									}}
 								>
-									<span class="mp-goto-arrow" aria-hidden="true">{@html iconArrowRightSvg}</span>
+									<span class="mp-goto-arrow" aria-hidden="true">↗</span>
 								</button>
 							{/if}
 						</div>
