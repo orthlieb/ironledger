@@ -80,6 +80,7 @@
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import gotoSvg from '$icons/arrow-up-right-from-square-solid.svg?raw';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
@@ -1180,7 +1181,7 @@
 												type="button"
 												onclick={() => (activeEntryId = pl.withinSettlementId ?? null)}
 												use:tooltip={'Go to the parent settlement'}
-												aria-label="Go to the parent settlement">↗</button
+												aria-label="Go to the parent settlement">{@html gotoSvg}</button
 											>
 										{/if}
 									</div>
@@ -1863,9 +1864,14 @@
 		border-radius: 6px;
 		background: var(--bg-control);
 		color: var(--text-dim);
-		font-size: 0.95rem;
 		line-height: 1;
 		cursor: pointer;
+	}
+	.cm-within-jump :global(svg) {
+		width: 13px;
+		height: 13px;
+		fill: currentColor;
+		display: block;
 	}
 	.cm-within-jump:hover {
 		border-color: var(--text-accent);

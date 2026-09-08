@@ -35,6 +35,9 @@
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { tooltip } from '$lib/actions/tooltip.js';
+	import gripSvg from '$icons/grip-vertical-solid.svg?raw';
+	import chevronUpSvg from '$icons/chevron-up-solid.svg?raw';
+	import chevronDownSvg from '$icons/chevron-down-solid.svg?raw';
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
 	import FoeImageCarousel from '$lib/components/FoeImageCarousel.svelte';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid-full.svg?raw';
@@ -271,7 +274,8 @@
 							>Filters{#if activeFilterCount > 0}&nbsp;<span class="fd-filter-badge"
 									>{activeFilterCount}</span
 								>{/if}
-							{filtersOpen ? '▲' : '▼'}</button
+							<span class="fd-filter-chev">{@html filtersOpen ? chevronUpSvg : chevronDownSvg}</span
+							></button
 						>
 					</div>
 
@@ -394,7 +398,7 @@
 
 				<!-- Back bar -->
 				<div class="fd-back-bar" style="--nature-color: {natureColor}" use:draggable>
-					<span class="drag-grip" aria-hidden="true">⠿</span>
+					<span class="drag-grip" aria-hidden="true">{@html gripSvg}</span>
 					<span class="fd-title">{headingText(confirmFoe.name)}</span>
 				</div>
 
@@ -637,6 +641,15 @@
 		display: flex;
 		align-items: center;
 		gap: 4px;
+	}
+	.fd-filter-chev {
+		display: inline-flex;
+	}
+	.fd-filter-chev :global(svg) {
+		width: 0.6rem;
+		height: 0.6rem;
+		fill: currentColor;
+		display: block;
 	}
 	.fd-filter-toggle:hover,
 	:global(.fd-filter-toggle[aria-expanded='true']) {

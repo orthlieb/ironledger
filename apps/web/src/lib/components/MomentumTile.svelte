@@ -5,6 +5,9 @@
 	 * Right column (divided by hairline): ↺ Reset: n button + MAX: m display.
 	 */
 	import momentumSvg from '$icons/icon-momentum.svg?raw';
+	import plusSvg from '$icons/plus-solid.svg?raw';
+	import minusSvg from '$icons/minus-solid.svg?raw';
+	import rotateLeftSvg from '$icons/arrow-rotate-left-solid.svg?raw';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	let {
@@ -54,7 +57,7 @@
 				class="mt-btn"
 				onclick={decrement}
 				disabled={value <= -6}
-				aria-label="Decrease Momentum">−</button
+				aria-label="Decrease Momentum">{@html minusSvg}</button
 			>
 			<span class="mt-val" class:mt-val--wide={Math.abs(value) >= 10} class:negative={value < 0}
 				>{value}</span
@@ -63,7 +66,7 @@
 				class="mt-btn"
 				onclick={increment}
 				disabled={value >= maxVal}
-				aria-label="Increase Momentum">+</button
+				aria-label="Increase Momentum">{@html plusSvg}</button
 			>
 		</div>
 	</div>
@@ -77,7 +80,7 @@
 			class="mt-reset-btn"
 			onclick={onreset}
 			use:tooltip={`Reset momentum to ${resetVal}`}
-			aria-label="Reset momentum to {resetVal}">↺ Reset: {resetVal}</button
+			aria-label="Reset momentum to {resetVal}">{@html rotateLeftSvg} Reset: {resetVal}</button
 		>
 		<span class="mt-max">MAX: {maxVal}</span>
 	</div>
@@ -194,6 +197,12 @@
 		flex-shrink: 0;
 	}
 
+	.mt-btn :global(svg) {
+		width: 0.6rem;
+		height: 0.6rem;
+		fill: currentColor;
+		display: block;
+	}
 	.mt-btn:hover:not(:disabled) {
 		background: color-mix(in srgb, var(--mt-color) 15%, transparent);
 		color: var(--mt-color);
@@ -245,6 +254,13 @@
 		flex: 1;
 	}
 
+	.mt-reset-btn :global(svg) {
+		width: 0.8em;
+		height: 0.8em;
+		fill: currentColor;
+		vertical-align: -0.1em;
+		margin-right: 1px;
+	}
 	.mt-reset-btn:hover {
 		background: color-mix(in srgb, var(--mt-color) 15%, transparent);
 		border-color: var(--mt-color);

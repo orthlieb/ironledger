@@ -16,6 +16,7 @@
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { Dialog } from 'bits-ui';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
+	import xmarkSvg from '$icons/xmark-solid.svg?raw';
 
 	let {
 		src,
@@ -56,7 +57,7 @@
 				class="lb-close"
 				onclick={onclose}
 				use:tooltip={'Close'}
-				aria-label="Close">✕</button
+				aria-label="Close">{@html xmarkSvg}</button
 			>
 		</Dialog.Content>
 	</Dialog.Portal>
@@ -112,6 +113,12 @@
 			background 0.12s,
 			color 0.12s,
 			border-color 0.12s;
+	}
+	:global(.lb-close svg) {
+		width: 0.95rem;
+		height: 0.95rem;
+		fill: currentColor;
+		display: block;
 	}
 	:global(.lb-close:hover) {
 		background: var(--bg-hover);

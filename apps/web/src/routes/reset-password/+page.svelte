@@ -1,6 +1,7 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
 	import swordSvg from '$icons/sharp-axe.svg?raw';
+	import arrowLeftSvg from '$icons/arrow-left-solid.svg?raw';
 
 	let { form, data }: { form: ActionData; data: PageData } = $props();
 </script>
@@ -35,14 +36,14 @@
 				<div class="success-msg">
 					Your password has been forged anew. Please <a href="/login">sign in</a>.
 				</div>
-				<p class="auth-link"><a href="/login">← Back to sign in</a></p>
+				<p class="auth-link"><a href="/login">{@html arrowLeftSvg} Back to sign in</a></p>
 			{:else if !data.token}
 				<!-- Bad link: no token in the URL. -->
 				<div class="error-msg">
 					This reset link is missing its token. Please request a new one from the
 					<a href="/forgot-password">forgot-password</a> page.
 				</div>
-				<p class="auth-link"><a href="/login">← Back to sign in</a></p>
+				<p class="auth-link"><a href="/login">{@html arrowLeftSvg} Back to sign in</a></p>
 			{:else}
 				{#if form?.error}
 					<div class="error-msg">{form.error}</div>

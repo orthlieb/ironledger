@@ -12,6 +12,10 @@
 	import linkSolidSvg from '$icons/link-solid-full.svg?raw';
 	import linkBrokenSvg from '$icons/link-broken-solid-full.svg?raw';
 	import checkSvg from '$icons/circle-check-solid-full.svg?raw';
+	import chevronDownSvg from '$icons/chevron-down-solid.svg?raw';
+	import chevronRightSvg from '$icons/chevron-right-solid.svg?raw';
+	import plusSvg from '$icons/plus-solid.svg?raw';
+	import minusSvg from '$icons/minus-solid.svg?raw';
 	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
@@ -79,7 +83,7 @@
 			aria-label={vow.collapsed ? 'Expand vow' : 'Collapse vow'}
 			use:tooltip={vow.collapsed ? 'Expand' : 'Collapse'}
 		>
-			{vow.collapsed ? '▶' : '▼'}
+			{@html vow.collapsed ? chevronRightSvg : chevronDownSvg}
 		</button>
 
 		<!-- Name is display-only; rename lives in the gear (Vow options) dialog. -->
@@ -167,14 +171,14 @@
 								class="adj-btn"
 								onclick={() => (vow.menace = Math.max(0, vow.menace - 1))}
 								disabled={vow.menace <= 0}
-								aria-label="Decrease menace">−</button
+								aria-label="Decrease menace">{@html minusSvg}</button
 							>
 							<span class="menace-val" class:menace-high={vow.menace >= 7}>{vow.menace}</span>
 							<button
 								class="adj-btn"
 								onclick={() => (vow.menace = Math.min(10, vow.menace + 1))}
 								disabled={vow.menace >= 10}
-								aria-label="Increase menace">+</button
+								aria-label="Increase menace">{@html plusSvg}</button
 							>
 							<span class="menace-max">/10</span>
 						</div>
@@ -269,6 +273,12 @@
 	}
 	.collapse-btn:hover {
 		color: var(--text);
+	}
+	.collapse-btn :global(svg) {
+		width: 0.62rem;
+		height: 0.62rem;
+		fill: currentColor;
+		display: block;
 	}
 
 	/* Display-only name (rename is in the gear dialog). */
@@ -448,6 +458,12 @@
 	.adj-btn:not(:disabled):hover {
 		background: var(--bg-hover);
 		border-color: var(--border-mid);
+	}
+	.adj-btn :global(svg) {
+		width: 0.6rem;
+		height: 0.6rem;
+		fill: currentColor;
+		display: block;
 	}
 
 	.menace-val {

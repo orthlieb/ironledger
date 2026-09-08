@@ -380,14 +380,20 @@ select option {
 }
 
 /* Drag gripper — shared visual indicator used in every draggable dialog header.
-   The ⠿ braille character renders as 6 dots in a 2×3 grid. */
+   The grip icon renders as a 2×3 grid of dots (FontAwesome grip-vertical). */
 .drag-grip {
-	font-size: 1rem;
 	color: var(--text-dimmer);
 	line-height: 1;
 	opacity: 0.6;
 	flex-shrink: 0;
 	cursor: inherit;
+	display: inline-flex;
+}
+.drag-grip svg {
+	width: 0.55rem;
+	height: 0.85rem;
+	fill: currentColor;
+	display: block;
 }
 
 /* Icon buttons */
@@ -917,4 +923,24 @@ blockquote {
 	padding: 3px 0 3px 12px;
 	border-left: 3px solid var(--border-mid);
 	color: var(--text-muted);
+}
+
+/* Back-arrow icon inside auth back-links (forgot/reset-password). */
+.auth-link a svg {
+	width: 0.72em;
+	height: 0.72em;
+	fill: currentColor;
+	vertical-align: -0.04em;
+	margin-right: 0.28em;
+}
+/* Refresh-icon glyph in the admin log toolbar. */
+.admin-refresh-ico {
+	display: inline-flex;
+	vertical-align: -0.12em;
+}
+.admin-refresh-ico svg {
+	width: 0.82em;
+	height: 0.82em;
+	fill: currentColor;
+	display: block;
 }

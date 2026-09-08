@@ -18,6 +18,8 @@
 	 */
 	import type { Snippet } from 'svelte';
 	import { draggable } from '$lib/actions/draggable.js';
+	import gripSvg from '$icons/grip-vertical-solid.svg?raw';
+	import xmarkSvg from '$icons/xmark-solid.svg?raw';
 
 	let {
 		title,
@@ -44,13 +46,13 @@
 </script>
 
 <div class="dh-header" class:dh-header--detail={detail} style:border-radius={radius} use:draggable>
-	<span class="drag-grip" aria-hidden="true">⠿</span>
+	<span class="drag-grip" aria-hidden="true">{@html gripSvg}</span>
 	{#if leading}{@render leading()}{/if}
 	<span class="dh-title" class:dh-title--detail={detail}>{title}</span>
 	{#if trailing}
 		{@render trailing()}
 	{:else if onclose}
-		<button class="dh-close" onclick={onclose} aria-label="Close">✕</button>
+		<button class="dh-close" onclick={onclose} aria-label="Close">{@html xmarkSvg}</button>
 	{/if}
 </div>
 
@@ -83,6 +85,12 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+	.dh-close :global(svg) {
+		width: 0.78rem;
+		height: 0.78rem;
+		fill: currentColor;
+		display: block;
 	}
 	.dh-close {
 		background: transparent;

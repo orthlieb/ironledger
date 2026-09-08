@@ -50,6 +50,7 @@
 	} from '$lib/sectionStore.svelte.js';
 	import caretUpSvg from '$icons/caret-large-up-solid.svg?raw';
 	import caretDownSvg from '$icons/caret-large-down-solid.svg?raw';
+	import rotateRightSvg from '$icons/arrow-rotate-right-solid.svg?raw';
 
 	// ---------------------------------------------------------------------------
 	// Callback props for interactive log links (Phase 2)
@@ -874,7 +875,7 @@
 									class="entry-btn entry-regen-btn"
 									onclick={() => storyDialogRef?.openRegenerate(entry.id, entry.source ?? '')}
 									use:tooltip={'Regenerate this story'}
-									aria-label="Regenerate this story">⟳</button
+									aria-label="Regenerate this story">{@html rotateRightSvg}</button
 								>
 							{/if}
 							{#if entry.title === 'Note'}
@@ -1270,12 +1271,9 @@
 		opacity: 1 !important;
 	}
 
-	/* Story regenerate — ⟳ glyph, sized to match the 10px SVG icon buttons */
+	/* Story regenerate — rotate icon, sized by the shared .entry-btn svg rule. */
 	.entry-regen-btn {
 		color: var(--text-dimmer);
-		font-size: 11px;
-		line-height: 1;
-		font-weight: 700;
 	}
 	.entry-regen-btn:hover {
 		color: var(--text-accent);

@@ -2057,6 +2057,12 @@
 		line-height: 1;
 		cursor: pointer;
 	}
+	:global(.mp-sel-angle-step svg) {
+		width: 9px;
+		height: 9px;
+		fill: currentColor;
+		display: block;
+	}
 	:global(.mp-sel-angle-step:hover) {
 		background: color-mix(in srgb, var(--text-accent) 12%, transparent);
 		color: var(--text);
@@ -2600,8 +2606,12 @@
 	   landmark's "go to parent settlement" button (.cm-within-jump). */
 	:global(.mp-goto-arrow) {
 		display: block;
-		font-size: 0.95rem;
-		line-height: 1;
+	}
+	:global(.mp-goto-arrow svg) {
+		width: 13px;
+		height: 13px;
+		fill: currentColor;
+		display: block;
 	}
 	:global(.mp-props-label) {
 		font-family: var(--font-ui);

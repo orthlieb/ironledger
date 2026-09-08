@@ -40,6 +40,9 @@
 	import iconPaletteSvg from '$icons/palette-solid-full.svg?raw';
 	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import searchIconSvg from '$icons/magnifying-glass-solid-full.svg?raw';
+	import plusSvg from '$icons/plus-solid.svg?raw';
+	import minusSvg from '$icons/minus-solid.svg?raw';
+	import gotoSvg from '$icons/arrow-up-right-from-square-solid.svg?raw';
 
 	let {
 		selectedMarker,
@@ -559,7 +562,7 @@
 									type="button"
 									class="mp-sel-angle-step"
 									onclick={() => stepDraftAngle(-15)}
-									aria-label="Rotate counter-clockwise">−</button
+									aria-label="Rotate counter-clockwise">{@html minusSvg}</button
 								>
 								<span class="mp-sel-angle-field">
 									<span class="mp-sel-angle-glyph" aria-hidden="true">{@html iconAngleSvg}</span>
@@ -581,7 +584,7 @@
 									type="button"
 									class="mp-sel-angle-step"
 									onclick={() => stepDraftAngle(15)}
-									aria-label="Rotate clockwise">+</button
+									aria-label="Rotate clockwise">{@html plusSvg}</button
 								>
 							</div>
 						</label>
@@ -742,7 +745,7 @@
 										onClose?.();
 									}}
 								>
-									<span class="mp-goto-arrow" aria-hidden="true">↗</span>
+									<span class="mp-goto-arrow" aria-hidden="true">{@html gotoSvg}</span>
 								</button>
 							{/if}
 						</div>

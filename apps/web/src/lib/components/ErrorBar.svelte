@@ -24,6 +24,7 @@
 	 */
 
 	import { tooltip } from '$lib/actions/tooltip.js';
+	import xmarkSvg from '$icons/xmark-solid.svg?raw';
 
 	type Severity = 'notification' | 'warning' | 'error';
 
@@ -83,7 +84,7 @@
 				class="error-bar-dismiss"
 				onclick={onDismiss}
 				aria-label="Dismiss"
-				use:tooltip={'Dismiss'}>✕</button
+				use:tooltip={'Dismiss'}>{@html xmarkSvg}</button
 			>
 		{/if}
 	</div>
@@ -151,6 +152,12 @@
 		flex: 1;
 	}
 
+	.error-bar-dismiss :global(svg) {
+		width: 0.72rem;
+		height: 0.72rem;
+		fill: currentColor;
+		display: block;
+	}
 	.error-bar-dismiss {
 		flex-shrink: 0;
 		background: none;
