@@ -22,7 +22,7 @@
 		type MapIcon,
 	} from '$lib/generated/mapIconManifest.js';
 	import { mapGlyphInner, haloPaddedViewBox } from '$lib/mapConstants.js';
-	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
+	import FilterBar from '$lib/components/FilterBar.svelte';
 
 	let {
 		open = $bindable(false),
@@ -45,16 +45,29 @@
 
 	let iconSearch = $state('');
 	let iconSearchInputEl = $state<HTMLInputElement | null>(null);
+	let activeCategories = $state(new Set<string>());
+	let filtersOpen = $state(false);
 	let stackDepth = $state(1);
+
+	/** Category filter chips for the FilterBar — one per manifest category,
+	 *  labelled from the manifest (e.g. "beast" → "Beast"). */
+	const CATEGORY_CHIPS = MAP_ICON_CATEGORIES.map((c) => ({
+		key: c,
+		label: MAP_ICON_LIST.find((i) => i.category === c)?.categoryLabel ?? c,
+	}));
 	$effect(() => {
 		if (!open) return;
 		stackDepth = pushDialog();
 		return () => popDialog();
 	});
 
-	// Reset the search filter each time the picker opens.
+	// Reset the search + category filters each time the picker opens.
 	$effect(() => {
-		if (open) iconSearch = '';
+		if (open) {
+			iconSearch = '';
+			activeCategories = new Set();
+			filtersOpen = false;
+		}
 	});
 
 	function iconKey(i: MapIcon): string {
@@ -66,6 +79,7 @@
 		const grouped: Record<string, MapIcon[]> = {};
 		for (const cat of MAP_ICON_CATEGORIES) grouped[cat] = [];
 		for (const i of MAP_ICON_LIST) {
+			if (activeCategories.size > 0 && !activeCategories.has(i.category)) continue;
 			if (
 				q &&
 				!i.slug.toLowerCase().includes(q) &&
@@ -101,19 +115,14 @@
 				radius="8px 8px 0 0"
 			/>
 			<div class="mp-icon-search-row">
-				<div class="mp-icon-search-field">
-					<span class="mp-icon-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-					<input
-						id="mp-icon-search"
-						name="mp-icon-search"
-						bind:this={iconSearchInputEl}
-						class="mp-icon-search"
-						type="search"
-						placeholder="Search icons…"
-						bind:value={iconSearch}
-						aria-label="Search icons"
-					/>
-				</div>
+				<FilterBar
+					bind:search={iconSearch}
+					bind:active={activeCategories}
+					bind:filtersOpen
+					bind:inputEl={iconSearchInputEl}
+					categories={CATEGORY_CHIPS}
+					placeholder="Search icons…"
+				/>
 			</div>
 			<div class="mp-icon-body">
 				<!-- "No icon" tile always at the top — clicking it clears the
