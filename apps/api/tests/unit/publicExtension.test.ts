@@ -82,12 +82,12 @@ describe('toPublicExtension — /catalogue/extensions contract', () => {
 
     // A spread of oracle + move categories whose distinct icons regressed to
     // the generic fallback when the payload dropped the category records.
-    expect(iconOf(byId.base?.oracleCategories, 'Location')).toBe('location-dot');
+    expect(iconOf(byId.base?.oracleCategories, 'Location')).toBe('location-dot-solid');
     expect(iconOf(byId.base?.oracleCategories, 'Character')).toBe('Characters');
     expect(iconOf(byId.base?.moveCategories, 'Fate')).toBe('scissors-thread');
-    expect(iconOf(byId.base?.moveCategories, 'Failure')).toBe('face-head-bandage');
+    expect(iconOf(byId.base?.moveCategories, 'Failure')).toBe('face-head-bandage-solid');
     expect(iconOf(byId.base?.moveCategories, 'Quest')).toBe('compass-rose');
-    expect(iconOf(byId.lodestar?.moveCategories, 'Scene')).toBe('hourglass-clock-solid-full');
+    expect(iconOf(byId.lodestar?.moveCategories, 'Scene')).toBe('hourglass-clock-solid');
   });
 
   it('forwards supersedesOracles / suppressesOracles verbatim', () => {
