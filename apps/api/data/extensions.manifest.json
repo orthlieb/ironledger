@@ -132,7 +132,6 @@
           "moves/failure.json",
           "moves/fate.json",
           "moves/quest.json",
-          "moves/rarity.json",
           "moves/relationship.json",
           "moves/suffer.json"
         ],
@@ -199,13 +198,14 @@
           "color": "#C0392B"
         }
       ],
-      "root": "apps/api/data",
+      "root": "extensions/delve",
       "provides": {
         "assets": [
           "assets/assets_delve.json"
         ],
         "moves": [
-          "moves/delve.json"
+          "moves/delve.json",
+          "moves/rarity.json"
         ],
         "oracles": [
           "oracles/char-disposition.json",

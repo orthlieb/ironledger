@@ -9,11 +9,13 @@
  * Two content layouts are supported during the migration:
  *   • Self-contained (Phase 3+): extensions/<id>/{moves,oracles,foes,assets}/…
  *     — everything the extension owns lives in its folder (root = extensions/<id>).
- *   • Legacy (base, delve): content still in apps/api/data/, type-organised and
- *     tagged by filename / category / source (root = apps/api/data).
+ *   • Legacy (base only): core content still in apps/api/data/, type-organised
+ *     and tagged by filename / category / source (root = apps/api/data). Delve,
+ *     Lodestar and YRT are all self-contained under extensions/<id>/.
  *
  * An extension is "self-contained" iff extensions/<id>/ has any content
- * subfolder; otherwise it's read from apps/api/data by source id.
+ * subfolder; otherwise it's read from apps/api/data by source id (only base
+ * is legacy now).
  *
  *   node scripts/gen-extensions-manifest.mjs         # write the manifest
  *   node scripts/gen-extensions-manifest.mjs --check # fail if out of date (CI)
@@ -28,7 +30,7 @@ import { fileURLToPath } from 'url';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(__dirname, '..');
 const EXT_ROOT = path.join(REPO, 'extensions');
-const DATA = path.join(REPO, 'apps/api/data'); // legacy base/delve content
+const DATA = path.join(REPO, 'apps/api/data'); // legacy base (core) content
 const DATA_REL = 'apps/api/data';
 const OUT = path.join(DATA, 'extensions.manifest.json');
 // Foe images are served as static files at /foes/<name>; nginx/adapter serve
@@ -40,7 +42,7 @@ const STATIC_FOES = path.join(REPO, 'apps/web/static/foes');
 
 /** Filename source token → extension id (assets_ironsworn → base). */
 const ALIAS = { ironsworn: 'base', delve: 'delve', yrt: 'yrt' };
-const CONTENT_DIRS = ['moves', 'oracles', 'foes', 'assets'];
+const CONTENT_DIRS = ['moves', 'oracles', 'foes', 'assets', 'delve'];
 
 const readJson = async (p) => JSON.parse(await readFile(p, 'utf-8'));
 const listJson = async (dir) =>
@@ -70,10 +72,11 @@ async function selfContainedProvides(root) {
     if (f === 'overrides.json') p.foeOverrides.push(`foes/${f}`);
     else p.foes.push(`foes/${f}`);
   }
+  for (const f of await listJson(path.join(root, 'delve'))) p.delveTables.push(`delve/${f}`);
   return p;
 }
 
-/** Provides for the legacy base/delve content in apps/api/data, by source id. */
+/** Provides for the legacy base (core) content in apps/api/data, by source id. */
 async function legacyProvides(ids) {
   const byId = Object.fromEntries(ids.map((id) => [id, emptyProvides()]));
   const orphans = [];
@@ -103,9 +106,6 @@ async function legacyProvides(ids) {
       else orphans.push(`foes/${f}`);
     }
   }
-  for (const f of await listJson(path.join(DATA, 'delve')))
-    put('delve', 'delveTables', `delve/${f}`);
-
   return { byId, orphans };
 }
 

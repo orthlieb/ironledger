@@ -54,10 +54,10 @@ describe('extensions.manifest.json', () => {
     expect(exts.find((e) => e.id === 'sample')?.dev).toBe(true);
   });
 
-  it('yrt + lodestar are self-contained under extensions/; base/delve stay in apps/api/data', () => {
+  it('delve, yrt, lodestar are self-contained under extensions/; only base stays in apps/api/data', () => {
     const root = Object.fromEntries(exts.map((e) => [e.id, e.root]));
     expect(root.base).toBe('apps/api/data');
-    expect(root.delve).toBe('apps/api/data');
+    expect(root.delve).toBe('extensions/delve');
     expect(root.yrt).toBe('extensions/yrt');
     expect(root.lodestar).toBe('extensions/lodestar');
   });
