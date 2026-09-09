@@ -49,11 +49,29 @@
 	let filtersOpen = $state(false);
 	let stackDepth = $state(1);
 
+	/** Deterministic, evenly-spread hue per category so every section and its
+	 *  filter pill share one colour. Derived from the manifest's category list
+	 *  (the folders under static/map/), so it scales to whatever number the
+	 *  developer adds — no hand-picked palette to maintain. OKLCH with a fixed
+	 *  lightness/chroma keeps every hue equally legible in both themes (an HSL
+	 *  hue-spread would wash the yellows out and darken the blues); the chip and
+	 *  section CSS `color-mix` their tints from this base. */
+	function categoryColor(index: number, count: number): string {
+		const hue = Math.round((index / Math.max(count, 1)) * 360);
+		return `oklch(0.64 0.14 ${hue})`;
+	}
+	const CATEGORY_COLORS: Record<string, string> = Object.fromEntries(
+		MAP_ICON_CATEGORIES.map((c, i) => [c, categoryColor(i, MAP_ICON_CATEGORIES.length)]),
+	);
+
 	/** Category filter chips for the FilterBar — one per manifest category,
-	 *  labelled from the manifest (e.g. "beast" → "Beast"). */
+	 *  labelled from the manifest (e.g. "beast" → "Beast") and tinted with the
+	 *  section colour. "Label only" is deliberately NOT a category here, so it
+	 *  never gets a chip and can never be filtered out. */
 	const CATEGORY_CHIPS = MAP_ICON_CATEGORIES.map((c) => ({
 		key: c,
 		label: MAP_ICON_LIST.find((i) => i.category === c)?.categoryLabel ?? c,
+		color: CATEGORY_COLORS[c],
 	}));
 	$effect(() => {
 		if (!open) return;
@@ -126,7 +144,9 @@
 			</div>
 			<div class="mp-icon-body">
 				<!-- "No icon" tile always at the top — clicking it clears the
-			     marker's icon so only the label renders (centred on the point). -->
+			     marker's icon so only the label renders (centred on the point).
+			     Rendered outside the filtered loop with no --cat-color, so it
+			     stays neutral and is always shown regardless of the filters. -->
 				<div class="mp-icon-cat-label">Label only</div>
 				<div class="mp-icon-grid">
 					<button
@@ -140,7 +160,9 @@
 					</button>
 				</div>
 				{#each Object.keys(filteredIcons) as cat (cat)}
-					<div class="mp-icon-cat-label">{filteredIcons[cat][0].categoryLabel}</div>
+					<div class="mp-icon-cat-label" style:--cat-color={CATEGORY_COLORS[cat]}>
+						{filteredIcons[cat][0].categoryLabel}
+					</div>
 					<div class="mp-icon-grid">
 						{#each filteredIcons[cat] as ic (iconKey(ic))}
 							{@const key = iconKey(ic)}
