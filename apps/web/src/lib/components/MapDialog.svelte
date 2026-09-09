@@ -2764,8 +2764,13 @@
 		font-weight: 700;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
-		color: var(--text-dimmer);
+		/* Each section is tinted with its category colour (set inline as
+		   --cat-color by MapIconPicker); "Label only" has none, so it falls
+		   back to the neutral dimmer + border. */
+		color: var(--cat-color, var(--text-dimmer));
 		margin: 12px 0 6px;
+		padding-bottom: 3px;
+		border-bottom: 1px solid color-mix(in srgb, var(--cat-color, var(--border)) 35%, transparent);
 	}
 	:global(.mp-icon-cat-label:first-child) {
 		margin-top: 0;
