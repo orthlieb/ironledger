@@ -796,7 +796,7 @@
 		}
 		if (newNpcRollDescriptor) {
 			n.descriptor = rollOracle('characterDescriptor', oracles).value ?? '';
-			rolled.push(['Descriptor', n.descriptor]);
+			rolled.push(['Revealed Details', n.descriptor]);
 		}
 		logCreateRolls(`New NPC — ${n.name}`, rolled);
 		if (newNpcRollTouched && isSourceEnabled('yrt')) {
