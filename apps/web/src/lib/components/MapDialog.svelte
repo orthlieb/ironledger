@@ -2736,42 +2736,6 @@
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
 	}
-	:global(.mp-icon-search-field) {
-		position: relative;
-		display: flex;
-		align-items: center;
-	}
-	:global(.mp-icon-search-icon) {
-		position: absolute;
-		left: 9px;
-		width: 13px;
-		height: 13px;
-		display: inline-flex;
-		pointer-events: none;
-		color: var(--text-dimmer);
-	}
-	:global(.mp-icon-search-icon svg) {
-		width: 100%;
-		height: 100%;
-		fill: currentColor;
-	}
-	:global(.mp-icon-search) {
-		flex: 1;
-		min-width: 0;
-		box-sizing: border-box;
-		padding: 5px 10px 5px 29px;
-		font-family: var(--font-ui);
-		font-size: 0.85rem;
-		color: var(--text);
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 4px;
-	}
-	:global(.mp-icon-search:focus) {
-		outline: none;
-		border-color: var(--focus-ring);
-		box-shadow: 0 0 0 2px var(--accent-glow);
-	}
 	:global(.mp-icon-body) {
 		/* Fixed height (not max-height) so the body doesn't shrink as
 		   the user types and the filtered icon list gets shorter — the
