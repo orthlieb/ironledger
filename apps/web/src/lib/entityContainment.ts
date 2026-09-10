@@ -181,7 +181,11 @@ export function effectiveRegion(
 	graph: ReadonlyMap<string, ContainmentNode>,
 ): string | undefined {
 	const self = graph.get(ref);
-	if (self?.region) return self.region;
+	if (!self) return undefined;
+	// A top-level node uses its own region. A nested node inherits from the
+	// parent chain and IGNORES its own (possibly stale) region — "the region
+	// becomes the parent region" — returning the nearest ancestor that has one.
+	if (!self.within) return self.region;
 	for (const a of ancestorRefs(ref, graph)) {
 		const r = graph.get(a)?.region;
 		if (r) return r;

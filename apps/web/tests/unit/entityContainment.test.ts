@@ -127,14 +127,16 @@ describe('reparent on delete', () => {
 });
 
 describe('region inheritance', () => {
-	it('uses own region when set', () => {
+	it('a top-level node uses its own region', () => {
 		expect(effectiveRegion('place:nysis', g)).toBe('Nysis Reach');
-		expect(effectiveRegion('place:tavern', g)).toBe('Tavern Row');
 		expect(effectiveRegion('community:freeport', g)).toBe('Coast');
 	});
-	it('inherits from the nearest ancestor with a region', () => {
+	it('a nested node inherits from the parent chain, ignoring its own region', () => {
 		// Collima has no own region → inherits Nysis Reach.
 		expect(effectiveRegion('community:collima', g)).toBe('Nysis Reach');
+		// The Tavern is nested (within Collima) and DOES have an own region
+		// ("Tavern Row"), but inheritance wins — it shows the parent chain's.
+		expect(effectiveRegion('place:tavern', g)).toBe('Nysis Reach');
 		// Bob (NPC, no region) also resolves to the chain's region.
 		expect(effectiveRegion('npc:bob', g)).toBe('Nysis Reach');
 	});
