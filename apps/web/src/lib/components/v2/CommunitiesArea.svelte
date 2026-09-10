@@ -28,8 +28,23 @@
 		persistCommunitiesNow,
 		addCommunity,
 		removeCommunity,
+		updateCommunityLocal,
 	} from '$lib/communityStore.svelte.js';
-	import { getNpcs, persistNpcsNow, addNpc, removeNpc } from '$lib/npcStore.svelte.js';
+	import {
+		getNpcs,
+		persistNpcsNow,
+		addNpc,
+		removeNpc,
+		updateNpcLocal,
+	} from '$lib/npcStore.svelte.js';
+	import {
+		buildGraph,
+		eligibleContainerRefs,
+		reparentOnDelete,
+		effectiveRegion,
+		isNested,
+		type ContainmentNode,
+	} from '$lib/entityContainment.js';
 	import { createDebouncedSave } from '$lib/debouncedSave.js';
 	import {
 		getPlaces,
@@ -268,6 +283,119 @@
 	const communities = $derived(getCommunities());
 	const npcs = $derived(getNpcs());
 	const places = $derived(getPlaces());
+
+	// --- Containment graph ("Within / Located In") ------------------------------
+	// A settlement/landmark/NPC can sit within a settlement or landmark. The
+	// graph is derived from all three stores each render; the pure helpers in
+	// entityContainment.ts answer the tree questions (eligible parents, cycle
+	// safety, reparent-on-delete, region inheritance).
+	const refOf = (kind: EntryKind, id: string) => `${kind}:${id}`;
+	/** Effective parent ref for an entity — the new `within`, else the legacy
+	 *  place-only `withinSettlementId` (read-time migration off the old field). */
+	function entityWithin(e: { within?: string; withinSettlementId?: string }): string | undefined {
+		return (
+			e.within ?? (e.withinSettlementId ? refOf('community', e.withinSettlementId) : undefined)
+		);
+	}
+	const containmentGraph = $derived(
+		buildGraph([
+			...communities.map(
+				(c): ContainmentNode => ({
+					ref: refOf('community', c.id),
+					within: entityWithin(c),
+					region: c.region,
+				}),
+			),
+			...places.map(
+				(p): ContainmentNode => ({
+					ref: refOf('place', p.id),
+					within: entityWithin(p),
+					region: p.region,
+				}),
+			),
+			...npcs.map((n): ContainmentNode => ({ ref: refOf('npc', n.id), within: entityWithin(n) })),
+		]),
+	);
+	function splitRef(ref: string): { kind: EntryKind; id: string } | null {
+		const i = ref.indexOf(':');
+		return i > 0 ? { kind: ref.slice(0, i) as EntryKind, id: ref.slice(i + 1) } : null;
+	}
+	/** Display name for a "kind:id" ref, falling back to the kind label. */
+	function refName(ref: string): string {
+		const p = splitRef(ref);
+		if (!p) return ref;
+		const list = p.kind === 'community' ? communities : p.kind === 'place' ? places : npcs;
+		return list.find((e) => e.id === p.id)?.name || kindLabelSingular(p.kind);
+	}
+	/** Container options for the active entry's Within picker — every settlement
+	 *  and landmark except itself and its own descendants (a cycle guard), sorted
+	 *  by kind then name. */
+	const withinOptions = $derived.by(() => {
+		if (!activeEntry) return [{ value: '', label: 'Nowhere' }];
+		const self = refOf(activeEntry.kind, activeEntry.id);
+		const opts = eligibleContainerRefs(self, containmentGraph)
+			.map((ref) => ({ value: ref, label: refName(ref), kind: splitRef(ref)?.kind ?? 'place' }))
+			.sort((a, b) =>
+				a.kind === b.kind ? a.label.localeCompare(b.label) : a.kind < b.kind ? -1 : 1,
+			)
+			.map(({ value, label, kind }) => ({
+				value,
+				label,
+				// Kind icon + colour so settlements and landmarks read apart at a
+				// glance in a long list (bits-ui typeahead handles find-by-name).
+				icon: ENTITY_KIND_META[kind].icon,
+				color: ENTITY_KIND_META[kind].color,
+			}));
+		return [{ value: '', label: 'Nowhere' }, ...opts];
+	});
+	/** Tooltip/label for the "go to parent" jump — names the container's kind,
+	 *  e.g. "Go to Settlement" / "Go to Landmark". (Containers are only ever
+	 *  settlements or landmarks; NPCs can't contain anything.) */
+	function goToWithinLabel(ref: string | undefined): string {
+		const kind = ref ? splitRef(ref)?.kind : undefined;
+		return `Go to ${kind ? kindLabelSingular(kind) : 'container'}`;
+	}
+	/** Re-parent the active entry. '' clears the link. Writes `within` and drops
+	 *  the legacy place field; region is now derived, so it isn't copied. */
+	function setWithin(ref: string) {
+		const within = ref || undefined;
+		if (activeEntry?.kind === 'community') updateCommunity({ within });
+		else if (activeEntry?.kind === 'place') updatePlace({ within, withinSettlementId: undefined });
+		else if (activeEntry?.kind === 'npc') updateNpc({ within });
+	}
+	/** Direct children of a container ref — entries whose effective `within` is
+	 *  exactly this ref, across all three kinds, sorted by kind then name. */
+	function childrenOf(parentRef: string): Array<{ id: string; kind: EntryKind; name: string }> {
+		const out: Array<{ id: string; kind: EntryKind; name: string }> = [];
+		for (const c of communities)
+			if (entityWithin(c) === parentRef) out.push({ id: c.id, kind: 'community', name: c.name });
+		for (const p of places)
+			if (entityWithin(p) === parentRef) out.push({ id: p.id, kind: 'place', name: p.name });
+		for (const n of npcs)
+			if (entityWithin(n) === parentRef) out.push({ id: n.id, kind: 'npc', name: n.name });
+		return out.sort((a, b) =>
+			a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind < b.kind ? -1 : 1,
+		);
+	}
+	/** Re-parent one entity (by ref) in its store, clearing the legacy place
+	 *  field. Returns the touched kind so the caller can flush it. */
+	function applyWithin(ref: string, within: string | undefined): EntryKind | null {
+		const p = splitRef(ref);
+		if (!p) return null;
+		if (p.kind === 'community') {
+			const c = communities.find((x) => x.id === p.id);
+			if (c) updateCommunityLocal({ ...c, within });
+			return 'community';
+		}
+		if (p.kind === 'place') {
+			const pl = places.find((x) => x.id === p.id);
+			if (pl) updatePlaceLocal({ ...pl, within, withinSettlementId: undefined });
+			return 'place';
+		}
+		const n = npcs.find((x) => x.id === p.id);
+		if (n) updateNpcLocal({ ...n, within });
+		return 'npc';
+	}
 	const loading = $derived(isCommunityLoading());
 
 	/** Combined list — communities + NPCs, sorted by createdAt (oldest first). */
@@ -407,18 +535,6 @@
 	function updateCommunityLike(patch: Partial<Community & Place>) {
 		if (activeEntry?.kind === 'community') updateCommunity(patch);
 		else if (activeEntry?.kind === 'place') updatePlace(patch);
-	}
-
-	/** Re-parent the active Place. Setting a parent settlement pulls that
-	 *  settlement's region down onto the place (a nested place shares its
-	 *  parent's region); choosing "No settlement" clears the link but leaves
-	 *  the region as-is. Mirrors the inheritance in _commitPlace. */
-	function setPlaceWithin(settlementId: string) {
-		const parent = settlementId ? communities.find((c) => c.id === settlementId) : undefined;
-		updatePlace({
-			withinSettlementId: settlementId || undefined,
-			...(parent ? { region: parent.region } : {}),
-		});
 	}
 
 	/** Roll on the Settlement Trouble oracle, animate the d100, log the
@@ -851,16 +967,12 @@
 		const pl = _pendingPlace;
 		_pendingPlace = null;
 		const oracles = getOracles();
-		const parent = _pendingPlaceWithin
-			? communities.find((c) => c.id === _pendingPlaceWithin)
-			: undefined;
-		pl.withinSettlementId = _pendingPlaceWithin || undefined;
+		pl.within = _pendingPlaceWithin ? refOf('community', _pendingPlaceWithin) : undefined;
 		const rolled: Array<[string, string]> = [];
-		// Region: inherit from the parent settlement when nested; otherwise roll
-		// only when the Region box is checked.
-		if (parent) {
-			pl.region = parent.region;
-		} else if (newPlaceRollRegion) {
+		// Region: a nested place inherits its region from the parent chain
+		// (derived, read-only) — nothing to store. A freestanding place rolls
+		// Region only when the box is checked.
+		if (!_pendingPlaceWithin && newPlaceRollRegion) {
 			pl.region = rollOracle(resolveOracleKey('region'), oracles).value ?? '';
 			rolled.push(['Region', pl.region]);
 		}
@@ -883,27 +995,34 @@
 	async function confirmDeleteEntry() {
 		if (!activeEntry) return;
 		const id = activeEntry.id;
-		if (activeEntry.kind === 'community') {
-			await removeCommunity(id);
-			// Orphan cleanup: any place nested inside this settlement now points
-			// at a community that's gone — its Within dropdown would show blank
-			// and its "go to parent" jump would land nowhere. Clear the link so
-			// those places become freestanding rather than dangling. (Region,
-			// which was inherited from the parent, is left as-is — it's still a
-			// valid place to be.)
-			const orphans = getPlaces().filter((p) => p.withinSettlementId === id);
-			if (orphans.length > 0) {
-				for (const p of orphans) updatePlaceLocal({ ...p, withinSettlementId: undefined });
-				await persistPlacesNow();
+		const kind = activeEntry.kind;
+		const deletedRef = refOf(kind, id);
+		// Reparent the deleted container's direct children to its own parent
+		// (grandparent), or detach them when it had none — computed from the
+		// current graph BEFORE the record is removed. A leaf (NPC) yields none.
+		const moves = reparentOnDelete(deletedRef, containmentGraph);
+		if (kind === 'community') await removeCommunity(id);
+		else if (kind === 'place') await removePlace(id);
+		else await removeNpc(id);
+		if (moves.length) {
+			const touched = new Set<EntryKind>();
+			for (const m of moves) {
+				const k = applyWithin(m.ref, m.within);
+				if (k) touched.add(k);
 			}
-			// Any map marker linked to this community loses its target — unlink
-			// it (the pin stays as a plain annotation).
-			await unlinkEntityFromMaps(formatEntityId('community', id));
-		} else if (activeEntry.kind === 'npc') await removeNpc(id);
-		else {
-			await removePlace(id);
-			await unlinkEntityFromMaps(formatEntityId('place', id));
+			await Promise.all(
+				[...touched].map((k) =>
+					k === 'community'
+						? persistCommunitiesNow()
+						: k === 'place'
+							? persistPlacesNow()
+							: persistNpcsNow(),
+				),
+			);
 		}
+		// A settlement/landmark that was on a map loses its marker target — unlink
+		// it (the pin stays as a plain annotation). NPCs are never map-linked.
+		if (kind !== 'npc') await unlinkEntityFromMaps(deletedRef);
 		if (activeEntryId === id) activeEntryId = null;
 		// Return to the list on narrow layouts after deleting the open entry.
 	}
@@ -1093,17 +1212,33 @@
 						{#if activeTab === 'core'}
 							{#if activeEntry.kind === 'community' || activeEntry.kind === 'place'}
 								{@const c = activeEntry.data}
+								{@const selfRef = refOf(activeEntry.kind, c.id)}
+								{@const nested = isNested(selfRef, containmentGraph)}
 								<div class="cm-field-row">
 									<label class="cm-field-label" for="cm-region-{c.id}">Region</label>
-									<input
-										id="cm-region-{c.id}"
-										class="cm-input"
-										type="text"
-										value={c.region}
-										oninput={(e) =>
-											updateCommunityLike({ region: (e.target as HTMLInputElement).value })}
-										placeholder="Region…"
-									/>
+									{#if nested}
+										<!-- Region is inherited from the parent chain (read-only) while
+										     this entry sits within another — see the Within field below. -->
+										<input
+											id="cm-region-{c.id}"
+											class="cm-input cm-input--readonly"
+											type="text"
+											disabled
+											value={effectiveRegion(selfRef, containmentGraph) ?? ''}
+											use:tooltip={'Inherited from the parent — set in the top-level entry'}
+											placeholder="—"
+										/>
+									{:else}
+										<input
+											id="cm-region-{c.id}"
+											class="cm-input"
+											type="text"
+											value={c.region}
+											oninput={(e) =>
+												updateCommunityLike({ region: (e.target as HTMLInputElement).value })}
+											placeholder="Region…"
+										/>
+									{/if}
 								</div>
 								{#if activeEntry.kind === 'community'}
 									{@const s = activeEntry.data}
@@ -1161,34 +1296,6 @@
 										/>
 									</div>
 								{/if}
-								{#if activeEntry.kind === 'place'}
-									{@const pl = activeEntry.data}
-									<div class="cm-field-row">
-										<label class="cm-field-label" for="cm-within-{c.id}">Within</label>
-										<Select
-											id="cm-within-{c.id}"
-											class="cm-within-select"
-											value={pl.withinSettlementId ?? ''}
-											onchange={(v) => setPlaceWithin(v)}
-											options={[
-												{ value: '', label: 'No settlement' },
-												...communities.map((cc) => ({
-													value: cc.id,
-													label: cc.name || 'Settlement',
-												})),
-											]}
-										/>
-										{#if pl.withinSettlementId}
-											<button
-												class="cm-within-jump"
-												type="button"
-												onclick={() => (activeEntryId = pl.withinSettlementId ?? null)}
-												use:tooltip={'Go to the parent settlement'}
-												aria-label="Go to the parent settlement">{@html gotoSvg}</button
-											>
-										{/if}
-									</div>
-								{/if}
 								{#if activeEntry.kind === 'community' || c.trouble}
 									<div class="cm-field-row cm-field-row--trouble">
 										<label class="cm-field-label" for="cm-trouble-{c.id}">Trouble</label>
@@ -1218,27 +1325,50 @@
 										{/if}
 									</div>
 								{/if}
-								{#if activeEntry.kind === 'community'}
-									{@const s = activeEntry.data}
-									{@const here = places.filter((p) => p.withinSettlementId === s.id)}
-									{#if here.length > 0}
+								{#if activeEntry.kind === 'community' || activeEntry.kind === 'place'}
+									{@const children = childrenOf(refOf(activeEntry.kind, c.id))}
+									{#if children.length > 0}
 										<div class="cm-field-row cm-field-row--places">
-											<span class="cm-field-label">Landmarks</span>
+											<span class="cm-field-label">Contains</span>
 											<div class="cm-mapref-chips">
-												{#each here as p (p.id)}
+												{#each children as ch (ch.kind + ch.id)}
 													<button
-														class="cm-mapref-chip"
+														class="cm-mapref-chip cm-mapref-chip--entity"
 														type="button"
-														onclick={() => (activeEntryId = p.id)}
-														use:tooltip={'Go to this landmark'}
-														><span class="cm-mapref-name">{p.name || 'Untitled landmark'}</span
-														></button
+														style:--chip-color={ENTITY_KIND_META[ch.kind].color}
+														onclick={() => (activeEntryId = ch.id)}
+														use:tooltip={`Go to this ${kindLabelSingular(ch.kind).toLowerCase()}`}
+														><span class="cm-mapref-glyph" aria-hidden="true"
+															>{@html ENTITY_KIND_META[ch.kind].icon}</span
+														><span class="cm-mapref-name">{ch.name || 'Untitled'}</span></button
 													>
 												{/each}
 											</div>
 										</div>
 									{/if}
 								{/if}
+								<!-- Within: the container this entry sits inside — any settlement or
+								     landmark except itself + its descendants. Positioned right above
+								     the Map field. -->
+								<div class="cm-field-row">
+									<label class="cm-field-label" for="cm-within-{c.id}">Within</label>
+									<Select
+										id="cm-within-{c.id}"
+										class="cm-within-select"
+										value={entityWithin(c) ?? ''}
+										onchange={(v) => setWithin(v)}
+										options={withinOptions}
+									/>
+									{#if entityWithin(c)}
+										<button
+											class="cm-within-jump"
+											type="button"
+											onclick={() => (activeEntryId = splitRef(entityWithin(c) ?? '')?.id ?? null)}
+											use:tooltip={goToWithinLabel(entityWithin(c))}
+											aria-label={goToWithinLabel(entityWithin(c))}>{@html gotoSvg}</button
+										>
+									{/if}
+								</div>
 								<!-- Map field: one chip per marker referencing this
 								     community/place. Multi-map is supported natively —
 								     the store returns refs across all maps, chips wrap
@@ -1385,8 +1515,29 @@
 										type="text"
 										value={n.location}
 										oninput={(e) => updateNpc({ location: (e.target as HTMLInputElement).value })}
-										placeholder="Location…"
+										placeholder="Free-text whereabouts — a spot within the container below…"
 									/>
+								</div>
+								<!-- Within: the structured container (settlement/landmark). Sits below
+								     the free-text Location, which is an unstructured sub-spot. -->
+								<div class="cm-field-row">
+									<label class="cm-field-label" for="cm-within-{n.id}">Within</label>
+									<Select
+										id="cm-within-{n.id}"
+										class="cm-within-select"
+										value={entityWithin(n) ?? ''}
+										onchange={(v) => setWithin(v)}
+										options={withinOptions}
+									/>
+									{#if entityWithin(n)}
+										<button
+											class="cm-within-jump"
+											type="button"
+											onclick={() => (activeEntryId = splitRef(entityWithin(n) ?? '')?.id ?? null)}
+											use:tooltip={goToWithinLabel(entityWithin(n))}
+											aria-label={goToWithinLabel(entityWithin(n))}>{@html gotoSvg}</button
+										>
+									{/if}
 								</div>
 							{/if}
 
@@ -1844,6 +1995,30 @@
 		border-color: var(--text-accent);
 		color: var(--text-accent);
 	}
+	/* "Contains" chips are tinted with their kind colour (settlement / landmark),
+	   matching the kind icon shown inside them. */
+	.cm-mapref-chip--entity {
+		border-color: color-mix(in srgb, var(--chip-color) 55%, var(--border-mid));
+		color: var(--chip-color);
+	}
+	.cm-mapref-chip--entity:hover {
+		background: color-mix(in srgb, var(--chip-color) 12%, transparent);
+		border-color: var(--chip-color);
+		color: var(--chip-color);
+	}
+	.cm-mapref-glyph {
+		flex-shrink: 0;
+		display: inline-flex;
+		width: 12px;
+		height: 12px;
+		color: var(--chip-color);
+	}
+	.cm-mapref-glyph :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+		display: block;
+	}
 	.cm-mapref-name {
 		font-weight: 600;
 		overflow: hidden;
@@ -1862,7 +2037,9 @@
 		align-items: center;
 		justify-content: center;
 		width: 26px;
-		height: 26px;
+		/* Match the Within <Select> height — stretch to the field row's cross
+		   axis rather than a fixed 26px so the two line up exactly. */
+		align-self: stretch;
 		border: 1px solid var(--border-mid);
 		border-radius: 6px;
 		background: var(--bg-control);
@@ -2126,7 +2303,8 @@
 	   globally. Base look from `.bui-select-trigger`; override just
 	   makes the trigger flex-fill inside `.cm-field-row` like the
 	   sibling `<input class="cm-input">` fields. */
-	:global(.cm-select) {
+	:global(.cm-select),
+	:global(.cm-within-select) {
 		flex: 1;
 		font-size: 0.78rem;
 		padding: 3px 8px;

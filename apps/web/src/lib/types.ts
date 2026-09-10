@@ -518,6 +518,11 @@ export interface Community {
 	id: string;
 	name: string;
 	region: string;
+	/** Optional container this settlement sits within — another settlement or a
+	 *  landmark, stored as a "kind:id" entity ref (see entityContainment.ts).
+	 *  Part of the Connections containment tree; when set, `region` is inherited
+	 *  from the parent chain. Empty/absent = top-level. */
+	within?: string;
 	location: string;
 	locationDescription: string;
 	trouble: string;
@@ -559,7 +564,12 @@ export interface Npc {
 	 *  while both Delve and Lodestar are disabled. */
 	disposition?: string;
 	relationship: NpcRelationship;
-	location: string;
+	/** Optional container this NPC is in — a settlement or landmark, stored as a
+	 *  "kind:id" entity ref (see entityContainment.ts). The structured parent in
+	 *  the Connections tree; complementary to the free-text `location` below,
+	 *  which is an unstructured sub-spot ("the victualler's back room"). */
+	within?: string;
+	location: string; // free-text whereabouts / sub-spot — not an entity ref
 	notes: string; // long-form description (Description tab)
 	situationalNotes?: string; // short situational notes (Core tab)
 	/** Content hash of the portrait stored in the blob endpoint; '' / absent = none. */
@@ -583,13 +593,19 @@ export interface Place {
 	id: string;
 	name: string;
 	region: string;
+	/** Optional container this landmark sits within — a settlement or another
+	 *  landmark, stored as a "kind:id" entity ref (see entityContainment.ts).
+	 *  Part of the Connections containment tree; when set, `region` is inherited
+	 *  from the parent chain. Empty/absent = a freestanding wilderness landmark.
+	 *  Supersedes the settlement-only `withinSettlementId` below. */
+	within?: string;
 	/** The place's landmark — what it is (rolled from a Landmark oracle:
 	 *  Overland / Coastal for the wilds, Settlement Landmark when nested). */
 	location: string;
 	locationDescription: string;
-	/** Optional parent settlement this place sits inside (a Community id). When
-	 *  set, the place is an in-settlement point-of-interest and inherits the
-	 *  settlement's region. Empty/absent = a freestanding wilderness landmark. */
+	/** @deprecated Superseded by the generalized `within` ref (which can point at
+	 *  any settlement OR landmark). Migrated to `within = "community:<id>"` on
+	 *  load; still read for back-compat. Was: optional parent settlement id. */
 	withinSettlementId?: string;
 	/** Export/import-only: the parent settlement's NAME. Written on export (in
 	 *  place of the raw id, which is minted per-user) and resolved back to a
