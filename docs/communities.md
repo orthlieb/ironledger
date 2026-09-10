@@ -107,40 +107,42 @@ If the answer to "who lives here?" is a group of people who share a settlement i
 
 ## Fields by expansion (base / delve / lodestar)
 
-Which fields each entry carries depends on the enabled [expansions](expansion-toggles.md). The
-oracle behind a field resolves per enabled pack (see `characterConcept.ts` and
-`resolveOracleKey`); a field is only rolled/shown when a visible oracle backs it.
+Rows are in Core-tab **display order** (top to bottom). Which fields an entry carries
+depends on the enabled [expansions](expansion-toggles.md); the oracle behind a field
+resolves per enabled pack (see `characterConcept.ts` and `resolveOracleKey`), and a field
+is only rolled/shown when a visible oracle backs it.
 
-**Legend:** ✓ present · **added** new with this pack · **replaced** supersedes a base
+**Legend:** ✓ present · **added** new with this pack · **replaced** supersedes/hides a base
 field · **deprecated** no longer rolled, kept only if legacy data has it · — no change.
 
 ### Settlement (`Community`)
 
-| Field                              | Base (classic) | + Delve | + Lodestar             | Backing oracle                                 |
-| ---------------------------------- | -------------- | ------- | ---------------------- | ---------------------------------------------- |
-| Region                             | ✓              | —       | —                      | Region _(YRT swaps the oracle, not the field)_ |
-| Location                           | ✓              | —       | **replaced** (dropped) | Location                                       |
-| Descriptor (`locationDescription`) | ✓              | —       | **replaced** (dropped) | Location Descriptor                            |
-| Trouble                            | ✓              | —       | — _(still rolls)_      | Settlement Trouble                             |
-| Type                               | —              | —       | **added**              | Settlement: Type                               |
-| Condition                          | —              | —       | **added**              | Settlement: Condition                          |
-| First Look                         | —              | —       | **added**              | Settlement: First Look                         |
-| Disposition                        | —              | —       | **added**              | Settlement: Disposition                        |
-| Projects                           | —              | —       | **added**              | Settlement: Projects                           |
-| Cultural Touchstones               | —              | —       | **added**              | Settlement: Cultural Touchstones               |
+| Field                              | Base (classic) | + Delve | + Lodestar            | Backing oracle                                 |
+| ---------------------------------- | -------------- | ------- | --------------------- | ---------------------------------------------- |
+| Region                             | ✓              | —       | —                     | Region _(YRT swaps the oracle, not the field)_ |
+| Type                               | —              | —       | **added**             | Settlement: Type                               |
+| Condition                          | —              | —       | **added**             | Settlement: Condition                          |
+| First Look                         | —              | —       | **added**             | Settlement: First Look                         |
+| Disposition                        | —              | —       | **added**             | Settlement: Disposition                        |
+| Projects                           | —              | —       | **added**             | Settlement: Projects                           |
+| Cultural Touchstones               | —              | —       | **added**             | Settlement: Cultural Touchstones               |
+| Location                           | ✓              | —       | **replaced** (hidden) | Location                                       |
+| Descriptor (`locationDescription`) | ✓              | —       | **replaced** (hidden) | Location Descriptor                            |
+| Trouble                            | ✓              | —       | — _(still rolls)_     | Settlement Trouble                             |
 
-Lodestar supersedes Location + Descriptor with its six-field settlement suite; Trouble
-survives. Delve adds nothing to settlements. Always present (all packs): Name · Notes ·
+Under Lodestar the six-field suite displays and Location + Descriptor are hidden entirely;
+Trouble survives. Delve adds nothing to settlements. Always present: Name · Notes ·
 Situational Notes · Portrait.
 
 ### Landmark (`Place`)
 
-| Field                              | Base                                           | + Delve | + Lodestar                                                    | Backing oracle                              |
-| ---------------------------------- | ---------------------------------------------- | ------- | ------------------------------------------------------------- | ------------------------------------------- |
-| Region                             | ✓ _(own, or inherited from parent settlement)_ | —       | —                                                             | Region                                      |
-| Landmark (`location`)              | ✓                                              | —       | — _(a Lodestar landmark oracle can fill it; field unchanged)_ | landmark-tagged oracle                      |
-| Descriptor (`locationDescription`) | ✓                                              | —       | — _(stays — unlike settlements)_                              | Location Descriptor                         |
-| Trouble                            | **deprecated**                                 | —       | —                                                             | _(was Settlement Trouble; no longer rolls)_ |
+| Field                              | Base                                                    | + Delve | + Lodestar                                                    | Backing oracle                                         |
+| ---------------------------------- | ------------------------------------------------------- | ------- | ------------------------------------------------------------- | ------------------------------------------------------ |
+| Region                             | ✓ _(own, or inherited from a parent — see containment)_ | —       | —                                                             | Region                                                 |
+| Landmark (`location`)              | ✓                                                       | —       | — _(a Lodestar landmark oracle can fill it; field unchanged)_ | landmark-tagged oracle                                 |
+| Descriptor (`locationDescription`) | ✓                                                       | —       | — _(stays — unlike settlements)_                              | Location Descriptor                                    |
+| Within (`withinSettlementId`)      | ✓                                                       | —       | —                                                             | — _(parent settlement; generalizing to any container)_ |
+| Trouble                            | **deprecated**                                          | —       | —                                                             | _(was Settlement Trouble; no longer rolls)_            |
 
 Places are location records — Delve and Lodestar change neither the field set nor replace
 anything. Always present: Name · Notes · Situational Notes · Portrait.
@@ -149,17 +151,18 @@ anything. Always present: Name · Notes · Situational Notes · Portrait.
 
 | Field                           | Base | + Delve   | + Lodestar   | Backing oracle                                                              |
 | ------------------------------- | ---- | --------- | ------------ | --------------------------------------------------------------------------- |
+| First Look                      | —    | —         | **added**    | Character: First Look _(Lodestar)_                                          |
+| Activity                        | —    | **added** | —            | Character: Activity _(Delve)_                                               |
+| Disposition                     | —    | **added** | **replaced** | Character: Disposition — Delve's, or Lodestar's variant when Lodestar is on |
 | Role                            | ✓    | —         | —            | Character: Role                                                             |
 | Goal                            | ✓    | —         | —            | Character: Goal                                                             |
 | Revealed Details (`descriptor`) | ✓    | —         | —            | Character: Descriptor _(retitled "Revealed Details")_                       |
-| Activity                        | —    | **added** | —            | Character: Activity _(Delve)_                                               |
-| Disposition                     | —    | **added** | **replaced** | Character: Disposition — Delve's, or Lodestar's variant when Lodestar is on |
-| First Look                      | —    | —         | **added**    | Character: First Look _(Lodestar)_                                          |
+| Relationship                    | ✓    | —         | —            | — _(neutral / bond / foe; app field)_                                       |
+| Location                        | ✓    | —         | —            | — _(free-text whereabouts; app field)_                                      |
 
 Disposition appears with **either** Delve or Lodestar; when both are on, Lodestar's oracle
-wins. Always present: Name · Relationship · Location (free-text) · Notes · Situational
-Notes · Portrait · Deceased. YRT adds no NPC field — its Touched oracle prepends prose into
-Notes.
+wins. Always present too: Name · Notes · Situational Notes · Portrait · Deceased. YRT
+adds no NPC field — its Touched oracle prepends prose into Notes.
 
 **Canonical lineage** (Datasworn): Role / Goal / Descriptor are **Classic**;
 Activity / Disposition are **Delve**; First Look is **Lodestar** — matching the code now
