@@ -68,11 +68,11 @@ The three free-form text fields each have a specific role; keeping the
 distinction makes them useful long-term rather than collapsing into one
 catch-all note:
 
-| Field              | What it's for                                                                                               | Where it shows                                                    |
-| ------------------ | ----------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
-| `descriptor`       | **Short** physical likeness — `tall, gaunt, scarred`. One line, no markdown.                                | Core tab → Descriptor field                                       |
-| `notes`            | **Background** — origin, upbringing, major personality traits. The slow-changing identity of the character. | Core tab → small Background block, full Background tab (markdown) |
-| `situationalNotes` | Running record of campaign-relevant actions and events — what the NPC has done, what has happened to them.  | Core tab → Notes block (markdown)                                 |
+| Field              | What it's for                                                                                                                                                           | Where it shows                                                    |
+| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `descriptor`       | **Short** physical likeness — `tall, gaunt, scarred`. One line, no markdown. Labeled **Revealed Details** in the UI (the Character: Descriptor oracle's retitled name). | Core tab → Revealed Details field                                 |
+| `notes`            | **Background** — origin, upbringing, major personality traits. The slow-changing identity of the character.                                                             | Core tab → small Background block, full Background tab (markdown) |
+| `situationalNotes` | Running record of campaign-relevant actions and events — what the NPC has done, what has happened to them.                                                              | Core tab → Notes block (markdown)                                 |
 
 Communities share the same `notes` + `situationalNotes` split but with the
 Description / Trouble framing: `notes` is the long-form description of the
@@ -102,6 +102,68 @@ Landmarks share Community's field shape today so the same card renders both. The
 #### When to reach for a Place vs a Community
 
 If the answer to "who lives here?" is a group of people who share a settlement identity, that's a **Community** (name it after the settlement). If the answer is "no-one lives there, but I want to remember it exists", or "it's a specific spot within a larger community", that's a **Place**. A campaign's Whitebridge is a Community; the Silver Fish Tavern inside Whitebridge is a Place; the shadow of the Ravaged Peak on the horizon is a Place.
+
+---
+
+## Fields by expansion (base / delve / lodestar)
+
+Which fields each entry carries depends on the enabled [expansions](expansion-toggles.md). The
+oracle behind a field resolves per enabled pack (see `characterConcept.ts` and
+`resolveOracleKey`); a field is only rolled/shown when a visible oracle backs it.
+
+**Legend:** ✓ present · **added** new with this pack · **replaced** supersedes a base
+field · **deprecated** no longer rolled, kept only if legacy data has it · — no change.
+
+### Settlement (`Community`)
+
+| Field                              | Base (classic) | + Delve | + Lodestar             | Backing oracle                                 |
+| ---------------------------------- | -------------- | ------- | ---------------------- | ---------------------------------------------- |
+| Region                             | ✓              | —       | —                      | Region _(YRT swaps the oracle, not the field)_ |
+| Location                           | ✓              | —       | **replaced** (dropped) | Location                                       |
+| Descriptor (`locationDescription`) | ✓              | —       | **replaced** (dropped) | Location Descriptor                            |
+| Trouble                            | ✓              | —       | — _(still rolls)_      | Settlement Trouble                             |
+| Type                               | —              | —       | **added**              | Settlement: Type                               |
+| Condition                          | —              | —       | **added**              | Settlement: Condition                          |
+| First Look                         | —              | —       | **added**              | Settlement: First Look                         |
+| Disposition                        | —              | —       | **added**              | Settlement: Disposition                        |
+| Projects                           | —              | —       | **added**              | Settlement: Projects                           |
+| Cultural Touchstones               | —              | —       | **added**              | Settlement: Cultural Touchstones               |
+
+Lodestar supersedes Location + Descriptor with its six-field settlement suite; Trouble
+survives. Delve adds nothing to settlements. Always present (all packs): Name · Notes ·
+Situational Notes · Portrait.
+
+### Landmark (`Place`)
+
+| Field                              | Base                                           | + Delve | + Lodestar                                                    | Backing oracle                              |
+| ---------------------------------- | ---------------------------------------------- | ------- | ------------------------------------------------------------- | ------------------------------------------- |
+| Region                             | ✓ _(own, or inherited from parent settlement)_ | —       | —                                                             | Region                                      |
+| Landmark (`location`)              | ✓                                              | —       | — _(a Lodestar landmark oracle can fill it; field unchanged)_ | landmark-tagged oracle                      |
+| Descriptor (`locationDescription`) | ✓                                              | —       | — _(stays — unlike settlements)_                              | Location Descriptor                         |
+| Trouble                            | **deprecated**                                 | —       | —                                                             | _(was Settlement Trouble; no longer rolls)_ |
+
+Places are location records — Delve and Lodestar change neither the field set nor replace
+anything. Always present: Name · Notes · Situational Notes · Portrait.
+
+### NPC (`Npc`)
+
+| Field                           | Base | + Delve   | + Lodestar   | Backing oracle                                                              |
+| ------------------------------- | ---- | --------- | ------------ | --------------------------------------------------------------------------- |
+| Role                            | ✓    | —         | —            | Character: Role                                                             |
+| Goal                            | ✓    | —         | —            | Character: Goal                                                             |
+| Revealed Details (`descriptor`) | ✓    | —         | —            | Character: Descriptor _(retitled "Revealed Details")_                       |
+| Activity                        | —    | **added** | —            | Character: Activity _(Delve)_                                               |
+| Disposition                     | —    | **added** | **replaced** | Character: Disposition — Delve's, or Lodestar's variant when Lodestar is on |
+| First Look                      | —    | —         | **added**    | Character: First Look _(Lodestar)_                                          |
+
+Disposition appears with **either** Delve or Lodestar; when both are on, Lodestar's oracle
+wins. Always present: Name · Relationship · Location (free-text) · Notes · Situational
+Notes · Portrait · Deceased. YRT adds no NPC field — its Touched oracle prepends prose into
+Notes.
+
+**Canonical lineage** (Datasworn): Role / Goal / Descriptor are **Classic**;
+Activity / Disposition are **Delve**; First Look is **Lodestar** — matching the code now
+that `charActivity` / `charDisposition` live in the Delve pack.
 
 ---
 
