@@ -180,15 +180,18 @@ export function effectiveRegion(
 	ref: string,
 	graph: ReadonlyMap<string, ContainmentNode>,
 ): string | undefined {
-	const self = graph.get(ref);
-	if (!self) return undefined;
-	// A top-level node uses its own region. A nested node inherits from the
-	// parent chain and IGNORES its own (possibly stale) region — "the region
-	// becomes the parent region" — returning the nearest ancestor that has one.
-	if (!self.within) return self.region;
-	for (const a of ancestorRefs(ref, graph)) {
-		const r = graph.get(a)?.region;
-		if (r) return r;
+	// Walk to the ROOT of the tree — the region on the top-level entry applies to
+	// everything under it. Intermediate nodes are themselves nested, so their own
+	// (stale/copied) region must be ignored: Freeport within Altiplano within
+	// Buralia inherits BURALIA's region, not Altiplano's. Cycle-safe.
+	const seen = new Set<string>();
+	let cur: string | undefined = ref;
+	while (cur && !seen.has(cur)) {
+		seen.add(cur);
+		const node = graph.get(cur);
+		if (!node) return undefined;
+		if (!node.within) return node.region;
+		cur = node.within;
 	}
 	return undefined;
 }

@@ -2037,7 +2037,9 @@
 		align-items: center;
 		justify-content: center;
 		width: 26px;
-		height: 26px;
+		/* Match the Within <Select> height — stretch to the field row's cross
+		   axis rather than a fixed 26px so the two line up exactly. */
+		align-self: stretch;
 		border: 1px solid var(--border-mid);
 		border-radius: 6px;
 		background: var(--bg-control);

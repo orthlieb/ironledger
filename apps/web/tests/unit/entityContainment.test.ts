@@ -23,16 +23,19 @@ import {
 	type ContainmentNode,
 } from '../../src/lib/entityContainment.js';
 
-// Fixture tree (Nysis is a Place per the design decision):
-//   place:nysis           region "Nysis Reach"      (top-level)
-//     community:collima    (no region → inherits)
+// Fixture tree (Nysis is a Place per the design decision). Collima and Tavern
+// carry their OWN region values — but both are nested, so those must be ignored
+// in favour of the tree root's region (the Freeport-within-Altiplano-within-
+// Buralia bug: an intermediate node's own region must not win):
+//   place:nysis           region "Nysis Reach"      (top-level = root)
+//     community:collima    region "Collima County"  (nested → own region ignored)
 //       npc:bob
-//       place:tavern       region "Tavern Row"
+//       place:tavern       region "Tavern Row"      (nested → own region ignored)
 //   community:freeport     region "Coast"           (top-level, separate tree)
 //   npc:solo               (no within, no region)
 const NODES: ContainmentNode[] = [
 	{ ref: 'place:nysis', region: 'Nysis Reach' },
-	{ ref: 'community:collima', within: 'place:nysis' },
+	{ ref: 'community:collima', within: 'place:nysis', region: 'Collima County' },
 	{ ref: 'npc:bob', within: 'community:collima' },
 	{ ref: 'place:tavern', within: 'community:collima', region: 'Tavern Row' },
 	{ ref: 'community:freeport', region: 'Coast' },
@@ -131,13 +134,15 @@ describe('region inheritance', () => {
 		expect(effectiveRegion('place:nysis', g)).toBe('Nysis Reach');
 		expect(effectiveRegion('community:freeport', g)).toBe('Coast');
 	});
-	it('a nested node inherits from the parent chain, ignoring its own region', () => {
-		// Collima has no own region → inherits Nysis Reach.
+	it('a nested node inherits the ROOT region, ignoring its own and intermediate ones', () => {
+		// Collima is nested and has its OWN region ("Collima County"), but the
+		// root (Nysis) wins.
 		expect(effectiveRegion('community:collima', g)).toBe('Nysis Reach');
-		// The Tavern is nested (within Collima) and DOES have an own region
-		// ("Tavern Row"), but inheritance wins — it shows the parent chain's.
+		// The Tavern is two levels deep (Collima → Nysis); both its own region
+		// ("Tavern Row") AND the intermediate Collima's ("Collima County") are
+		// ignored — it resolves all the way to the root. This is the bug fix.
 		expect(effectiveRegion('place:tavern', g)).toBe('Nysis Reach');
-		// Bob (NPC, no region) also resolves to the chain's region.
+		// Bob (NPC, no region) also resolves to the root region.
 		expect(effectiveRegion('npc:bob', g)).toBe('Nysis Reach');
 	});
 	it('is undefined when neither node nor ancestors carry a region', () => {
