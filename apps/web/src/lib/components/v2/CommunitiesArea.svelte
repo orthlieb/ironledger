@@ -338,9 +338,23 @@
 			.sort((a, b) =>
 				a.kind === b.kind ? a.label.localeCompare(b.label) : a.kind < b.kind ? -1 : 1,
 			)
-			.map(({ value, label }) => ({ value, label }));
+			.map(({ value, label, kind }) => ({
+				value,
+				label,
+				// Kind icon + colour so settlements and landmarks read apart at a
+				// glance in a long list (bits-ui typeahead handles find-by-name).
+				icon: ENTITY_KIND_META[kind].icon,
+				color: ENTITY_KIND_META[kind].color,
+			}));
 		return [{ value: '', label: 'Nowhere' }, ...opts];
 	});
+	/** Tooltip/label for the "go to parent" jump — names the container's kind,
+	 *  e.g. "Go to Settlement" / "Go to Landmark". (Containers are only ever
+	 *  settlements or landmarks; NPCs can't contain anything.) */
+	function goToWithinLabel(ref: string | undefined): string {
+		const kind = ref ? splitRef(ref)?.kind : undefined;
+		return `Go to ${kind ? kindLabelSingular(kind) : 'container'}`;
+	}
 	/** Re-parent the active entry. '' clears the link. Writes `within` and drops
 	 *  the legacy place field; region is now derived, so it isn't copied. */
 	function setWithin(ref: string) {
@@ -1209,7 +1223,7 @@
 											id="cm-region-{c.id}"
 											class="cm-input cm-input--readonly"
 											type="text"
-											readonly
+											disabled
 											value={effectiveRegion(selfRef, containmentGraph) ?? ''}
 											use:tooltip={'Inherited from the parent — set in the top-level entry'}
 											placeholder="—"
@@ -1319,10 +1333,13 @@
 											<div class="cm-mapref-chips">
 												{#each children as ch (ch.kind + ch.id)}
 													<button
-														class="cm-mapref-chip"
+														class="cm-mapref-chip cm-mapref-chip--entity"
 														type="button"
+														style:--chip-color={ENTITY_KIND_META[ch.kind].color}
 														onclick={() => (activeEntryId = ch.id)}
 														use:tooltip={`Go to this ${kindLabelSingular(ch.kind).toLowerCase()}`}
+														><span class="cm-mapref-glyph" aria-hidden="true"
+															>{@html ENTITY_KIND_META[ch.kind].icon}</span
 														><span class="cm-mapref-name">{ch.name || 'Untitled'}</span></button
 													>
 												{/each}
@@ -1347,8 +1364,8 @@
 											class="cm-within-jump"
 											type="button"
 											onclick={() => (activeEntryId = splitRef(entityWithin(c) ?? '')?.id ?? null)}
-											use:tooltip={'Go to the container'}
-											aria-label="Go to the container">{@html gotoSvg}</button
+											use:tooltip={goToWithinLabel(entityWithin(c))}
+											aria-label={goToWithinLabel(entityWithin(c))}>{@html gotoSvg}</button
 										>
 									{/if}
 								</div>
@@ -1517,8 +1534,8 @@
 											class="cm-within-jump"
 											type="button"
 											onclick={() => (activeEntryId = splitRef(entityWithin(n) ?? '')?.id ?? null)}
-											use:tooltip={'Go to the container'}
-											aria-label="Go to the container">{@html gotoSvg}</button
+											use:tooltip={goToWithinLabel(entityWithin(n))}
+											aria-label={goToWithinLabel(entityWithin(n))}>{@html gotoSvg}</button
 										>
 									{/if}
 								</div>
@@ -1978,6 +1995,30 @@
 		border-color: var(--text-accent);
 		color: var(--text-accent);
 	}
+	/* "Contains" chips are tinted with their kind colour (settlement / landmark),
+	   matching the kind icon shown inside them. */
+	.cm-mapref-chip--entity {
+		border-color: color-mix(in srgb, var(--chip-color) 55%, var(--border-mid));
+		color: var(--chip-color);
+	}
+	.cm-mapref-chip--entity:hover {
+		background: color-mix(in srgb, var(--chip-color) 12%, transparent);
+		border-color: var(--chip-color);
+		color: var(--chip-color);
+	}
+	.cm-mapref-glyph {
+		flex-shrink: 0;
+		display: inline-flex;
+		width: 12px;
+		height: 12px;
+		color: var(--chip-color);
+	}
+	.cm-mapref-glyph :global(svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+		display: block;
+	}
 	.cm-mapref-name {
 		font-weight: 600;
 		overflow: hidden;
@@ -2260,7 +2301,8 @@
 	   globally. Base look from `.bui-select-trigger`; override just
 	   makes the trigger flex-fill inside `.cm-field-row` like the
 	   sibling `<input class="cm-input">` fields. */
-	:global(.cm-select) {
+	:global(.cm-select),
+	:global(.cm-within-select) {
 		flex: 1;
 		font-size: 0.78rem;
 		padding: 3px 8px;

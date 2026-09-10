@@ -18,6 +18,12 @@
 		value: T;
 		label: string;
 		disabled?: boolean;
+		/** Optional inline SVG glyph (raw markup) shown before the label, in the
+		 *  trigger and the item — e.g. a kind icon to distinguish options in a
+		 *  long list. */
+		icon?: string;
+		/** Optional accent colour for the glyph (fill: currentColor on the svg). */
+		color?: string;
 	}
 
 	let {
@@ -54,12 +60,20 @@
 		onchange?.(v as T);
 	}
 
-	const selectedLabel = $derived(options.find((o) => o.value === value)?.label ?? '');
+	const selected = $derived(options.find((o) => o.value === value));
+	const selectedLabel = $derived(selected?.label ?? '');
 	const isPlaceholder = $derived(selectedLabel === '');
 </script>
 
 <BitsSelect.Root type="single" {value} onValueChange={handleValueChange} {disabled} {required}>
 	<BitsSelect.Trigger {id} class={`bui-select-trigger ${cls}`.trim()} aria-label={ariaLabel}>
+		{#if selected?.icon}
+			<span
+				class="bui-select-optglyph"
+				style:--opt-color={selected.color ?? 'currentColor'}
+				aria-hidden="true">{@html selected.icon}</span
+			>
+		{/if}
 		<span class="bui-select-value" class:bui-select-value--placeholder={isPlaceholder}>
 			{isPlaceholder ? placeholder : selectedLabel}
 		</span>
@@ -74,6 +88,13 @@
 					disabled={opt.disabled}
 					class="bui-select-item"
 				>
+					{#if opt.icon}
+						<span
+							class="bui-select-optglyph"
+							style:--opt-color={opt.color ?? 'currentColor'}
+							aria-hidden="true">{@html opt.icon}</span
+						>
+					{/if}
 					{opt.label}
 				</BitsSelect.Item>
 			{/each}
@@ -123,6 +144,21 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+	/* Optional per-option glyph (icon) — tinted via --opt-color. Shown in the
+	   trigger's selected value and in each dropdown item. */
+	:global(.bui-select-optglyph) {
+		flex-shrink: 0;
+		display: inline-flex;
+		width: 14px;
+		height: 14px;
+		color: var(--opt-color, currentColor);
+	}
+	:global(.bui-select-optglyph svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+		display: block;
 	}
 	:global(.bui-select-value--placeholder) {
 		color: var(--text-dimmer);
