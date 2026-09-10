@@ -1126,7 +1126,10 @@
 										{/if}
 									{/each}
 								{/if}
-								{#if activeEntry.kind === 'place' || !lodestarOn || c.location}
+								<!-- Lodestar supersedes a settlement's Location + Descriptor with its
+								     own suite, so hide both under Lodestar even if legacy data still
+								     carries a value. Places (Landmarks) always show them. -->
+								{#if activeEntry.kind === 'place' || !lodestarOn}
 									<div class="cm-field-row">
 										<label class="cm-field-label" for="cm-location-{c.id}"
 											>{activeEntry.kind === 'place' ? 'Landmark' : 'Location'}</label
@@ -1142,7 +1145,7 @@
 										/>
 									</div>
 								{/if}
-								{#if activeEntry.kind === 'place' || !lodestarOn || c.locationDescription}
+								{#if activeEntry.kind === 'place' || !lodestarOn}
 									<div class="cm-field-row">
 										<label class="cm-field-label" for="cm-locdesc-{c.id}">Descriptor</label>
 										<input
