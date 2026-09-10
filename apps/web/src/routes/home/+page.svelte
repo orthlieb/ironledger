@@ -116,6 +116,12 @@
 	import foesIconSvg from '$icons/Foes.svg?raw';
 	import expeditionsIconSvg from '$icons/Expeditions.svg?raw';
 	import villageIconSvg from '$icons/village.svg?raw';
+	import {
+		buildGraph,
+		effectiveRegion,
+		breadcrumbRefs,
+		type ContainmentNode,
+	} from '$lib/entityContainment.js';
 
 	// Log divider width is persisted PER desktop view mode — grid and log keep
 	// independent positions (a dominant log in "log" view must not carry over
@@ -208,6 +214,54 @@
 	const communities = $derived(getCommunities());
 	const npcs = $derived(getNpcs());
 	const places = $derived(getPlaces());
+
+	// --- Containment graph, for export/MD region + breadcrumb walking ----------
+	const refOf = (kind: 'community' | 'place' | 'npc', id: string) => `${kind}:${id}`;
+	function entityWithin(e: { within?: string; withinSettlementId?: string }): string | undefined {
+		return (
+			e.within ?? (e.withinSettlementId ? refOf('community', e.withinSettlementId) : undefined)
+		);
+	}
+	function splitRef(ref: string): { kind: 'community' | 'place' | 'npc'; id: string } | null {
+		const i = ref.indexOf(':');
+		return i > 0
+			? { kind: ref.slice(0, i) as 'community' | 'place' | 'npc', id: ref.slice(i + 1) }
+			: null;
+	}
+	/** Name of a "kind:id" ref against the live stores, '' if gone. */
+	function refName(ref: string): string {
+		const p = splitRef(ref);
+		if (!p) return '';
+		const list = p.kind === 'community' ? communities : p.kind === 'place' ? places : npcs;
+		return list.find((e) => e.id === p.id)?.name ?? '';
+	}
+	const containmentGraph = $derived(
+		buildGraph([
+			...communities.map(
+				(c): ContainmentNode => ({
+					ref: refOf('community', c.id),
+					within: entityWithin(c),
+					region: c.region,
+				}),
+			),
+			...places.map(
+				(p): ContainmentNode => ({
+					ref: refOf('place', p.id),
+					within: entityWithin(p),
+					region: p.region,
+				}),
+			),
+			...npcs.map((n): ContainmentNode => ({ ref: refOf('npc', n.id), within: entityWithin(n) })),
+		]),
+	);
+	/** MD breadcrumb of the container chain as wikilinks — "[[Nysis]] /
+	 *  [[Collima]]" (root → parent), or '' when top-level. */
+	function mdWithin(ref: string): string {
+		const chain = breadcrumbRefs(ref, containmentGraph)
+			.map((r) => refName(r))
+			.filter(Boolean);
+		return chain.length ? `**Within:** ${chain.map((n) => `[[${n}]]`).join(' / ')}` : '';
+	}
 	const activeCharId = $derived(activeDiceCtx?.charId ?? '');
 	const activeFoeId = $derived(getActiveFoeId());
 	const activeExpeditionId = $derived(getActiveExpeditionId());
@@ -983,21 +1037,54 @@
 				else if (inline && row.portraitEtag) await update(row); // replace: persist etag
 			}
 
-			/** Re-link imported Places to their parent settlement BY NAME. Exports
-			 *  carry `withinSettlementName` (not a raw id — ids are minted per-user);
-			 *  resolve it against the just-imported communities. Call AFTER communities
-			 *  land so the live store holds their new ids. Unresolved / standalone →
-			 *  link cleared. Rows with no name field (legacy raw-id exports) untouched. */
-			function relinkPlaces(rows: Place[]): void {
-				const idByName = new Map(getCommunities().map((c) => [normaliseName(c.name), c.id]));
-				for (const pl of rows) {
-					const rec = pl as unknown as Record<string, unknown>;
-					const name = rec.withinSettlementName;
-					if (typeof name !== 'string') continue; // legacy raw id — leave as-is
-					delete rec.withinSettlementName;
-					const id = name ? idByName.get(normaliseName(name)) : undefined;
-					if (id) rec.withinSettlementId = id;
-					else delete rec.withinSettlementId;
+			/** Re-link every imported connection to its container BY NAME + KIND.
+			 *  Exports carry a portable `withinRef` {kind, name} (ids are minted
+			 *  per-user, so a raw id never re-links on another ledger); the legacy
+			 *  place-only `withinSettlementName` is still honoured. Runs as a POST
+			 *  pass — AFTER communities, places AND npcs land — so container ids of
+			 *  every kind exist (a landmark can sit within another landmark).
+			 *  Resolves to the live `within` ref and clears the transport fields;
+			 *  a row with neither transport field (legacy raw id) is left untouched. */
+			async function relinkContainment(): Promise<void> {
+				const nm = (s: string) => normaliseName(s);
+				const commByName = new Map(getCommunities().map((c) => [nm(c.name), c.id]));
+				const placeByName = new Map(getPlaces().map((p) => [nm(p.name), p.id]));
+				const resolveWithin = (rec: Record<string, unknown>): string | null | undefined => {
+					// undefined = nothing to relink; null = clear; string = new within ref.
+					const wr = rec.withinRef as { kind?: string; name?: string } | undefined;
+					if (
+						wr &&
+						(wr.kind === 'community' || wr.kind === 'place') &&
+						typeof wr.name === 'string'
+					) {
+						const id = (wr.kind === 'community' ? commByName : placeByName).get(nm(wr.name));
+						return id ? `${wr.kind}:${id}` : null;
+					}
+					if (typeof rec.withinSettlementName === 'string') {
+						const id = commByName.get(nm(rec.withinSettlementName));
+						return id ? `community:${id}` : null;
+					}
+					return undefined;
+				};
+				const passes = [
+					[getCommunities(), updateCommunity],
+					[getPlaces(), updatePlace],
+					[getNpcs(), updateNpc],
+				] as const;
+				for (const [list, update] of passes) {
+					for (const e of list) {
+						const rec = e as unknown as Record<string, unknown>;
+						if (!('withinRef' in rec) && !('withinSettlementName' in rec)) continue;
+						const within = resolveWithin(rec);
+						if (within === undefined) continue;
+						const patch = { ...(e as object) } as Record<string, unknown>;
+						if (within) patch.within = within;
+						else delete patch.within;
+						delete patch.withinRef;
+						delete patch.withinSettlementName;
+						delete patch.withinSettlementId;
+						await update(patch as never);
+					}
 				}
 			}
 
@@ -1050,11 +1137,12 @@
 						await step(`NPC “${n.name}”`, () =>
 							importEntityRow(n, 'npcs', existingNpcByName, addNpc, updateNpc),
 						);
-					relinkPlaces(incomingPlaces);
 					for (const pl of incomingPlaces)
 						await step(`Place “${pl.name}”`, () =>
 							importEntityRow(pl, 'places', existingPlaceByName, addPlace, updatePlace),
 						);
+					// All connection kinds are in — now resolve the portable within refs.
+					await relinkContainment();
 				} else if (m.type === 'expeditions') {
 					for (const exp of incomingExpeditions) {
 						const byName =
@@ -1087,11 +1175,12 @@
 						await step(`NPC “${n.name}”`, () =>
 							importEntityRow(n, 'npcs', existingNpcByName, addNpc, updateNpc),
 						);
-					relinkPlaces(incomingPlaces);
 					for (const pl of incomingPlaces)
 						await step(`Place “${pl.name}”`, () =>
 							importEntityRow(pl, 'places', existingPlaceByName, addPlace, updatePlace),
 						);
+					// All connection kinds are in — now resolve the portable within refs.
+					await relinkContainment();
 					for (const exp of incomingExpeditions) {
 						const byName =
 							exp.type === 'site'
@@ -1364,6 +1453,7 @@
 		const charPortraits = new Map<string, string>();
 		const commPortraits = new Map<string, string>();
 		const npcPortraits = new Map<string, string>();
+		const placePortraits = new Map<string, string>();
 		const expPortraits = new Map<string, string>();
 		async function prefetch<T extends { id: string }>(
 			items: T[],
@@ -1406,6 +1496,15 @@
 						: '',
 				(n) => n.imageUrl ?? '',
 				npcPortraits,
+			),
+			prefetch(
+				places,
+				(p) =>
+					p.portraitEtag
+						? `/api/session/places/${p.id}/portrait?v=${encodeURIComponent(p.portraitEtag)}`
+						: '',
+				(p) => p.imageUrl ?? '',
+				placePortraits,
 			),
 			prefetch(
 				expeditions,
@@ -1525,7 +1624,7 @@
 		}
 
 		// ── Connections & NPCs ───────────────────────────────────────────
-		if (communities.length || npcs.length) {
+		if (communities.length || places.length || npcs.length) {
 			const lines: string[] = ['# Connections & NPCs', ''];
 			for (const c of communities) {
 				lines.push(`## ${c.name} _(Settlement)_`);
@@ -1534,11 +1633,32 @@
 					const src = addImage(commDu, 'community', c.name);
 					lines.push(`![Portrait](${src})`);
 				}
-				if (c.region) lines.push(`**Region:** ${c.region}`);
+				const cRef = refOf('community', c.id);
+				const cWithin = mdWithin(cRef);
+				if (cWithin) lines.push(cWithin);
+				const cRegion = effectiveRegion(cRef, containmentGraph);
+				if (cRegion) lines.push(`**Region:** ${cRegion}`);
 				if (c.location) lines.push(`**Location:** ${c.location}`);
 				if (c.locationDescription) lines.push(`**Description:** ${c.locationDescription}`);
 				if (c.trouble) lines.push(`**Trouble:** ${c.trouble}`);
 				if (c.notes?.trim()) lines.push(``, `**Notes:**`, c.notes.trim());
+				lines.push('');
+			}
+			for (const p of places) {
+				lines.push(`## ${p.name} _(Landmark)_`);
+				const plDu = placePortraits.get(p.id);
+				if (plDu) {
+					const src = addImage(plDu, 'place', p.name);
+					lines.push(`![Portrait](${src})`);
+				}
+				const pRef = refOf('place', p.id);
+				const pWithin = mdWithin(pRef);
+				if (pWithin) lines.push(pWithin);
+				const pRegion = effectiveRegion(pRef, containmentGraph);
+				if (pRegion) lines.push(`**Region:** ${pRegion}`);
+				if (p.location) lines.push(`**Landmark:** ${p.location}`);
+				if (p.locationDescription) lines.push(`**Description:** ${p.locationDescription}`);
+				if (p.notes?.trim()) lines.push(``, `**Notes:**`, p.notes.trim());
 				lines.push('');
 			}
 			for (const n of npcs) {
@@ -1548,6 +1668,8 @@
 					const src = addImage(npcDu, 'npc', n.name);
 					lines.push(`![Portrait](${src})`);
 				}
+				const nWithin = mdWithin(refOf('npc', n.id));
+				if (nWithin) lines.push(nWithin);
 				if (n.role) lines.push(`**Role:** ${n.role}`);
 				if (n.goal) lines.push(`**Goal:** ${n.goal}`);
 				if (n.descriptor) lines.push(`**Descriptor:** ${n.descriptor}`);
@@ -1730,16 +1852,25 @@
 			if (du) out.imageUrl = du;
 		}
 		delete out.portraitEtag;
-		// A Place's parent settlement is exported BY NAME (ids are minted
-		// per-user, so a raw id never re-links on another ledger). Drop the id
-		// and record the current settlement's name; import resolves it back.
-		if (seg === 'places') {
-			const p = out as unknown as Place;
-			const parentName = p.withinSettlementId
-				? communities.find((c) => c.id === p.withinSettlementId)?.name
-				: undefined;
-			if (parentName) p.withinSettlementName = parentName;
-			delete p.withinSettlementId;
+		// The containment parent is exported BY NAME + KIND (ids are minted
+		// per-user, so a raw id never re-links on another ledger). Resolve the
+		// within ref — or a Place's legacy withinSettlementId — to a portable
+		// {kind, name}; import re-links it to a fresh `within` id. A nested
+		// settlement/landmark's region is flattened to the tree ROOT's region so
+		// the export reads correctly (a nested node's own region is ignored at
+		// runtime), matching the in-app inheritance.
+		const rec = out as unknown as Record<string, unknown>;
+		const withinStr = entityWithin(rec as { within?: string; withinSettlementId?: string });
+		const parsed = withinStr ? splitRef(withinStr) : null;
+		const parentName = withinStr ? refName(withinStr) : '';
+		if (parsed && parentName) rec.withinRef = { kind: parsed.kind, name: parentName };
+		delete rec.within;
+		delete rec.withinSettlementId;
+		delete rec.withinSettlementName;
+		if (seg === 'communities' || seg === 'places') {
+			const kind = seg === 'communities' ? 'community' : 'place';
+			const er = effectiveRegion(refOf(kind, out.id), containmentGraph);
+			if (er !== undefined) (rec as { region?: string }).region = er;
 		}
 		return out;
 	}
