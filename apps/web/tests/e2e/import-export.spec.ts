@@ -1307,6 +1307,35 @@ test.describe('Import / Export — Markdown structure', () => {
 				base('md-riverton', 'Riverton', { within: `place:${GV}`, portraitEtag: etag }),
 			),
 		});
+		// A map with a background + a marker linking to Riverton — exercises the
+		// per-map markdown file (image + marker→entity link).
+		const mapRes = await fetch(`${V1}/session/maps`, {
+			method: 'POST',
+			headers: h,
+			body: JSON.stringify({ name: 'Test Map' }),
+		});
+		const mapId = ((await mapRes.json()) as { id: string }).id;
+		await fetch(`${V1}/session/maps/${mapId}/background`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({ dataUrl: `data:image/png;base64,${TINY_PNG}` }),
+		});
+		await fetch(`${V1}/session/maps/${mapId}/markers`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({
+				markers: [
+					{
+						id: 'mk1',
+						x: 5,
+						y: 5,
+						label: 'Riverton Pin',
+						icon: 'settlement',
+						entityId: 'community:md-riverton',
+					},
+				],
+			}),
+		});
 	});
 
 	async function exportMarkdown(page: import('@playwright/test').Page) {
@@ -1362,6 +1391,26 @@ test.describe('Import / Export — Markdown structure', () => {
 		expect(names).toContain('connections/riverton.md');
 		expect(names).not.toContain('connections/lakeside.md');
 		expect(names).not.toContain('connections/green-vale.md');
+	});
+
+	test('writes one markdown file per map — background image + marker→entity links', async ({
+		page,
+	}) => {
+		await gotoHome(page);
+		const entries = await exportMarkdown(page);
+		const names = Object.keys(entries);
+		const mapFile = names.find((n) => n.startsWith('maps/') && n.endsWith('.md'));
+		expect(mapFile, 'a per-map markdown file exists').toBeTruthy();
+		const md = strFromU8(entries[mapFile as string]);
+		expect(md).toContain('# Test Map');
+		// The background is written as an image and referenced from the map file.
+		expect(names.some((n) => n.startsWith('images/map-'))).toBe(true);
+		expect(md).toContain('![Test Map](../images/map-');
+		// Each marker links to its settlement/landmark connection file.
+		expect(md).toContain('[Riverton Pin](../connections/riverton.md)');
+		// The old single-file / json data dump is gone.
+		expect(names).not.toContain('maps.md');
+		expect(names.some((n) => n.endsWith('/map.json'))).toBe(false);
 	});
 });
 

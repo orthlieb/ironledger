@@ -1880,25 +1880,37 @@
 			index.push('## Foes', '', '- [Bestiary](foes.md)', '');
 		}
 
-		// ── Campaign Maps ────────────────────────────────────────────────
-		// Each map contributes a `maps/<mapId>/` folder with the same
-		// per-map zip contents `exportMapZip()` produces (manifest.json
-		// + map.json + optional background.jpg). A tiny top-level
-		// `maps.md` lists them with relative links so a human can
-		// navigate the bundle without unzipping into an editor first.
+		// ── Campaign Maps — one file per map under maps/ ──────────────────
+		// Each map file shows its background as an image and a linked list of its
+		// markers → the settlement / landmark / expedition each one pins.
+		// Best-effort: a failed maps fetch just omits maps from the bundle.
 		try {
 			const mapListRes = await fetch('/api/session/maps');
 			if (mapListRes.ok) {
 				const listBody = (await mapListRes.json()) as {
-					maps?: Array<{ id: string; name: string; updatedAt: string }>;
+					maps?: Array<{ id: string; name: string }>;
 				};
 				const maps = (Array.isArray(listBody.maps) ? listBody.maps : []).filter((m) =>
 					mapSet.has(m.id),
 				);
-				const mapsMdLines: string[] = [];
-				if (maps.length) {
-					mapsMdLines.push('# Campaign Maps', '');
-				}
+				if (maps.length) index.push('## Maps', '');
+				const mapSlugs = slugMap(maps, 'map');
+				// A marker's linked entity → a relative link into the right folder
+				// (maps/ is one level deep, like connections/ and expeditions/); an
+				// unresolved link falls back to the label + any carried name.
+				const markerLine = (entityId: unknown, label: string, entityName: unknown): string => {
+					const ref = typeof entityId === 'string' ? entityId : '';
+					const i = ref.indexOf(':');
+					const kind = i > 0 ? ref.slice(0, i) : '';
+					const id = i > 0 ? ref.slice(i + 1) : '';
+					const text = label || (typeof entityName === 'string' ? entityName : 'Marker');
+					if ((kind === 'community' || kind === 'place') && connSlugs.has(id))
+						return `- [${text}](../connections/${connSlugs.get(id)}.md)`;
+					if ((kind === 'journey' || kind === 'site' || kind === 'scene') && expSlugs.has(id))
+						return `- [${text}](../expeditions/${expSlugs.get(id)}.md)`;
+					const suffix = typeof entityName === 'string' && entityName ? ` — ${entityName}` : '';
+					return `- ${text}${suffix}`;
+				};
 				for (const summary of maps) {
 					const detailRes = await fetch(`/api/session/maps/${summary.id}`);
 					if (!detailRes.ok) continue;
@@ -1907,44 +1919,32 @@
 						name: string;
 						markers: Array<Record<string, unknown>>;
 						backgroundHash: string | null;
-						settings: Record<string, unknown>;
 					};
-					const bgUrl = detail.backgroundHash
-						? `/api/session/maps/${detail.id}/background?v=${encodeURIComponent(
-								detail.backgroundHash,
-							)}`
-						: '';
-					const entries = await buildMapZipEntries({
-						name: detail.name,
-						// eslint-disable-next-line @typescript-eslint/no-explicit-any
-						markers: detail.markers as any,
-						// eslint-disable-next-line @typescript-eslint/no-explicit-any
-						settings: detail.settings as any,
-						backgroundUrl: bgUrl,
-					});
-					const dir = `maps/${detail.id}`;
-					for (const [path, bytes] of Object.entries(entries)) {
-						zipFiles[`${dir}/${path}`] = bytes;
+					const slug = mapSlugs.get(detail.id) ?? slugify(detail.name || 'map');
+					const lines: string[] = [`# ${detail.name || 'Untitled Map'}`, ''];
+					if (detail.backgroundHash) {
+						const du = await fetchPortraitDataUrl(
+							`/api/session/maps/${detail.id}/background?v=${encodeURIComponent(detail.backgroundHash)}`,
+						);
+						if (du)
+							lines.push(
+								`![${detail.name || 'Map'}](../${addImage(du, 'map', detail.name || 'map')})`,
+								'',
+							);
 					}
-					mapsMdLines.push(`## ${detail.name || 'Untitled Map'}`);
-					mapsMdLines.push(
-						`- Markers: ${Array.isArray(detail.markers) ? detail.markers.length : 0}`,
-					);
-					mapsMdLines.push(`- [Data](./${dir}/map.json)`);
-					if (entries['background.jpg']) {
-						mapsMdLines.push(`- ![Background](./${dir}/background.jpg)`);
+					const markers = Array.isArray(detail.markers) ? detail.markers : [];
+					if (markers.length) {
+						lines.push('## Markers', '');
+						for (const mk of markers)
+							lines.push(markerLine(mk.entityId, String(mk.label ?? ''), mk.entityName));
 					}
-					mapsMdLines.push('');
+					zipFiles[`maps/${slug}.md`] = strToU8(lines.join('\n').trimEnd() + '\n');
+					index.push(`- [${detail.name || 'Untitled Map'}](maps/${slug}.md)`);
 				}
-				if (mapsMdLines.length > 0) {
-					zipFiles['maps.md'] = strToU8(mapsMdLines.join('\n').trimEnd());
-					index.push('## Maps', '', '- [Maps](maps.md)', '');
-				}
+				if (maps.length) index.push('');
 			}
 		} catch {
-			// Best-effort — a failed maps fetch doesn't block the rest of
-			// the bundle. The user still gets characters / connections /
-			// expeditions / log; maps just missing from this snapshot.
+			// Best-effort — a failed maps fetch doesn't block the rest of the bundle.
 		}
 
 		// ── Session Log ──────────────────────────────────────────────────
