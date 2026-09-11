@@ -20,7 +20,7 @@
 	 *   │   log (scrollable)          │
 	 *   └─────────────────────────────┘
 	 */
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import type { CharacterFull } from '$lib/api.js';
 	import type { Community, Npc, Expedition, Place } from '$lib/types.js';
 	import {
@@ -62,6 +62,7 @@
 	import CommunitiesArea from '$lib/components/v2/CommunitiesArea.svelte';
 	import ImportCollisionDialog from '$lib/components/ImportCollisionDialog.svelte';
 	import ImportDialog from '$lib/components/ImportDialog.svelte';
+	import ExportProgressDialog from '$lib/components/ExportProgressDialog.svelte';
 	import MapOwnerConflictDialog from '$lib/components/MapOwnerConflictDialog.svelte';
 	import {
 		normaliseName,
@@ -289,6 +290,8 @@
 	/** Live import progress for the dialog's bar. `total` 0 = row count not
 	 *  known yet (still unpacking), which the dialog shows as a spinner. */
 	let importProgress = $state<{ done: number; total: number; label: string } | null>(null);
+	// Export busy overlay — non-null while an export is gathering/compressing.
+	let exportProgress = $state<{ done: number; total: number; label: string } | null>(null);
 	let importValidCount = $state(0);
 	/** Resolver for the `review` pause — settled by the dialog's decision. */
 	let reviewResolve: ((proceed: boolean) => void) | null = null;
@@ -2006,60 +2009,126 @@
 		const selPlaces = places.filter((p) => placeSet.has(p.id));
 		const wantConn = selComms.length > 0 || selNpcs.length > 0 || selPlaces.length > 0;
 
-		// ── Markdown ──────────────────────────────────────────────────────────
-		if (sel.format === 'md') {
-			const onlyLog =
-				selChars.length === 0 && selExps.length === 0 && !wantConn && mapSet.size === 0 && sel.log;
-			if (onlyLog) {
-				downloadFile(`session-log-${stamp}.md`, logToMarkdown(sessionLog.entries), 'text/markdown');
+		exportProgress = { done: 0, total: 0, label: 'Preparing export…' };
+		try {
+			// ── Markdown ──────────────────────────────────────────────────────────
+			if (sel.format === 'md') {
+				const onlyLog =
+					selChars.length === 0 &&
+					selExps.length === 0 &&
+					!wantConn &&
+					mapSet.size === 0 &&
+					sel.log;
+				if (onlyLog) {
+					downloadFile(
+						`session-log-${stamp}.md`,
+						logToMarkdown(sessionLog.entries),
+						'text/markdown',
+					);
+					return;
+				}
+				exportProgress = { done: 0, total: 0, label: 'Building Markdown…' };
+				await tick();
+				await exportMarkdownZip(stamp);
 				return;
 			}
-			await exportMarkdownZip(stamp);
-			return;
-		}
 
-		// ── Zip (re-importable; merges by whichever keys are present) ───────────
-		const payload: Record<string, unknown> = {};
-		let count = 0;
-		if (selChars.length) {
-			payload.characters = await Promise.all(selChars.map(embedCharForExport));
-			count += selChars.length;
-		}
-		if (selComms.length) {
-			payload.communities = await Promise.all(
-				selComms.map((c) => embedEntityForExport('communities', c)),
-			);
-			count += selComms.length;
-		}
-		if (selNpcs.length) {
-			payload.npcs = await Promise.all(selNpcs.map((n) => embedEntityForExport('npcs', n)));
-			count += selNpcs.length;
-		}
-		if (selPlaces.length) {
-			payload.places = await Promise.all(selPlaces.map((p) => embedEntityForExport('places', p)));
-			count += selPlaces.length;
-		}
-		if (selExps.length) {
-			payload.expeditions = await Promise.all(
-				selExps.map((e) => embedEntityForExport('expeditions', e)),
-			);
-			count += selExps.length;
-		}
-		if (sel.log) {
-			const entries = [...sessionLog.entries].reverse();
-			payload.log = entries;
-			count += entries.length;
-		}
-		payload.session = { activeCharId, activeFoeId, activeExpeditionId };
+			// ── Zip (re-importable; merges by whichever keys are present) ───────────
+			const payload: Record<string, unknown> = {};
+			let count = 0;
+			// One tick per embedded entity + one for the synchronous compress step.
+			const total =
+				selChars.length +
+				selComms.length +
+				selNpcs.length +
+				selPlaces.length +
+				selExps.length +
+				mapSet.size +
+				1;
+			let done = 0;
+			exportProgress = { done, total, label: 'Preparing export…' };
+			// Embed a group concurrently, advancing the bar as each portrait fetch
+			// resolves; `label` names the phase up front.
+			async function embedAll<T>(
+				items: T[],
+				fn: (it: T) => Promise<unknown>,
+				label: string,
+			): Promise<unknown[]> {
+				exportProgress = { done, total, label };
+				return Promise.all(
+					items.map(async (it) => {
+						const r = await fn(it);
+						done += 1;
+						exportProgress = { done, total, label };
+						return r;
+					}),
+				);
+			}
+			if (selChars.length) {
+				payload.characters = await embedAll(selChars, embedCharForExport, 'Embedding characters…');
+				count += selChars.length;
+			}
+			if (selComms.length) {
+				payload.communities = await embedAll(
+					selComms,
+					(c) => embedEntityForExport('communities', c),
+					'Embedding settlements…',
+				);
+				count += selComms.length;
+			}
+			if (selNpcs.length) {
+				payload.npcs = await embedAll(
+					selNpcs,
+					(n) => embedEntityForExport('npcs', n),
+					'Embedding NPCs…',
+				);
+				count += selNpcs.length;
+			}
+			if (selPlaces.length) {
+				payload.places = await embedAll(
+					selPlaces,
+					(p) => embedEntityForExport('places', p),
+					'Embedding landmarks…',
+				);
+				count += selPlaces.length;
+			}
+			if (selExps.length) {
+				payload.expeditions = await embedAll(
+					selExps,
+					(e) => embedEntityForExport('expeditions', e),
+					'Embedding expeditions…',
+				);
+				count += selExps.length;
+			}
+			if (sel.log) {
+				const entries = [...sessionLog.entries].reverse();
+				payload.log = entries;
+				count += entries.length;
+			}
+			payload.session = { activeCharId, activeFoeId, activeExpeditionId };
 
-		// Selected maps ride along as nested `maps/<id>/…` dirs (markers +
-		// background bytes). No id filter → every map; here we pass the picked set.
-		const { mapFiles } = mapSet.size
-			? await collectMapEntries(mapSet)
-			: { mapFiles: {} as Record<string, Uint8Array> };
-		count += mapSet.size;
+			// Selected maps ride along as nested `maps/<id>/…` dirs (markers +
+			// background bytes).
+			let mapFiles: Record<string, Uint8Array> = {};
+			if (mapSet.size) {
+				exportProgress = { done, total, label: 'Collecting maps…' };
+				await tick();
+				({ mapFiles } = await collectMapEntries(mapSet));
+				done += mapSet.size;
+				exportProgress = { done, total, label: 'Collecting maps…' };
+			}
+			count += mapSet.size;
 
-		await exportZip('everything', payload, count, `ironledger-export-${stamp}.zip`, mapFiles);
+			// zipSync is synchronous and briefly freezes the thread — paint
+			// "Compressing…" (via tick) before we block so the stall is explained.
+			exportProgress = { done, total, label: 'Compressing…' };
+			await tick();
+			await exportZip('everything', payload, count, `ironledger-export-${stamp}.zip`, mapFiles);
+			done = total;
+			exportProgress = { done, total, label: 'Compressing…' };
+		} finally {
+			exportProgress = null;
+		}
 	}
 </script>
 
@@ -2091,6 +2160,11 @@
 		importProgress = null;
 	}}
 />
+
+<!-- Export busy overlay — gathers portraits + compresses the zip. Shown while
+     handleExportSelection runs; closes when the download fires or an error is
+     caught (exportProgress → null in its finally). -->
+<ExportProgressDialog open={exportProgress !== null} progress={exportProgress} />
 
 <!-- ID-collision prompt — surfaces only when an import's NPC/community/expedition
      ids clash with the active session. onImportFile awaits its open() promise
