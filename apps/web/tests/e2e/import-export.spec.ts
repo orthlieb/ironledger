@@ -950,6 +950,67 @@ test.describe('Import — marker entity re-link', () => {
 		expect(keys).not.toContain('community:00000000-dead-4000-8000-000000000000');
 	});
 
+	test('a marker linked to a LANDMARK re-links by name too', async ({ page }) => {
+		// Same mechanism as settlements, but the marker points at a place — guards
+		// against the re-link only being wired for communities.
+		const tok = await getTestToken();
+		const placeId = crypto.randomUUID();
+		await fetch(`${V1}/session/places`, {
+			method: 'PATCH',
+			headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				places: [
+					{
+						id: placeId,
+						name: 'Relink Vale',
+						region: '',
+						location: '',
+						locationDescription: '',
+						trouble: '',
+						notes: '',
+						createdAt: Date.now(),
+					},
+				],
+			}),
+		});
+		await gotoHome(page);
+		const mapZip = zipSync({
+			'manifest.json': strToU8(
+				JSON.stringify({ app: 'Iron Ledger', version: '1.0.0', type: 'map', body: 'map.json' }),
+			),
+			'map.json': strToU8(
+				JSON.stringify({
+					name: 'Landmark Relink Map',
+					markers: [
+						{
+							id: 'mk-relink-place',
+							x: 4,
+							y: 4,
+							label: 'Vale pin',
+							icon: 'landmark',
+							entityId: 'place:00000000-dead-4000-8000-000000000001',
+							entityName: 'Relink Vale',
+						},
+					],
+					settings: {},
+				}),
+			),
+		});
+		await page.locator(ZIP_INPUT).setInputFiles({
+			name: 'relink-place.zip',
+			mimeType: 'application/zip',
+			buffer: Buffer.from(mapZip),
+		});
+		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 5_000 });
+		const index = await page.evaluate(async () => {
+			const res = await fetch('/api/session/maps/entity-markers', { credentials: 'include' });
+			return (await res.json()) as { index?: Record<string, unknown> };
+		});
+		const keys = Object.keys(index.index ?? {});
+		expect(keys).toContain(`place:${placeId}`);
+		expect(keys).not.toContain('place:00000000-dead-4000-8000-000000000001');
+	});
+
 	test('an unresolvable marker link is dropped (pin kept, no dead link)', async ({ page }) => {
 		await gotoHome(page); // no matching community seeded
 		const mapZip = zipSync({
@@ -1043,16 +1104,32 @@ async function worldSummary(page: import('@playwright/test').Page) {
 			...communities.map((c) => [`community:${c.id}`, c.name as string] as const),
 			...places.map((p) => [`place:${p.id}`, p.name as string] as const),
 		]);
-		const maps: Array<{ name: string; markers: number; linked: number }> = [];
+		const maps: Array<{
+			name: string;
+			markers: number;
+			linked: number;
+			linkedNames: string[];
+			linkedKinds: string[];
+		}> = [];
 		for (const m of mapList) {
 			const det = await (
 				await fetch(`/api/session/maps/${m.id}`, { credentials: 'include' })
 			).json();
 			const markers = (det.markers ?? []) as Array<{ entityId?: string }>;
+			const resolved = markers.filter((mk) => mk.entityId && idset.has(mk.entityId));
 			maps.push({
 				name: det.name,
 				markers: markers.length,
-				linked: markers.filter((mk) => mk.entityId && idset.has(mk.entityId)).length,
+				linked: resolved.length,
+				// The specific entities each marker resolves to, by NAME — so a
+				// round-trip must re-link every marker to the SAME settlement/
+				// landmark, not merely keep the count.
+				linkedNames: resolved.map((mk) => nameById.get(mk.entityId as string) as string).sort(),
+				// Which kinds are linked — lets a test assert both settlements and
+				// landmarks are exercised.
+				linkedKinds: [
+					...new Set(resolved.map((mk) => (mk.entityId as string).split(':')[0])),
+				].sort(),
 			});
 		}
 		const withinPairs = cp
@@ -1098,6 +1175,12 @@ test.describe('Import / Export — YRT starter rich round-trip', () => {
 		expect(imported.portraitNames.length, 'portraits imported').toBeGreaterThan(10);
 		expect(imported.maps.length, 'a map imported').toBeGreaterThan(0);
 		expect(imported.maps[0].linked, 'map markers link to entities').toBeGreaterThan(0);
+		// The regional map links markers to BOTH settlements and landmarks, so the
+		// round-trip equality below actually exercises both kinds.
+		expect(imported.maps[0].linkedKinds, 'markers link settlements AND landmarks').toEqual([
+			'community',
+			'place',
+		]);
 
 		// 2. Add one containment edge (settlement within a landmark) so the graph
 		//    is part of what round-trips. Reload so the export reads it.
