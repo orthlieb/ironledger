@@ -63,10 +63,9 @@
 	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
 	import { assetIcon } from '$lib/iconRegistry.js';
-	import { Dialog, Popover, Command, Tabs } from 'bits-ui';
+	import { Dialog, Tabs } from 'bits-ui';
+	import Combobox from '$lib/components/Combobox.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
 	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
 	import CharacterOptionsDialog from '$lib/components/CharacterOptionsDialog.svelte';
 	import VowCard from '$lib/components/VowCard.svelte';
@@ -227,6 +226,10 @@
 	/** Combobox open state — bound so item handlers can close the popover
 	 *  before dispatching (mirror of Foes area). */
 	let charPickerOpen = $state(false);
+	/** Switcher combobox action row. */
+	const charActions = [
+		{ label: '+ New character…', value: '+ New character', onselect: () => void addCharacter() },
+	];
 
 	// Hydrate the active character's data IN PLACE the first time it becomes
 	// active — patches missing keys onto the existing $state proxy so
@@ -999,68 +1002,21 @@
 			<!-- Character switcher (Popover + Command). Trigger reads live
 					 data.name (reactive) so renames in the stage below propagate
 					 here without extra plumbing. -->
-			<Popover.Root bind:open={charPickerOpen}>
-				<Popover.Trigger class="mp-combobox ca-hdr-combobox" aria-label="Switch or add character">
-					{#if activeChar}<span class="mp-combobox-value">{charDisplayName(activeChar)}</span
-						>{:else}<span class="mp-combobox-value mp-combobox-value--placeholder"
-							>— No characters yet —</span
-						>{/if}
-					<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
-				</Popover.Trigger>
-				<Popover.Portal>
-					<Popover.Content class="mp-cmd-popover" sideOffset={4} align="start" collisionPadding={8}>
-						<Command.Root class="mp-cmd">
-							<div class="mp-cmd-search-row">
-								<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-								<Command.Input class="mp-cmd-search" placeholder="Search characters…" autofocus />
-							</div>
-							<Command.List class="mp-cmd-list">
-								<Command.Empty class="mp-cmd-empty">No matching characters.</Command.Empty>
-								{#each sortedCharacters as ch (ch.id)}
-									{@const n = charDisplayName(ch)}
-									<Command.Item
-										class="mp-cmd-item"
-										value={n}
-										onSelect={() => {
-											selectChar(ch.id);
-											charPickerOpen = false;
-										}}
-									>
-										<span class="mp-cmd-check" aria-hidden="true">
-											{#if ch.id === activeCharId}
-												<svg
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2.5"
-													><polyline
-														points="4 11 8 15 16 6"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													></polyline></svg
-												>
-											{/if}
-										</span>
-										<span class="mp-cmd-item-name">{n}</span>
-									</Command.Item>
-								{/each}
-								<Command.Separator class="mp-cmd-sep" />
-								<Command.Item
-									class="mp-cmd-item mp-cmd-item--action"
-									value="+ New character"
-									onSelect={() => {
-										charPickerOpen = false;
-										void addCharacter();
-									}}
-								>
-									<span class="mp-cmd-check" aria-hidden="true"></span>
-									<span class="mp-cmd-item-name">+ New character…</span>
-								</Command.Item>
-							</Command.List>
-						</Command.Root>
-					</Popover.Content>
-				</Popover.Portal>
-			</Popover.Root>
+			<Combobox
+				bind:open={charPickerOpen}
+				items={sortedCharacters}
+				getKey={(ch) => ch.id}
+				getLabel={charDisplayName}
+				activeKey={activeCharId}
+				onselect={(ch) => selectChar(ch.id)}
+				triggerValue={activeChar ? charDisplayName(activeChar) : ''}
+				placeholder="— No characters yet —"
+				searchPlaceholder="Search characters…"
+				emptyText="No matching characters."
+				ariaLabel="Switch or add character"
+				class="ca-hdr-combobox"
+				actions={charActions}
+			/>
 
 			{#if activeChar && activeData}
 				<!-- Per-character add buttons — icon-only to save header width.

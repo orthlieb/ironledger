@@ -54,10 +54,9 @@
 	import iconZoomInSvg from '$icons/magnifying-glass-plus-solid.svg?raw';
 	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid.svg?raw';
 	import iconGearSvg from '$icons/gear-solid.svg?raw';
-	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
-	import { Dialog, Popover, Command } from 'bits-ui';
+	import { Dialog } from 'bits-ui';
+	import Combobox from '$lib/components/Combobox.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
 		DEFAULT_MAP_ASPECT,
@@ -120,6 +119,7 @@
 	// `Command.Root`); this state just lets the pick handlers below
 	// dismiss the popover after committing a choice.
 	let mapPickerOpen = $state(false);
+	const mapActions = [{ label: '+ New map…', value: '+ New map', onselect: pickNewMap }];
 	async function pickMap(id: string) {
 		mapPickerOpen = false;
 		if (id === mapState.activeId) return;
@@ -1056,68 +1056,20 @@
 			     the two chips on the dialog stay consistent. Sits alone on
 			     the first row so long map names never crowd out the zoom
 			     controls at phone widths. -->
-					<Popover.Root bind:open={mapPickerOpen}>
-						<Popover.Trigger
-							class="mp-combobox mp-picker-btn"
-							aria-label="Switch, create, or manage maps"
-						>
-							<span class="mp-combobox-value">{mapState.name || 'Map'}</span>
-							<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
-						</Popover.Trigger>
-						<Popover.Portal>
-							<Popover.Content
-								class="mp-cmd-popover"
-								sideOffset={4}
-								align="start"
-								collisionPadding={8}
-							>
-								<Command.Root class="mp-cmd">
-									<div class="mp-cmd-search-row">
-										<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-										<Command.Input class="mp-cmd-search" placeholder="Search maps…" autofocus />
-									</div>
-									<Command.List class="mp-cmd-list">
-										<Command.Empty class="mp-cmd-empty">No matching maps.</Command.Empty>
-										{#each mapListState.maps as m (m.id)}
-											<Command.Item
-												class="mp-cmd-item"
-												value={m.name}
-												onSelect={() => pickMap(m.id)}
-											>
-												<span class="mp-cmd-check" aria-hidden="true">
-													{#if m.id === mapState.activeId}
-														<svg
-															viewBox="0 0 20 20"
-															fill="none"
-															stroke="currentColor"
-															stroke-width="2.5"
-															><polyline
-																points="4 11 8 15 16 6"
-																stroke-linecap="round"
-																stroke-linejoin="round"
-															></polyline></svg
-														>
-													{/if}
-												</span>
-												<span class="mp-cmd-item-name">{m.name}</span>
-											</Command.Item>
-										{/each}
-										{#if mapListState.maps.length > 0}
-											<Command.Separator class="mp-cmd-sep" />
-										{/if}
-										<Command.Item
-											class="mp-cmd-item mp-cmd-item--action"
-											value="+ New map"
-											onSelect={pickNewMap}
-										>
-											<span class="mp-cmd-check" aria-hidden="true"></span>
-											<span class="mp-cmd-item-name">+ New map…</span>
-										</Command.Item>
-									</Command.List>
-								</Command.Root>
-							</Popover.Content>
-						</Popover.Portal>
-					</Popover.Root>
+					<Combobox
+						bind:open={mapPickerOpen}
+						items={mapListState.maps}
+						getKey={(m) => m.id}
+						getLabel={(m) => m.name}
+						activeKey={mapState.activeId}
+						onselect={(m) => pickMap(m.id)}
+						triggerValue={mapState.name || 'Map'}
+						searchPlaceholder="Search maps…"
+						emptyText="No matching maps."
+						ariaLabel="Switch, create, or manage maps"
+						class="mp-picker-btn"
+						actions={mapActions}
+					/>
 				</div>
 				<div class="mp-tools mp-tools-actions">
 					<button
@@ -1687,69 +1639,6 @@
 	/* Marker-properties footer OK/Cancel use the app-wide `.btn` +
 	   `.btn.btn-primary` (see app.css) so every dialog's affirmative
 	   button stays visually identical. No .mp-btn-primary variant. */
-	/* Combobox trigger shell — a text-field-shaped `<button>` (bits-ui
-	   Popover.Trigger) containing an optional prefix icon, a value/
-	   placeholder span, and a chevron. Shared by both comboboxes in
-	   this dialog (map switcher, marker link picker). Classes are
-	   passed through to bits-ui components, so Svelte's CSS pruning
-	   can't see them — scope with `:global()`. */
-	:global(.mp-combobox) {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 4px 6px 4px 10px;
-		background: var(--bg-inset);
-		color: var(--text);
-		border: 1px solid var(--border-mid);
-		border-radius: 4px;
-		font-family: var(--font-ui);
-		font-size: 0.82rem;
-		font-weight: 500;
-		letter-spacing: 0;
-		text-transform: none;
-		cursor: pointer;
-		min-height: 30px;
-		transition: border-color 0.12s;
-	}
-	:global(.mp-combobox:hover:not(:disabled)),
-	:global(.mp-combobox:focus-visible) {
-		border-color: var(--text-accent);
-		outline: none;
-	}
-	:global(.mp-combobox[data-state='open']) {
-		border-color: var(--text-accent);
-		box-shadow: inset 0 -2px 0 0 var(--text-accent);
-	}
-	:global(.mp-combobox-value) {
-		flex: 1 1 auto;
-		min-width: 0;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-		text-align: left;
-	}
-	:global(.mp-combobox-value--placeholder) {
-		color: var(--text-dimmer);
-		font-style: italic;
-	}
-	:global(.mp-combobox-caret) {
-		flex-shrink: 0;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 20px;
-		height: 20px;
-		color: var(--text-muted);
-	}
-	:global(.mp-combobox-caret svg) {
-		width: 12px;
-		height: 12px;
-		fill: currentColor;
-	}
-	:global(.mp-combobox-caret svg path) {
-		fill: currentColor;
-	}
-
 	:global(.mp-picker-btn) {
 		max-width: 240px;
 	}
@@ -1761,164 +1650,6 @@
 			max-width: none;
 			width: 100%;
 		}
-	}
-
-	/* Shadcn-style combobox popover (Popover.Content + Command inside).
-	   Two of these live in this dialog — the map switcher and the
-	   marker link picker — and share every `.mp-cmd-*` class so they
-	   read as one visual system. Bits-ui portals the Content into
-	   `dialogEl`, so scope with `:global()` (Svelte's class-pruning
-	   can't see through the portal). */
-	:global(.mp-cmd-popover) {
-		width: min(320px, calc(100vw - 2rem));
-		background: var(--bg-card);
-		color: var(--text);
-		border: 1px solid var(--border-mid);
-		border-radius: 8px;
-		box-shadow: 0 16px 48px #00000070;
-		/* 90 — same rule as `.bui-select-content` (see z-index budget
-		   in docs/ui-components.md): popovers must beat bits-ui modal
-		   content (81) so they still show if opened from inside a
-		   ConfirmDialog / AlertDialog. */
-		z-index: 90;
-		outline: none;
-		overflow: hidden;
-	}
-	:global(.mp-cmd) {
-		display: flex;
-		flex-direction: column;
-		max-height: min(420px, 70vh);
-	}
-	/* Search row at the top: magnifying-glass prefix + Command.Input. */
-	:global(.mp-cmd-search-row) {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 8px 10px;
-		border-bottom: 1px solid var(--border);
-	}
-	:global(.mp-cmd-search-icon) {
-		display: inline-flex;
-		width: 12px;
-		height: 12px;
-		color: var(--text-dimmer);
-		flex-shrink: 0;
-	}
-	:global(.mp-cmd-search-icon svg) {
-		width: 100%;
-		height: 100%;
-		fill: currentColor;
-	}
-	:global(.mp-cmd-search-icon svg path) {
-		fill: currentColor;
-	}
-	/* Command.Input is a real `<input>` and inherits app.css's global
-	   input styling (border, padding, radius, focus box-shadow). Strip
-	   every bit of that so only the search-row divider frames it. */
-	:global(.mp-cmd-search) {
-		flex: 1 1 auto;
-		min-width: 0;
-		padding: 2px 0;
-		background: transparent;
-		border: none;
-		border-radius: 0;
-		outline: none;
-		box-shadow: none;
-		-webkit-appearance: none;
-		appearance: none;
-		color: var(--text);
-		font: inherit;
-		font-family: var(--font-ui);
-		font-size: 0.82rem;
-	}
-	:global(.mp-cmd-search:focus) {
-		outline: none;
-		box-shadow: none;
-	}
-	:global(.mp-cmd-search::placeholder) {
-		color: var(--text-dimmer);
-	}
-	:global(.mp-cmd-list) {
-		flex: 1 1 auto;
-		min-height: 0;
-		overflow-y: auto;
-		overscroll-behavior: contain;
-		padding: 4px 0;
-	}
-	:global(.mp-cmd-empty) {
-		padding: 12px;
-		font-family: var(--font-ui);
-		font-size: 0.82rem;
-		color: var(--text-dimmer);
-		font-style: italic;
-		text-align: center;
-	}
-	:global(.mp-cmd-item) {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-		padding: 6px 12px;
-		font-family: var(--font-ui);
-		font-size: 0.85rem;
-		color: var(--text);
-		cursor: pointer;
-		user-select: none;
-	}
-	/* bits-ui Command sets `data-selected='true'` on the highlighted
-	   item (keyboard nav) — same visual shape as pointer hover. */
-	:global(.mp-cmd-item[data-selected='true']),
-	:global(.mp-cmd-item:hover) {
-		background: color-mix(in srgb, var(--text) 6%, transparent);
-	}
-	:global(.mp-cmd-item[aria-disabled='true']) {
-		opacity: 0.5;
-		cursor: default;
-	}
-	:global(.mp-cmd-item--action) {
-		color: var(--text-accent);
-	}
-	:global(.mp-cmd-check) {
-		flex-shrink: 0;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 14px;
-		height: 14px;
-		color: var(--text-accent);
-	}
-	:global(.mp-cmd-check svg) {
-		width: 100%;
-		height: 100%;
-	}
-	:global(.mp-cmd-item-icon) {
-		display: inline-flex;
-		width: 18px;
-		height: 18px;
-		flex-shrink: 0;
-		color: var(--kind-color, var(--text-accent));
-	}
-	:global(.mp-cmd-item-icon svg) {
-		width: 100%;
-		height: 100%;
-		fill: currentColor;
-	}
-	:global(.mp-cmd-item-icon svg path) {
-		fill: currentColor;
-	}
-	:global(.mp-cmd-item-name) {
-		flex: 1;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-	:global(.mp-cmd-item-name--muted) {
-		color: var(--text-dimmer);
-		font-style: italic;
-	}
-	:global(.mp-cmd-sep) {
-		height: 1px;
-		background: var(--border);
-		margin: 4px 0;
 	}
 
 	:global(.mp-btn-icon) {
@@ -2125,30 +1856,11 @@
 	:global(.mp-sel-entity-btn) {
 		/* Combobox trigger sits inside `.mp-props-field` (flex column):
 		   default `align-items: stretch` gives it full width and the
-		   min-height from `.mp-combobox` handles the vertical rhythm.
+		   min-height from `.cb-trigger` handles the vertical rhythm.
 		   Explicit width so the inline-flex Popover.Trigger fills the
 		   field on both mobile and desktop. */
 		width: 100%;
 	}
-	/* Kind icon for the currently-linked entity — same SVG the picker
-	   row uses. Coloured via `--kind-color` set inline from
-	   `ENTITY_KIND_META`. */
-	:global(.mp-sel-entity-icon) {
-		flex-shrink: 0;
-		display: inline-flex;
-		width: 16px;
-		height: 16px;
-		color: var(--kind-color, var(--text-accent));
-	}
-	:global(.mp-sel-entity-icon svg) {
-		width: 100%;
-		height: 100%;
-		fill: currentColor;
-	}
-	:global(.mp-sel-entity-icon svg path) {
-		fill: currentColor;
-	}
-
 	:global(.mp-error) {
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
