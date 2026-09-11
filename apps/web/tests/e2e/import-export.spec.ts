@@ -12,6 +12,8 @@
  * dialog are unchanged.
  */
 import { test, expect, type Download } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
 import { resetAll, getTestToken, seedCommunity } from './helpers/reset';
 import { settleHome } from './helpers/home';
@@ -1005,5 +1007,141 @@ test.describe('Import — marker entity re-link', () => {
 		expect(state.indexKeys).not.toContain('community:11111111-dead-4000-8000-000000000000');
 		expect(state.markerCount).toBe(1); // pin kept
 		expect(state.firstMarkerHasEntity).toBe(false); // link dropped
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Rich round-trip — the bundled YRT starter (static/about/yrt-starter.zip) is
+// the app's most content-dense archive: ~15 settlements + ~22 landmarks with
+// portraits, a regional map with entity-linked markers, characters, and
+// expeditions. Import it through the real dialog, add one containment edge to
+// exercise the "graph", then export → wipe → re-import and assert the whole
+// world came back byte-for-meaning: same names per kind, the SAME entities
+// still carry portraits, the map markers still resolve, and the within link
+// survives. This is the test that would have caught portraits silently not
+// round-tripping.
+// ---------------------------------------------------------------------------
+
+const STARTER_ZIP = fileURLToPath(new URL('../../static/about/yrt-starter.zip', import.meta.url));
+
+/** A structural snapshot of the whole world, keyed by NAME (ids are minted
+ *  per-import, so names are the stable identity across a round-trip). */
+async function worldSummary(page: import('@playwright/test').Page) {
+	return await page.evaluate(async () => {
+		const s = await (await fetch('/api/session', { credentials: 'include' })).json();
+		const chars = await (await fetch('/api/characters', { credentials: 'include' })).json();
+		const mapList = ((await (await fetch('/api/session/maps', { credentials: 'include' })).json())
+			.maps ?? []) as Array<{ id: string }>;
+		const communities = (s.communities ?? []) as Array<Record<string, unknown>>;
+		const places = (s.places ?? []) as Array<Record<string, unknown>>;
+		const cp = [...communities, ...places];
+		const idset = new Set([
+			...communities.map((c) => `community:${c.id}`),
+			...places.map((p) => `place:${p.id}`),
+		]);
+		const nameById = new Map<string, string>([
+			...communities.map((c) => [`community:${c.id}`, c.name as string] as const),
+			...places.map((p) => [`place:${p.id}`, p.name as string] as const),
+		]);
+		const maps: Array<{ name: string; markers: number; linked: number }> = [];
+		for (const m of mapList) {
+			const det = await (
+				await fetch(`/api/session/maps/${m.id}`, { credentials: 'include' })
+			).json();
+			const markers = (det.markers ?? []) as Array<{ entityId?: string }>;
+			maps.push({
+				name: det.name,
+				markers: markers.length,
+				linked: markers.filter((mk) => mk.entityId && idset.has(mk.entityId)).length,
+			});
+		}
+		const withinPairs = cp
+			.filter((e) => typeof e.within === 'string')
+			.map((e) => ({ child: e.name as string, parent: nameById.get(e.within as string) }))
+			.filter((x) => x.parent)
+			.sort((a, b) => a.child.localeCompare(b.child));
+		const sorted = (a: string[]) => a.slice().sort();
+		return {
+			communities: sorted(communities.map((c) => c.name as string)),
+			places: sorted(places.map((p) => p.name as string)),
+			npcCount: (s.npcs ?? []).length,
+			expeditions: sorted((s.expeditions ?? []).map((e: { name: string }) => e.name)),
+			characters: sorted((Array.isArray(chars) ? chars : []).map((c: { name: string }) => c.name)),
+			portraitNames: sorted(cp.filter((e) => e.portraitEtag).map((e) => e.name as string)),
+			maps: maps.sort((a, b) => a.name.localeCompare(b.name)),
+			withinPairs,
+		};
+	});
+}
+
+async function importZipBytes(page: import('@playwright/test').Page, bytes: Buffer, name: string) {
+	await page.locator(ZIP_INPUT).setInputFiles({ name, mimeType: 'application/zip', buffer: bytes });
+	await expectImportOk(page, 45_000);
+}
+
+test.describe('Import / Export — YRT starter rich round-trip', () => {
+	test.beforeAll(async () => {
+		await resetAll();
+	});
+
+	test('the bundled starter survives import → export → re-import with maps, portraits, and the within graph intact', async ({
+		page,
+	}) => {
+		test.setTimeout(120_000);
+		await gotoHome(page);
+
+		// 1. Import the real bundled starter and confirm it landed rich content.
+		await importZipBytes(page, readFileSync(STARTER_ZIP), 'yrt-starter.zip');
+		const imported = await worldSummary(page);
+		expect(imported.communities.length, 'settlements imported').toBeGreaterThan(10);
+		expect(imported.places.length, 'landmarks imported').toBeGreaterThan(10);
+		expect(imported.portraitNames.length, 'portraits imported').toBeGreaterThan(10);
+		expect(imported.maps.length, 'a map imported').toBeGreaterThan(0);
+		expect(imported.maps[0].linked, 'map markers link to entities').toBeGreaterThan(0);
+
+		// 2. Add one containment edge (settlement within a landmark) so the graph
+		//    is part of what round-trips. Reload so the export reads it.
+		await page.evaluate(async () => {
+			const s = await (await fetch('/api/session', { credentials: 'include' })).json();
+			const c = (s.communities ?? [])[0];
+			const p = (s.places ?? [])[0];
+			await fetch(`/api/session/communities/${c.id}`, {
+				method: 'PATCH',
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ ...c, within: `place:${p.id}` }),
+			});
+		});
+		await gotoHome(page);
+		const before = await worldSummary(page);
+		expect(before.withinPairs.length, 'within edge present before export').toBeGreaterThan(0);
+
+		// 3. Export everything.
+		await openExportDialog(page);
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.exd-dialog .btn-primary').click(),
+		]);
+		const exported = await downloadBuffer(download);
+		expect(exported.length).toBeGreaterThan(0);
+
+		// 4. Wipe and re-import the produced archive.
+		await resetAll();
+		await gotoHome(page);
+		await importZipBytes(page, exported, 'roundtrip.zip');
+		const after = await worldSummary(page);
+
+		// 5. Everything came back, keyed by name — including portraits, the map +
+		//    its resolved markers, and the containment edge.
+		expect(after.communities).toEqual(before.communities);
+		expect(after.places).toEqual(before.places);
+		expect(after.npcCount).toEqual(before.npcCount);
+		expect(after.expeditions).toEqual(before.expeditions);
+		expect(after.characters).toEqual(before.characters);
+		expect(after.portraitNames, 'the same entities still carry portraits').toEqual(
+			before.portraitNames,
+		);
+		expect(after.maps, 'map + resolved marker links round-trip').toEqual(before.maps);
+		expect(after.withinPairs, 'the within graph round-trips by name').toEqual(before.withinPairs);
 	});
 });
