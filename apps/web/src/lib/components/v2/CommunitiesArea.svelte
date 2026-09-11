@@ -43,6 +43,7 @@
 		isEligibleContainer,
 		reparentOnDelete,
 		effectiveRegion,
+		breadcrumbRefs,
 		isNested,
 		type ContainmentNode,
 	} from '$lib/entityContainment.js';
@@ -1150,15 +1151,21 @@
 								<div class="cm-field-row">
 									<label class="cm-field-label" for="cm-region-{c.id}">Region</label>
 									{#if nested}
-										<!-- Region is inherited from the parent chain (read-only) while
-										     this entry sits within another — see the Within field below. -->
+										{@const regionRoot = refName(
+											breadcrumbRefs(selfRef, containmentGraph)[0] ?? '',
+										)}
+										<!-- Region is inherited from the ROOT of the Within chain (the
+										     top-level entry), not the immediate parent — read-only here;
+										     edit it on that root entry. -->
 										<input
 											id="cm-region-{c.id}"
 											class="cm-input cm-input--readonly"
 											type="text"
 											disabled
 											value={effectiveRegion(selfRef, containmentGraph) ?? ''}
-											use:tooltip={'Inherited from the parent — set in the top-level entry'}
+											use:tooltip={regionRoot
+												? `Region comes from ${regionRoot}`
+												: 'Region comes from the top of this chain'}
 											placeholder="—"
 										/>
 									{:else}
@@ -2007,14 +2014,16 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 26px;
-		/* Match the Within combobox height — stretch to the field row's cross
-		   axis rather than a fixed 26px so the two line up exactly. */
-		align-self: stretch;
+		/* Match the d6 roll button (.dice-btn, app.css): 22×22, 3px radius,
+		   transparent, centred in the field row rather than stretched. */
+		box-sizing: border-box;
+		width: 22px;
+		height: 22px;
+		align-self: center;
 		border: 1px solid var(--border-mid);
-		border-radius: 6px;
-		background: var(--bg-control);
-		color: var(--text-dim);
+		border-radius: 3px;
+		background: transparent;
+		color: var(--text-muted);
 		line-height: 1;
 		cursor: pointer;
 	}
@@ -2270,17 +2279,29 @@
 	.cm-input:focus {
 		border-color: var(--text-accent);
 	}
+	/* A field showing an inherited (read-only) value — the Region of a nested
+	   entry. Grey the text so it reads as non-editable; `-webkit-text-fill-color`
+	   is required because WebKit ignores `color` on a disabled input. */
+	.cm-input--readonly,
+	.cm-input:disabled {
+		color: var(--text-dimmer);
+		-webkit-text-fill-color: var(--text-dimmer);
+		background: var(--bg-control);
+		cursor: default;
+	}
 	/* Threaded to bits-ui via `<Select class="cm-select">` (relationship
 	   field) and `<Combobox class="cm-within-select">` (the Within picker),
 	   so scope globally. Base look comes from the wrapper's own trigger
-	   (`.bui-select-trigger` / `.cb-trigger`); this override just makes the
-	   trigger flex-fill inside `.cm-field-row` like the sibling
-	   `<input class="cm-input">` fields. */
+	   (`.bui-select-trigger` / `.cb-trigger`); this override makes the trigger
+	   flex-fill inside `.cm-field-row` AND match the 23px height of the sibling
+	   `<input class="cm-input">` fields (the trigger's caret would otherwise
+	   push it taller). */
 	:global(.cm-select),
 	:global(.cm-within-select) {
 		flex: 1;
 		font-size: 0.78rem;
-		padding: 3px 8px;
+		height: 23px;
+		padding: 0 8px;
 		min-height: 0;
 	}
 
