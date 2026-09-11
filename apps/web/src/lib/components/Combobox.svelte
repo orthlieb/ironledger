@@ -94,8 +94,11 @@
 		ariaLabel?: string;
 		/** Extra class(es) on the trigger (per-site width tweaks). */
 		class?: string;
-		/** Filter pills; when set, a pill row + clear button render and the
-		 *  list is pre-filtered by filterOf ∈ activeFilters (empty = all). */
+		/** Filter pills; when set, a pill row + clear button render and the list
+		 *  is pre-filtered by filterOf ∈ activeFilters (empty = all). A pill whose
+		 *  class has no items currently in the list is hidden, and the whole row
+		 *  is hidden unless at least two classes are present (one class can't
+		 *  meaningfully be filtered). */
 		filters?: FilterPill[];
 		/** Bindable active-filter set (pair with filters + filterOf). */
 		activeFilters?: Set<string>;
@@ -114,10 +117,27 @@
 		trigger?: Snippet;
 	} = $props();
 
+	// Only pills whose class actually appears in the current items — a class
+	// with nothing to match is a dead pill (e.g. a settlement's Within picker
+	// offers no settlements, so its "Settlements" pill would filter to nothing).
+	const presentFilters = $derived(
+		filters && filterOf ? filters.filter((f) => items.some((it) => filterOf(it) === f.key)) : [],
+	);
+	// A single class (or none) can't meaningfully be filtered — hide the whole
+	// pill row + clear button in that case.
+	const showPills = $derived(presentFilters.length >= 2);
+	// Active filters narrowed to the classes still on offer. When a previously
+	// active class drops out (or the row is hidden), it stops filtering rather
+	// than leaving the list mysteriously empty with no pill left to clear it.
+	const effectiveFilters = $derived(
+		showPills && activeFilters
+			? new Set([...activeFilters].filter((k) => presentFilters.some((f) => f.key === k)))
+			: new Set<string>(),
+	);
+
 	const visibleItems = $derived.by(() => {
-		const set = activeFilters;
-		if (!filters || !filterOf || !set || set.size === 0) return items;
-		return items.filter((it) => set.has(filterOf(it)));
+		if (!filterOf || effectiveFilters.size === 0) return items;
+		return items.filter((it) => effectiveFilters.has(filterOf(it)));
 	});
 
 	const isPlaceholder = $derived(triggerValue === '');
@@ -174,9 +194,9 @@
 					<span class="cb-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
 					<Command.Input class="cb-search" placeholder={searchPlaceholder} autofocus />
 				</div>
-				{#if filters && filters.length}
+				{#if showPills}
 					<div class="cb-pills" role="group" aria-label={filterGroupLabel}>
-						{#each filters as pill (pill.key)}
+						{#each presentFilters as pill (pill.key)}
 							{@const active = !!activeFilters?.has(pill.key)}
 							<button
 								type="button"

@@ -98,8 +98,22 @@ function place(id: string, name: string, within?: string): Row {
 	} as Row;
 }
 
-/** Replace the communities + places collections in one shot (via the API). */
-async function seedForest(communities: Row[], places: Row[]) {
+function npc(id: string, name: string): Row {
+	return {
+		id,
+		name,
+		role: '',
+		goal: '',
+		descriptor: '',
+		relationship: 'neutral',
+		location: '',
+		notes: '',
+		createdAt: Date.now(),
+	} as Row;
+}
+
+/** Replace the communities + places + npcs collections in one shot (via the API). */
+async function seedForest(communities: Row[], places: Row[], npcs: Row[] = []) {
 	const tok = await getTestToken();
 	const headers = { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' };
 	await fetch(`${API}/session/communities`, {
@@ -112,6 +126,24 @@ async function seedForest(communities: Row[], places: Row[]) {
 		headers,
 		body: JSON.stringify({ places }),
 	});
+	await fetch(`${API}/session/npcs`, { method: 'PATCH', headers, body: JSON.stringify({ npcs }) });
+}
+
+/** Switch the active connection via the header switcher combobox. */
+async function switchTo(page: Page, name: string) {
+	await page.locator(CM_COMBOBOX).click();
+	await page.locator('.cb-popover .cb-item:not(.cb-item--action)', { hasText: name }).click();
+	await expect(page.locator('.cb-popover'))
+		.toBeHidden({ timeout: 3_000 })
+		.catch(() => {});
+}
+
+/** Open the active connection's Within picker and return its open popover. */
+async function openWithin(page: Page) {
+	await page.locator(`${CM_AREA} .cm-within-select`).click();
+	const popover = page.locator('.cb-popover').last();
+	await expect(popover).toBeVisible({ timeout: 3_000 });
+	return popover;
 }
 
 // ── Tests ──────────────────────────────────────────────────────────────────────
@@ -192,33 +224,50 @@ test.describe('Containment rules', () => {
 			.toEqual({ valeWithinAlpha: true, bravoDetached: true, transportStripped: true });
 	});
 
-	test('UI: the Within picker offers only settlement-free landmark chains', async ({ page }) => {
-		// Alpha(settlement) ← Low Vale(landmark).  Bravo(settlement) + Mesa Ridge
-		// (landmark) are roots. Opening Bravo's Within picker must offer only Mesa
-		// Ridge: Alpha is a settlement, and Low Vale already sits under a settlement.
+	// Fixture shared by the two UI tests:
+	//   Alpha(settlement) ← Low Vale(landmark)   Bravo(settlement)   Mesa Ridge(landmark)   Nomad(npc)
+	async function seedPickerFixture() {
 		await seedForest(
 			[community('c-alpha', 'Alpha Town'), community('c-bravo', 'Bravo Town')],
 			[place('p-low', 'Low Vale', 'community:c-alpha'), place('p-mesa', 'Mesa Ridge')],
+			[npc('n-nomad', 'Nomad')],
 		);
+	}
+
+	test("UI: a settlement's Within picker offers only settlement-free landmarks", async ({
+		page,
+	}) => {
+		await seedPickerFixture();
 		await gotoHome(page);
-
-		// Switch the active connection to Bravo.
-		await page.locator(CM_COMBOBOX).click();
-		await page
-			.locator('.cb-popover .cb-item:not(.cb-item--action)', { hasText: 'Bravo Town' })
-			.click();
-		await expect(page.locator('.cb-popover'))
-			.toBeHidden({ timeout: 3_000 })
-			.catch(() => {});
-
-		// Open Bravo's Within picker and read the offered option names.
-		await page.locator(`${CM_AREA} .cm-within-select`).click();
-		const popover = page.locator('.cb-popover').last();
-		await expect(popover).toBeVisible({ timeout: 3_000 });
+		await switchTo(page, 'Bravo Town');
+		const popover = await openWithin(page);
 		const names = await popover.locator('.cb-item-name').allInnerTexts();
 
 		expect(names).toContain('Mesa Ridge'); // settlement-free landmark → eligible
 		expect(names).not.toContain('Alpha Town'); // settlement → never a parent
 		expect(names).not.toContain('Low Vale'); // landmark under a settlement → chain full
+	});
+
+	test('UI: the filter row hides when a class is absent, shows when ≥2 are present', async ({
+		page,
+	}) => {
+		await seedPickerFixture();
+		await gotoHome(page);
+
+		// Bravo (settlement) can only nest under a landmark, so its picker lists
+		// landmarks only — one class — and the whole filter row is hidden.
+		await switchTo(page, 'Bravo Town');
+		let popover = await openWithin(page);
+		await expect(popover.locator('.cb-pills')).toHaveCount(0);
+		await expect(popover.locator('.cb-pill', { hasText: 'Settlements' })).toHaveCount(0);
+		await page.keyboard.press('Escape');
+
+		// Nomad (NPC, a leaf) can nest under settlements OR landmarks — both classes
+		// are present, so the pill row shows with both pills.
+		await switchTo(page, 'Nomad');
+		popover = await openWithin(page);
+		await expect(popover.locator('.cb-pills')).toHaveCount(1);
+		await expect(popover.locator('.cb-pill', { hasText: 'Settlements' })).toHaveCount(1);
+		await expect(popover.locator('.cb-pill', { hasText: 'Landmarks' })).toHaveCount(1);
 	});
 });
