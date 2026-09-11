@@ -1764,7 +1764,7 @@
 				for (const c of selComms) {
 					writeConn(c.id, c.name, 'Settlement', (lines) => {
 						const commDu = commPortraits.get(c.id);
-						if (commDu) lines.push(`![Portrait](../${addImage(commDu, 'community', c.name)})`);
+						if (commDu) lines.push(`![Portrait](../${addImage(commDu, 'settlement', c.name)})`);
 						const cRef = refOf('community', c.id);
 						const cWithin = withinLine(cRef);
 						if (cWithin) lines.push(cWithin);
@@ -1785,7 +1785,7 @@
 				for (const p of selPlaces) {
 					writeConn(p.id, p.name, 'Landmark', (lines) => {
 						const plDu = placePortraits.get(p.id);
-						if (plDu) lines.push(`![Portrait](../${addImage(plDu, 'place', p.name)})`);
+						if (plDu) lines.push(`![Portrait](../${addImage(plDu, 'landmark', p.name)})`);
 						const pRef = refOf('place', p.id);
 						const pWithin = withinLine(pRef);
 						if (pWithin) lines.push(pWithin);

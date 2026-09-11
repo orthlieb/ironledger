@@ -1340,7 +1340,10 @@ test.describe('Import / Export — Markdown structure', () => {
 		// Portrait bytes are written under images/ and referenced from the entity
 		// file one folder up (../images/…), not left as a dead/absolute link.
 		expect(entries.names.some((n) => n.startsWith('images/'))).toBe(true);
-		expect(entries.riverton).toContain('![Portrait](../images/');
+		// Image files use the user-facing kind name (settlement/landmark), not the
+		// internal community/place.
+		expect(entries.names.some((n) => n.startsWith('images/settlement-'))).toBe(true);
+		expect(entries.riverton).toContain('![Portrait](../images/settlement-');
 	});
 
 	test('obeys the selection — deselected entities get no file', async ({ page }) => {
