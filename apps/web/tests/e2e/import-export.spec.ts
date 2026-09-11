@@ -950,6 +950,67 @@ test.describe('Import — marker entity re-link', () => {
 		expect(keys).not.toContain('community:00000000-dead-4000-8000-000000000000');
 	});
 
+	test('a marker linked to a LANDMARK re-links by name too', async ({ page }) => {
+		// Same mechanism as settlements, but the marker points at a place — guards
+		// against the re-link only being wired for communities.
+		const tok = await getTestToken();
+		const placeId = crypto.randomUUID();
+		await fetch(`${V1}/session/places`, {
+			method: 'PATCH',
+			headers: { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				places: [
+					{
+						id: placeId,
+						name: 'Relink Vale',
+						region: '',
+						location: '',
+						locationDescription: '',
+						trouble: '',
+						notes: '',
+						createdAt: Date.now(),
+					},
+				],
+			}),
+		});
+		await gotoHome(page);
+		const mapZip = zipSync({
+			'manifest.json': strToU8(
+				JSON.stringify({ app: 'Iron Ledger', version: '1.0.0', type: 'map', body: 'map.json' }),
+			),
+			'map.json': strToU8(
+				JSON.stringify({
+					name: 'Landmark Relink Map',
+					markers: [
+						{
+							id: 'mk-relink-place',
+							x: 4,
+							y: 4,
+							label: 'Vale pin',
+							icon: 'landmark',
+							entityId: 'place:00000000-dead-4000-8000-000000000001',
+							entityName: 'Relink Vale',
+						},
+					],
+					settings: {},
+				}),
+			),
+		});
+		await page.locator(ZIP_INPUT).setInputFiles({
+			name: 'relink-place.zip',
+			mimeType: 'application/zip',
+			buffer: Buffer.from(mapZip),
+		});
+		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 5_000 });
+		const index = await page.evaluate(async () => {
+			const res = await fetch('/api/session/maps/entity-markers', { credentials: 'include' });
+			return (await res.json()) as { index?: Record<string, unknown> };
+		});
+		const keys = Object.keys(index.index ?? {});
+		expect(keys).toContain(`place:${placeId}`);
+		expect(keys).not.toContain('place:00000000-dead-4000-8000-000000000001');
+	});
+
 	test('an unresolvable marker link is dropped (pin kept, no dead link)', async ({ page }) => {
 		await gotoHome(page); // no matching community seeded
 		const mapZip = zipSync({
@@ -1043,16 +1104,32 @@ async function worldSummary(page: import('@playwright/test').Page) {
 			...communities.map((c) => [`community:${c.id}`, c.name as string] as const),
 			...places.map((p) => [`place:${p.id}`, p.name as string] as const),
 		]);
-		const maps: Array<{ name: string; markers: number; linked: number }> = [];
+		const maps: Array<{
+			name: string;
+			markers: number;
+			linked: number;
+			linkedNames: string[];
+			linkedKinds: string[];
+		}> = [];
 		for (const m of mapList) {
 			const det = await (
 				await fetch(`/api/session/maps/${m.id}`, { credentials: 'include' })
 			).json();
 			const markers = (det.markers ?? []) as Array<{ entityId?: string }>;
+			const resolved = markers.filter((mk) => mk.entityId && idset.has(mk.entityId));
 			maps.push({
 				name: det.name,
 				markers: markers.length,
-				linked: markers.filter((mk) => mk.entityId && idset.has(mk.entityId)).length,
+				linked: resolved.length,
+				// The specific entities each marker resolves to, by NAME — so a
+				// round-trip must re-link every marker to the SAME settlement/
+				// landmark, not merely keep the count.
+				linkedNames: resolved.map((mk) => nameById.get(mk.entityId as string) as string).sort(),
+				// Which kinds are linked — lets a test assert both settlements and
+				// landmarks are exercised.
+				linkedKinds: [
+					...new Set(resolved.map((mk) => (mk.entityId as string).split(':')[0])),
+				].sort(),
 			});
 		}
 		const withinPairs = cp
@@ -1098,6 +1175,12 @@ test.describe('Import / Export — YRT starter rich round-trip', () => {
 		expect(imported.portraitNames.length, 'portraits imported').toBeGreaterThan(10);
 		expect(imported.maps.length, 'a map imported').toBeGreaterThan(0);
 		expect(imported.maps[0].linked, 'map markers link to entities').toBeGreaterThan(0);
+		// The regional map links markers to BOTH settlements and landmarks, so the
+		// round-trip equality below actually exercises both kinds.
+		expect(imported.maps[0].linkedKinds, 'markers link settlements AND landmarks').toEqual([
+			'community',
+			'place',
+		]);
 
 		// 2. Add one containment edge (settlement within a landmark) so the graph
 		//    is part of what round-trips. Reload so the export reads it.
@@ -1143,5 +1226,146 @@ test.describe('Import / Export — YRT starter rich round-trip', () => {
 		);
 		expect(after.maps, 'map + resolved marker links round-trip').toEqual(before.maps);
 		expect(after.withinPairs, 'the within graph round-trips by name').toEqual(before.withinPairs);
+
+		// Portrait BYTES survived the round-trip, not just the etag flag: fetch a
+		// restored connection's portrait and confirm it comes back with content.
+		const portrait = await page.evaluate(async () => {
+			const s = await (await fetch('/api/session', { credentials: 'include' })).json();
+			const comm = (s.communities ?? []).find((c: { portraitEtag?: string }) => c.portraitEtag);
+			const place = (s.places ?? []).find((p: { portraitEtag?: string }) => p.portraitEtag);
+			const hit = comm
+				? { kind: 'communities', id: comm.id }
+				: place
+					? { kind: 'places', id: place.id }
+					: null;
+			if (!hit) return { checked: false, status: 0, bytes: 0 };
+			const res = await fetch(`/api/session/${hit.kind}/${hit.id}/portrait`, {
+				credentials: 'include',
+			});
+			const bytes = res.ok ? (await res.arrayBuffer()).byteLength : 0;
+			return { checked: true, status: res.status, bytes };
+		});
+		expect(portrait.checked, 'a restored connection has a portrait to check').toBe(true);
+		expect(portrait.status).toBe(200);
+		expect(portrait.bytes).toBeGreaterThan(0);
 	});
 });
+
+// ---------------------------------------------------------------------------
+// Markdown export — folder-per-kind, one file per entity, with working
+// relative links (Obsidian/GitHub both resolve them), honouring the dialog
+// selection. Regression guard for: MD ignoring the checklist, one big
+// connections.md, and dead [[wikilinks]].
+// ---------------------------------------------------------------------------
+
+test.describe('Import / Export — Markdown structure', () => {
+	const GV = 'md-green-vale';
+	test.beforeAll(async () => {
+		await resetAll();
+		const tok = await getTestToken();
+		const h = { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' };
+		const base = (id: string, name: string, extra: Record<string, unknown> = {}) => ({
+			id,
+			name,
+			region: '',
+			location: '',
+			locationDescription: '',
+			trouble: '',
+			notes: '',
+			createdAt: Date.now(),
+			...extra,
+		});
+		await fetch(`${V1}/session/places`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify({ places: [base(GV, 'Green Vale')] }),
+		});
+		await fetch(`${V1}/session/communities`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify({
+				communities: [
+					base('md-riverton', 'Riverton', { within: `place:${GV}` }),
+					base('md-lakeside', 'Lakeside'),
+				],
+			}),
+		});
+		// Give Riverton a portrait so the MD export's image handling is exercised
+		// (bytes → images/ file, referenced from the entity file with ../images/).
+		const TINY_PNG =
+			'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI6QAAAABJRU5ErkJggg==';
+		const put = await fetch(`${V1}/session/communities/md-riverton/portrait`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({ dataUrl: `data:image/png;base64,${TINY_PNG}` }),
+		});
+		const { etag } = (await put.json()) as { etag: string };
+		await fetch(`${V1}/session/communities/md-riverton`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify(
+				base('md-riverton', 'Riverton', { within: `place:${GV}`, portraitEtag: etag }),
+			),
+		});
+	});
+
+	async function exportMarkdown(page: import('@playwright/test').Page) {
+		await openExportDialog(page);
+		await page.locator('.exd-segbtn', { hasText: 'Markdown' }).click();
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.exd-dialog .btn-primary').click(),
+		]);
+		return unzipSync(new Uint8Array(await downloadBuffer(download)));
+	}
+
+	test('writes one file per entity with working relative links + a README index', async ({
+		page,
+	}) => {
+		await gotoHome(page);
+		const entries = exportMarkdownNames(await exportMarkdown(page));
+		// Folder-per-kind, file-per-entity — not one big connections.md.
+		expect(entries.names).toContain('README.md');
+		expect(entries.names).toContain('connections/riverton.md');
+		expect(entries.names).toContain('connections/green-vale.md');
+		expect(entries.names).toContain('connections/lakeside.md');
+		expect(entries.names).not.toContain('connections.md');
+		// The within link is a working relative markdown link, not a dead wikilink.
+		expect(entries.riverton).toContain('[Green Vale](green-vale.md)');
+		expect(entries.riverton).not.toContain('[[Green Vale]]');
+		// README links into the folder.
+		expect(entries.readme).toContain('(connections/riverton.md)');
+		// Portrait bytes are written under images/ and referenced from the entity
+		// file one folder up (../images/…), not left as a dead/absolute link.
+		expect(entries.names.some((n) => n.startsWith('images/'))).toBe(true);
+		expect(entries.riverton).toContain('![Portrait](../images/');
+	});
+
+	test('obeys the selection — deselected entities get no file', async ({ page }) => {
+		await gotoHome(page);
+		await openExportDialog(page);
+		await page.locator('.exd-segbtn', { hasText: 'Markdown' }).click();
+		// Clear everything, then pick only Riverton.
+		await page.locator('.exd-selectall').click();
+		await page.locator('.fb-input').fill('Riverton');
+		await page.locator('.exd-item', { hasText: 'Riverton' }).click();
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.exd-dialog .btn-primary').click(),
+		]);
+		const names = Object.keys(unzipSync(new Uint8Array(await downloadBuffer(download))));
+		expect(names).toContain('connections/riverton.md');
+		expect(names).not.toContain('connections/lakeside.md');
+		expect(names).not.toContain('connections/green-vale.md');
+	});
+});
+
+function exportMarkdownNames(entries: Record<string, Uint8Array>) {
+	return {
+		names: Object.keys(entries),
+		riverton: entries['connections/riverton.md']
+			? strFromU8(entries['connections/riverton.md'])
+			: '',
+		readme: entries['README.md'] ? strFromU8(entries['README.md']) : '',
+	};
+}
