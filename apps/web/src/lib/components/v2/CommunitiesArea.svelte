@@ -40,8 +40,10 @@
 	import {
 		buildGraph,
 		eligibleContainerRefs,
+		isEligibleContainer,
 		reparentOnDelete,
 		effectiveRegion,
+		breadcrumbRefs,
 		isNested,
 		type ContainmentNode,
 	} from '$lib/entityContainment.js';
@@ -58,7 +60,8 @@
 	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
 	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
 	import { isSourceEnabled, resolveOracleKey } from '$lib/expansionStore.svelte.js';
-	import { Popover, Command, Tabs } from 'bits-ui';
+	import { Tabs } from 'bits-ui';
+	import Combobox from '$lib/components/Combobox.svelte';
 	import {
 		loadOracles,
 		getOracles,
@@ -87,16 +90,13 @@
 	import { createMapOwnerActions, fmtCoord } from '$lib/mapOwnerActions.js';
 	import iconGearSvg from '$icons/gear-solid.svg?raw';
 	import iconMapSvg from '$icons/compass-rose.svg?raw';
-	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
 	import heartPulseSvg from '$icons/heart-pulse-solid.svg?raw';
 	import skullSvg from '$icons/skull-crossbones-solid.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
 	import villageIconSvg from '$icons/village.svg?raw';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
 	import gotoSvg from '$icons/arrow-up-right-from-square-solid.svg?raw';
-	import clearFiltersSvg from '$icons/filter-circle-xmark-solid.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
@@ -248,16 +248,26 @@
 	// mirror the FilterBar look used by Moves / Oracles / Export dialogs
 	// (uppercase, colour-tinted border, filled on active); a clear button on
 	// the right resets the set.
-	let entryKindFilter = $state<Set<EntryKind>>(new Set<EntryKind>());
-	function toggleKindFilter(kind: EntryKind) {
-		const next = new Set(entryKindFilter);
-		if (next.has(kind)) next.delete(kind);
-		else next.add(kind);
-		entryKindFilter = next;
+	let entryKindFilter = $state<Set<string>>(new Set<string>());
+	/** Never-blank display name for an entry (trigger + list rows). */
+	function entryLabel(e: Entry): string {
+		return e.data.name || `Unnamed ${kindLabelSingular(e.kind)}`;
 	}
-	function clearKindFilter() {
-		entryKindFilter = new Set<EntryKind>();
-	}
+	/** Switcher combobox config: kind-filter pills + the "+ New …" actions. */
+	const CM_PILLS: { key: string; label: string; color: string }[] = [
+		{ key: 'community', label: 'Settlements', color: accentFor('community') },
+		{ key: 'npc', label: 'NPCs', color: accentFor('npc') },
+		{ key: 'place', label: 'Landmarks', color: accentFor('place') },
+	];
+	const cmActions = [
+		{
+			label: '+ New Settlement…',
+			value: '+ New Settlement',
+			onselect: () => void addNewCommunity(),
+		},
+		{ label: '+ New NPC…', value: '+ New NPC', onselect: () => void addNewNpc() },
+		{ label: '+ New Landmark…', value: '+ New Landmark', onselect: () => void addNewPlace() },
+	];
 
 	// Name-first drafts for the three New * dialogs.
 	let newCommunityName = $state<string>('');
@@ -327,27 +337,43 @@
 		const list = p.kind === 'community' ? communities : p.kind === 'place' ? places : npcs;
 		return list.find((e) => e.id === p.id)?.name || kindLabelSingular(p.kind);
 	}
-	/** Container options for the active entry's Within picker — every settlement
-	 *  and landmark except itself and its own descendants (a cycle guard), sorted
-	 *  by kind then name. */
-	const withinOptions = $derived.by(() => {
-		if (!activeEntry) return [{ value: '', label: 'Nowhere' }];
+	/** Container options for the active entry's Within picker (shared
+	 *  <Combobox>) — every settlement and landmark except itself and its own
+	 *  descendants (a cycle guard), sorted by kind then name. Each carries a
+	 *  kind glyph + colour so settlements and landmarks read apart in a long
+	 *  list; "Nowhere" is the combobox's clearItem, not an option here. */
+	interface WithinItem {
+		ref: string;
+		label: string;
+		kind: EntryKind;
+		icon: string;
+		color: string;
+	}
+	const withinItems = $derived.by<WithinItem[]>(() => {
+		if (!activeEntry) return [];
 		const self = refOf(activeEntry.kind, activeEntry.id);
-		const opts = eligibleContainerRefs(self, containmentGraph)
-			.map((ref) => ({ value: ref, label: refName(ref), kind: splitRef(ref)?.kind ?? 'place' }))
+		return eligibleContainerRefs(self, containmentGraph)
+			.map((ref): WithinItem => {
+				const kind = splitRef(ref)?.kind ?? 'place';
+				return {
+					ref,
+					label: refName(ref),
+					kind,
+					icon: ENTITY_KIND_META[kind].icon,
+					color: ENTITY_KIND_META[kind].color,
+				};
+			})
 			.sort((a, b) =>
 				a.kind === b.kind ? a.label.localeCompare(b.label) : a.kind < b.kind ? -1 : 1,
-			)
-			.map(({ value, label, kind }) => ({
-				value,
-				label,
-				// Kind icon + colour so settlements and landmarks read apart at a
-				// glance in a long list (bits-ui typeahead handles find-by-name).
-				icon: ENTITY_KIND_META[kind].icon,
-				color: ENTITY_KIND_META[kind].color,
-			}));
-		return [{ value: '', label: 'Nowhere' }, ...opts];
+			);
 	});
+	// Kind-filter pills so the long settlement/landmark list narrows the same
+	// way the switcher does.
+	const WITHIN_PILLS: { key: string; label: string; color: string }[] = [
+		{ key: 'community', label: 'Settlements', color: ENTITY_KIND_META.community.color },
+		{ key: 'place', label: 'Landmarks', color: ENTITY_KIND_META.place.color },
+	];
+	let withinFilter = $state<Set<string>>(new Set<string>());
 	/** Tooltip/label for the "go to parent" jump — names the container's kind,
 	 *  e.g. "Go to Settlement" / "Go to Landmark". (Containers are only ever
 	 *  settlements or landmarks; NPCs can't contain anything.) */
@@ -356,12 +382,19 @@
 		return `Go to ${kind ? kindLabelSingular(kind) : 'container'}`;
 	}
 	/** Re-parent the active entry. '' clears the link. Writes `within` and drops
-	 *  the legacy place field; region is now derived, so it isn't copied. */
+	 *  the legacy place field; region is now derived, so it isn't copied. The
+	 *  picker only ever offers eligible parents (see `withinItems`), but this
+	 *  guards the containment rules at the setter too — an ineligible ref (a
+	 *  settlement chain, a cycle, a non-container) is ignored rather than
+	 *  written. */
 	function setWithin(ref: string) {
+		if (!activeEntry) return;
+		if (ref && !isEligibleContainer(refOf(activeEntry.kind, activeEntry.id), ref, containmentGraph))
+			return;
 		const within = ref || undefined;
-		if (activeEntry?.kind === 'community') updateCommunity({ within });
-		else if (activeEntry?.kind === 'place') updatePlace({ within, withinSettlementId: undefined });
-		else if (activeEntry?.kind === 'npc') updateNpc({ within });
+		if (activeEntry.kind === 'community') updateCommunity({ within });
+		else if (activeEntry.kind === 'place') updatePlace({ within, withinSettlementId: undefined });
+		else if (activeEntry.kind === 'npc') updateNpc({ within });
 	}
 	/** Direct children of a container ref — entries whose effective `within` is
 	 *  exactly this ref, across all three kinds, sorted by kind then name. */
@@ -431,18 +464,14 @@
 			),
 	);
 
-	/** Popover list after the kind-filter pills. Empty filter set = show all. */
-	const visibleEntries = $derived<Entry[]>(
-		entryKindFilter.size === 0
-			? sortedEntries
-			: sortedEntries.filter((e) => entryKindFilter.has(e.kind)),
-	);
-
 	$effect(() => {
 		if (!activeEntryId && entries.length > 0) activeEntryId = entries[0].id;
 	});
 
 	const activeEntry = $derived(entries.find((e) => e.id === activeEntryId));
+	/** The active entry's current container ref (empty when top-level) — drives
+	 *  the Within combobox's trigger value/icon + active checkmark. */
+	const activeWithinRef = $derived(activeEntry ? entityWithin(activeEntry.data) : undefined);
 	const activeKind = $derived<EntryKind | null>(activeEntry?.kind ?? null);
 	const activeColor = $derived(activeKind ? accentFor(activeKind) : COMMUNITY_COLOR);
 
@@ -1035,122 +1064,27 @@
 			<span class="cmt-title">{headingText('Connections')}</span>
 		{/if}
 		<div class="cm-header-actions" data-entry-count={entries.length}>
-			<Popover.Root bind:open={entryPickerOpen}>
-				<Popover.Trigger class="mp-combobox cm-hdr-combobox" aria-label="Switch or add connection">
-					{#if activeEntry}
-						<span class="mp-combobox-value"
-							>{activeEntry.data.name || `Unnamed ${kindLabelSingular(activeEntry.kind)}`}</span
-						>
-					{:else}
-						<span class="mp-combobox-value mp-combobox-value--placeholder"
-							>— No connections yet —</span
-						>
-					{/if}
-					<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
-				</Popover.Trigger>
-				<Popover.Portal>
-					<Popover.Content class="mp-cmd-popover" sideOffset={4} align="start" collisionPadding={8}>
-						<Command.Root class="mp-cmd">
-							<div class="mp-cmd-search-row">
-								<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-								<Command.Input class="mp-cmd-search" placeholder="Search connections…" autofocus />
-							</div>
-							<div class="cm-kind-pills" role="group" aria-label="Filter by connection kind">
-								{#each [{ key: 'community' as EntryKind, label: 'Settlements' }, { key: 'npc' as EntryKind, label: 'NPCs' }, { key: 'place' as EntryKind, label: 'Landmarks' }] as pill (pill.key)}
-									{@const active = entryKindFilter.has(pill.key)}
-									<button
-										type="button"
-										class="cm-kind-pill"
-										class:active
-										style:--pcolor={accentFor(pill.key)}
-										aria-pressed={active}
-										onclick={() => toggleKindFilter(pill.key)}>{pill.label}</button
-									>
-								{/each}
-								<button
-									type="button"
-									class="cm-kind-clear"
-									onclick={clearKindFilter}
-									disabled={entryKindFilter.size === 0}
-									use:tooltip={'Clear filters'}
-									aria-label="Clear filters">{@html clearFiltersSvg}</button
-								>
-							</div>
-							<Command.List class="mp-cmd-list">
-								<Command.Empty class="mp-cmd-empty">No matching connections.</Command.Empty>
-								{#each visibleEntries as entry (entry.id)}
-									{@const n = entry.data.name || `Unnamed ${kindLabelSingular(entry.kind)}`}
-									{@const accent = accentFor(entry.kind)}
-									<Command.Item
-										class="mp-cmd-item"
-										value={n}
-										onSelect={() => {
-											selectEntry(entry.id);
-											entryPickerOpen = false;
-										}}
-									>
-										<span class="mp-cmd-check" aria-hidden="true">
-											{#if entry.id === activeEntryId}
-												<svg
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2.5"
-													><polyline
-														points="4 11 8 15 16 6"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													></polyline></svg
-												>
-											{/if}
-										</span>
-										<span
-											class="mp-cmd-item-icon cm-cmd-type-icon"
-											style="color: {accent}"
-											aria-hidden="true">{@html iconFor(entry.kind)}</span
-										>
-										<span class="mp-cmd-item-name">{n}</span>
-									</Command.Item>
-								{/each}
-								<Command.Separator class="mp-cmd-sep" />
-								<Command.Item
-									class="mp-cmd-item mp-cmd-item--action"
-									value="+ New Settlement"
-									onSelect={() => {
-										entryPickerOpen = false;
-										void addNewCommunity();
-									}}
-								>
-									<span class="mp-cmd-check" aria-hidden="true"></span>
-									<span class="mp-cmd-item-name">+ New Settlement…</span>
-								</Command.Item>
-								<Command.Item
-									class="mp-cmd-item mp-cmd-item--action"
-									value="+ New NPC"
-									onSelect={() => {
-										entryPickerOpen = false;
-										void addNewNpc();
-									}}
-								>
-									<span class="mp-cmd-check" aria-hidden="true"></span>
-									<span class="mp-cmd-item-name">+ New NPC…</span>
-								</Command.Item>
-								<Command.Item
-									class="mp-cmd-item mp-cmd-item--action"
-									value="+ New Landmark"
-									onSelect={() => {
-										entryPickerOpen = false;
-										void addNewPlace();
-									}}
-								>
-									<span class="mp-cmd-check" aria-hidden="true"></span>
-									<span class="mp-cmd-item-name">+ New Landmark…</span>
-								</Command.Item>
-							</Command.List>
-						</Command.Root>
-					</Popover.Content>
-				</Popover.Portal>
-			</Popover.Root>
+			<Combobox
+				bind:open={entryPickerOpen}
+				items={sortedEntries}
+				getKey={(e) => e.id}
+				getLabel={entryLabel}
+				getIcon={(e) => iconFor(e.kind)}
+				getColor={(e) => accentFor(e.kind)}
+				activeKey={activeEntryId}
+				onselect={(e) => selectEntry(e.id)}
+				triggerValue={activeEntry ? entryLabel(activeEntry) : ''}
+				placeholder="— No connections yet —"
+				searchPlaceholder="Search connections…"
+				emptyText="No matching connections."
+				ariaLabel="Switch or add connection"
+				filterGroupLabel="Filter by connection kind"
+				class="cm-hdr-combobox"
+				filters={CM_PILLS}
+				bind:activeFilters={entryKindFilter}
+				filterOf={(e) => e.kind}
+				actions={cmActions}
+			/>
 			{#if activeEntry}
 				{#if activeIsMapOwner}
 					{#if activeEntryMapEmpty}
@@ -1217,15 +1151,21 @@
 								<div class="cm-field-row">
 									<label class="cm-field-label" for="cm-region-{c.id}">Region</label>
 									{#if nested}
-										<!-- Region is inherited from the parent chain (read-only) while
-										     this entry sits within another — see the Within field below. -->
+										{@const regionRoot = refName(
+											breadcrumbRefs(selfRef, containmentGraph)[0] ?? '',
+										)}
+										<!-- Region is inherited from the ROOT of the Within chain (the
+										     top-level entry), not the immediate parent — read-only here;
+										     edit it on that root entry. -->
 										<input
 											id="cm-region-{c.id}"
 											class="cm-input cm-input--readonly"
 											type="text"
 											disabled
 											value={effectiveRegion(selfRef, containmentGraph) ?? ''}
-											use:tooltip={'Inherited from the parent — set in the top-level entry'}
+											use:tooltip={regionRoot
+												? `Region comes from ${regionRoot}`
+												: 'Region comes from the top of this chain'}
 											placeholder="—"
 										/>
 									{:else}
@@ -1352,12 +1292,31 @@
 								     the Map field. -->
 								<div class="cm-field-row">
 									<label class="cm-field-label" for="cm-within-{c.id}">Within</label>
-									<Select
+									<Combobox
 										id="cm-within-{c.id}"
 										class="cm-within-select"
-										value={entityWithin(c) ?? ''}
-										onchange={(v) => setWithin(v)}
-										options={withinOptions}
+										items={withinItems}
+										getKey={(o) => o.ref}
+										getLabel={(o) => o.label}
+										getIcon={(o) => o.icon}
+										getColor={(o) => o.color}
+										activeKey={activeWithinRef ?? ''}
+										onselect={(o) => setWithin(o.ref)}
+										triggerValue={activeWithinRef ? refName(activeWithinRef) : 'Nowhere'}
+										triggerIcon={activeWithinRef
+											? ENTITY_KIND_META[splitRef(activeWithinRef)?.kind ?? 'place'].icon
+											: undefined}
+										triggerColor={activeWithinRef
+											? ENTITY_KIND_META[splitRef(activeWithinRef)?.kind ?? 'place'].color
+											: undefined}
+										searchPlaceholder="Search settlements & landmarks…"
+										emptyText="No eligible containers."
+										ariaLabel="Within — the container this sits inside"
+										filterGroupLabel="Filter by container kind"
+										filters={WITHIN_PILLS}
+										bind:activeFilters={withinFilter}
+										filterOf={(o) => o.kind}
+										clearItem={{ label: 'Nowhere', onselect: () => setWithin('') }}
 									/>
 									{#if entityWithin(c)}
 										<button
@@ -1522,12 +1481,31 @@
 								     the free-text Location, which is an unstructured sub-spot. -->
 								<div class="cm-field-row">
 									<label class="cm-field-label" for="cm-within-{n.id}">Within</label>
-									<Select
+									<Combobox
 										id="cm-within-{n.id}"
 										class="cm-within-select"
-										value={entityWithin(n) ?? ''}
-										onchange={(v) => setWithin(v)}
-										options={withinOptions}
+										items={withinItems}
+										getKey={(o) => o.ref}
+										getLabel={(o) => o.label}
+										getIcon={(o) => o.icon}
+										getColor={(o) => o.color}
+										activeKey={activeWithinRef ?? ''}
+										onselect={(o) => setWithin(o.ref)}
+										triggerValue={activeWithinRef ? refName(activeWithinRef) : 'Nowhere'}
+										triggerIcon={activeWithinRef
+											? ENTITY_KIND_META[splitRef(activeWithinRef)?.kind ?? 'place'].icon
+											: undefined}
+										triggerColor={activeWithinRef
+											? ENTITY_KIND_META[splitRef(activeWithinRef)?.kind ?? 'place'].color
+											: undefined}
+										searchPlaceholder="Search settlements & landmarks…"
+										emptyText="No eligible containers."
+										ariaLabel="Within — the container this sits inside"
+										filterGroupLabel="Filter by container kind"
+										filters={WITHIN_PILLS}
+										bind:activeFilters={withinFilter}
+										filterOf={(o) => o.kind}
+										clearItem={{ label: 'Nowhere', onselect: () => setWithin('') }}
 									/>
 									{#if entityWithin(n)}
 										<button
@@ -2036,14 +2014,16 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 26px;
-		/* Match the Within <Select> height — stretch to the field row's cross
-		   axis rather than a fixed 26px so the two line up exactly. */
-		align-self: stretch;
+		/* Match the d6 roll button (.dice-btn, app.css): 22×22, 3px radius,
+		   transparent, centred in the field row rather than stretched. */
+		box-sizing: border-box;
+		width: 22px;
+		height: 22px;
+		align-self: center;
 		border: 1px solid var(--border-mid);
-		border-radius: 6px;
-		background: var(--bg-control);
-		color: var(--text-dim);
+		border-radius: 3px;
+		background: transparent;
+		color: var(--text-muted);
 		line-height: 1;
 		cursor: pointer;
 	}
@@ -2299,15 +2279,29 @@
 	.cm-input:focus {
 		border-color: var(--text-accent);
 	}
-	/* Threaded to bits-ui via `<Select class="cm-select">` so scope
-	   globally. Base look from `.bui-select-trigger`; override just
-	   makes the trigger flex-fill inside `.cm-field-row` like the
-	   sibling `<input class="cm-input">` fields. */
+	/* A field showing an inherited (read-only) value — the Region of a nested
+	   entry. Grey the text so it reads as non-editable; `-webkit-text-fill-color`
+	   is required because WebKit ignores `color` on a disabled input. */
+	.cm-input--readonly,
+	.cm-input:disabled {
+		color: var(--text-dimmer);
+		-webkit-text-fill-color: var(--text-dimmer);
+		background: var(--bg-control);
+		cursor: default;
+	}
+	/* Threaded to bits-ui via `<Select class="cm-select">` (relationship
+	   field) and `<Combobox class="cm-within-select">` (the Within picker),
+	   so scope globally. Base look comes from the wrapper's own trigger
+	   (`.bui-select-trigger` / `.cb-trigger`); this override makes the trigger
+	   flex-fill inside `.cm-field-row` AND match the 23px height of the sibling
+	   `<input class="cm-input">` fields (the trigger's caret would otherwise
+	   push it taller). */
 	:global(.cm-select),
 	:global(.cm-within-select) {
 		flex: 1;
 		font-size: 0.78rem;
-		padding: 3px 8px;
+		height: 23px;
+		padding: 0 8px;
 		min-height: 0;
 	}
 
@@ -2382,74 +2376,6 @@
 		flex: 1 1 auto;
 		min-width: 0;
 	}
-	/* Type-icon glyph (community / npc / place) inside popover items. */
-	:global(.cm-cmd-type-icon svg) {
-		fill: currentColor;
-	}
-	:global(.cm-cmd-type-icon svg path) {
-		fill: currentColor;
-	}
-
-	/* Kind-filter pill row above the popover list — mirrors the FilterBar
-	   pattern used by Moves / Oracles / Export dialogs: uppercase small caps,
-	   colour-tinted border, filled when active. Multi-select (empty = show
-	   all); the trailing clear button empties the set. */
-	:global(.cm-kind-pills) {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 6px;
-		padding: 6px 8px 4px;
-		border-bottom: 1px solid var(--border);
-	}
-	:global(.cm-kind-pill) {
-		font-family: var(--font-ui);
-		font-size: 0.66rem;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--pcolor, var(--text-dimmer));
-		background: transparent;
-		border: 1px solid color-mix(in srgb, var(--pcolor, var(--border)) 40%, transparent);
-		border-radius: 999px;
-		padding: 3px 10px;
-		cursor: pointer;
-		white-space: nowrap;
-		transition:
-			background 0.12s,
-			border-color 0.12s;
-	}
-	:global(.cm-kind-pill:hover) {
-		background: color-mix(in srgb, var(--pcolor) 12%, transparent);
-	}
-	:global(.cm-kind-pill.active) {
-		background: color-mix(in srgb, var(--pcolor) 18%, transparent);
-		border-color: var(--pcolor);
-	}
-	:global(.cm-kind-clear) {
-		margin-left: auto;
-		background: transparent;
-		border: 0;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		padding: 3px;
-		border-radius: 6px;
-		display: grid;
-		place-items: center;
-	}
-	:global(.cm-kind-clear:hover:not(:disabled)) {
-		color: var(--text-accent);
-	}
-	:global(.cm-kind-clear:disabled) {
-		opacity: 0.35;
-		cursor: default;
-	}
-	:global(.cm-kind-clear svg) {
-		width: 15px;
-		height: 15px;
-		fill: currentColor;
-	}
-
 	/* "Also randomize" checklist inside the New * dialogs — one column,
 	   compact spacing. Shared with the Site + NPC + Community + Place
 	   dialogs so all four read the same. */

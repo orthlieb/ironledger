@@ -46,7 +46,7 @@ async function selectSeededCommunity(page: Page): Promise<void> {
 			.catch(() => false))
 	) {
 		await page.locator(`${CM_AREA} .cm-hdr-combobox`).click();
-		await page.locator('.mp-cmd-popover .mp-cmd-item:not(.mp-cmd-item--action)').first().click();
+		await page.locator('.cb-popover .cb-item:not(.cb-item--action)').first().click();
 	}
 	await expect(page.locator(`${CM_AREA} [aria-label="Add map"]`).first()).toBeVisible({
 		timeout: 6_000,

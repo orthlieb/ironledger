@@ -43,10 +43,9 @@
 	import iconGearSvg from '$icons/gear-solid.svg?raw';
 	import swordSvg from '$icons/sword-solid.svg?raw';
 	import skullSvg from '$icons/skull-crossbones-solid.svg?raw';
-	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
-	import { Popover, Command, Tabs } from 'bits-ui';
+	import { Tabs } from 'bits-ui';
+	import Combobox from '$lib/components/Combobox.svelte';
 	import foesIconSvg from '$icons/Foes.svg?raw';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
@@ -72,6 +71,19 @@
 
 	const encounters = $derived(getEncounters());
 	const loading = $derived(isEncounterLoading());
+
+	// Switcher combobox helpers — per-item label / nature glyph / nature colour.
+	function foeItemLabel(enc: (typeof encounters)[number]): string {
+		const def = findFoe(enc.foeId);
+		return enc.customName?.trim() || def?.name || enc.foeId;
+	}
+	function foeItemColor(enc: (typeof encounters)[number]): string {
+		const def = findFoe(enc.foeId);
+		return def ? (FOE_NATURE_COLORS[def.nature] ?? '#7A9AB8') : '#7A9AB8';
+	}
+	const foeActions = [
+		{ label: '+ New foe…', value: '+ New foe', onselect: () => void foePickerRef?.open() },
+	];
 
 	$effect(() => {
 		if (!activeFoeId && encounters.length > 0) activeFoeId = encounters[0].id;
@@ -283,79 +295,23 @@
 			<!-- Foe switcher (Popover + Command). Same class prefix as
 					 MapDialog's map switcher so the two comboboxes look
 					 identical (see docs/ui-components.md). -->
-			<Popover.Root bind:open={foePickerOpen}>
-				<Popover.Trigger class="mp-combobox fa-hdr-combobox" aria-label="Switch or add foe">
-					{#if activeEnc}<span class="mp-combobox-value">{displayName}</span>{:else}<span
-							class="mp-combobox-value mp-combobox-value--placeholder">— No foes yet —</span
-						>{/if}
-					<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
-				</Popover.Trigger>
-				<Popover.Portal>
-					<Popover.Content class="mp-cmd-popover" sideOffset={4} align="start" collisionPadding={8}>
-						<Command.Root class="mp-cmd">
-							<div class="mp-cmd-search-row">
-								<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-								<Command.Input class="mp-cmd-search" placeholder="Search foes…" autofocus />
-							</div>
-							<Command.List class="mp-cmd-list">
-								<Command.Empty class="mp-cmd-empty">No matching foes.</Command.Empty>
-								{#each encounters as enc (enc.id)}
-									{@const def = findFoe(enc.foeId)}
-									{@const n = enc.customName?.trim() || def?.name || enc.foeId}
-									{@const natureCol = def
-										? (FOE_NATURE_COLORS[def.nature] ?? '#7A9AB8')
-										: '#7A9AB8'}
-									{@const typeIcon = foeIcon(def)}
-									<Command.Item
-										class="mp-cmd-item"
-										value={n}
-										onSelect={() => {
-											selectFoe(enc.id);
-											foePickerOpen = false;
-										}}
-									>
-										<span class="mp-cmd-check" aria-hidden="true">
-											{#if enc.id === activeFoeId}
-												<svg
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2.5"
-													><polyline
-														points="4 11 8 15 16 6"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													></polyline></svg
-												>
-											{/if}
-										</span>
-										{#if typeIcon}
-											<span
-												class="mp-cmd-item-icon fa-cmd-type-icon"
-												style="color: {natureCol}"
-												aria-hidden="true">{@html typeIcon}</span
-											>
-										{/if}
-										<span class="mp-cmd-item-name">{n}</span>
-									</Command.Item>
-								{/each}
-								<Command.Separator class="mp-cmd-sep" />
-								<Command.Item
-									class="mp-cmd-item mp-cmd-item--action"
-									value="+ New foe"
-									onSelect={() => {
-										foePickerOpen = false;
-										void foePickerRef?.open();
-									}}
-								>
-									<span class="mp-cmd-check" aria-hidden="true"></span>
-									<span class="mp-cmd-item-name">+ New foe…</span>
-								</Command.Item>
-							</Command.List>
-						</Command.Root>
-					</Popover.Content>
-				</Popover.Portal>
-			</Popover.Root>
+			<Combobox
+				bind:open={foePickerOpen}
+				items={encounters}
+				getKey={(enc) => enc.id}
+				getLabel={foeItemLabel}
+				getIcon={(enc) => foeIcon(findFoe(enc.foeId))}
+				getColor={foeItemColor}
+				activeKey={activeFoeId}
+				onselect={(enc) => selectFoe(enc.id)}
+				triggerValue={activeEnc ? displayName : ''}
+				placeholder="— No foes yet —"
+				searchPlaceholder="Search foes…"
+				emptyText="No matching foes."
+				ariaLabel="Switch or add foe"
+				class="fa-hdr-combobox"
+				actions={foeActions}
+			/>
 
 			{#if activeEnc}
 				<button
@@ -763,14 +719,6 @@
 		fill: currentColor;
 	}
 	:global(.fa-hdr-settings-btn svg path) {
-		fill: currentColor;
-	}
-	/* Type-icon glyph inside popover items — tinted by inline color
-	   (nature colour) via currentColor. */
-	:global(.fa-cmd-type-icon svg) {
-		fill: currentColor;
-	}
-	:global(.fa-cmd-type-icon svg path) {
 		fill: currentColor;
 	}
 	/* Header contains a SegmentedRadio that opts into `labels="auto"`;

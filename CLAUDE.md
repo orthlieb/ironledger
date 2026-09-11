@@ -267,8 +267,11 @@ Concretely:
 - `<select>` → `<Select>` (`$lib/components/Select.svelte` — bits-ui
   `Select` inside). See `docs/ui-components.md` → "Simple dropdown
   fields — `<Select>` wrapper".
-- Searchable pickers → bits-ui `Popover + Command` (the shadcn shape;
-  `.mp-combobox` trigger + `.mp-cmd-*` popover body). See
+- Searchable pickers / "switch or add X" headers → `<Combobox>`
+  (`$lib/components/Combobox.svelte` — bits-ui `Popover + Command`
+  inside, `.cb-*` styles; supports filter pills, per-item glyphs, a
+  clear row, and "+ New …" actions). Add a prop rather than
+  hand-rolling a fresh Popover+Command block. See
   `docs/ui-components.md` → "Combobox pattern".
 - Confirmations → bits-ui `AlertDialog` via `<ConfirmDialog>`; other
   modals → bits-ui `Dialog`. Don't hand-roll a `<dialog>` for new

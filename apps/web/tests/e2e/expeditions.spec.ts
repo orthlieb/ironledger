@@ -49,7 +49,7 @@ async function foeCount(page: import('@playwright/test').Page): Promise<number> 
 /** Open a "+ New Journey…" / "+ New Site…" action from the header combobox. */
 async function openNewExpedition(page: import('@playwright/test').Page, kind: 'Journey' | 'Site') {
 	await page.locator(EXP_COMBOBOX).click();
-	await page.locator('.mp-cmd-item--action', { hasText: new RegExp(`New ${kind}`, 'i') }).click();
+	await page.locator('.cb-item--action', { hasText: new RegExp(`New ${kind}`, 'i') }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
 }
 

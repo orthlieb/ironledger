@@ -42,7 +42,7 @@ async function expCount(page: Page): Promise<number> {
 /** Open "+ New Scene…" from the header combobox and wait for the dialog. */
 async function openNewSceneDialog(page: Page) {
 	await page.locator(EXP_COMBOBOX).click();
-	await page.locator('.mp-cmd-item--action', { hasText: /New Scene/ }).click();
+	await page.locator('.cb-item--action', { hasText: /New Scene/ }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
 	await expect(page.locator('.confirm-modal .cm-title')).toContainText('New Scene');
 }

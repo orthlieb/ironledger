@@ -13,13 +13,15 @@
 	 * The dialog is driven by the `selectedMarker` prop (owned by the
 	 * parent as `selectedMarkerId` → `selectedMarker` derived). Closing
 	 * the dialog calls `onClose`, which is where the parent clears its
-	 * selection. All the `.mp-props-*` / `.mp-sel-*` / `.mp-cmd-*`
-	 * styling lives in MapDialog's global stylesheet — this component
-	 * is only ever mounted by MapDialog, so the `:global` rules reach
-	 * it there.
+	 * selection. The `.mp-props-*` / `.mp-sel-*` styling lives in
+	 * MapDialog's global stylesheet — this component is only ever
+	 * mounted by MapDialog, so the `:global` rules reach it there. The
+	 * connection link picker is the shared `<Combobox>` (which owns its
+	 * own `.cb-*` styles).
 	 */
 	import { untrack } from 'svelte';
-	import { Dialog, Popover, Command } from 'bits-ui';
+	import { Dialog } from 'bits-ui';
+	import Combobox from '$lib/components/Combobox.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import Pickr from '@simonwep/pickr';
 	import '@simonwep/pickr/dist/themes/nano.min.css';
@@ -38,8 +40,6 @@
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import iconAngleSvg from '$icons/angle-solid.svg?raw';
 	import iconPaletteSvg from '$icons/palette-solid.svg?raw';
-	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
 	import plusSvg from '$icons/plus-solid.svg?raw';
 	import minusSvg from '$icons/minus-solid.svg?raw';
 	import gotoSvg from '$icons/arrow-up-right-from-square-solid.svg?raw';
@@ -632,106 +632,29 @@
 					<div class="mp-props-field">
 						<span class="mp-props-label">Link to</span>
 						<div class="mp-link-row">
-							<Popover.Root bind:open={entityPickerOpen}>
-								<Popover.Trigger
-									class="mp-combobox mp-sel-entity-btn"
-									aria-label="Link marker to a connection"
-								>
-									{#if draft.entityId && draftLinkedEntity}
-										<span
-											class="mp-sel-entity-icon"
-											aria-hidden="true"
-											style="--kind-color: {ENTITY_KIND_META[draftLinkedEntity.kind].color}"
-											>{@html ENTITY_KIND_META[draftLinkedEntity.kind].icon}</span
-										>
-										<span class="mp-combobox-value">{draftLinkedEntity.name}</span>
-									{:else if draft.entityId}
-										<span class="mp-combobox-value mp-combobox-value--placeholder">Broken link</span
-										>
-									{:else}
-										<span class="mp-combobox-value mp-combobox-value--placeholder">— No link —</span
-										>
-									{/if}
-									<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
-								</Popover.Trigger>
-								<Popover.Portal>
-									<Popover.Content
-										class="mp-cmd-popover"
-										sideOffset={4}
-										align="start"
-										collisionPadding={8}
-									>
-										<Command.Root class="mp-cmd">
-											<div class="mp-cmd-search-row">
-												<span class="mp-cmd-search-icon" aria-hidden="true"
-													>{@html searchIconSvg}</span
-												>
-												<Command.Input
-													class="mp-cmd-search"
-													placeholder="Search connections…"
-													autofocus
-												/>
-											</div>
-											<Command.List class="mp-cmd-list">
-												<Command.Empty class="mp-cmd-empty">No matching connections.</Command.Empty>
-												<Command.Item
-													class="mp-cmd-item"
-													value="No link"
-													onSelect={() => pickDraftEntity('')}
-												>
-													<span class="mp-cmd-check" aria-hidden="true">
-														{#if !draft.entityId}
-															<svg
-																viewBox="0 0 20 20"
-																fill="none"
-																stroke="currentColor"
-																stroke-width="2.5"
-																><polyline
-																	points="4 11 8 15 16 6"
-																	stroke-linecap="round"
-																	stroke-linejoin="round"
-																></polyline></svg
-															>
-														{/if}
-													</span>
-													<span class="mp-cmd-item-name mp-cmd-item-name--muted">— No link —</span>
-												</Command.Item>
-												{#each sortedLinkableEntities as e (`${e.kind}:${e.id}`)}
-													{@const val = `${e.kind}:${e.id}`}
-													{@const meta = KIND_META[e.kind]}
-													<Command.Item
-														class="mp-cmd-item"
-														value={e.name}
-														onSelect={() => pickDraftEntity(val)}
-													>
-														<span class="mp-cmd-check" aria-hidden="true">
-															{#if draft.entityId === val}
-																<svg
-																	viewBox="0 0 20 20"
-																	fill="none"
-																	stroke="currentColor"
-																	stroke-width="2.5"
-																	><polyline
-																		points="4 11 8 15 16 6"
-																		stroke-linecap="round"
-																		stroke-linejoin="round"
-																	></polyline></svg
-																>
-															{/if}
-														</span>
-														<span
-															class="mp-cmd-item-icon"
-															aria-hidden="true"
-															style="--kind-color: {meta.color}">{@html meta.icon}</span
-														>
-														<span class="mp-cmd-item-name">{e.name}</span>
-													</Command.Item>
-												{/each}
-											</Command.List>
-										</Command.Root>
-									</Popover.Content>
-								</Popover.Portal>
-							</Popover.Root>
+							<Combobox
+								bind:open={entityPickerOpen}
+								items={sortedLinkableEntities}
+								getKey={(e) => `${e.kind}:${e.id}`}
+								getLabel={(e) => e.name}
+								getIcon={(e) => KIND_META[e.kind].icon}
+								getColor={(e) => KIND_META[e.kind].color}
+								activeKey={draft.entityId}
+								onselect={(e) => pickDraftEntity(`${e.kind}:${e.id}`)}
+								triggerValue={draftLinkedEntity ? draftLinkedEntity.name : ''}
+								triggerIcon={draftLinkedEntity
+									? ENTITY_KIND_META[draftLinkedEntity.kind].icon
+									: undefined}
+								triggerColor={draftLinkedEntity
+									? ENTITY_KIND_META[draftLinkedEntity.kind].color
+									: undefined}
+								placeholder={draft.entityId && !draftLinkedEntity ? 'Broken link' : '— No link —'}
+								searchPlaceholder="Search connections…"
+								emptyText="No matching connections."
+								ariaLabel="Link marker to a connection"
+								class="mp-sel-entity-btn"
+								clearItem={{ label: '— No link —', onselect: () => pickDraftEntity('') }}
+							/>
 							{#if draft.entityId && draftLinkedEntity}
 								{@const linked = draftLinkedEntity}
 								<button

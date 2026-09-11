@@ -16,7 +16,11 @@ import {
 	wouldCreateCycle,
 	descendantRefs,
 	eligibleContainerRefs,
+	isEligibleContainer,
+	chainHasSettlement,
+	subtreeHasSettlement,
 	reparentOnDelete,
+	sanitizeContainment,
 	breadcrumbRefs,
 	effectiveRegion,
 	isNested,
@@ -99,14 +103,106 @@ describe('descendants + eligible containers', () => {
 		);
 		expect(descendantRefs('npc:bob', g)).toEqual(new Set());
 	});
-	it('eligible containers exclude self, descendants, and non-containers', () => {
-		// nysis: only freeport is a valid parent (collima/tavern are descendants,
-		// bob/solo are NPCs, nysis is self).
-		expect(eligibleContainerRefs('place:nysis', g)).toEqual(['community:freeport']);
-		// a leaf NPC can go under any of the four containers.
+	it('eligible containers exclude self, descendants, non-containers, and settlement chains', () => {
+		// nysis' subtree carries a settlement (Collima), so it can only land under a
+		// settlement-free chain. Freeport is a settlement, so it's out — leaving
+		// nysis with NO eligible parent (collima/tavern are descendants, bob/solo
+		// are NPCs, nysis is self).
+		expect(eligibleContainerRefs('place:nysis', g)).toEqual([]);
+		// Freeport (a settlement) may only go under a landmark whose chain has no
+		// settlement — that's nysis alone. collima/tavern already sit under a
+		// settlement; another settlement can't join their chain.
+		expect(eligibleContainerRefs('community:freeport', g)).toEqual(['place:nysis']);
+		// a leaf NPC (no settlement anywhere in its subtree) can go under any of the
+		// four containers.
 		expect(new Set(eligibleContainerRefs('npc:solo', g))).toEqual(
 			new Set(['place:nysis', 'community:collima', 'place:tavern', 'community:freeport']),
 		);
+	});
+});
+
+describe('one settlement per chain', () => {
+	it('chainHasSettlement walks up; subtreeHasSettlement walks down', () => {
+		expect(chainHasSettlement('community:collima', g)).toBe(true); // itself
+		expect(chainHasSettlement('place:tavern', g)).toBe(true); // ancestor Collima
+		expect(chainHasSettlement('place:nysis', g)).toBe(false); // landmark root
+		expect(chainHasSettlement('npc:solo', g)).toBe(false);
+
+		expect(subtreeHasSettlement('place:nysis', g)).toBe(true); // Collima below
+		expect(subtreeHasSettlement('community:collima', g)).toBe(true); // itself
+		expect(subtreeHasSettlement('place:tavern', g)).toBe(false);
+		expect(subtreeHasSettlement('npc:solo', g)).toBe(false);
+	});
+
+	it('isEligibleContainer blocks a second settlement on a path but allows siblings', () => {
+		// A settlement can never nest under a chain that already has one…
+		expect(isEligibleContainer('community:freeport', 'community:collima', g)).toBe(false); // direct
+		expect(isEligibleContainer('community:freeport', 'place:tavern', g)).toBe(false); // transitive
+		// …but two settlements on SEPARATE paths under one landmark is fine:
+		// Freeport under Nysis gives nysis→collima and nysis→freeport, one each.
+		expect(isEligibleContainer('community:freeport', 'place:nysis', g)).toBe(true);
+		// A settlement-free leaf goes anywhere, even under a settlement's chain.
+		expect(isEligibleContainer('npc:solo', 'community:collima', g)).toBe(true);
+		// Still rejects non-containers, self, and cycles.
+		expect(isEligibleContainer('npc:solo', 'npc:bob', g)).toBe(false); // NPC parent
+		expect(isEligibleContainer('place:nysis', 'place:nysis', g)).toBe(false); // self
+		expect(isEligibleContainer('place:nysis', 'community:collima', g)).toBe(false); // descendant
+	});
+});
+
+describe('sanitizeContainment (import repair)', () => {
+	const proposed = (links: Record<string, string | undefined>, extra: string[] = []) => {
+		const refs = new Set(
+			[...Object.keys(links), ...Object.values(links), ...extra].filter((r): r is string => !!r),
+		);
+		return [...refs].map((ref): ContainmentNode => ({ ref, within: links[ref] }));
+	};
+
+	it('passes a legal forest through untouched', () => {
+		const out = sanitizeContainment(NODES);
+		expect(out.get('community:collima')).toBe('place:nysis');
+		expect(out.get('place:tavern')).toBe('community:collima');
+		expect(out.get('npc:bob')).toBe('community:collima');
+		expect(out.get('community:freeport')).toBeUndefined();
+	});
+
+	it('detaches a settlement nested directly in a settlement', () => {
+		const out = sanitizeContainment(proposed({ 'community:b': 'community:a' }));
+		expect(out.get('community:b')).toBeUndefined();
+	});
+
+	it('detaches the deeper settlement on a transitive two-settlement chain', () => {
+		// A(settlement) → L(landmark) → B(settlement): B has a settlement ancestor.
+		const out = sanitizeContainment(
+			proposed({ 'place:l': 'community:a', 'community:b': 'place:l' }),
+		);
+		expect(out.get('place:l')).toBe('community:a'); // the landmark link survives
+		expect(out.get('community:b')).toBeUndefined(); // the lower settlement detaches
+	});
+
+	it('drops a non-container, dangling, or self parent', () => {
+		// NPC parent (present but not a container).
+		expect(
+			sanitizeContainment([{ ref: 'place:x', within: 'npc:n' }, { ref: 'npc:n' }]).get('place:x'),
+		).toBeUndefined();
+		// Dangling parent (not among the nodes at all).
+		expect(
+			sanitizeContainment([{ ref: 'place:x', within: 'place:ghost' }]).get('place:x'),
+		).toBeUndefined();
+		// Self parent.
+		expect(
+			sanitizeContainment([{ ref: 'place:x', within: 'place:x' }]).get('place:x'),
+		).toBeUndefined();
+	});
+
+	it('breaks a cycle rather than looping', () => {
+		const out = sanitizeContainment([
+			{ ref: 'place:a', within: 'place:b' },
+			{ ref: 'place:b', within: 'place:a' },
+		]);
+		// No cycle may survive — at most one link stands (both may be dropped).
+		const links = [out.get('place:a'), out.get('place:b')].filter(Boolean);
+		expect(links.length).toBeLessThanOrEqual(1);
 	});
 });
 
@@ -126,6 +222,16 @@ describe('reparent on delete', () => {
 	});
 	it('returns nothing for a leaf', () => {
 		expect(reparentOnDelete('npc:bob', g)).toEqual([]);
+	});
+	it('detaches instead of lifting when the grandparent would break the settlement rule', () => {
+		// A(settlement) → L(landmark) → B(settlement). Deleting L must NOT lift B
+		// under A (two settlements on one chain) — B detaches instead.
+		const chain = buildGraph([
+			{ ref: 'community:a' },
+			{ ref: 'place:l', within: 'community:a' },
+			{ ref: 'community:b', within: 'place:l' },
+		]);
+		expect(reparentOnDelete('place:l', chain)).toEqual([{ ref: 'community:b', within: undefined }]);
 	});
 });
 

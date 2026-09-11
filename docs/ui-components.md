@@ -850,12 +850,12 @@ dialog can override.
 Portalled bits-ui content is a plain `<div>` (not top-layer). We
 reserve **z-index 80+** for it so it wins over the app chrome:
 
-| Layer          | z-index | Notes                                                               |
-| -------------- | ------- | ------------------------------------------------------------------- |
-| Popover / menu | `90`    | `.bui-select-content`, `.mp-cmd-popover`, `.hm-menu` — must beat 81 |
-| Modal content  | `81`    | `.confirm-modal`, dialog body                                       |
-| Modal overlay  | `80`    | `.cm-overlay`, other alert-dialog scrims                            |
-| App chrome     | `< 20`  | Toolbars, sidebar                                                   |
+| Layer          | z-index | Notes                                                           |
+| -------------- | ------- | --------------------------------------------------------------- |
+| Popover / menu | `90`    | `.bui-select-content`, `.cb-popover`, `.hm-menu` — must beat 81 |
+| Modal content  | `81`    | `.confirm-modal`, dialog body                                   |
+| Modal overlay  | `80`    | `.cm-overlay`, other alert-dialog scrims                        |
+| App chrome     | `< 20`  | Toolbars, sidebar                                               |
 
 Popovers / menus sit **above** modal content on purpose: a
 `<Select>`, combobox, or `DropdownMenu` opened from inside a
@@ -867,73 +867,85 @@ the dialog it was launched from.
 Keep new bits-ui surfaces inside this budget; don't invent a `999`
 one-off.
 
-### Combobox pattern (search-first pickers)
+### Combobox pattern (search-first pickers) — `<Combobox>` wrapper
 
 For any pick-from-a-list-with-typeahead — the shadcn-svelte
-combobox shape — use bits-ui **`Popover` + `Command`**. The
-trigger is a text-field-styled `<button>` that shows the current
-value (or a placeholder) and a chevron; clicking opens a popover
-with its own search `<input>` at the top and a filtered list
-below.
+combobox shape — use the shared **`$lib/components/Combobox.svelte`**
+wrapper (bits-ui `Popover` + `Command` inside, `.cb-*` styles). It
+is to the searchable picker what `<Select>` is to the plain
+dropdown: one component owns the trigger, the search box, an
+optional filter-pill row, the list (per-item check + tinted glyph +
+name), an optional leading "clear" row, and optional trailing
+action rows. Reach for it for every "switch or add X" header and
+any field whose option list is long enough to want typeahead.
 
 ```svelte
-<Popover.Root bind:open>
-  <Popover.Trigger class="mp-combobox {extraClass}" aria-label="…">
-    {#if current}
-      <span class="mp-combobox-value">{current.name}</span>
-    {:else}
-      <span class="mp-combobox-value mp-combobox-value--placeholder">— Select —</span>
-    {/if}
-    <span class="mp-combobox-caret" aria-hidden="true">{@html caretDownSvg}</span>
-  </Popover.Trigger>
-  <Popover.Portal to={dialogEl ?? undefined}>
-    <Popover.Content class="mp-cmd-popover" sideOffset={4} align="start" collisionPadding={8}>
-      <Command.Root class="mp-cmd">
-        <div class="mp-cmd-search-row">
-          <span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-          <Command.Input class="mp-cmd-search" placeholder="Search…" />
-        </div>
-        <Command.List class="mp-cmd-list">
-          <Command.Empty class="mp-cmd-empty">No results.</Command.Empty>
-          {#each items as it}
-            <Command.Item class="mp-cmd-item" value={it.name} onSelect={() => pick(it)}>
-              <span class="mp-cmd-check"
-                >{#if selected(it)}<check-svg />{/if}</span
-              >
-              <span class="mp-cmd-item-name">{it.name}</span>
-            </Command.Item>
-          {/each}
-        </Command.List>
-      </Command.Root>
-    </Popover.Content>
-  </Popover.Portal>
-</Popover.Root>
+<script>
+  import Combobox from '$lib/components/Combobox.svelte';
+</script>
+
+<Combobox
+  bind:open={pickerOpen}
+  items={sortedThings}
+  getKey={(t) => t.id}
+  getLabel={(t) => t.name}
+  getIcon={(t) => KIND_META[t.kind].icon}
+  getColor={(t) => KIND_META[t.kind].color}
+  activeKey={activeId}
+  onselect={(t) => select(t.id)}
+  triggerValue={active ? active.name : ''}
+  placeholder="— No things yet —"
+  searchPlaceholder="Search things…"
+  emptyText="No matching things."
+  ariaLabel="Switch or add thing"
+  class="xx-hdr-combobox"
+  filters={KIND_PILLS}
+  bind:activeFilters={kindFilter}
+  filterOf={(t) => t.kind}
+  actions={[{ label: '+ New thing…', value: '+ New thing', onselect: addThing }]}
+/>
 ```
 
-Notes:
+Key props (see the component's docstring for the full list):
 
-- **Trigger is a `<button>`, not an `<input>`** — the visible field is
-  a shell that opens the popover. All typing happens inside the
-  popover's `Command.Input`. This is the shape most designers
-  reach for; it also avoids the global `input:focus` box-shadow
-  bleeding through the trigger.
-- **`Command.Item value={…}` is what the search filters against** —
-  usually the item's user-facing name. `onSelect` fires when the
-  item is picked. Selection state (checkmark) is tracked in your
-  own store; there's no `bind:value` on the Command.
-- **`Command.Empty`** renders when the list is empty after
-  filtering — Command handles this automatically.
-- **`Command.Separator`** for a divider before a footer action row
-  (e.g. "+ New map…" at the bottom of the map switcher).
-- Sort items yourself before passing to the `{#each}` — Command
-  filters but does not sort. Reserve one CSS prefix per surface —
-  the two comboboxes in `MapDialog` (map switcher and marker link
-  picker) share `.mp-cmd-*` on purpose so they look identical.
+- **`items` + `getKey` / `getLabel`** — the domain list and how to
+  read a stable key + the display/search text off each item. bits-ui
+  `Command` filters by the label; you don't pre-filter for search.
+- **`getIcon` / `getColor`** — optional per-item glyph (raw inline
+  SVG, same convention as `<Select>`) and its accent colour.
+- **`activeKey`** — draws the leading checkmark on the current item.
+- **`triggerValue` / `placeholder`** — trigger text; empty
+  `triggerValue` shows the muted-italic placeholder. `triggerIcon` /
+  `triggerColor` add a leading glyph to the trigger (e.g. the
+  selected kind's icon — the marker link picker uses this).
+- **`filters` + `bind:activeFilters` + `filterOf`** — when present,
+  renders the kind/type filter-pill row (+ clear button) and narrows
+  the list to `filterOf(item) ∈ activeFilters` (empty set = all).
+- **`clearItem`** — a leading muted "clear" row (Nowhere / No link),
+  checked when `activeKey` is falsy.
+- **`actions`** — trailing "+ New …" rows after a separator (the
+  separator only renders when there's something above it).
+- **`trigger`** snippet — escape hatch to render custom trigger
+  content; the default (glyph + value + caret) covers every current
+  call site. Pass `portalTo` a parent native `<dialog>` when the
+  combobox lives inside one.
 
-**When to use bits-ui `Combobox` instead** — only when you
-specifically want the trigger to _be_ the input (search-as-you-
-type without a separate popover input). That's a different
-interaction pattern; the shadcn shape above is the default.
+Used by: the Characters / Foes / Expeditions / Connections **switchers**
+(the last two add filter pills), the Connections **Within** picker
+(pills + `clearItem`), the **map switcher** and **marker link picker**
+in `MapDialog` / `MarkerPropertiesDialog`. Sort items yourself before
+passing them — `Command` filters but does not sort.
+
+The wrapper owns the `.cb-*` styles (single source of truth, the way
+`Select.svelte` owns `.bui-select-*`). Per-call-site width tweaks ride
+along via the `class` prop (e.g. `.ea-hdr-combobox`, `.cm-within-select`).
+
+**When to use bits-ui `Combobox` (the primitive) instead** — only when
+you specifically want the trigger to _be_ the input (search-as-you-type
+without a separate popover input). That's a different interaction
+pattern; the wrapper above is the default. If a call site needs
+something the wrapper can't express, add a prop to the wrapper rather
+than hand-rolling a fresh `Popover` + `Command` block.
 
 ### Simple dropdown fields — `<Select>` wrapper
 
@@ -1189,14 +1201,13 @@ consumer of a shared dialog primitive is migrated, keep them.
 Reserve class prefixes so it's obvious at a glance which
 primitive a class belongs to:
 
-| Prefix          | Primitive                             | Example use                                                      |
-| --------------- | ------------------------------------- | ---------------------------------------------------------------- |
-| `cm-*`          | `AlertDialog` (Confirm)               | `.cm-overlay`, `.cm-header`, `.cm-actions`                       |
-| `mp-combobox-*` | `Popover.Trigger` combobox shell      | `.mp-combobox`, `.mp-combobox-value`, `-caret`                   |
-| `mp-cmd-*`      | `Popover + Command` popover body      | `.mp-cmd-popover`, `.mp-cmd-search`, `.mp-cmd-item`              |
-| `bui-select-*`  | `<Select>` wrapper (bits-ui)          | `.bui-select-trigger`, `.bui-select-content`, `.bui-select-item` |
-| `hm-*`          | `DropdownMenu` (title-bar hamburger)  | `.hm-menu`, `.hm-item`, `.hm-sep`, `.hm-item--danger`            |
-| `imd-*`         | `ImportDialog` (incl. its `Progress`) | `.imd-bar`, `.imd-bar-fill`, `.imd-state`, `.imd-spinner`        |
+| Prefix         | Primitive                              | Example use                                                        |
+| -------------- | -------------------------------------- | ------------------------------------------------------------------ |
+| `cm-*`         | `AlertDialog` (Confirm)                | `.cm-overlay`, `.cm-header`, `.cm-actions`                         |
+| `cb-*`         | `<Combobox>` wrapper (Popover+Command) | `.cb-trigger`, `.cb-popover`, `.cb-search`, `.cb-item`, `.cb-pill` |
+| `bui-select-*` | `<Select>` wrapper (bits-ui)           | `.bui-select-trigger`, `.bui-select-content`, `.bui-select-item`   |
+| `hm-*`         | `DropdownMenu` (title-bar hamburger)   | `.hm-menu`, `.hm-item`, `.hm-sep`, `.hm-item--danger`              |
+| `imd-*`        | `ImportDialog` (incl. its `Progress`)  | `.imd-bar`, `.imd-bar-fill`, `.imd-state`, `.imd-spinner`          |
 
 New primitives get a fresh prefix keyed to their surface — pick
 one that's short and searchable. Don't stack unrelated bits-ui

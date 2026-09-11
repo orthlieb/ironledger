@@ -36,7 +36,7 @@ async function entryCount(page: Page): Promise<number> {
 /** Open the New-{kind} dialog via the header combobox action item. */
 async function openNew(page: Page, kind: 'Settlement' | 'NPC' | 'Landmark') {
 	await page.locator(CM_COMBOBOX).click();
-	await page.locator('.mp-cmd-item--action', { hasText: new RegExp(`New ${kind}`, 'i') }).click();
+	await page.locator('.cb-item--action', { hasText: new RegExp(`New ${kind}`, 'i') }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
 }
 

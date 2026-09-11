@@ -62,14 +62,12 @@
 	import { formatEntityId } from '$lib/mapEntityLinks.js';
 	import { createMapOwnerActions, fmtCoord } from '$lib/mapOwnerActions.js';
 	import iconGearSvg from '$icons/gear-solid.svg?raw';
-	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
-	import clearFiltersSvg from '$icons/filter-circle-xmark-solid.svg?raw';
 	import checkSvg from '$icons/circle-check-solid.svg?raw';
 	import locationSvg from '$icons/location-dot-solid.svg?raw';
 	import iconMapSvg from '$icons/compass-rose.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
-	import { Tabs, Popover, Command } from 'bits-ui';
+	import { Tabs } from 'bits-ui';
+	import Combobox from '$lib/components/Combobox.svelte';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import CountdownTrack from '$lib/components/CountdownTrack.svelte';
 	const journeyPlaceholderSvg = ENTITY_KIND_META.journey.icon;
@@ -157,16 +155,7 @@
 	// expedition types currently allowed through. Empty set = show all
 	// (default). Mirrors the Connections popover's kind-filter pills.
 	type ExpKind = 'journey' | 'site' | 'scene';
-	let expTypeFilter = $state<Set<ExpKind>>(new Set<ExpKind>());
-	function toggleExpTypeFilter(kind: ExpKind) {
-		const next = new Set(expTypeFilter);
-		if (next.has(kind)) next.delete(kind);
-		else next.add(kind);
-		expTypeFilter = next;
-	}
-	function clearExpTypeFilter() {
-		expTypeFilter = new Set<ExpKind>();
-	}
+	let expTypeFilter = $state<Set<string>>(new Set<string>());
 	let mapDialogRef = $state<{
 		open(target?: { mapId?: string; markerId?: string; promptUpload?: boolean }): void;
 		close(): void;
@@ -222,12 +211,35 @@
 	const sortedExpeditions = $derived(
 		expeditions.slice().sort((a, b) => expDisplayName(a).localeCompare(expDisplayName(b))),
 	);
-	/** Popover list after the type-filter pills. Empty filter set = show all. */
-	const visibleExpeditions = $derived(
-		expTypeFilter.size === 0
-			? sortedExpeditions
-			: sortedExpeditions.filter((e) => expTypeFilter.has(e.type as ExpKind)),
-	);
+	/** Switcher combobox config: type-filter pills, per-item glyph/colour, and
+	 *  the source-gated "+ New …" action rows. */
+	const EXP_PILLS: { key: string; label: string; color: string }[] = [
+		{ key: 'journey', label: 'Journeys', color: JOURNEY_COLOR },
+		{ key: 'site', label: 'Sites', color: SITE_COLOR },
+		{ key: 'scene', label: 'Scenes', color: SCENE_COLOR },
+	];
+	const EXP_ICON: Record<ExpKind, string> = {
+		journey: journeyPlaceholderSvg,
+		site: sitePlaceholderSvg,
+		scene: scenePlaceholderSvg,
+	};
+	const EXP_COLOR: Record<ExpKind, string> = {
+		journey: JOURNEY_COLOR,
+		site: SITE_COLOR,
+		scene: SCENE_COLOR,
+	};
+	const expActions = $derived([
+		{ label: '+ New Journey…', value: '+ New Journey', onselect: addJourney },
+		...(isSourceEnabled('delve')
+			? [{ label: '+ New Site…', value: '+ New Site', onselect: addSite }]
+			: []),
+		// Scenes are gated on Lodestar (which supplies the four Scene moves).
+		// Existing scenes keep rendering when Lodestar is later disabled; only
+		// the create affordance is hidden.
+		...(isSourceEnabled('lodestar')
+			? [{ label: '+ New Scene…', value: '+ New Scene', onselect: addScene }]
+			: []),
+	]);
 
 	/** Back-references for the active expedition, if any. Empty until the
 	 *  index has loaded. Re-derived when either the index or the active
@@ -719,137 +731,27 @@
 			     muted placeholder, and the popover surfaces "+ New Journey…"
 			     / "+ New Site…" as the only actions. Campaign map moved to
 			     the app-nav (Map button next to Move). -->
-			<Popover.Root bind:open={expPickerOpen}>
-				<Popover.Trigger class="mp-combobox ea-hdr-combobox" aria-label="Switch or add expedition">
-					{#if activeExp}<span class="mp-combobox-value">{expDisplayName(activeExp)}</span
-						>{:else}<span class="mp-combobox-value mp-combobox-value--placeholder"
-							>— No expeditions yet —</span
-						>{/if}
-					<span class="mp-combobox-caret" aria-hidden="true">{@html iconCaretDownSvg}</span>
-				</Popover.Trigger>
-				<Popover.Portal>
-					<Popover.Content class="mp-cmd-popover" sideOffset={4} align="start" collisionPadding={8}>
-						<Command.Root class="mp-cmd">
-							<div class="mp-cmd-search-row">
-								<span class="mp-cmd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-								<Command.Input class="mp-cmd-search" placeholder="Search expeditions…" autofocus />
-							</div>
-							<div class="ea-kind-pills" role="group" aria-label="Filter by expedition type">
-								{#each [{ key: 'journey' as ExpKind, label: 'Journeys', color: JOURNEY_COLOR }, { key: 'site' as ExpKind, label: 'Sites', color: SITE_COLOR }, { key: 'scene' as ExpKind, label: 'Scenes', color: SCENE_COLOR }] as pill (pill.key)}
-									{@const active = expTypeFilter.has(pill.key)}
-									<button
-										type="button"
-										class="ea-kind-pill"
-										class:active
-										style:--pcolor={pill.color}
-										aria-pressed={active}
-										onclick={() => toggleExpTypeFilter(pill.key)}>{pill.label}</button
-									>
-								{/each}
-								<button
-									type="button"
-									class="ea-kind-clear"
-									onclick={clearExpTypeFilter}
-									disabled={expTypeFilter.size === 0}
-									use:tooltip={'Clear filters'}
-									aria-label="Clear filters">{@html clearFiltersSvg}</button
-								>
-							</div>
-							<Command.List class="mp-cmd-list">
-								<Command.Empty class="mp-cmd-empty">No matching expeditions.</Command.Empty>
-								{#each visibleExpeditions as exp (exp.id)}
-									{@const n = expDisplayName(exp)}
-									{@const typeIcon =
-										exp.type === 'site'
-											? sitePlaceholderSvg
-											: exp.type === 'scene'
-												? scenePlaceholderSvg
-												: journeyPlaceholderSvg}
-									{@const typeColor =
-										exp.type === 'site'
-											? SITE_COLOR
-											: exp.type === 'scene'
-												? SCENE_COLOR
-												: JOURNEY_COLOR}
-									<Command.Item
-										class="mp-cmd-item"
-										value={n}
-										onSelect={() => {
-											selectExp(exp.id);
-											expPickerOpen = false;
-										}}
-									>
-										<span class="mp-cmd-check" aria-hidden="true">
-											{#if exp.id === activeExpId}
-												<svg
-													viewBox="0 0 20 20"
-													fill="none"
-													stroke="currentColor"
-													stroke-width="2.5"
-													><polyline
-														points="4 11 8 15 16 6"
-														stroke-linecap="round"
-														stroke-linejoin="round"
-													></polyline></svg
-												>
-											{/if}
-										</span>
-										<span
-											class="mp-cmd-item-icon ea-cmd-type-icon"
-											style="color: {typeColor}"
-											aria-hidden="true">{@html typeIcon}</span
-										>
-										<span class="mp-cmd-item-name">{n}</span>
-									</Command.Item>
-								{/each}
-								<Command.Separator class="mp-cmd-sep" />
-								<Command.Item
-									class="mp-cmd-item mp-cmd-item--action"
-									value="+ New Journey"
-									onSelect={() => {
-										expPickerOpen = false;
-										addJourney();
-									}}
-								>
-									<span class="mp-cmd-check" aria-hidden="true"></span>
-									<span class="mp-cmd-item-name">+ New Journey…</span>
-								</Command.Item>
-								{#if isSourceEnabled('delve')}
-									<Command.Item
-										class="mp-cmd-item mp-cmd-item--action"
-										value="+ New Site"
-										onSelect={() => {
-											expPickerOpen = false;
-											addSite();
-										}}
-									>
-										<span class="mp-cmd-check" aria-hidden="true"></span>
-										<span class="mp-cmd-item-name">+ New Site…</span>
-									</Command.Item>
-								{/if}
-								<!-- Scenes are gated on Lodestar (which supplies the four
-								     Scene moves — Begin the Scene / Face Danger / Secure an
-								     Advantage / Finish the Scene). Existing scenes keep
-								     rendering when Lodestar is later disabled; we only
-								     hide the create affordance. -->
-								{#if isSourceEnabled('lodestar')}
-									<Command.Item
-										class="mp-cmd-item mp-cmd-item--action"
-										value="+ New Scene"
-										onSelect={() => {
-											expPickerOpen = false;
-											addScene();
-										}}
-									>
-										<span class="mp-cmd-check" aria-hidden="true"></span>
-										<span class="mp-cmd-item-name">+ New Scene…</span>
-									</Command.Item>
-								{/if}
-							</Command.List>
-						</Command.Root>
-					</Popover.Content>
-				</Popover.Portal>
-			</Popover.Root>
+			<Combobox
+				bind:open={expPickerOpen}
+				items={sortedExpeditions}
+				getKey={(e) => e.id}
+				getLabel={expDisplayName}
+				getIcon={(e) => EXP_ICON[e.type as ExpKind]}
+				getColor={(e) => EXP_COLOR[e.type as ExpKind]}
+				activeKey={activeExpId}
+				onselect={(e) => selectExp(e.id)}
+				triggerValue={activeExp ? expDisplayName(activeExp) : ''}
+				placeholder="— No expeditions yet —"
+				searchPlaceholder="Search expeditions…"
+				emptyText="No matching expeditions."
+				ariaLabel="Switch or add expedition"
+				filterGroupLabel="Filter by expedition type"
+				class="ea-hdr-combobox"
+				filters={EXP_PILLS}
+				bind:activeFilters={expTypeFilter}
+				filterOf={(e) => e.type}
+				actions={expActions}
+			/>
 			{#if activeExp}
 				<!-- Scenes are non-map-spatial — no map affordance. -->
 				{#if activeExp.type !== 'scene'}
@@ -1668,64 +1570,6 @@
 		min-width: 0;
 	}
 
-	/* Type-filter pill row above the popover list — mirrors the Connections
-	   popover (Journeys / Sites / Scenes). Uppercase small caps, colour-tinted
-	   border, filled ~18% when active; trailing clear button on the right. */
-	:global(.ea-kind-pills) {
-		display: flex;
-		flex-wrap: wrap;
-		align-items: center;
-		gap: 6px;
-		padding: 6px 8px 4px;
-		border-bottom: 1px solid var(--border);
-	}
-	:global(.ea-kind-pill) {
-		font-family: var(--font-ui);
-		font-size: 0.66rem;
-		font-weight: 600;
-		letter-spacing: 0.04em;
-		text-transform: uppercase;
-		color: var(--pcolor, var(--text-dimmer));
-		background: transparent;
-		border: 1px solid color-mix(in srgb, var(--pcolor, var(--border)) 40%, transparent);
-		border-radius: 999px;
-		padding: 3px 10px;
-		cursor: pointer;
-		white-space: nowrap;
-		transition:
-			background 0.12s,
-			border-color 0.12s;
-	}
-	:global(.ea-kind-pill:hover) {
-		background: color-mix(in srgb, var(--pcolor) 12%, transparent);
-	}
-	:global(.ea-kind-pill.active) {
-		background: color-mix(in srgb, var(--pcolor) 18%, transparent);
-		border-color: var(--pcolor);
-	}
-	:global(.ea-kind-clear) {
-		margin-left: auto;
-		background: transparent;
-		border: 0;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		padding: 3px;
-		border-radius: 6px;
-		display: grid;
-		place-items: center;
-	}
-	:global(.ea-kind-clear:hover:not(:disabled)) {
-		color: var(--text-accent);
-	}
-	:global(.ea-kind-clear:disabled) {
-		opacity: 0.35;
-		cursor: default;
-	}
-	:global(.ea-kind-clear svg) {
-		width: 15px;
-		height: 15px;
-		fill: currentColor;
-	}
 	/* Header +/plain icon button (used for the per-expedition Map btn) —
 	   matches Characters' Vow/Asset shape. */
 	:global(.ea-hdr-icon-btn) {

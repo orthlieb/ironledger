@@ -137,7 +137,7 @@ test.describe('Tab accessibility — v2 areas', () => {
 				.catch(() => false))
 		) {
 			await page.locator(`${CM_AREA} .cm-hdr-combobox`).click();
-			await page.locator('.mp-cmd-item--action', { hasText: /New Settlement/i }).click();
+			await page.locator('.cb-item--action', { hasText: /New Settlement/i }).click();
 			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 15_000 });
 			await page.locator('.confirm-modal .co-input').first().fill('E2E Community');
 			await page.locator('.confirm-modal button:has-text("Create")').click();
@@ -178,7 +178,7 @@ test.describe('Tab accessibility — v2 areas', () => {
 				.catch(() => false))
 		) {
 			await page.locator(`${EXP_AREA} .ea-hdr-combobox`).click();
-			await page.locator('.mp-cmd-item--action', { hasText: /New Journey/i }).click();
+			await page.locator('.cb-item--action', { hasText: /New Journey/i }).click();
 			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 10_000 });
 			await page.locator('.confirm-modal .co-input').first().fill('E2E Journey');
 			await page.locator('.confirm-modal button:has-text("Create")').click();
@@ -216,7 +216,7 @@ test.describe('Tab accessibility — v2 areas', () => {
 				.catch(() => false))
 		) {
 			await page.locator(`${FOE_AREA} .fa-hdr-combobox`).click();
-			await page.locator('.mp-cmd-item--action', { hasText: /New foe/i }).click();
+			await page.locator('.cb-item--action', { hasText: /New foe/i }).click();
 			await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 8_000 });
 			await page.locator('.foe-dialog .fd-tile').first().click();
 			await page.locator('.foe-dialog button:has-text("Add to Foes")').click();

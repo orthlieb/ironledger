@@ -32,18 +32,16 @@ export async function characterCount(page: Page): Promise<number> {
 
 /** Active character's display name (the combobox trigger value). */
 export async function activeCharacterName(page: Page): Promise<string> {
-	return (
-		await page.locator(`${CHAR_AREA} .ca-hdr-combobox .mp-combobox-value`).innerText()
-	).trim();
+	return (await page.locator(`${CHAR_AREA} .ca-hdr-combobox .cb-value`).innerText()).trim();
 }
 
 /** Open the character switcher and select the Nth listed character. */
 export async function selectCharacterByIndex(page: Page, index: number): Promise<void> {
 	await page.locator(`${CHAR_AREA} .ca-hdr-combobox`).click();
-	const items = page.locator('.mp-cmd-popover .mp-cmd-item:not(.mp-cmd-item--action)');
+	const items = page.locator('.cb-popover .cb-item:not(.cb-item--action)');
 	await expect(items.first()).toBeVisible({ timeout: 3_000 });
 	await items.nth(index).click();
-	await expect(page.locator('.mp-cmd-popover'))
+	await expect(page.locator('.cb-popover'))
 		.toBeHidden({ timeout: 3_000 })
 		.catch(() => {});
 }
@@ -55,7 +53,7 @@ export async function selectCharacterByIndex(page: Page, index: number): Promise
 export async function createCharacter(page: Page): Promise<void> {
 	const before = await characterCount(page);
 	await page.locator(`${CHAR_AREA} .ca-hdr-combobox`).click();
-	await page.locator('.mp-cmd-item--action', { hasText: /New character/i }).click();
+	await page.locator('.cb-item--action', { hasText: /New character/i }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
 	// Name-first dialog: the Create button is disabled until a name is entered.
 	await page.locator('.confirm-modal .co-input').fill('E2E Character');

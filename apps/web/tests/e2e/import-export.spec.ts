@@ -12,6 +12,8 @@
  * dialog are unchanged.
  */
 import { test, expect, type Download } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
 import { resetAll, getTestToken, seedCommunity } from './helpers/reset';
 import { settleHome } from './helpers/home';
@@ -74,7 +76,7 @@ async function seedCharacter(page: import('@playwright/test').Page, name = 'Expo
 		.catch(() => false);
 	if (hasChar) return;
 	await page.locator(`${CHAR_AREA} .ca-hdr-combobox`).click();
-	await page.locator('.mp-cmd-item--action', { hasText: /New character/i }).click();
+	await page.locator('.cb-item--action', { hasText: /New character/i }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
 	await page.locator('.confirm-modal .co-input').first().fill(name);
 	await page.locator('.confirm-modal .btn-primary').click();
@@ -498,7 +500,7 @@ test.describe('Import / Export — portrait round-trip', () => {
 				.catch(() => false))
 		) {
 			await page.locator(`${CHAR_AREA} .ca-hdr-combobox`).click();
-			await page.locator('.mp-cmd-item--action', { hasText: /New character/i }).click();
+			await page.locator('.cb-item--action', { hasText: /New character/i }).click();
 			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
 			await page.locator('.confirm-modal .co-input').first().fill('Portrait Char');
 			await page.locator('.confirm-modal .btn-primary').click();
@@ -561,7 +563,7 @@ test.describe('Import / Export — portrait round-trip', () => {
 		// Select the freshly imported character from the switcher, open Background.
 		await page.locator(`${CHAR_AREA} .ca-hdr-combobox`).click();
 		await page
-			.locator('.mp-cmd-popover .mp-cmd-item:not(.mp-cmd-item--action)', { hasText: uniqueName })
+			.locator('.cb-popover .cb-item:not(.cb-item--action)', { hasText: uniqueName })
 			.first()
 			.click();
 		await page.locator(`${CHAR_AREA} .ca-tab`, { hasText: /^Background$/i }).click();
@@ -577,12 +579,12 @@ test.describe('Import / Export — portrait round-trip', () => {
 });
 
 // ---------------------------------------------------------------------------
-// Place → parent settlement re-linking. A Place stores its parent as
-// `withinSettlementId`, but ids are minted per-user, so the export records the
-// parent BY NAME (`withinSettlementName`) and import resolves it back to the
-// current settlement's id — mirroring how bundled maps re-link owners by name.
-// This one flow exercises BOTH directions: import resolves name→id (the place
-// gets linked), then export resolves id→name (emits withinSettlementName).
+// Containment re-linking. A connection stores its parent as a `within` ref
+// (`"kind:id"`), but ids are minted per-user, so the export records the parent
+// BY NAME + KIND (`withinRef { kind, name }`) and import resolves it back to the
+// current parent's id — mirroring how bundled maps re-link owners by name. This
+// flow exercises BOTH directions: import resolves a legacy `withinSettlementName`
+// to `within`, then export lifts `within` back to a portable `withinRef`.
 // ---------------------------------------------------------------------------
 
 test.describe('Import / Export — Place ↔ settlement re-linking', () => {
@@ -632,9 +634,10 @@ test.describe('Import / Export — Place ↔ settlement re-linking', () => {
 		// now persisted with their final ids and the resolved parent link.
 		await gotoHome(page);
 
-		// Export everything and inspect the body: the place must carry
-		// withinSettlementName === "Havenport" (proving import resolved the link)
-		// and must NOT carry a raw withinSettlementId.
+		// Export everything and inspect the body: the place must carry a portable
+		// withinRef { kind: 'community', name: 'Havenport' } (proving import
+		// resolved the legacy name link into `within`, and export lifted it back
+		// to a name reference) and must NOT carry any raw id/legacy field.
 		await openExportDialog(page);
 		const [download] = await Promise.all([
 			page.waitForEvent('download'),
@@ -646,8 +649,10 @@ test.describe('Import / Export — Place ↔ settlement re-linking', () => {
 
 		const deep = (data.places as Array<Record<string, unknown>>).find((p) => p.name === 'The Deep');
 		expect(deep).toBeDefined();
-		expect(deep?.withinSettlementName).toBe('Havenport');
+		expect(deep?.withinRef).toEqual({ kind: 'community', name: 'Havenport' });
+		expect(deep?.within).toBeUndefined();
 		expect(deep?.withinSettlementId).toBeUndefined();
+		expect(deep?.withinSettlementName).toBeUndefined();
 	});
 });
 
@@ -859,10 +864,13 @@ test.describe('Import / Export — full round-trip', () => {
 		// NPC.
 		expect(state.npcs.find((n: { name: string }) => n.name === 'Old Salt')).toBeDefined();
 
-		// Place — present AND re-linked to the community's NEW id (not the old one).
+		// Place — present AND re-linked (via `within`) to the community's NEW id
+		// (not the old one). Seeded with the legacy withinSettlementId; the
+		// round-trip migrates it to a `within` ref resolved by name.
 		const hall = state.places.find((p: { name: string }) => p.name === 'The Sunken Hall');
 		expect(hall, 'place round-tripped').toBeDefined();
-		expect(hall.withinSettlementId, 'place re-linked to community').toBe(bellmark.id);
+		expect(hall.within, 'place re-linked to community').toBe(`community:${bellmark.id}`);
+		expect(hall.withinSettlementId, 'legacy field dropped').toBeUndefined();
 
 		// Expeditions — both types with their discriminating fields.
 		const journey = state.expeditions.find((e: { name: string }) => e.name === 'The Long Road');
@@ -999,5 +1007,141 @@ test.describe('Import — marker entity re-link', () => {
 		expect(state.indexKeys).not.toContain('community:11111111-dead-4000-8000-000000000000');
 		expect(state.markerCount).toBe(1); // pin kept
 		expect(state.firstMarkerHasEntity).toBe(false); // link dropped
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Rich round-trip — the bundled YRT starter (static/about/yrt-starter.zip) is
+// the app's most content-dense archive: ~15 settlements + ~22 landmarks with
+// portraits, a regional map with entity-linked markers, characters, and
+// expeditions. Import it through the real dialog, add one containment edge to
+// exercise the "graph", then export → wipe → re-import and assert the whole
+// world came back byte-for-meaning: same names per kind, the SAME entities
+// still carry portraits, the map markers still resolve, and the within link
+// survives. This is the test that would have caught portraits silently not
+// round-tripping.
+// ---------------------------------------------------------------------------
+
+const STARTER_ZIP = fileURLToPath(new URL('../../static/about/yrt-starter.zip', import.meta.url));
+
+/** A structural snapshot of the whole world, keyed by NAME (ids are minted
+ *  per-import, so names are the stable identity across a round-trip). */
+async function worldSummary(page: import('@playwright/test').Page) {
+	return await page.evaluate(async () => {
+		const s = await (await fetch('/api/session', { credentials: 'include' })).json();
+		const chars = await (await fetch('/api/characters', { credentials: 'include' })).json();
+		const mapList = ((await (await fetch('/api/session/maps', { credentials: 'include' })).json())
+			.maps ?? []) as Array<{ id: string }>;
+		const communities = (s.communities ?? []) as Array<Record<string, unknown>>;
+		const places = (s.places ?? []) as Array<Record<string, unknown>>;
+		const cp = [...communities, ...places];
+		const idset = new Set([
+			...communities.map((c) => `community:${c.id}`),
+			...places.map((p) => `place:${p.id}`),
+		]);
+		const nameById = new Map<string, string>([
+			...communities.map((c) => [`community:${c.id}`, c.name as string] as const),
+			...places.map((p) => [`place:${p.id}`, p.name as string] as const),
+		]);
+		const maps: Array<{ name: string; markers: number; linked: number }> = [];
+		for (const m of mapList) {
+			const det = await (
+				await fetch(`/api/session/maps/${m.id}`, { credentials: 'include' })
+			).json();
+			const markers = (det.markers ?? []) as Array<{ entityId?: string }>;
+			maps.push({
+				name: det.name,
+				markers: markers.length,
+				linked: markers.filter((mk) => mk.entityId && idset.has(mk.entityId)).length,
+			});
+		}
+		const withinPairs = cp
+			.filter((e) => typeof e.within === 'string')
+			.map((e) => ({ child: e.name as string, parent: nameById.get(e.within as string) }))
+			.filter((x) => x.parent)
+			.sort((a, b) => a.child.localeCompare(b.child));
+		const sorted = (a: string[]) => a.slice().sort();
+		return {
+			communities: sorted(communities.map((c) => c.name as string)),
+			places: sorted(places.map((p) => p.name as string)),
+			npcCount: (s.npcs ?? []).length,
+			expeditions: sorted((s.expeditions ?? []).map((e: { name: string }) => e.name)),
+			characters: sorted((Array.isArray(chars) ? chars : []).map((c: { name: string }) => c.name)),
+			portraitNames: sorted(cp.filter((e) => e.portraitEtag).map((e) => e.name as string)),
+			maps: maps.sort((a, b) => a.name.localeCompare(b.name)),
+			withinPairs,
+		};
+	});
+}
+
+async function importZipBytes(page: import('@playwright/test').Page, bytes: Buffer, name: string) {
+	await page.locator(ZIP_INPUT).setInputFiles({ name, mimeType: 'application/zip', buffer: bytes });
+	await expectImportOk(page, 45_000);
+}
+
+test.describe('Import / Export — YRT starter rich round-trip', () => {
+	test.beforeAll(async () => {
+		await resetAll();
+	});
+
+	test('the bundled starter survives import → export → re-import with maps, portraits, and the within graph intact', async ({
+		page,
+	}) => {
+		test.setTimeout(120_000);
+		await gotoHome(page);
+
+		// 1. Import the real bundled starter and confirm it landed rich content.
+		await importZipBytes(page, readFileSync(STARTER_ZIP), 'yrt-starter.zip');
+		const imported = await worldSummary(page);
+		expect(imported.communities.length, 'settlements imported').toBeGreaterThan(10);
+		expect(imported.places.length, 'landmarks imported').toBeGreaterThan(10);
+		expect(imported.portraitNames.length, 'portraits imported').toBeGreaterThan(10);
+		expect(imported.maps.length, 'a map imported').toBeGreaterThan(0);
+		expect(imported.maps[0].linked, 'map markers link to entities').toBeGreaterThan(0);
+
+		// 2. Add one containment edge (settlement within a landmark) so the graph
+		//    is part of what round-trips. Reload so the export reads it.
+		await page.evaluate(async () => {
+			const s = await (await fetch('/api/session', { credentials: 'include' })).json();
+			const c = (s.communities ?? [])[0];
+			const p = (s.places ?? [])[0];
+			await fetch(`/api/session/communities/${c.id}`, {
+				method: 'PATCH',
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ ...c, within: `place:${p.id}` }),
+			});
+		});
+		await gotoHome(page);
+		const before = await worldSummary(page);
+		expect(before.withinPairs.length, 'within edge present before export').toBeGreaterThan(0);
+
+		// 3. Export everything.
+		await openExportDialog(page);
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.exd-dialog .btn-primary').click(),
+		]);
+		const exported = await downloadBuffer(download);
+		expect(exported.length).toBeGreaterThan(0);
+
+		// 4. Wipe and re-import the produced archive.
+		await resetAll();
+		await gotoHome(page);
+		await importZipBytes(page, exported, 'roundtrip.zip');
+		const after = await worldSummary(page);
+
+		// 5. Everything came back, keyed by name — including portraits, the map +
+		//    its resolved markers, and the containment edge.
+		expect(after.communities).toEqual(before.communities);
+		expect(after.places).toEqual(before.places);
+		expect(after.npcCount).toEqual(before.npcCount);
+		expect(after.expeditions).toEqual(before.expeditions);
+		expect(after.characters).toEqual(before.characters);
+		expect(after.portraitNames, 'the same entities still carry portraits').toEqual(
+			before.portraitNames,
+		);
+		expect(after.maps, 'map + resolved marker links round-trip').toEqual(before.maps);
+		expect(after.withinPairs, 'the within graph round-trips by name').toEqual(before.withinPairs);
 	});
 });

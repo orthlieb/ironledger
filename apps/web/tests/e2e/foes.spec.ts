@@ -30,7 +30,7 @@ async function foeCount(page: Page): Promise<number> {
 /** Open the foe picker via the combobox "+ New foe…" action. */
 async function openFoePicker(page: Page) {
 	await page.locator(FOE_COMBOBOX).click();
-	await page.locator('.mp-cmd-item--action', { hasText: /New foe/i }).click();
+	await page.locator('.cb-item--action', { hasText: /New foe/i }).click();
 	await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
 }
 

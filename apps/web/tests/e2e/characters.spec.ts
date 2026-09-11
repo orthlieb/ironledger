@@ -20,7 +20,7 @@ const CHAR_COMBOBOX = `${CHAR_HEADER} .ca-hdr-combobox`;
 /** Create a character through the header combobox + name-first dialog. */
 async function createCharacter(page: import('@playwright/test').Page) {
 	await page.locator(CHAR_COMBOBOX).click();
-	await page.locator('.mp-cmd-item--action', { hasText: /New character/i }).click();
+	await page.locator('.cb-item--action', { hasText: /New character/i }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
 	// The Create button is disabled until a name is entered.
 	await page.locator('.confirm-modal .co-input').fill('E2E Character');

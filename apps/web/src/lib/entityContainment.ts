@@ -16,6 +16,10 @@
 // Design decisions (see docs/communities.md + the design thread):
 //   • Single parent → a tree, not a DAG. "Where is X?" has one answer.
 //   • Containers are settlements/landmarks only; NPCs are always leaves.
+//   • At most one settlement per root-to-leaf path: a settlement may not sit
+//     (even transitively) inside another settlement, so a settlement's parent
+//     is always a landmark. isEligibleContainer is the single guard the
+//     picker, the setter, and the import sanitizer all share.
 //   • Nothing is denormalised: the breadcrumb and effective region are
 //     DERIVED by walking `within`, so moving a parent needs no rewrite.
 //   • Deleting a container reparents its children to the container's own
@@ -55,6 +59,12 @@ function refKind(ref: string): string | null {
 	const idx = ref.indexOf(':');
 	if (idx <= 0 || idx === ref.length - 1) return null;
 	return ref.slice(0, idx);
+}
+
+/** True when `ref` names a settlement (a Community). Settlements are the kind
+ *  constrained to one-per-chain. */
+function isSettlementRef(ref: string): boolean {
+	return refKind(ref) === 'community';
 }
 
 /** True when `ref` names a container kind (settlement or landmark). */
@@ -123,41 +133,154 @@ export function descendantRefs(
 	return out;
 }
 
+/** True when `ref` is a settlement, or any of its ancestors is. Backs the
+ *  one-settlement-per-chain rule (a chain that already holds a settlement). */
+export function chainHasSettlement(
+	ref: string,
+	graph: ReadonlyMap<string, ContainmentNode>,
+): boolean {
+	return isSettlementRef(ref) || ancestorRefs(ref, graph).some(isSettlementRef);
+}
+
+/** True when `ref` is a settlement, or any node in its subtree is. A subtree
+ *  that carries a settlement can't be dropped under a chain that already has
+ *  one. */
+export function subtreeHasSettlement(
+	ref: string,
+	graph: ReadonlyMap<string, ContainmentNode>,
+): boolean {
+	if (isSettlementRef(ref)) return true;
+	for (const d of descendantRefs(ref, graph)) if (isSettlementRef(d)) return true;
+	return false;
+}
+
 /**
- * Container refs that `selfRef` may be placed within: every settlement/landmark
- * except `selfRef` and its own descendants (choosing one of those would form a
- * cycle). Order is preserved from the graph's insertion order; the caller sorts
- * for display.
+ * May `childRef` be placed within `parentRef`? The single source of truth for
+ * the containment rules — the picker, the setter guard, and the import
+ * sanitizer all funnel through here:
+ *   • the parent must be a container (settlement/landmark); NPCs are leaves;
+ *   • no cycle — the parent may not be the child itself or sit in the child's
+ *     own subtree;
+ *   • at most one settlement per root-to-leaf path — a child subtree that
+ *     carries a settlement may not go under a chain that already has one. This
+ *     also blocks settlement-within-settlement outright: a settlement's subtree
+ *     always "carries a settlement" (itself), so it can only land under a
+ *     settlement-free chain — i.e. under a landmark with no settlement above.
+ */
+export function isEligibleContainer(
+	childRef: string,
+	parentRef: string,
+	graph: ReadonlyMap<string, ContainmentNode>,
+): boolean {
+	if (childRef === parentRef) return false;
+	if (!isContainerRef(parentRef)) return false;
+	if (wouldCreateCycle(childRef, parentRef, graph)) return false;
+	if (subtreeHasSettlement(childRef, graph) && chainHasSettlement(parentRef, graph)) return false;
+	return true;
+}
+
+/**
+ * Container refs that `selfRef` may be placed within — every container that
+ * satisfies isEligibleContainer (not self, not a descendant, not a chain that
+ * would put two settlements on one path). Order is preserved from the graph's
+ * insertion order; the caller sorts for display.
  */
 export function eligibleContainerRefs(
 	selfRef: string,
 	graph: ReadonlyMap<string, ContainmentNode>,
 ): string[] {
-	const banned = descendantRefs(selfRef, graph);
 	const out: string[] = [];
 	for (const ref of graph.keys()) {
-		if (ref === selfRef || banned.has(ref)) continue;
-		if (isContainerRef(ref)) out.push(ref);
+		if (isEligibleContainer(selfRef, ref, graph)) out.push(ref);
 	}
 	return out;
 }
 
 /**
  * When a container is deleted, where do its direct children go? Each child is
- * reparented to the deleted node's own parent (grandparent), or detached
- * (`within: undefined`) when the deleted node had no parent. Returns one entry
- * per affected child; refs not listed are unchanged.
+ * lifted to the deleted node's own parent (grandparent) — but only when that
+ * keeps the rules (isEligibleContainer against the post-delete graph); otherwise
+ * the child detaches (`within: undefined`). A child always detaches when the
+ * deleted node had no parent. Returns one entry per affected child; refs not
+ * listed are unchanged.
+ *
+ * The eligibility check matters: deleting a landmark that sits between two
+ * settlements (settlement → landmark → settlement) would otherwise lift the
+ * lower settlement straight under the upper one, quietly breaking the
+ * one-settlement-per-chain rule. Here it detaches instead.
  */
 export function reparentOnDelete(
 	deletedRef: string,
 	graph: ReadonlyMap<string, ContainmentNode>,
 ): Array<{ ref: string; within: string | undefined }> {
 	const grandparent = graph.get(deletedRef)?.within;
+	// The graph as it will be once `deletedRef` is gone — children are judged
+	// against that (their own `within` still names the doomed node, but the
+	// eligibility checks walk down from the child and up from the grandparent,
+	// never up through the deleted node, so this is sound).
+	const afterDelete = new Map(graph);
+	afterDelete.delete(deletedRef);
 	const out: Array<{ ref: string; within: string | undefined }> = [];
 	for (const [ref, node] of graph) {
-		if (node.within === deletedRef) out.push({ ref, within: grandparent });
+		if (node.within !== deletedRef) continue;
+		const within =
+			grandparent && isEligibleContainer(ref, grandparent, afterDelete) ? grandparent : undefined;
+		out.push({ ref, within });
 	}
 	return out;
+}
+
+/**
+ * Repair a proposed forest so it obeys the containment rules — used by the
+ * importer, where an incoming file may describe illegal nesting. Takes the
+ * proposed nodes (each with the `within` the import wants to set) and returns a
+ * `ref → within` map with every offending link stripped:
+ *   • a `within` that names an unknown, non-container, self, or cycle-forming
+ *     parent is dropped;
+ *   • whenever a settlement ends up with a settlement ancestor, the deeper
+ *     (descendant) settlement is detached — enforcing one settlement per chain.
+ * Runs to a fixed point (each pass removes at least one link), so the result is
+ * always a valid forest. Deterministic in the nodes' order.
+ */
+export function sanitizeContainment(
+	nodes: readonly ContainmentNode[],
+): Map<string, string | undefined> {
+	const present = new Set(nodes.map((n) => n.ref));
+	const within = new Map<string, string>();
+	for (const n of nodes) if (n.within) within.set(n.ref, n.within);
+
+	const rebuild = () => buildGraph(nodes.map((n) => ({ ...n, within: within.get(n.ref) })));
+
+	let changed = true;
+	while (changed) {
+		changed = false;
+		const graph = rebuild();
+		// Structural: dangling / non-container / self / cycle-forming parents.
+		for (const [ref, parent] of [...within]) {
+			if (
+				!present.has(parent) ||
+				!isContainerRef(parent) ||
+				parent === ref ||
+				wouldCreateCycle(ref, parent, graph)
+			) {
+				within.delete(ref);
+				changed = true;
+			}
+		}
+		if (changed) continue; // rebuild before judging chains
+		// One settlement per chain: detach any settlement with a settlement ancestor.
+		const settled = rebuild();
+		for (const ref of [...within.keys()]) {
+			if (isSettlementRef(ref) && ancestorRefs(ref, settled).some(isSettlementRef)) {
+				within.delete(ref);
+				changed = true;
+			}
+		}
+	}
+
+	const result = new Map<string, string | undefined>();
+	for (const n of nodes) result.set(n.ref, within.get(n.ref));
+	return result;
 }
 
 /**

@@ -20,7 +20,7 @@
 	 *   │   log (scrollable)          │
 	 *   └─────────────────────────────┘
 	 */
-	import { onMount } from 'svelte';
+	import { onMount, tick } from 'svelte';
 	import type { CharacterFull } from '$lib/api.js';
 	import type { Community, Npc, Expedition, Place } from '$lib/types.js';
 	import {
@@ -62,6 +62,7 @@
 	import CommunitiesArea from '$lib/components/v2/CommunitiesArea.svelte';
 	import ImportCollisionDialog from '$lib/components/ImportCollisionDialog.svelte';
 	import ImportDialog from '$lib/components/ImportDialog.svelte';
+	import ExportProgressDialog from '$lib/components/ExportProgressDialog.svelte';
 	import MapOwnerConflictDialog from '$lib/components/MapOwnerConflictDialog.svelte';
 	import {
 		normaliseName,
@@ -120,6 +121,7 @@
 		buildGraph,
 		effectiveRegion,
 		breadcrumbRefs,
+		sanitizeContainment,
 		type ContainmentNode,
 	} from '$lib/entityContainment.js';
 
@@ -288,6 +290,8 @@
 	/** Live import progress for the dialog's bar. `total` 0 = row count not
 	 *  known yet (still unpacking), which the dialog shows as a spinner. */
 	let importProgress = $state<{ done: number; total: number; label: string } | null>(null);
+	// Export busy overlay — non-null while an export is gathering/compressing.
+	let exportProgress = $state<{ done: number; total: number; label: string } | null>(null);
 	let importValidCount = $state(0);
 	/** Resolver for the `review` pause — settled by the dialog's decision. */
 	let reviewResolve: ((proceed: boolean) => void) | null = null;
@@ -863,7 +867,7 @@
 				});
 			}
 			incomingCharacters = keepValid(incomingCharacters, 'Character');
-			incomingCommunities = keepValid(incomingCommunities, 'Community');
+			incomingCommunities = keepValid(incomingCommunities, 'Settlement');
 			incomingNpcs = keepValid(incomingNpcs, 'NPC');
 			incomingPlaces = keepValid(incomingPlaces, 'Place');
 			incomingExpeditions = keepValid(incomingExpeditions, 'Expedition', true);
@@ -1043,14 +1047,24 @@
 			 *  place-only `withinSettlementName` is still honoured. Runs as a POST
 			 *  pass — AFTER communities, places AND npcs land — so container ids of
 			 *  every kind exist (a landmark can sit within another landmark).
-			 *  Resolves to the live `within` ref and clears the transport fields;
-			 *  a row with neither transport field (legacy raw id) is left untouched. */
+			 *
+			 *  The resolved forest is run through `sanitizeContainment` before it's
+			 *  applied, so an imported file that describes illegal nesting (a
+			 *  settlement inside a settlement, two settlements on one chain, a
+			 *  cycle, an NPC as a container) can't create it here — the offending
+			 *  links are dropped and those rows land top-level. The transport
+			 *  fields are always cleared; a row with neither (legacy raw id) keeps
+			 *  whatever `within` it already had (also sanitized). */
 			async function relinkContainment(): Promise<void> {
 				const nm = (s: string) => normaliseName(s);
 				const commByName = new Map(getCommunities().map((c) => [nm(c.name), c.id]));
 				const placeByName = new Map(getPlaces().map((p) => [nm(p.name), p.id]));
-				const resolveWithin = (rec: Record<string, unknown>): string | null | undefined => {
-					// undefined = nothing to relink; null = clear; string = new within ref.
+				/** Where this row WANTS to sit: resolved from its transport field by
+				 *  name+kind, else its existing `within`. */
+				const proposedWithin = (
+					kind: 'community' | 'place' | 'npc',
+					rec: Record<string, unknown>,
+				): string | undefined => {
 					const wr = rec.withinRef as { kind?: string; name?: string } | undefined;
 					if (
 						wr &&
@@ -1058,27 +1072,43 @@
 						typeof wr.name === 'string'
 					) {
 						const id = (wr.kind === 'community' ? commByName : placeByName).get(nm(wr.name));
-						return id ? `${wr.kind}:${id}` : null;
+						return id ? `${wr.kind}:${id}` : undefined;
 					}
 					if (typeof rec.withinSettlementName === 'string') {
 						const id = commByName.get(nm(rec.withinSettlementName));
-						return id ? `community:${id}` : null;
+						return id ? `community:${id}` : undefined;
 					}
-					return undefined;
+					return typeof rec.within === 'string' ? rec.within : undefined;
 				};
+
 				const passes = [
-					[getCommunities(), updateCommunity],
-					[getPlaces(), updatePlace],
-					[getNpcs(), updateNpc],
+					['community', getCommunities(), updateCommunity],
+					['place', getPlaces(), updatePlace],
+					['npc', getNpcs(), updateNpc],
 				] as const;
-				for (const [list, update] of passes) {
+
+				// 1. Resolve the whole proposed forest, then repair it to the rules.
+				const nodes: ContainmentNode[] = [];
+				for (const [kind, list] of passes)
+					for (const e of list)
+						nodes.push({
+							ref: refOf(kind, e.id),
+							within: proposedWithin(kind, e as unknown as Record<string, unknown>),
+						});
+				const sanitized = sanitizeContainment(nodes);
+
+				// 2. Apply — write the sanitized `within` (or clear it) and drop every
+				//    transport field. Skip rows that neither carried a transport field
+				//    nor changed, so we don't churn untouched entities.
+				for (const [kind, list, update] of passes) {
 					for (const e of list) {
 						const rec = e as unknown as Record<string, unknown>;
-						if (!('withinRef' in rec) && !('withinSettlementName' in rec)) continue;
-						const within = resolveWithin(rec);
-						if (within === undefined) continue;
+						const hadTransport = 'withinRef' in rec || 'withinSettlementName' in rec;
+						const next = sanitized.get(refOf(kind, e.id));
+						const current = typeof rec.within === 'string' ? rec.within : undefined;
+						if (!hadTransport && next === current) continue;
 						const patch = { ...(e as object) } as Record<string, unknown>;
-						if (within) patch.within = within;
+						if (next) patch.within = next;
 						else delete patch.within;
 						delete patch.withinRef;
 						delete patch.withinSettlementName;
@@ -1124,7 +1154,7 @@
 						await step(`Log entry “${String(entry.title ?? '')}”`, () => appendSafeLog(entry));
 				} else if (m.type === 'communities') {
 					for (const c of incomingCommunities)
-						await step(`Community “${c.name}”`, () =>
+						await step(`Settlement “${c.name}”`, () =>
 							importEntityRow(
 								c,
 								'communities',
@@ -1162,7 +1192,7 @@
 					for (const entry of d.log ?? [])
 						await step(`Log entry “${String(entry.title ?? '')}”`, () => appendSafeLog(entry));
 					for (const c of incomingCommunities)
-						await step(`Community “${c.name}”`, () =>
+						await step(`Settlement “${c.name}”`, () =>
 							importEntityRow(
 								c,
 								'communities',
@@ -1979,60 +2009,126 @@
 		const selPlaces = places.filter((p) => placeSet.has(p.id));
 		const wantConn = selComms.length > 0 || selNpcs.length > 0 || selPlaces.length > 0;
 
-		// ── Markdown ──────────────────────────────────────────────────────────
-		if (sel.format === 'md') {
-			const onlyLog =
-				selChars.length === 0 && selExps.length === 0 && !wantConn && mapSet.size === 0 && sel.log;
-			if (onlyLog) {
-				downloadFile(`session-log-${stamp}.md`, logToMarkdown(sessionLog.entries), 'text/markdown');
+		exportProgress = { done: 0, total: 0, label: 'Preparing export…' };
+		try {
+			// ── Markdown ──────────────────────────────────────────────────────────
+			if (sel.format === 'md') {
+				const onlyLog =
+					selChars.length === 0 &&
+					selExps.length === 0 &&
+					!wantConn &&
+					mapSet.size === 0 &&
+					sel.log;
+				if (onlyLog) {
+					downloadFile(
+						`session-log-${stamp}.md`,
+						logToMarkdown(sessionLog.entries),
+						'text/markdown',
+					);
+					return;
+				}
+				exportProgress = { done: 0, total: 0, label: 'Building Markdown…' };
+				await tick();
+				await exportMarkdownZip(stamp);
 				return;
 			}
-			await exportMarkdownZip(stamp);
-			return;
-		}
 
-		// ── Zip (re-importable; merges by whichever keys are present) ───────────
-		const payload: Record<string, unknown> = {};
-		let count = 0;
-		if (selChars.length) {
-			payload.characters = await Promise.all(selChars.map(embedCharForExport));
-			count += selChars.length;
-		}
-		if (selComms.length) {
-			payload.communities = await Promise.all(
-				selComms.map((c) => embedEntityForExport('communities', c)),
-			);
-			count += selComms.length;
-		}
-		if (selNpcs.length) {
-			payload.npcs = await Promise.all(selNpcs.map((n) => embedEntityForExport('npcs', n)));
-			count += selNpcs.length;
-		}
-		if (selPlaces.length) {
-			payload.places = await Promise.all(selPlaces.map((p) => embedEntityForExport('places', p)));
-			count += selPlaces.length;
-		}
-		if (selExps.length) {
-			payload.expeditions = await Promise.all(
-				selExps.map((e) => embedEntityForExport('expeditions', e)),
-			);
-			count += selExps.length;
-		}
-		if (sel.log) {
-			const entries = [...sessionLog.entries].reverse();
-			payload.log = entries;
-			count += entries.length;
-		}
-		payload.session = { activeCharId, activeFoeId, activeExpeditionId };
+			// ── Zip (re-importable; merges by whichever keys are present) ───────────
+			const payload: Record<string, unknown> = {};
+			let count = 0;
+			// One tick per embedded entity + one for the synchronous compress step.
+			const total =
+				selChars.length +
+				selComms.length +
+				selNpcs.length +
+				selPlaces.length +
+				selExps.length +
+				mapSet.size +
+				1;
+			let done = 0;
+			exportProgress = { done, total, label: 'Preparing export…' };
+			// Embed a group concurrently, advancing the bar as each portrait fetch
+			// resolves; `label` names the phase up front.
+			async function embedAll<T>(
+				items: T[],
+				fn: (it: T) => Promise<unknown>,
+				label: string,
+			): Promise<unknown[]> {
+				exportProgress = { done, total, label };
+				return Promise.all(
+					items.map(async (it) => {
+						const r = await fn(it);
+						done += 1;
+						exportProgress = { done, total, label };
+						return r;
+					}),
+				);
+			}
+			if (selChars.length) {
+				payload.characters = await embedAll(selChars, embedCharForExport, 'Embedding characters…');
+				count += selChars.length;
+			}
+			if (selComms.length) {
+				payload.communities = await embedAll(
+					selComms,
+					(c) => embedEntityForExport('communities', c),
+					'Embedding settlements…',
+				);
+				count += selComms.length;
+			}
+			if (selNpcs.length) {
+				payload.npcs = await embedAll(
+					selNpcs,
+					(n) => embedEntityForExport('npcs', n),
+					'Embedding NPCs…',
+				);
+				count += selNpcs.length;
+			}
+			if (selPlaces.length) {
+				payload.places = await embedAll(
+					selPlaces,
+					(p) => embedEntityForExport('places', p),
+					'Embedding landmarks…',
+				);
+				count += selPlaces.length;
+			}
+			if (selExps.length) {
+				payload.expeditions = await embedAll(
+					selExps,
+					(e) => embedEntityForExport('expeditions', e),
+					'Embedding expeditions…',
+				);
+				count += selExps.length;
+			}
+			if (sel.log) {
+				const entries = [...sessionLog.entries].reverse();
+				payload.log = entries;
+				count += entries.length;
+			}
+			payload.session = { activeCharId, activeFoeId, activeExpeditionId };
 
-		// Selected maps ride along as nested `maps/<id>/…` dirs (markers +
-		// background bytes). No id filter → every map; here we pass the picked set.
-		const { mapFiles } = mapSet.size
-			? await collectMapEntries(mapSet)
-			: { mapFiles: {} as Record<string, Uint8Array> };
-		count += mapSet.size;
+			// Selected maps ride along as nested `maps/<id>/…` dirs (markers +
+			// background bytes).
+			let mapFiles: Record<string, Uint8Array> = {};
+			if (mapSet.size) {
+				exportProgress = { done, total, label: 'Collecting maps…' };
+				await tick();
+				({ mapFiles } = await collectMapEntries(mapSet));
+				done += mapSet.size;
+				exportProgress = { done, total, label: 'Collecting maps…' };
+			}
+			count += mapSet.size;
 
-		await exportZip('everything', payload, count, `ironledger-export-${stamp}.zip`, mapFiles);
+			// zipSync is synchronous and briefly freezes the thread — paint
+			// "Compressing…" (via tick) before we block so the stall is explained.
+			exportProgress = { done, total, label: 'Compressing…' };
+			await tick();
+			await exportZip('everything', payload, count, `ironledger-export-${stamp}.zip`, mapFiles);
+			done = total;
+			exportProgress = { done, total, label: 'Compressing…' };
+		} finally {
+			exportProgress = null;
+		}
 	}
 </script>
 
@@ -2064,6 +2160,11 @@
 		importProgress = null;
 	}}
 />
+
+<!-- Export busy overlay — gathers portraits + compresses the zip. Shown while
+     handleExportSelection runs; closes when the download fires or an error is
+     caught (exportProgress → null in its finally). -->
+<ExportProgressDialog open={exportProgress !== null} progress={exportProgress} />
 
 <!-- ID-collision prompt — surfaces only when an import's NPC/community/expedition
      ids clash with the active session. onImportFile awaits its open() promise
