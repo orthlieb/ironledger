@@ -140,7 +140,7 @@
 		},
 		{
 			key: 'conn:community',
-			label: 'Communities',
+			label: 'Settlements',
 			color: K.community.color,
 			icon: K.community.icon,
 			items: comms.map((c) => ({

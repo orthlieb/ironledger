@@ -864,7 +864,7 @@
 				});
 			}
 			incomingCharacters = keepValid(incomingCharacters, 'Character');
-			incomingCommunities = keepValid(incomingCommunities, 'Community');
+			incomingCommunities = keepValid(incomingCommunities, 'Settlement');
 			incomingNpcs = keepValid(incomingNpcs, 'NPC');
 			incomingPlaces = keepValid(incomingPlaces, 'Place');
 			incomingExpeditions = keepValid(incomingExpeditions, 'Expedition', true);
@@ -1151,7 +1151,7 @@
 						await step(`Log entry “${String(entry.title ?? '')}”`, () => appendSafeLog(entry));
 				} else if (m.type === 'communities') {
 					for (const c of incomingCommunities)
-						await step(`Community “${c.name}”`, () =>
+						await step(`Settlement “${c.name}”`, () =>
 							importEntityRow(
 								c,
 								'communities',
@@ -1189,7 +1189,7 @@
 					for (const entry of d.log ?? [])
 						await step(`Log entry “${String(entry.title ?? '')}”`, () => appendSafeLog(entry));
 					for (const c of incomingCommunities)
-						await step(`Community “${c.name}”`, () =>
+						await step(`Settlement “${c.name}”`, () =>
 							importEntityRow(
 								c,
 								'communities',
