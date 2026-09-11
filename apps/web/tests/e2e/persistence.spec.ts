@@ -125,17 +125,17 @@ async function cmCount(page: Page): Promise<number> {
 
 /** The active entity's display name from an area combobox trigger. */
 async function activeName(page: Page, combo: string): Promise<string> {
-	return (await page.locator(`${combo} .mp-combobox-value`).innerText()).trim();
+	return (await page.locator(`${combo} .cb-value`).innerText()).trim();
 }
 
 /** Select a connection by name via the connections combobox. */
 async function selectConnection(page: Page, name: string) {
 	await page.locator(CM_COMBOBOX).click();
 	await page
-		.locator('.mp-cmd-popover .mp-cmd-item:not(.mp-cmd-item--action)', { hasText: name })
+		.locator('.cb-popover .cb-item:not(.cb-item--action)', { hasText: name })
 		.first()
 		.click();
-	await expect(page.locator('.mp-cmd-popover'))
+	await expect(page.locator('.cb-popover'))
 		.toBeHidden({ timeout: 3_000 })
 		.catch(() => {});
 }
@@ -144,7 +144,7 @@ async function selectConnection(page: Page, name: string) {
 
 async function createChar(page: Page) {
 	await page.locator(CHAR_COMBOBOX).click();
-	await page.locator('.mp-cmd-item--action', { hasText: /New character/i }).click();
+	await page.locator('.cb-item--action', { hasText: /New character/i }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
 	await page.locator('.confirm-modal .co-input').first().fill('Persist Char');
 	await page.locator('.confirm-modal .btn-primary').click();
@@ -152,7 +152,7 @@ async function createChar(page: Page) {
 }
 async function addFoe(page: Page) {
 	await page.locator(FOE_COMBOBOX).click();
-	await page.locator('.mp-cmd-item--action', { hasText: /New foe/i }).click();
+	await page.locator('.cb-item--action', { hasText: /New foe/i }).click();
 	await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
 	await page.locator('.foe-dialog .fd-tile').first().click();
 	await page.locator('.foe-dialog button:has-text("Add to Foes")').click();
@@ -160,7 +160,7 @@ async function addFoe(page: Page) {
 }
 async function createJourney(page: Page) {
 	await page.locator(EXP_COMBOBOX).click();
-	await page.locator('.mp-cmd-item--action', { hasText: /New Journey/i }).click();
+	await page.locator('.cb-item--action', { hasText: /New Journey/i }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
 	await page.locator('.confirm-modal .co-input').first().fill('Persist Journey');
 	await page.locator('.confirm-modal button:has-text("Create")').click();
@@ -168,7 +168,7 @@ async function createJourney(page: Page) {
 }
 async function createCommunity(page: Page) {
 	await page.locator(CM_COMBOBOX).click();
-	await page.locator('.mp-cmd-item--action', { hasText: /New Settlement/i }).click();
+	await page.locator('.cb-item--action', { hasText: /New Settlement/i }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
 	await page.locator('.confirm-modal .co-input').first().fill('Persist Community');
 	await page.locator('.confirm-modal button:has-text("Create")').click();

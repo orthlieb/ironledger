@@ -105,6 +105,58 @@ If the answer to "who lives here?" is a group of people who share a settlement i
 
 ---
 
+## Containment — the "Within / Located In" graph
+
+Every connection can sit **within** a container, forming a single-parent
+forest ("Bob is in Collima, which is within the Buralian ash country"). The
+parent is stored on the child as a `within` entity ref (`"kind:id"`); the
+breadcrumb and effective region are derived by walking it, never stored (see
+[`entityContainment.ts`](../apps/web/src/lib/entityContainment.ts)).
+
+Three kinds, two of them containers:
+
+| Kind                         | Can be **within** (its parent) | Can **contain** (children) |
+| ---------------------------- | ------------------------------ | -------------------------- |
+| **Settlement** (`Community`) | Landmark only                  | Landmark, NPC              |
+| **Landmark** (`Place`)       | Settlement **or** Landmark     | Settlement, Landmark, NPC  |
+| **NPC** (`Npc`)              | Settlement **or** Landmark     | — (always a leaf)          |
+
+```mermaid
+erDiagram
+    SETTLEMENT |o--o{ LANDMARK   : contains
+    SETTLEMENT |o--o{ NPC        : contains
+    LANDMARK   |o--o{ SETTLEMENT : contains
+    LANDMARK   |o--o{ LANDMARK   : contains
+    LANDMARK   |o--o{ NPC        : contains
+```
+
+Read the crow's feet as: a container holds **zero-or-many** children (`o{`); a
+child has **zero-or-one** parent of that kind (`|o`).
+
+Two rules the diagram can't draw, enforced in code:
+
+- **Single parent → it's a forest.** Each entity has at most one `within`
+  across all of those relationships combined. "Where is X?" has one answer.
+- **At most one settlement per root-to-leaf path** (the "one settlement in the
+  graph" rule). A settlement may not sit — directly _or transitively_ — inside
+  another settlement, so a settlement's parent is always a landmark. Two
+  settlements may still live under one landmark on **separate** branches (a
+  region with two towns); what's forbidden is a settlement _above_ a settlement
+  on the same chain. This also makes a settlement's parent choice landmark-only,
+  since any settlement-bearing chain is off-limits to it.
+
+[`isEligibleContainer(child, parent, graph)`](../apps/web/src/lib/entityContainment.ts)
+is the single guard all three enforcement points share: the Within picker only
+offers eligible parents (`eligibleContainerRefs`), the `setWithin` setter
+re-checks before writing, and **import** repairs an incoming forest through
+[`sanitizeContainment`](../apps/web/src/lib/entityContainment.ts) — dropping any
+link that names a non-container, a cycle, or a second settlement on a chain, so
+those rows land top-level rather than creating an illegal nesting. Deleting a
+container lifts its children to the grandparent only when that keeps the rules,
+detaching them otherwise (`reparentOnDelete`).
+
+---
+
 ## Fields by expansion (base / delve / lodestar)
 
 Rows are in Core-tab **display order** (top to bottom). Which fields an entry carries

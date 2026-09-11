@@ -40,6 +40,7 @@
 	import {
 		buildGraph,
 		eligibleContainerRefs,
+		isEligibleContainer,
 		reparentOnDelete,
 		effectiveRegion,
 		isNested,
@@ -380,12 +381,19 @@
 		return `Go to ${kind ? kindLabelSingular(kind) : 'container'}`;
 	}
 	/** Re-parent the active entry. '' clears the link. Writes `within` and drops
-	 *  the legacy place field; region is now derived, so it isn't copied. */
+	 *  the legacy place field; region is now derived, so it isn't copied. The
+	 *  picker only ever offers eligible parents (see `withinItems`), but this
+	 *  guards the containment rules at the setter too — an ineligible ref (a
+	 *  settlement chain, a cycle, a non-container) is ignored rather than
+	 *  written. */
 	function setWithin(ref: string) {
+		if (!activeEntry) return;
+		if (ref && !isEligibleContainer(refOf(activeEntry.kind, activeEntry.id), ref, containmentGraph))
+			return;
 		const within = ref || undefined;
-		if (activeEntry?.kind === 'community') updateCommunity({ within });
-		else if (activeEntry?.kind === 'place') updatePlace({ within, withinSettlementId: undefined });
-		else if (activeEntry?.kind === 'npc') updateNpc({ within });
+		if (activeEntry.kind === 'community') updateCommunity({ within });
+		else if (activeEntry.kind === 'place') updatePlace({ within, withinSettlementId: undefined });
+		else if (activeEntry.kind === 'npc') updateNpc({ within });
 	}
 	/** Direct children of a container ref — entries whose effective `within` is
 	 *  exactly this ref, across all three kinds, sorted by kind then name. */

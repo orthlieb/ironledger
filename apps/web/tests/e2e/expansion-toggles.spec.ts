@@ -184,10 +184,10 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await setExpansionsViaStorage(page, { delve: false });
 		// The switcher still offers "+ New Journey…" but not "+ New Site…".
 		await page.locator(`${EXP_HEADER} .ea-hdr-combobox`).click();
-		await expect(page.locator('.mp-cmd-item--action', { hasText: /New Journey/i })).toBeVisible({
+		await expect(page.locator('.cb-item--action', { hasText: /New Journey/i })).toBeVisible({
 			timeout: 5_000,
 		});
-		await expect(page.locator('.mp-cmd-item--action', { hasText: /New Site/i })).toHaveCount(0, {
+		await expect(page.locator('.cb-item--action', { hasText: /New Site/i })).toHaveCount(0, {
 			timeout: 5_000,
 		});
 		await page.keyboard.press('Escape');
@@ -196,7 +196,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	test('Delve off: Delve foes hidden from Foe picker', async ({ page }) => {
 		await setExpansionsViaStorage(page, { delve: false });
 		await page.locator(`${FOE_HEADER} .fa-hdr-combobox`).click();
-		await page.locator('.mp-cmd-item--action', { hasText: /New foe/i }).click();
+		await page.locator('.cb-item--action', { hasText: /New foe/i }).click();
 		await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 8_000 });
 		await expect(page.locator('.foe-dialog .fd-tile-name', { hasText: /^Bladewing$/ })).toHaveCount(
 			0,
@@ -324,7 +324,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 
 	async function openNewNpc(page: Page) {
 		await page.locator(`${CM_HEADER} .cm-hdr-combobox`).click();
-		await page.locator('.mp-cmd-item--action', { hasText: /New NPC/i }).click();
+		await page.locator('.cb-item--action', { hasText: /New NPC/i }).click();
 		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 8_000 });
 	}
 	const checkboxLabel = (page: Page, label: string) =>

@@ -38,7 +38,7 @@ async function gotoHomeAndWait(page: import('@playwright/test').Page) {
 /** v2: open the foe picker via the header combobox → "+ New foe…". */
 async function openFoePicker(page: import('@playwright/test').Page) {
 	await page.locator(`${FOE_HEADER} .fa-hdr-combobox`).click();
-	await page.locator('.mp-cmd-item--action', { hasText: /New foe/i }).click();
+	await page.locator('.cb-item--action', { hasText: /New foe/i }).click();
 }
 
 test.beforeEach(async ({ page }) => {

@@ -76,7 +76,7 @@ async function expCount(page: Page): Promise<number> {
 async function ensureFoeExists(page: Page) {
 	if ((await foeCount(page)) === 0) {
 		await page.locator(`${FOE_AREA} .fa-hdr-combobox`).click();
-		await page.locator('.mp-cmd-item--action', { hasText: /New foe/i }).click();
+		await page.locator('.cb-item--action', { hasText: /New foe/i }).click();
 		await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
 		const foeTile = page.locator('.foe-dialog .fd-tile').first();
 		await expect(foeTile).toBeVisible({ timeout: 8_000 });
@@ -93,7 +93,7 @@ async function ensureFoeExists(page: Page) {
 async function addFoe(page: Page) {
 	const before = await foeCount(page);
 	await page.locator(`${FOE_AREA} .fa-hdr-combobox`).click();
-	await page.locator('.mp-cmd-item--action', { hasText: /New foe/i }).click();
+	await page.locator('.cb-item--action', { hasText: /New foe/i }).click();
 	await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 5_000 });
 	const foeTile = page.locator('.foe-dialog .fd-tile').first();
 	await expect(foeTile).toBeVisible({ timeout: 8_000 });
@@ -135,7 +135,7 @@ async function encountersWhenAtLeast(page: Page, count: number) {
 async function ensureExpeditionExists(page: Page) {
 	if ((await expCount(page)) === 0) {
 		await page.locator(`${EXP_AREA} .ea-hdr-combobox`).click();
-		await page.locator('.mp-cmd-item--action', { hasText: /New Journey/i }).click();
+		await page.locator('.cb-item--action', { hasText: /New Journey/i }).click();
 		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
 		await page.locator('.confirm-modal .co-input').first().fill('E2E Journey');
 		await page.locator('.confirm-modal button:has-text("Create")').click();

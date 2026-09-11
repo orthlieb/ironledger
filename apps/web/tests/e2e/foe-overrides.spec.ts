@@ -120,7 +120,7 @@ async function openFoePicker(page: Page): Promise<void> {
 	const dialog = page.locator('.foe-dialog');
 	const openViaCombobox = async () => {
 		await page.locator(`${FOE_HEADER} .fa-hdr-combobox`).click();
-		await page.locator('.mp-cmd-item--action', { hasText: /New foe/i }).click();
+		await page.locator('.cb-item--action', { hasText: /New foe/i }).click();
 	};
 	await openViaCombobox();
 	try {

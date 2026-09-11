@@ -120,6 +120,7 @@
 		buildGraph,
 		effectiveRegion,
 		breadcrumbRefs,
+		sanitizeContainment,
 		type ContainmentNode,
 	} from '$lib/entityContainment.js';
 
@@ -1043,14 +1044,24 @@
 			 *  place-only `withinSettlementName` is still honoured. Runs as a POST
 			 *  pass — AFTER communities, places AND npcs land — so container ids of
 			 *  every kind exist (a landmark can sit within another landmark).
-			 *  Resolves to the live `within` ref and clears the transport fields;
-			 *  a row with neither transport field (legacy raw id) is left untouched. */
+			 *
+			 *  The resolved forest is run through `sanitizeContainment` before it's
+			 *  applied, so an imported file that describes illegal nesting (a
+			 *  settlement inside a settlement, two settlements on one chain, a
+			 *  cycle, an NPC as a container) can't create it here — the offending
+			 *  links are dropped and those rows land top-level. The transport
+			 *  fields are always cleared; a row with neither (legacy raw id) keeps
+			 *  whatever `within` it already had (also sanitized). */
 			async function relinkContainment(): Promise<void> {
 				const nm = (s: string) => normaliseName(s);
 				const commByName = new Map(getCommunities().map((c) => [nm(c.name), c.id]));
 				const placeByName = new Map(getPlaces().map((p) => [nm(p.name), p.id]));
-				const resolveWithin = (rec: Record<string, unknown>): string | null | undefined => {
-					// undefined = nothing to relink; null = clear; string = new within ref.
+				/** Where this row WANTS to sit: resolved from its transport field by
+				 *  name+kind, else its existing `within`. */
+				const proposedWithin = (
+					kind: 'community' | 'place' | 'npc',
+					rec: Record<string, unknown>,
+				): string | undefined => {
 					const wr = rec.withinRef as { kind?: string; name?: string } | undefined;
 					if (
 						wr &&
@@ -1058,27 +1069,43 @@
 						typeof wr.name === 'string'
 					) {
 						const id = (wr.kind === 'community' ? commByName : placeByName).get(nm(wr.name));
-						return id ? `${wr.kind}:${id}` : null;
+						return id ? `${wr.kind}:${id}` : undefined;
 					}
 					if (typeof rec.withinSettlementName === 'string') {
 						const id = commByName.get(nm(rec.withinSettlementName));
-						return id ? `community:${id}` : null;
+						return id ? `community:${id}` : undefined;
 					}
-					return undefined;
+					return typeof rec.within === 'string' ? rec.within : undefined;
 				};
+
 				const passes = [
-					[getCommunities(), updateCommunity],
-					[getPlaces(), updatePlace],
-					[getNpcs(), updateNpc],
+					['community', getCommunities(), updateCommunity],
+					['place', getPlaces(), updatePlace],
+					['npc', getNpcs(), updateNpc],
 				] as const;
-				for (const [list, update] of passes) {
+
+				// 1. Resolve the whole proposed forest, then repair it to the rules.
+				const nodes: ContainmentNode[] = [];
+				for (const [kind, list] of passes)
+					for (const e of list)
+						nodes.push({
+							ref: refOf(kind, e.id),
+							within: proposedWithin(kind, e as unknown as Record<string, unknown>),
+						});
+				const sanitized = sanitizeContainment(nodes);
+
+				// 2. Apply — write the sanitized `within` (or clear it) and drop every
+				//    transport field. Skip rows that neither carried a transport field
+				//    nor changed, so we don't churn untouched entities.
+				for (const [kind, list, update] of passes) {
 					for (const e of list) {
 						const rec = e as unknown as Record<string, unknown>;
-						if (!('withinRef' in rec) && !('withinSettlementName' in rec)) continue;
-						const within = resolveWithin(rec);
-						if (within === undefined) continue;
+						const hadTransport = 'withinRef' in rec || 'withinSettlementName' in rec;
+						const next = sanitized.get(refOf(kind, e.id));
+						const current = typeof rec.within === 'string' ? rec.within : undefined;
+						if (!hadTransport && next === current) continue;
 						const patch = { ...(e as object) } as Record<string, unknown>;
-						if (within) patch.within = within;
+						if (next) patch.within = next;
 						else delete patch.within;
 						delete patch.withinRef;
 						delete patch.withinSettlementName;
