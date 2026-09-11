@@ -256,14 +256,6 @@
 			...npcs.map((n): ContainmentNode => ({ ref: refOf('npc', n.id), within: entityWithin(n) })),
 		]),
 	);
-	/** MD breadcrumb of the container chain as wikilinks — "[[Nysis]] /
-	 *  [[Collima]]" (root → parent), or '' when top-level. */
-	function mdWithin(ref: string): string {
-		const chain = breadcrumbRefs(ref, containmentGraph)
-			.map((r) => refName(r))
-			.filter(Boolean);
-		return chain.length ? `**Within:** ${chain.map((n) => `[[${n}]]`).join(' / ')}` : '';
-	}
 	const activeCharId = $derived(activeDiceCtx?.charId ?? '');
 	const activeFoeId = $derived(getActiveFoeId());
 	const activeExpeditionId = $derived(getActiveExpeditionId());
@@ -1462,10 +1454,27 @@
 		return '';
 	}
 
-	async function exportMarkdownZip(stamp: string) {
+	async function exportMarkdownZip(stamp: string, sel: ExportSelection) {
 		const zipFiles: Record<string, Uint8Array> = {};
 		const usedNames = new Set<string>();
 
+		// Selection → the entities this export covers (honours the dialog's
+		// checklist; the zip export already did, the markdown one used to walk
+		// everything).
+		const charSet = new Set(sel.characters);
+		const commSet = new Set(sel.communities);
+		const npcSet = new Set(sel.npcs);
+		const placeSet = new Set(sel.places);
+		const expSet = new Set(sel.expeditions);
+		const mapSet = new Set(sel.maps);
+		const selChars = chars.filter((c) => charSet.has(c.id));
+		const selComms = communities.filter((c) => commSet.has(c.id));
+		const selNpcs = npcs.filter((n) => npcSet.has(n.id));
+		const selPlaces = places.filter((p) => placeSet.has(p.id));
+		const selExps = expeditions.filter((e) => expSet.has(e.id));
+
+		// Portraits go under images/; entity files live one folder deep and link
+		// to them with a ../ prefix. Returns the bare zip path (images/…).
 		function addImage(dataUrl: string, prefix: string, name: string): string {
 			let base = `images/${prefix}-${slugify(name)}`;
 			let path = `${base}.jpg`;
@@ -1475,8 +1484,50 @@
 			}
 			usedNames.add(path);
 			zipFiles[path] = b64ToU8(dataUrl);
-			return `./${path}`;
+			return path;
 		}
+
+		// Unique slug per folder so filenames and the links pointing at them
+		// agree even when two entities share a name.
+		function slugMap(items: Array<{ id: string; name?: string }>, fallback: string) {
+			const used = new Set<string>();
+			const m = new Map<string, string>();
+			for (const it of items) {
+				const base = slugify(it.name || fallback) || fallback;
+				let slug = base;
+				let i = 2;
+				while (used.has(slug)) slug = `${base}-${i++}`;
+				used.add(slug);
+				m.set(it.id, slug);
+			}
+			return m;
+		}
+		const charSlugs = slugMap(selChars, 'character');
+		// Settlements + landmarks + NPCs share one connections/ folder → one slug
+		// namespace, so a within-link resolves to the right file.
+		const connItems: Array<{ id: string; name: string }> = [...selComms, ...selPlaces, ...selNpcs];
+		const connSlugs = slugMap(connItems, 'connection');
+		const expSlugs = slugMap(selExps, 'expedition');
+
+		// A connection links to another connection in the SAME folder → bare
+		// "<slug>.md". Falls back to the plain name for anything outside the
+		// selection (or non-connection).
+		function connLink(ref: string): string {
+			const i = ref.indexOf(':');
+			const id = i < 0 ? '' : ref.slice(i + 1);
+			const slug = connSlugs.get(id);
+			const ent = connItems.find((e) => e.id === id);
+			return slug && ent ? `[${ent.name}](${slug}.md)` : refName(ref);
+		}
+		// "**Within:** [Root](root.md) / [Parent](parent.md)" (relative links),
+		// or '' when top-level.
+		function withinLine(ref: string): string {
+			const chain = breadcrumbRefs(ref, containmentGraph);
+			return chain.length ? `**Within:** ${chain.map(connLink).join(' / ')}` : '';
+		}
+
+		// README.md index ties the bundle together, linked into each folder.
+		const index: string[] = ['# Iron Ledger Export', ''];
 
 		// Fetch every portrait's bytes up front (concurrently) so the markdown
 		// builders below stay synchronous. Falls back to any legacy inline value.
@@ -1501,7 +1552,7 @@
 		}
 		await Promise.all([
 			prefetch(
-				chars,
+				selChars,
 				(c) => {
 					const et = (c.data as Record<string, unknown>).portraitEtag as string | undefined;
 					return et ? `/api/characters/${c.id}/portrait?v=${encodeURIComponent(et)}` : '';
@@ -1510,7 +1561,7 @@
 				charPortraits,
 			),
 			prefetch(
-				communities,
+				selComms,
 				(c) =>
 					c.portraitEtag
 						? `/api/session/communities/${c.id}/portrait?v=${encodeURIComponent(c.portraitEtag)}`
@@ -1519,7 +1570,7 @@
 				commPortraits,
 			),
 			prefetch(
-				npcs,
+				selNpcs,
 				(n) =>
 					n.portraitEtag
 						? `/api/session/npcs/${n.id}/portrait?v=${encodeURIComponent(n.portraitEtag)}`
@@ -1528,7 +1579,7 @@
 				npcPortraits,
 			),
 			prefetch(
-				places,
+				selPlaces,
 				(p) =>
 					p.portraitEtag
 						? `/api/session/places/${p.id}/portrait?v=${encodeURIComponent(p.portraitEtag)}`
@@ -1537,7 +1588,7 @@
 				placePortraits,
 			),
 			prefetch(
-				expeditions,
+				selExps,
 				(e) =>
 					e.portraitEtag
 						? `/api/session/expeditions/${e.id}/portrait?v=${encodeURIComponent(e.portraitEtag)}`
@@ -1547,17 +1598,17 @@
 			),
 		]);
 
-		// ── Characters ──────────────────────────────────────────────────
-		if (chars.length) {
-			const lines: string[] = [];
-			chars.forEach((char, idx) => {
-				if (idx > 0) lines.push('', '---', '');
+		// ── Characters — one file each under characters/ ──────────────────
+		if (selChars.length) {
+			index.push('## Characters', '');
+			for (const char of selChars) {
+				const lines: string[] = [];
 				const d = char.data as Record<string, unknown>;
 				lines.push(`# ${char.name || 'Unnamed Character'}`, '');
 				const charDu = charPortraits.get(char.id);
 				if (charDu) {
 					const src = addImage(charDu, 'char', char.name);
-					lines.push(`![Portrait](${src})`, '');
+					lines.push(`![Portrait](../${src})`, '');
 				}
 				if (d.background) lines.push(`**Background:** ${d.background}`, '');
 				const initiativeLabels: Record<number, string> = {
@@ -1649,82 +1700,96 @@
 						);
 					});
 				}
-			});
-			zipFiles['characters.md'] = strToU8(lines.join('\n'));
+				const slug = charSlugs.get(char.id) ?? slugify(char.name || 'character');
+				zipFiles[`characters/${slug}.md`] = strToU8(lines.join('\n').trimEnd() + '\n');
+				index.push(`- [${char.name || 'Unnamed Character'}](characters/${slug}.md)`);
+			}
+			index.push('');
 		}
 
-		// ── Connections & NPCs ───────────────────────────────────────────
-		if (communities.length || places.length || npcs.length) {
-			const lines: string[] = ['# Connections & NPCs', ''];
-			for (const c of communities) {
-				lines.push(`## ${c.name} _(Settlement)_`);
-				const commDu = commPortraits.get(c.id);
-				if (commDu) {
-					const src = addImage(commDu, 'community', c.name);
-					lines.push(`![Portrait](${src})`);
+		// ── Connections — one file each under connections/ ────────────────
+		if (connItems.length) {
+			index.push('## Connections', '');
+			const writeConn = (
+				id: string,
+				name: string,
+				kindLabel: string,
+				body: (lines: string[]) => void,
+			) => {
+				const slug = connSlugs.get(id) ?? slugify(name || 'connection');
+				const lines: string[] = [`# ${name} _(${kindLabel})_`, ''];
+				body(lines);
+				zipFiles[`connections/${slug}.md`] = strToU8(lines.join('\n').trimEnd() + '\n');
+				index.push(`- [${name}](connections/${slug}.md)`);
+			};
+			if (selComms.length) {
+				index.push('### Settlements');
+				for (const c of selComms) {
+					writeConn(c.id, c.name, 'Settlement', (lines) => {
+						const commDu = commPortraits.get(c.id);
+						if (commDu) lines.push(`![Portrait](../${addImage(commDu, 'community', c.name)})`);
+						const cRef = refOf('community', c.id);
+						const cWithin = withinLine(cRef);
+						if (cWithin) lines.push(cWithin);
+						const cRegion = effectiveRegion(cRef, containmentGraph);
+						if (cRegion) lines.push(`**Region:** ${cRegion}`);
+						if (c.location) lines.push(`**Location:** ${c.location}`);
+						if (c.locationDescription) lines.push(`**Description:** ${c.locationDescription}`);
+						if (c.trouble) lines.push(`**Trouble:** ${c.trouble}`);
+						if (c.notes?.trim()) lines.push(``, `**Notes:**`, c.notes.trim());
+					});
 				}
-				const cRef = refOf('community', c.id);
-				const cWithin = mdWithin(cRef);
-				if (cWithin) lines.push(cWithin);
-				const cRegion = effectiveRegion(cRef, containmentGraph);
-				if (cRegion) lines.push(`**Region:** ${cRegion}`);
-				if (c.location) lines.push(`**Location:** ${c.location}`);
-				if (c.locationDescription) lines.push(`**Description:** ${c.locationDescription}`);
-				if (c.trouble) lines.push(`**Trouble:** ${c.trouble}`);
-				if (c.notes?.trim()) lines.push(``, `**Notes:**`, c.notes.trim());
-				lines.push('');
+				index.push('');
 			}
-			for (const p of places) {
-				lines.push(`## ${p.name} _(Landmark)_`);
-				const plDu = placePortraits.get(p.id);
-				if (plDu) {
-					const src = addImage(plDu, 'place', p.name);
-					lines.push(`![Portrait](${src})`);
+			if (selPlaces.length) {
+				index.push('### Landmarks');
+				for (const p of selPlaces) {
+					writeConn(p.id, p.name, 'Landmark', (lines) => {
+						const plDu = placePortraits.get(p.id);
+						if (plDu) lines.push(`![Portrait](../${addImage(plDu, 'place', p.name)})`);
+						const pRef = refOf('place', p.id);
+						const pWithin = withinLine(pRef);
+						if (pWithin) lines.push(pWithin);
+						const pRegion = effectiveRegion(pRef, containmentGraph);
+						if (pRegion) lines.push(`**Region:** ${pRegion}`);
+						if (p.location) lines.push(`**Landmark:** ${p.location}`);
+						if (p.locationDescription) lines.push(`**Description:** ${p.locationDescription}`);
+						if (p.notes?.trim()) lines.push(``, `**Notes:**`, p.notes.trim());
+					});
 				}
-				const pRef = refOf('place', p.id);
-				const pWithin = mdWithin(pRef);
-				if (pWithin) lines.push(pWithin);
-				const pRegion = effectiveRegion(pRef, containmentGraph);
-				if (pRegion) lines.push(`**Region:** ${pRegion}`);
-				if (p.location) lines.push(`**Landmark:** ${p.location}`);
-				if (p.locationDescription) lines.push(`**Description:** ${p.locationDescription}`);
-				if (p.notes?.trim()) lines.push(``, `**Notes:**`, p.notes.trim());
-				lines.push('');
+				index.push('');
 			}
-			for (const n of npcs) {
-				lines.push(`## ${n.name} _(NPC)_`);
-				const npcDu = npcPortraits.get(n.id);
-				if (npcDu) {
-					const src = addImage(npcDu, 'npc', n.name);
-					lines.push(`![Portrait](${src})`);
+			if (selNpcs.length) {
+				index.push('### NPCs');
+				for (const n of selNpcs) {
+					writeConn(n.id, n.name, 'NPC', (lines) => {
+						const npcDu = npcPortraits.get(n.id);
+						if (npcDu) lines.push(`![Portrait](../${addImage(npcDu, 'npc', n.name)})`);
+						const nWithin = withinLine(refOf('npc', n.id));
+						if (nWithin) lines.push(nWithin);
+						if (n.role) lines.push(`**Role:** ${n.role}`);
+						if (n.goal) lines.push(`**Goal:** ${n.goal}`);
+						if (n.descriptor) lines.push(`**Descriptor:** ${n.descriptor}`);
+						if (n.relationship)
+							lines.push(
+								`**Relationship:** ${n.relationship.charAt(0).toUpperCase() + n.relationship.slice(1)}`,
+							);
+						if (n.location) lines.push(`**Location:** ${n.location}`);
+						if (n.notes?.trim()) lines.push(``, `**Notes:**`, n.notes.trim());
+					});
 				}
-				const nWithin = mdWithin(refOf('npc', n.id));
-				if (nWithin) lines.push(nWithin);
-				if (n.role) lines.push(`**Role:** ${n.role}`);
-				if (n.goal) lines.push(`**Goal:** ${n.goal}`);
-				if (n.descriptor) lines.push(`**Descriptor:** ${n.descriptor}`);
-				if (n.relationship)
-					lines.push(
-						`**Relationship:** ${n.relationship.charAt(0).toUpperCase() + n.relationship.slice(1)}`,
-					);
-				if (n.location) lines.push(`**Location:** ${n.location}`);
-				if (n.notes?.trim()) lines.push(``, `**Notes:**`, n.notes.trim());
-				lines.push('');
+				index.push('');
 			}
-			zipFiles['connections.md'] = strToU8(lines.join('\n').trimEnd());
 		}
 
-		// ── Expeditions ──────────────────────────────────────────────────
-		if (expeditions.length) {
-			const lines: string[] = ['# Expeditions', ''];
-			for (const exp of expeditions) {
+		// ── Expeditions — one file each under expeditions/ ────────────────
+		if (selExps.length) {
+			index.push('## Expeditions', '');
+			for (const exp of selExps) {
 				const type = exp.type === 'journey' ? 'Journey' : 'Site';
-				lines.push(`## ${exp.name} _(${type})_`);
+				const lines: string[] = [`# ${exp.name} _(${type})_`, ''];
 				const expDu = expPortraits.get(exp.id);
-				if (expDu) {
-					const src = addImage(expDu, 'expedition', exp.name);
-					lines.push(`![Portrait](${src})`);
-				}
+				if (expDu) lines.push(`![Portrait](../${addImage(expDu, 'expedition', exp.name)})`);
 				if (exp.complete) lines.push(`- **Status:** Complete`);
 				lines.push(
 					`- **Difficulty:** ${exp.difficulty.charAt(0).toUpperCase() + exp.difficulty.slice(1)}`,
@@ -1744,9 +1809,11 @@
 					if (activeDenizens.length > 0) lines.push(`- **Denizens:** ${activeDenizens.join(', ')}`);
 				}
 				if (exp.notes?.trim()) lines.push(``, `**Notes:**`, exp.notes.trim());
-				lines.push('');
+				const slug = expSlugs.get(exp.id) ?? slugify(exp.name || 'expedition');
+				zipFiles[`expeditions/${slug}.md`] = strToU8(lines.join('\n').trimEnd() + '\n');
+				index.push(`- [${exp.name}](expeditions/${slug}.md)`);
 			}
-			zipFiles['expeditions.md'] = strToU8(lines.join('\n').trimEnd());
+			index.push('');
 		}
 
 		// ── Foes ─────────────────────────────────────────────────────────
@@ -1769,6 +1836,7 @@
 				lines.push('');
 			}
 			zipFiles['foes.md'] = strToU8(lines.join('\n').trimEnd());
+			index.push('## Foes', '', '- [Bestiary](foes.md)', '');
 		}
 
 		// ── Campaign Maps ────────────────────────────────────────────────
@@ -1783,7 +1851,9 @@
 				const listBody = (await mapListRes.json()) as {
 					maps?: Array<{ id: string; name: string; updatedAt: string }>;
 				};
-				const maps = Array.isArray(listBody.maps) ? listBody.maps : [];
+				const maps = (Array.isArray(listBody.maps) ? listBody.maps : []).filter((m) =>
+					mapSet.has(m.id),
+				);
 				const mapsMdLines: string[] = [];
 				if (maps.length) {
 					mapsMdLines.push('# Campaign Maps', '');
@@ -1827,6 +1897,7 @@
 				}
 				if (mapsMdLines.length > 0) {
 					zipFiles['maps.md'] = strToU8(mapsMdLines.join('\n').trimEnd());
+					index.push('## Maps', '', '- [Maps](maps.md)', '');
 				}
 			}
 		} catch {
@@ -1836,7 +1907,13 @@
 		}
 
 		// ── Session Log ──────────────────────────────────────────────────
-		zipFiles['session-log.md'] = strToU8(logToMarkdown(sessionLog.entries));
+		if (sel.log) {
+			zipFiles['session-log.md'] = strToU8(logToMarkdown(sessionLog.entries));
+			index.push('## Session Log', '', '- [Log](session-log.md)', '');
+		}
+
+		// ── README index ──────────────────────────────────────────────────
+		zipFiles['README.md'] = strToU8(index.join('\n').trimEnd() + '\n');
 
 		// ── ZIP & download ───────────────────────────────────────────────
 		const zip = zipSync(zipFiles, { level: 6 });
@@ -2029,7 +2106,7 @@
 				}
 				exportProgress = { done: 0, total: 0, label: 'Building Markdown…' };
 				await tick();
-				await exportMarkdownZip(stamp);
+				await exportMarkdownZip(stamp, sel);
 				return;
 			}
 

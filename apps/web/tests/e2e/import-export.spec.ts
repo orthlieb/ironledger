@@ -1145,3 +1145,101 @@ test.describe('Import / Export — YRT starter rich round-trip', () => {
 		expect(after.withinPairs, 'the within graph round-trips by name').toEqual(before.withinPairs);
 	});
 });
+
+// ---------------------------------------------------------------------------
+// Markdown export — folder-per-kind, one file per entity, with working
+// relative links (Obsidian/GitHub both resolve them), honouring the dialog
+// selection. Regression guard for: MD ignoring the checklist, one big
+// connections.md, and dead [[wikilinks]].
+// ---------------------------------------------------------------------------
+
+test.describe('Import / Export — Markdown structure', () => {
+	const GV = 'md-green-vale';
+	test.beforeAll(async () => {
+		await resetAll();
+		const tok = await getTestToken();
+		const h = { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' };
+		const base = (id: string, name: string, extra: Record<string, unknown> = {}) => ({
+			id,
+			name,
+			region: '',
+			location: '',
+			locationDescription: '',
+			trouble: '',
+			notes: '',
+			createdAt: Date.now(),
+			...extra,
+		});
+		await fetch(`${V1}/session/places`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify({ places: [base(GV, 'Green Vale')] }),
+		});
+		await fetch(`${V1}/session/communities`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify({
+				communities: [
+					base('md-riverton', 'Riverton', { within: `place:${GV}` }),
+					base('md-lakeside', 'Lakeside'),
+				],
+			}),
+		});
+	});
+
+	async function exportMarkdown(page: import('@playwright/test').Page) {
+		await openExportDialog(page);
+		await page.locator('.exd-segbtn', { hasText: 'Markdown' }).click();
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.exd-dialog .btn-primary').click(),
+		]);
+		return unzipSync(new Uint8Array(await downloadBuffer(download)));
+	}
+
+	test('writes one file per entity with working relative links + a README index', async ({
+		page,
+	}) => {
+		await gotoHome(page);
+		const entries = exportMarkdownNames(await exportMarkdown(page));
+		// Folder-per-kind, file-per-entity — not one big connections.md.
+		expect(entries.names).toContain('README.md');
+		expect(entries.names).toContain('connections/riverton.md');
+		expect(entries.names).toContain('connections/green-vale.md');
+		expect(entries.names).toContain('connections/lakeside.md');
+		expect(entries.names).not.toContain('connections.md');
+		// The within link is a working relative markdown link, not a dead wikilink.
+		expect(entries.riverton).toContain('[Green Vale](green-vale.md)');
+		expect(entries.riverton).not.toContain('[[Green Vale]]');
+		// README links into the folder.
+		expect(entries.readme).toContain('(connections/riverton.md)');
+	});
+
+	test('obeys the selection — deselected entities get no file', async ({ page }) => {
+		await gotoHome(page);
+		await openExportDialog(page);
+		await page.locator('.exd-segbtn', { hasText: 'Markdown' }).click();
+		// Clear everything, then pick only Riverton.
+		await page.locator('.exd-selectall').click();
+		await page.locator('.fb-input').fill('Riverton');
+		await page.locator('.exd-item', { hasText: 'Riverton' }).click();
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.exd-dialog .btn-primary').click(),
+		]);
+		const names = Object.keys(unzipSync(new Uint8Array(await downloadBuffer(download))));
+		expect(names).toContain('connections/riverton.md');
+		expect(names).not.toContain('connections/lakeside.md');
+		expect(names).not.toContain('connections/green-vale.md');
+	});
+});
+
+function exportMarkdownNames(entries: Record<string, Uint8Array>) {
+	return {
+		names: Object.keys(entries),
+		riverton: entries['connections/riverton.md']
+			? strFromU8(entries['connections/riverton.md'])
+			: '',
+		readme: entries['README.md'] ? strFromU8(entries['README.md']) : '',
+	};
+}
