@@ -1143,6 +1143,28 @@ test.describe('Import / Export — YRT starter rich round-trip', () => {
 		);
 		expect(after.maps, 'map + resolved marker links round-trip').toEqual(before.maps);
 		expect(after.withinPairs, 'the within graph round-trips by name').toEqual(before.withinPairs);
+
+		// Portrait BYTES survived the round-trip, not just the etag flag: fetch a
+		// restored connection's portrait and confirm it comes back with content.
+		const portrait = await page.evaluate(async () => {
+			const s = await (await fetch('/api/session', { credentials: 'include' })).json();
+			const comm = (s.communities ?? []).find((c: { portraitEtag?: string }) => c.portraitEtag);
+			const place = (s.places ?? []).find((p: { portraitEtag?: string }) => p.portraitEtag);
+			const hit = comm
+				? { kind: 'communities', id: comm.id }
+				: place
+					? { kind: 'places', id: place.id }
+					: null;
+			if (!hit) return { checked: false, status: 0, bytes: 0 };
+			const res = await fetch(`/api/session/${hit.kind}/${hit.id}/portrait`, {
+				credentials: 'include',
+			});
+			const bytes = res.ok ? (await res.arrayBuffer()).byteLength : 0;
+			return { checked: true, status: res.status, bytes };
+		});
+		expect(portrait.checked, 'a restored connection has a portrait to check').toBe(true);
+		expect(portrait.status).toBe(200);
+		expect(portrait.bytes).toBeGreaterThan(0);
 	});
 });
 
@@ -1185,6 +1207,23 @@ test.describe('Import / Export — Markdown structure', () => {
 				],
 			}),
 		});
+		// Give Riverton a portrait so the MD export's image handling is exercised
+		// (bytes → images/ file, referenced from the entity file with ../images/).
+		const TINY_PNG =
+			'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI6QAAAABJRU5ErkJggg==';
+		const put = await fetch(`${V1}/session/communities/md-riverton/portrait`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({ dataUrl: `data:image/png;base64,${TINY_PNG}` }),
+		});
+		const { etag } = (await put.json()) as { etag: string };
+		await fetch(`${V1}/session/communities/md-riverton`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify(
+				base('md-riverton', 'Riverton', { within: `place:${GV}`, portraitEtag: etag }),
+			),
+		});
 	});
 
 	async function exportMarkdown(page: import('@playwright/test').Page) {
@@ -1213,6 +1252,10 @@ test.describe('Import / Export — Markdown structure', () => {
 		expect(entries.riverton).not.toContain('[[Green Vale]]');
 		// README links into the folder.
 		expect(entries.readme).toContain('(connections/riverton.md)');
+		// Portrait bytes are written under images/ and referenced from the entity
+		// file one folder up (../images/…), not left as a dead/absolute link.
+		expect(entries.names.some((n) => n.startsWith('images/'))).toBe(true);
+		expect(entries.riverton).toContain('![Portrait](../images/');
 	});
 
 	test('obeys the selection — deselected entities get no file', async ({ page }) => {
