@@ -1333,6 +1333,8 @@ test.describe('Import / Export — Markdown structure', () => {
 		// The within link is a working relative markdown link, not a dead wikilink.
 		expect(entries.riverton).toContain('[Green Vale](green-vale.md)');
 		expect(entries.riverton).not.toContain('[[Green Vale]]');
+		// …and the reverse: the parent lists its children (Contains) as links.
+		expect(entries.greenVale).toContain('**Contains:** [Riverton](riverton.md)');
 		// README links into the folder.
 		expect(entries.readme).toContain('(connections/riverton.md)');
 		// Portrait bytes are written under images/ and referenced from the entity
@@ -1361,11 +1363,11 @@ test.describe('Import / Export — Markdown structure', () => {
 });
 
 function exportMarkdownNames(entries: Record<string, Uint8Array>) {
+	const read = (k: string) => (entries[k] ? strFromU8(entries[k]) : '');
 	return {
 		names: Object.keys(entries),
-		riverton: entries['connections/riverton.md']
-			? strFromU8(entries['connections/riverton.md'])
-			: '',
-		readme: entries['README.md'] ? strFromU8(entries['README.md']) : '',
+		riverton: read('connections/riverton.md'),
+		greenVale: read('connections/green-vale.md'),
+		readme: read('README.md'),
 	};
 }

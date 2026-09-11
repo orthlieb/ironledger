@@ -1504,8 +1504,33 @@
 		}
 		const charSlugs = slugMap(selChars, 'character');
 		// Settlements + landmarks + NPCs share one connections/ folder → one slug
-		// namespace, so a within-link resolves to the right file.
-		const connItems: Array<{ id: string; name: string }> = [...selComms, ...selPlaces, ...selNpcs];
+		// namespace, so a within/contains link resolves to the right file. Each
+		// item is tagged with its kind + parent so both directions can be built.
+		const connItems: Array<{
+			kind: 'community' | 'place' | 'npc';
+			id: string;
+			name: string;
+			within?: string;
+		}> = [
+			...selComms.map((c) => ({
+				kind: 'community' as const,
+				id: c.id,
+				name: c.name,
+				within: entityWithin(c),
+			})),
+			...selPlaces.map((p) => ({
+				kind: 'place' as const,
+				id: p.id,
+				name: p.name,
+				within: entityWithin(p),
+			})),
+			...selNpcs.map((n) => ({
+				kind: 'npc' as const,
+				id: n.id,
+				name: n.name,
+				within: entityWithin(n),
+			})),
+		];
 		const connSlugs = slugMap(connItems, 'connection');
 		const expSlugs = slugMap(selExps, 'expedition');
 
@@ -1524,6 +1549,18 @@
 		function withinLine(ref: string): string {
 			const chain = breadcrumbRefs(ref, containmentGraph);
 			return chain.length ? `**Within:** ${chain.map(connLink).join(' / ')}` : '';
+		}
+		// "**Contains:** [Child](child.md) / …" — the direct children (the reverse
+		// of Within), sorted by kind then name; '' for a leaf. NPCs never contain.
+		function containsLine(ref: string): string {
+			const kids = connItems
+				.filter((x) => x.within === ref)
+				.sort((a, b) =>
+					a.kind === b.kind ? a.name.localeCompare(b.name) : a.kind < b.kind ? -1 : 1,
+				);
+			return kids.length
+				? `**Contains:** ${kids.map((k) => connLink(refOf(k.kind, k.id))).join(' / ')}`
+				: '';
 		}
 
 		// README.md index ties the bundle together, linked into each folder.
@@ -1731,6 +1768,8 @@
 						const cRef = refOf('community', c.id);
 						const cWithin = withinLine(cRef);
 						if (cWithin) lines.push(cWithin);
+						const cContains = containsLine(cRef);
+						if (cContains) lines.push(cContains);
 						const cRegion = effectiveRegion(cRef, containmentGraph);
 						if (cRegion) lines.push(`**Region:** ${cRegion}`);
 						if (c.location) lines.push(`**Location:** ${c.location}`);
@@ -1750,6 +1789,8 @@
 						const pRef = refOf('place', p.id);
 						const pWithin = withinLine(pRef);
 						if (pWithin) lines.push(pWithin);
+						const pContains = containsLine(pRef);
+						if (pContains) lines.push(pContains);
 						const pRegion = effectiveRegion(pRef, containmentGraph);
 						if (pRegion) lines.push(`**Region:** ${pRegion}`);
 						if (p.location) lines.push(`**Landmark:** ${p.location}`);
