@@ -1454,7 +1454,11 @@
 		return '';
 	}
 
-	async function exportMarkdownZip(stamp: string, sel: ExportSelection) {
+	async function exportMarkdownZip(
+		stamp: string,
+		sel: ExportSelection,
+		onProgress?: (done: number, total: number, label: string) => void,
+	) {
 		const zipFiles: Record<string, Uint8Array> = {};
 		const usedNames = new Set<string>();
 
@@ -1578,15 +1582,23 @@
 			urlFor: (it: T) => string,
 			legacy: (it: T) => string,
 			into: Map<string, string>,
+			onOne?: () => void,
 		) {
 			await Promise.all(
 				items.map(async (it) => {
 					const url = urlFor(it);
 					const du = url ? await fetchPortraitDataUrl(url) : legacy(it);
 					if (du) into.set(it.id, du);
+					onOne?.();
 				}),
 			);
 		}
+		// Progress: one step per embedded entity, plus one for the final compress.
+		const mdTotal =
+			selChars.length + selComms.length + selNpcs.length + selPlaces.length + selExps.length + 1;
+		let mdDone = 0;
+		const bump = () => onProgress?.(++mdDone, mdTotal, 'Embedding portraits…');
+		onProgress?.(0, mdTotal, 'Embedding portraits…');
 		await Promise.all([
 			prefetch(
 				selChars,
@@ -1596,6 +1608,7 @@
 				},
 				(c) => ((c.data as Record<string, unknown>).portrait as string) ?? '',
 				charPortraits,
+				bump,
 			),
 			prefetch(
 				selComms,
@@ -1605,6 +1618,7 @@
 						: '',
 				(c) => c.imageUrl ?? '',
 				commPortraits,
+				bump,
 			),
 			prefetch(
 				selNpcs,
@@ -1614,6 +1628,7 @@
 						: '',
 				(n) => n.imageUrl ?? '',
 				npcPortraits,
+				bump,
 			),
 			prefetch(
 				selPlaces,
@@ -1623,6 +1638,7 @@
 						: '',
 				(p) => p.imageUrl ?? '',
 				placePortraits,
+				bump,
 			),
 			prefetch(
 				selExps,
@@ -1632,6 +1648,7 @@
 						: '',
 				(e) => e.imageUrl ?? '',
 				expPortraits,
+				bump,
 			),
 		]);
 
@@ -1956,6 +1973,9 @@
 		// ── README index ──────────────────────────────────────────────────
 		zipFiles['README.md'] = strToU8(index.join('\n').trimEnd() + '\n');
 
+		onProgress?.(mdTotal, mdTotal, 'Compressing…');
+		await tick();
+
 		// ── ZIP & download ───────────────────────────────────────────────
 		const zip = zipSync(zipFiles, { level: 6 });
 		const blob = new Blob([zip], { type: 'application/zip' });
@@ -2128,6 +2148,7 @@
 		const wantConn = selComms.length > 0 || selNpcs.length > 0 || selPlaces.length > 0;
 
 		exportProgress = { done: 0, total: 0, label: 'Preparing export…' };
+		const startedAt = performance.now();
 		try {
 			// ── Markdown ──────────────────────────────────────────────────────────
 			if (sel.format === 'md') {
@@ -2147,7 +2168,9 @@
 				}
 				exportProgress = { done: 0, total: 0, label: 'Building Markdown…' };
 				await tick();
-				await exportMarkdownZip(stamp, sel);
+				await exportMarkdownZip(stamp, sel, (done, total, label) => {
+					exportProgress = { done, total, label };
+				});
 				return;
 			}
 
@@ -2245,6 +2268,11 @@
 			done = total;
 			exportProgress = { done, total, label: 'Compressing…' };
 		} finally {
+			// A cached/small export finishes in a blink; hold the overlay long
+			// enough to register as feedback rather than a flash.
+			const MIN_MS = 500;
+			const elapsed = performance.now() - startedAt;
+			if (elapsed < MIN_MS) await new Promise((r) => setTimeout(r, MIN_MS - elapsed));
 			exportProgress = null;
 		}
 	}
