@@ -22,9 +22,12 @@
 	let {
 		open = $bindable(false),
 		progress = null,
+		summary = '',
 	}: {
 		open?: boolean;
 		progress?: { done: number; total: number; label: string } | null;
+		/** Human-readable content breakdown, e.g. "3 characters, 4 landmarks". */
+		summary?: string;
 	} = $props();
 
 	let stackDepth = $state(1);
@@ -69,6 +72,9 @@
 					<p class="exp-state-sub exp-state-sub--ellipsis">
 						{progress?.label || 'Gathering your world.'}
 					</p>
+					{#if summary}
+						<p class="exp-summary">{summary}</p>
+					{/if}
 				</div>
 			</div>
 		</Dialog.Content>
@@ -124,6 +130,13 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+	:global(.exp-summary) {
+		margin: 6px 0 0;
+		font-size: 12px;
+		line-height: 1.5;
+		color: var(--text-dimmer);
+		text-align: center;
 	}
 	:global(.exp-bar) {
 		width: 100%;

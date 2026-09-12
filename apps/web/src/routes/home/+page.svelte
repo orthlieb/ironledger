@@ -284,6 +284,9 @@
 	let importProgress = $state<{ done: number; total: number; label: string } | null>(null);
 	// Export busy overlay — non-null while an export is gathering/compressing.
 	let exportProgress = $state<{ done: number; total: number; label: string } | null>(null);
+	let exportSummary = $state('');
+	// Live per-category tally shown in the import overlay ("2/15 settlements, …").
+	let importLiveSummary = $state('');
 	let importValidCount = $state(0);
 	/** Resolver for the `review` pause — settled by the dialog's decision. */
 	let reviewResolve: ((proceed: boolean) => void) | null = null;
@@ -658,6 +661,41 @@
 	async function runImport(file: File, opts: { silent?: boolean } = {}) {
 		const silent = opts.silent === true;
 		const errors: string[] = [];
+		// Live content tally — totals seeded once the manifest is known (below),
+		// counts advanced per row in step().
+		const importTotals: Record<string, number> = {};
+		const importDoneBy: Record<string, number> = {};
+		const catOf = (label: string) =>
+			label.startsWith('Character')
+				? 'char'
+				: label.startsWith('Settlement')
+					? 'comm'
+					: label.startsWith('Place')
+						? 'place'
+						: label.startsWith('NPC')
+							? 'npc'
+							: label.startsWith('Expedition')
+								? 'exp'
+								: label.startsWith('Log entry')
+									? 'log'
+									: '';
+		const renderImportSummary = () => {
+			const cats: Array<[string, string, string]> = [
+				['char', 'character', 'characters'],
+				['comm', 'settlement', 'settlements'],
+				['place', 'landmark', 'landmarks'],
+				['npc', 'NPC', 'NPCs'],
+				['exp', 'expedition', 'expeditions'],
+				['log', 'log entry', 'log entries'],
+			];
+			importLiveSummary = cats
+				.filter(([k]) => (importTotals[k] ?? 0) > 0)
+				.map(([k, one, many]) => {
+					const t = importTotals[k];
+					return `${importDoneBy[k] ?? 0}/${t} ${t === 1 ? one : many}`;
+				})
+				.join(', ');
+		};
 		// Unpacking is synchronous and blocks paint, but applying rows is not:
 		// every unit of work goes through step(), so that is where the bar
 		// advances. Rows that hit the network yield on their own; rows that
@@ -682,15 +720,30 @@
 			}
 			if (importProgress) {
 				importProgress = { ...importProgress, done: importProgress.done + 1 };
+				const cat = catOf(label);
+				if (cat) {
+					importDoneBy[cat] = (importDoneBy[cat] ?? 0) + 1;
+					renderImportSummary();
+				}
 			}
 		};
 		importErrors = [];
 		importSummary = '';
+		importLiveSummary = '';
 		importProgress = null;
+		let importStartedAt = 0;
+		// Hold the importing overlay a 5s minimum (matching the export overlay) so
+		// its bar + progress register rather than flashing past on a fast import.
+		const holdImportMin = async () => {
+			const MIN_MS = 5000;
+			const elapsed = performance.now() - importStartedAt;
+			if (elapsed < MIN_MS) await new Promise((r) => setTimeout(r, MIN_MS - elapsed));
+		};
 		if (!silent) {
 			importStage = 'importing';
 			importDialogOpen = true;
 			importProgress = { done: 0, total: 0, label: 'Reading the archive…' };
+			importStartedAt = performance.now();
 		}
 		try {
 			const bytes = new Uint8Array(await file.arrayBuffer());
@@ -702,6 +755,7 @@
 				await importMapZip(file, relinkMarkersByName);
 				if (!silent) {
 					importSummary = 'Map imported.';
+					await holdImportMin();
 					importStage = 'done';
 				}
 				return;
@@ -1133,6 +1187,13 @@
 					logRows +
 					(t === 'everything' ? 1 : 0); // the bundled-maps step
 				importProgress = { done: 0, total, label: importProgress.label };
+				importTotals.char = incomingCharacters.length;
+				importTotals.comm = incomingCommunities.length;
+				importTotals.place = incomingPlaces.length;
+				importTotals.npc = incomingNpcs.length;
+				importTotals.exp = incomingExpeditions.length;
+				importTotals.log = logRows;
+				renderImportSummary();
 			}
 
 			if (parsed.manifest && parsed.data) {
@@ -1248,8 +1309,12 @@
 				(parts.length ? `Imported ${parts.join(' · ')}.` : 'Nothing new to import.') +
 				(validErrors.length ? ` ${validErrors.length} skipped.` : '');
 			importErrors = [...validErrors, ...errors];
+			// Hold the (full) bar the 5s minimum before flipping to the summary.
+			if (!silent) {
+				await holdImportMin();
+				importStage = 'done';
+			}
 			importProgress = null;
-			if (!silent) importStage = 'done';
 		} catch (err) {
 			const msg =
 				err instanceof ImportError
@@ -1458,6 +1523,7 @@
 		stamp: string,
 		sel: ExportSelection,
 		onProgress?: (done: number, total: number, label: string) => void,
+		onItem?: (kind: string) => void,
 	) {
 		const zipFiles: Record<string, Uint8Array> = {};
 		const usedNames = new Set<string>();
@@ -1582,14 +1648,14 @@
 			urlFor: (it: T) => string,
 			legacy: (it: T) => string,
 			into: Map<string, string>,
-			onOne?: () => void,
+			onOne?: (it: T) => void,
 		) {
 			await Promise.all(
 				items.map(async (it) => {
 					const url = urlFor(it);
 					const du = url ? await fetchPortraitDataUrl(url) : legacy(it);
 					if (du) into.set(it.id, du);
-					onOne?.();
+					onOne?.(it);
 				}),
 			);
 		}
@@ -1608,7 +1674,10 @@
 				},
 				(c) => ((c.data as Record<string, unknown>).portrait as string) ?? '',
 				charPortraits,
-				bump,
+				() => {
+					bump();
+					onItem?.('char');
+				},
 			),
 			prefetch(
 				selComms,
@@ -1618,7 +1687,10 @@
 						: '',
 				(c) => c.imageUrl ?? '',
 				commPortraits,
-				bump,
+				() => {
+					bump();
+					onItem?.('comm');
+				},
 			),
 			prefetch(
 				selNpcs,
@@ -1628,7 +1700,10 @@
 						: '',
 				(n) => n.imageUrl ?? '',
 				npcPortraits,
-				bump,
+				() => {
+					bump();
+					onItem?.('npc');
+				},
 			),
 			prefetch(
 				selPlaces,
@@ -1638,7 +1713,10 @@
 						: '',
 				(p) => p.imageUrl ?? '',
 				placePortraits,
-				bump,
+				() => {
+					bump();
+					onItem?.('place');
+				},
 			),
 			prefetch(
 				selExps,
@@ -1648,7 +1726,10 @@
 						: '',
 				(e) => e.imageUrl ?? '',
 				expPortraits,
-				bump,
+				(e) => {
+					bump();
+					onItem?.(e.type);
+				},
 			),
 		]);
 
@@ -2147,6 +2228,35 @@
 		const selPlaces = places.filter((p) => placeSet.has(p.id));
 		const wantConn = selComms.length > 0 || selNpcs.length > 0 || selPlaces.length > 0;
 
+		// Live content tally for the overlay — done/total per category, ticking
+		// up as each item is processed (e.g. "3/15 settlements, 0/22 landmarks").
+		const word = (n: number, one: string, many = `${one}s`) => (n === 1 ? one : many);
+		const journeys = selExps.filter((e) => e.type === 'journey').length;
+		const sites = selExps.filter((e) => e.type === 'site').length;
+		const scenes = selExps.filter((e) => e.type === 'scene').length;
+		const tally: Array<{ key: string; total: number; label: string }> = [
+			{ key: 'char', total: selChars.length, label: word(selChars.length, 'character') },
+			{ key: 'comm', total: selComms.length, label: word(selComms.length, 'settlement') },
+			{ key: 'place', total: selPlaces.length, label: word(selPlaces.length, 'landmark') },
+			{ key: 'npc', total: selNpcs.length, label: word(selNpcs.length, 'NPC') },
+			{ key: 'journey', total: journeys, label: word(journeys, 'journey') },
+			{ key: 'site', total: sites, label: word(sites, 'site') },
+			{ key: 'scene', total: scenes, label: word(scenes, 'scene') },
+			{ key: 'map', total: mapSet.size, label: word(mapSet.size, 'map') },
+			{
+				key: 'log',
+				total: sel.log ? sessionLog.entries.length : 0,
+				label: word(sel.log ? sessionLog.entries.length : 0, 'log entry', 'log entries'),
+			},
+		];
+		const doneBy: Record<string, number> = {};
+		const renderSummary = () =>
+			(exportSummary = tally
+				.filter((c) => c.total > 0)
+				.map((c) => `${doneBy[c.key] ?? 0}/${c.total} ${c.label}`)
+				.join(', '));
+		renderSummary();
+
 		exportProgress = { done: 0, total: 0, label: 'Preparing export…' };
 		const startedAt = performance.now();
 		try {
@@ -2168,9 +2278,23 @@
 				}
 				exportProgress = { done: 0, total: 0, label: 'Building Markdown…' };
 				await tick();
-				await exportMarkdownZip(stamp, sel, (done, total, label) => {
-					exportProgress = { done, total, label };
-				});
+				await exportMarkdownZip(
+					stamp,
+					sel,
+					(done, total, label) => {
+						exportProgress = { done, total, label };
+					},
+					(kind) => {
+						doneBy[kind] = (doneBy[kind] ?? 0) + 1;
+						renderSummary();
+					},
+				);
+				// The markdown bundle also writes maps + the log; reflect them in the
+				// final tally.
+				doneBy['map'] = mapSet.size;
+				if (sel.log) doneBy['log'] = sessionLog.entries.length;
+				renderSummary();
+				exportProgress = { done: 1, total: 1, label: 'Done' };
 				return;
 			}
 
@@ -2194,19 +2318,28 @@
 				items: T[],
 				fn: (it: T) => Promise<unknown>,
 				label: string,
+				keyOf: (it: T) => string,
 			): Promise<unknown[]> {
 				exportProgress = { done, total, label };
 				return Promise.all(
 					items.map(async (it) => {
 						const r = await fn(it);
 						done += 1;
+						const k = keyOf(it);
+						doneBy[k] = (doneBy[k] ?? 0) + 1;
 						exportProgress = { done, total, label };
+						renderSummary();
 						return r;
 					}),
 				);
 			}
 			if (selChars.length) {
-				payload.characters = await embedAll(selChars, embedCharForExport, 'Embedding characters…');
+				payload.characters = await embedAll(
+					selChars,
+					embedCharForExport,
+					'Embedding characters…',
+					() => 'char',
+				);
 				count += selChars.length;
 			}
 			if (selComms.length) {
@@ -2214,6 +2347,7 @@
 					selComms,
 					(c) => embedEntityForExport('communities', c),
 					'Embedding settlements…',
+					() => 'comm',
 				);
 				count += selComms.length;
 			}
@@ -2222,6 +2356,7 @@
 					selNpcs,
 					(n) => embedEntityForExport('npcs', n),
 					'Embedding NPCs…',
+					() => 'npc',
 				);
 				count += selNpcs.length;
 			}
@@ -2230,6 +2365,7 @@
 					selPlaces,
 					(p) => embedEntityForExport('places', p),
 					'Embedding landmarks…',
+					() => 'place',
 				);
 				count += selPlaces.length;
 			}
@@ -2238,6 +2374,7 @@
 					selExps,
 					(e) => embedEntityForExport('expeditions', e),
 					'Embedding expeditions…',
+					(e) => e.type,
 				);
 				count += selExps.length;
 			}
@@ -2245,6 +2382,8 @@
 				const entries = [...sessionLog.entries].reverse();
 				payload.log = entries;
 				count += entries.length;
+				doneBy['log'] = entries.length;
+				renderSummary();
 			}
 			payload.session = { activeCharId, activeFoeId, activeExpeditionId };
 
@@ -2256,7 +2395,9 @@
 				await tick();
 				({ mapFiles } = await collectMapEntries(mapSet));
 				done += mapSet.size;
+				doneBy['map'] = mapSet.size;
 				exportProgress = { done, total, label: 'Collecting maps…' };
+				renderSummary();
 			}
 			count += mapSet.size;
 
@@ -2266,14 +2407,16 @@
 			await tick();
 			await exportZip('everything', payload, count, `ironledger-export-${stamp}.zip`, mapFiles);
 			done = total;
-			exportProgress = { done, total, label: 'Compressing…' };
+			exportProgress = { done, total, label: 'Done' };
 		} finally {
-			// A cached/small export finishes in a blink; hold the overlay long
-			// enough to register as feedback rather than a flash.
-			const MIN_MS = 500;
+			// A cached/small export finishes in a blink; hold the overlay a 5s
+			// minimum (matching the import dialog) so the feedback + summary
+			// register rather than flashing past.
+			const MIN_MS = 5000;
 			const elapsed = performance.now() - startedAt;
 			if (elapsed < MIN_MS) await new Promise((r) => setTimeout(r, MIN_MS - elapsed));
 			exportProgress = null;
+			exportSummary = '';
 		}
 	}
 </script>
@@ -2294,6 +2437,7 @@
 	bind:open={importDialogOpen}
 	stage={importStage}
 	summary={importSummary}
+	liveSummary={importLiveSummary}
 	errors={importErrors}
 	validCount={importValidCount}
 	progress={importProgress}
@@ -2303,6 +2447,7 @@
 		importStage = 'idle';
 		importErrors = [];
 		importSummary = '';
+		importLiveSummary = '';
 		importProgress = null;
 	}}
 />
@@ -2310,7 +2455,11 @@
 <!-- Export busy overlay — gathers portraits + compresses the zip. Shown while
      handleExportSelection runs; closes when the download fires or an error is
      caught (exportProgress → null in its finally). -->
-<ExportProgressDialog open={exportProgress !== null} progress={exportProgress} />
+<ExportProgressDialog
+	open={exportProgress !== null}
+	progress={exportProgress}
+	summary={exportSummary}
+/>
 
 <!-- ID-collision prompt — surfaces only when an import's NPC/community/expedition
      ids clash with the active session. onImportFile awaits its open() promise
