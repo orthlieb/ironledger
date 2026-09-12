@@ -92,6 +92,7 @@
 		populateMap,
 		type MapZipBody,
 	} from '$lib/mapExport.js';
+	import { gridDimsForAspect } from '$lib/mapConstants.js';
 	import type { MapOwnerKind, MapMarker } from '$lib/mapStore.svelte.js';
 	import { resolveEntity, parseEntityId, formatEntityId } from '$lib/mapEntityLinks.js';
 
@@ -1993,21 +1994,81 @@
 				);
 				if (maps.length) index.push('## Maps', '');
 				const mapSlugs = slugMap(maps, 'map');
-				// A marker's linked entity → a relative link into the right folder
-				// (maps/ is one level deep, like connections/ and expeditions/); an
-				// unresolved link falls back to the label + any carried name.
-				const markerLine = (entityId: unknown, label: string, entityName: unknown): string => {
+				const svgEsc = (v: string) =>
+					v
+						.replace(/&/g, '&amp;')
+						.replace(/</g, '&lt;')
+						.replace(/>/g, '&gt;')
+						.replace(/"/g, '&quot;');
+				// A numbered marker's linked entity → a relative link into the right
+				// folder (maps/ is one level deep, like connections/ and expeditions/);
+				// an unresolved link falls back to the label + any carried name.
+				const markerLine = (n: number, entityId: unknown, label: string, entityName: unknown) => {
 					const ref = typeof entityId === 'string' ? entityId : '';
 					const i = ref.indexOf(':');
 					const kind = i > 0 ? ref.slice(0, i) : '';
 					const id = i > 0 ? ref.slice(i + 1) : '';
 					const text = label || (typeof entityName === 'string' ? entityName : 'Marker');
 					if ((kind === 'community' || kind === 'place') && connSlugs.has(id))
-						return `- [${text}](../connections/${connSlugs.get(id)}.md)`;
+						return `${n}. [${text}](../connections/${connSlugs.get(id)}.md)`;
 					if ((kind === 'journey' || kind === 'site' || kind === 'scene') && expSlugs.has(id))
-						return `- [${text}](../expeditions/${expSlugs.get(id)}.md)`;
+						return `${n}. [${text}](../expeditions/${expSlugs.get(id)}.md)`;
 					const suffix = typeof entityName === 'string' && entityName ? ` — ${entityName}` : '';
-					return `- ${text}${suffix}`;
+					return `${n}. ${text}${suffix}`;
+				};
+				// A self-contained, scalable SVG: the background as a data URI with a
+				// numbered pin per marker. Vector so it never gets "too small", and
+				// the numbers (vs. overlapping labels) keep a dense map legible — the
+				// legend below maps each number to its entity.
+				// Pick a legible number color for a given pin fill: a light disc
+				// (e.g. a pale water/site marker) needs a dark number, a dark disc a
+				// white one — otherwise the white-on-white number vanishes. Falls
+				// back to white for any color we can't parse to a luminance.
+				const numberInk = (color: string) => {
+					const hex = color.trim().replace(/^#/, '');
+					const h =
+						hex.length === 3
+							? hex
+									.split('')
+									.map((c) => c + c)
+									.join('')
+							: hex;
+					if (!/^[0-9a-fA-F]{6}$/.test(h)) return '#fff';
+					const r8 = parseInt(h.slice(0, 2), 16);
+					const g8 = parseInt(h.slice(2, 4), 16);
+					const b8 = parseInt(h.slice(4, 6), 16);
+					// Perceived luminance (ITU-R BT.601); >0.6 ⇒ light fill ⇒ dark ink.
+					const lum = (0.299 * r8 + 0.587 * g8 + 0.114 * b8) / 255;
+					return lum > 0.6 ? '#1a1a1a' : '#fff';
+				};
+				const buildMapSvg = (
+					bg: string,
+					cols: number,
+					rows: number,
+					markers: Array<Record<string, unknown>>,
+				) => {
+					const r = Math.max(cols, rows) * 0.009 + 0.125;
+					const pins = markers
+						.map((mk, idx) => {
+							const x = Number(mk.x) || 0;
+							const y = Number(mk.y) || 0;
+							const color = typeof mk.color === 'string' && mk.color ? mk.color : '#e63946';
+							const ink = numberInk(color);
+							// A halo stroke opposite the ink keeps the number crisp against
+							// the disc even where the fill sits near the luminance cutoff.
+							const halo = ink === '#fff' ? '#1a1a1a' : '#fff';
+							return (
+								`<g><circle cx="${x}" cy="${y}" r="${r}" fill="${svgEsc(color)}" stroke="#fff" stroke-width="${r * 0.14}"/>` +
+								`<text x="${x}" y="${y}" font-size="${r * 0.575}" fill="${ink}" stroke="${halo}" stroke-width="${r * 0.03}" font-family="sans-serif" font-weight="700" text-anchor="middle" dominant-baseline="central">${idx + 1}</text></g>`
+							);
+						})
+						.join('');
+					return (
+						`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${cols} ${rows}">` +
+						`<image href="${bg}" x="0" y="0" width="${cols}" height="${rows}" preserveAspectRatio="none"/>` +
+						pins +
+						`</svg>`
+					);
 				};
 				for (const summary of maps) {
 					const detailRes = await fetch(`/api/session/maps/${summary.id}`);
@@ -2017,24 +2078,30 @@
 						name: string;
 						markers: Array<Record<string, unknown>>;
 						backgroundHash: string | null;
+						settings?: { aspect?: number };
 					};
 					const slug = mapSlugs.get(detail.id) ?? slugify(detail.name || 'map');
 					const lines: string[] = [`# ${detail.name || 'Untitled Map'}`, ''];
+					const markers = Array.isArray(detail.markers) ? detail.markers : [];
 					if (detail.backgroundHash) {
 						const du = await fetchPortraitDataUrl(
 							`/api/session/maps/${detail.id}/background?v=${encodeURIComponent(detail.backgroundHash)}`,
 						);
-						if (du)
-							lines.push(
-								`![${detail.name || 'Map'}](../${addImage(du, 'map', detail.name || 'map')})`,
-								'',
-							);
+						if (du) {
+							const aspect =
+								typeof detail.settings?.aspect === 'number' && detail.settings.aspect > 0
+									? detail.settings.aspect
+									: 1;
+							const { cols, rows } = gridDimsForAspect(aspect);
+							zipFiles[`images/map-${slug}.svg`] = strToU8(buildMapSvg(du, cols, rows, markers));
+							lines.push(`![${detail.name || 'Map'}](../images/map-${slug}.svg)`, '');
+						}
 					}
-					const markers = Array.isArray(detail.markers) ? detail.markers : [];
 					if (markers.length) {
 						lines.push('## Markers', '');
-						for (const mk of markers)
-							lines.push(markerLine(mk.entityId, String(mk.label ?? ''), mk.entityName));
+						markers.forEach((mk, idx) =>
+							lines.push(markerLine(idx + 1, mk.entityId, String(mk.label ?? ''), mk.entityName)),
+						);
 					}
 					zipFiles[`maps/${slug}.md`] = strToU8(lines.join('\n').trimEnd() + '\n');
 					index.push(`- [${detail.name || 'Untitled Map'}](maps/${slug}.md)`);
