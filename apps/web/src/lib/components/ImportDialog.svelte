@@ -7,9 +7,9 @@
 	 * chooser, a progress spinner, and a success or error report.
 	 *
 	 *   idle      → drop zone + "Choose file"
-	 *   importing → spinner; promoted to a determinate bar only once the work
-	 *               has been running BAR_DELAY_MS, so a fast import never
-	 *               flashes one
+	 *   importing → a determinate bar (once the row count is known) with a live
+	 *               per-category tally; the host holds this stage a 5s minimum
+	 *               so a fast import still reads as feedback, not a flash
 	 *   done      → ✓ + summary
 	 *   error     → ⚠ + the ImportError message + "Choose another file"
 	 */
@@ -22,6 +22,7 @@
 		open = $bindable(false),
 		stage = 'idle',
 		summary = '',
+		liveSummary = '',
 		errors = [],
 		validCount = 0,
 		progress = null,
@@ -33,6 +34,8 @@
 		stage?: 'idle' | 'importing' | 'review' | 'done' | 'error';
 		/** Success detail, e.g. "3 characters · 12 connections · 148 log entries". */
 		summary?: string;
+		/** Live per-category tally shown during importing ("2/15 settlements, …"). */
+		liveSummary?: string;
 		/** All problems collected during import. On `review`/`error` these are the
 		 *  rows that couldn't be read; on `done` they're the ones that failed while
 		 *  the rest imported. */
@@ -62,25 +65,6 @@
 		return () => popDialog();
 	});
 
-	/** Hold the bar back this long. Most imports finish well inside it and are
-	 *  better served by the spinner alone — a bar that appears and vanishes
-	 *  reads as a glitch, and one that fills instantly tells you nothing. Past
-	 *  this the wait is real and the user wants a fraction, not a spinner. */
-	const BAR_DELAY_MS = 5000;
-	let barReady = $state(false);
-
-	// Reads `stage` and nothing else on purpose: `progress` changes on every
-	// row, and tracking it here would restart the timer forever so the bar
-	// would never appear.
-	$effect(() => {
-		if (stage !== 'importing') {
-			barReady = false;
-			return;
-		}
-		const t = setTimeout(() => (barReady = true), BAR_DELAY_MS);
-		return () => clearTimeout(t);
-	});
-
 	function pick(file: File | null | undefined) {
 		if (file) onfile(file);
 	}
@@ -108,7 +92,7 @@
 			<div class="imd-body">
 				{#if stage === 'importing'}
 					<div class="imd-state">
-						{#if barReady && progress && progress.total > 0}
+						{#if progress && progress.total > 0}
 							<Progress.Root
 								value={progress.done}
 								max={progress.total}
@@ -130,6 +114,9 @@
 						<p class="imd-state-sub imd-state-sub--ellipsis">
 							{progress?.label || 'Reading the archive and applying its contents.'}
 						</p>
+						{#if liveSummary}
+							<p class="imd-live-summary">{liveSummary}</p>
+						{/if}
 					</div>
 				{:else if stage === 'review'}
 					<div class="imd-state">
@@ -376,6 +363,13 @@
 		margin: 0;
 		font-size: 12.5px;
 		color: var(--text-muted);
+	}
+	:global(.imd-live-summary) {
+		margin: 6px 0 0;
+		font-size: 12px;
+		line-height: 1.5;
+		color: var(--text-dimmer);
+		text-align: center;
 	}
 	:global(.imd-errlist) {
 		margin: 4px 0 0;
