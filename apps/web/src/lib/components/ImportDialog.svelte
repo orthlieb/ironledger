@@ -7,9 +7,9 @@
 	 * chooser, a progress spinner, and a success or error report.
 	 *
 	 *   idle      → drop zone + "Choose file"
-	 *   importing → spinner; promoted to a determinate bar only once the work
-	 *               has been running BAR_DELAY_MS, so a fast import never
-	 *               flashes one
+	 *   importing → a determinate bar (once the row count is known) with a live
+	 *               per-category tally; the host holds this stage a 5s minimum
+	 *               so a fast import still reads as feedback, not a flash
 	 *   done      → ✓ + summary
 	 *   error     → ⚠ + the ImportError message + "Choose another file"
 	 */
