@@ -1,0 +1,69 @@
+{
+  "key": "yrtReligion",
+  "title": "Character: Religion",
+  "category": "Character",
+  "selectLabel": "Character: Religion",
+  "description": "What a character was raised to, by where they were raised. Choose the column for their home country; if unsure, roll Location: Region first.\n\n- **Nysis:** Piscis, Ostrea, Collima, Fluenti, Vitre, Ravenna, Oray Hills, Verday Groves\n- **Freeport:** the city and its wards\n- **Mososi:** Typpe, Materton, Termin, Lokigi, Sveba, Seka Lands\n- **Buralia:** Mons, Intersang, Weirden Fen, Alneta, Altiplano and the grass\n- **Other:** Biel, Ramage, Gelandia, and anywhere over the Sea of Bees\n\nShares are of resident population, not of worshippers. The Nysis column rounds: Wildens is under one per cent there because it is underground, and it is given a single point so it can be rolled at all.",
+  "source": "yrt",
+  "tableType": "columnSelect",
+  "columns": [
+    {
+      "key": "nysis",
+      "label": "Nysis"
+    },
+    {
+      "key": "freeport",
+      "label": "Freeport"
+    },
+    {
+      "key": "mososi",
+      "label": "Mososi"
+    },
+    {
+      "key": "buralia",
+      "label": "Buralia"
+    },
+    {
+      "key": "other",
+      "label": "Other"
+    }
+  ],
+  "data": [
+    {
+      "nysis": 86,
+      "freeport": 58,
+      "mososi": 4,
+      "buralia": 0,
+      "other": 0,
+      "tell": "Keeps the calendar. Knows their own grade and yours.",
+      "value": "<strong>Puritan</strong>: Holds that humanity was sentenced to be mixed with the beasts, and that the sentence is carried in the body. Grades people Pure through Feral, keeps a third of the year free of anything that had blood or a face, and takes its miracles from mana the Conclave sells it."
+    },
+    {
+      "nysis": 90,
+      "freeport": 73,
+      "mososi": 89,
+      "buralia": 1,
+      "other": 0,
+      "tell": "Will not use the grading words at all, and answers a flourish with a plain sentence.",
+      "value": "<strong>Optime</strong>: Worships YRT, the same god, and holds only that the fall was something other than the Puritans say. Does not grade people. Keeps the abstinence loosely, as a discipline rather than a purity law."
+    },
+    {
+      "nysis": 91,
+      "freeport": 83,
+      "mososi": 92,
+      "buralia": 95,
+      "other": 0,
+      "tell": "Swears by the twelve without thinking, which in Nysis is a confession and in Freeport is only the low wards.",
+      "value": "<strong>Wildens</strong>: The twelve feral gods, and under them the local lesser god their people brought in. Underground in Nysis. Tolerated but not legal in Freeport, where Kroduk's house is still kept outside the chains. The ordinary faith of Buralia."
+    },
+    {
+      "nysis": 100,
+      "freeport": 100,
+      "mososi": 100,
+      "buralia": 100,
+      "other": 100,
+      "tell": "Has no answer ready, or gives one that fits none of the three.",
+      "value": "<strong>Neither, or their own</strong>: Either nothing at all, which is common in the Stews and among the Touched, or a practice that none of the three names fit: Seka lineage and herd reckoning, Verdani green lore, or whatever a crew off the Sea of Bees keeps and has never been asked about."
+    }
+  ]
+}
