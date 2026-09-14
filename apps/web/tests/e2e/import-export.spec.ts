@@ -1403,11 +1403,19 @@ test.describe('Import / Export — Markdown structure', () => {
 		expect(mapFile, 'a per-map markdown file exists').toBeTruthy();
 		const md = strFromU8(entries[mapFile as string]);
 		expect(md).toContain('# Test Map');
-		// The background is written as an image and referenced from the map file.
-		expect(names.some((n) => n.startsWith('images/map-'))).toBe(true);
+		// The map is a self-contained SVG (background + numbered pins), referenced
+		// from the map file.
+		const svgName = names.find((n) => n.startsWith('images/map-') && n.endsWith('.svg'));
+		expect(svgName, 'a per-map SVG exists').toBeTruthy();
 		expect(md).toContain('![Test Map](../images/map-');
-		// Each marker links to its settlement/landmark connection file.
-		expect(md).toContain('[Riverton Pin](../connections/riverton.md)');
+		expect(md).toContain('.svg)');
+		const svg = strFromU8(entries[svgName as string]);
+		expect(svg).toContain('<svg'); // vector, scales — not a fixed raster
+		expect(svg).toContain('<image'); // background embedded
+		expect(svg).toContain('<circle'); // a numbered pin drawn on the map
+		expect(svg).toContain('>1</text>'); // marker #1
+		// Legend is numbered (matches the pins) and links to the entity.
+		expect(md).toContain('1. [Riverton Pin](../connections/riverton.md)');
 		// The old single-file / json data dump is gone.
 		expect(names).not.toContain('maps.md');
 		expect(names.some((n) => n.endsWith('/map.json'))).toBe(false);
