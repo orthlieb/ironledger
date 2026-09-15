@@ -352,6 +352,7 @@
           "oracles/freeport-denizen.json",
           "oracles/mana-backlash.json",
           "oracles/region.json",
+          "oracles/religion.json",
           "oracles/settlement-opportunity.json",
           "oracles/settlement-peril.json",
           "oracles/settlement-type.json",
