@@ -8,114 +8,154 @@
   "roll": ["value", "type"],
   "data": [
     {
-      "topRange": 7,
+      "topRange": 6,
       "value": "Piscis",
-      "type": "Settled"
+      "type": "Settled",
+      "country": "nysis"
     },
     {
-      "topRange": 14,
+      "topRange": 12,
       "value": "Ostrea",
-      "type": "Settled"
+      "type": "Settled",
+      "country": "nysis"
     },
     {
-      "topRange": 21,
+      "topRange": 18,
       "value": "Collima",
-      "type": "Settled"
+      "type": "Settled",
+      "country": "nysis"
     },
     {
-      "topRange": 28,
+      "topRange": 24,
       "value": "Freeport",
-      "type": "Settled"
+      "type": "Settled",
+      "country": "freeport"
     },
     {
-      "topRange": 35,
+      "topRange": 30,
       "value": "Mons",
-      "type": "Settled"
+      "type": "Settled",
+      "country": "buralia"
     },
     {
-      "topRange": 42,
+      "topRange": 36,
       "value": "Termin",
-      "type": "Settled"
+      "type": "Settled",
+      "country": "mososi"
+    },
+    {
+      "topRange": 43,
+      "value": "Fluenti",
+      "type": "Settled",
+      "country": "nysis"
     },
     {
       "topRange": 49,
-      "value": "Fluenti",
-      "type": "Settled"
-    },
-    {
-      "topRange": 55,
       "value": "Materton",
-      "type": "Settled"
+      "type": "Settled",
+      "country": "mososi"
     },
     {
-      "topRange": 60,
+      "topRange": 54,
       "value": "Oray Hills",
-      "type": "Boundary"
+      "type": "Boundary",
+      "country": "nysis"
     },
     {
-      "topRange": 65,
+      "topRange": 59,
       "value": "Profunda Forest",
-      "type": "Boundary"
+      "type": "Boundary",
+      "country": "nysis"
     },
     {
-      "topRange": 70,
+      "topRange": 64,
       "value": "Verday Groves",
-      "type": "Boundary"
+      "type": "Boundary",
+      "country": "nysis"
     },
     {
-      "topRange": 75,
+      "topRange": 69,
       "value": "Nebula Forest",
-      "type": "Boundary"
+      "type": "Boundary",
+      "country": "nysis"
     },
     {
-      "topRange": 80,
+      "topRange": 74,
       "value": "Suda Forest",
-      "type": "Boundary"
+      "type": "Boundary",
+      "country": "nysis"
+    },
+    {
+      "topRange": 79,
+      "value": "Seka Lands",
+      "type": "Boundary",
+      "country": "mososi"
+    },
+    {
+      "topRange": 81,
+      "value": "Malperm Mtns",
+      "type": "Remote",
+      "country": "nysis"
+    },
+    {
+      "topRange": 83,
+      "value": "Pinna Mtns",
+      "type": "Remote",
+      "country": "nysis"
     },
     {
       "topRange": 85,
-      "value": "Seka Lands",
-      "type": "Boundary"
+      "value": "Polvokovrita Gap",
+      "type": "Remote",
+      "country": "mososi"
     },
     {
       "topRange": 87,
-      "value": "Malperm Mtns",
-      "type": "Remote"
+      "value": "Dronitay Shelf",
+      "type": "Remote",
+      "country": "mososi"
     },
     {
       "topRange": 89,
-      "value": "Pinna Mtns",
-      "type": "Remote"
+      "value": "Teeth of Kolonoy",
+      "type": "Remote",
+      "country": "mososi"
     },
     {
       "topRange": 91,
-      "value": "Polvokovrita Gap",
-      "type": "Remote"
+      "value": "Weirden Fen",
+      "type": "Remote",
+      "country": "buralia"
     },
     {
       "topRange": 93,
-      "value": "Dronitay Shelf",
-      "type": "Remote"
-    },
-    {
-      "topRange": 95,
-      "value": "Teeth of Kolonoy",
-      "type": "Remote"
-    },
-    {
-      "topRange": 97,
-      "value": "Weirden Fen",
-      "type": "Remote"
-    },
-    {
-      "topRange": 99,
       "value": "Ravenna",
-      "type": "Remote"
+      "type": "Remote",
+      "country": "nysis"
+    },
+    {
+      "topRange": 94,
+      "value": "Spero",
+      "type": "Remote",
+      "country": "buralia"
+    },
+    {
+      "topRange": 96,
+      "type": "Remote",
+      "country": "elsewhere",
+      "value": "Ramage"
+    },
+    {
+      "topRange": 98,
+      "type": "Remote",
+      "country": "elsewhere",
+      "value": "Biel"
     },
     {
       "topRange": 100,
-      "value": "Spero",
-      "type": "Remote"
+      "type": "Remote",
+      "country": "elsewhere",
+      "value": "Gelandia"
     }
   ]
 }

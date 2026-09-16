@@ -211,25 +211,37 @@
 	 *  N features) and prepends the result into the NPC's background/notes.
 	 *  No schema change — everything lives in the notes prose. */
 	let newNpcRollTouched = $state(false);
-	/** YRT: the NPC's country of origin (born, not necessarily resident) — one
-	 *  of the `yrtReligion` oracle's country columns. Required when YRT is on;
-	 *  drives the Religion roll and is recorded in the notes prose. '' = unset. */
+	/** YRT: the NPC's region of origin (born, not necessarily resident) — one of
+	 *  the `yrtRegion` oracle's regions, the same set settlements roll. Optional;
+	 *  drives the Religion roll (via the region's `country`) and is recorded in
+	 *  the notes prose. '' = unset. */
 	let newNpcOrigin = $state('');
-	/** YRT: rolls `yrtReligion` against `newNpcOrigin` and prepends the faith
-	 *  into the NPC's notes (like Touched). Opt-in; needs an origin. */
+	/** YRT: rolls `yrtReligion` against the origin region's country and prepends
+	 *  the faith into the NPC's notes (like Touched). Opt-in; needs a region. */
 	let newNpcRollReligion = $state(false);
-	/** Country-of-origin options, sourced from the yrtReligion oracle's columns
-	 *  so the two never drift. Empty until the catalogue (and YRT) loads. */
+	/** Region-of-origin options, sourced from the YRT Region oracle's rows — the
+	 *  same regions a settlement rolls, so the two stay consistent. Each carries
+	 *  the `country` (a yrtReligion column key) the religion roll resolves
+	 *  against. Empty until the catalogue (and YRT) loads. */
 	const npcOriginOptions = $derived(
-		(findOracle('yrtReligion')?.columns ?? []).map((c) => ({ value: c.key, label: c.label })),
+		(findOracle('yrtRegion')?.data ?? []).map((r) => ({
+			value: String(r.value ?? ''),
+			label: String(r.value ?? ''),
+			country: String((r as Record<string, unknown>).country ?? 'elsewhere'),
+		})),
 	);
-	/** Pick a random country of origin (uniform across the available columns). */
+	/** The religion country column for the chosen region of origin. */
+	const npcOriginCountry = $derived(
+		npcOriginOptions.find((o) => o.value === newNpcOrigin)?.country ?? '',
+	);
+	/** Roll the Region oracle for a random region of origin (same source as a
+	 *  settlement's region roll). */
 	function randomizeNpcOrigin() {
-		const opts = npcOriginOptions;
-		if (opts.length) newNpcOrigin = opts[Math.floor(Math.random() * opts.length)].value;
+		const rolled = rollOracle('yrtRegion', getOracles()).value;
+		if (typeof rolled === 'string' && rolled) newNpcOrigin = rolled;
 	}
-	// Religion is rolled against the origin column, so it can't be chosen without
-	// one — clearing the origin drops the (now-disabled) Religion tick too.
+	// Religion is rolled against the origin region's country, so it can't be
+	// chosen without a region — clearing it drops the (now-disabled) tick too.
 	$effect(() => {
 		if (!newNpcOrigin && newNpcRollReligion) newNpcRollReligion = false;
 	});
@@ -973,21 +985,19 @@
 				appendLog(findOracle('yrtTouched')?.title ?? 'Touched', touchedLogHtml(r));
 			}
 		}
-		// YRT: country of origin is required, so record it in the notes; when the
-		// Religion box is checked, roll yrtReligion against that origin column and
-		// fold the faith into the same block (prose only, no schema change).
+		// YRT: record the (optional) region of origin in the notes; when the
+		// Religion box is checked, roll yrtReligion against that region's country
+		// column and fold the faith into the same block (prose only, no schema).
 		if (isSourceEnabled('yrt') && newNpcOrigin) {
-			const originLabel =
-				npcOriginOptions.find((o) => o.value === newNpcOrigin)?.label ?? newNpcOrigin;
-			let block = `**Country of origin:** ${originLabel}`;
-			if (newNpcRollReligion) {
-				const rel = rollOracle('yrtReligion', oracles, { stat: newNpcOrigin });
+			let block = `**Region of origin:** ${newNpcOrigin}`;
+			if (newNpcRollReligion && npcOriginCountry) {
+				const rel = rollOracle('yrtReligion', oracles, { stat: npcOriginCountry });
 				// The oracle value is markdown (e.g. "**Wildens**: …") and notes are
 				// markdown too, so it drops straight in — no conversion needed.
 				block += `\n\n**Religion:** ${rel.value ?? ''}`;
 				appendLog(
 					findOracle('yrtReligion')?.title ?? 'Character: Religion',
-					`<div class="roll-line">Origin: <strong>${originLabel}</strong></div>${rel.html}`,
+					`<div class="roll-line">Region: <strong>${newNpcOrigin}</strong></div>${rel.html}`,
 				);
 			}
 			n.notes = block + (n.notes ? `\n\n${n.notes}` : '');
@@ -1784,20 +1794,20 @@
 
 	{#if isSourceEnabled('yrt')}
 		<div class="co-field">
-			<span class="co-field-label">Country of origin (optional — where they were born)</span>
+			<span class="co-field-label">Region of origin (optional — where they were born)</span>
 			<div class="co-name-row">
 				<Select
 					id="nn-origin"
 					bind:value={newNpcOrigin}
 					options={npcOriginOptions}
-					placeholder="Select a country…"
+					placeholder="Select a region…"
 				/>
 				<button
 					class="dice-btn"
 					type="button"
 					onclick={randomizeNpcOrigin}
-					use:tooltip={'Random country of origin'}
-					aria-label="Random country of origin">{@html diceD6Svg}</button
+					use:tooltip={'Random region of origin'}
+					aria-label="Random region of origin">{@html diceD6Svg}</button
 				>
 			</div>
 		</div>
@@ -1869,7 +1879,7 @@
 			>
 				<span
 					class="nn-check-label"
-					use:tooltip={newNpcOrigin ? '' : 'Choose a country of origin first'}
+					use:tooltip={newNpcOrigin ? '' : 'Choose a region of origin first'}
 				>
 					Religion
 				</span>
