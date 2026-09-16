@@ -16,6 +16,16 @@
         "tens": "#2f363c",
         "ones": "#cdd3d8",
         "texture": "marble"
+      },
+      "previewColors": {
+        "dark": {
+          "bg": "#0e0f11",
+          "fg": "#c0c8d0"
+        },
+        "light": {
+          "bg": "#eceff2",
+          "fg": "#3a4148"
+        }
       }
     },
     {
@@ -32,6 +42,16 @@
         "tens": "#0e1420",
         "ones": "#9fd8f5",
         "texture": "astral"
+      },
+      "previewColors": {
+        "dark": {
+          "bg": "#070b12",
+          "fg": "#38bdf8"
+        },
+        "light": {
+          "bg": "#e8eef6",
+          "fg": "#0369a1"
+        }
       }
     },
     {
@@ -48,6 +68,16 @@
         "tens": "#1c231e",
         "ones": "#9ec7b4",
         "texture": "metal"
+      },
+      "previewColors": {
+        "dark": {
+          "bg": "#080d0a",
+          "fg": "#68a68a"
+        },
+        "light": {
+          "bg": "#e8ede6",
+          "fg": "#2f6d54"
+        }
       }
     },
     {
@@ -64,6 +94,16 @@
         "tens": "#141a12",
         "ones": "#e6ebd7",
         "texture": "skulls"
+      },
+      "previewColors": {
+        "dark": {
+          "bg": "#0a0d0a",
+          "fg": "#a3c775"
+        },
+        "light": {
+          "bg": "#f2eee4",
+          "fg": "#3f5d29"
+        }
       }
     },
     {
@@ -80,6 +120,16 @@
         "tens": "#2e1c0e",
         "ones": "#e6cf96",
         "texture": "paper"
+      },
+      "previewColors": {
+        "dark": {
+          "bg": "#0b0906",
+          "fg": "#e8a030"
+        },
+        "light": {
+          "bg": "#f4ede0",
+          "fg": "#8a4e08"
+        }
       }
     }
   ]

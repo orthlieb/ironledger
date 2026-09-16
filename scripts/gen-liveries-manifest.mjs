@@ -34,6 +34,22 @@ const APP_HTML = path.join(ROOT, 'apps/web/src/app.html');
 const check = process.argv.includes('--check');
 
 // ── Manifest (runtime metadata) ────────────────────────────────────────────────
+// Base-app chrome tokens used as the preview fallback when a livery has
+// `palette: null` (inherits the base forge-amber chrome). Keep in sync with
+// the `:root` / `[data-theme='light']` blocks in apps/web/src/app.css.
+const BASE_PREVIEW = {
+  dark: { bg: '#0b0906', fg: '#e8a030' },
+  light: { bg: '#f4ede0', fg: '#8a4e08' },
+};
+function previewColors(livery) {
+  const p = livery.palette;
+  if (!p) return BASE_PREVIEW;
+  return {
+    dark: { bg: p.dark['bg-page'], fg: p.dark['text-accent'] },
+    light: { bg: p.light['bg-page'], fg: p.light['text-accent'] },
+  };
+}
+
 function buildManifest(liveries) {
   const obj = {
     _generated: 'scripts/gen-liveries-manifest.mjs — edit liveries/<id>/livery.json, not this file',
@@ -47,6 +63,10 @@ function buildManifest(liveries) {
       transliterate: l.transliterate ?? null,
       googleFamily: l.font.googleFamily ?? null,
       dice: l.dice ?? null,
+      // Compact per-livery swatch pair (bg-page + text-accent, per theme) so
+      // SettingsDialog's livery picker can render a dark+light preview tile
+      // per option without carrying the whole palette client-side.
+      previewColors: previewColors(l),
     })),
   };
   return JSON.stringify(obj, null, 2) + '\n';
