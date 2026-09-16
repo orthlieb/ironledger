@@ -12,7 +12,7 @@
 // `&amp;`.
 // =============================================================================
 
-import { renderNote } from './markdown.js';
+import { renderNote, renderInline } from './markdown.js';
 
 export interface DslRef {
 	scheme: string;
@@ -96,11 +96,10 @@ const SPAN = /\[([^\]]+)\]\{\.([\w-]+)\}/g; // [text]{.class}
  *  `dialog-only` (the move/asset dialog only). Keep in sync with lint-dsl.mjs. */
 const SPAN_CLASSES = new Set(['log-only', 'dialog-only']);
 
-/** Render markdown+DSL text (moves, oracles, assets) to HTML: resolve DSL action
- *  links + `{.class}` spans, then apply renderNote formatting (bold, lists).
- *  Interactive link HTML is protected behind sentinels so renderNote never
- *  escapes it. */
-export function renderRich(md: string | undefined): string {
+/** Shared core for the rich renderers: resolve DSL action links + `{.class}`
+ *  spans behind sentinels, apply the given leaf formatter (block or inline),
+ *  then restore the protected HTML. */
+function renderRichWith(md: string | undefined, format: (s: string) => string): string {
 	if (!md) return '';
 	const stash: string[] = [];
 	const protect = (html: string): string => `${P0}${stash.push(html) - 1}${P1}`;
@@ -115,11 +114,26 @@ export function renderRich(md: string | undefined): string {
 	// `[label](href)` link, so its stashed HTML embeds inner sentinels that only
 	// surface once the outer span sentinel is replaced (String.replace is 1-pass).
 	const restore = new RegExp(`${P0}(\\d+)${P1}`, 'g');
-	let out = renderNote(s);
+	let out = format(s);
 	for (let i = 0; i < 100 && out.includes(P0); i++) {
 		out = out.replace(restore, (_m, n: string) => stash[Number(n)]);
 	}
 	return out;
+}
+
+/** Render markdown+DSL text (moves, oracles, assets) to HTML: resolve DSL action
+ *  links + `{.class}` spans, then apply renderNote formatting (bold, lists,
+ *  paragraphs). Interactive link HTML is protected behind sentinels so
+ *  renderNote never escapes it. Use for block contexts (log entries, dialogs). */
+export function renderRich(md: string | undefined): string {
+	return renderRichWith(md, renderNote);
+}
+
+/** Inline variant of `renderRich`: same DSL action links + `{.class}` spans,
+ *  but only inline formatting (bold/italic) with NO block wrapping — for
+ *  single-line contexts like oracle table cells and roll results. */
+export function renderRichInline(md: string | undefined): string {
+	return renderRichWith(md, renderInline);
 }
 
 // =============================================================================

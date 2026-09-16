@@ -1,13 +1,20 @@
 // =============================================================================
 // lint-dsl.mjs — validate the markdown + interactive-link DSL in authored content
 //
-// Scans every `[label](scheme:path?query)` link and `[text]{.class}` span in
-//   • moves   (except `html: true`)  — trigger/outcomes/notes/table
-//   • assets  (except `html: true`)  — abilities/preamble/description
-//   • oracle values (any DSL token)  — roll: + action links
-// and fails (exit 1) on: unknown scheme, non-existent target (move id / oracle
-// key), missing/malformed args, unknown span class, or stray HTML left in a
-// flagged move/asset. Reports `file → item → token → reason`.
+// Two guards over authored content (base + every extension):
+//
+// 1. DSL validation — every `[label](scheme:path?query)` link and `[text]{.class}`
+//    span in moves / assets / oracle values must resolve: known scheme, existing
+//    target (move id / oracle key), well-formed args, known span class.
+//
+// 2. No raw HTML or JS in content. A blanket sweep walks EVERY string in EVERY
+//    content kind (moves, assets, oracles, foes, delve — including overrides,
+//    rarities, foe drives/tactics, delve tables) and fails on any HTML tag;
+//    markup must be markdown or the DSL. Extension SVG icons (inlined + {@html})
+//    are scanned for <script>/on*=/javascript:/entities. An item flagged
+//    `html: true` opts its subtree out of the HTML sweep (legacy escape hatch).
+//
+// Fails (exit 1) with `file → item → token → reason`.
 //
 // Run on predev/prebuild + CI:  node scripts/lint-dsl.mjs
 // =============================================================================
@@ -61,6 +68,20 @@ const SPAN_CLASSES = new Set(['log-only', 'dialog-only']);
 const LINK = /\[([^\]]+)\]\(([a-z]+):([^)]*)\)/g; // [label](scheme:rest)
 const SPAN = /\[([^\]]+)\]\{\.([\w-]+)\}/g; // [text]{.class}
 const HTML_TAG = /<[a-z][\w-]*(\s[^>]*)?>/i;
+// Executable content that must never appear in an extension SVG icon — icons are
+// inlined via `?raw` and rendered with {@html}, so a script or handler runs.
+const SVG_JS = /<script\b|<foreignObject\b|\son\w+\s*=|javascript:|<!ENTITY/i;
+
+/** Visit every string leaf in a JSON value, reporting a dotted path. An object
+ *  flagged `html: true` opts its whole subtree out (the raw-HTML escape hatch). */
+function walkStrings(node, visit, at = '') {
+  if (typeof node === 'string') return visit(node, at || '(root)');
+  if (Array.isArray(node)) return node.forEach((v, i) => walkStrings(v, visit, `${at}[${i}]`));
+  if (node && typeof node === 'object') {
+    if (node.html === true) return;
+    for (const [k, v] of Object.entries(node)) walkStrings(v, visit, at ? `${at}.${k}` : k);
+  }
+}
 
 // ── File loading ─────────────────────────────────────────────────────────────
 async function listJson(dir) {
@@ -181,9 +202,9 @@ async function main() {
       if (m.html) continue;
       const errs = [];
       for (const field of ['trigger', 'triggerPreamble', 'strong', 'weak', 'miss', 'notes'])
-        scanText(m[field], moveIds, oracleKeys, { strayHtml: true }, errs);
+        scanText(m[field], moveIds, oracleKeys, { strayHtml: false }, errs);
       for (const row of m.table ?? [])
-        scanText(row.value, moveIds, oracleKeys, { strayHtml: true }, errs);
+        scanText(row.value, moveIds, oracleKeys, { strayHtml: false }, errs);
       record(file, m.id, errs);
     }
 
@@ -192,20 +213,53 @@ async function main() {
     for (const a of data.assets ?? []) {
       if (a.html) continue;
       const errs = [];
-      scanText(a.preamble, moveIds, oracleKeys, { strayHtml: true }, errs);
-      scanText(a.description, moveIds, oracleKeys, { strayHtml: true }, errs);
+      scanText(a.preamble, moveIds, oracleKeys, { strayHtml: false }, errs);
+      scanText(a.description, moveIds, oracleKeys, { strayHtml: false }, errs);
       for (const ab of a.abilities ?? [])
-        scanText(ab.text, moveIds, oracleKeys, { strayHtml: true }, errs);
+        scanText(ab.text, moveIds, oracleKeys, { strayHtml: false }, errs);
       record(file, a.id, errs);
     }
 
-  // Oracles — validate any DSL token in a value (mixed transition; no strayHtml).
+  // Oracles — validate any DSL token in a value (scheme + target checks).
   for (const { file, data } of oracles)
     for (const e of data.data ?? []) {
       const errs = [];
       for (const v of Object.values(e))
         scanText(v, moveIds, oracleKeys, { strayHtml: false }, errs);
       record(file, data.key, errs);
+    }
+
+  // Blanket guard — NO raw HTML anywhere in content data. Every content kind,
+  // every nested string (so overrides, rarities, foe drives/tactics, delve
+  // tables are all covered). Markup is markdown or the `[label](scheme:args)`
+  // DSL — never HTML. `html: true` items still opt out (handled in walkStrings).
+  for (const kind of ['moves', 'assets', 'oracles', 'foes', 'delve'])
+    for (const { file, data } of await loadAll(kind))
+      walkStrings(data, (s, where) => {
+        const tag = s.match(HTML_TAG);
+        if (tag)
+          failures.push({ file, item: where, token: tag[0], reason: 'raw HTML in content data' });
+      });
+
+  // SVG icon guard — icons are inlined (`?raw`) and rendered with {@html}, so a
+  // <script>, on*= handler, javascript: URI, or entity would execute. Never.
+  const extRoot = path.join(ROOT, 'extensions');
+  if (existsSync(extRoot))
+    for (const ext of await readdir(extRoot)) {
+      const iconDir = path.join(extRoot, ext, 'icons');
+      if (!existsSync(iconDir)) continue;
+      for (const f of await readdir(iconDir)) {
+        if (!f.endsWith('.svg')) continue;
+        const svg = await readFile(path.join(iconDir, f), 'utf8');
+        const hit = svg.match(SVG_JS);
+        if (hit)
+          failures.push({
+            file: path.relative(ROOT, path.join(iconDir, f)),
+            item: 'icon',
+            token: hit[0],
+            reason: 'executable content (script/handler) in SVG icon',
+          });
+      }
     }
 
   if (failures.length === 0) {

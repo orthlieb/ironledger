@@ -29,15 +29,15 @@
     },
     {
       "topRange": 80,
-      "value": "You hold yourself together through stubborn will. Suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">-1 momentum</a>."
+      "value": "You hold yourself together through stubborn will. Suffer [-1 momentum](resource:momentum?value=-1)."
     },
     {
       "topRange": 90,
-      "value": "A thread of hope holds. Recover <a class=\"resource-link\" data-resource=\"spirit\" data-value=\"+1\">+1 spirit</a>."
+      "value": "A thread of hope holds. Recover [+1 spirit](resource:spirit?value=+1)."
     },
     {
       "topRange": 100,
-      "value": "Something deep within you refuses to be extinguished. Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+2\">+2 momentum</a>."
+      "value": "Something deep within you refuses to be extinguished. Take [+2 momentum](resource:momentum?value=+2)."
     }
   ]
 }
