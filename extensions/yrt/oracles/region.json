@@ -5,117 +5,171 @@
   "selectLabel": "Location: Region",
   "description": "Determine the region of the Yrt world where an event or location is situated. Regions are ordered and weighted by type: settled lands come up most often, boundary lands less often, and remote lands rarely.",
   "source": "yrt",
-  "roll": ["value", "type"],
+  "columns": [
+    {
+      "key": "value",
+      "label": "Region"
+    },
+    {
+      "key": "type",
+      "label": "Type"
+    },
+    {
+      "key": "country",
+      "label": "Country"
+    }
+  ],
+  "roll": ["value", "country"],
   "data": [
     {
-      "topRange": 7,
+      "topRange": 6,
       "value": "Piscis",
-      "type": "Settled"
+      "type": "Settled",
+      "country": "Nysis"
     },
     {
-      "topRange": 14,
+      "topRange": 12,
       "value": "Ostrea",
-      "type": "Settled"
+      "type": "Settled",
+      "country": "Nysis"
     },
     {
-      "topRange": 21,
+      "topRange": 18,
       "value": "Collima",
-      "type": "Settled"
+      "type": "Settled",
+      "country": "Nysis"
     },
     {
-      "topRange": 28,
+      "topRange": 24,
       "value": "Freeport",
-      "type": "Settled"
+      "type": "Settled",
+      "country": "Freeport"
     },
     {
-      "topRange": 35,
+      "topRange": 30,
       "value": "Mons",
-      "type": "Settled"
+      "type": "Settled",
+      "country": "Buralia"
     },
     {
-      "topRange": 42,
+      "topRange": 36,
       "value": "Termin",
-      "type": "Settled"
+      "type": "Settled",
+      "country": "Mososi"
+    },
+    {
+      "topRange": 43,
+      "value": "Fluenti",
+      "type": "Settled",
+      "country": "Nysis"
     },
     {
       "topRange": 49,
-      "value": "Fluenti",
-      "type": "Settled"
-    },
-    {
-      "topRange": 55,
       "value": "Materton",
-      "type": "Settled"
+      "type": "Settled",
+      "country": "Mososi"
     },
     {
-      "topRange": 60,
+      "topRange": 54,
       "value": "Oray Hills",
-      "type": "Boundary"
+      "type": "Boundary",
+      "country": "Nysis"
     },
     {
-      "topRange": 65,
+      "topRange": 59,
       "value": "Profunda Forest",
-      "type": "Boundary"
+      "type": "Boundary",
+      "country": "Nysis"
     },
     {
-      "topRange": 70,
+      "topRange": 64,
       "value": "Verday Groves",
-      "type": "Boundary"
+      "type": "Boundary",
+      "country": "Nysis"
     },
     {
-      "topRange": 75,
+      "topRange": 69,
       "value": "Nebula Forest",
-      "type": "Boundary"
+      "type": "Boundary",
+      "country": "Nysis"
     },
     {
-      "topRange": 80,
+      "topRange": 74,
       "value": "Suda Forest",
-      "type": "Boundary"
+      "type": "Boundary",
+      "country": "Nysis"
+    },
+    {
+      "topRange": 79,
+      "value": "Seka Lands",
+      "type": "Boundary",
+      "country": "Mososi"
+    },
+    {
+      "topRange": 81,
+      "value": "Malperm Mtns",
+      "type": "Remote",
+      "country": "Nysis"
+    },
+    {
+      "topRange": 83,
+      "value": "Pinna Mtns",
+      "type": "Remote",
+      "country": "Nysis"
     },
     {
       "topRange": 85,
-      "value": "Seka Lands",
-      "type": "Boundary"
+      "value": "Polvokovrita Gap",
+      "type": "Remote",
+      "country": "Mososi"
     },
     {
       "topRange": 87,
-      "value": "Malperm Mtns",
-      "type": "Remote"
+      "value": "Dronitay Shelf",
+      "type": "Remote",
+      "country": "Mososi"
     },
     {
       "topRange": 89,
-      "value": "Pinna Mtns",
-      "type": "Remote"
+      "value": "Teeth of Kolonoy",
+      "type": "Remote",
+      "country": "Mososi"
     },
     {
       "topRange": 91,
-      "value": "Polvokovrita Gap",
-      "type": "Remote"
+      "value": "Weirden Fen",
+      "type": "Remote",
+      "country": "Buralia"
     },
     {
       "topRange": 93,
-      "value": "Dronitay Shelf",
-      "type": "Remote"
-    },
-    {
-      "topRange": 95,
-      "value": "Teeth of Kolonoy",
-      "type": "Remote"
-    },
-    {
-      "topRange": 97,
-      "value": "Weirden Fen",
-      "type": "Remote"
-    },
-    {
-      "topRange": 99,
       "value": "Ravenna",
-      "type": "Remote"
+      "type": "Remote",
+      "country": "Nysis"
+    },
+    {
+      "topRange": 94,
+      "value": "Spero",
+      "type": "Remote",
+      "country": "Buralia"
+    },
+    {
+      "topRange": 96,
+      "type": "Remote",
+      "country": "Elsewhere",
+      "value": "Ramage"
+    },
+    {
+      "topRange": 98,
+      "type": "Remote",
+      "country": "Elsewhere",
+      "value": "Biel"
     },
     {
       "topRange": 100,
-      "value": "Spero",
-      "type": "Remote"
+      "type": "Remote",
+      "country": "Elsewhere",
+      "value": "Gelandia"
     }
   ]
 }
