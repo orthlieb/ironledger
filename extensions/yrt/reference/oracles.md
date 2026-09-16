@@ -22,6 +22,25 @@ Generate a random occupation for an NPC in Freeport or other large town or city.
 | 90 | undefined |
 | 91–100 | undefined |
 
+## Character: Religion
+
+What a character believes, based on where they were raised. Choose the column for their home country; if unsure, roll Location: Region first.
+
+- **Nysis:** Piscis, Ostrea, Collima, Fluenti, Vitre, Ravenna, Oray Hills, Verday Groves
+- **Freeport:** the city and its wards
+- **Mososi:** Typpe, Materton, Termin, Lokigi, Sveba, Seka Lands
+- **Buralia:** Mons, Intersang, Weirden Fen, Alneta, Altiplano and the grass
+- **Elsewhere:** Biel, Ramage, Gelandia, and anywhere over the Sea of Bees
+
+Shares are of resident population, not of worshippers. Every faith keeps at least a single point in every column, even where its true share rounds to nothing — a lone missionary, or a sailor cast ashore in a foreign land, is always possible. Wildens in Nysis is one such: under one per cent there because it is underground, but never quite zero.
+
+| Nysis | Freeport | Mososi | Buralia | Elsewhere | Result |
+| --- | --- | --- | --- | --- | --- |
+| 86 | 58 | 4 | 1 | 1 | **Puritan**: Holds that humanity was sentenced to be mixed with the beasts, and that the sentence is carried in the body. Grades people Pure through Feral, keeps a third of the year free of anything that had blood or a face, and takes its miracles from mana the Conclave sells it. |
+| 90 | 73 | 89 | 2 | 2 | **Optime**: Worships YRT, the same god, and holds only that the fall was something other than the Puritans say. Does not grade people. Keeps the abstinence loosely, as a discipline rather than a purity law. |
+| 91 | 83 | 92 | 95 | 3 | **Wildens**: The twelve feral gods, and under them the local lesser god their people brought in. Underground in Nysis. Tolerated but not legal in Freeport, where Kroduk's house is still kept outside the chains. The ordinary faith of Buralia. |
+| 100 | 100 | 100 | 100 | 100 | **Neither, or their own**: Either nothing at all, which is common in the Stews and among the Touched, or a practice that none of the three names fit: Seka lineage and herd reckoning, Verdani green lore, or whatever a crew off the Sea of Bees keeps and has never been asked about. |
+
 ## Character: Touched
 
 Generate a Touched character — their social class, animal aspect, and supernatural features in the Yrt setting.
@@ -182,28 +201,31 @@ Determine the region of the Yrt world where an event or location is situated. Re
 
 | d100 | Result |
 | --- | --- |
-| 1–7 | Piscis |
-| 8–14 | Ostrea |
-| 15–21 | Collima |
-| 22–28 | Freeport |
-| 29–35 | Mons |
-| 36–42 | Termin |
-| 43–49 | Fluenti |
-| 50–55 | Materton |
-| 56–60 | Oray Hills |
-| 61–65 | Profunda Forest |
-| 66–70 | Verday Groves |
-| 71–75 | Nebula Forest |
-| 76–80 | Suda Forest |
-| 81–85 | Seka Lands |
-| 86–87 | Malperm Mtns |
-| 88–89 | Pinna Mtns |
-| 90–91 | Polvokovrita Gap |
-| 92–93 | Dronitay Shelf |
-| 94–95 | Teeth of Kolonoy |
-| 96–97 | Weirden Fen |
-| 98–99 | Ravenna |
-| 100 | Spero |
+| 1–6 | Piscis |
+| 7–12 | Ostrea |
+| 13–18 | Collima |
+| 19–24 | Freeport |
+| 25–30 | Mons |
+| 31–36 | Termin |
+| 37–43 | Fluenti |
+| 44–49 | Materton |
+| 50–54 | Oray Hills |
+| 55–59 | Profunda Forest |
+| 60–64 | Verday Groves |
+| 65–69 | Nebula Forest |
+| 70–74 | Suda Forest |
+| 75–79 | Seka Lands |
+| 80–81 | Malperm Mtns |
+| 82–83 | Pinna Mtns |
+| 84–85 | Polvokovrita Gap |
+| 86–87 | Dronitay Shelf |
+| 88–89 | Teeth of Kolonoy |
+| 90–91 | Weirden Fen |
+| 92–93 | Ravenna |
+| 94 | Spero |
+| 95–96 | Ramage |
+| 97–98 | Biel |
+| 99–100 | Gelandia |
 
 ## Location: Settlement Landmark
 
@@ -482,12 +504,12 @@ When using this oracle to reveal the scale and purpose of a settlement, choose w
 
 | Settled Lands | Boundary Lands | Remote Lands | Result | Population |
 | --- | --- | --- | --- | --- |
-| 15 | 20 | 25 | <strong>Stead</strong> — Tiny, self-sustaining settlement with a few family dwellings | ~5–20 |
-| 25 | 35 | 50 | <strong>Camp</strong> — Temporary settlement for nomadic people, soldiers, or seasonal workers | ~20–200 (transient) |
-| 30 | 60 | 75 | <strong>Outpost</strong> — Border or frontier settlement for defense, trade, or exploration | 20–100 |
-| 55 | 80 | 90 | <strong>Hamlet</strong> — Small settlement with a few homes, limited services, and informal leadership | 20–100 |
-| 85 | 95 | 98 | <strong>Village</strong> — Moderate-sized settlement with communal buildings and recognized leadership | 100–600 |
-| 100 | 100 | 100 | <strong>Hold</strong> — Large, fortified settlement with diverse trade skills and well-established leadership | 600–2,500 |
+| 15 | 20 | 25 | **Stead** — Tiny, self-sustaining settlement with a few family dwellings | ~5–20 |
+| 25 | 35 | 50 | **Camp** — Temporary settlement for nomadic people, soldiers, or seasonal workers | ~20–200 (transient) |
+| 30 | 60 | 75 | **Outpost** — Border or frontier settlement for defense, trade, or exploration | 20–100 |
+| 55 | 80 | 90 | **Hamlet** — Small settlement with a few homes, limited services, and informal leadership | 20–100 |
+| 85 | 95 | 98 | **Village** — Moderate-sized settlement with communal buildings and recognized leadership | 100–600 |
+| 100 | 100 | 100 | **Hold** — Large, fortified settlement with diverse trade skills and well-established leadership | 600–2,500 |
 
 ## Story: Region
 
