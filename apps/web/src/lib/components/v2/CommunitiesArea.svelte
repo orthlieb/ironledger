@@ -892,16 +892,14 @@
 		const article = /^[aeiouAEIOU]/.test(r.animal) ? 'an' : 'a';
 		if (r.className === 'Feral') {
 			return (
-				`${who} is **Feral with many** features of ${article} ${r.animal}.\n\n` +
+				`${who} is **Feral with many** features of ${article} ${r.animal}.\n` +
 				`- _Enter narrative concerning this NPC here._`
 			);
 		}
 		const n = r.features.length;
 		const noun = n === 1 ? 'feature' : 'features';
 		const bullets = r.features.map((f) => `- ${f.value}`).join('\n');
-		return (
-			`${who} is **${r.className} with ${n}** ${noun} of ${article} ${r.animal}.\n\n` + bullets
-		);
+		return `${who} is **${r.className} with ${n}** ${noun} of ${article} ${r.animal}.\n` + bullets;
 	}
 
 	/** Monstrosity-style log breakdown of a Touched roll: class + animal aspect,
