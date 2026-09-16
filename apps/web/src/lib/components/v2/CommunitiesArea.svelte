@@ -221,19 +221,24 @@
 	let newNpcRollReligion = $state(false);
 	/** Region-of-origin options, sourced from the YRT Region oracle's rows — the
 	 *  same regions a settlement rolls, so the two stay consistent. Each carries
-	 *  the `country` (a yrtReligion column key) the religion roll resolves
-	 *  against. Empty until the catalogue (and YRT) loads. */
+	 *  its `country` (a yrtReligion column, by that column's label), surfaced as
+	 *  the oracle's Country column. Empty until the catalogue (and YRT) loads. */
 	const npcOriginOptions = $derived(
 		(findOracle('yrtRegion')?.data ?? []).map((r) => ({
 			value: String(r.value ?? ''),
 			label: String(r.value ?? ''),
-			country: String((r as Record<string, unknown>).country ?? 'elsewhere'),
+			country: String((r as Record<string, unknown>).country ?? ''),
 		})),
 	);
-	/** The religion country column for the chosen region of origin. */
-	const npcOriginCountry = $derived(
-		npcOriginOptions.find((o) => o.value === newNpcOrigin)?.country ?? '',
-	);
+	/** The yrtReligion column KEY for the chosen region's country — resolved from
+	 *  the region's `country` (a column label) against the religion oracle's own
+	 *  columns, so the mapping stays entirely data-driven. '' if unresolved. */
+	const npcOriginCountry = $derived.by(() => {
+		const country = npcOriginOptions.find((o) => o.value === newNpcOrigin)?.country ?? '';
+		if (!country) return '';
+		const cols = findOracle('yrtReligion')?.columns ?? [];
+		return cols.find((c) => c.label === country)?.key ?? '';
+	});
 	/** Roll the Region oracle for a random region of origin (same source as a
 	 *  settlement's region roll). */
 	function randomizeNpcOrigin() {

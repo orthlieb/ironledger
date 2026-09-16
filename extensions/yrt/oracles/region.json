@@ -5,156 +5,170 @@
   "selectLabel": "Location: Region",
   "description": "Determine the region of the Yrt world where an event or location is situated. Regions are ordered and weighted by type: settled lands come up most often, boundary lands less often, and remote lands rarely.",
   "source": "yrt",
-  "roll": ["value", "type"],
+  "columns": [
+    {
+      "key": "value",
+      "label": "Region"
+    },
+    {
+      "key": "type",
+      "label": "Type"
+    },
+    {
+      "key": "country",
+      "label": "Country"
+    }
+  ],
+  "roll": ["value", "country"],
   "data": [
     {
       "topRange": 6,
       "value": "Piscis",
       "type": "Settled",
-      "country": "nysis"
+      "country": "Nysis"
     },
     {
       "topRange": 12,
       "value": "Ostrea",
       "type": "Settled",
-      "country": "nysis"
+      "country": "Nysis"
     },
     {
       "topRange": 18,
       "value": "Collima",
       "type": "Settled",
-      "country": "nysis"
+      "country": "Nysis"
     },
     {
       "topRange": 24,
       "value": "Freeport",
       "type": "Settled",
-      "country": "freeport"
+      "country": "Freeport"
     },
     {
       "topRange": 30,
       "value": "Mons",
       "type": "Settled",
-      "country": "buralia"
+      "country": "Buralia"
     },
     {
       "topRange": 36,
       "value": "Termin",
       "type": "Settled",
-      "country": "mososi"
+      "country": "Mososi"
     },
     {
       "topRange": 43,
       "value": "Fluenti",
       "type": "Settled",
-      "country": "nysis"
+      "country": "Nysis"
     },
     {
       "topRange": 49,
       "value": "Materton",
       "type": "Settled",
-      "country": "mososi"
+      "country": "Mososi"
     },
     {
       "topRange": 54,
       "value": "Oray Hills",
       "type": "Boundary",
-      "country": "nysis"
+      "country": "Nysis"
     },
     {
       "topRange": 59,
       "value": "Profunda Forest",
       "type": "Boundary",
-      "country": "nysis"
+      "country": "Nysis"
     },
     {
       "topRange": 64,
       "value": "Verday Groves",
       "type": "Boundary",
-      "country": "nysis"
+      "country": "Nysis"
     },
     {
       "topRange": 69,
       "value": "Nebula Forest",
       "type": "Boundary",
-      "country": "nysis"
+      "country": "Nysis"
     },
     {
       "topRange": 74,
       "value": "Suda Forest",
       "type": "Boundary",
-      "country": "nysis"
+      "country": "Nysis"
     },
     {
       "topRange": 79,
       "value": "Seka Lands",
       "type": "Boundary",
-      "country": "mososi"
+      "country": "Mososi"
     },
     {
       "topRange": 81,
       "value": "Malperm Mtns",
       "type": "Remote",
-      "country": "nysis"
+      "country": "Nysis"
     },
     {
       "topRange": 83,
       "value": "Pinna Mtns",
       "type": "Remote",
-      "country": "nysis"
+      "country": "Nysis"
     },
     {
       "topRange": 85,
       "value": "Polvokovrita Gap",
       "type": "Remote",
-      "country": "mososi"
+      "country": "Mososi"
     },
     {
       "topRange": 87,
       "value": "Dronitay Shelf",
       "type": "Remote",
-      "country": "mososi"
+      "country": "Mososi"
     },
     {
       "topRange": 89,
       "value": "Teeth of Kolonoy",
       "type": "Remote",
-      "country": "mososi"
+      "country": "Mososi"
     },
     {
       "topRange": 91,
       "value": "Weirden Fen",
       "type": "Remote",
-      "country": "buralia"
+      "country": "Buralia"
     },
     {
       "topRange": 93,
       "value": "Ravenna",
       "type": "Remote",
-      "country": "nysis"
+      "country": "Nysis"
     },
     {
       "topRange": 94,
       "value": "Spero",
       "type": "Remote",
-      "country": "buralia"
+      "country": "Buralia"
     },
     {
       "topRange": 96,
       "type": "Remote",
-      "country": "elsewhere",
+      "country": "Elsewhere",
       "value": "Ramage"
     },
     {
       "topRange": 98,
       "type": "Remote",
-      "country": "elsewhere",
+      "country": "Elsewhere",
       "value": "Biel"
     },
     {
       "topRange": 100,
       "type": "Remote",
-      "country": "elsewhere",
+      "country": "Elsewhere",
       "value": "Gelandia"
     }
   ]
