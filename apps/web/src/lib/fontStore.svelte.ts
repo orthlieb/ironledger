@@ -36,6 +36,14 @@ export interface LiveryDice {
 	texture: string;
 }
 
+/** Compact per-theme preview colours — bg-page + text-accent — pulled from
+ *  the livery's palette (or the base app tokens for a null-palette livery).
+ *  Consumed by SettingsDialog's livery picker to render a preview swatch. */
+export interface LiveryPreviewColors {
+	dark: { bg: string; fg: string };
+	light: { bg: string; fg: string };
+}
+
 export interface LiveryMeta {
 	id: string;
 	label: string;
@@ -45,6 +53,7 @@ export interface LiveryMeta {
 	transliterate: string | null;
 	googleFamily: string | null;
 	dice: LiveryDice | null;
+	previewColors: LiveryPreviewColors;
 }
 
 export const LIVERIES: LiveryMeta[] = manifest.liveries;
