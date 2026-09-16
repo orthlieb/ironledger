@@ -228,6 +228,11 @@
 		const opts = npcOriginOptions;
 		if (opts.length) newNpcOrigin = opts[Math.floor(Math.random() * opts.length)].value;
 	}
+	// Religion is rolled against the origin column, so it can't be chosen without
+	// one — clearing the origin drops the (now-disabled) Religion tick too.
+	$effect(() => {
+		if (!newNpcOrigin && newNpcRollReligion) newNpcRollReligion = false;
+	});
 	const NPC_NAME_ORACLES: { value: string; label: string }[] = [
 		{ value: 'namesIronlander', label: 'Ironlander' },
 		{ value: 'namesIronlander2', label: 'Ironlander 2' },
@@ -788,7 +793,7 @@
 		newNpcName = '';
 		newNpcRollTouched = false; // opt-in; the others stay checked from last open
 		newNpcRollReligion = false; // opt-in
-		newNpcOrigin = ''; // required (YRT on) — force a fresh choice each time
+		newNpcOrigin = ''; // optional; a fresh (empty) choice each open
 		await loadOracles();
 		newNpcDialogRef?.open();
 	}
@@ -1747,7 +1752,7 @@
 	draggable
 	confirmLabel="Create"
 	confirmClass="btn-primary"
-	confirmDisabled={!newNpcName.trim() || (isSourceEnabled('yrt') && !newNpcOrigin)}
+	confirmDisabled={!newNpcName.trim()}
 	cancelLabel="Cancel"
 	accentColor={NPC_COLOR}
 	onconfirm={_commitNpc}
@@ -1781,7 +1786,7 @@
 
 	{#if isSourceEnabled('yrt')}
 		<div class="co-field">
-			<span class="co-field-label">Country of origin (where they were born)</span>
+			<span class="co-field-label">Country of origin (optional — where they were born)</span>
 			<div class="co-name-row">
 				<Select
 					id="nn-origin"
@@ -1861,9 +1866,15 @@
 			<Checkbox
 				class="nn-check"
 				checked={newNpcRollReligion}
+				disabled={!newNpcOrigin}
 				onCheckedChange={(v) => (newNpcRollReligion = !!v)}
 			>
-				<span class="nn-check-label">Religion</span>
+				<span
+					class="nn-check-label"
+					use:tooltip={newNpcOrigin ? '' : 'Choose a country of origin first'}
+				>
+					Religion
+				</span>
 			</Checkbox>
 		{/if}
 	</div>
