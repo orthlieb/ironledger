@@ -29,15 +29,15 @@
     },
     {
       "topRange": 80,
-      "value": "You grit your teeth and hold on, barely. Suffer <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"-1\">-1 momentum</a>."
+      "value": "You grit your teeth and hold on, barely. Suffer [-1 momentum](resource:momentum?value=-1)."
     },
     {
       "topRange": 90,
-      "value": "Against all expectations, you endure the blow. Recover <a class=\"resource-link\" data-resource=\"health\" data-value=\"+1\">+1 health</a>."
+      "value": "Against all expectations, you endure the blow. Recover [+1 health](resource:health?value=+1)."
     },
     {
       "topRange": 100,
-      "value": "Defying death itself, you rise renewed. Take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+2\">+2 momentum</a>."
+      "value": "Defying death itself, you rise renewed. Take [+2 momentum](resource:momentum?value=+2)."
     }
   ]
 }

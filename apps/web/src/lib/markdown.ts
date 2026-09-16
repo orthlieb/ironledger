@@ -26,6 +26,17 @@ function escHtml(s: string): string {
 }
 
 /**
+ * Render inline markdown only — **bold**, *italic*, _italic_ — with every
+ * other character HTML-escaped, and NO block wrapping (no <p>/<ul>/…). Use
+ * this for single-line contexts such as oracle table cells and roll results,
+ * where the surrounding element is already a block. Safe with {@html}: all
+ * text is escaped at the leaves.
+ */
+export function renderInline(text: string): string {
+	return applyInline(text ?? '');
+}
+
+/**
  * Apply inline formatting (**bold**, *italic*, _italic_) to a plain-text
  * segment and return the HTML string.
  */

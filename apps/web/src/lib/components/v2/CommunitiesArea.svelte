@@ -211,6 +211,23 @@
 	 *  N features) and prepends the result into the NPC's background/notes.
 	 *  No schema change — everything lives in the notes prose. */
 	let newNpcRollTouched = $state(false);
+	/** YRT: the NPC's country of origin (born, not necessarily resident) — one
+	 *  of the `yrtReligion` oracle's country columns. Required when YRT is on;
+	 *  drives the Religion roll and is recorded in the notes prose. '' = unset. */
+	let newNpcOrigin = $state('');
+	/** YRT: rolls `yrtReligion` against `newNpcOrigin` and prepends the faith
+	 *  into the NPC's notes (like Touched). Opt-in; needs an origin. */
+	let newNpcRollReligion = $state(false);
+	/** Country-of-origin options, sourced from the yrtReligion oracle's columns
+	 *  so the two never drift. Empty until the catalogue (and YRT) loads. */
+	const npcOriginOptions = $derived(
+		(findOracle('yrtReligion')?.columns ?? []).map((c) => ({ value: c.key, label: c.label })),
+	);
+	/** Pick a random country of origin (uniform across the available columns). */
+	function randomizeNpcOrigin() {
+		const opts = npcOriginOptions;
+		if (opts.length) newNpcOrigin = opts[Math.floor(Math.random() * opts.length)].value;
+	}
 	const NPC_NAME_ORACLES: { value: string; label: string }[] = [
 		{ value: 'namesIronlander', label: 'Ironlander' },
 		{ value: 'namesIronlander2', label: 'Ironlander 2' },
@@ -770,6 +787,8 @@
 		};
 		newNpcName = '';
 		newNpcRollTouched = false; // opt-in; the others stay checked from last open
+		newNpcRollReligion = false; // opt-in
+		newNpcOrigin = ''; // required (YRT on) — force a fresh choice each time
 		await loadOracles();
 		newNpcDialogRef?.open();
 	}
@@ -950,6 +969,25 @@
 				n.notes = formatTouchedMd(n.name, r) + (n.notes ? `\n\n${n.notes}` : '');
 				appendLog(findOracle('yrtTouched')?.title ?? 'Touched', touchedLogHtml(r));
 			}
+		}
+		// YRT: country of origin is required, so record it in the notes; when the
+		// Religion box is checked, roll yrtReligion against that origin column and
+		// fold the faith into the same block (prose only, no schema change).
+		if (isSourceEnabled('yrt') && newNpcOrigin) {
+			const originLabel =
+				npcOriginOptions.find((o) => o.value === newNpcOrigin)?.label ?? newNpcOrigin;
+			let block = `**Country of origin:** ${originLabel}`;
+			if (newNpcRollReligion) {
+				const rel = rollOracle('yrtReligion', oracles, { stat: newNpcOrigin });
+				// The oracle value is markdown (e.g. "**Wildens**: …") and notes are
+				// markdown too, so it drops straight in — no conversion needed.
+				block += `\n\n**Religion:** ${rel.value ?? ''}`;
+				appendLog(
+					findOracle('yrtReligion')?.title ?? 'Character: Religion',
+					`<div class="roll-line">Origin: <strong>${originLabel}</strong></div>${rel.html}`,
+				);
+			}
+			n.notes = block + (n.notes ? `\n\n${n.notes}` : '');
 		}
 		await addNpc(n);
 		activeEntryId = n.id;
@@ -1709,7 +1747,7 @@
 	draggable
 	confirmLabel="Create"
 	confirmClass="btn-primary"
-	confirmDisabled={!newNpcName.trim()}
+	confirmDisabled={!newNpcName.trim() || (isSourceEnabled('yrt') && !newNpcOrigin)}
 	cancelLabel="Cancel"
 	accentColor={NPC_COLOR}
 	onconfirm={_commitNpc}
@@ -1740,6 +1778,27 @@
 			>
 		</div>
 	</div>
+
+	{#if isSourceEnabled('yrt')}
+		<div class="co-field">
+			<span class="co-field-label">Country of origin (where they were born)</span>
+			<div class="co-name-row">
+				<Select
+					id="nn-origin"
+					bind:value={newNpcOrigin}
+					options={npcOriginOptions}
+					placeholder="Select a country…"
+				/>
+				<button
+					class="dice-btn"
+					type="button"
+					onclick={randomizeNpcOrigin}
+					use:tooltip={'Random country of origin'}
+					aria-label="Random country of origin">{@html diceD6Svg}</button
+				>
+			</div>
+		</div>
+	{/if}
 
 	<div class="nn-randomize">
 		<span class="nn-randomize-label">Also randomize</span>
@@ -1798,6 +1857,13 @@
 				onCheckedChange={(v) => (newNpcRollTouched = !!v)}
 			>
 				<span class="nn-check-label">Touched</span>
+			</Checkbox>
+			<Checkbox
+				class="nn-check"
+				checked={newNpcRollReligion}
+				onCheckedChange={(v) => (newNpcRollReligion = !!v)}
+			>
+				<span class="nn-check-label">Religion</span>
 			</Checkbox>
 		{/if}
 	</div>

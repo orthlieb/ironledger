@@ -12,13 +12,15 @@ Yrt adds a **mana** resource to characters, representing Conclave spellcraft fue
 | -------- | ----- | ----------------- |
 | `mana`   | 0–10  | amber (`#f59e0b`) |
 
-Mana is a valid `data-resource` value in resource links:
+Mana is a valid resource in the interactive-link DSL, written like any other
+resource link (markup in content is the DSL / markdown — never raw HTML):
 
-```html
-<a class="resource-link" data-resource="mana" data-value="-1">−1 mana</a>
+```
+[−1 mana](resource:mana?value=-1)
 ```
 
-It is defined alongside standard resources in `STAT_RANGES` and `STAT_LINK_COLORS` in `07-moves.js`.
+It behaves like the standard resources (momentum, health, spirit, supply)
+wherever resource links appear.
 
 ---
 
@@ -83,14 +85,14 @@ Some Yrt ritual assets include a cantrip system — minor magical effects that d
 }
 ```
 
-| Field             | Type             | Description                                                                                                                                                                                        |
-| ----------------- | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `description`     | string (HTML)    | Extended narrative text displayed on the card between `preamble` and the ability checkboxes. Used for Conclave Ritual lore and usage guidance. Supports `<strong>`, `<br>`, and other inline HTML. |
-| `cantrips`        | array            | Pool of available cantrip definitions                                                                                                                                                              |
-| `cantrips[].key`  | string           | Unique cantrip identifier (kebab-case)                                                                                                                                                             |
-| `cantrips[].name` | string           | Display name                                                                                                                                                                                       |
-| `cantrips[].desc` | string           | Short description of the effect                                                                                                                                                                    |
-| `cantripSlots`    | array of numbers | Number of cantrip slots unlocked per ability tier (e.g., `[2, 2, 2]` = 2 slots per ability, 6 total when all marked)                                                                               |
+| Field             | Type              | Description                                                                                                                                                                                                                                             |
+| ----------------- | ----------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `description`     | string (markdown) | Extended narrative text displayed on the card between `preamble` and the ability checkboxes. Used for Conclave Ritual lore and usage guidance. Supports markdown (`**bold**`, lists) and the `[label](scheme:args)` interactive-link DSL — no raw HTML. |
+| `cantrips`        | array             | Pool of available cantrip definitions                                                                                                                                                                                                                   |
+| `cantrips[].key`  | string            | Unique cantrip identifier (kebab-case)                                                                                                                                                                                                                  |
+| `cantrips[].name` | string            | Display name                                                                                                                                                                                                                                            |
+| `cantrips[].desc` | string            | Short description of the effect                                                                                                                                                                                                                         |
+| `cantripSlots`    | array of numbers  | Number of cantrip slots unlocked per ability tier (e.g., `[2, 2, 2]` = 2 slots per ability, 6 total when all marked)                                                                                                                                    |
 
 The character selects cantrips from the pool to fill their available slots. Unlocking more abilities opens more slots.
 
@@ -99,7 +101,7 @@ The character selects cantrips from the pool to fill their available slots. Unlo
 The card renders content in this order:
 
 1. `preamble` — prerequisite or flavour text (e.g., "If you are a Conclave ritualist.")
-2. `description` — extended narrative / usage guidance (Yrt-specific, HTML supported)
+2. `description` — extended narrative / usage guidance (Yrt-specific, markdown + DSL)
 3. Ability checkboxes (3 rows)
 4. Cantrip / selectable-list section (if `cantrips` / `cantripSlots` are present)
 5. Difficulty Factors collapsible (if `inspectionFactors` is present — Conclave Rituals only)

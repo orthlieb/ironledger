@@ -11,37 +11,37 @@
       "settled": 15,
       "boundary": 20,
       "remote": 25,
-      "value": "<strong>Stead</strong> — Tiny, self-sustaining settlement with a few family dwellings"
+      "value": "**Stead** — Tiny, self-sustaining settlement with a few family dwellings"
     },
     {
       "settled": 25,
       "boundary": 35,
       "remote": 50,
-      "value": "<strong>Camp</strong> — Temporary settlement for nomadic people, soldiers, or seasonal workers"
+      "value": "**Camp** — Temporary settlement for nomadic people, soldiers, or seasonal workers"
     },
     {
       "settled": 30,
       "boundary": 60,
       "remote": 75,
-      "value": "<strong>Outpost</strong> — Border or frontier settlement for defense, trade, or exploration"
+      "value": "**Outpost** — Border or frontier settlement for defense, trade, or exploration"
     },
     {
       "settled": 55,
       "boundary": 80,
       "remote": 90,
-      "value": "<strong>Hamlet</strong> — Small settlement with a few homes, limited services, and informal leadership"
+      "value": "**Hamlet** — Small settlement with a few homes, limited services, and informal leadership"
     },
     {
       "settled": 85,
       "boundary": 95,
       "remote": 98,
-      "value": "<strong>Village</strong> — Moderate-sized settlement with communal buildings and recognized leadership"
+      "value": "**Village** — Moderate-sized settlement with communal buildings and recognized leadership"
     },
     {
       "settled": 100,
       "boundary": 100,
       "remote": 100,
-      "value": "<strong>Hold</strong> — Large, fortified settlement with diverse trade skills and well-established leadership"
+      "value": "**Hold** — Large, fortified settlement with diverse trade skills and well-established leadership"
     }
   ],
   "tableType": "columnSelect",
