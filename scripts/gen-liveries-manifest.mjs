@@ -112,7 +112,10 @@ async function warnFontDrift(liveries) {
     const fam = l.font.googleFamily;
     if (!fam) continue;
     // family= token before the first colon, e.g. "Cinzel:wght@…" → "Cinzel".
-    const family = fam.split(':')[0];
+    // Google Fonts URLs encode spaces as `+` (e.g. `family=Mystery+Quest`),
+    // so normalise the needle the same way before the includes() check —
+    // otherwise every multi-word family name warns spuriously.
+    const family = fam.split(':')[0].replace(/ /g, '+');
     if (!html.includes(`family=${family}`)) {
       console.warn(
         `⚠ livery "${l.id}" declares googleFamily "${fam}" but app.html's font ` +

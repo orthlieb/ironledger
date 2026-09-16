@@ -186,7 +186,7 @@ html[data-font='futhark'][data-theme='light'] {
 
 /* Sabbat (sabbat) */
 [data-font='sabbat'] {
-	--font-display: 'Metamorphous', 'Palatino Linotype', Georgia, serif;
+	--font-display: 'Mystery Quest', 'Palatino Linotype', Georgia, serif;
 	--font-display-weight: 400;
 	--font-display-variant: normal;
 	--font-display-transform: none;

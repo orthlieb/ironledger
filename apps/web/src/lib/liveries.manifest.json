@@ -54,10 +54,10 @@
       "id": "sabbat",
       "label": "Sabbat",
       "default": false,
-      "description": "Metamorphous storybook-gothic titles over a witch-wood green chrome. Poison-green candle glow on a forest-black ground, bone dice on iron. Halloween-adjacent, wearable year-round.",
+      "description": "Mystery Quest carnival-spooky lettering over a witch-wood green chrome. Poison-green candle glow on a forest-black ground, bone dice on iron. Halloween-adjacent, wearable year-round.",
       "preview": "☾",
       "transliterate": null,
-      "googleFamily": "Metamorphous:wght@400",
+      "googleFamily": "Mystery Quest",
       "dice": {
         "action": "#7bb04b",
         "challenge": "#2a1913",
