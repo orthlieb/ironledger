@@ -21,6 +21,7 @@ import {
 	suppressedOracleKeys,
 } from '$lib/expansionStore.svelte.js';
 import { ROLL_DSL, hasRollTemplate, linkifyTemplate, fillTemplate, type RollFn } from './dsl.js';
+import { renderInline } from './markdown.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -388,7 +389,7 @@ export function buildTableHtml(
 			const range = lo === hi ? `${hi}` : `${lo}–${hi}`;
 			html +=
 				`<tr><td class="oracle-range">${range}</td>` +
-				cols.map((c, i) => `<td${cc(i)}>${r[c.key] as string}</td>`).join('') +
+				cols.map((c, i) => `<td${cc(i)}>${renderInline(String(r[c.key] ?? ''))}</td>`).join('') +
 				'</tr>';
 		}
 		return html + '</tbody></table>';
@@ -425,7 +426,7 @@ export function buildTableHtml(
 				})
 				.join('');
 			const popCell = hasPop ? `<td class="oracle-pop-col">${r['population'] ?? ''}</td>` : '';
-			html += `<tr>${cells}<td>${r['value'] as string}</td>${popCell}</tr>`;
+			html += `<tr>${cells}<td>${renderInline(String(r['value'] ?? ''))}</td>${popCell}</tr>`;
 		}
 		return html + '</tbody></table>';
 	}
@@ -571,8 +572,9 @@ export function buildTableHtml(
 		if (v == null) return '';
 		const s = String(v);
 		// A value with a `[label](roll:…)` blank (e.g. a "roll twice" row) renders
-		// its tokens as pills; plain values pass through unchanged.
-		return hasRollTemplate(s) ? linkifyTemplate(s) : s;
+		// its tokens as pills; plain values go through the inline markdown renderer
+		// (bold/italic + HTML escaping), so catalogue prose never injects raw HTML.
+		return hasRollTemplate(s) ? linkifyTemplate(s) : renderInline(s);
 	};
 
 	// A single value column keeps the space-saving multi-column layout for long
@@ -696,7 +698,7 @@ export function rollOracle(
 		const value = found[col.key] as string;
 		const html =
 			`<div class="roll-line">Roll (${col.label}): d100 → ${roll}</div>` +
-			`<div class="move-outcome">${value}</div>`;
+			`<div class="move-outcome">${renderInline(String(value ?? ''))}</div>`;
 		return { roll, html, title, value };
 	}
 
@@ -710,7 +712,10 @@ export function rollOracle(
 		const value = found['value'] as string;
 		// Optional per-row population (Settlement: Type) — reported alongside the result.
 		const pop = found['population'] as string | undefined;
-		const outcome = pop ? `${value} · <span class="oracle-pop">pop. ${pop}</span>` : value;
+		const renderedValue = renderInline(String(value ?? ''));
+		const outcome = pop
+			? `${renderedValue} · <span class="oracle-pop">pop. ${pop}</span>`
+			: renderedValue;
 		const html =
 			`<div class="roll-line">Roll (${col.label}): d100 → ${roll}</div>` +
 			`<div class="move-outcome">${outcome}</div>`;

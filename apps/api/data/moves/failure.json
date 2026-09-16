@@ -17,7 +17,7 @@
           "eq": 1
         }
       ],
-      "logBody": "<p>Mark <a class=\"resource-link\" data-resource=\"failures\" data-value=\"+1\">+1 tick</a> on your failure track.</p><p>Mark <a class=\"resource-link\" data-resource=\"failures\" data-value=\"+2\">+2 ticks</a> if your failure was the result of a progress move.</p>",
+      "logBody": "Mark [+1 tick](resource:failures?value=+1) on your failure track.\nMark [+2 ticks](resource:failures?value=+2) if your failure was the result of a progress move.",
       "source": "base",
       "logTitle": "{character} marks a failure"
     },

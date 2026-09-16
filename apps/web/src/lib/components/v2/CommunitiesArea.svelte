@@ -979,15 +979,9 @@
 			let block = `**Country of origin:** ${originLabel}`;
 			if (newNpcRollReligion) {
 				const rel = rollOracle('yrtReligion', oracles, { stat: newNpcOrigin });
-				// The oracle value is HTML (e.g. "<strong>Wildens</strong>: …"); the
-				// notes field is markdown, so translate the inline tags to markdown
-				// (and drop any stragglers) — otherwise the tags render literally.
-				const faith = String(rel.value ?? '')
-					.replace(/<\/?(strong|b)>/gi, '**')
-					.replace(/<\/?(em|i)>/gi, '*')
-					.replace(/<[^>]+>/g, '')
-					.trim();
-				block += `\n\n**Religion:** ${faith}`;
+				// The oracle value is markdown (e.g. "**Wildens**: …") and notes are
+				// markdown too, so it drops straight in — no conversion needed.
+				block += `\n\n**Religion:** ${rel.value ?? ''}`;
 				appendLog(
 					findOracle('yrtReligion')?.title ?? 'Character: Religion',
 					`<div class="roll-line">Origin: <strong>${originLabel}</strong></div>${rel.html}`,

@@ -128,7 +128,7 @@
       "strong": "",
       "weak": "",
       "miss": "",
-      "logBody": "You turn the tide and <a class=\"initiative-link\" data-value=\"character\">seize the initiative</a>. Add +1 to your next move and take <a class=\"resource-link\" data-resource=\"momentum\" data-value=\"+1\">+1 momentum on a hit</a>. If you fail to score a hit on that move, you must suffer a dire outcome. <a class=\"move-link\" data-id=\"move/pay-the-price\">Pay the Price</a>.",
+      "logBody": "You turn the tide and [seize the initiative](initiative:character). Add +1 to your next move and take [+1 momentum on a hit](resource:momentum?value=+1). If you fail to score a hit on that move, you must suffer a dire outcome. [Pay the Price](move:pay-the-price).",
       "notes": "Once per fight only. This lets you steal initiative and make any non-progress move at +1. On a hit you also get +1 momentum. But if you miss, the consequences are severe — Pay the Price with a dire outcome. Use it when you're desperate.",
       "preconditions": [
         {

@@ -985,7 +985,9 @@
 		if (!logBody) return;
 
 		const entryId = crypto.randomUUID();
-		const enriched = enrichOutcomeLinks(logBody, entryId, ctx.charId);
+		// logBody is authored in the same markdown + `[label](scheme:args)` DSL as
+		// the outcome text, so render it to HTML before enriching its links.
+		const enriched = enrichOutcomeLinks(renderRich(logBody), entryId, ctx.charId);
 		close();
 		appendLog(resolveTitle(selectedMove), enriched, entryId);
 	}
