@@ -84,10 +84,10 @@
       "id": "sabbat",
       "label": "Sabbat",
       "default": false,
-      "description": "Mystery Quest carnival-spooky lettering over a witch-wood green chrome. Poison-green candle glow on a forest-black ground, bone dice on iron. Halloween-adjacent, wearable year-round.",
+      "description": "Metamorphous storybook-gothic titles over a witch-wood green chrome. Poison-green candle glow on a forest-black ground, bone dice on iron. Halloween-adjacent, wearable year-round.",
       "preview": "☾",
       "transliterate": null,
-      "googleFamily": "Mystery Quest",
+      "googleFamily": "Metamorphous:wght@400",
       "dice": {
         "action": "#7bb04b",
         "challenge": "#2a1913",
@@ -129,6 +129,32 @@
         "light": {
           "bg": "#f4ede0",
           "fg": "#8a4e08"
+        }
+      }
+    },
+    {
+      "id": "vlad",
+      "label": "Vlad",
+      "default": false,
+      "description": "Blood-dripping Nosifer titles over a Transylvanian midnight — coffin-black page, oxblood accents, bone dice on dried-blood iron. Halloween-adjacent, wears the horror on its sleeve.",
+      "preview": "🦇",
+      "transliterate": null,
+      "googleFamily": "Nosifer",
+      "dice": {
+        "action": "#9a1b28",
+        "challenge": "#1a0508",
+        "tens": "#2a0a10",
+        "ones": "#efd9c1",
+        "texture": "metal"
+      },
+      "previewColors": {
+        "dark": {
+          "bg": "#08050a",
+          "fg": "#c9384a"
+        },
+        "light": {
+          "bg": "#f2e8db",
+          "fg": "#7a0e1c"
         }
       }
     }
