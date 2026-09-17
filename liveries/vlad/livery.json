@@ -1,0 +1,57 @@
+{
+  "id": "vlad",
+  "label": "Vlad",
+  "default": false,
+  "description": "Blood-dripping Nosifer titles over a Transylvanian midnight — coffin-black page, oxblood accents, bone dice on dried-blood iron. Halloween-adjacent, wears the horror on its sleeve.",
+  "preview": "🦇",
+  "font": {
+    "stack": "'Nosifer', 'Palatino Linotype', Georgia, serif",
+    "googleFamily": "Nosifer",
+    "weight": 400,
+    "variant": "normal",
+    "transform": "none",
+    "scale": 0.92
+  },
+  "transliterate": null,
+  "dice": {
+    "action": "#9a1b28",
+    "challenge": "#1a0508",
+    "tens": "#2a0a10",
+    "ones": "#efd9c1",
+    "texture": "metal"
+  },
+  "palette": {
+    "dark": {
+      "bg-page": "#08050a",
+      "bg-card": "#170a10",
+      "bg-inset": "#0c0709",
+      "bg-control": "#1e0e14",
+      "bg-hover": "#2a141b",
+      "border": "#3a1c22",
+      "border-mid": "#5a2f38",
+      "text": "#efd9c1",
+      "text-muted": "#b09484",
+      "text-dimmer": "#6f5f56",
+      "text-accent": "#c9384a",
+      "focus-ring": "#c9384a",
+      "accent-glow": "#c9384a22",
+      "accent-dim": "#c9384a12"
+    },
+    "light": {
+      "bg-page": "#f2e8db",
+      "bg-card": "#e8dbc9",
+      "bg-inset": "#f7f0e4",
+      "bg-control": "#eddfcd",
+      "bg-hover": "#ddccb7",
+      "border": "#c6b5a0",
+      "border-mid": "#a08b78",
+      "text": "#1c0a0e",
+      "text-muted": "#4a2b2f",
+      "text-dimmer": "#7a5c60",
+      "text-accent": "#7a0e1c",
+      "focus-ring": "#7a0e1c",
+      "accent-glow": "#7a0e1c22",
+      "accent-dim": "#7a0e1c12"
+    }
+  }
+}
