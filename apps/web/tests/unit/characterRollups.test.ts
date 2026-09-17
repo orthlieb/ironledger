@@ -24,7 +24,10 @@ import {
 } from '../../src/lib/characterRollupsFormat.js';
 
 describe('defaultRandomizeFlags', () => {
-	it('checks every concept oracle and leaves both YRT flags off', () => {
+	it('checks every flag — concept oracles + both YRT extras', () => {
+		// touched + religion default on so a YRT session opens with the full
+		// roll-on-Create set armed; RandomizeBlock's origin/religion sync
+		// still disables religion visually until a region is picked.
 		expect(defaultRandomizeFlags()).toEqual({
 			firstLook: true,
 			activity: true,
@@ -32,18 +35,18 @@ describe('defaultRandomizeFlags', () => {
 			role: true,
 			goal: true,
 			descriptor: true,
-			touched: false,
-			religion: false,
+			touched: true,
+			religion: true,
 		});
 	});
 
 	it('returns a fresh object each call — mutating one does not poison the next', () => {
 		const a = defaultRandomizeFlags();
 		a.firstLook = false;
-		a.touched = true;
+		a.touched = false;
 		const b = defaultRandomizeFlags();
 		expect(b.firstLook).toBe(true);
-		expect(b.touched).toBe(false);
+		expect(b.touched).toBe(true);
 	});
 });
 

@@ -43,10 +43,20 @@
 	const dispositionOk = $derived(!!resolveCharacterOracle('disposition'));
 
 	// Region of origin drives the religion checkbox — no region → no country
-	// column to roll against, so untick and disable the religion box until a
-	// region is picked.
+	// column to roll against. Sync on every origin transition: picking a
+	// region auto-arms religion (its checkbox is now meaningful), clearing a
+	// region unticks it (nothing to roll against). `seenOrigin` starts at a
+	// sentinel so the very first mount counts as a transition — that way a
+	// dialog opened with `religion: true` in its defaults but no region yet
+	// still shows the checkbox unchecked, matching what will actually roll.
+	// A user re-check / uncheck between origin changes sticks until the
+	// next origin transition, which is a fresh state either way.
+	let seenOrigin: string | undefined = undefined;
 	$effect(() => {
-		if (!origin && flags.religion) flags.religion = false;
+		if (origin !== seenOrigin) {
+			flags.religion = !!origin;
+			seenOrigin = origin;
+		}
 	});
 
 	function randomOrigin() {

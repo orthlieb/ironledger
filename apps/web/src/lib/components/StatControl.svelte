@@ -29,6 +29,7 @@
 		min = 1,
 		max = 3,
 		tooltip = '',
+		readonly = false,
 		onchange,
 	}: {
 		label: string;
@@ -38,6 +39,13 @@
 		max?: number;
 		/** Tooltip text shown on hover */
 		tooltip?: string;
+		/** When true, the tile is a display only — the value is not editable
+		 *  (spinners hidden anyway, but the input keeps its readonly attr so
+		 *  the caret can't land and no keystroke changes the number). Kept
+		 *  as a plain `<input>` so the tile layout, focus behaviour for
+		 *  screen-reader / selection, and the styling contract with parent
+		 *  containers all stay identical to the editable tile. */
+		readonly?: boolean;
 		/** Fired when value is committed (on blur) and differs from the focused value */
 		onchange?: (oldVal: number, newVal: number) => void;
 	} = $props();
@@ -64,15 +72,20 @@
 	<input
 		type="number"
 		class="stat-value-input"
+		class:stat-value-input--readonly={readonly}
 		id={inputId}
 		name={inputId}
 		bind:value
 		{min}
 		{max}
+		{readonly}
 		onfocus={() => {
 			focusValue = value;
 		}}
 		onblur={() => {
+			// Editable tiles clamp + notify on blur; a readonly tile can't
+			// have edited the value, so both are no-ops.
+			if (readonly) return;
 			const clamped = Math.min(max, Math.max(min, value || min));
 			value = clamped;
 			if (clamped !== focusValue) onchange?.(focusValue, clamped);
@@ -99,7 +112,9 @@
 		transition: background 0.15s;
 	}
 
-	.stat-tile:has(.stat-value-input:focus) {
+	/* Focus tint fires only for the editable variant — a readonly tile has
+	   nothing to edit, so the hover/focus lift would just mislead. */
+	.stat-tile:has(.stat-value-input:focus:not(.stat-value-input--readonly)) {
 		background: color-mix(in srgb, var(--stat-color) 16%, var(--bg-card));
 	}
 
@@ -161,6 +176,12 @@
 
 	.stat-value-input:focus {
 		outline: none;
+	}
+
+	/* Readonly tile: default cursor + text-select instead of the caret,
+	   makes it clear the number is a display, not an edit field. */
+	.stat-value-input--readonly {
+		cursor: default;
 	}
 
 	.stat-value-input::-webkit-outer-spin-button,

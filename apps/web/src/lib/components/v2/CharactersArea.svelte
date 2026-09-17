@@ -1220,35 +1220,44 @@
 								     Wrapped with a vertical "STATS" side label on the LHS (V1 stats-row-wrapper pattern). -->
 								<div class="ca-stats-wrapper">
 									<div class="ca-side-label">Stats</div>
+									<!-- Stats are fixed once the character is created — the values
+									     live behind the New Character dialog's roll/allocator. The Core
+									     panel tiles read them out only, hover tooltips + colour tokens
+									     unchanged. -->
 									<div class="ca-stats-row">
 										<StatControl
 											label="Edge"
 											bind:value={d.edge}
 											color="var(--color-edge)"
+											readonly
 											tooltip="Quickness, agility, and prowess in ranged combat"
 										/>
 										<StatControl
 											label="Heart"
 											bind:value={d.heart}
 											color="var(--color-heart)"
+											readonly
 											tooltip="Courage, willpower, empathy, sociability, and loyalty"
 										/>
 										<StatControl
 											label="Iron"
 											bind:value={d.iron}
 											color="var(--color-iron)"
+											readonly
 											tooltip="Physical strength, endurance, and prowess in close combat"
 										/>
 										<StatControl
 											label="Shadow"
 											bind:value={d.shadow}
 											color="var(--color-shadow)"
+											readonly
 											tooltip="Sneakiness, deceptiveness, and cunning"
 										/>
 										<StatControl
 											label="Wits"
 											bind:value={d.wits}
 											color="var(--color-wits)"
+											readonly
 											tooltip="Expertise, knowledge, and observation"
 										/>
 									</div>

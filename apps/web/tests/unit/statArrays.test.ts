@@ -43,6 +43,13 @@ describe('BASE_ARRAY / LODESTAR_ARRAYS', () => {
 			expect(a.hint.length).toBeGreaterThan(0);
 		}
 	});
+
+	it('marks exactly one array as the default in each ruleset — Perilous under Lodestar, Standard under base', () => {
+		// The StatAllocator uses this flag to pre-select the RAW default
+		// rather than whichever entry happens to lead the display order.
+		expect(LODESTAR_ARRAYS.filter((a) => a.default).map((a) => a.id)).toEqual(['perilous']);
+		expect(BASE_ARRAY.default).toBe(true);
+	});
 });
 
 describe('availableStatArrays', () => {
