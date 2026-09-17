@@ -58,7 +58,11 @@ export interface RandomizeResult {
 // ── Flag defaults ──────────────────────────────────────────────────────────
 
 /** Fresh flag set — the defaults the New NPC / New Character dialogs open
- *  with (concept oracles on, YRT-only ones off). */
+ *  with. Every concept oracle is on, and so are the two YRT extras
+ *  (touched + religion): on a YRT session the user is expected to want
+ *  them rolled, and the RandomizeBlock's origin/religion sync still
+ *  disables religion until a region is picked so the visible state
+ *  matches what will actually roll. */
 export function defaultRandomizeFlags(): CharacterRandomizeFlags {
 	return {
 		firstLook: true,
@@ -67,8 +71,8 @@ export function defaultRandomizeFlags(): CharacterRandomizeFlags {
 		role: true,
 		goal: true,
 		descriptor: true,
-		touched: false,
-		religion: false,
+		touched: true,
+		religion: true,
 	};
 }
 
