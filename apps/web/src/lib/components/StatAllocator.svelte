@@ -47,10 +47,15 @@
 	// The currently-armed array. Kept in local state so switching arrays
 	// doesn't roll — it just arms the next Roll click. The effect fills in
 	// the initial pick AND reconciles a stale selection if `arrays` swaps
-	// (e.g. Lodestar gets toggled off mid-dialog).
+	// (e.g. Lodestar gets toggled off mid-dialog). Prefers the array whose
+	// `default: true` is set (Perilous under Lodestar, the standard array
+	// under base) so the dropdown opens on the RAW default rather than
+	// whichever entry happens to lead the list.
 	let selectedId = $state<string>('');
 	$effect(() => {
-		if (!arrays.find((a) => a.id === selectedId)) selectedId = arrays[0]?.id ?? '';
+		if (!arrays.find((a) => a.id === selectedId)) {
+			selectedId = (arrays.find((a) => a.default) ?? arrays[0])?.id ?? '';
+		}
 	});
 
 	const selected = $derived(arrays.find((a) => a.id === selectedId) ?? arrays[0]);
