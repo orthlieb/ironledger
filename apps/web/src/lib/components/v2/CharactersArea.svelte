@@ -32,7 +32,17 @@
 	import { getActiveCharacterId, setActiveCharacterId } from '$lib/activeContext.svelte.js';
 	import { createDebouncedSave } from '$lib/debouncedSave.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
-	import { rollOracle, getOracles } from '$lib/oracleStore.svelte.js';
+	import { rollOracle, getOracles, findOracle } from '$lib/oracleStore.svelte.js';
+	import {
+		NAME_ORACLES,
+		defaultRandomizeFlags,
+		rollCharacterRandomizations,
+		randomizationsAsMarkdown,
+		touchedLogHtml,
+		logCreateRolls,
+		type CharacterRandomizeFlags,
+	} from '$lib/characterRollups.js';
+	import RandomizeBlock from '$lib/components/RandomizeBlock.svelte';
 	import Select from '$lib/components/Select.svelte';
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import {
@@ -892,32 +902,34 @@
 	let newCharDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let newCharName = $state('');
 	// Character-name randomizer: pick any Name-category oracle and roll it into
-	// the field. All base — no extension adds character-name oracles. "Other
-	// Names" is a three-lineage table (giants/varou/trolls) whose value is a
-	// per-lineage bag, so it's exposed as three picker entries (`namesOther_*`)
-	// and the suffix selects which name to lift — mirrors the NPC dialog.
+	// the field. NAME_ORACLES + rollByNameOracleKey mirror the New NPC dialog,
+	// living in `characterRollups` so both dialogs stay in lock-step.
 	let newCharNameOracle = $state('namesIronlander');
-	const NAME_ORACLES = [
-		{ value: 'namesIronlander', label: 'Ironlander' },
-		{ value: 'namesIronlander2', label: 'Ironlander 2' },
-		{ value: 'namesElf_elf1', label: 'Elf 1' },
-		{ value: 'namesElf_elf2', label: 'Elf 2' },
-		{ value: 'namesOther_giants', label: 'Giants' },
-		{ value: 'namesOther_varou', label: 'Varou' },
-		{ value: 'namesOther_trolls', label: 'Trolls' },
-	];
+	// Also-randomize checklist + YRT region-of-origin — same shared UI + roll
+	// pipeline as the New NPC dialog. Character has no dedicated slots for any
+	// of these, so the results are folded into `background` as a markdown block.
+	let newCharFlags = $state<CharacterRandomizeFlags>(defaultRandomizeFlags());
+	let newCharOrigin = $state('');
+
 	function rollNewCharName() {
-		// Entries are `oracleKey` or, for `matrix` name oracles (Name: Elf,
-		// Name: Other), `oracleKey_columnKey`; rollOracle resolves both.
-		const usc = newCharNameOracle.indexOf('_');
-		const key = usc >= 0 ? newCharNameOracle.slice(0, usc) : newCharNameOracle;
-		const col = usc >= 0 ? newCharNameOracle.slice(usc + 1) : undefined;
-		newCharName = rollOracle(key, getOracles(), col ? { stat: col } : undefined).value ?? '';
+		const key = newCharNameOracle;
+		const usc = key.indexOf('_');
+		const oracleKey = usc >= 0 ? key.slice(0, usc) : key;
+		const col = usc >= 0 ? key.slice(usc + 1) : undefined;
+		const r = rollOracle(oracleKey, getOracles(), col ? { stat: col } : undefined);
+		newCharName = r.value ?? '';
+		if (r.value)
+			appendLog(
+				r.title,
+				`<div class="roll-line">Roll: d100 → ${r.roll}</div><div>Result: <strong>${r.value}</strong></div>`,
+			);
 	}
 
 	function addCharacter() {
-		// Reset the input each time — never carry a stale draft across opens.
+		// Reset every draft field each open — never carry stale state across.
 		newCharName = '';
+		newCharFlags = defaultRandomizeFlags();
+		newCharOrigin = '';
 		newCharDialogRef?.open();
 	}
 
@@ -926,14 +938,30 @@
 		const nameToUse = newCharName.trim() || 'New Character';
 		creatingChar = true;
 		try {
-			const newChar = await createCharacter(nameToUse);
+			// Roll every flagged field now (concept-gated, YRT-gated), so the
+			// resulting character opens with a filled-in background and a
+			// composite log entry sits alongside the individual concept rolls.
+			const r = rollCharacterRandomizations(newCharFlags, {
+				origin: newCharOrigin,
+				yrtEnabled: isSourceEnabled('yrt'),
+			});
+			logCreateRolls(`New Character — ${nameToUse}`, r.rolled);
+			if (r.touched)
+				appendLog(findOracle('yrtTouched')?.title ?? 'Touched', touchedLogHtml(r.touched));
+			if (r.religionLogHtml)
+				appendLog(findOracle('yrtReligion')?.title ?? 'Character: Religion', r.religionLogHtml);
+			const md = randomizationsAsMarkdown(r, nameToUse);
+			const initial = md ? { background: md } : {};
+			const newChar = await createCharacter(nameToUse, initial);
 			activeCharId = newChar.id;
-			activeCard = 'core';
+			activeCard = md ? 'background' : 'core';
 		} catch (err) {
 			console.error('[v2] createCharacter failed', err);
 		} finally {
 			creatingChar = false;
 			newCharName = '';
+			newCharFlags = defaultRandomizeFlags();
+			newCharOrigin = '';
 		}
 	}
 
@@ -1540,6 +1568,8 @@
 			>
 		</div>
 	</div>
+
+	<RandomizeBlock bind:flags={newCharFlags} bind:origin={newCharOrigin} />
 </ConfirmDialog>
 
 <!-- Character options — gear icon in the header opens this. Rename +

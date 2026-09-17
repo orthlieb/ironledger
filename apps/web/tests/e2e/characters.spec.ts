@@ -140,6 +140,61 @@ test.describe('Characters area (v2)', () => {
 		await expect(page.locator(CHAR_STAGE)).toBeVisible({ timeout: 5_000 });
 	});
 
+	test('New Character dialog shows the shared randomize checklist', async ({ page }) => {
+		// The dialog embeds <RandomizeBlock>, so the six default-checked concept
+		// oracles (First Look, Activity, Disposition, Role, Goal, Revealed
+		// Details) must all render as their own checkbox. Guards a regression
+		// where the block goes missing (e.g. an import gets pruned by mistake).
+		await page.locator(CHAR_COMBOBOX).click();
+		await page.locator('.cb-item--action', { hasText: /New character/i }).click();
+		const dialog = page.locator('.confirm-modal');
+		await expect(dialog).toBeVisible({ timeout: 5_000 });
+		for (const label of [
+			'First Look',
+			'Activity',
+			'Disposition',
+			'Role',
+			'Goal',
+			'Revealed Details',
+		]) {
+			await expect(
+				dialog.locator('.nn-check-label', { hasText: new RegExp(`^${label}$`) }),
+				`Expected the ${label} checkbox to render in the New Character dialog`,
+			).toHaveCount(1);
+		}
+		await page.keyboard.press('Escape');
+		await expect(dialog).not.toBeVisible({ timeout: 3_000 });
+	});
+
+	test('New Character with default checkboxes folds rolls into the Background prose', async ({
+		page,
+	}) => {
+		// With the six concept boxes checked (defaults), Create must open the
+		// character on the Background tab with a markdown block that names each
+		// concept — proves _commitNewCharacter routes the RandomizeResult
+		// through randomizationsAsMarkdown into the character's `background`
+		// field and switches activeCard to 'background' when there is content
+		// to show.
+		await page.locator(CHAR_COMBOBOX).click();
+		await page.locator('.cb-item--action', { hasText: /New character/i }).click();
+		const dialog = page.locator('.confirm-modal');
+		await expect(dialog).toBeVisible({ timeout: 5_000 });
+		await dialog.locator('.co-input').fill('E2E Randomized');
+		await dialog.locator('.btn-primary').click();
+		await expect(dialog).not.toBeVisible({ timeout: 5_000 });
+
+		// The Background tab is active — its prose section holds the rendered
+		// markdown; MarkdownNotes renders bold `**Label:**` as a <strong>.
+		const bgSection = page.locator(`${CHAR_AREA} .ca-bg-section`);
+		await expect(bgSection).toBeVisible({ timeout: 5_000 });
+		for (const label of ['First Look:', 'Role:', 'Goal:', 'Revealed Details:']) {
+			await expect(
+				bgSection,
+				`Expected background prose to include the "${label}" line`,
+			).toContainText(label, { timeout: 5_000 });
+		}
+	});
+
 	// ── Character stage sections ──────────────────────────────────────────────
 
 	test('selected character shows stats and vitals on the Core tab', async ({ page }) => {

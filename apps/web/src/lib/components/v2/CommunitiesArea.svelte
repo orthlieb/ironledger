@@ -68,9 +68,18 @@
 		getOraclesByTag,
 		rollOracle,
 		findOracle,
-		rollFromRangeTable,
 		resolveCharacterOracle,
 	} from '$lib/oracleStore.svelte.js';
+	import {
+		NAME_ORACLES,
+		defaultRandomizeFlags,
+		rollCharacterRandomizations,
+		formatTouchedMd,
+		touchedLogHtml,
+		logCreateRolls,
+		type CharacterRandomizeFlags,
+	} from '$lib/characterRollups.js';
+	import RandomizeBlock from '$lib/components/RandomizeBlock.svelte';
 	import { appendLog } from '$lib/log.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
@@ -197,68 +206,16 @@
 	// New-NPC dialog state — the dialog stays minimal: just a Name + Oracle
 	// picker + a checklist of what to randomize on Create. The user lands on
 	// the sheet and edits every other field there, so we don't recreate the
-	// edit surface up front.
+	// edit surface up front. The checklist + region-of-origin picker live in
+	// the shared <RandomizeBlock> (same component the New Character dialog
+	// uses); the flag set + roll logic come from `characterRollups`.
 	let newNpcDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	let _pendingNpc: Npc | null = null;
 	let _pendingNpcNameOracle = $state<string>('namesIronlander');
-	let newNpcRollFirstLook = $state(true);
-	let newNpcRollActivity = $state(true);
-	let newNpcRollDisposition = $state(true);
-	let newNpcRollRole = $state(true);
-	let newNpcRollGoal = $state(true);
-	let newNpcRollDescriptor = $state(true);
-	/** YRT: rolls the compound `yrtTouched` oracle (class + animal aspect +
-	 *  N features) and prepends the result into the NPC's background/notes.
-	 *  No schema change — everything lives in the notes prose. */
-	let newNpcRollTouched = $state(false);
-	/** YRT: the NPC's region of origin (born, not necessarily resident) — one of
-	 *  the `yrtRegion` oracle's regions, the same set settlements roll. Optional;
-	 *  drives the Religion roll (via the region's `country`) and is recorded in
-	 *  the notes prose. '' = unset. */
+	let newNpcFlags = $state<CharacterRandomizeFlags>(defaultRandomizeFlags());
+	/** YRT: the NPC's region of origin (born, not necessarily resident). Drives
+	 *  the Religion roll and is recorded in the notes prose. '' = unset. */
 	let newNpcOrigin = $state('');
-	/** YRT: rolls `yrtReligion` against the origin region's country and prepends
-	 *  the faith into the NPC's notes (like Touched). Opt-in; needs a region. */
-	let newNpcRollReligion = $state(false);
-	/** Region-of-origin options, sourced from the YRT Region oracle's rows — the
-	 *  same regions a settlement rolls, so the two stay consistent. Each carries
-	 *  its `country` (a yrtReligion column, by that column's label), surfaced as
-	 *  the oracle's Country column. Empty until the catalogue (and YRT) loads. */
-	const npcOriginOptions = $derived(
-		(findOracle('yrtRegion')?.data ?? []).map((r) => ({
-			value: String(r.value ?? ''),
-			label: String(r.value ?? ''),
-			country: String((r as Record<string, unknown>).country ?? ''),
-		})),
-	);
-	/** The yrtReligion column KEY for the chosen region's country — resolved from
-	 *  the region's `country` (a column label) against the religion oracle's own
-	 *  columns, so the mapping stays entirely data-driven. '' if unresolved. */
-	const npcOriginCountry = $derived.by(() => {
-		const country = npcOriginOptions.find((o) => o.value === newNpcOrigin)?.country ?? '';
-		if (!country) return '';
-		const cols = findOracle('yrtReligion')?.columns ?? [];
-		return cols.find((c) => c.label === country)?.key ?? '';
-	});
-	/** Roll the Region oracle for a random region of origin (same source as a
-	 *  settlement's region roll). */
-	function randomizeNpcOrigin() {
-		const rolled = rollOracle('yrtRegion', getOracles()).value;
-		if (typeof rolled === 'string' && rolled) newNpcOrigin = rolled;
-	}
-	// Religion is rolled against the origin region's country, so it can't be
-	// chosen without a region — clearing it drops the (now-disabled) tick too.
-	$effect(() => {
-		if (!newNpcOrigin && newNpcRollReligion) newNpcRollReligion = false;
-	});
-	const NPC_NAME_ORACLES: { value: string; label: string }[] = [
-		{ value: 'namesIronlander', label: 'Ironlander' },
-		{ value: 'namesIronlander2', label: 'Ironlander 2' },
-		{ value: 'namesElf_elf1', label: 'Elf 1' },
-		{ value: 'namesElf_elf2', label: 'Elf 2' },
-		{ value: 'namesOther_giants', label: 'Giants' },
-		{ value: 'namesOther_varou', label: 'Varou' },
-		{ value: 'namesOther_trolls', label: 'Trolls' },
-	];
 
 	// New-Place dialog state. A Place is a location (Landmark), not a
 	// settlement, so it rolls a Landmark oracle rather than Settlement
@@ -682,17 +639,6 @@
 		return rollOracle(oracleKey[key], oracles).value ?? '';
 	}
 
-	/** Log the oracle rolls made while creating a connection — one combined
-	 *  entry per Create (name-dice clicks log on their own). `rolled` is
-	 *  [label, value] pairs; empty values are skipped. */
-	function logCreateRolls(title: string, rolled: Array<[string, string]>) {
-		const body = rolled
-			.filter(([, v]) => v)
-			.map(([l, v]) => `<div class="roll-line">${l}: <strong>${v}</strong></div>`)
-			.join('');
-		if (body) appendLog(title, body);
-	}
-
 	// Persist the store that was being edited. Reads (+ clears) _savingKind,
 	// exactly as the inline timer did — shared by the debounced schedule and
 	// every flush() site.
@@ -808,22 +754,21 @@
 			createdAt: Date.now(),
 		};
 		newNpcName = '';
-		newNpcRollTouched = false; // opt-in; the others stay checked from last open
-		newNpcRollReligion = false; // opt-in
+		newNpcFlags = defaultRandomizeFlags();
 		newNpcOrigin = ''; // optional; a fresh (empty) choice each open
 		await loadOracles();
 		newNpcDialogRef?.open();
 	}
 
-	/** Roll a name off the selected oracle and drop it into the form. Picker
-	 *  entries are `oracleKey` or, for `matrix` name oracles (Name: Elf,
-	 *  Name: Other), `oracleKey_columnKey` — the suffix picks the column
-	 *  (elf1/elf2, giants/varou/trolls). rollOracle resolves both shapes. */
+	/** Roll a name off the selected oracle, drop it into the form, and log the
+	 *  d100 result. See the matrix-key comment in `rollByNameOracleKey` for
+	 *  the suffix convention. */
 	function rollNpcNameField() {
-		const usc = _pendingNpcNameOracle.indexOf('_');
-		const key = usc >= 0 ? _pendingNpcNameOracle.slice(0, usc) : _pendingNpcNameOracle;
-		const col = usc >= 0 ? _pendingNpcNameOracle.slice(usc + 1) : undefined;
-		const r = rollOracle(key, getOracles(), col ? { stat: col } : undefined);
+		const key = _pendingNpcNameOracle;
+		const usc = key.indexOf('_');
+		const oracleKey = usc >= 0 ? key.slice(0, usc) : key;
+		const col = usc >= 0 ? key.slice(usc + 1) : undefined;
+		const r = rollOracle(oracleKey, getOracles(), col ? { stat: col } : undefined);
 		newNpcName = r.value ?? '';
 		if (r.value)
 			appendLog(
@@ -832,180 +777,38 @@
 			);
 	}
 
-	/** Run the compound YRT Touched roll and return the pieces the
-	 *  formatter cares about: class, animal aspect (if any), and the
-	 *  rolled features list (empty for Pure and Feral). Mirrors the
-	 *  bespoke branching in `rollOracle('yrtTouched', …)` — we don't
-	 *  reuse that call directly because it only exposes a pre-rendered
-	 *  html blob; we want structured data to build our own template. */
-	type TouchedRoll = {
-		className: 'Pure' | 'Prime' | 'Second' | 'Third' | 'Feral';
-		classRoll: number;
-		animal: string;
-		animalRoll: number;
-		/** '1–3' / '4–6' when the feature count was rolled; '' when fixed/none. */
-		countRange: string;
-		features: Array<{ value: string; roll: number }>;
-	};
-	function rollYrtTouchedStructured(): TouchedRoll | null {
-		const touched = findOracle('yrtTouched');
-		if (!touched) return null;
-		const clsRes = rollFromRangeTable(touched.data);
-		const cls = clsRes.value as {
-			className: TouchedRoll['className'];
-			featureCount: number | { min: number; max: number } | null;
-		};
-		const r: TouchedRoll = {
-			className: cls.className,
-			classRoll: clsRes.roll,
-			animal: '',
-			animalRoll: 0,
-			countRange: '',
-			features: [],
-		};
-		if (cls.featureCount === 0) return r; // Pure — no animal, no features
-		const animalOracle = findOracle('yrtAnimal');
-		const aRes = animalOracle ? rollFromRangeTable(animalOracle.data) : { roll: 0, value: '' };
-		r.animal = (aRes.value as string) ?? '';
-		r.animalRoll = aRes.roll;
-		if (cls.featureCount === null) return r; // Feral — animal, narrative features
-		let count: number;
-		if (typeof cls.featureCount === 'number') {
-			count = cls.featureCount; // Prime — exactly 1
-		} else {
-			const { min } = cls.featureCount;
-			// Second / Third: d6 % 3 + min → 1..3 or 4..6.
-			count = (Math.floor(Math.random() * 6) % 3) + min;
-			r.countRange = min === 1 ? '1–3' : '4–6';
-		}
-		const featOracle = findOracle('touchedFeatures');
-		const seen = new Set<string>();
-		let safety = 0;
-		if (featOracle) {
-			while (r.features.length < count && safety++ < 1000) {
-				const fr = rollFromRangeTable(featOracle.data);
-				const v = fr.value as string;
-				if (!seen.has(v)) {
-					seen.add(v);
-					r.features.push({ value: v, roll: fr.roll });
-				}
-			}
-		}
-		return r;
-	}
-
-	/** Render the Touched roll into the concise markdown template we
-	 *  prepend to the NPC's notes:
-	 *    <name> is **<class> with <count>** features of a/an <animal>.
-	 *    - feature 1
-	 *    - feature 2
-	 *  Pure has no animal (and no bullets). Feral drops the bullets for
-	 *  a narrative placeholder. */
-	function formatTouchedMd(name: string, r: TouchedRoll): string {
-		const who = name.trim() || 'This NPC';
-		if (r.className === 'Pure') {
-			return `${who} is **Pure with no touched features**.`;
-		}
-		const article = /^[aeiouAEIOU]/.test(r.animal) ? 'an' : 'a';
-		if (r.className === 'Feral') {
-			return (
-				`${who} is **Feral with many** features of ${article} ${r.animal}.\n` +
-				`- _Enter narrative concerning this NPC here._`
-			);
-		}
-		const n = r.features.length;
-		const noun = n === 1 ? 'feature' : 'features';
-		const bullets = r.features.map((f) => `- ${f.value}`).join('\n');
-		return `${who} is **${r.className} with ${n}** ${noun} of ${article} ${r.animal}.\n` + bullets;
-	}
-
-	/** Monstrosity-style log breakdown of a Touched roll: class + animal aspect,
-	 *  the feature-count roll (Second/Third), then one line per feature. */
-	function touchedLogHtml(r: TouchedRoll): string {
-		const lines = [
-			`<div class="roll-line">Class: <strong>${r.className}</strong> (d100 → ${r.classRoll})</div>`,
-		];
-		if (r.animal)
-			lines.push(
-				`<div class="roll-line">Animal aspect: <strong>${r.animal}</strong> (d100 → ${r.animalRoll})</div>`,
-			);
-		if (r.className === 'Feral') {
-			lines.push(
-				`<div class="roll-line"><em>Features are all-encompassing — determine narratively.</em></div>`,
-			);
-		} else if (r.features.length) {
-			if (r.countRange)
-				lines.push(
-					`<div class="roll-line">Features: (${r.countRange} → ${r.features.length})</div>`,
-				);
-			for (const f of r.features)
-				lines.push(`<div class="roll-line">— <strong>${f.value}</strong> (d100 → ${f.roll})</div>`);
-		}
-		return lines.join('');
-	}
-
 	async function _commitNpc() {
 		if (!_pendingNpc) return;
 		const n = _pendingNpc;
 		_pendingNpc = null;
 		if (newNpcName.trim()) n.name = newNpcName.trim();
-		const oracles = getOracles();
-		const rolled: Array<[string, string]> = [];
-		// Concept-resolved rolls: each block runs only when the user asked for
-		// it AND the concept has a currently-visible backing oracle. First Look,
-		// Activity, and Disposition can be silently absent depending on which
-		// extensions the user has enabled (see resolveCharacterOracle jsdoc).
-		const firstLookOracle = resolveCharacterOracle('firstLook');
-		if (newNpcRollFirstLook && firstLookOracle) {
-			n.firstLook = rollOracle(firstLookOracle.key, oracles).value ?? '';
-			rolled.push(['First Look', n.firstLook]);
+		// One call handles every flagged roll (concept-gated, YRT-gated) and
+		// hands back both structured slots (firstLook/…/touched) and the flat
+		// pairs the composite log entry consumes.
+		const r = rollCharacterRandomizations(newNpcFlags, {
+			origin: newNpcOrigin,
+			yrtEnabled: isSourceEnabled('yrt'),
+		});
+		if (r.firstLook !== undefined) n.firstLook = r.firstLook;
+		if (r.activity !== undefined) n.activity = r.activity;
+		if (r.disposition !== undefined) n.disposition = r.disposition;
+		if (r.role !== undefined) n.role = r.role;
+		if (r.goal !== undefined) n.goal = r.goal;
+		if (r.descriptor !== undefined) n.descriptor = r.descriptor;
+		logCreateRolls(`New NPC — ${n.name}`, r.rolled);
+		if (r.touched) {
+			n.notes = formatTouchedMd(n.name, r.touched) + (n.notes ? `\n\n${n.notes}` : '');
+			appendLog(findOracle('yrtTouched')?.title ?? 'Touched', touchedLogHtml(r.touched));
 		}
-		const activityOracle = resolveCharacterOracle('activity');
-		if (newNpcRollActivity && activityOracle) {
-			n.activity = rollOracle(activityOracle.key, oracles).value ?? '';
-			rolled.push(['Activity', n.activity]);
-		}
-		const dispositionOracle = resolveCharacterOracle('disposition');
-		if (newNpcRollDisposition && dispositionOracle) {
-			n.disposition = rollOracle(dispositionOracle.key, oracles).value ?? '';
-			rolled.push(['Disposition', n.disposition]);
-		}
-		if (newNpcRollRole) {
-			n.role = rollOracle('characterRole', oracles).value ?? '';
-			rolled.push(['Role', n.role]);
-		}
-		if (newNpcRollGoal) {
-			n.goal = rollOracle('characterGoal', oracles).value ?? '';
-			rolled.push(['Goal', n.goal]);
-		}
-		if (newNpcRollDescriptor) {
-			n.descriptor = rollOracle('characterDescriptor', oracles).value ?? '';
-			rolled.push(['Revealed Details', n.descriptor]);
-		}
-		logCreateRolls(`New NPC — ${n.name}`, rolled);
-		if (newNpcRollTouched && isSourceEnabled('yrt')) {
-			const r = rollYrtTouchedStructured();
-			if (r) {
-				n.notes = formatTouchedMd(n.name, r) + (n.notes ? `\n\n${n.notes}` : '');
-				appendLog(findOracle('yrtTouched')?.title ?? 'Touched', touchedLogHtml(r));
-			}
-		}
-		// YRT: record the (optional) region of origin in the notes; when the
-		// Religion box is checked, roll yrtReligion against that region's country
-		// column and fold the faith into the same block (prose only, no schema).
-		if (isSourceEnabled('yrt') && newNpcOrigin) {
-			let block = `**Region of origin:** ${newNpcOrigin}`;
-			if (newNpcRollReligion && npcOriginCountry) {
-				const rel = rollOracle('yrtReligion', oracles, { stat: npcOriginCountry });
-				// The oracle value is markdown (e.g. "**Wildens**: …") and notes are
-				// markdown too, so it drops straight in — no conversion needed.
-				block += `\n\n**Religion:** ${rel.value ?? ''}`;
-				appendLog(
-					findOracle('yrtReligion')?.title ?? 'Character: Religion',
-					`<div class="roll-line">Region: <strong>${newNpcOrigin}</strong></div>${rel.html}`,
-				);
-			}
+		// YRT: record the (optional) region of origin in the notes; a filled-in
+		// Religion roll from the same call folds into the same block (prose
+		// only, no schema).
+		if (r.origin) {
+			let block = `**Region of origin:** ${r.origin}`;
+			if (r.religionMd) block += `\n\n**Religion:** ${r.religionMd}`;
 			n.notes = block + (n.notes ? `\n\n${n.notes}` : '');
+			if (r.religionLogHtml)
+				appendLog(findOracle('yrtReligion')?.title ?? 'Character: Religion', r.religionLogHtml);
 		}
 		await addNpc(n);
 		activeEntryId = n.id;
@@ -1786,7 +1589,7 @@
 	<div class="co-field">
 		<span class="co-field-label">Use a name oracle to roll a random name</span>
 		<div class="co-name-row">
-			<Select id="nn-oracle" bind:value={_pendingNpcNameOracle} options={NPC_NAME_ORACLES} />
+			<Select id="nn-oracle" bind:value={_pendingNpcNameOracle} options={NAME_ORACLES} />
 			<button
 				class="dice-btn"
 				type="button"
@@ -1797,100 +1600,7 @@
 		</div>
 	</div>
 
-	{#if isSourceEnabled('yrt')}
-		<div class="co-field">
-			<span class="co-field-label">Region of origin (optional — where they were born)</span>
-			<div class="co-name-row">
-				<Select
-					id="nn-origin"
-					bind:value={newNpcOrigin}
-					options={npcOriginOptions}
-					placeholder="Select a region…"
-				/>
-				<button
-					class="dice-btn"
-					type="button"
-					onclick={randomizeNpcOrigin}
-					use:tooltip={'Random region of origin'}
-					aria-label="Random region of origin">{@html diceD6Svg}</button
-				>
-			</div>
-		</div>
-	{/if}
-
-	<div class="nn-randomize">
-		<span class="nn-randomize-label">Also randomize</span>
-		{#if resolveCharacterOracle('firstLook')}
-			<Checkbox
-				class="nn-check"
-				checked={newNpcRollFirstLook}
-				onCheckedChange={(v) => (newNpcRollFirstLook = !!v)}
-			>
-				<span class="nn-check-label">First Look</span>
-			</Checkbox>
-		{/if}
-		{#if resolveCharacterOracle('activity')}
-			<Checkbox
-				class="nn-check"
-				checked={newNpcRollActivity}
-				onCheckedChange={(v) => (newNpcRollActivity = !!v)}
-			>
-				<span class="nn-check-label">Activity</span>
-			</Checkbox>
-		{/if}
-		{#if resolveCharacterOracle('disposition')}
-			<Checkbox
-				class="nn-check"
-				checked={newNpcRollDisposition}
-				onCheckedChange={(v) => (newNpcRollDisposition = !!v)}
-			>
-				<span class="nn-check-label">Disposition</span>
-			</Checkbox>
-		{/if}
-		<Checkbox
-			class="nn-check"
-			checked={newNpcRollRole}
-			onCheckedChange={(v) => (newNpcRollRole = !!v)}
-		>
-			<span class="nn-check-label">Role</span>
-		</Checkbox>
-		<Checkbox
-			class="nn-check"
-			checked={newNpcRollGoal}
-			onCheckedChange={(v) => (newNpcRollGoal = !!v)}
-		>
-			<span class="nn-check-label">Goal</span>
-		</Checkbox>
-		<Checkbox
-			class="nn-check"
-			checked={newNpcRollDescriptor}
-			onCheckedChange={(v) => (newNpcRollDescriptor = !!v)}
-		>
-			<span class="nn-check-label">Revealed Details</span>
-		</Checkbox>
-		{#if isSourceEnabled('yrt')}
-			<Checkbox
-				class="nn-check"
-				checked={newNpcRollTouched}
-				onCheckedChange={(v) => (newNpcRollTouched = !!v)}
-			>
-				<span class="nn-check-label">Touched</span>
-			</Checkbox>
-			<Checkbox
-				class="nn-check"
-				checked={newNpcRollReligion}
-				disabled={!newNpcOrigin}
-				onCheckedChange={(v) => (newNpcRollReligion = !!v)}
-			>
-				<span
-					class="nn-check-label"
-					use:tooltip={newNpcOrigin ? '' : 'Choose a region of origin first'}
-				>
-					Religion
-				</span>
-			</Checkbox>
-		{/if}
-	</div>
+	<RandomizeBlock bind:flags={newNpcFlags} bind:origin={newNpcOrigin} />
 </ConfirmDialog>
 
 <!-- New Place dialog — mirrors the New Community pattern. Places don't have
