@@ -17,13 +17,18 @@ const CHAR_STAGE = `${CHAR_AREA} .ca-stage`;
 // sub-tabs (.ca-tab) have rendered.
 const CHAR_COMBOBOX = `${CHAR_HEADER} .ca-hdr-combobox`;
 
-/** Create a character through the header combobox + name-first dialog. */
+/** Create a character through the header combobox + name-first dialog.
+ *  Fills the name AND clicks the stat-Roll button — Create is now gated on
+ *  a name plus at least one non-zero stat, so a fresh dialog with all-zero
+ *  stats cannot commit until the user acts on the allocator. */
 async function createCharacter(page: import('@playwright/test').Page) {
 	await page.locator(CHAR_COMBOBOX).click();
 	await page.locator('.cb-item--action', { hasText: /New character/i }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-	// The Create button is disabled until a name is entered.
 	await page.locator('.confirm-modal .co-input').fill('E2E Character');
+	// Roll starting stats — the StatAllocator's Roll button is the only
+	// dice button inside `.sa-field`. Clicking it fills the five StatControls.
+	await page.locator('.confirm-modal .sa-field .dice-btn').click();
 	await page.locator('.confirm-modal .btn-primary').click();
 	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 }
@@ -180,6 +185,8 @@ test.describe('Characters area (v2)', () => {
 		const dialog = page.locator('.confirm-modal');
 		await expect(dialog).toBeVisible({ timeout: 5_000 });
 		await dialog.locator('.co-input').fill('E2E Randomized');
+		// Roll starting stats — Create is gated on ≥1 non-zero stat.
+		await dialog.locator('.sa-field .dice-btn').click();
 		await dialog.locator('.btn-primary').click();
 		await expect(dialog).not.toBeVisible({ timeout: 5_000 });
 
@@ -193,6 +200,57 @@ test.describe('Characters area (v2)', () => {
 				`Expected background prose to include the "${label}" line`,
 			).toContainText(label, { timeout: 5_000 });
 		}
+	});
+
+	test('New Character dialog: Create is gated on ≥1 non-zero stat', async ({ page }) => {
+		// A fresh dialog opens with all-zero stats: Create stays disabled even
+		// with a name filled in until the user rolls or types a non-zero value.
+		// Guards the gate that keeps under-hydrated characters from committing.
+		await page.locator(CHAR_COMBOBOX).click();
+		await page.locator('.cb-item--action', { hasText: /New character/i }).click();
+		const dialog = page.locator('.confirm-modal');
+		await expect(dialog).toBeVisible({ timeout: 5_000 });
+		const create = dialog.locator('.btn-primary');
+
+		// Name alone is not enough — five zero stats keep Create disabled.
+		await dialog.locator('.co-input').fill('E2E Stat Gate');
+		await expect(create).toBeDisabled();
+
+		// Roll → stats flip to the array's values → Create enables.
+		await dialog.locator('.sa-field .dice-btn').click();
+		await expect(create).toBeEnabled({ timeout: 2_000 });
+
+		await page.keyboard.press('Escape');
+		await expect(dialog).not.toBeVisible({ timeout: 3_000 });
+	});
+
+	test('New Character dialog: stat allocator lands values in the character stats row', async ({
+		page,
+	}) => {
+		// Rolling in the dialog must persist through _commitNewCharacter to
+		// the character's Core tab — the freshly-created character's stat row
+		// carries whatever the allocator produced (all five stats are numeric
+		// and at least one is non-zero). Proves initialData: { edge, heart, … }
+		// rides through createCharacter into the hydrated character.
+		await page.locator(CHAR_COMBOBOX).click();
+		await page.locator('.cb-item--action', { hasText: /New character/i }).click();
+		const dialog = page.locator('.confirm-modal');
+		await expect(dialog).toBeVisible({ timeout: 5_000 });
+		await dialog.locator('.co-input').fill('E2E Stat Roll');
+		await dialog.locator('.sa-field .dice-btn').click();
+		await dialog.locator('.btn-primary').click();
+		await expect(dialog).not.toBeVisible({ timeout: 5_000 });
+
+		// Move to Core (the roll may have opened Background because concept
+		// rolls filled it in), then check the stat row.
+		await switchCharTab(page, 'Core');
+		const inputs = page.locator(`${CHAR_AREA} .ca-stats-row .stat-value-input`);
+		await expect(inputs).toHaveCount(5, { timeout: 5_000 });
+		const values = await inputs.evaluateAll((els) =>
+			els.map((el) => Number((el as HTMLInputElement).value)),
+		);
+		expect(values.every((v) => Number.isFinite(v))).toBe(true);
+		expect(values.some((v) => v > 0)).toBe(true);
 	});
 
 	// ── Character stage sections ──────────────────────────────────────────────
