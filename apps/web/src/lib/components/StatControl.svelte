@@ -39,12 +39,12 @@
 		max?: number;
 		/** Tooltip text shown on hover */
 		tooltip?: string;
-		/** When true, the tile is a display only — the value is not editable
-		 *  (spinners hidden anyway, but the input keeps its readonly attr so
-		 *  the caret can't land and no keystroke changes the number). Kept
-		 *  as a plain `<input>` so the tile layout, focus behaviour for
-		 *  screen-reader / selection, and the styling contract with parent
-		 *  containers all stay identical to the editable tile. */
+		/** When true, the tile is a display only — the value renders as a
+		 *  plain `<span>` instead of an `<input>` so it's not tab-stopped,
+		 *  can't take focus, and reads to screen readers as data rather
+		 *  than a form field. The stat-name / colour tokens / tooltip and
+		 *  the tile's visible layout stay identical to the editable
+		 *  variant — only the value node changes shape. */
 		readonly?: boolean;
 		/** Fired when value is committed (on blur) and differs from the focused value */
 		onchange?: (oldVal: number, newVal: number) => void;
@@ -69,29 +69,34 @@
 <div class="stat-tile" style:--stat-color={color} use:tooltipAction={tooltip}>
 	<div class="stat-icon" aria-hidden="true">{@html icon}</div>
 	<div class="stat-name">{label}</div>
-	<input
-		type="number"
-		class="stat-value-input"
-		class:stat-value-input--readonly={readonly}
-		id={inputId}
-		name={inputId}
-		bind:value
-		{min}
-		{max}
-		{readonly}
-		onfocus={() => {
-			focusValue = value;
-		}}
-		onblur={() => {
-			// Editable tiles clamp + notify on blur; a readonly tile can't
-			// have edited the value, so both are no-ops.
-			if (readonly) return;
-			const clamped = Math.min(max, Math.max(min, value || min));
-			value = clamped;
-			if (clamped !== focusValue) onchange?.(focusValue, clamped);
-		}}
-		aria-label="{label} stat value"
-	/>
+	{#if readonly}
+		<!-- Read-only tile: not a form field. A plain <span> reads as data
+		     to screen readers, stays out of the tab order, and cannot show
+		     a focus outline — matching the "this is a display" semantics
+		     the Core panel wants. -->
+		<span class="stat-value-input stat-value-input--readonly" aria-label="{label} stat value">
+			{value}
+		</span>
+	{:else}
+		<input
+			type="number"
+			class="stat-value-input"
+			id={inputId}
+			name={inputId}
+			bind:value
+			{min}
+			{max}
+			onfocus={() => {
+				focusValue = value;
+			}}
+			onblur={() => {
+				const clamped = Math.min(max, Math.max(min, value || min));
+				value = clamped;
+				if (clamped !== focusValue) onchange?.(focusValue, clamped);
+			}}
+			aria-label="{label} stat value"
+		/>
+	{/if}
 </div>
 
 <style>
@@ -112,9 +117,9 @@
 		transition: background 0.15s;
 	}
 
-	/* Focus tint fires only for the editable variant — a readonly tile has
-	   nothing to edit, so the hover/focus lift would just mislead. */
-	.stat-tile:has(.stat-value-input:focus:not(.stat-value-input--readonly)) {
+	/* Focus tint fires when the editable input takes focus. The readonly
+	   variant is a plain <span> and cannot focus, so no exclusion needed. */
+	.stat-tile:has(.stat-value-input:focus) {
 		background: color-mix(in srgb, var(--stat-color) 16%, var(--bg-card));
 	}
 
@@ -178,9 +183,11 @@
 		outline: none;
 	}
 
-	/* Readonly tile: default cursor + text-select instead of the caret,
-	   makes it clear the number is a display, not an edit field. */
+	/* Readonly variant is a <span>, so it needs an explicit display + baseline
+	   alignment to match the editable input's exact placement. block+centered
+	   is enough — the parent flex column handles the rest. */
 	.stat-value-input--readonly {
+		display: block;
 		cursor: default;
 	}
 
