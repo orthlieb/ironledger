@@ -43,6 +43,8 @@
 		type CharacterRandomizeFlags,
 	} from '$lib/characterRollups.js';
 	import RandomizeBlock from '$lib/components/RandomizeBlock.svelte';
+	import StatAllocator from '$lib/components/StatAllocator.svelte';
+	import { availableStatArrays, type Stat } from '$lib/rules/statArrays.js';
 	import Select from '$lib/components/Select.svelte';
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import {
@@ -910,6 +912,31 @@
 	// of these, so the results are folded into `background` as a markdown block.
 	let newCharFlags = $state<CharacterRandomizeFlags>(defaultRandomizeFlags());
 	let newCharOrigin = $state('');
+	// Stat allocator — the dialog opens with all-zero stats so Create is gated
+	// until the user either rolls a starting array (Lodestar offers three) or
+	// hand-types values. Values live in a plain object bound through
+	// <StatAllocator>; on commit they ride along as `initialData` to
+	// createCharacter, overriding DEFAULT_CHARACTER's 1/1/1/1/1.
+	const zeroStats = (): Record<Stat, number> => ({
+		edge: 0,
+		heart: 0,
+		iron: 0,
+		shadow: 0,
+		wits: 0,
+	});
+	let newCharStats = $state<Record<Stat, number>>(zeroStats());
+	const statArrays = $derived(availableStatArrays(isSourceEnabled('lodestar')));
+	// Create needs a name AND at least one non-zero stat — a blank stat row
+	// would leave the caller with an under-hydrated character. Rolling any of
+	// the three Lodestar arrays (or the base) satisfies this on its own.
+	const canCreateChar = $derived(
+		newCharName.trim().length > 0 &&
+			(newCharStats.edge > 0 ||
+				newCharStats.heart > 0 ||
+				newCharStats.iron > 0 ||
+				newCharStats.shadow > 0 ||
+				newCharStats.wits > 0),
+	);
 
 	function rollNewCharName() {
 		const key = newCharNameOracle;
@@ -925,11 +952,20 @@
 			);
 	}
 
-	function addCharacter() {
-		// Reset every draft field each open — never carry stale state across.
+	/** Reset every draft field to its fresh-open state — called by
+	 *  `addCharacter` on open and by the dialog's cancel/dismiss handlers so
+	 *  a partially-filled dialog never survives across opens. Stats reset to
+	 *  all zeros; Create is gated on ≥1 non-zero stat, so this is exactly
+	 *  the "user must act before committing" gate the spec calls for. */
+	function resetNewCharDraft() {
 		newCharName = '';
 		newCharFlags = defaultRandomizeFlags();
 		newCharOrigin = '';
+		newCharStats = zeroStats();
+	}
+
+	function addCharacter() {
+		resetNewCharDraft();
 		newCharDialogRef?.open();
 	}
 
@@ -951,7 +987,18 @@
 			if (r.religionLogHtml)
 				appendLog(findOracle('yrtReligion')?.title ?? 'Character: Religion', r.religionLogHtml);
 			const md = randomizationsAsMarkdown(r, nameToUse);
-			const initial = md ? { background: md } : {};
+			// Ride the just-rolled/edited stats along with the background prose
+			// as `initialData` — createCharacter merges these into a fresh
+			// character before the API create call, so DEFAULT_CHARACTER's 1s
+			// never override what the user chose.
+			const initial: Record<string, unknown> = {
+				edge: newCharStats.edge,
+				heart: newCharStats.heart,
+				iron: newCharStats.iron,
+				shadow: newCharStats.shadow,
+				wits: newCharStats.wits,
+			};
+			if (md) initial.background = md;
 			const newChar = await createCharacter(nameToUse, initial);
 			activeCharId = newChar.id;
 			activeCard = md ? 'background' : 'core';
@@ -959,9 +1006,7 @@
 			console.error('[v2] createCharacter failed', err);
 		} finally {
 			creatingChar = false;
-			newCharName = '';
-			newCharFlags = defaultRandomizeFlags();
-			newCharOrigin = '';
+			resetNewCharDraft();
 		}
 	}
 
@@ -1527,15 +1572,11 @@
 	draggable
 	confirmLabel="Create"
 	confirmClass="btn-primary"
-	confirmDisabled={!newCharName.trim()}
+	confirmDisabled={!canCreateChar}
 	accentColor="var(--text-accent)"
 	onconfirm={_commitNewCharacter}
-	oncancel={() => {
-		newCharName = '';
-	}}
-	ondismiss={() => {
-		newCharName = '';
-	}}
+	oncancel={resetNewCharDraft}
+	ondismiss={resetNewCharDraft}
 >
 	<label class="co-field">
 		<span class="co-field-label">Character name</span>
@@ -1547,7 +1588,11 @@
 			placeholder="New Character"
 			autofocus
 			onkeydown={(e) => {
-				if (e.key === 'Enter') {
+				// Enter commits only when the Create button would be enabled —
+				// same gate as the button (name + ≥1 non-zero stat) so a hasty
+				// Enter with unrolled stats doesn't leak an under-hydrated
+				// character through.
+				if (e.key === 'Enter' && canCreateChar) {
 					e.preventDefault();
 					newCharDialogRef?.close();
 					void _commitNewCharacter();
@@ -1568,6 +1613,8 @@
 			>
 		</div>
 	</div>
+
+	<StatAllocator bind:stats={newCharStats} arrays={statArrays} />
 
 	<RandomizeBlock bind:flags={newCharFlags} bind:origin={newCharOrigin} />
 </ConfirmDialog>
