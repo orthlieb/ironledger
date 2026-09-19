@@ -136,24 +136,24 @@
       "id": "vlad",
       "label": "Vlad",
       "default": false,
-      "description": "Blood-dripping Nosifer titles over a Transylvanian midnight — coffin-black page, oxblood accents, bone dice on dried-blood iron. Halloween-adjacent, wears the horror on its sleeve.",
+      "description": "Blood-dripping Nosifer titles over grave-frost slate — cold-blue midnight or morgue-white, ash text, dice bone on iron. Halloween-adjacent, undead all the way down.",
       "preview": "🦇",
       "transliterate": null,
       "googleFamily": "Nosifer",
       "dice": {
         "action": "#9a1b28",
-        "challenge": "#1a0508",
-        "tens": "#2a0a10",
-        "ones": "#efd9c1",
+        "challenge": "#10131a",
+        "tens": "#1c2029",
+        "ones": "#dde1e6",
         "texture": "metal"
       },
       "previewColors": {
         "dark": {
-          "bg": "#08050a",
+          "bg": "#0a0d12",
           "fg": "#c9384a"
         },
         "light": {
-          "bg": "#faf8f6",
+          "bg": "#f5f6f8",
           "fg": "#7a0e1c"
         }
       }
