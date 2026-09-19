@@ -488,38 +488,46 @@ It is not the dead person. It is a plant-construct using a dead person as a pot.
 
 ## 14. Necrotic Sea Hare
 
-![A Necrotic Sea Hare — palm-sized, iridescent, and patient, trailing Black-saturated mucus across contaminated sediment.](../foes/images/necrotic-sea-hare.webp)
+![A Necrotic Sea Hare, palm-sized and soft when fed, locked grey and rigid when it is not, indistinguishable from the shingle it is lying in.](../foes/images/necrotic-sea-hare.webp)
 
-*A Necrotic Sea Hare — palm-sized, iridescent, and patient, trailing Black-saturated mucus across contaminated sediment.*
+*A Necrotic Sea Hare, palm-sized and soft when fed, locked grey and rigid when it is not, indistinguishable from the shingle it is lying in.*
 
-**Rank:** 1 — Troublesome · **Nature:** Animal (Azure+Black-saturated)
+**Rank:** 1 — Troublesome · **Nature:** Animal (Gray+Black-saturated)
 
 **Features:**
 - Palm-sized, soft-bodied, resembling a nudibranch
 - Mottled grey-black with faint iridescent blue-purple highlights along the mantle edge
 - Moves with unhurried deliberateness along contaminated sediment
 - Leaves a thin oily trail of Black-saturated mucus in its wake, faintly luminescent
+- Locked rigid it is a grey cobble, and far heavier than a cobble that size
+- Takes the colour and texture of whatever it has been lying on
 
 **Drives:**
 - Process contaminated sediment
-- Anchor to warm tissue when disturbed
+- Lie in the substrate as substrate and wait for something to come within reach
 
 **Tactics:**
 - Lie motionless in sediment; nearly invisible at rest
+- Hunger sets the trigger: fed it needs real pressure, hungry it fires at a shadow crossing or a hand within a span
 - Attach instantly when anything disturbs its substrate — does not chase, latches
+- Rasps rather than bites, taking an oyster out of an unopened shell and taking flesh off a limb the same way
 - Deliver a sustained dose of Black-contaminated fluid through the attachment point
-- Azure saturation in its tissue actively suppresses healing at the contact site
+- Gray locks its connective tissue rigid in about a second; a blade skids and striking it wastes the blow
+- Locks to hold and softens only to travel, so it stays where it has taken hold for as long as it likes
 - Does not release voluntarily; must be physically removed or killed while attached
+- Releases a cloud of Black-laden ink when crowded
 
 > **Escalating Harm** (YRT): harm rises on each miss, capped by rank.
 
 The Necrotic Sea Hare is a post-Fall bottom-dweller found in contaminated waterways, silted canals, flooded ruins, and any water body close enough to a blight zone for Black mana to have worked into the substrate. It is small enough to hold in your hand and individually not very dangerous. The problem is that it does not stop.
 
-The creature feeds by dissolving organic matter — sediment detritus, waterlogged wood, dead tissue — through a Black-saturated secretion delivered by contact. This is an effective adaptation for processing the contaminated sediment it lives in. Applied to living tissue, the same mechanism causes progressive necrotic breakdown. The longer the attachment continues and the more times the body is forced to Endure Harm, the deeper the contamination spreads and the faster the tissue fails.
+The creature feeds by dissolving organic matter — sediment detritus, waterlogged wood, dead tissue — through a Black-saturated secretion delivered by contact. This is an effective adaptation for processing the contaminated sediment it lives in. Applied to living tissue, the same mechanism causes progressive necrotic breakdown. The longer the attachment continues and the more times the body is forced to Endure Harm, the deeper the contamination spreads and the faster the tissue fails. The fouled ground supplies the Gray it binds into its teeth and its body, which is how a shell-less animal goes hard. Its ink is the ordinary defensive ink of its kind, carrying the Black its tissue is saturated with.
 
 A single Necrotic Sea Hare attached to a foot is unpleasant and should be dealt with promptly. Several of them in a silted crossing you did not see until you were waist-deep in the water is a serious emergency.
 
 Removal requires getting clear of the water and treating the attachment site directly. Cold water slows but does not stop the process. Cutting the creature off while attached without treating the wound leaves contaminated mucus in the wound, which must be treated separately. Conclave records categorise the Necrotic Sea Hare as a contamination indicator rather than an active threat, which is technically accurate and practically unhelpful.
+
+It cannot live on clean ground. It needs Black-fouled substrate under it. Dropped onto uncontaminated bottom a population will strip what is there, spoil what it cannot eat, and thin out within a few seasons for want of anything to hold it. Carried in with contaminated stone, it is permanent, because the stone is the habitat. Same creature, two entirely different infestations, and the difference is what is underneath rather than how many arrived.
 
 ## 15. Puppet Bones
 
