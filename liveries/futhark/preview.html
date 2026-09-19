@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Futhark (futhark) — livery preview</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;600&display=swap" rel="stylesheet" />
+		<style>
+			:root { color-scheme: light dark; font-family: 'Roboto', system-ui, sans-serif; }
+			body { margin: 0; padding: 24px; background: #202024; color: #e6e6e8; display: grid; gap: 24px; grid-template-columns: 1fr 1fr; max-width: 1200px; }
+			@media (max-width: 720px) { body { grid-template-columns: 1fr; } }
+			h1 { grid-column: 1 / -1; font-size: 1.6rem; margin: 0; }
+			.hint { grid-column: 1 / -1; margin: -12px 0 0; color: #a0a3a8; font-size: 0.9rem; }
+			.note { grid-column: 1 / -1; margin: 0; color: #a0a3a8; font-size: 0.8rem; }
+			.note code { background: #333; padding: 1px 4px; border-radius: 3px; }
+			.theme { border-radius: 12px; padding: 20px; box-shadow: 0 4px 18px rgba(0,0,0,0.35); }
+			.theme h2 { font-size: 1.2rem; margin: 0 0 12px; letter-spacing: 0.02em; font-weight: 400; }
+			.demo { border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; font-size: 0.9rem; }
+			.demo-title { font-size: 1.4rem; font-weight: 400; letter-spacing: 0.02em; }
+			.pill { display: inline-flex; padding: 3px 10px; border-radius: 999px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+			.dice { display: flex; gap: 8px; margin-top: 12px; }
+			.die { width: 78px; height: 44px; border-radius: 6px; display: grid; place-items: center; font-family: 'Roboto', system-ui, sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em; }
+			.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-top: 16px; }
+			.sw { display: flex; align-items: center; gap: 10px; font-size: 0.75rem; line-height: 1.15; }
+			.chip { flex: 0 0 32px; height: 32px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); }
+			.theme.dark .chip { border-color: rgba(255,255,255,0.12); }
+			.name { font-weight: 600; }
+			.hex { display: block; font-family: ui-monospace, SFMono-Regular, monospace; opacity: 0.7; font-size: 0.72rem; }
+		</style>
+	</head>
+	<body>
+		<h1>Futhark <span style="opacity: 0.6; font-weight: 400;">(futhark)</span></h1>
+		<p class="hint">Names transliterated into Elder Futhark runes over a weathered-verdigris chrome. Uses system runic fonts — no web font required.</p>
+		<section class="theme dark" style="background: #080d0a; color: #d0d8d0; --card: #101511; --border: #2a3530; --accent: #68a68a; --muted: #8ba099">
+			<h2 style="color: #68a68a; ">Dark</h2>
+			<div class="demo" style="background: #101511; border: 1px solid #2a3530;">
+				<span class="demo-title" style="color: #68a68a; ">Sample</span>
+				<span class="pill" style="background: #68a68a20; color: #68a68a; border: 1px solid #68a68a;">Journey</span>
+				<span style="color: #68a68a;">— accent on ground</span>
+				<span style="color: #8ba099; margin-left: auto; font-size: 0.75rem;">muted</span>
+			</div>
+			<div class="dice">
+				<div class="die" style="background: #3f6d5a; color: #9ec7b4">d6</div>
+				<div class="die" style="background: #7a4a2a; color: #9ec7b4">d10</div>
+				<div class="die" style="background: #1c231e; color: #9ec7b4">d100 (10s)</div>
+				<div class="die" style="background: #9ec7b4; color: #1c231e">d100 (1s)</div>
+			</div>
+			<div class="grid">
+				<div class="sw">
+					<div class="chip" style="background: #080d0a"></div>
+					<div><span class="name">bg-page</span><span class="hex">#080d0a</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #101511"></div>
+					<div><span class="name">bg-card</span><span class="hex">#101511</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #0b100d"></div>
+					<div><span class="name">bg-inset</span><span class="hex">#0b100d</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #151b17"></div>
+					<div><span class="name">bg-control</span><span class="hex">#151b17</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #1c231e"></div>
+					<div><span class="name">bg-hover</span><span class="hex">#1c231e</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #2a3530"></div>
+					<div><span class="name">border</span><span class="hex">#2a3530</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #3f4d47"></div>
+					<div><span class="name">border-mid</span><span class="hex">#3f4d47</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #d0d8d0"></div>
+					<div><span class="name">text</span><span class="hex">#d0d8d0</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #8ba099"></div>
+					<div><span class="name">text-muted</span><span class="hex">#8ba099</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #5c6b64"></div>
+					<div><span class="name">text-dimmer</span><span class="hex">#5c6b64</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #68a68a"></div>
+					<div><span class="name">text-accent</span><span class="hex">#68a68a</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #68a68a"></div>
+					<div><span class="name">focus-ring</span><span class="hex">#68a68a</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #68a68a20"></div>
+					<div><span class="name">accent-glow</span><span class="hex">#68a68a20</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #68a68a12"></div>
+					<div><span class="name">accent-dim</span><span class="hex">#68a68a12</span></div>
+				</div>
+			</div>
+		</section>
+		<section class="theme light" style="background: #e8ede6; color: #171c19; --card: #dfe5dc; --border: #b7c2b3; --accent: #2f6d54; --muted: #4a5751">
+			<h2 style="color: #2f6d54; ">Light</h2>
+			<div class="demo" style="background: #dfe5dc; border: 1px solid #b7c2b3;">
+				<span class="demo-title" style="color: #2f6d54; ">Sample</span>
+				<span class="pill" style="background: #2f6d5420; color: #2f6d54; border: 1px solid #2f6d54;">Journey</span>
+				<span style="color: #2f6d54;">— accent on ground</span>
+				<span style="color: #4a5751; margin-left: auto; font-size: 0.75rem;">muted</span>
+			</div>
+			<div class="dice">
+				<div class="die" style="background: #3f6d5a; color: #9ec7b4">d6</div>
+				<div class="die" style="background: #7a4a2a; color: #9ec7b4">d10</div>
+				<div class="die" style="background: #1c231e; color: #9ec7b4">d100 (10s)</div>
+				<div class="die" style="background: #9ec7b4; color: #1c231e">d100 (1s)</div>
+			</div>
+			<div class="grid">
+				<div class="sw">
+					<div class="chip" style="background: #e8ede6"></div>
+					<div><span class="name">bg-page</span><span class="hex">#e8ede6</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #dfe5dc"></div>
+					<div><span class="name">bg-card</span><span class="hex">#dfe5dc</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #edf1eb"></div>
+					<div><span class="name">bg-inset</span><span class="hex">#edf1eb</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #e3e9e0"></div>
+					<div><span class="name">bg-control</span><span class="hex">#e3e9e0</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #d7ded4"></div>
+					<div><span class="name">bg-hover</span><span class="hex">#d7ded4</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #b7c2b3"></div>
+					<div><span class="name">border</span><span class="hex">#b7c2b3</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #98a494"></div>
+					<div><span class="name">border-mid</span><span class="hex">#98a494</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #171c19"></div>
+					<div><span class="name">text</span><span class="hex">#171c19</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #4a5751"></div>
+					<div><span class="name">text-muted</span><span class="hex">#4a5751</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #7f8c85"></div>
+					<div><span class="name">text-dimmer</span><span class="hex">#7f8c85</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #2f6d54"></div>
+					<div><span class="name">text-accent</span><span class="hex">#2f6d54</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #2f6d54"></div>
+					<div><span class="name">focus-ring</span><span class="hex">#2f6d54</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #2f6d5420"></div>
+					<div><span class="name">accent-glow</span><span class="hex">#2f6d5420</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #2f6d5412"></div>
+					<div><span class="name">accent-dim</span><span class="hex">#2f6d5412</span></div>
+				</div>
+			</div>
+		</section>
+	</body>
+</html>

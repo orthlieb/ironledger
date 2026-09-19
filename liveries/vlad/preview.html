@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8" />
+		<title>Vlad (vlad) — livery preview</title>
+		<meta name="viewport" content="width=device-width, initial-scale=1" />
+		<link rel="preconnect" href="https://fonts.googleapis.com" />
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
+		<link href="https://fonts.googleapis.com/css2?family=Nosifer&family=Roboto:wght@400;600&display=swap" rel="stylesheet" />
+		<style>
+			:root { color-scheme: light dark; font-family: 'Roboto', system-ui, sans-serif; }
+			body { margin: 0; padding: 24px; background: #202024; color: #e6e6e8; display: grid; gap: 24px; grid-template-columns: 1fr 1fr; max-width: 1200px; }
+			@media (max-width: 720px) { body { grid-template-columns: 1fr; } }
+			h1 { grid-column: 1 / -1; font-size: 1.6rem; margin: 0; }
+			.hint { grid-column: 1 / -1; margin: -12px 0 0; color: #a0a3a8; font-size: 0.9rem; }
+			.note { grid-column: 1 / -1; margin: 0; color: #a0a3a8; font-size: 0.8rem; }
+			.note code { background: #333; padding: 1px 4px; border-radius: 3px; }
+			.theme { border-radius: 12px; padding: 20px; box-shadow: 0 4px 18px rgba(0,0,0,0.35); }
+			.theme h2 { font-size: 1.2rem; margin: 0 0 12px; letter-spacing: 0.02em; font-weight: 400; }
+			.demo { border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; font-size: 0.9rem; }
+			.demo-title { font-size: 1.4rem; font-weight: 400; letter-spacing: 0.02em; }
+			.pill { display: inline-flex; padding: 3px 10px; border-radius: 999px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+			.dice { display: flex; gap: 8px; margin-top: 12px; }
+			.die { width: 78px; height: 44px; border-radius: 6px; display: grid; place-items: center; font-family: 'Roboto', system-ui, sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em; }
+			.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-top: 16px; }
+			.sw { display: flex; align-items: center; gap: 10px; font-size: 0.75rem; line-height: 1.15; }
+			.chip { flex: 0 0 32px; height: 32px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); }
+			.theme.dark .chip { border-color: rgba(255,255,255,0.12); }
+			.name { font-weight: 600; }
+			.hex { display: block; font-family: ui-monospace, SFMono-Regular, monospace; opacity: 0.7; font-size: 0.72rem; }
+		</style>
+	</head>
+	<body>
+		<h1>Vlad <span style="opacity: 0.6; font-weight: 400;">(vlad)</span></h1>
+		<p class="hint">Blood-dripping Nosifer titles over a Transylvanian midnight — coffin-black page, oxblood accents, bone dice on dried-blood iron. Halloween-adjacent, wears the horror on its sleeve.</p>
+		<section class="theme dark" style="background: #08050a; color: #efd9c1; --card: #170a10; --border: #3a1c22; --accent: #c9384a; --muted: #b09484">
+			<h2 style="color: #c9384a; font-family: &#39;Nosifer&#39;, serif;">Dark</h2>
+			<div class="demo" style="background: #170a10; border: 1px solid #3a1c22;">
+				<span class="demo-title" style="color: #c9384a; font-family: &#39;Nosifer&#39;, serif;">Sample</span>
+				<span class="pill" style="background: #c9384a22; color: #c9384a; border: 1px solid #c9384a;">Journey</span>
+				<span style="color: #c9384a;">— accent on ground</span>
+				<span style="color: #b09484; margin-left: auto; font-size: 0.75rem;">muted</span>
+			</div>
+			<div class="dice">
+				<div class="die" style="background: #9a1b28; color: #efd9c1">d6</div>
+				<div class="die" style="background: #1a0508; color: #efd9c1">d10</div>
+				<div class="die" style="background: #2a0a10; color: #efd9c1">d100 (10s)</div>
+				<div class="die" style="background: #efd9c1; color: #2a0a10">d100 (1s)</div>
+			</div>
+			<div class="grid">
+				<div class="sw">
+					<div class="chip" style="background: #08050a"></div>
+					<div><span class="name">bg-page</span><span class="hex">#08050a</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #170a10"></div>
+					<div><span class="name">bg-card</span><span class="hex">#170a10</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #0c0709"></div>
+					<div><span class="name">bg-inset</span><span class="hex">#0c0709</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #1e0e14"></div>
+					<div><span class="name">bg-control</span><span class="hex">#1e0e14</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #2a141b"></div>
+					<div><span class="name">bg-hover</span><span class="hex">#2a141b</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #3a1c22"></div>
+					<div><span class="name">border</span><span class="hex">#3a1c22</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #5a2f38"></div>
+					<div><span class="name">border-mid</span><span class="hex">#5a2f38</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #efd9c1"></div>
+					<div><span class="name">text</span><span class="hex">#efd9c1</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #b09484"></div>
+					<div><span class="name">text-muted</span><span class="hex">#b09484</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #6f5f56"></div>
+					<div><span class="name">text-dimmer</span><span class="hex">#6f5f56</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #c9384a"></div>
+					<div><span class="name">text-accent</span><span class="hex">#c9384a</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #c9384a"></div>
+					<div><span class="name">focus-ring</span><span class="hex">#c9384a</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #c9384a22"></div>
+					<div><span class="name">accent-glow</span><span class="hex">#c9384a22</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #c9384a12"></div>
+					<div><span class="name">accent-dim</span><span class="hex">#c9384a12</span></div>
+				</div>
+			</div>
+		</section>
+		<section class="theme light" style="background: #faf8f6; color: #1c0a0e; --card: #efeae5; --border: #d5cdc3; --accent: #7a0e1c; --muted: #4a2b2f">
+			<h2 style="color: #7a0e1c; font-family: &#39;Nosifer&#39;, serif;">Light</h2>
+			<div class="demo" style="background: #efeae5; border: 1px solid #d5cdc3;">
+				<span class="demo-title" style="color: #7a0e1c; font-family: &#39;Nosifer&#39;, serif;">Sample</span>
+				<span class="pill" style="background: #7a0e1c22; color: #7a0e1c; border: 1px solid #7a0e1c;">Journey</span>
+				<span style="color: #7a0e1c;">— accent on ground</span>
+				<span style="color: #4a2b2f; margin-left: auto; font-size: 0.75rem;">muted</span>
+			</div>
+			<div class="dice">
+				<div class="die" style="background: #9a1b28; color: #efd9c1">d6</div>
+				<div class="die" style="background: #1a0508; color: #efd9c1">d10</div>
+				<div class="die" style="background: #2a0a10; color: #efd9c1">d100 (10s)</div>
+				<div class="die" style="background: #efd9c1; color: #2a0a10">d100 (1s)</div>
+			</div>
+			<div class="grid">
+				<div class="sw">
+					<div class="chip" style="background: #faf8f6"></div>
+					<div><span class="name">bg-page</span><span class="hex">#faf8f6</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #efeae5"></div>
+					<div><span class="name">bg-card</span><span class="hex">#efeae5</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #ffffff"></div>
+					<div><span class="name">bg-inset</span><span class="hex">#ffffff</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #f4efea"></div>
+					<div><span class="name">bg-control</span><span class="hex">#f4efea</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #e6dfd7"></div>
+					<div><span class="name">bg-hover</span><span class="hex">#e6dfd7</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #d5cdc3"></div>
+					<div><span class="name">border</span><span class="hex">#d5cdc3</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #a89f92"></div>
+					<div><span class="name">border-mid</span><span class="hex">#a89f92</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #1c0a0e"></div>
+					<div><span class="name">text</span><span class="hex">#1c0a0e</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #4a2b2f"></div>
+					<div><span class="name">text-muted</span><span class="hex">#4a2b2f</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #7a5c60"></div>
+					<div><span class="name">text-dimmer</span><span class="hex">#7a5c60</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #7a0e1c"></div>
+					<div><span class="name">text-accent</span><span class="hex">#7a0e1c</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #7a0e1c"></div>
+					<div><span class="name">focus-ring</span><span class="hex">#7a0e1c</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #7a0e1c22"></div>
+					<div><span class="name">accent-glow</span><span class="hex">#7a0e1c22</span></div>
+				</div>
+				<div class="sw">
+					<div class="chip" style="background: #7a0e1c12"></div>
+					<div><span class="name">accent-dim</span><span class="hex">#7a0e1c12</span></div>
+				</div>
+			</div>
+		</section>
+	</body>
+</html>
