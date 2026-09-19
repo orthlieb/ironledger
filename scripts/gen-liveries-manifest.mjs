@@ -200,12 +200,15 @@ function themeBlock(mode, pal, dice, fontFamily, label) {
     `--accent: ${pal['text-accent']}`,
     `--muted: ${pal['text-muted']}`,
   ].join('; ');
+  // Dice tiles are labelled with the die each colour drives (d6 action /
+  // d10 challenge / d100 tens + ones). The label uses the regular UI font,
+  // not the livery display font — the die name is metadata, not chrome.
   const diceRow = dice
     ? `\t\t\t<div class="dice">\n` +
-      `\t\t\t\t<div class="die" style="background: ${dice.action}; color: ${dice.ones}">6</div>\n` +
-      `\t\t\t\t<div class="die" style="background: ${dice.challenge}; color: ${dice.ones}">42</div>\n` +
-      `\t\t\t\t<div class="die" style="background: ${dice.tens}; color: ${dice.ones}">17</div>\n` +
-      `\t\t\t\t<div class="die" style="background: ${dice.ones}; color: ${dice.tens}">D</div>\n` +
+      `\t\t\t\t<div class="die" style="background: ${dice.action}; color: ${dice.ones}">d6</div>\n` +
+      `\t\t\t\t<div class="die" style="background: ${dice.challenge}; color: ${dice.ones}">d10</div>\n` +
+      `\t\t\t\t<div class="die" style="background: ${dice.tens}; color: ${dice.ones}">d100 (10s)</div>\n` +
+      `\t\t\t\t<div class="die" style="background: ${dice.ones}; color: ${dice.tens}">d100 (1s)</div>\n` +
       `\t\t\t</div>\n`
     : '';
   const fontRule = fontFamily ? `font-family: ${esc(fontFamily)}, serif;` : '';
@@ -264,7 +267,7 @@ function previewHtml(livery) {
     `\t\t\t.demo-title { font-size: 1.4rem; font-weight: 400; letter-spacing: 0.02em; }\n` +
     `\t\t\t.pill { display: inline-flex; padding: 3px 10px; border-radius: 999px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }\n` +
     `\t\t\t.dice { display: flex; gap: 8px; margin-top: 12px; }\n` +
-    `\t\t\t.die { width: 44px; height: 44px; border-radius: 6px; display: grid; place-items: center; font-family: 'Roboto', serif; font-size: 1rem; font-weight: 600; }\n` +
+    `\t\t\t.die { width: 78px; height: 44px; border-radius: 6px; display: grid; place-items: center; font-family: 'Roboto', system-ui, sans-serif; font-size: 0.72rem; font-weight: 600; letter-spacing: 0.02em; }\n` +
     `\t\t\t.grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; margin-top: 16px; }\n` +
     `\t\t\t.sw { display: flex; align-items: center; gap: 10px; font-size: 0.75rem; line-height: 1.15; }\n` +
     `\t\t\t.chip { flex: 0 0 32px; height: 32px; border-radius: 4px; border: 1px solid rgba(0,0,0,0.2); }\n` +
