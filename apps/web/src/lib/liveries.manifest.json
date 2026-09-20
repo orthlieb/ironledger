@@ -55,6 +55,33 @@
       }
     },
     {
+      "id": "elspeth",
+      "label": "Elspeth",
+      "default": false,
+      "description": "Metamorphous storybook-gothic titles over a witch's-brew chrome — aubergine coven ground with poison-green candle glow, bone dice on cauldron-dark. Halloween-adjacent, wearable year-round.",
+      "preview": "☾",
+      "transliterate": null,
+      "googleFamily": "Metamorphous:wght@400",
+      "dice": {
+        "action": "#8ac651",
+        "challenge": "#3e2f4f",
+        "tens": "#100a15",
+        "ones": "#e6ebd7",
+        "texture": "skulls"
+      },
+      "previewColors": {
+        "dark": {
+          "bg": "#0f0913",
+          "fg": "#8ac651"
+        },
+        "light": {
+          "bg": "#f3eef8",
+          "fg": "#3f5d29"
+        }
+      },
+      "brandSvg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\"><!--crescent moon, placeholder — replace with final art-->\n  <path fill=\"currentColor\" d=\"M336 56a204 204 0 1 0 132 340A172 172 0 0 1 336 56z\"/>\n</svg>"
+    },
+    {
       "id": "futhark",
       "label": "Futhark",
       "default": false,
@@ -106,33 +133,6 @@
         }
       },
       "brandSvg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\"><!--jack-o'-lantern silhouette, placeholder — replace with final art-->\n  <path fill=\"currentColor\" d=\"M256 100c-18 0-32 6-42 16-16-4-38-10-62-6-56 8-88 66-88 146s32 138 88 146c24 4 46-2 62-6 10 10 24 16 42 16s32-6 42-16c16 4 38 10 62 6 56-8 88-66 88-146s-32-138-88-146c-24-4-46 2-62 6-10-10-24-16-42-16zm-72 128 32 40h-64zm144 0 32 40h-64zm-72 60c22 0 32 26 32 44h-64c0-18 10-44 32-44z\"/>\n  <path fill=\"currentColor\" d=\"M244 60h24l-4 48h-16z\"/>\n</svg>"
-    },
-    {
-      "id": "sabbat",
-      "label": "Sabbat",
-      "default": false,
-      "description": "Metamorphous storybook-gothic titles over a witch's-brew chrome — aubergine coven ground with poison-green candle glow, bone dice on cauldron-dark. Halloween-adjacent, wearable year-round.",
-      "preview": "☾",
-      "transliterate": null,
-      "googleFamily": "Metamorphous:wght@400",
-      "dice": {
-        "action": "#8ac651",
-        "challenge": "#3e2f4f",
-        "tens": "#100a15",
-        "ones": "#e6ebd7",
-        "texture": "skulls"
-      },
-      "previewColors": {
-        "dark": {
-          "bg": "#0f0913",
-          "fg": "#8ac651"
-        },
-        "light": {
-          "bg": "#f3eef8",
-          "fg": "#3f5d29"
-        }
-      },
-      "brandSvg": "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 512 512\"><!--crescent moon, placeholder — replace with final art-->\n  <path fill=\"currentColor\" d=\"M336 56a204 204 0 1 0 132 340A172 172 0 0 1 336 56z\"/>\n</svg>"
     },
     {
       "id": "simonetta",
