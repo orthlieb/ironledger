@@ -26,7 +26,6 @@ const ZIP_INPUT = 'input[type="file"][accept=".zip,application/zip"]';
 // over the item/nesting caps) lands on the "error" stage with the message in
 // its `.imd-errlist`.
 const IMD_DONE_OK = '.imd-badge--ok';
-const IMD_DONE_WARN = '.imd-badge--warn';
 const IMD_ERRLIST = '.imd-errlist';
 
 // runImport (home/+page.svelte) holds the "importing" stage for a minimum
