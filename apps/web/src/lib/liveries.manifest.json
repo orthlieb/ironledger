@@ -111,24 +111,24 @@
       "id": "sabbat",
       "label": "Sabbat",
       "default": false,
-      "description": "Metamorphous storybook-gothic titles over a witch-wood green chrome. Poison-green candle glow on a forest-black ground, bone dice on iron. Halloween-adjacent, wearable year-round.",
+      "description": "Metamorphous storybook-gothic titles over a witch's-brew chrome — aubergine coven ground with poison-green candle glow, bone dice on cauldron-dark. Halloween-adjacent, wearable year-round.",
       "preview": "☾",
       "transliterate": null,
       "googleFamily": "Metamorphous:wght@400",
       "dice": {
-        "action": "#7bb04b",
-        "challenge": "#2a1913",
-        "tens": "#141a12",
+        "action": "#8ac651",
+        "challenge": "#3e2f4f",
+        "tens": "#100a15",
         "ones": "#e6ebd7",
         "texture": "skulls"
       },
       "previewColors": {
         "dark": {
-          "bg": "#0a0d0a",
-          "fg": "#a3c775"
+          "bg": "#0f0913",
+          "fg": "#8ac651"
         },
         "light": {
-          "bg": "#f2eee4",
+          "bg": "#f3eef8",
           "fg": "#3f5d29"
         }
       },
