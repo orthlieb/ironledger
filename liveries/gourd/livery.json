@@ -1,0 +1,57 @@
+{
+  "id": "gourd",
+  "label": "Gourd",
+  "default": false,
+  "description": "Berkshire Swash harvest-fair titles over a pumpkin-patch chrome — deep moss + pumpkin candlelight in dark, pale sage under harvest daylight in light. Vine-green borders, orange/green/moss/cream dice. Halloween-adjacent, harvest-forward.",
+  "preview": "🎃",
+  "font": {
+    "stack": "'Berkshire Swash', 'Palatino Linotype', Georgia, serif",
+    "googleFamily": "Berkshire Swash",
+    "weight": 400,
+    "variant": "normal",
+    "transform": "none",
+    "scale": 1
+  },
+  "transliterate": null,
+  "dice": {
+    "action": "#f5761a",
+    "challenge": "#6f8c4a",
+    "tens": "#14201a",
+    "ones": "#e8d8b4",
+    "texture": "wood"
+  },
+  "palette": {
+    "dark": {
+      "bg-page": "#0a1408",
+      "bg-card": "#14201a",
+      "bg-inset": "#08110a",
+      "bg-control": "#1a2820",
+      "bg-hover": "#223428",
+      "border": "#2f4232",
+      "border-mid": "#4d6a4e",
+      "text": "#e8d8b4",
+      "text-muted": "#a09070",
+      "text-dimmer": "#6a5f48",
+      "text-accent": "#f5761a",
+      "focus-ring": "#f5761a",
+      "accent-glow": "#f5761a22",
+      "accent-dim": "#f5761a12"
+    },
+    "light": {
+      "bg-page": "#eef2df",
+      "bg-card": "#e0e7ce",
+      "bg-inset": "#f5f9e8",
+      "bg-control": "#e6ecd4",
+      "bg-hover": "#d5dbc0",
+      "border": "#b3c48b",
+      "border-mid": "#7d9758",
+      "text": "#1a2010",
+      "text-muted": "#4a5238",
+      "text-dimmer": "#78805e",
+      "text-accent": "#b04a10",
+      "focus-ring": "#b04a10",
+      "accent-glow": "#b04a1022",
+      "accent-dim": "#b04a1012"
+    }
+  }
+}

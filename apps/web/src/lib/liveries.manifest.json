@@ -81,6 +81,32 @@
       }
     },
     {
+      "id": "gourd",
+      "label": "Gourd",
+      "default": false,
+      "description": "Berkshire Swash harvest-fair titles over a pumpkin-patch chrome — deep moss + pumpkin candlelight in dark, pale sage under harvest daylight in light. Vine-green borders, orange/green/moss/cream dice. Halloween-adjacent, harvest-forward.",
+      "preview": "🎃",
+      "transliterate": null,
+      "googleFamily": "Berkshire Swash",
+      "dice": {
+        "action": "#f5761a",
+        "challenge": "#6f8c4a",
+        "tens": "#14201a",
+        "ones": "#e8d8b4",
+        "texture": "wood"
+      },
+      "previewColors": {
+        "dark": {
+          "bg": "#0a1408",
+          "fg": "#f5761a"
+        },
+        "light": {
+          "bg": "#eef2df",
+          "fg": "#b04a10"
+        }
+      }
+    },
+    {
       "id": "sabbat",
       "label": "Sabbat",
       "default": false,
