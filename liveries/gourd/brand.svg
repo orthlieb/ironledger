@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--jack-o'-lantern silhouette, placeholder — replace with final art-->
+  <path fill="currentColor" d="M256 100c-18 0-32 6-42 16-16-4-38-10-62-6-56 8-88 66-88 146s32 138 88 146c24 4 46-2 62-6 10 10 24 16 42 16s32-6 42-16c16 4 38 10 62 6 56-8 88-66 88-146s-32-138-88-146c-24-4-46 2-62 6-10-10-24-16-42-16zm-72 128 32 40h-64zm144 0 32 40h-64zm-72 60c22 0 32 26 32 44h-64c0-18 10-44 32-44z"/>
+  <path fill="currentColor" d="M244 60h24l-4 48h-16z"/>
+</svg>

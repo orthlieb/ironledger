@@ -98,6 +98,37 @@ texture in **Settings → Dice**, at which point that explicit choice sticks
 across livery switches. A livery with no `dice` block falls straight through to
 the factory blue/red d6+d10 and black/white d100. Omitting `dice` is fine.
 
+### Brand icon (optional) — `brand.svg`
+
+A livery may ship a single `brand.svg` next to its `livery.json`. When present,
+the nav-bar mark (the axe next to "Iron Ledger") **and** the browser tab
+favicon both switch to it while this livery is active. Absent → the default
+sharp-axe stays for both.
+
+```
+liveries/<id>/brand.svg
+```
+
+The SVG follows the same normalisation as `$lib/icons/` art (see the
+"Icon SVGs" section in `CLAUDE.md`):
+
+- Root is `<svg xmlns viewBox>` — no width/height, no `style`, no
+  `enable-background`, no `xml:space`.
+- Every `<path fill>` uses `fill="currentColor"` (or no `fill` attr so CSS
+  wins) — never a hard-coded colour. The nav mark picks up `text-accent`
+  from the palette; the favicon picks up whatever colour the currentColor
+  cascade resolves to (usually `text-accent` too since the browser reads
+  the SVG's own root).
+- No full-canvas background rect, no wrapping `<g>`, no embedded
+  `<style>` block.
+
+The build inlines each livery's `brand.svg` verbatim into
+`liveries.manifest.json` as `brandSvg: string`, so there is no runtime
+fetch. Switching liveries flips the nav mark reactively; the favicon is
+swapped by rebuilding the `<link rel="icon" type="image/svg+xml">` with a
+data URL. `apple-touch-icon.png` is untouched — the home-screen icon is
+captured when a user adds the site and can't be swapped at runtime.
+
 ## How the build wires it up
 
 Two committed, generator-owned artifacts are produced from the JSON:
