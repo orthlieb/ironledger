@@ -121,6 +121,10 @@
           "color": "var(--text-muted)"
         }
       ],
+      "infoLink": {
+        "label": "Ironsworn",
+        "url": "https://ironsworn-rpg.fandom.com/wiki/Special:AllPages"
+      },
       "root": "apps/api/data",
       "provides": {
         "assets": [
@@ -338,6 +342,10 @@
           "order": 200
         }
       ],
+      "infoLink": {
+        "label": "YRT",
+        "url": "http://yrt.iron-ledger.org"
+      },
       "root": "extensions/yrt",
       "provides": {
         "assets": [

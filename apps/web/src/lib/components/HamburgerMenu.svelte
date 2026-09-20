@@ -16,6 +16,7 @@
 	import ExportDialog from './ExportDialog.svelte';
 	import type { ExportSelection } from '$lib/exportSelection.js';
 	import { viewMode, setViewMode, VIEW_MODES, type ViewMode } from '$lib/viewModeStore.svelte.js';
+	import { getExtensions, isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import { onMount } from 'svelte';
 
 	// The View submenu is only meaningful on desktop / tablet — mobile
@@ -37,6 +38,19 @@
 		log: 'Log',
 		tabs: 'Tabs',
 	};
+
+	// Info submenu — one link per enabled extension that declares an infoLink
+	// in its extension.json (a pointer to its reference wiki / documentation).
+	// The submenu only renders when at least one link is available so a
+	// base-only session with an infoLink still gets the menu, but a session
+	// with everything toggled off never shows an empty submenu. Reactive on
+	// the extension registry + per-source enabled state so a toggle in
+	// Settings flips items in and out live.
+	const infoLinks = $derived(
+		getExtensions()
+			.filter((e) => e.infoLink && isSourceEnabled(e.id))
+			.map((e) => e.infoLink!),
+	);
 
 	let {
 		isAdmin = false,
@@ -102,6 +116,35 @@
 							<DropdownMenu.Item class="hm-item hm-item--radio" onSelect={() => setViewMode(m)}>
 								<span class="hm-check" aria-hidden="true">{viewMode.mode === m ? '✓' : ''}</span>
 								{VIEW_LABELS[m]}
+							</DropdownMenu.Item>
+						{/each}
+					</DropdownMenu.SubContent>
+				</DropdownMenu.Sub>
+			{/if}
+
+			<!-- Info submenu — reference wikis / docs supplied by enabled
+			     extensions via extension.json's `infoLink`. Only renders when
+			     at least one link is available (base's Ironsworn wiki is
+			     always present, so this is effectively always on). Each item
+			     opens in a new tab. -->
+			{#if infoLinks.length}
+				<DropdownMenu.Sub>
+					<DropdownMenu.SubTrigger class="hm-item hm-item--sub">
+						Info
+						<span class="hm-sub-arrow" aria-hidden="true">{@html chevronRightSvg}</span>
+					</DropdownMenu.SubTrigger>
+					<DropdownMenu.SubContent class="hm-menu hm-submenu" sideOffset={4}>
+						{#each infoLinks as link (link.url)}
+							<DropdownMenu.Item>
+								{#snippet child({ props })}
+									<a
+										{...props}
+										href={link.url}
+										target="_blank"
+										rel="noopener noreferrer"
+										class="hm-item">{link.label}</a
+									>
+								{/snippet}
 							</DropdownMenu.Item>
 						{/each}
 					</DropdownMenu.SubContent>

@@ -37,5 +37,9 @@
     { "key": "Magic", "icon": "wand-sparkles-solid", "color": "#9B59B6" },
     { "key": "Story", "icon": "book-solid", "color": "#8E7CC3" },
     { "key": "Other", "icon": "dice-d100-solid", "color": "var(--text-muted)" }
-  ]
+  ],
+  "infoLink": {
+    "label": "Ironsworn",
+    "url": "https://ironsworn-rpg.fandom.com/wiki/Special:AllPages"
+  }
 }

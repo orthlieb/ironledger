@@ -11,5 +11,9 @@
   },
   "moveCategories": [
     { "key": "Yrt", "icon": "yrt-tree", "color": "var(--color-touched)", "order": 200 }
-  ]
+  ],
+  "infoLink": {
+    "label": "YRT",
+    "url": "http://yrt.iron-ledger.org"
+  }
 }
