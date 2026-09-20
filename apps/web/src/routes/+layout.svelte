@@ -30,7 +30,12 @@
 	import { setAiDebug } from '$lib/aiSettings.svelte.js';
 	import { page } from '$app/stores';
 	import { goto } from '$app/navigation';
-	import { headingText, getFontDisplay, setFontDisplay } from '$lib/fontStore.svelte.js';
+	import {
+		headingText,
+		getFontDisplay,
+		setFontDisplay,
+		activeLiveryBrand,
+	} from '$lib/fontStore.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
@@ -248,7 +253,9 @@
 			class:nav-brand--current={$page.url.pathname === '/home'}
 			aria-current={$page.url.pathname === '/home' ? 'page' : undefined}
 		>
-			<span class="nav-brand-icon" aria-hidden="true">{@html swordSvg}</span>
+			<span class="nav-brand-icon" aria-hidden="true">
+				{@html activeLiveryBrand() ?? swordSvg}
+			</span>
 			{headingText('Iron Ledger')}
 		</a>
 		<div class="nav-links">

@@ -94,7 +94,26 @@ function previewColors(livery) {
   };
 }
 
-function buildManifest(liveries) {
+// Read an optional `liveries/<id>/brand.svg` and return its trimmed contents,
+// or null when absent. The file is inlined verbatim into the manifest so the
+// client can render it as a currentColor glyph (nav brand + favicon) without
+// a runtime fetch. Same normalisation checklist as $lib/icons/ SVGs applies —
+// enforced by convention; the gen step only trims whitespace.
+async function readBrandSvg(id) {
+  const p = path.join(LIVERIES_DIR, id, 'brand.svg');
+  if (!existsSync(p)) return null;
+  const raw = (await readFile(p, 'utf8')).trim();
+  if (!raw.startsWith('<svg')) {
+    console.warn(`⚠ livery "${id}" brand.svg does not start with <svg — skipped`);
+    return null;
+  }
+  return raw;
+}
+
+async function buildManifest(liveries) {
+  const brandById = Object.fromEntries(
+    await Promise.all(liveries.map(async (l) => [l.id, await readBrandSvg(l.id)])),
+  );
   const obj = {
     _generated: 'scripts/gen-liveries-manifest.mjs — edit liveries/<id>/livery.json, not this file',
     default: liveries.find((l) => l.default).id,
@@ -111,6 +130,11 @@ function buildManifest(liveries) {
       // SettingsDialog's livery picker can render a dark+light preview tile
       // per option without carrying the whole palette client-side.
       previewColors: previewColors(l),
+      // Optional per-livery brand icon (nav mark + favicon). When absent the
+      // app falls back to the default sharp-axe SVG. Source of truth is
+      // liveries/<id>/brand.svg — inlined verbatim so the client renders it
+      // as a currentColor glyph without a runtime fetch.
+      ...(brandById[l.id] ? { brandSvg: brandById[l.id] } : {}),
     })),
   };
   return JSON.stringify(obj, null, 2) + '\n';
@@ -316,7 +340,7 @@ async function readIf(file) {
 }
 
 const liveries = await loadLiveries();
-const manifest = buildManifest(liveries);
+const manifest = await buildManifest(liveries);
 const css = buildCss(liveries);
 // Per-livery preview.html — each livery gets a design-review swatch page
 // sitting next to its own livery.json.

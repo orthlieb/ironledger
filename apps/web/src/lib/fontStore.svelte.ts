@@ -54,6 +54,10 @@ export interface LiveryMeta {
 	googleFamily: string | null;
 	dice: LiveryDice | null;
 	previewColors: LiveryPreviewColors;
+	/** Optional raw SVG a livery may ship at `liveries/<id>/brand.svg`. When
+	 *  present, the nav brand icon and the favicon both switch to it while
+	 *  this livery is active. Absent → the default sharp-axe stays. */
+	brandSvg?: string;
 }
 
 export const LIVERIES: LiveryMeta[] = manifest.liveries;
@@ -95,14 +99,49 @@ export function activeLiveryDice(): LiveryDice | null {
 	return LIVERIES.find((l) => l.id === _font)?.dice ?? null;
 }
 
+/** The active livery's brand SVG (raw markup) — the nav mark uses it in
+ *  place of the default sharp-axe when present. Reactive: reads the
+ *  `_font` state, so callers inside a Svelte template or `$derived`
+ *  re-render on livery change. */
+export function activeLiveryBrand(): string | null {
+	return LIVERIES.find((l) => l.id === _font)?.brandSvg ?? null;
+}
+
+// URL-encode an SVG string for use in a data: URI. Cheaper than base64 for
+// SVG (base64 bloats ~33%, encodeURIComponent leaves most ASCII intact).
+function svgToDataUrl(svg: string, cacheKey: string): string {
+	return `data:image/svg+xml,${encodeURIComponent(svg)}#${cacheKey}`;
+}
+
+/** Swap the browser tab icon to the current livery's brand SVG, or restore
+ *  the default static `/favicon.svg` when the active livery doesn't ship one.
+ *  The old <link rel="icon" type="image/svg+xml"> is removed and a fresh one
+ *  appended — the rebuild is how Safari picks up the change; Chrome + Firefox
+ *  accept either an in-place href swap or a re-append, so re-append covers
+ *  both. The `apple-touch-icon` stays static (it's baked in at "add to home
+ *  screen" time, no way to swap it at runtime). */
+function updateFavicon(id: LiveryId, svg: string | null): void {
+	if (typeof document === 'undefined') return;
+	const head = document.head;
+	const old = head.querySelector('link[rel="icon"][type="image/svg+xml"]');
+	old?.remove();
+	const link = document.createElement('link');
+	link.rel = 'icon';
+	link.type = 'image/svg+xml';
+	link.href = svg ? svgToDataUrl(svg, id) : '/favicon.svg?v=2';
+	head.appendChild(link);
+}
+
 /** Apply a livery: persists to localStorage + flips the `data-font` attribute.
  *
  *  `data-font` is set for ALL liveries — including the default — so the
  *  `[data-font='<default>']`-scoped rules in liveries.generated.css match.
  *  localStorage skips writing the default so a "no user preference" state
  *  stays represented by an absent storage entry. The generated CSS supplies
- *  the font stack (`--font-display`) and chrome palette for the attribute,
- *  so there is nothing else to set here. Unknown ids fall back to default. */
+ *  the font stack (`--font-display`) and chrome palette for the attribute.
+ *  Also swaps the tab favicon to the livery's brand SVG when it ships one,
+ *  restoring the default static icon otherwise. Unknown ids fall back to
+ *  default. */
 export function setFontDisplay(f: LiveryId): void {
 	if (!IDS.has(f)) f = DEFAULT_LIVERY;
 	_font = f;
@@ -112,6 +151,7 @@ export function setFontDisplay(f: LiveryId): void {
 		localStorage.setItem(FONT_DISPLAY_KEY, f);
 	}
 	document.documentElement.setAttribute('data-font', f);
+	updateFavicon(f, LIVERIES.find((l) => l.id === f)?.brandSvg ?? null);
 }
 
 // ── Text helper ───────────────────────────────────────────────────────────────
