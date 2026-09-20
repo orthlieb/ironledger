@@ -257,7 +257,7 @@ function previewHtml(livery) {
     `\t\t\t:root { color-scheme: light dark; font-family: 'Roboto', system-ui, sans-serif; }\n` +
     `\t\t\tbody { margin: 0; padding: 24px; background: #202024; color: #e6e6e8; display: grid; gap: 24px; grid-template-columns: 1fr 1fr; max-width: 1200px; }\n` +
     `\t\t\t@media (max-width: 720px) { body { grid-template-columns: 1fr; } }\n` +
-    `\t\t\th1 { grid-column: 1 / -1; font-size: 1.6rem; margin: 0; }\n` +
+    `\t\t\th1 { grid-column: 1 / -1; font-size: 2rem; margin: 0; ${familyForCss ? `font-family: ${familyForCss}, serif; ` : ''}font-weight: 400; letter-spacing: 0.02em; }\n` +
     `\t\t\t.hint { grid-column: 1 / -1; margin: -12px 0 0; color: #a0a3a8; font-size: 0.9rem; }\n` +
     `\t\t\t.note { grid-column: 1 / -1; margin: 0; color: #a0a3a8; font-size: 0.8rem; }\n` +
     `\t\t\t.note code { background: #333; padding: 1px 4px; border-radius: 3px; }\n` +

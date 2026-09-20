@@ -242,15 +242,17 @@ test.describe('Characters area (v2)', () => {
 		await expect(dialog).not.toBeVisible({ timeout: 5_000 });
 
 		// Move to Core (the roll may have opened Background because concept
-		// rolls filled it in), then check the stat row.
+		// rolls filled it in), then check the stat row. The Core panel's
+		// StatControl tiles render the value as a read-only <span> (not an
+		// <input>), so read via textContent to cover both variants.
 		await switchCharTab(page, 'Core');
-		const inputs = page.locator(`${CHAR_AREA} .ca-stats-row .stat-value-input`);
-		await expect(inputs).toHaveCount(5, { timeout: 5_000 });
-		const values = await inputs.evaluateAll((els) =>
-			els.map((el) => Number((el as HTMLInputElement).value)),
+		const values = page.locator(`${CHAR_AREA} .ca-stats-row .stat-value-input`);
+		await expect(values).toHaveCount(5, { timeout: 5_000 });
+		const nums = await values.evaluateAll((els) =>
+			els.map((el) => Number((el.textContent ?? '').trim() || (el as HTMLInputElement).value)),
 		);
-		expect(values.every((v) => Number.isFinite(v))).toBe(true);
-		expect(values.some((v) => v > 0)).toBe(true);
+		expect(nums.every((v) => Number.isFinite(v))).toBe(true);
+		expect(nums.some((v) => v > 0)).toBe(true);
 	});
 
 	// ── Character stage sections ──────────────────────────────────────────────

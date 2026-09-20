@@ -28,8 +28,17 @@ const ZIP_INPUT = 'input[type="file"][accept=".zip,application/zip"]';
 const IMD_DONE_OK = '.imd-badge--ok';
 const IMD_ERRLIST = '.imd-errlist';
 
+// runImport (home/+page.svelte) holds the "importing" stage for a minimum
+// 5s — matching the export overlay so a fast import doesn't flash past its
+// progress bar. Any assertion that waits for the dialog to leave the
+// importing stage (`.imd-badge--ok` / `--warn` / `--err` on the done stage,
+// or `.imd-errlist` on the error stage) needs a timeout above that hold,
+// or the assertion times out at exactly the moment the badge would render.
+// 8s = 5s hold + 3s slack for build + CI runners.
+const IMD_TIMEOUT = 8_000;
+
 /** Assert the ImportDialog reached a clean success (done, no issues). */
-async function expectImportOk(page: import('@playwright/test').Page, timeout = 5_000) {
+async function expectImportOk(page: import('@playwright/test').Page, timeout = IMD_TIMEOUT) {
 	await expect(page.locator(IMD_DONE_OK)).toBeVisible({ timeout });
 }
 
@@ -37,7 +46,7 @@ async function expectImportOk(page: import('@playwright/test').Page, timeout = 5
 async function expectImportError(
 	page: import('@playwright/test').Page,
 	text: string | RegExp,
-	timeout = 5_000,
+	timeout = IMD_TIMEOUT,
 ) {
 	await expect(page.locator(IMD_ERRLIST)).toBeVisible({ timeout });
 	await expect(page.locator(IMD_ERRLIST)).toContainText(text, { timeout });
@@ -67,7 +76,10 @@ async function openExportDialog(page: import('@playwright/test').Page) {
 }
 
 /** Create one character via the switcher (name-first confirm dialog), unless a
- *  character tab already exists. Gives the export checklist something to hold. */
+ *  character tab already exists. Gives the export checklist something to hold.
+ *  The New Character dialog gates Create on a name AND ≥1 non-zero stat, so
+ *  we click the stat allocator's Roll button before Create — matches the
+ *  shared createCharacter helper in characters.spec.ts. */
 async function seedCharacter(page: import('@playwright/test').Page, name = 'Export Seed') {
 	const hasChar = await page
 		.locator(`${CHAR_AREA} .ca-tab`)
@@ -79,6 +91,7 @@ async function seedCharacter(page: import('@playwright/test').Page, name = 'Expo
 	await page.locator('.cb-item--action', { hasText: /New character/i }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
 	await page.locator('.confirm-modal .co-input').first().fill(name);
+	await page.locator('.confirm-modal .sa-field .dice-btn').click();
 	await page.locator('.confirm-modal .btn-primary').click();
 	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 	await expect(page.locator(`${CHAR_AREA} .ca-tab`).first()).toBeVisible({ timeout: 8_000 });
@@ -367,7 +380,7 @@ test.describe('Import dialog', () => {
 		const payload = makeManifest('character', { name: 'Wayfarer', data: { edge: 1 } }, 1);
 		await uploadImport(page, payload);
 		// Done stage: green ✓ badge, "Import complete", and a summary line.
-		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: IMD_TIMEOUT });
 		await expect(page.locator('.imd-state-title')).toContainText('Import complete');
 		await expect(page.locator('.imd-state-sub')).toContainText('1 character');
 		// No issue list on a clean import.
@@ -386,7 +399,7 @@ test.describe('Import dialog', () => {
 			mimeType: 'application/zip',
 			buffer: Buffer.from(bad),
 		});
-		await expect(page.locator('.imd-badge--err')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.imd-badge--err')).toBeVisible({ timeout: IMD_TIMEOUT });
 		await expect(page.locator('.imd-state-title')).toContainText('Import failed');
 		await expectImportError(page, 'not valid JSON');
 	});
@@ -415,7 +428,7 @@ test.describe('Import dialog', () => {
 		await page.locator('.imd-footer .btn-primary', { hasText: /Import 1 valid item/ }).click();
 
 		// Lands on done-with-issues: warn badge, the skipped row still listed.
-		await expect(page.locator('.imd-badge--warn')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.imd-badge--warn')).toBeVisible({ timeout: IMD_TIMEOUT });
 		await expect(page.locator('.imd-state-sub')).toContainText('1 connection');
 	});
 
@@ -431,7 +444,7 @@ test.describe('Import dialog', () => {
 		});
 		// Cancel returns to the chooser (idle) without applying anything.
 		await page.locator('.imd-footer .btn', { hasText: /^Cancel$/ }).click();
-		await expect(page.locator('.imd-drop')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.imd-drop')).toBeVisible({ timeout: IMD_TIMEOUT });
 	});
 
 	// The per-category "Connections" export writes the body file as a full
@@ -463,7 +476,7 @@ test.describe('Import dialog', () => {
 			mimeType: 'application/zip',
 			buffer: Buffer.from(wrapped),
 		});
-		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: IMD_TIMEOUT });
 		// The rows landed — summary counts them, not "Nothing new to import".
 		await expect(page.locator('.imd-state-sub')).toContainText('2 connections');
 		await expect(page.locator('.imd-state-sub')).not.toContainText('Nothing new');
@@ -503,6 +516,8 @@ test.describe('Import / Export — portrait round-trip', () => {
 			await page.locator('.cb-item--action', { hasText: /New character/i }).click();
 			await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
 			await page.locator('.confirm-modal .co-input').first().fill('Portrait Char');
+			// New Character dialog gate: name + ≥1 non-zero stat, so roll before Create.
+			await page.locator('.confirm-modal .sa-field .dice-btn').click();
 			await page.locator('.confirm-modal .btn-primary').click();
 			await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 		}
@@ -513,7 +528,7 @@ test.describe('Import / Export — portrait round-trip', () => {
 			mimeType: 'image/png',
 			buffer: Buffer.from(TINY_PNG, 'base64'),
 		});
-		await expect(page.locator(`${CHAR_AREA} img.pu-img`)).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator(`${CHAR_AREA} img.pu-img`)).toBeVisible({ timeout: IMD_TIMEOUT });
 		// Let the portrait PUT + the 1500 ms character auto-save settle.
 		await page.waitForTimeout(2_400);
 
@@ -938,7 +953,7 @@ test.describe('Import — marker entity re-link', () => {
 			mimeType: 'application/zip',
 			buffer: Buffer.from(mapZip),
 		});
-		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: IMD_TIMEOUT });
 
 		// The marker now points at the SEEDED community's id — not the foreign one.
 		const index = await page.evaluate(async () => {
@@ -1001,7 +1016,7 @@ test.describe('Import — marker entity re-link', () => {
 			mimeType: 'application/zip',
 			buffer: Buffer.from(mapZip),
 		});
-		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: IMD_TIMEOUT });
 		const index = await page.evaluate(async () => {
 			const res = await fetch('/api/session/maps/entity-markers', { credentials: 'include' });
 			return (await res.json()) as { index?: Record<string, unknown> };
@@ -1040,7 +1055,7 @@ test.describe('Import — marker entity re-link', () => {
 			mimeType: 'application/zip',
 			buffer: Buffer.from(mapZip),
 		});
-		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: IMD_TIMEOUT });
 
 		// No entity-marker back-references at all — the dead link was dropped,
 		// but the pin itself survived (the map has one marker).
