@@ -61,6 +61,13 @@ and everything filters out — nothing else changes.
   "oracleCategories": [
     { "key": "Sample", "icon": "dice-d100-solid", "color": "var(--text-muted)" },
   ],
+
+  // Optional — one wiki / documentation pointer that lands in the Hamburger →
+  // Info submenu while this extension is enabled. See "Info-menu link" below.
+  "infoLink": {
+    "label": "Sample",
+    "url": "https://example.com/wiki",
+  },
 }
 ```
 
@@ -205,6 +212,34 @@ static files (nginx/adapter serve them directly), the build **copies** every
 extension foe image into `apps/web/static/foes/` and writes
 `apps/web/static/foes/.gitignore` recording the copies. The copies are build
 artifacts (gitignored); the source of truth is the extension folder.
+
+### Info-menu link — `infoLink`
+
+An extension can optionally declare **one** pointer to its reference wiki
+or documentation. When the extension is enabled, the app's Hamburger → Info
+submenu adds an item that opens `url` in a new tab, labelled `label`.
+
+```jsonc
+{
+  "infoLink": {
+    "label": "Sample", // short, ≤ ~12 chars — appears in the submenu row
+    "url": "https://example.com/wiki", // must start with http:// or https://
+  },
+}
+```
+
+The field is validated at build time by `scripts/gen-extensions-manifest.mjs`
+(non-empty `label`, `url` matches `^https?://`); everything else about the
+menu is data-driven — no per-extension code lands in the app. The Info
+submenu only renders when at least one enabled extension carries an
+`infoLink`. Base ships one for the Ironsworn wiki, so the submenu is
+effectively always on; YRT ships one for `yrt.iron-ledger.org` that
+appears when YRT is enabled.
+
+Exactly one entry per extension: two links would drift into a
+per-extension "menu" and the UI budget doesn't have room for that. If
+a pack really needs a hub, point `url` at a landing page and branch
+from there.
 
 ---
 

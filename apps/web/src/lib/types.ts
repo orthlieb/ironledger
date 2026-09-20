@@ -89,6 +89,11 @@ export interface ExtensionInfo {
 	moveCategories?: CategoryDef[];
 	/** Oracle categories introduced (icon + tint; picker order is alphabetical). */
 	oracleCategories?: CategoryDef[];
+	/** Optional pointer to this extension's reference wiki / documentation.
+	 *  When set (and the extension is enabled), the Hamburger → Info submenu
+	 *  adds one item that opens `url` in a new tab, labelled `label`. Mirrors
+	 *  ExtensionInfo in @ironledger/shared. */
+	infoLink?: { label: string; url: string };
 }
 
 export interface FoeDef {

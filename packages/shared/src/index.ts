@@ -156,6 +156,12 @@ export interface ExtensionInfo {
   /** Oracle categories this extension introduces (icon + tint; picker order
    *  stays alphabetical). */
   oracleCategories?: CategoryDef[];
+  /** Optional pointer to this extension's reference wiki / documentation.
+   *  When set (and the extension is enabled), the Hamburger → Info submenu
+   *  adds one item that opens `url` in a new tab, labelled `label`. Exactly
+   *  one entry per extension. External URL — the HamburgerMenu opens it
+   *  with `target="_blank" rel="noopener noreferrer"`. */
+  infoLink?: { label: string; url: string };
 }
 
 /** Move definition — mirrors the JSON structure in moves/*.json */

@@ -117,6 +117,21 @@ async function build() {
   for (const id of ids) {
     const m = await readJson(path.join(EXT_ROOT, id, 'extension.json'));
     if (m.id !== id) throw new Error(`extension.json id "${m.id}" ≠ folder "${id}"`);
+    // Validate the optional infoLink field (one wiki / doc pointer that lands
+    // in the Hamburger → Info submenu while this extension is enabled).
+    if (m.infoLink !== undefined) {
+      if (typeof m.infoLink !== 'object' || m.infoLink === null || Array.isArray(m.infoLink)) {
+        throw new Error(`extensions/${id}/extension.json: infoLink must be an object`);
+      }
+      if (typeof m.infoLink.label !== 'string' || !m.infoLink.label.trim()) {
+        throw new Error(
+          `extensions/${id}/extension.json: infoLink.label must be a non-empty string`,
+        );
+      }
+      if (typeof m.infoLink.url !== 'string' || !/^https?:\/\//.test(m.infoLink.url)) {
+        throw new Error(`extensions/${id}/extension.json: infoLink.url must be an http(s) URL`);
+      }
+    }
     meta[id] = m;
   }
 
@@ -171,6 +186,10 @@ async function build() {
       // of truth (no app-side hardcoded MOVE_CAT_ICON / CATEGORY_COLORS maps).
       ...(meta[id].moveCategories?.length ? { moveCategories: meta[id].moveCategories } : {}),
       ...(meta[id].oracleCategories?.length ? { oracleCategories: meta[id].oracleCategories } : {}),
+      // Optional pointer to this extension's reference wiki/documentation.
+      // Consumed by the Hamburger → Info submenu (HamburgerMenu.svelte): one
+      // link per enabled extension carrying an infoLink.
+      ...(meta[id].infoLink ? { infoLink: meta[id].infoLink } : {}),
       root,
       provides: Object.fromEntries(
         Object.entries(provides)
