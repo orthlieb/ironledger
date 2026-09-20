@@ -49,14 +49,16 @@ export async function selectCharacterByIndex(page: Page, index: number): Promise
 /**
  * Create a character via the header combobox → "+ New character…" → name
  * dialog (blank name → "New Character"). Always creates a new one.
+ * The dialog now gates Create on a name AND ≥1 non-zero stat, so we click
+ * the stat allocator's Roll button before Create.
  */
 export async function createCharacter(page: Page): Promise<void> {
 	const before = await characterCount(page);
 	await page.locator(`${CHAR_AREA} .ca-hdr-combobox`).click();
 	await page.locator('.cb-item--action', { hasText: /New character/i }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-	// Name-first dialog: the Create button is disabled until a name is entered.
 	await page.locator('.confirm-modal .co-input').fill('E2E Character');
+	await page.locator('.confirm-modal .sa-field .dice-btn').click();
 	await page.locator('.confirm-modal .btn-primary').click();
 	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 	await expect.poll(() => characterCount(page), { timeout: 8_000 }).toBe(before + 1);

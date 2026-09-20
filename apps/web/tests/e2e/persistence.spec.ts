@@ -147,6 +147,8 @@ async function createChar(page: Page) {
 	await page.locator('.cb-item--action', { hasText: /New character/i }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
 	await page.locator('.confirm-modal .co-input').first().fill('Persist Char');
+	// New Character dialog gates Create on ≥1 non-zero stat — roll before commit.
+	await page.locator('.confirm-modal .sa-field .dice-btn').click();
 	await page.locator('.confirm-modal .btn-primary').click();
 	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
 }
