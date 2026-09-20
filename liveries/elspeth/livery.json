@@ -1,0 +1,57 @@
+{
+  "id": "elspeth",
+  "label": "Elspeth",
+  "default": false,
+  "description": "Metamorphous storybook-gothic titles over a witch's-brew chrome — aubergine coven ground with poison-green candle glow, bone dice on cauldron-dark. Halloween-adjacent, wearable year-round.",
+  "preview": "☾",
+  "font": {
+    "stack": "'Metamorphous', 'Palatino Linotype', Georgia, serif",
+    "googleFamily": "Metamorphous:wght@400",
+    "weight": 400,
+    "variant": "normal",
+    "transform": "none",
+    "scale": 1
+  },
+  "transliterate": null,
+  "dice": {
+    "action": "#8ac651",
+    "challenge": "#3e2f4f",
+    "tens": "#100a15",
+    "ones": "#e6ebd7",
+    "texture": "skulls"
+  },
+  "palette": {
+    "dark": {
+      "bg-page": "#0f0913",
+      "bg-card": "#1a1325",
+      "bg-inset": "#0a050d",
+      "bg-control": "#221a30",
+      "bg-hover": "#2c2340",
+      "border": "#3a2c4a",
+      "border-mid": "#5c4977",
+      "text": "#e6dcee",
+      "text-muted": "#a798b6",
+      "text-dimmer": "#6f627e",
+      "text-accent": "#8ac651",
+      "focus-ring": "#8ac651",
+      "accent-glow": "#8ac65122",
+      "accent-dim": "#8ac65112"
+    },
+    "light": {
+      "bg-page": "#f3eef8",
+      "bg-card": "#e6dcf0",
+      "bg-inset": "#faf6fc",
+      "bg-control": "#ede4f4",
+      "bg-hover": "#dbcde8",
+      "border": "#c1abd4",
+      "border-mid": "#8a6ba6",
+      "text": "#1a1120",
+      "text-muted": "#4a3855",
+      "text-dimmer": "#7c6a8a",
+      "text-accent": "#3f5d29",
+      "focus-ring": "#3f5d29",
+      "accent-glow": "#3f5d2920",
+      "accent-dim": "#3f5d2912"
+    }
+  }
+}
