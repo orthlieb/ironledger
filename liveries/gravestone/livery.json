@@ -1,0 +1,57 @@
+{
+  "id": "gravestone",
+  "label": "Gravestone",
+  "default": false,
+  "description": "An epitaph in weathered granite — Metamorphous inscriptions carved into cold stone, lichen-green accents on a graveyard-at-dusk palette. Quiet, elegiac, memento mori.",
+  "preview": "🪦",
+  "font": {
+    "stack": "'Metamorphous', 'Cinzel', Georgia, serif",
+    "googleFamily": "Metamorphous",
+    "weight": 400,
+    "variant": "normal",
+    "transform": "none",
+    "scale": 0.96
+  },
+  "transliterate": null,
+  "dice": {
+    "action": "#4a5c48",
+    "challenge": "#1f2622",
+    "tens": "#2c3a30",
+    "ones": "#d9d0be",
+    "texture": "marble"
+  },
+  "palette": {
+    "dark": {
+      "bg-page": "#111311",
+      "bg-card": "#1a1d1a",
+      "bg-inset": "#141614",
+      "bg-control": "#20241f",
+      "bg-hover": "#2a2f28",
+      "border": "#3a4038",
+      "border-mid": "#525a50",
+      "text": "#d9d0be",
+      "text-muted": "#9a9484",
+      "text-dimmer": "#6a6558",
+      "text-accent": "#94a682",
+      "focus-ring": "#94a682",
+      "accent-glow": "#94a68222",
+      "accent-dim": "#94a68212"
+    },
+    "light": {
+      "bg-page": "#e4e0d4",
+      "bg-card": "#d8d3c4",
+      "bg-inset": "#ece8dc",
+      "bg-control": "#dcd7c8",
+      "bg-hover": "#cec8b8",
+      "border": "#b0a998",
+      "border-mid": "#8f8878",
+      "text": "#1c1e1a",
+      "text-muted": "#4a4d42",
+      "text-dimmer": "#78766a",
+      "text-accent": "#4d6842",
+      "focus-ring": "#4d6842",
+      "accent-glow": "#4d684222",
+      "accent-dim": "#4d684212"
+    }
+  }
+}
