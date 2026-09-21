@@ -186,7 +186,6 @@ function buildManifest(liveries) {
       default: l.default,
       description: l.description,
       preview: l.preview ?? null,
-      transliterate: l.transliterate ?? null,
       googleFamily: l.font.googleFamily ?? null,
       dice: l.dice ?? null,
       // Compact per-livery swatch pair (bg-page + text-accent, per theme) so

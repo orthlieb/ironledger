@@ -49,10 +49,6 @@ export const TOKEN_KEYS = [
   'accent-dim',
 ];
 
-// Named text transformers `headingText()` can apply. A livery may reference
-// one by id, or `null` for the identity (no transliteration).
-export const KNOWN_TRANSLITERATORS = new Set(['elder-futhark']);
-
 // Valid 3D-dice texture keys. Mirrors DICE_TEXTURE_OPTIONS in
 // apps/web/src/lib/dice.ts (the dice-box library's own texture names) — keep
 // the two in sync. A livery `dice` block is optional; when present its texture
@@ -123,11 +119,11 @@ export function validateLivery(lv, slug) {
     if (typeof f.scale !== 'number' || !(f.scale > 0)) at('font.scale must be a positive number');
   }
 
-  // ── transliterate ───────────────────────────────────────────────────────────
-  if (lv.transliterate != null && !KNOWN_TRANSLITERATORS.has(lv.transliterate)) {
+  // ── transliterate (retired — reject leftover fields so the schema stays lean) ─
+  if ('transliterate' in lv) {
     at(
-      `transliterate "${lv.transliterate}" is not a known transformer ` +
-        `(${[...KNOWN_TRANSLITERATORS].join(', ')}) — add it to headingText() first`,
+      'transliterate is no longer supported (Elder Futhark livery retired) — ' +
+        'remove the field from livery.json',
     );
   }
 

@@ -10,15 +10,13 @@
  *
  * The generated CSS owns the font stack (`--font-display`) and chrome, so
  * switching liveries is just flipping the `data-font` attribute the CSS keys
- * on. This store only tracks the active id + applies the transliteration a
- * livery may request (e.g. Elder Futhark runes).
+ * on. This store only tracks the active id and exposes helpers keyed off it.
  *
  * Usage in any component:
  *   import { headingText } from '$lib/fontStore.svelte.js';
  *   // in template: {headingText(character.name)}
  */
 
-import { toFuthark } from './futhark.js';
 import manifest from './liveries.manifest.json';
 
 /** A livery id (the folder slug). Kept as a string since liveries are data. */
@@ -50,7 +48,6 @@ export interface LiveryMeta {
 	default: boolean;
 	description: string;
 	preview: string | null;
-	transliterate: string | null;
 	googleFamily: string | null;
 	dice: LiveryDice | null;
 	previewColors: LiveryPreviewColors;
@@ -65,12 +62,6 @@ export const DEFAULT_LIVERY: LiveryId = manifest.default;
 const IDS = new Set(LIVERIES.map((l) => l.id));
 
 export const FONT_DISPLAY_KEY = 'ironledger:font:display';
-
-// Named text transformers a livery may request via its `transliterate` field.
-// A livery with `transliterate: null` (the common case) uses the identity.
-const TRANSLITERATORS: Record<string, (t: string) => string> = {
-	'elder-futhark': toFuthark,
-};
 
 // ── Reactive state ────────────────────────────────────────────────────────────
 
@@ -157,15 +148,13 @@ export function setFontDisplay(f: LiveryId): void {
 // ── Text helper ───────────────────────────────────────────────────────────────
 
 /**
- * Return `text` unchanged, or transliterated when the active livery requests a
- * transformer (e.g. Elder Futhark runes in the Futhark livery).
- *
- * Because this function reads `_font` (a `$state`), calling it inside a
- * Svelte template or a `$derived` expression creates a reactive dependency —
- * the component re-renders automatically when the livery changes.
+ * Return `text` unchanged. Kept as a helper for two reasons: (1) call sites
+ * remain uniform whether or not a future livery ever wants to transform its
+ * display text again, and (2) reading `_font` (a `$state`) inside a Svelte
+ * template creates a reactive dependency, so components re-render when the
+ * livery changes even though the string is unmodified today.
  */
 export function headingText(text: string): string {
-	const lv = LIVERIES.find((l) => l.id === _font);
-	const fn = lv?.transliterate ? TRANSLITERATORS[lv.transliterate] : null;
-	return fn ? fn(text) : text;
+	void _font;
+	return text;
 }

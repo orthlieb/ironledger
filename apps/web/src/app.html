@@ -44,13 +44,13 @@
 		<link rel="preconnect" href="https://fonts.googleapis.com" />
 		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />
 		<link
-			href="https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Cinzel:wght@400;600;700;900&family=Metamorphous&family=Nosifer&family=Orbitron:wght@400;500;700;900&family=Roboto:ital,wght@0,400;0,500;0,600;1,400&family=Simonetta:ital,wght@0,400;0,900;1,400;1,900&display=swap"
+			href="https://fonts.googleapis.com/css2?family=Berkshire+Swash&family=Cinzel:wght@400;600;700;900&family=Metamorphous&family=Nosifer&family=Orbitron:wght@400;500;700;900&family=Roboto:ital,wght@0,400;0,500;0,600;1,400&family=Simonetta:ital,wght@0,400;0,900;1,400;1,900&family=Skranji:wght@400;700&display=swap"
 			rel="stylesheet"
 		/>
 		<!--
 			Apply saved theme + livery before first paint to prevent flash.
 			Theme: "auto" (or missing key) → no attribute → CSS media query decides.
-			Livery: set data-font from the saved id (default 'gravestone' when unset).
+			Livery: set data-font from the saved id (default 'beowulf' when unset).
 		-->
 		<script>
 			(function () {
@@ -64,7 +64,7 @@
 				// stack map to keep in sync, and adding a livery needs no change
 				// to this script. An unknown saved id just falls through to the
 				// base theme until +layout normalizes it on mount.
-				var f = localStorage.getItem('ironledger:font:display') || 'gravestone';
+				var f = localStorage.getItem('ironledger:font:display') || 'beowulf';
 				document.documentElement.setAttribute('data-font', f);
 			})();
 		</script>

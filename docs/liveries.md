@@ -1,11 +1,12 @@
 # Liveries — drop-in theme packs
 
 A **livery** pairs a display (heading) font with an optional chrome palette. It
-is the "skin" the user picks in **Settings → Appearance → Livery**. The three
-built-in looks — **Gravestone** (Metamorphous/granite, default), **Grimoire**
-(Simonetta/amber), and **Futhark** (runes/verdigris) — plus the **Codex**
-sample are all defined as data. Adding a new one is a drop-in: create a
-folder, run one command.
+is the "skin" the user picks in **Settings → Appearance → Livery**. The
+built-in looks — **Beowulf** (Skranji/verdigris, default), **Grimoire**
+(Simonetta/amber), **Gravestone** (Metamorphous/granite), **Codex**
+(Orbitron/void-navy), **Vlad** (Nosifer/oxblood), **Gourd** (Berkshire
+Swash/pumpkin), and **Elspeth** (witch violet + moss) — are all defined
+as data. Adding a new one is a drop-in: create a folder, run one command.
 
 Liveries are orthogonal to the light/dark **theme** (`data-theme`) and to
 gameplay colours (stats, resources, danger/success). A livery only restyles the
@@ -16,10 +17,10 @@ and the heading font. Every livery works in both light and dark theme.
 
 ```
 liveries/
-  gravestone/livery.json  ← Gravestone (default)
-  simonetta/livery.json   ← Grimoire
-  futhark/livery.json     ← Futhark
-  codex/livery.json       ← sample — copy this as your template
+  beowulf/livery.json     ← Beowulf (default)
+  grimoire/livery.json    ← Grimoire
+  gravestone/livery.json  ← Gravestone
+  codex/livery.json       ← Codex sample — copy this as your template
 ```
 
 One folder per livery; the folder name is the livery **id** and must match the
@@ -33,7 +34,7 @@ One folder per livery; the folder name is the livery **id** and must match the
   "label": "Codex", // shown in the Settings dropdown
   "default": false, // exactly one livery across the whole set is true
   "description": "…", // one sentence; shown in docs / tooling
-  "preview": null, // optional sample string shown in the dropdown, e.g. "ᚠᚢᚦᚨᚱᚲ"
+  "preview": null, // optional sample string shown in the dropdown, e.g. an emoji
 
   "font": {
     "stack": "'Orbitron', Eurostile, system-ui, sans-serif", // full CSS font-family
@@ -43,8 +44,6 @@ One folder per livery; the folder name is the livery **id** and must match the
     "transform": "uppercase", // --font-display-transform: none|uppercase|lowercase|capitalize
     "scale": 0.96, // --font-display-scale (heading size multiplier)
   },
-
-  "transliterate": null, // null, or a known transformer id (currently only "elder-futhark")
 
   "dice": {
     // optional; null/omitted → factory blue/red d6+d10, black/white d100, no texture
@@ -139,10 +138,10 @@ npm run gen:liveries        # scripts/gen-liveries-manifest.mjs
 ```
 
 - **`apps/web/src/lib/liveries.manifest.json`** — runtime metadata (id, label,
-  default, description, preview, transliterate, googleFamily, dice). Read by
-  `fontStore.svelte.ts` (active-livery state + `headingText()` transliteration +
-  `activeLiveryDice()`), `SettingsDialog.svelte` (the dropdown), and `dice.ts`
-  (per-livery dice colours/texture).
+  default, description, preview, googleFamily, dice, previewColors, optional
+  brandSvg). Read by `fontStore.svelte.ts` (active-livery state +
+  `activeLiveryDice()` + `activeLiveryBrand()`), `SettingsDialog.svelte` (the
+  dropdown), and `dice.ts` (per-livery dice colours/texture).
 - **`apps/web/src/lib/liveries.generated.css`** — the per-livery
   `[data-font='<id>']` typography block (including `--font-display`, so the
   render-blocking stylesheet owns the font stack — no FOUC, no JS to set it)
@@ -178,11 +177,10 @@ manifest by hand.
 
 ## Web fonts (only if you need one)
 
-The built-in liveries load their web fonts (Metamorphous, Simonetta, Orbitron) from the
-Google Fonts `<link>` in `apps/web/src/app.html`. **Codex** demonstrates that
-path — its Orbitron face is declared via `googleFamily` and added to that
-`<link>`. **Futhark** is the other kind: a system-font stack (runic fonts) that
-needs no web font at all — the easiest kind of livery.
+The built-in liveries load their web fonts (Skranji, Metamorphous, Simonetta,
+Orbitron, Nosifer, Berkshire Swash) from the Google Fonts `<link>` in
+`apps/web/src/app.html`. **Codex** demonstrates the path — its Orbitron face
+is declared via `googleFamily` and added to that `<link>`.
 
 If your livery introduces a **new** web font, two things are needed:
 
@@ -195,11 +193,3 @@ If your livery introduces a **new** web font, two things are needed:
 
 Only the Google Fonts host is allowed by the app's CSP; a self-hosted font
 would need a `@font-face` (add it to `app.css`) and no `googleFamily`.
-
-## Transliteration
-
-A livery can transform heading text through `headingText()` by naming a
-transformer in `transliterate`. Today the only one is `"elder-futhark"` (used
-by **Futhark**, which maps Latin names to runes). To add another, register it
-in the `TRANSLITERATORS` map in `fontStore.svelte.ts` first — the linter rejects
-an unknown transformer id.
