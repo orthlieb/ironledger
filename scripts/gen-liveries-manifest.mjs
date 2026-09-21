@@ -110,10 +110,16 @@ async function readBrandSvg(id) {
   return raw;
 }
 
-async function buildManifest(liveries) {
-  const brandById = Object.fromEntries(
-    await Promise.all(liveries.map(async (l) => [l.id, await readBrandSvg(l.id)])),
+async function attachBrandSvgs(liveries) {
+  await Promise.all(
+    liveries.map(async (l) => {
+      l.brandSvg = await readBrandSvg(l.id);
+    }),
   );
+}
+
+function buildManifest(liveries) {
+  const brandById = Object.fromEntries(liveries.map((l) => [l.id, l.brandSvg ?? null]));
   const obj = {
     _generated: 'scripts/gen-liveries-manifest.mjs — edit liveries/<id>/livery.json, not this file',
     default: liveries.find((l) => l.default).id,
@@ -213,8 +219,11 @@ function swatch(name, hex) {
 
 // One theme (dark or light) — demo strip, dice row, palette grid. Colours are
 // inlined as static hex so the file renders identically without CSS-vars or
-// the app running.
-function themeBlock(mode, pal, dice, fontFamily, label) {
+// the app running. `brandSvg` is optional — when passed, the demo strip
+// renders the livery's brand icon to the left of the "Iron Ledger" wordmark
+// (mirrors the actual nav bar); falls back to the shared axe on liveries
+// that ship no brand.svg so the strip always shows the icon slot.
+function themeBlock(mode, pal, dice, fontFamily, brandSvg, label) {
   const rows = TOKEN_KEYS.map((k) => swatch(k, pal[k])).join('\n');
   const rules = [
     `background: ${pal['bg-page']}`,
@@ -236,13 +245,16 @@ function themeBlock(mode, pal, dice, fontFamily, label) {
       `\t\t\t</div>\n`
     : '';
   const fontRule = fontFamily ? `font-family: ${esc(fontFamily)}, serif;` : '';
+  const iconSpan = brandSvg
+    ? `\t\t\t\t<span class="demo-icon" style="color: ${pal['text-accent']};">${brandSvg.replace(/\n\s*/g, '')}</span>\n`
+    : '';
   return (
     `\t\t<section class="theme ${mode}" style="${rules}">\n` +
     `\t\t\t<h2 style="color: ${pal['text-accent']}; ${fontRule}">${esc(label)}</h2>\n` +
     `\t\t\t<div class="demo" style="background: ${pal['bg-card']}; border: 1px solid ${pal.border};">\n` +
-    `\t\t\t\t<span class="demo-title" style="color: ${pal['text-accent']}; ${fontRule}">Sample</span>\n` +
+    iconSpan +
+    `\t\t\t\t<span class="demo-title" style="color: ${pal['text-accent']}; ${fontRule}">Iron Ledger</span>\n` +
     `\t\t\t\t<span class="pill" style="background: ${pal['accent-glow']}; color: ${pal['text-accent']}; border: 1px solid ${pal['text-accent']};">Journey</span>\n` +
-    `\t\t\t\t<span style="color: ${pal['text-accent']};">— accent on ground</span>\n` +
     `\t\t\t\t<span style="color: ${pal['text-muted']}; margin-left: auto; font-size: 0.75rem;">muted</span>\n` +
     `\t\t\t</div>\n` +
     diceRow +
@@ -264,8 +276,8 @@ function previewHtml(livery) {
       `\t\t<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />\n` +
       `\t\t<link href="https://fonts.googleapis.com/css2?family=${familyForLink}&family=Roboto:wght@400;600&display=swap" rel="stylesheet" />\n`
     : `\t\t<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;600&display=swap" rel="stylesheet" />\n`;
-  const dark = themeBlock('dark', pal.dark, livery.dice, familyForCss, 'Dark');
-  const light = themeBlock('light', pal.light, livery.dice, familyForCss, 'Light');
+  const dark = themeBlock('dark', pal.dark, livery.dice, familyForCss, livery.brandSvg, 'Dark');
+  const light = themeBlock('light', pal.light, livery.dice, familyForCss, livery.brandSvg, 'Light');
   const note = livery.palette
     ? ''
     : `\t\t<p class="note">This livery has <code>palette: null</code> — it inherits the base forge-amber chrome, shown here as its dark + light halves.</p>\n`;
@@ -287,7 +299,9 @@ function previewHtml(livery) {
     `\t\t\t.note code { background: #333; padding: 1px 4px; border-radius: 3px; }\n` +
     `\t\t\t.theme { border-radius: 12px; padding: 20px; box-shadow: 0 4px 18px rgba(0,0,0,0.35); }\n` +
     `\t\t\t.theme h2 { font-size: 1.2rem; margin: 0 0 12px; letter-spacing: 0.02em; font-weight: 400; }\n` +
-    `\t\t\t.demo { border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; gap: 12px; font-size: 0.9rem; }\n` +
+    `\t\t\t.demo { border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }\n` +
+    `\t\t\t.demo-icon { display: inline-flex; width: 22px; height: 22px; flex: 0 0 22px; }\n` +
+    `\t\t\t.demo-icon svg { width: 100%; height: 100%; fill: currentColor; }\n` +
     `\t\t\t.demo-title { font-size: 1.4rem; font-weight: 400; letter-spacing: 0.02em; }\n` +
     `\t\t\t.pill { display: inline-flex; padding: 3px 10px; border-radius: 999px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }\n` +
     `\t\t\t.dice { display: flex; gap: 8px; margin-top: 12px; }\n` +
@@ -340,7 +354,8 @@ async function readIf(file) {
 }
 
 const liveries = await loadLiveries();
-const manifest = await buildManifest(liveries);
+await attachBrandSvgs(liveries);
+const manifest = buildManifest(liveries);
 const css = buildCss(liveries);
 // Per-livery preview.html — each livery gets a design-review swatch page
 // sitting next to its own livery.json.
