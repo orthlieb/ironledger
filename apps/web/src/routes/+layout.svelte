@@ -32,7 +32,7 @@
 	import { goto } from '$app/navigation';
 	import {
 		headingText,
-		getFontDisplay,
+		savedFont,
 		setFontDisplay,
 		activeLiveryBrand,
 	} from '$lib/fontStore.svelte.js';
@@ -118,11 +118,14 @@
 	import { onMount } from 'svelte';
 	import { cycleViewMode, viewMode } from '$lib/viewModeStore.svelte.js';
 	onMount(() => {
-		// Normalize the livery attribute: the pre-paint script in app.html sets
-		// data-font best-effort from raw localStorage; re-applying the validated
-		// id corrects a stale/corrupted value (unknown id → default). A no-op
-		// for the normal case since the attribute already matches.
-		setFontDisplay(getFontDisplay());
+		// Adopt the persisted livery: fontStore's module-level `_font` starts at
+		// DEFAULT_LIVERY on both server and client (so SSR + first client paint
+		// agree), and this call reads localStorage via savedFont() to swap in the
+		// real value. When the user's saved livery is not the default the
+		// assignment is a real value change and reactivity fires — the nav mark
+		// re-renders with the livery's brand.svg and the favicon updates. Unknown
+		// or corrupted ids fall back to default inside setFontDisplay().
+		setFontDisplay(savedFont());
 		const openMove = (e: Event) => {
 			const d = (e as CustomEvent<{ id: string; harm?: number }>).detail;
 			const id = d?.id ?? '';
