@@ -105,6 +105,10 @@ interface ExtensionManifestEntry {
    *  category icon from these (see extensionCategories.svelte.ts). */
   moveCategories?: CategoryMeta[];
   oracleCategories?: CategoryMeta[];
+  /** Optional pointer to this extension's reference wiki / documentation.
+   *  Carried through to the public payload — the Hamburger → Info submenu
+   *  renders one item per enabled extension that declares this. */
+  infoLink?: { label: string; url: string };
   /** Repo-relative content root (e.g. `apps/api/data` or `extensions/yrt`). */
   root: string;
   /** Content files this extension provides, relative to `root`. */
@@ -153,6 +157,7 @@ export function toPublicExtension(e: ExtensionManifestEntry): PublicExtension {
       : {}),
     ...(e.moveCategories?.length ? { moveCategories: e.moveCategories } : {}),
     ...(e.oracleCategories?.length ? { oracleCategories: e.oracleCategories } : {}),
+    ...(e.infoLink ? { infoLink: e.infoLink } : {}),
   };
 }
 
