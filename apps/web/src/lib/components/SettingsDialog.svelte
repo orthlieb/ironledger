@@ -631,13 +631,17 @@
 	}
 	:global(.sd-livery-preview-icon) {
 		display: inline-flex;
-		width: 20px;
 		height: 20px;
 		flex-shrink: 0;
+		align-items: center;
 	}
+	/* Height parity across the axe fallback (square) and per-livery brand
+	   marks (tightened viewBox so aspect varies). Height pins to 20 px;
+	   width auto so no letterboxing. */
 	:global(.sd-livery-preview-icon svg) {
-		width: 100%;
-		height: 100%;
+		height: 20px;
+		width: auto;
+		max-width: 30px;
 		fill: currentColor;
 	}
 	:global(.sd-livery-preview-text) {
