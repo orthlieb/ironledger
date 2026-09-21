@@ -50,7 +50,7 @@
 		<!--
 			Apply saved theme + livery before first paint to prevent flash.
 			Theme: "auto" (or missing key) → no attribute → CSS media query decides.
-			Livery: set data-font from the saved id (default 'cinzel' when unset).
+			Livery: set data-font from the saved id (default 'gravestone' when unset).
 		-->
 		<script>
 			(function () {
@@ -64,7 +64,7 @@
 				// stack map to keep in sync, and adding a livery needs no change
 				// to this script. An unknown saved id just falls through to the
 				// base theme until +layout normalizes it on mount.
-				var f = localStorage.getItem('ironledger:font:display') || 'cinzel';
+				var f = localStorage.getItem('ironledger:font:display') || 'gravestone';
 				document.documentElement.setAttribute('data-font', f);
 			})();
 		</script>

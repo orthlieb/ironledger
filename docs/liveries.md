@@ -2,9 +2,10 @@
 
 A **livery** pairs a display (heading) font with an optional chrome palette. It
 is the "skin" the user picks in **Settings → Appearance → Livery**. The three
-built-in looks — **Gravestone** (Cinzel/steel), **Grimoire** (Simonetta/amber),
-and **Futhark** (runes/verdigris) — plus the **Codex** sample are all defined
-as data. Adding a new one is a drop-in: create a folder, run one command.
+built-in looks — **Gravestone** (Metamorphous/granite, default), **Grimoire**
+(Simonetta/amber), and **Futhark** (runes/verdigris) — plus the **Codex**
+sample are all defined as data. Adding a new one is a drop-in: create a
+folder, run one command.
 
 Liveries are orthogonal to the light/dark **theme** (`data-theme`) and to
 gameplay colours (stats, resources, danger/success). A livery only restyles the
@@ -15,7 +16,7 @@ and the heading font. Every livery works in both light and dark theme.
 
 ```
 liveries/
-  cinzel/livery.json      ← Gravestone (default)
+  gravestone/livery.json  ← Gravestone (default)
   simonetta/livery.json   ← Grimoire
   futhark/livery.json     ← Futhark
   codex/livery.json       ← sample — copy this as your template
@@ -177,7 +178,7 @@ manifest by hand.
 
 ## Web fonts (only if you need one)
 
-The built-in liveries load their web fonts (Cinzel, Simonetta, Orbitron) from the
+The built-in liveries load their web fonts (Metamorphous, Simonetta, Orbitron) from the
 Google Fonts `<link>` in `apps/web/src/app.html`. **Codex** demonstrates that
 path — its Orbitron face is declared via `googleFamily` and added to that
 `<link>`. **Futhark** is the other kind: a system-font stack (runic fonts) that

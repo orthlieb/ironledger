@@ -1,7 +1,7 @@
 {
   "id": "gravestone",
   "label": "Gravestone",
-  "default": false,
+  "default": true,
   "description": "An epitaph in weathered granite — Metamorphous inscriptions carved into cold stone, lichen-green accents on a graveyard-at-dusk palette. Quiet, elegiac, memento mori.",
   "preview": "🪦",
   "font": {

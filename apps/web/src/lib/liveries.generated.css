@@ -7,63 +7,63 @@
    setFontDisplay() in fontStore. A livery with palette:null emits only the
    typography block and inherits the base forge-amber chrome from app.css.
    ============================================================================= */
-/* Cinzel (cinzel) — default */
-[data-font='cinzel'] {
-	--font-display: 'Cinzel', 'Palatino Linotype', Georgia, serif;
+/* Gravestone (gravestone) — default */
+[data-font='gravestone'] {
+	--font-display: 'Metamorphous', 'Cinzel', Georgia, serif;
 	--font-display-weight: 400;
 	--font-display-variant: normal;
-	--font-display-transform: uppercase;
-	--font-display-scale: 1;
+	--font-display-transform: none;
+	--font-display-scale: 0.96;
 }
-html[data-font='cinzel']:not([data-theme='light']) {
-	--bg-page: #0e0f11;
-	--bg-card: #161a1d;
-	--bg-inset: #101214;
-	--bg-control: #1c2124;
-	--bg-hover: #242a2f;
-	--border: #2f363c;
-	--border-mid: #4a545c;
-	--text: #dee2e6;
-	--text-muted: #94a0a9;
-	--text-dimmer: #6a747c;
-	--text-accent: #c0c8d0;
-	--focus-ring: #c0c8d0;
-	--accent-glow: #c0c8d020;
-	--accent-dim: #c0c8d012;
+html[data-font='gravestone']:not([data-theme='light']) {
+	--bg-page: #111311;
+	--bg-card: #1a1d1a;
+	--bg-inset: #141614;
+	--bg-control: #20241f;
+	--bg-hover: #2a2f28;
+	--border: #3a4038;
+	--border-mid: #525a50;
+	--text: #d9d0be;
+	--text-muted: #9a9484;
+	--text-dimmer: #6a6558;
+	--text-accent: #94a682;
+	--focus-ring: #94a682;
+	--accent-glow: #94a68222;
+	--accent-dim: #94a68212;
 }
 @media (prefers-color-scheme: light) {
-	html[data-font='cinzel']:not([data-theme='dark']) {
-		--bg-page: #eceff2;
-		--bg-card: #e2e6ea;
-		--bg-inset: #f2f5f8;
-		--bg-control: #e6ebef;
-		--bg-hover: #dae0e6;
-		--border: #c1c8cf;
-		--border-mid: #a5adb5;
-		--text: #1a1d20;
-		--text-muted: #4f565d;
-		--text-dimmer: #828a92;
-		--text-accent: #3a4148;
-		--focus-ring: #3a4148;
-		--accent-glow: #3a414820;
-		--accent-dim: #3a414812;
+	html[data-font='gravestone']:not([data-theme='dark']) {
+		--bg-page: #e4e0d4;
+		--bg-card: #d8d3c4;
+		--bg-inset: #ece8dc;
+		--bg-control: #dcd7c8;
+		--bg-hover: #cec8b8;
+		--border: #b0a998;
+		--border-mid: #8f8878;
+		--text: #1c1e1a;
+		--text-muted: #4a4d42;
+		--text-dimmer: #78766a;
+		--text-accent: #4d6842;
+		--focus-ring: #4d6842;
+		--accent-glow: #4d684222;
+		--accent-dim: #4d684212;
 	}
 }
-html[data-font='cinzel'][data-theme='light'] {
-	--bg-page: #eceff2;
-	--bg-card: #e2e6ea;
-	--bg-inset: #f2f5f8;
-	--bg-control: #e6ebef;
-	--bg-hover: #dae0e6;
-	--border: #c1c8cf;
-	--border-mid: #a5adb5;
-	--text: #1a1d20;
-	--text-muted: #4f565d;
-	--text-dimmer: #828a92;
-	--text-accent: #3a4148;
-	--focus-ring: #3a4148;
-	--accent-glow: #3a414820;
-	--accent-dim: #3a414812;
+html[data-font='gravestone'][data-theme='light'] {
+	--bg-page: #e4e0d4;
+	--bg-card: #d8d3c4;
+	--bg-inset: #ece8dc;
+	--bg-control: #dcd7c8;
+	--bg-hover: #cec8b8;
+	--border: #b0a998;
+	--border-mid: #8f8878;
+	--text: #1c1e1a;
+	--text-muted: #4a4d42;
+	--text-dimmer: #78766a;
+	--text-accent: #4d6842;
+	--focus-ring: #4d6842;
+	--accent-glow: #4d684222;
+	--accent-dim: #4d684212;
 }
 
 /* Codex (codex) */
@@ -300,65 +300,6 @@ html[data-font='gourd'][data-theme='light'] {
 	--focus-ring: #b04a10;
 	--accent-glow: #b04a1022;
 	--accent-dim: #b04a1012;
-}
-
-/* Gravestone (gravestone) */
-[data-font='gravestone'] {
-	--font-display: 'Metamorphous', 'Cinzel', Georgia, serif;
-	--font-display-weight: 400;
-	--font-display-variant: normal;
-	--font-display-transform: none;
-	--font-display-scale: 0.96;
-}
-html[data-font='gravestone']:not([data-theme='light']) {
-	--bg-page: #111311;
-	--bg-card: #1a1d1a;
-	--bg-inset: #141614;
-	--bg-control: #20241f;
-	--bg-hover: #2a2f28;
-	--border: #3a4038;
-	--border-mid: #525a50;
-	--text: #d9d0be;
-	--text-muted: #9a9484;
-	--text-dimmer: #6a6558;
-	--text-accent: #94a682;
-	--focus-ring: #94a682;
-	--accent-glow: #94a68222;
-	--accent-dim: #94a68212;
-}
-@media (prefers-color-scheme: light) {
-	html[data-font='gravestone']:not([data-theme='dark']) {
-		--bg-page: #e4e0d4;
-		--bg-card: #d8d3c4;
-		--bg-inset: #ece8dc;
-		--bg-control: #dcd7c8;
-		--bg-hover: #cec8b8;
-		--border: #b0a998;
-		--border-mid: #8f8878;
-		--text: #1c1e1a;
-		--text-muted: #4a4d42;
-		--text-dimmer: #78766a;
-		--text-accent: #4d6842;
-		--focus-ring: #4d6842;
-		--accent-glow: #4d684222;
-		--accent-dim: #4d684212;
-	}
-}
-html[data-font='gravestone'][data-theme='light'] {
-	--bg-page: #e4e0d4;
-	--bg-card: #d8d3c4;
-	--bg-inset: #ece8dc;
-	--bg-control: #dcd7c8;
-	--bg-hover: #cec8b8;
-	--border: #b0a998;
-	--border-mid: #8f8878;
-	--text: #1c1e1a;
-	--text-muted: #4a4d42;
-	--text-dimmer: #78766a;
-	--text-accent: #4d6842;
-	--focus-ring: #4d6842;
-	--accent-glow: #4d684222;
-	--accent-dim: #4d684212;
 }
 
 /* Grimoire (simonetta) */
