@@ -388,9 +388,14 @@
 		color: inherit;
 	}
 
+	/* Height parity across the axe (square viewBox) and per-livery brand
+	   marks (tightened to hug the glyph, so aspect ratios vary). Height
+	   pins to 16 px; width auto so each mark sits at the same visual
+	   height as the axe without letterboxing the shorter ones. */
 	.nav-brand-icon :global(svg) {
-		width: 16px;
 		height: 16px;
+		width: auto;
+		max-width: 24px;
 		fill: currentColor;
 	}
 
