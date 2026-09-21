@@ -7,7 +7,7 @@
    setFontDisplay() in fontStore. A livery with palette:null emits only the
    typography block and inherits the base forge-amber chrome from app.css.
    ============================================================================= */
-/* Gravestone (cinzel) — default */
+/* Cinzel (cinzel) — default */
 [data-font='cinzel'] {
 	--font-display: 'Cinzel', 'Palatino Linotype', Georgia, serif;
 	--font-display-weight: 400;

@@ -213,6 +213,22 @@ export async function loadLiveries() {
     );
   }
 
+  // Labels are what the Settings picker shows — two liveries sharing a
+  // label are indistinguishable in the UI. This has bitten us: cinzel
+  // shipped labelled "Gravestone" from day one, but the collision only
+  // surfaced when a real gravestone livery landed months later.
+  const byLabel = new Map();
+  for (const l of liveries) {
+    const arr = byLabel.get(l.label) ?? [];
+    arr.push(l.id);
+    byLabel.set(l.label, arr);
+  }
+  for (const [label, ids] of byLabel) {
+    if (ids.length > 1) {
+      errors.push(`label "${label}" is used by multiple liveries: ${ids.join(', ')}`);
+    }
+  }
+
   if (errors.length) {
     throw new Error(`Invalid livery definitions:\n  - ${errors.join('\n  - ')}`);
   }
