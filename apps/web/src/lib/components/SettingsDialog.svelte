@@ -43,6 +43,7 @@
 		savedFont,
 		setFontDisplay,
 	} from '$lib/fontStore.svelte.js';
+	import swordSvg from '$icons/sharp-axe.svg?raw';
 	import {
 		type AiProvider,
 		AI_PROVIDERS,
@@ -54,7 +55,7 @@
 		getSetup,
 		setSetup,
 	} from '$lib/aiSettings.svelte.js';
-	import { Dialog, Tabs, ToggleGroup, RadioGroup } from 'bits-ui';
+	import { Dialog, Tabs, ToggleGroup } from 'bits-ui';
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import AiConfigDialog from '$lib/components/AiConfigDialog.svelte';
@@ -72,6 +73,14 @@
 		fontDisplay = f;
 		setFontDisplay(f);
 	}
+
+	// Livery-picker preview: the dropdown option list + the currently-selected
+	// livery record. The preview panel below the picker reads bg-page +
+	// text-accent from the livery's `previewColors` for each theme, and the
+	// brand SVG for the nav mark (falling back to the default sharp-axe when
+	// the livery doesn't ship one).
+	const liveryOptions = $derived(LIVERIES.map((l) => ({ value: l.id, label: l.label })));
+	const activeLivery = $derived(LIVERIES.find((l) => l.id === fontDisplay) ?? LIVERIES[0]);
 
 	// ---------------------------------------------------------------------------
 	// Theme
@@ -280,38 +289,43 @@
 							/>
 						</div>
 
-						<!-- Livery — heading font paired with a chrome palette. Tiles
-						     show each pack's dark + light preview swatches (bg-page +
-						     text-accent) with an "Aa" sample in that livery's own
-						     display font, so a user can compare all five looks at a
-						     glance instead of guessing from a text label. -->
+						<!-- Livery — heading font paired with a chrome palette. Picker
+						     is a plain dropdown; a preview panel below shows the "Iron
+						     Ledger" nav mark on this livery's dark + light bg-page,
+						     with the livery's own display font + brand icon (falling
+						     back to the default sharp-axe when the livery ships no
+						     brand.svg). Reactive on fontDisplay — pick a different
+						     livery and the panel updates before the dialog closes. -->
 						<div class="sd-row sd-row--stacked">
 							<span class="sd-label">Livery</span>
-							<RadioGroup.Root
+							<Select
 								value={fontDisplay}
-								onValueChange={(v) => v && applyFont(v as LiveryId)}
-								aria-label="Livery"
-								class="sd-livery-tiles"
-							>
-								{#each LIVERIES as l (l.id)}
-									<label class="sd-livery-tile" data-font={l.id}>
-										<RadioGroup.Item value={l.id} class="sd-livery-radio" />
-										<span class="sd-livery-swatches" aria-hidden="true">
-											<span
-												class="sd-livery-swatch"
-												style="background:{l.previewColors.dark.bg}; color:{l.previewColors.dark
-													.fg}">Aa</span
-											>
-											<span
-												class="sd-livery-swatch"
-												style="background:{l.previewColors.light.bg}; color:{l.previewColors.light
-													.fg}">Aa</span
-											>
-										</span>
-										<span class="sd-livery-tile-label">{l.label}</span>
-									</label>
-								{/each}
-							</RadioGroup.Root>
+								options={liveryOptions}
+								ariaLabel="Livery"
+								onchange={(v) => applyFont(v)}
+							/>
+							<div class="sd-livery-preview" data-font={activeLivery.id} aria-hidden="true">
+								<div
+									class="sd-livery-preview-panel"
+									style="background:{activeLivery.previewColors.dark.bg}; color:{activeLivery
+										.previewColors.dark.fg};"
+								>
+									<span class="sd-livery-preview-icon"
+										>{@html activeLivery.brandSvg ?? swordSvg}</span
+									>
+									<span class="sd-livery-preview-text">{headingText('Iron Ledger')}</span>
+								</div>
+								<div
+									class="sd-livery-preview-panel"
+									style="background:{activeLivery.previewColors.light.bg}; color:{activeLivery
+										.previewColors.light.fg};"
+								>
+									<span class="sd-livery-preview-icon"
+										>{@html activeLivery.brandSvg ?? swordSvg}</span
+									>
+									<span class="sd-livery-preview-text">{headingText('Iron Ledger')}</span>
+								</div>
+							</div>
 						</div>
 					</Tabs.Content>
 
@@ -591,87 +605,49 @@
 		min-width: 82px;
 	}
 
-	/* ── Livery preview tiles ─────────────────────────────────────────────
-	   One tile per livery. Two swatches per tile — the livery's own
-	   bg-page + text-accent for dark and light theme, with an "Aa" sample
-	   in the livery's `--font-display`. `data-font=<id>` on the tile wraps
-	   its swatches so the livery typography resolves without setting it
-	   on the html root. Selected tile shows an accent-glow ring. */
-	:global(.sd-livery-tiles) {
+	/* ── Livery preview panels ────────────────────────────────────────────
+	   Two side-by-side rectangles under the Livery dropdown showing the
+	   selected pack's dark + light bg-page as background, its text-accent
+	   as foreground, and the "Iron Ledger" nav mark (livery display font
+	   + brand.svg) as the sample. `data-font=<id>` on the wrapper picks
+	   up the livery's typography tokens (`--font-display`, weight, etc.)
+	   without touching the html root, so switching the dropdown swaps
+	   the preview live without affecting the rest of the app until the
+	   dialog closes. */
+	:global(.sd-livery-preview) {
+		display: grid;
+		grid-template-columns: 1fr 1fr;
+		gap: 6px;
+		margin-top: 8px;
+	}
+	:global(.sd-livery-preview-panel) {
 		display: flex;
-		flex-wrap: wrap;
+		align-items: center;
 		gap: 8px;
-		padding: 2px;
-	}
-	:global(.sd-livery-tile) {
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		gap: 4px;
-		padding: 4px 4px 6px;
+		padding: 12px 14px;
+		border-radius: 6px;
 		border: 1px solid var(--border);
-		border-radius: 8px;
-		background: var(--bg-inset);
-		cursor: pointer;
-		transition:
-			border-color 0.12s,
-			box-shadow 0.12s,
-			background 0.12s;
+		min-height: 44px;
 	}
-	:global(.sd-livery-tile:hover) {
-		background: var(--bg-hover);
-		border-color: var(--border-mid);
-	}
-	:global(.sd-livery-tile:has(.sd-livery-radio[data-state='checked'])) {
-		border-color: var(--text-accent);
-		box-shadow: 0 0 0 2px var(--accent-glow);
-	}
-	/* Hide the radio input itself; the whole tile is the target. Keep it
-	   focusable so the group is keyboard-navigable (arrow keys via bits-ui). */
-	:global(.sd-livery-radio) {
-		position: absolute;
-		width: 1px;
-		height: 1px;
-		padding: 0;
-		margin: -1px;
-		overflow: hidden;
-		clip: rect(0, 0, 0, 0);
-		white-space: nowrap;
-		border: 0;
-	}
-	:global(.sd-livery-radio:focus-visible + .sd-livery-swatches) {
-		outline: 2px solid var(--focus-ring);
-		outline-offset: 2px;
-		border-radius: 5px;
-	}
-	:global(.sd-livery-swatches) {
-		display: flex;
-		border-radius: 5px;
-		overflow: hidden;
-		border: 1px solid var(--border);
-	}
-	:global(.sd-livery-swatch) {
+	:global(.sd-livery-preview-icon) {
 		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 36px;
-		height: 32px;
+		width: 20px;
+		height: 20px;
+		flex-shrink: 0;
+	}
+	:global(.sd-livery-preview-icon svg) {
+		width: 100%;
+		height: 100%;
+		fill: currentColor;
+	}
+	:global(.sd-livery-preview-text) {
 		font-family: var(--font-display);
 		font-weight: var(--font-display-weight);
 		font-variant: var(--font-display-variant);
 		text-transform: var(--font-display-transform);
 		font-size: calc(0.95rem * var(--font-display-scale));
+		letter-spacing: 0.08em;
 		line-height: 1;
-		letter-spacing: 0.02em;
-	}
-	:global(.sd-livery-tile-label) {
-		font-family: var(--font-ui);
-		font-size: 0.68rem;
-		color: var(--text-muted);
-		white-space: nowrap;
-	}
-	:global(.sd-livery-tile:has(.sd-livery-radio[data-state='checked']) .sd-livery-tile-label) {
-		color: var(--text);
 	}
 	/* Dice sound + appearance group — inherits the column gap so its rows
 	   line up with the rest. Dimmed + inert when 3D dice are off. */
