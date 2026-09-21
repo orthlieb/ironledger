@@ -154,7 +154,7 @@ findings are surfaced as warnings, not errors, so they don't block CI.
 
 ### Appearance & Liveries
 
-- **Liveries** — pick a display font paired with a chrome palette in Settings → Appearance. Ships with **Beowulf** (Skranji stone-cut titles over weathered verdigris, default), **Grimoire** (calligraphic Simonetta over amber), **Gravestone** (Metamorphous over granite), **Vlad** (Nosifer dripping crimson), **Gourd** (Berkshire Swash pumpkin), **Elspeth** (witch violet + moss), and a **Codex** sci-fi sample (Orbitron over void-navy)
+- **Liveries** — pick a display font paired with a chrome palette in Settings → Appearance. All named after mythic or literary figures whose visual world matches the theme. Ships with **Beowulf** (Skranji stone-cut titles over weathered verdigris, default), **Merlin** (calligraphic Simonetta over amber), **Yorick** (Metamorphous over granite), **Vlad** (Nosifer dripping crimson), **Jack** (Berkshire Swash pumpkin), **Elspeth** (witch violet + moss), and **Deckard** (Orbitron sci-fi over void-navy)
 - **Drop-in livery packs** — each livery is a single `liveries/<id>/livery.json` (display font, dark/light chrome palette, and 3D-dice skin); a build-time generator compiles them into a manifest + CSS, so adding a new theme needs no code changes. See [docs/liveries.md](docs/liveries.md)
 - Independent **light / dark / auto** (system) theme, orthogonal to the livery
 - Per-livery **3D dice** colours + texture, overridable in Settings → Dice

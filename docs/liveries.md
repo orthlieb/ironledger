@@ -2,9 +2,10 @@
 
 A **livery** pairs a display (heading) font with an optional chrome palette. It
 is the "skin" the user picks in **Settings → Appearance → Livery**. The
-built-in looks — **Beowulf** (Skranji/verdigris, default), **Grimoire**
-(Simonetta/amber), **Gravestone** (Metamorphous/granite), **Codex**
-(Orbitron/void-navy), **Vlad** (Nosifer/oxblood), **Gourd** (Berkshire
+built-in looks — all named after mythic or literary figures whose visual
+world matches the theme — **Beowulf** (Skranji/verdigris, default),
+**Merlin** (Simonetta/amber), **Yorick** (Metamorphous/granite), **Deckard**
+(Orbitron/void-navy), **Vlad** (Nosifer/oxblood), **Jack** (Berkshire
 Swash/pumpkin), and **Elspeth** (witch violet + moss) — are all defined
 as data. Adding a new one is a drop-in: create a folder, run one command.
 
@@ -18,9 +19,9 @@ and the heading font. Every livery works in both light and dark theme.
 ```
 liveries/
   beowulf/livery.json     ← Beowulf (default)
-  grimoire/livery.json    ← Grimoire
-  gravestone/livery.json  ← Gravestone
-  codex/livery.json       ← Codex sample — copy this as your template
+  merlin/livery.json      ← Merlin
+  yorick/livery.json      ← Yorick
+  deckard/livery.json     ← Deckard sample — copy this as your template
 ```
 
 One folder per livery; the folder name is the livery **id** and must match the
@@ -30,8 +31,8 @@ One folder per livery; the folder name is the livery **id** and must match the
 
 ```jsonc
 {
-  "id": "codex", // must equal the folder name; a safe CSS ident [a-z][a-z0-9-]*
-  "label": "Codex", // shown in the Settings dropdown
+  "id": "deckard", // must equal the folder name; a safe CSS ident [a-z][a-z0-9-]*
+  "label": "Deckard", // shown in the Settings dropdown
   "default": false, // exactly one livery across the whole set is true
   "description": "…", // one sentence; shown in docs / tooling
   "preview": null, // optional sample string shown in the dropdown, e.g. an emoji
@@ -60,7 +61,7 @@ One folder per livery; the folder name is the livery **id** and must match the
 
 ### The palette
 
-`palette` is either `null` (inherit the base theme's chrome — what **Grimoire**
+`palette` is either `null` (inherit the base theme's chrome — what **Merlin**
 does) or an object with a `dark` and a `light` half. Each half must define
 **exactly** these 14 tokens (any hex colour, `#rgb`/`#rgba`/`#rrggbb`/`#rrggbbaa`):
 
@@ -164,7 +165,7 @@ npm run gen:liveries:check   # fail if the committed artifacts are stale
 
 ## Add a livery in four steps
 
-1. **Copy the sample:** `cp -r liveries/codex liveries/<your-id>`.
+1. **Copy the sample:** `cp -r liveries/deckard liveries/<your-id>`.
 2. **Edit `liveries/<your-id>/livery.json`** — set `id` to the folder name,
    pick a font `stack`, and either set `palette: null` or fill both `dark` and
    `light` halves.
@@ -179,7 +180,7 @@ manifest by hand.
 
 The built-in liveries load their web fonts (Skranji, Metamorphous, Simonetta,
 Orbitron, Nosifer, Berkshire Swash) from the Google Fonts `<link>` in
-`apps/web/src/app.html`. **Codex** demonstrates the path — its Orbitron face
+`apps/web/src/app.html`. **Deckard** demonstrates the path — its Orbitron face
 is declared via `googleFamily` and added to that `<link>`.
 
 If your livery introduces a **new** web font, two things are needed:

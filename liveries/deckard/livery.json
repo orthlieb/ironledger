@@ -1,6 +1,6 @@
 {
-  "id": "codex",
-  "label": "Codex",
+  "id": "deckard",
+  "label": "Deckard",
   "default": false,
   "description": "Sample livery: a geometric sci-fi display face (Orbitron) over a void-navy chrome with an electric-cyan accent — a ship's-database look ready for a future Starforged expansion. Copy this folder as the template for a new livery.",
   "preview": null,

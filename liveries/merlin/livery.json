@@ -1,6 +1,6 @@
 {
-  "id": "grimoire",
-  "label": "Grimoire",
+  "id": "merlin",
+  "label": "Merlin",
   "default": false,
   "description": "Calligraphic Simonetta titles in natural title-case over the base forge-amber chrome.",
   "preview": null,
