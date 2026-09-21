@@ -37,6 +37,7 @@ interface ManifestEntry {
   oracleCategories?: CategoryMeta[];
   suppressesOracles?: string[];
   supersedesOracles?: Record<string, string>;
+  infoLink?: { label: string; url: string };
   provides?: Record<string, string[]>;
   root?: string;
 }
@@ -123,5 +124,21 @@ describe('toPublicExtension — /catalogue/extensions contract', () => {
       expect(e.provides).toBeUndefined();
       expect(e.root).toBeUndefined();
     }
+  });
+
+  it('forwards infoLink verbatim (Hamburger → Info submenu depends on it)', () => {
+    // The Hamburger menu builds its Info submenu from every enabled
+    // extension's `infoLink`. If the mapper drops the field the submenu
+    // silently disappears — a regression that reached prod before we
+    // noticed. Guard the passthrough here: every manifest infoLink must
+    // survive into the public payload byte-for-byte.
+    const project = (entries: Array<{ id: string; infoLink?: unknown }>) =>
+      Object.fromEntries(entries.map((e) => [e.id, e.infoLink ?? null]));
+    expect(project(publicList)).toEqual(project(manifest.extensions));
+    // Pin the two links we ship today so a paste-error in either
+    // extension.json is caught in CI rather than at browse-time.
+    const byId = Object.fromEntries(publicList.map((e) => [e.id, e]));
+    expect(byId.base?.infoLink?.label).toBe('Ironsworn');
+    expect(byId.yrt?.infoLink?.label).toBe('YRT');
   });
 });
