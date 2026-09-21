@@ -2,7 +2,7 @@
   "id": "merlin",
   "label": "Merlin",
   "default": false,
-  "description": "Calligraphic Simonetta titles in natural title-case over the base forge-amber chrome.",
+  "description": "Calligraphic Simonetta titles in natural title-case over weathered verdigris — aged-bronze accents on forest-moss dark, lichen on bone in light.",
   "preview": null,
   "font": {
     "stack": "'Simonetta', 'Palatino Linotype', Georgia, serif",
@@ -13,11 +13,44 @@
     "scale": 1.12
   },
   "dice": {
-    "action": "#9a5b12",
-    "challenge": "#6d1f2c",
-    "tens": "#2e1c0e",
-    "ones": "#e6cf96",
-    "texture": "paper"
+    "action": "#3f6d5a",
+    "challenge": "#7a4a2a",
+    "tens": "#1c231e",
+    "ones": "#9ec7b4",
+    "texture": "metal"
   },
-  "palette": null
+  "palette": {
+    "dark": {
+      "bg-page": "#080d0a",
+      "bg-card": "#101511",
+      "bg-inset": "#0b100d",
+      "bg-control": "#151b17",
+      "bg-hover": "#1c231e",
+      "border": "#2a3530",
+      "border-mid": "#3f4d47",
+      "text": "#d0d8d0",
+      "text-muted": "#8ba099",
+      "text-dimmer": "#5c6b64",
+      "text-accent": "#68a68a",
+      "focus-ring": "#68a68a",
+      "accent-glow": "#68a68a20",
+      "accent-dim": "#68a68a12"
+    },
+    "light": {
+      "bg-page": "#e8ede6",
+      "bg-card": "#dfe5dc",
+      "bg-inset": "#edf1eb",
+      "bg-control": "#e3e9e0",
+      "bg-hover": "#d7ded4",
+      "border": "#b7c2b3",
+      "border-mid": "#98a494",
+      "text": "#171c19",
+      "text-muted": "#4a5751",
+      "text-dimmer": "#7f8c85",
+      "text-accent": "#2f6d54",
+      "focus-ring": "#2f6d54",
+      "accent-glow": "#2f6d5420",
+      "accent-dim": "#2f6d5412"
+    }
+  }
 }

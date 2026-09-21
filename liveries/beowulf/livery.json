@@ -2,7 +2,7 @@
   "id": "beowulf",
   "label": "Beowulf",
   "default": true,
-  "description": "The house livery — Skranji stone-cut titles over weathered verdigris, sharp-axe brand mark. Iron Ledger as it ships.",
+  "description": "The house livery — Skranji stone-cut titles over the base forge-amber-on-obsidian chrome, sharp-axe brand mark. Iron Ledger as it ships.",
   "preview": null,
   "font": {
     "stack": "'Skranji', 'Cinzel', 'Palatino Linotype', Georgia, serif",
@@ -13,44 +13,11 @@
     "scale": 1
   },
   "dice": {
-    "action": "#3f6d5a",
-    "challenge": "#7a4a2a",
-    "tens": "#1c231e",
-    "ones": "#9ec7b4",
-    "texture": "metal"
+    "action": "#9a5b12",
+    "challenge": "#6d1f2c",
+    "tens": "#2e1c0e",
+    "ones": "#e6cf96",
+    "texture": "paper"
   },
-  "palette": {
-    "dark": {
-      "bg-page": "#080d0a",
-      "bg-card": "#101511",
-      "bg-inset": "#0b100d",
-      "bg-control": "#151b17",
-      "bg-hover": "#1c231e",
-      "border": "#2a3530",
-      "border-mid": "#3f4d47",
-      "text": "#d0d8d0",
-      "text-muted": "#8ba099",
-      "text-dimmer": "#5c6b64",
-      "text-accent": "#68a68a",
-      "focus-ring": "#68a68a",
-      "accent-glow": "#68a68a20",
-      "accent-dim": "#68a68a12"
-    },
-    "light": {
-      "bg-page": "#e8ede6",
-      "bg-card": "#dfe5dc",
-      "bg-inset": "#edf1eb",
-      "bg-control": "#e3e9e0",
-      "bg-hover": "#d7ded4",
-      "border": "#b7c2b3",
-      "border-mid": "#98a494",
-      "text": "#171c19",
-      "text-muted": "#4a5751",
-      "text-dimmer": "#7f8c85",
-      "text-accent": "#2f6d54",
-      "focus-ring": "#2f6d54",
-      "accent-glow": "#2f6d5420",
-      "accent-dim": "#2f6d5412"
-    }
-  }
+  "palette": null
 }
