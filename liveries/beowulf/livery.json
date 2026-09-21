@@ -1,18 +1,17 @@
 {
-  "id": "futhark",
-  "label": "Futhark",
-  "default": false,
-  "description": "Names transliterated into Elder Futhark runes over a weathered-verdigris chrome. Uses system runic fonts — no web font required.",
-  "preview": "ᚠᚢᚦᚨᚱᚲ",
+  "id": "beowulf",
+  "label": "Beowulf",
+  "default": true,
+  "description": "The house livery — Skranji stone-cut titles over weathered verdigris, sharp-axe brand mark. Iron Ledger as it ships.",
+  "preview": null,
   "font": {
-    "stack": "'Segoe UI Historic', 'Noto Sans Runic', 'Apple Symbols', system-ui, sans-serif",
-    "googleFamily": null,
+    "stack": "'Skranji', 'Cinzel', 'Palatino Linotype', Georgia, serif",
+    "googleFamily": "Skranji:wght@400;700",
     "weight": 400,
     "variant": "normal",
     "transform": "none",
-    "scale": 1.12
+    "scale": 1
   },
-  "transliterate": "elder-futhark",
   "dice": {
     "action": "#3f6d5a",
     "challenge": "#7a4a2a",

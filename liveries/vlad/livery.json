@@ -12,7 +12,6 @@
     "transform": "none",
     "scale": 0.92
   },
-  "transliterate": null,
   "dice": {
     "action": "#9a1b28",
     "challenge": "#1a0508",
