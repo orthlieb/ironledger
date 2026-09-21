@@ -71,7 +71,14 @@ function _readSaved(): LiveryId {
 	return v && IDS.has(v) ? v : DEFAULT_LIVERY;
 }
 
-let _font = $state<LiveryId>(_readSaved());
+// Start at the default on BOTH server and client so SSR and the first client
+// paint agree — otherwise the client would read localStorage at module load,
+// disagree with the SSR'd DOM, and Svelte's {@html …} hydration path would
+// keep the (stale) SSR content because the state matches the SSR-time value
+// only on the server. The real value lands after +layout.svelte's onMount
+// calls setFontDisplay(savedFont()), which is a genuine value change (default
+// → saved) and therefore fires the reactive updates the nav mark relies on.
+let _font = $state<LiveryId>(DEFAULT_LIVERY);
 
 // ── Getters / setters ─────────────────────────────────────────────────────────
 
@@ -104,6 +111,21 @@ function svgToDataUrl(svg: string, cacheKey: string): string {
 	return `data:image/svg+xml,${encodeURIComponent(svg)}#${cacheKey}`;
 }
 
+// Wrap a brand SVG for use as a favicon. Livery brand marks paint with
+// `fill="currentColor"` because they inherit their tint from the nav bar's
+// CSS. A favicon renders outside any page CSS context, so `currentColor`
+// falls back to the SVG root's `color` — Chromium/WebKit default that to
+// black, which vanishes on a dark browser-chrome tab strip (visible in the
+// screenshot from the deckard/void-navy livery). Inject a `<style>` block
+// right after the opening <svg> that binds the SVG's `color` property to
+// `prefers-color-scheme`, so `currentColor` resolves to a legible tone on
+// both light and dark tab strips without any per-livery tuning.
+const FAVICON_STYLE =
+	'<style>svg{color:#1a1a1a}@media (prefers-color-scheme:dark){svg{color:#eaeaea}}</style>';
+function toFaviconSvg(raw: string): string {
+	return raw.replace(/<svg([^>]*)>/, `<svg$1>${FAVICON_STYLE}`);
+}
+
 /** Swap the browser tab icon to the current livery's brand SVG, or restore
  *  the default static `/favicon.svg` when the active livery doesn't ship one.
  *  The old <link rel="icon" type="image/svg+xml"> is removed and a fresh one
@@ -119,7 +141,7 @@ function updateFavicon(id: LiveryId, svg: string | null): void {
 	const link = document.createElement('link');
 	link.rel = 'icon';
 	link.type = 'image/svg+xml';
-	link.href = svg ? svgToDataUrl(svg, id) : '/favicon.svg?v=2';
+	link.href = svg ? svgToDataUrl(toFaviconSvg(svg), id) : '/favicon.svg?v=2';
 	head.appendChild(link);
 }
 
