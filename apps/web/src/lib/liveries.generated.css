@@ -77,11 +77,11 @@ html[data-font='deckard'][data-theme='light'] {
 
 /* Elspeth (elspeth) */
 [data-font='elspeth'] {
-	--font-display: 'Metamorphous', 'Palatino Linotype', Georgia, serif;
+	--font-display: 'Griffy', 'Palatino Linotype', Georgia, serif;
 	--font-display-weight: 400;
 	--font-display-variant: normal;
 	--font-display-transform: none;
-	--font-display-scale: 1;
+	--font-display-scale: 1.05;
 }
 html[data-font='elspeth']:not([data-theme='light']) {
 	--bg-page: #0f0913;
@@ -313,7 +313,7 @@ html[data-font='vlad'][data-theme='light'] {
 
 /* Yorick (yorick) */
 [data-font='yorick'] {
-	--font-display: 'Metamorphous', 'Cinzel', Georgia, serif;
+	--font-display: 'Cinzel', 'Palatino Linotype', Georgia, serif;
 	--font-display-weight: 400;
 	--font-display-variant: normal;
 	--font-display-transform: none;

@@ -2,15 +2,15 @@
   "id": "elspeth",
   "label": "Elspeth",
   "default": false,
-  "description": "Metamorphous storybook-gothic titles over a witch's-brew chrome — aubergine coven ground with poison-green candle glow, bone dice on cauldron-dark. Halloween-adjacent, wearable year-round.",
+  "description": "Griffy sketchy-hand-ink titles over a witch's-brew chrome — aubergine coven ground with poison-green candle glow, bone dice on cauldron-dark. Halloween-adjacent, wearable year-round.",
   "preview": "☾",
   "font": {
-    "stack": "'Metamorphous', 'Palatino Linotype', Georgia, serif",
-    "googleFamily": "Metamorphous:wght@400",
+    "stack": "'Griffy', 'Palatino Linotype', Georgia, serif",
+    "googleFamily": "Griffy",
     "weight": 400,
     "variant": "normal",
     "transform": "none",
-    "scale": 1
+    "scale": 1.05
   },
   "dice": {
     "action": "#8ac651",
