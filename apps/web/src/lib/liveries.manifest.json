@@ -58,9 +58,9 @@
       "id": "elspeth",
       "label": "Elspeth",
       "default": false,
-      "description": "Metamorphous storybook-gothic titles over a witch's-brew chrome — aubergine coven ground with poison-green candle glow, bone dice on cauldron-dark. Halloween-adjacent, wearable year-round.",
+      "description": "Griffy sketchy-hand-ink titles over a witch's-brew chrome — aubergine coven ground with poison-green candle glow, bone dice on cauldron-dark. Halloween-adjacent, wearable year-round.",
       "preview": "☾",
-      "googleFamily": "Metamorphous:wght@400",
+      "googleFamily": "Griffy",
       "dice": {
         "action": "#8ac651",
         "challenge": "#3e2f4f",
@@ -162,9 +162,9 @@
       "id": "yorick",
       "label": "Yorick",
       "default": false,
-      "description": "An epitaph in weathered granite — Metamorphous inscriptions carved into cold stone, lichen-green accents on a graveyard-at-dusk palette. Quiet, elegiac, memento mori.",
+      "description": "An epitaph in weathered granite — Cinzel Roman inscriptions carved into cold stone, lichen-green accents on a graveyard-at-dusk palette. Quiet, elegiac, memento mori.",
       "preview": "🪦",
-      "googleFamily": "Metamorphous",
+      "googleFamily": "Cinzel:wght@400;600;700;900",
       "dice": {
         "action": "#4a5c48",
         "challenge": "#1f2622",
