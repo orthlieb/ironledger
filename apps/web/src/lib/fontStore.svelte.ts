@@ -113,17 +113,19 @@ function svgToDataUrl(svg: string, cacheKey: string): string {
 
 // Wrap a brand SVG for use as a favicon. Livery brand marks paint with
 // `fill="currentColor"` because they inherit their tint from the nav bar's
-// CSS. A favicon renders outside any page CSS context, so `currentColor`
-// falls back to the SVG root's `color` — Chromium/WebKit default that to
-// black, which vanishes on a dark browser-chrome tab strip (visible in the
-// screenshot from the deckard/void-navy livery). Inject a `<style>` block
-// right after the opening <svg> that binds the SVG's `color` property to
-// `prefers-color-scheme`, so `currentColor` resolves to a legible tone on
-// both light and dark tab strips without any per-livery tuning.
-const FAVICON_STYLE =
-	'<style>svg{color:#1a1a1a}@media (prefers-color-scheme:dark){svg{color:#eaeaea}}</style>';
-function toFaviconSvg(raw: string): string {
-	return raw.replace(/<svg([^>]*)>/, `<svg$1>${FAVICON_STYLE}`);
+// CSS; a favicon has no such context. The obvious `prefers-color-scheme`
+// media query inside the SVG reflects the OS mode, not the browser
+// chrome's tab-strip colour, so a light-OS user with a dark browser theme
+// still gets the light-mode branch (dark glyph on dark chrome — the bug
+// this replaces). Instead: hardcode `fill=…` to the livery's own accent
+// colour, which is by construction a saturated mid-tone that already
+// contrasts against the livery's own chrome and reads legibly against
+// both light and dark tab strips (amber for Beowulf, crimson for Vlad,
+// aged bronze for Merlin, …). Rebuilds `fill="currentColor"` on every
+// path — the nav-bar rendering path keeps the original source SVG, so
+// its currentColor cascade still works there.
+function toFaviconSvg(raw: string, glyphColor: string): string {
+	return raw.replaceAll('fill="currentColor"', `fill="${glyphColor}"`);
 }
 
 /** Swap the browser tab icon to the current livery's brand SVG, or restore
@@ -133,7 +135,7 @@ function toFaviconSvg(raw: string): string {
  *  accept either an in-place href swap or a re-append, so re-append covers
  *  both. The `apple-touch-icon` stays static (it's baked in at "add to home
  *  screen" time, no way to swap it at runtime). */
-function updateFavicon(id: LiveryId, svg: string | null): void {
+function updateFavicon(id: LiveryId, svg: string | null, glyphColor: string): void {
 	if (typeof document === 'undefined') return;
 	const head = document.head;
 	const old = head.querySelector('link[rel="icon"][type="image/svg+xml"]');
@@ -141,7 +143,7 @@ function updateFavicon(id: LiveryId, svg: string | null): void {
 	const link = document.createElement('link');
 	link.rel = 'icon';
 	link.type = 'image/svg+xml';
-	link.href = svg ? svgToDataUrl(toFaviconSvg(svg), id) : '/favicon.svg?v=2';
+	link.href = svg ? svgToDataUrl(toFaviconSvg(svg, glyphColor), id) : '/favicon.svg?v=2';
 	head.appendChild(link);
 }
 
@@ -164,7 +166,11 @@ export function setFontDisplay(f: LiveryId): void {
 		localStorage.setItem(FONT_DISPLAY_KEY, f);
 	}
 	document.documentElement.setAttribute('data-font', f);
-	updateFavicon(f, LIVERIES.find((l) => l.id === f)?.brandSvg ?? null);
+	// Use the livery's dark-theme text-accent as the favicon glyph colour —
+	// see toFaviconSvg() for why hardcoding beats `prefers-color-scheme`
+	// tricks in favicons.
+	const active = LIVERIES.find((l) => l.id === f);
+	updateFavicon(f, active?.brandSvg ?? null, active?.previewColors.dark.fg ?? '#e8a030');
 }
 
 // ── Text helper ───────────────────────────────────────────────────────────────
