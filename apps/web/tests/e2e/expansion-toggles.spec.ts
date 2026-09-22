@@ -391,16 +391,14 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 
 		// Toggle Lodestar off and reload — the concept oracle becomes unavailable
 		// but the saved value must not disappear (fallback: {#if n.firstLook || ...}).
-		// waitForHome first so the newly added NPC + its firstLook value have
-		// actually persisted to the session blob before the reload rehydrates,
-		// then reload (this line was missing in the original test — the assertion
-		// below only means anything against a fresh page, since the in-page
-		// disable-oracle path is not what the app renders after a real toggle
-		// followed by a reload).
+		// setExpansionsViaStorage already does page.reload() + waitForHome; the
+		// waitForHome BEFORE it is the fix — without it the newly added NPC and
+		// its rolled firstLook value may not have persisted to the session blob
+		// yet, so the reload rehydrates a stub NPC and the "value survives reload"
+		// assertion below is testing nothing (element-not-found rather than
+		// element-with-empty-value).
 		await waitForHome(page);
 		await setExpansionsViaStorage(page, { lodestar: false });
-		await page.reload();
-		await waitForHome(page);
 
 		// After reload the same NPC is still the active card.
 		await expect(firstLookRow).toBeVisible({ timeout: 5_000 });
