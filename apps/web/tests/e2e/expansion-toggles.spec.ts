@@ -16,6 +16,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { ensureCharacter } from './helpers/home';
+import { resetCommunities } from './helpers/reset';
 
 const CHAR_AREA = '.home-area--characters';
 const FOE_AREA = '.home-area--foes';
@@ -125,6 +126,15 @@ async function goHome(page: Page): Promise<void> {
 
 test.describe('Expansion toggles — Delve / YRT', () => {
 	test.beforeEach(async ({ page }) => {
+		// Server-side clean slate so the "firstLook survives Lodestar off" test
+		// (line 377) actually sees its own just-created NPC as entries[0] after
+		// reload — without this, an NPC persisted by a previous run of this
+		// same spec on the same fixture user stays behind, becomes entries[0]
+		// (oldest by createdAt), and activeEntry rehydrates to that old NPC
+		// (which has no firstLook), so the row assertion fails on the wrong
+		// card. The other tests in this describe don't create NPCs, so
+		// clearing the collection is a no-op for them.
+		await resetCommunities();
 		await goHome(page);
 		await resetExpansionToggles(page);
 		await page.reload();
