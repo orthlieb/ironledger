@@ -44,6 +44,7 @@
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import iconPaletteSvg from '$icons/palette-solid.svg?raw';
+	import Select from '$lib/components/Select.svelte';
 	import plusSvg from '$icons/plus-solid.svg?raw';
 	import minusSvg from '$icons/minus-solid.svg?raw';
 	import gotoSvg from '$icons/arrow-up-right-from-square-solid.svg?raw';
@@ -99,6 +100,21 @@
 			.slice()
 			.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
 	);
+
+	/** 8 compass positions for the label, ordered as they read left-to-
+	 *  right in reading order (top row → middle → bottom). Arrow glyph
+	 *  in the label so the trigger and each Item read visually without
+	 *  the extra `icon` slot. */
+	const LABEL_POSITION_OPTIONS: { value: MapMarkerLabelPosition; label: string }[] = [
+		{ value: 'top-left', label: '↖  Top-left' },
+		{ value: 'top', label: '↑  Top' },
+		{ value: 'top-right', label: '↗  Top-right' },
+		{ value: 'left', label: '←  Left' },
+		{ value: 'right', label: '→  Right' },
+		{ value: 'bottom-left', label: '↙  Bottom-left' },
+		{ value: 'bottom', label: '↓  Bottom' },
+		{ value: 'bottom-right', label: '↘  Bottom-right' },
+	];
 
 	function openIconPicker() {
 		if (!selectedMarker) return;
@@ -682,89 +698,20 @@
 						</div>
 					</div>
 
-					<!-- Label position (relative to the icon) — 3×3 compass grid.
-					     The centre cell is decorative (the icon itself never moves;
-					     it's always at the marker anchor). Only the 8 outer cells
-					     are toggleable, radiogroup semantics, aria-checked reflects
-					     the current pick. Applies live via pickLabelPosition. -->
-					<div class="mp-props-field">
+					<!-- Label position (relative to the icon) — compact dropdown
+					     replacing the 3×3 compass grid. Values map 1:1 to the 8
+					     compass points on `MapMarker.labelPosition`; the arrow
+					     glyphs in the option labels let the trigger and each menu
+					     item read without an extra icon slot. -->
+					<label class="mp-props-field">
 						<span class="mp-props-label">Label position</span>
-						<div class="mp-anchor-grid" role="radiogroup" aria-label="Label position">
-							<button
-								type="button"
-								class="mp-anchor-cell"
-								role="radio"
-								aria-checked={draft.labelPosition === 'top-left'}
-								data-active={draft.labelPosition === 'top-left'}
-								aria-label="Top left"
-								onclick={() => pickLabelPosition('top-left')}>↖</button
-							>
-							<button
-								type="button"
-								class="mp-anchor-cell"
-								role="radio"
-								aria-checked={draft.labelPosition === 'top'}
-								data-active={draft.labelPosition === 'top'}
-								aria-label="Top"
-								onclick={() => pickLabelPosition('top')}>↑</button
-							>
-							<button
-								type="button"
-								class="mp-anchor-cell"
-								role="radio"
-								aria-checked={draft.labelPosition === 'top-right'}
-								data-active={draft.labelPosition === 'top-right'}
-								aria-label="Top right"
-								onclick={() => pickLabelPosition('top-right')}>↗</button
-							>
-							<button
-								type="button"
-								class="mp-anchor-cell"
-								role="radio"
-								aria-checked={draft.labelPosition === 'left'}
-								data-active={draft.labelPosition === 'left'}
-								aria-label="Left"
-								onclick={() => pickLabelPosition('left')}>←</button
-							>
-							<span class="mp-anchor-cell mp-anchor-cell--center" aria-hidden="true">◈</span>
-							<button
-								type="button"
-								class="mp-anchor-cell"
-								role="radio"
-								aria-checked={draft.labelPosition === 'right'}
-								data-active={draft.labelPosition === 'right'}
-								aria-label="Right"
-								onclick={() => pickLabelPosition('right')}>→</button
-							>
-							<button
-								type="button"
-								class="mp-anchor-cell"
-								role="radio"
-								aria-checked={draft.labelPosition === 'bottom-left'}
-								data-active={draft.labelPosition === 'bottom-left'}
-								aria-label="Bottom left"
-								onclick={() => pickLabelPosition('bottom-left')}>↙</button
-							>
-							<button
-								type="button"
-								class="mp-anchor-cell"
-								role="radio"
-								aria-checked={draft.labelPosition === 'bottom'}
-								data-active={draft.labelPosition === 'bottom'}
-								aria-label="Bottom"
-								onclick={() => pickLabelPosition('bottom')}>↓</button
-							>
-							<button
-								type="button"
-								class="mp-anchor-cell"
-								role="radio"
-								aria-checked={draft.labelPosition === 'bottom-right'}
-								data-active={draft.labelPosition === 'bottom-right'}
-								aria-label="Bottom right"
-								onclick={() => pickLabelPosition('bottom-right')}>↘</button
-							>
-						</div>
-					</div>
+						<Select
+							value={draft.labelPosition}
+							options={LABEL_POSITION_OPTIONS}
+							ariaLabel="Label position"
+							onchange={pickLabelPosition}
+						/>
+					</label>
 
 					<div class="mp-props-row">
 						<label class="mp-props-field mp-props-field--icon">

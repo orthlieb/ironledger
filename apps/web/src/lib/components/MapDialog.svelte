@@ -2441,10 +2441,12 @@
 	}
 	/* Icon (row 1) and Colour (row 2) are the same fixed width so the two
 	   swatch buttons match and line up in a column — the width is pinned on
-	   the field (not the label) so the longer "COLOUR" label can't widen it. */
+	   the field (not the label) so the longer "COLOUR" label can't widen it.
+	   Sized to fit the 22 px inline SVG plus the 8 px padding the buttons
+	   carry, matching the 32 px-tall angle field for a compact row. */
 	:global(.mp-props-field--icon),
 	:global(.mp-props-field--color) {
-		width: 3.5rem;
+		width: 2.5rem;
 	}
 	/* RGB field grows to fill the rest of the row; `min-width` is its wrap
 	   threshold — when the row can't spare ~7rem it drops to the next line
@@ -2517,58 +2519,6 @@
 		outline-offset: 1px;
 	}
 
-	/* 3×3 compass grid — picks where the label sits relative to the icon.
-	   Centre cell is decorative (◈ the icon sits at the marker anchor and
-	   never moves); the 8 outer cells are role=radio and reflect the
-	   active pick with `data-active` + `aria-checked`. Pressed styling
-	   matches the .mp-style-btn set so the two neighbouring pickers read
-	   as one toolbar family. */
-	:global(.mp-anchor-grid) {
-		display: grid;
-		grid-template-columns: repeat(3, 32px);
-		grid-template-rows: repeat(3, 32px);
-		gap: 4px;
-	}
-	:global(.mp-anchor-cell) {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		font-family: var(--font-ui);
-		font-size: 1rem;
-		line-height: 1;
-		color: var(--text-muted);
-		background: var(--bg-control);
-		border: 1px solid var(--border-mid);
-		border-radius: 4px;
-		cursor: pointer;
-		transition:
-			background 120ms,
-			border-color 120ms,
-			color 120ms;
-	}
-	:global(.mp-anchor-cell:hover) {
-		background: var(--bg-hover);
-		color: var(--text);
-	}
-	:global(.mp-anchor-cell[data-active='true']) {
-		background: var(--accent-glow);
-		border-color: var(--text-accent);
-		color: var(--text-accent);
-	}
-	:global(.mp-anchor-cell:focus-visible) {
-		outline: 2px solid var(--focus-ring);
-		outline-offset: 1px;
-	}
-	:global(.mp-anchor-cell--center) {
-		cursor: default;
-		color: var(--text-dimmer);
-		background: transparent;
-		border-style: dashed;
-	}
-	:global(.mp-anchor-cell--center:hover) {
-		background: transparent;
-		color: var(--text-dimmer);
-	}
 	:global(.mp-props-footer) {
 		display: flex;
 		align-items: center;
