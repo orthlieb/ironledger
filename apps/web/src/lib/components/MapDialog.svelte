@@ -1054,6 +1054,7 @@
 		if (ls.italic) parts.push('font-style:italic');
 		if (ls.smallCaps) parts.push('font-variant:small-caps');
 		if (ls.underline) parts.push('text-decoration:underline');
+		if (ls.uppercase) parts.push('text-transform:uppercase');
 		return parts.join(';');
 	}
 </script>

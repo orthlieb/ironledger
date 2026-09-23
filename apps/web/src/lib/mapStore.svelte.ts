@@ -71,6 +71,10 @@ export interface MapMarker {
 		italic?: boolean;
 		smallCaps?: boolean;
 		underline?: boolean;
+		/** Uppercase presentational transform via CSS `text-transform:
+		 *  uppercase`. The stored `label` stays in whatever case the user
+		 *  typed — toggling this off restores it verbatim. */
+		uppercase?: boolean;
 	};
 }
 

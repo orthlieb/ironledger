@@ -396,6 +396,7 @@
 		italic: boolean;
 		smallCaps: boolean;
 		underline: boolean;
+		uppercase: boolean;
 	};
 	let draft = $state<MarkerDraft | null>(null);
 	let originalMarker = $state<MarkerDraft | null>(null);
@@ -419,6 +420,7 @@
 			italic: !!m.labelStyle?.italic,
 			smallCaps: !!m.labelStyle?.smallCaps,
 			underline: !!m.labelStyle?.underline,
+			uppercase: !!m.labelStyle?.uppercase,
 		};
 		originalMarker = snap;
 		draft = { ...snap };
@@ -435,13 +437,15 @@
 		// object round-trips as an empty object in JSON but shipping it
 		// forever wastes the "no styling" byte-savings for the 99 % of
 		// markers that never touch these toggles.
-		const anyStyle = draft.bold || draft.italic || draft.smallCaps || draft.underline;
+		const anyStyle =
+			draft.bold || draft.italic || draft.smallCaps || draft.underline || draft.uppercase;
 		const labelStyle = anyStyle
 			? {
 					bold: draft.bold || undefined,
 					italic: draft.italic || undefined,
 					smallCaps: draft.smallCaps || undefined,
 					underline: draft.underline || undefined,
+					uppercase: draft.uppercase || undefined,
 				}
 			: undefined;
 		updateMarker(selectedMarker.id, {
@@ -467,7 +471,7 @@
 		draft.label = (e.target as HTMLInputElement).value;
 		applyDraftLive();
 	}
-	function toggleLabelStyle(key: 'bold' | 'italic' | 'smallCaps' | 'underline') {
+	function toggleLabelStyle(key: 'bold' | 'italic' | 'smallCaps' | 'underline' | 'uppercase') {
 		if (!draft) return;
 		draft[key] = !draft[key];
 		applyDraftLive();
@@ -527,7 +531,8 @@
 				originalMarker.bold ||
 				originalMarker.italic ||
 				originalMarker.smallCaps ||
-				originalMarker.underline;
+				originalMarker.underline ||
+				originalMarker.uppercase;
 			updateMarker(selectedMarker.id, {
 				label: originalMarker.label,
 				icon: originalMarker.icon ?? undefined,
@@ -540,6 +545,7 @@
 							italic: originalMarker.italic || undefined,
 							smallCaps: originalMarker.smallCaps || undefined,
 							underline: originalMarker.underline || undefined,
+							uppercase: originalMarker.uppercase || undefined,
 						}
 					: undefined,
 			});
@@ -624,6 +630,15 @@
 								aria-label="Underline"
 								onclick={() => toggleLabelStyle('underline')}
 								style="text-decoration:underline">U</button
+							>
+							<button
+								type="button"
+								class="mp-style-btn"
+								data-active={draft.uppercase}
+								aria-pressed={draft.uppercase}
+								aria-label="Uppercase"
+								onclick={() => toggleLabelStyle('uppercase')}
+								style="text-transform:uppercase">AA</button
 							>
 						</div>
 					</div>
