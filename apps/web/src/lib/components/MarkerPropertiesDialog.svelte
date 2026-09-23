@@ -787,8 +787,13 @@
 							</button>
 						</label>
 
+						<!-- No visible label — the input's value ("rgb(r, g, b)") is
+						     self-descriptive and dropping the label keeps the row's
+						     four controls at the same 32 px height. aria-label
+						     retained for screen readers. `align-items: flex-end` on
+						     the row still pins the input to the row's bottom edge, so
+						     it lines up with the icon / angle / colour buttons. -->
 						<label class="mp-props-field mp-props-field--rgb">
-							<span class="mp-props-label">RGB</span>
 							<input
 								class="mp-rgb-input"
 								type="text"
