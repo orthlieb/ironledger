@@ -34,7 +34,12 @@
 		mapGlyphInner,
 		resolveMapIcon,
 	} from '$lib/mapConstants.js';
-	import { updateMarker, removeMarker, type MapMarker } from '$lib/mapStore.svelte.js';
+	import {
+		updateMarker,
+		removeMarker,
+		type MapMarker,
+		type MapMarkerLabelPosition,
+	} from '$lib/mapStore.svelte.js';
 	import { getLinkableEntities, resolveEntity } from '$lib/mapEntityLinks.js';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
@@ -397,6 +402,7 @@
 		smallCaps: boolean;
 		underline: boolean;
 		uppercase: boolean;
+		labelPosition: MapMarkerLabelPosition;
 	};
 	let draft = $state<MarkerDraft | null>(null);
 	let originalMarker = $state<MarkerDraft | null>(null);
@@ -421,6 +427,7 @@
 			smallCaps: !!m.labelStyle?.smallCaps,
 			underline: !!m.labelStyle?.underline,
 			uppercase: !!m.labelStyle?.uppercase,
+			labelPosition: m.labelPosition ?? 'bottom',
 		};
 		originalMarker = snap;
 		draft = { ...snap };
@@ -455,6 +462,7 @@
 			angle: draft.angle,
 			entityId: draft.entityId || undefined,
 			labelStyle,
+			labelPosition: draft.labelPosition === 'bottom' ? undefined : draft.labelPosition,
 		});
 	}
 
@@ -474,6 +482,11 @@
 	function toggleLabelStyle(key: 'bold' | 'italic' | 'smallCaps' | 'underline' | 'uppercase') {
 		if (!draft) return;
 		draft[key] = !draft[key];
+		applyDraftLive();
+	}
+	function pickLabelPosition(pos: MapMarkerLabelPosition) {
+		if (!draft) return;
+		draft.labelPosition = pos;
 		applyDraftLive();
 	}
 	function onDraftAngleInput(e: Event) {
@@ -548,6 +561,8 @@
 							uppercase: originalMarker.uppercase || undefined,
 						}
 					: undefined,
+				labelPosition:
+					originalMarker.labelPosition === 'bottom' ? undefined : originalMarker.labelPosition,
 			});
 		}
 		propsDialogOpen = false;
@@ -639,6 +654,90 @@
 								aria-label="Uppercase"
 								onclick={() => toggleLabelStyle('uppercase')}
 								style="text-transform:uppercase">AA</button
+							>
+						</div>
+					</div>
+
+					<!-- Label position (relative to the icon) — 3×3 compass grid.
+					     The centre cell is decorative (the icon itself never moves;
+					     it's always at the marker anchor). Only the 8 outer cells
+					     are toggleable, radiogroup semantics, aria-checked reflects
+					     the current pick. Applies live via pickLabelPosition. -->
+					<div class="mp-props-field">
+						<span class="mp-props-label">Label position</span>
+						<div class="mp-anchor-grid" role="radiogroup" aria-label="Label position">
+							<button
+								type="button"
+								class="mp-anchor-cell"
+								role="radio"
+								aria-checked={draft.labelPosition === 'top-left'}
+								data-active={draft.labelPosition === 'top-left'}
+								aria-label="Top left"
+								onclick={() => pickLabelPosition('top-left')}>↖</button
+							>
+							<button
+								type="button"
+								class="mp-anchor-cell"
+								role="radio"
+								aria-checked={draft.labelPosition === 'top'}
+								data-active={draft.labelPosition === 'top'}
+								aria-label="Top"
+								onclick={() => pickLabelPosition('top')}>↑</button
+							>
+							<button
+								type="button"
+								class="mp-anchor-cell"
+								role="radio"
+								aria-checked={draft.labelPosition === 'top-right'}
+								data-active={draft.labelPosition === 'top-right'}
+								aria-label="Top right"
+								onclick={() => pickLabelPosition('top-right')}>↗</button
+							>
+							<button
+								type="button"
+								class="mp-anchor-cell"
+								role="radio"
+								aria-checked={draft.labelPosition === 'left'}
+								data-active={draft.labelPosition === 'left'}
+								aria-label="Left"
+								onclick={() => pickLabelPosition('left')}>←</button
+							>
+							<span class="mp-anchor-cell mp-anchor-cell--center" aria-hidden="true">◈</span>
+							<button
+								type="button"
+								class="mp-anchor-cell"
+								role="radio"
+								aria-checked={draft.labelPosition === 'right'}
+								data-active={draft.labelPosition === 'right'}
+								aria-label="Right"
+								onclick={() => pickLabelPosition('right')}>→</button
+							>
+							<button
+								type="button"
+								class="mp-anchor-cell"
+								role="radio"
+								aria-checked={draft.labelPosition === 'bottom-left'}
+								data-active={draft.labelPosition === 'bottom-left'}
+								aria-label="Bottom left"
+								onclick={() => pickLabelPosition('bottom-left')}>↙</button
+							>
+							<button
+								type="button"
+								class="mp-anchor-cell"
+								role="radio"
+								aria-checked={draft.labelPosition === 'bottom'}
+								data-active={draft.labelPosition === 'bottom'}
+								aria-label="Bottom"
+								onclick={() => pickLabelPosition('bottom')}>↓</button
+							>
+							<button
+								type="button"
+								class="mp-anchor-cell"
+								role="radio"
+								aria-checked={draft.labelPosition === 'bottom-right'}
+								data-active={draft.labelPosition === 'bottom-right'}
+								aria-label="Bottom right"
+								onclick={() => pickLabelPosition('bottom-right')}>↘</button
 							>
 						</div>
 					</div>

@@ -76,7 +76,26 @@ export interface MapMarker {
 		 *  typed — toggling this off restores it verbatim. */
 		uppercase?: boolean;
 	};
+	/** Where the label sits relative to the icon. Icon stays at the
+	 *  marker anchor (so hit-testing + selection behaviour are unchanged);
+	 *  only the label rotates around it. Absent → 'bottom' (the
+	 *  current default — label under the icon). Ignored when the marker
+	 *  has no icon (label centres on the anchor either way). */
+	labelPosition?: MapMarkerLabelPosition;
 }
+
+/** Compass positions the label may sit in relative to the icon (icon
+ *  stays at the marker anchor). Exported so the marker-properties
+ *  dialog can strongly type its picker options. */
+export type MapMarkerLabelPosition =
+	| 'top'
+	| 'bottom'
+	| 'left'
+	| 'right'
+	| 'top-left'
+	| 'top-right'
+	| 'bottom-left'
+	| 'bottom-right';
 
 /** Server-persisted per-map settings — things that describe the MAP
  *  itself (not the current viewer's device preferences). Scale in

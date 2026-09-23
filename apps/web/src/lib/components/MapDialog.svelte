@@ -1047,6 +1047,42 @@
 	// attribute so every combination is legal and there's no need for
 	// a matrix of CSS classes. Empty for unstyled markers, which keeps
 	// the persisted marker byte-identical for pre-styling data.
+	// Where the label sits relative to the icon, expressed as SVG text
+	// placement (x, y, text-anchor, dominant-baseline). `extent` is the
+	// icon's world-unit half-size at the current zoom — the label offsets
+	// clear that edge by LABEL_GAP so it never bites into the icon. Diagonal
+	// positions use the icon's corner geometry (~0.7 × half-side) so the
+	// label sits outside the bounding rect, not straddling it.
+	type LabelPos = NonNullable<MapMarker['labelPosition']>;
+	interface LabelPlacement {
+		x: number;
+		y: number;
+		anchor: 'start' | 'middle' | 'end';
+		baseline: 'text-after-edge' | 'hanging' | 'central';
+	}
+	function labelPlacement(pos: LabelPos, extent: number, gap: number): LabelPlacement {
+		const straight = extent + gap;
+		const diag = extent * 0.72 + gap;
+		switch (pos) {
+			case 'top':
+				return { x: 0, y: -straight, anchor: 'middle', baseline: 'text-after-edge' };
+			case 'bottom':
+				return { x: 0, y: straight, anchor: 'middle', baseline: 'hanging' };
+			case 'left':
+				return { x: -straight, y: 0, anchor: 'end', baseline: 'central' };
+			case 'right':
+				return { x: straight, y: 0, anchor: 'start', baseline: 'central' };
+			case 'top-left':
+				return { x: -diag, y: -diag, anchor: 'end', baseline: 'text-after-edge' };
+			case 'top-right':
+				return { x: diag, y: -diag, anchor: 'start', baseline: 'text-after-edge' };
+			case 'bottom-left':
+				return { x: -diag, y: diag, anchor: 'end', baseline: 'hanging' };
+			case 'bottom-right':
+				return { x: diag, y: diag, anchor: 'start', baseline: 'hanging' };
+		}
+	}
+
 	function labelStyleCss(ls: MapMarker['labelStyle']): string {
 		if (!ls) return '';
 		const parts: string[] = [];
@@ -1392,13 +1428,21 @@
 								{#if m.label}
 									{@const labelCss = labelStyleCss(m.labelStyle)}
 									{#if hasIcon}
+										{@const iconExtent = ICON_SIZE * (ic?.raster ? RASTER_ICON_SCALE : 1)}
+										{@const p = labelPlacement(
+											m.labelPosition ?? 'bottom',
+											iconExtent / 2,
+											LABEL_GAP,
+										)}
 										<text
 											class="mp-marker-label"
 											fill={color}
 											style={`--halo:${halo}${labelCss ? ';' + labelCss : ''}`}
 											vector-effect="non-scaling-stroke"
-											y={(ICON_SIZE * (ic?.raster ? RASTER_ICON_SCALE : 1)) / 2 + LABEL_GAP}
-											>{m.label}</text
+											x={p.x}
+											y={p.y}
+											text-anchor={p.anchor}
+											dominant-baseline={p.baseline}>{m.label}</text
 										>
 									{:else}
 										<text
@@ -2446,6 +2490,59 @@
 	:global(.mp-style-btn:focus-visible) {
 		outline: 2px solid var(--focus-ring);
 		outline-offset: 1px;
+	}
+
+	/* 3×3 compass grid — picks where the label sits relative to the icon.
+	   Centre cell is decorative (◈ the icon sits at the marker anchor and
+	   never moves); the 8 outer cells are role=radio and reflect the
+	   active pick with `data-active` + `aria-checked`. Pressed styling
+	   matches the .mp-style-btn set so the two neighbouring pickers read
+	   as one toolbar family. */
+	:global(.mp-anchor-grid) {
+		display: grid;
+		grid-template-columns: repeat(3, 32px);
+		grid-template-rows: repeat(3, 32px);
+		gap: 4px;
+	}
+	:global(.mp-anchor-cell) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		font-family: var(--font-ui);
+		font-size: 1rem;
+		line-height: 1;
+		color: var(--text-muted);
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		cursor: pointer;
+		transition:
+			background 120ms,
+			border-color 120ms,
+			color 120ms;
+	}
+	:global(.mp-anchor-cell:hover) {
+		background: var(--bg-hover);
+		color: var(--text);
+	}
+	:global(.mp-anchor-cell[data-active='true']) {
+		background: var(--accent-glow);
+		border-color: var(--text-accent);
+		color: var(--text-accent);
+	}
+	:global(.mp-anchor-cell:focus-visible) {
+		outline: 2px solid var(--focus-ring);
+		outline-offset: 1px;
+	}
+	:global(.mp-anchor-cell--center) {
+		cursor: default;
+		color: var(--text-dimmer);
+		background: transparent;
+		border-style: dashed;
+	}
+	:global(.mp-anchor-cell--center:hover) {
+		background: transparent;
+		color: var(--text-dimmer);
 	}
 	:global(.mp-props-footer) {
 		display: flex;
