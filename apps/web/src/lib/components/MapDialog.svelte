@@ -2457,6 +2457,18 @@
 		min-width: 7rem;
 	}
 
+	/* Style row is wide (7 buttons + a divider). Position is a narrow
+	   Select whose trigger only shows the arrow glyph (~1 em). Flexing
+	   Style + Position onto one row lets Position ride the tail of the
+	   Style row on desktop and wrap under it on phone widths. */
+	:global(.mp-props-field--style) {
+		flex: 0 0 auto;
+	}
+	:global(.mp-props-field--position) {
+		flex: 0 0 auto;
+		width: 3rem;
+	}
+
 	/* Label text-style toggles (Bold / Italic / Small caps / Underline) —
 	   text-editor-toolbar feel. Each button previews its own effect on
 	   the letter it displays (B, I, Aa, U); the pressed state uses the

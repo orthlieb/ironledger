@@ -102,18 +102,18 @@
 	);
 
 	/** 8 compass positions for the label, ordered as they read left-to-
-	 *  right in reading order (top row → middle → bottom). Arrow glyph
-	 *  in the label so the trigger and each Item read visually without
-	 *  the extra `icon` slot. */
+	 *  right in reading order (top row → middle → bottom). Just the
+	 *  arrow glyph in the label — no word — so the Select trigger stays
+	 *  narrow enough to sit on the same row as the Style toggles. */
 	const LABEL_POSITION_OPTIONS: { value: MapMarkerLabelPosition; label: string }[] = [
-		{ value: 'top-left', label: '↖  Top-left' },
-		{ value: 'top', label: '↑  Top' },
-		{ value: 'top-right', label: '↗  Top-right' },
-		{ value: 'left', label: '←  Left' },
-		{ value: 'right', label: '→  Right' },
-		{ value: 'bottom-left', label: '↙  Bottom-left' },
-		{ value: 'bottom', label: '↓  Bottom' },
-		{ value: 'bottom-right', label: '↘  Bottom-right' },
+		{ value: 'top-left', label: '↖' },
+		{ value: 'top', label: '↑' },
+		{ value: 'top-right', label: '↗' },
+		{ value: 'left', label: '←' },
+		{ value: 'right', label: '→' },
+		{ value: 'bottom-left', label: '↙' },
+		{ value: 'bottom', label: '↓' },
+		{ value: 'bottom-right', label: '↘' },
 	];
 
 	function openIconPicker() {
@@ -611,13 +611,13 @@
 				/>
 				<div class="mp-props-body">
 					<label class="mp-props-field">
-						<span class="mp-props-label">Name</span>
+						<span class="mp-props-label">Label</span>
 						<input
 							id="mp-props-name"
 							name="mp-props-name"
 							class="mp-props-input"
 							type="text"
-							placeholder="Marker name…"
+							placeholder="Marker label…"
 							value={draft.label}
 							oninput={onDraftLabelInput}
 						/>
@@ -628,90 +628,91 @@
 					     data-active track the pressed state; the ↦ live preview is
 					     applied straight on the button label so a glance tells the
 					     user what the map will look like. -->
-					<div class="mp-props-field">
-						<span class="mp-props-label">Style</span>
-						<div class="mp-style-row" role="group" aria-label="Label text style">
-							<!-- Bold / Italic / Underline — independent boolean toggles. -->
-							<button
-								type="button"
-								class="mp-style-btn"
-								data-active={draft.bold}
-								aria-pressed={draft.bold}
-								aria-label="Bold"
-								onclick={() => toggleLabelStyle('bold')}
-								style="font-weight:700">B</button
-							>
-							<button
-								type="button"
-								class="mp-style-btn"
-								data-active={draft.italic}
-								aria-pressed={draft.italic}
-								aria-label="Italic"
-								onclick={() => toggleLabelStyle('italic')}
-								style="font-style:italic">I</button
-							>
-							<button
-								type="button"
-								class="mp-style-btn"
-								data-active={draft.underline}
-								aria-pressed={draft.underline}
-								aria-label="Underline"
-								onclick={() => toggleLabelStyle('underline')}
-								style="text-decoration:underline">U</button
-							>
-							<!-- Case — mutually exclusive radio group: Regular /
+					<div class="mp-props-row">
+						<div class="mp-props-field mp-props-field--style">
+							<span class="mp-props-label">Style</span>
+							<div class="mp-style-row" role="group" aria-label="Label text style">
+								<!-- Bold / Italic / Underline — independent boolean toggles. -->
+								<button
+									type="button"
+									class="mp-style-btn"
+									data-active={draft.bold}
+									aria-pressed={draft.bold}
+									aria-label="Bold"
+									onclick={() => toggleLabelStyle('bold')}
+									style="font-weight:700">B</button
+								>
+								<button
+									type="button"
+									class="mp-style-btn"
+									data-active={draft.italic}
+									aria-pressed={draft.italic}
+									aria-label="Italic"
+									onclick={() => toggleLabelStyle('italic')}
+									style="font-style:italic">I</button
+								>
+								<button
+									type="button"
+									class="mp-style-btn"
+									data-active={draft.underline}
+									aria-pressed={draft.underline}
+									aria-label="Underline"
+									onclick={() => toggleLabelStyle('underline')}
+									style="text-decoration:underline">U</button
+								>
+								<!-- Case — mutually exclusive radio group: Regular /
 							     Small caps / Uppercase. The active one is highlighted
 							     the same way pressed toggles are; role=radio +
 							     aria-checked carry the semantics for AT. -->
-							<span class="mp-style-sep" aria-hidden="true"></span>
-							<div class="mp-style-radios" role="radiogroup" aria-label="Case">
-								<button
-									type="button"
-									class="mp-style-btn"
-									role="radio"
-									aria-checked={draft.case === 'regular'}
-									data-active={draft.case === 'regular'}
-									aria-label="Regular case"
-									onclick={() => pickCase('regular')}>Aa</button
-								>
-								<button
-									type="button"
-									class="mp-style-btn mp-style-btn--sc"
-									role="radio"
-									aria-checked={draft.case === 'small-caps'}
-									data-active={draft.case === 'small-caps'}
-									aria-label="Small caps"
-									onclick={() => pickCase('small-caps')}
-									>A<span class="mp-style-btn-xheight">A</span></button
-								>
-								<button
-									type="button"
-									class="mp-style-btn"
-									role="radio"
-									aria-checked={draft.case === 'uppercase'}
-									data-active={draft.case === 'uppercase'}
-									aria-label="Uppercase"
-									onclick={() => pickCase('uppercase')}
-									style="text-transform:uppercase">AA</button
-								>
+								<span class="mp-style-sep" aria-hidden="true"></span>
+								<div class="mp-style-radios" role="radiogroup" aria-label="Case">
+									<button
+										type="button"
+										class="mp-style-btn"
+										role="radio"
+										aria-checked={draft.case === 'regular'}
+										data-active={draft.case === 'regular'}
+										aria-label="Regular case"
+										onclick={() => pickCase('regular')}>Aa</button
+									>
+									<button
+										type="button"
+										class="mp-style-btn mp-style-btn--sc"
+										role="radio"
+										aria-checked={draft.case === 'small-caps'}
+										data-active={draft.case === 'small-caps'}
+										aria-label="Small caps"
+										onclick={() => pickCase('small-caps')}
+										>A<span class="mp-style-btn-xheight">A</span></button
+									>
+									<button
+										type="button"
+										class="mp-style-btn"
+										role="radio"
+										aria-checked={draft.case === 'uppercase'}
+										data-active={draft.case === 'uppercase'}
+										aria-label="Uppercase"
+										onclick={() => pickCase('uppercase')}
+										style="text-transform:uppercase">AA</button
+									>
+								</div>
 							</div>
 						</div>
-					</div>
 
-					<!-- Label position (relative to the icon) — compact dropdown
-					     replacing the 3×3 compass grid. Values map 1:1 to the 8
-					     compass points on `MapMarker.labelPosition`; the arrow
-					     glyphs in the option labels let the trigger and each menu
-					     item read without an extra icon slot. -->
-					<label class="mp-props-field">
-						<span class="mp-props-label">Label position</span>
-						<Select
-							value={draft.labelPosition}
-							options={LABEL_POSITION_OPTIONS}
-							ariaLabel="Label position"
-							onchange={pickLabelPosition}
-						/>
-					</label>
+						<!-- Label position (relative to the icon) — arrow-only
+						     Select trigger so it fits on the same row as the Style
+						     toggles. Values map 1:1 to the 8 compass points on
+						     `MapMarker.labelPosition`. -->
+						<label class="mp-props-field mp-props-field--position">
+							<span class="mp-props-label">Position</span>
+							<Select
+								value={draft.labelPosition}
+								options={LABEL_POSITION_OPTIONS}
+								ariaLabel="Label position"
+								onchange={pickLabelPosition}
+							/>
+						</label>
+					</div>
 
 					<div class="mp-props-row">
 						<label class="mp-props-field mp-props-field--icon">
