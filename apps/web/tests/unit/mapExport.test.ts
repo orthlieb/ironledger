@@ -29,7 +29,11 @@ vi.mock('../../src/lib/mapStore.svelte.js', () => ({
 	switchMap: vi.fn(),
 }));
 
-import { buildMapZipEntries } from '../../src/lib/mapExport.js';
+import {
+	buildMapZipEntries,
+	cleanLabelStyle,
+	cleanLabelPosition,
+} from '../../src/lib/mapExport.js';
 import type { MapMarker, MapServerSettings } from '../../src/lib/mapStore.svelte.js';
 
 // ---------------------------------------------------------------------------
@@ -44,6 +48,22 @@ const MARKER: MapMarker = {
 	icon: 'settlement/village',
 	color: '#22c55e',
 	entityId: 'place:abc123',
+};
+
+/** Same shape, with every typographic field set. Regression guard for the
+ *  bug where `applyMapImport` maintained an allowlist that silently
+ *  dropped `labelStyle` + `labelPosition` (mirrors the earlier
+ *  toPublicExtension → infoLink bug — same class of allowlist drift). */
+const STYLED_MARKER: MapMarker = {
+	id: 'm-2',
+	x: 4.5,
+	y: 1.75,
+	label: 'Bright Hollow',
+	icon: 'site/spring',
+	color: '#e8a030',
+	angle: 15,
+	labelStyle: { bold: true, italic: true, underline: true, case: 'small-caps' },
+	labelPosition: 'top-right',
 };
 
 const SETTINGS: MapServerSettings = {
@@ -125,6 +145,70 @@ describe('buildMapZipEntries — envelope', () => {
 		expect(body.name).toBe('Regional');
 		expect(body.markers).toEqual([MARKER]);
 		expect(body.settings).toEqual(SETTINGS);
+	});
+
+	it('applyMapImport allowlist keeps labelStyle + labelPosition (drift guard)', () => {
+		// The 2026-09 infoLink regression was a mapper that silently dropped a
+		// new field. `applyMapImport`'s `cleanMarkers.map(...)` is the same
+		// pattern — an explicit allowlist that HAS to be kept in lock-step with
+		// every new persistable field on MapMarker. These two assertions guard
+		// against the "someone adds a case value / a compass point and forgets
+		// to update the whitelist" regression by exercising the cleaner
+		// functions directly.
+		expect(
+			cleanLabelStyle({ bold: true, italic: true, underline: true, case: 'small-caps' }),
+		).toEqual({
+			bold: true,
+			italic: true,
+			underline: true,
+			case: 'small-caps',
+		});
+		expect(cleanLabelStyle({ case: 'uppercase' })).toEqual({ case: 'uppercase' });
+		// Unknown / malformed values fall away silently so a hand-edited or
+		// older manifest still imports (just without the styling).
+		expect(cleanLabelStyle({ case: 'centre' })).toBeUndefined();
+		expect(cleanLabelStyle({ bold: 'yes' })).toBeUndefined();
+		expect(cleanLabelStyle('nope')).toBeUndefined();
+		expect(cleanLabelStyle(null)).toBeUndefined();
+		expect(cleanLabelStyle({})).toBeUndefined();
+
+		for (const pos of [
+			'top',
+			'bottom',
+			'left',
+			'right',
+			'top-left',
+			'top-right',
+			'bottom-left',
+			'bottom-right',
+		]) {
+			expect(cleanLabelPosition(pos)).toBe(pos);
+		}
+		expect(cleanLabelPosition('centre')).toBeUndefined();
+		expect(cleanLabelPosition(0)).toBeUndefined();
+		expect(cleanLabelPosition(null)).toBeUndefined();
+	});
+
+	it('map.json preserves labelStyle + labelPosition (typographic fields)', async () => {
+		// Drift guard for the export side of the marker text-styling
+		// feature. buildMapZipEntries writes markers straight through,
+		// so this only fails if someone later inserts a normaliser that
+		// strips fields (or if the JSON.stringify shape changes).
+		const files = await buildMapZipEntries({
+			name: 'Regional',
+			markers: [STYLED_MARKER],
+			settings: {},
+			backgroundUrl: '',
+		});
+		const body = JSON.parse(strFromU8(files['map.json']));
+		expect(body.markers).toEqual([STYLED_MARKER]);
+		expect(body.markers[0].labelStyle).toEqual({
+			bold: true,
+			italic: true,
+			underline: true,
+			case: 'small-caps',
+		});
+		expect(body.markers[0].labelPosition).toBe('top-right');
 	});
 });
 

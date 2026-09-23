@@ -34,9 +34,53 @@ import {
 	setBackground,
 	switchMap,
 	type MapMarker,
+	type MapMarkerLabelPosition,
 	type MapOwnerKind,
 	type MapServerSettings,
 } from './mapStore.svelte.js';
+
+// ---------------------------------------------------------------------------
+// Import-side validation for the two typographic marker fields — kept close
+// to `applyMapImport` because it's the only place that consumes JSON from
+// disk (buildMapZipEntries writes markers straight through, so export is
+// already field-agnostic). Both helpers drop unknown / malformed values
+// silently: an imported bundle from an older / hand-edited manifest that
+// carries a bogus `labelPosition: 'centre'` or a non-object `labelStyle`
+// still imports, just without the styling.
+// ---------------------------------------------------------------------------
+
+const IMPORT_LABEL_CASES = new Set(['small-caps', 'uppercase']);
+const IMPORT_LABEL_POSITIONS = new Set<MapMarkerLabelPosition>([
+	'top',
+	'bottom',
+	'left',
+	'right',
+	'top-left',
+	'top-right',
+	'bottom-left',
+	'bottom-right',
+]);
+
+/** @internal — exported for the unit test to guard the field allowlist. */
+export function cleanLabelStyle(v: unknown): MapMarker['labelStyle'] {
+	if (!v || typeof v !== 'object') return undefined;
+	const src = v as Record<string, unknown>;
+	const out: NonNullable<MapMarker['labelStyle']> = {};
+	if (src.bold === true) out.bold = true;
+	if (src.italic === true) out.italic = true;
+	if (src.underline === true) out.underline = true;
+	if (typeof src.case === 'string' && IMPORT_LABEL_CASES.has(src.case)) {
+		out.case = src.case as 'small-caps' | 'uppercase';
+	}
+	return Object.keys(out).length ? out : undefined;
+}
+
+/** @internal — exported for the unit test to guard the field allowlist. */
+export function cleanLabelPosition(v: unknown): MapMarker['labelPosition'] {
+	return typeof v === 'string' && IMPORT_LABEL_POSITIONS.has(v as MapMarkerLabelPosition)
+		? (v as MapMarkerLabelPosition)
+		: undefined;
+}
 
 /** Suggested filename stamp: 'YYYY-MM-DD_HHmm'. */
 function stamp(): string {
@@ -272,6 +316,11 @@ export async function populateMap(
 			color: typeof m.color === 'string' ? m.color : undefined,
 			entityId: typeof m.entityId === 'string' ? m.entityId : undefined,
 			angle: typeof m.angle === 'number' && Number.isFinite(m.angle) ? m.angle : undefined,
+			// Typography — validated + normalised so a hand-edited or older
+			// manifest can't inject arbitrary CSS-adjacent strings into the
+			// runtime marker.
+			labelStyle: cleanLabelStyle((m as { labelStyle?: unknown }).labelStyle),
+			labelPosition: cleanLabelPosition((m as { labelPosition?: unknown }).labelPosition),
 		}));
 	await replaceMarkers(cleanMarkers);
 
