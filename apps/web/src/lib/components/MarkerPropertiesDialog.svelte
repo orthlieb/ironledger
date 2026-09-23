@@ -488,6 +488,17 @@
 	const draftAngle = $derived(draft ? normalizeAngle(draft.angle) : selectedAngle);
 	const draftLinkedEntity = $derived(draft ? resolveEntity(draft.entityId) : null);
 
+	// Gating derived from the draft's two "visual" fields. Icon-only
+	// controls (angle) grey out when there's no icon to rotate; label-only
+	// controls (Style row) grey out when there's no text to style;
+	// Position needs BOTH (positioning a label relative to an icon that
+	// isn't there makes no sense either way). The OK button gates on
+	// "either present" — a marker with neither icon nor label would be
+	// invisible on the canvas, so we won't let the user commit that.
+	const hasIcon = $derived(!!draft?.icon);
+	const hasLabel = $derived(!!draft?.label.trim());
+	const canSave = $derived(hasIcon || hasLabel);
+
 	function onDraftLabelInput(e: Event) {
 		if (!draft) return;
 		draft.label = (e.target as HTMLInputElement).value;
@@ -632,13 +643,15 @@
 						<div class="mp-props-field mp-props-field--style">
 							<span class="mp-props-label">Style</span>
 							<div class="mp-style-row" role="group" aria-label="Label text style">
-								<!-- Bold / Italic / Underline — independent boolean toggles. -->
+								<!-- Bold / Italic / Underline — independent boolean toggles.
+								     Disabled when there's no label to style. -->
 								<button
 									type="button"
 									class="mp-style-btn"
 									data-active={draft.bold}
 									aria-pressed={draft.bold}
 									aria-label="Bold"
+									disabled={!hasLabel}
 									onclick={() => toggleLabelStyle('bold')}
 									style="font-weight:700">B</button
 								>
@@ -648,6 +661,7 @@
 									data-active={draft.italic}
 									aria-pressed={draft.italic}
 									aria-label="Italic"
+									disabled={!hasLabel}
 									onclick={() => toggleLabelStyle('italic')}
 									style="font-style:italic">I</button
 								>
@@ -657,6 +671,7 @@
 									data-active={draft.underline}
 									aria-pressed={draft.underline}
 									aria-label="Underline"
+									disabled={!hasLabel}
 									onclick={() => toggleLabelStyle('underline')}
 									style="text-decoration:underline">U</button
 								>
@@ -673,6 +688,7 @@
 										aria-checked={draft.case === 'regular'}
 										data-active={draft.case === 'regular'}
 										aria-label="Regular case"
+										disabled={!hasLabel}
 										onclick={() => pickCase('regular')}>Aa</button
 									>
 									<button
@@ -682,6 +698,7 @@
 										aria-checked={draft.case === 'small-caps'}
 										data-active={draft.case === 'small-caps'}
 										aria-label="Small caps"
+										disabled={!hasLabel}
 										onclick={() => pickCase('small-caps')}
 										>A<span class="mp-style-btn-xheight">A</span></button
 									>
@@ -692,6 +709,7 @@
 										aria-checked={draft.case === 'uppercase'}
 										data-active={draft.case === 'uppercase'}
 										aria-label="Uppercase"
+										disabled={!hasLabel}
 										onclick={() => pickCase('uppercase')}
 										style="text-transform:uppercase">AA</button
 									>
@@ -702,13 +720,16 @@
 						<!-- Label position (relative to the icon) — arrow-only
 						     Select trigger so it fits on the same row as the Style
 						     toggles. Values map 1:1 to the 8 compass points on
-						     `MapMarker.labelPosition`. -->
+						     `MapMarker.labelPosition`. Disabled when either half of
+						     the pair is missing — with no icon the label centres
+						     regardless, with no label there's nothing to position. -->
 						<label class="mp-props-field mp-props-field--position">
 							<span class="mp-props-label">Position</span>
 							<Select
 								value={draft.labelPosition}
 								options={LABEL_POSITION_OPTIONS}
 								ariaLabel="Label position"
+								disabled={!hasIcon || !hasLabel}
 								onchange={pickLabelPosition}
 							/>
 						</label>
@@ -731,12 +752,16 @@
 							</button>
 						</label>
 
-						<label class="mp-props-field mp-props-field--angle">
+						<label
+							class="mp-props-field mp-props-field--angle"
+							class:mp-props-field--disabled={!hasIcon}
+						>
 							<span class="mp-props-label">Angle</span>
 							<div class="mp-sel-angle" role="group" aria-label="Marker rotation">
 								<button
 									type="button"
 									class="mp-sel-angle-step"
+									disabled={!hasIcon}
 									onclick={() => stepDraftAngle(-15)}
 									aria-label="Rotate counter-clockwise">{@html minusSvg}</button
 								>
@@ -749,6 +774,7 @@
 										min="0"
 										max="359"
 										step="15"
+										disabled={!hasIcon}
 										value={draftAngle}
 										oninput={onDraftAngleInput}
 										aria-label="Marker rotation in degrees"
@@ -758,6 +784,7 @@
 								<button
 									type="button"
 									class="mp-sel-angle-step"
+									disabled={!hasIcon}
 									onclick={() => stepDraftAngle(15)}
 									aria-label="Rotate clockwise">{@html plusSvg}</button
 								>
@@ -860,7 +887,12 @@
 					</button>
 					<div class="mp-props-footer-spacer"></div>
 					<button class="btn" onclick={cancelDraft}>Cancel</button>
-					<button class="btn btn-primary" onclick={commitDraft}>OK</button>
+					<button
+						class="btn btn-primary"
+						disabled={!canSave}
+						use:tooltip={canSave ? '' : 'A marker needs an icon or a label'}
+						onclick={commitDraft}>OK</button
+					>
 				</div>
 			</Dialog.Content>
 		</Dialog.Portal>

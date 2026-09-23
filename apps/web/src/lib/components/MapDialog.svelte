@@ -2530,6 +2530,27 @@
 		outline: 2px solid var(--focus-ring);
 		outline-offset: 1px;
 	}
+	/* Disabled state — greyed and non-interactive. Applied when the
+	   feature the button controls has no target (Style buttons when
+	   there's no label to style; case radios likewise). */
+	:global(.mp-style-btn:disabled) {
+		opacity: 0.4;
+		cursor: not-allowed;
+		background: var(--bg-control);
+	}
+	:global(.mp-style-btn:disabled:hover) {
+		background: var(--bg-control);
+	}
+	/* Angle field — greys the whole widget when there's no icon to
+	   rotate. Applied via a container class since the field is composed
+	   of three separate elements (± steps + number input). */
+	:global(.mp-props-field--disabled .mp-sel-angle) {
+		opacity: 0.4;
+	}
+	:global(.mp-sel-angle-step:disabled),
+	:global(.mp-sel-angle-input:disabled) {
+		cursor: not-allowed;
+	}
 
 	:global(.mp-props-footer) {
 		display: flex;
