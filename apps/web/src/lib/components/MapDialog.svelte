@@ -1041,6 +1041,21 @@
 	 *  Sized to clear the label's font-ascent PLUS a couple of pixels
 	 *  of breathing room so the text never bites into the glyph. */
 	const LABEL_GAP = $derived(isMobileViewport ? 0.5 : 0.3);
+
+	// Marker text emphasis — bold/italic/small-caps/underline flags on
+	// `m.labelStyle`. Serialised straight into the SVG `<text>`'s style
+	// attribute so every combination is legal and there's no need for
+	// a matrix of CSS classes. Empty for unstyled markers, which keeps
+	// the persisted marker byte-identical for pre-styling data.
+	function labelStyleCss(ls: MapMarker['labelStyle']): string {
+		if (!ls) return '';
+		const parts: string[] = [];
+		if (ls.bold) parts.push('font-weight:700');
+		if (ls.italic) parts.push('font-style:italic');
+		if (ls.smallCaps) parts.push('font-variant:small-caps');
+		if (ls.underline) parts.push('text-decoration:underline');
+		return parts.join(';');
+	}
 </script>
 
 <Dialog.Root bind:open={dialogOpen}>
@@ -1374,11 +1389,12 @@
 									/>
 								{/if}
 								{#if m.label}
+									{@const labelCss = labelStyleCss(m.labelStyle)}
 									{#if hasIcon}
 										<text
 											class="mp-marker-label"
 											fill={color}
-											style="--halo:{halo}"
+											style={`--halo:${halo}${labelCss ? ';' + labelCss : ''}`}
 											vector-effect="non-scaling-stroke"
 											y={(ICON_SIZE * (ic?.raster ? RASTER_ICON_SCALE : 1)) / 2 + LABEL_GAP}
 											>{m.label}</text
@@ -1387,7 +1403,7 @@
 										<text
 											class="mp-marker-label mp-marker-label--centered"
 											fill={color}
-											style="--halo:{halo}"
+											style={`--halo:${halo}${labelCss ? ';' + labelCss : ''}`}
 											vector-effect="non-scaling-stroke"
 											y="0">{m.label}</text
 										>
@@ -2392,6 +2408,43 @@
 	:global(.mp-props-field--rgb) {
 		flex: 1 1 7rem;
 		min-width: 7rem;
+	}
+
+	/* Label text-style toggles (Bold / Italic / Small caps / Underline) —
+	   text-editor-toolbar feel. Each button previews its own effect on
+	   the letter it displays (B, I, Aa, U); the pressed state uses the
+	   accent-glow ground + accent border so a glance across the row tells
+	   the user which flags are on without reading aria-pressed. */
+	:global(.mp-style-row) {
+		display: flex;
+		gap: 4px;
+	}
+	:global(.mp-style-btn) {
+		min-width: 32px;
+		height: 32px;
+		padding: 0 8px;
+		font-family: var(--font-ui);
+		font-size: 0.95rem;
+		color: var(--text);
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		cursor: pointer;
+		transition:
+			background 120ms,
+			border-color 120ms;
+	}
+	:global(.mp-style-btn:hover) {
+		background: var(--bg-hover);
+	}
+	:global(.mp-style-btn[data-active='true']) {
+		background: var(--accent-glow);
+		border-color: var(--text-accent);
+		color: var(--text-accent);
+	}
+	:global(.mp-style-btn:focus-visible) {
+		outline: 2px solid var(--focus-ring);
+		outline-offset: 1px;
 	}
 	:global(.mp-props-footer) {
 		display: flex;

@@ -389,6 +389,13 @@
 		color: string;
 		angle: number;
 		entityId: string;
+		/** Text emphasis on the label — mirrors the boolean flags on
+		 *  `MapMarker.labelStyle`. Kept as four discrete booleans in the
+		 *  draft so the toggle buttons in the UI bind directly. */
+		bold: boolean;
+		italic: boolean;
+		smallCaps: boolean;
+		underline: boolean;
 	};
 	let draft = $state<MarkerDraft | null>(null);
 	let originalMarker = $state<MarkerDraft | null>(null);
@@ -408,6 +415,10 @@
 			color: m.color ?? DEFAULT_MARKER_COLOR,
 			angle: normalizeAngle(m.angle),
 			entityId: m.entityId ?? '',
+			bold: !!m.labelStyle?.bold,
+			italic: !!m.labelStyle?.italic,
+			smallCaps: !!m.labelStyle?.smallCaps,
+			underline: !!m.labelStyle?.underline,
 		};
 		originalMarker = snap;
 		draft = { ...snap };
@@ -420,12 +431,26 @@
 	 *  handler updates the draft then calls this. */
 	function applyDraftLive() {
 		if (!draft || !selectedMarker) return;
+		// Persist labelStyle only when at least one flag is set — an empty
+		// object round-trips as an empty object in JSON but shipping it
+		// forever wastes the "no styling" byte-savings for the 99 % of
+		// markers that never touch these toggles.
+		const anyStyle = draft.bold || draft.italic || draft.smallCaps || draft.underline;
+		const labelStyle = anyStyle
+			? {
+					bold: draft.bold || undefined,
+					italic: draft.italic || undefined,
+					smallCaps: draft.smallCaps || undefined,
+					underline: draft.underline || undefined,
+				}
+			: undefined;
 		updateMarker(selectedMarker.id, {
 			label: draft.label,
 			icon: draft.icon ?? undefined,
 			color: draft.color,
 			angle: draft.angle,
 			entityId: draft.entityId || undefined,
+			labelStyle,
 		});
 	}
 
@@ -440,6 +465,11 @@
 	function onDraftLabelInput(e: Event) {
 		if (!draft) return;
 		draft.label = (e.target as HTMLInputElement).value;
+		applyDraftLive();
+	}
+	function toggleLabelStyle(key: 'bold' | 'italic' | 'smallCaps' | 'underline') {
+		if (!draft) return;
+		draft[key] = !draft[key];
 		applyDraftLive();
 	}
 	function onDraftAngleInput(e: Event) {
@@ -493,12 +523,25 @@
 	 *  once `selectedMarker` returns to null. */
 	function cancelDraft() {
 		if (originalMarker && selectedMarker) {
+			const anyStyle =
+				originalMarker.bold ||
+				originalMarker.italic ||
+				originalMarker.smallCaps ||
+				originalMarker.underline;
 			updateMarker(selectedMarker.id, {
 				label: originalMarker.label,
 				icon: originalMarker.icon ?? undefined,
 				color: originalMarker.color,
 				angle: originalMarker.angle,
 				entityId: originalMarker.entityId || undefined,
+				labelStyle: anyStyle
+					? {
+							bold: originalMarker.bold || undefined,
+							italic: originalMarker.italic || undefined,
+							smallCaps: originalMarker.smallCaps || undefined,
+							underline: originalMarker.underline || undefined,
+						}
+					: undefined,
 			});
 		}
 		propsDialogOpen = false;
@@ -537,6 +580,53 @@
 							oninput={onDraftLabelInput}
 						/>
 					</label>
+
+					<!-- Text emphasis toggles — each one flips a single boolean on
+					     `draft.labelStyle` via toggleLabelStyle(). aria-pressed +
+					     data-active track the pressed state; the ↦ live preview is
+					     applied straight on the button label so a glance tells the
+					     user what the map will look like. -->
+					<div class="mp-props-field">
+						<span class="mp-props-label">Style</span>
+						<div class="mp-style-row" role="group" aria-label="Label text style">
+							<button
+								type="button"
+								class="mp-style-btn"
+								data-active={draft.bold}
+								aria-pressed={draft.bold}
+								aria-label="Bold"
+								onclick={() => toggleLabelStyle('bold')}
+								style="font-weight:700">B</button
+							>
+							<button
+								type="button"
+								class="mp-style-btn"
+								data-active={draft.italic}
+								aria-pressed={draft.italic}
+								aria-label="Italic"
+								onclick={() => toggleLabelStyle('italic')}
+								style="font-style:italic">I</button
+							>
+							<button
+								type="button"
+								class="mp-style-btn mp-style-btn--sc"
+								data-active={draft.smallCaps}
+								aria-pressed={draft.smallCaps}
+								aria-label="Small caps"
+								onclick={() => toggleLabelStyle('smallCaps')}
+								style="font-variant:small-caps">Aa</button
+							>
+							<button
+								type="button"
+								class="mp-style-btn"
+								data-active={draft.underline}
+								aria-pressed={draft.underline}
+								aria-label="Underline"
+								onclick={() => toggleLabelStyle('underline')}
+								style="text-decoration:underline">U</button
+							>
+						</div>
+					</div>
 
 					<div class="mp-props-row">
 						<label class="mp-props-field mp-props-field--icon">

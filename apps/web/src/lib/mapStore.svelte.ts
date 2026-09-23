@@ -62,6 +62,16 @@ export interface MapMarker {
 	 *  around the marker's anchor point. Optional so pre-rotation markers
 	 *  still parse; the render path treats undefined as 0°. */
 	angle?: number;
+	/** Optional typographic emphasis on the label — boolean flags so any
+	 *  combination is legal (bold-italic small-caps under a rune label,
+	 *  etc.). Every flag defaults to false when absent, which is how
+	 *  pre-styling markers stay unchanged. */
+	labelStyle?: {
+		bold?: boolean;
+		italic?: boolean;
+		smallCaps?: boolean;
+		underline?: boolean;
+	};
 }
 
 /** Server-persisted per-map settings — things that describe the MAP
