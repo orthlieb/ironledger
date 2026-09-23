@@ -62,7 +62,41 @@ export interface MapMarker {
 	 *  around the marker's anchor point. Optional so pre-rotation markers
 	 *  still parse; the render path treats undefined as 0°. */
 	angle?: number;
+	/** Optional typographic emphasis on the label — boolean flags so any
+	 *  combination is legal (bold-italic small-caps under a rune label,
+	 *  etc.). Every flag defaults to false when absent, which is how
+	 *  pre-styling markers stay unchanged. */
+	labelStyle?: {
+		bold?: boolean;
+		italic?: boolean;
+		underline?: boolean;
+		/** Case transform, mutually exclusive with the other options in
+		 *  the same group (regular text = field absent). Small-caps
+		 *  renders lowercase as x-height caps; uppercase transforms the
+		 *  rendered glyphs while the stored `label` stays in whatever
+		 *  case the user typed. */
+		case?: 'small-caps' | 'uppercase';
+	};
+	/** Where the label sits relative to the icon. Icon stays at the
+	 *  marker anchor (so hit-testing + selection behaviour are unchanged);
+	 *  only the label rotates around it. Absent → 'bottom' (the
+	 *  current default — label under the icon). Ignored when the marker
+	 *  has no icon (label centres on the anchor either way). */
+	labelPosition?: MapMarkerLabelPosition;
 }
+
+/** Compass positions the label may sit in relative to the icon (icon
+ *  stays at the marker anchor). Exported so the marker-properties
+ *  dialog can strongly type its picker options. */
+export type MapMarkerLabelPosition =
+	| 'top'
+	| 'bottom'
+	| 'left'
+	| 'right'
+	| 'top-left'
+	| 'top-right'
+	| 'bottom-left'
+	| 'bottom-right';
 
 /** Server-persisted per-map settings — things that describe the MAP
  *  itself (not the current viewer's device preferences). Scale in

@@ -34,12 +34,17 @@
 		mapGlyphInner,
 		resolveMapIcon,
 	} from '$lib/mapConstants.js';
-	import { updateMarker, removeMarker, type MapMarker } from '$lib/mapStore.svelte.js';
+	import {
+		updateMarker,
+		removeMarker,
+		type MapMarker,
+		type MapMarkerLabelPosition,
+	} from '$lib/mapStore.svelte.js';
 	import { getLinkableEntities, resolveEntity } from '$lib/mapEntityLinks.js';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
-	import iconAngleSvg from '$icons/angle-solid.svg?raw';
 	import iconPaletteSvg from '$icons/palette-solid.svg?raw';
+	import Select from '$lib/components/Select.svelte';
 	import plusSvg from '$icons/plus-solid.svg?raw';
 	import minusSvg from '$icons/minus-solid.svg?raw';
 	import gotoSvg from '$icons/arrow-up-right-from-square-solid.svg?raw';
@@ -95,6 +100,21 @@
 			.slice()
 			.sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' })),
 	);
+
+	/** 8 compass positions for the label, ordered as they read left-to-
+	 *  right in reading order (top row → middle → bottom). Just the
+	 *  arrow glyph in the label — no word — so the Select trigger stays
+	 *  narrow enough to sit on the same row as the Style toggles. */
+	const LABEL_POSITION_OPTIONS: { value: MapMarkerLabelPosition; label: string }[] = [
+		{ value: 'top-left', label: '↖' },
+		{ value: 'top', label: '↑' },
+		{ value: 'top-right', label: '↗' },
+		{ value: 'left', label: '←' },
+		{ value: 'right', label: '→' },
+		{ value: 'bottom-left', label: '↙' },
+		{ value: 'bottom', label: '↓' },
+		{ value: 'bottom-right', label: '↘' },
+	];
 
 	function openIconPicker() {
 		if (!selectedMarker) return;
@@ -389,6 +409,17 @@
 		color: string;
 		angle: number;
 		entityId: string;
+		/** Text emphasis on the label — mirrors the boolean flags on
+		 *  `MapMarker.labelStyle`. Kept as four discrete booleans in the
+		 *  draft so the toggle buttons in the UI bind directly. */
+		bold: boolean;
+		italic: boolean;
+		underline: boolean;
+		/** Case transform — 'regular' is the absent-field default; the
+		 *  other two are mutually exclusive alternatives (setting one
+		 *  clears the other). Stored as `labelStyle.case` when != 'regular'. */
+		case: 'regular' | 'small-caps' | 'uppercase';
+		labelPosition: MapMarkerLabelPosition;
 	};
 	let draft = $state<MarkerDraft | null>(null);
 	let originalMarker = $state<MarkerDraft | null>(null);
@@ -408,6 +439,11 @@
 			color: m.color ?? DEFAULT_MARKER_COLOR,
 			angle: normalizeAngle(m.angle),
 			entityId: m.entityId ?? '',
+			bold: !!m.labelStyle?.bold,
+			italic: !!m.labelStyle?.italic,
+			underline: !!m.labelStyle?.underline,
+			case: m.labelStyle?.case ?? 'regular',
+			labelPosition: m.labelPosition ?? 'bottom',
 		};
 		originalMarker = snap;
 		draft = { ...snap };
@@ -420,12 +456,27 @@
 	 *  handler updates the draft then calls this. */
 	function applyDraftLive() {
 		if (!draft || !selectedMarker) return;
+		// Persist labelStyle only when at least one flag is set — an empty
+		// object round-trips as an empty object in JSON but shipping it
+		// forever wastes the "no styling" byte-savings for the 99 % of
+		// markers that never touch these toggles.
+		const anyStyle = draft.bold || draft.italic || draft.underline || draft.case !== 'regular';
+		const labelStyle = anyStyle
+			? {
+					bold: draft.bold || undefined,
+					italic: draft.italic || undefined,
+					underline: draft.underline || undefined,
+					case: draft.case === 'regular' ? undefined : draft.case,
+				}
+			: undefined;
 		updateMarker(selectedMarker.id, {
 			label: draft.label,
 			icon: draft.icon ?? undefined,
 			color: draft.color,
 			angle: draft.angle,
 			entityId: draft.entityId || undefined,
+			labelStyle,
+			labelPosition: draft.labelPosition === 'bottom' ? undefined : draft.labelPosition,
 		});
 	}
 
@@ -437,9 +488,39 @@
 	const draftAngle = $derived(draft ? normalizeAngle(draft.angle) : selectedAngle);
 	const draftLinkedEntity = $derived(draft ? resolveEntity(draft.entityId) : null);
 
+	// Gating derived from the draft's two "visual" fields. Icon-only
+	// controls (angle) grey out when there's no icon to rotate; label-only
+	// controls (Style row) grey out when there's no text to style;
+	// Position needs BOTH (positioning a label relative to an icon that
+	// isn't there makes no sense either way). The OK button gates on
+	// "either present" — a marker with neither icon nor label would be
+	// invisible on the canvas, so we won't let the user commit that.
+	const hasIcon = $derived(!!draft?.icon);
+	const hasLabel = $derived(!!draft?.label.trim());
+	const canSave = $derived(hasIcon || hasLabel);
+
 	function onDraftLabelInput(e: Event) {
 		if (!draft) return;
 		draft.label = (e.target as HTMLInputElement).value;
+		applyDraftLive();
+	}
+	function toggleLabelStyle(key: 'bold' | 'italic' | 'underline') {
+		if (!draft) return;
+		draft[key] = !draft[key];
+		applyDraftLive();
+	}
+	/** Case is a radio group: picking a new option always replaces the
+	 *  current one. Clicking the already-active option is a no-op — we
+	 *  don't want a "clear" gesture on a radio (that's what the Regular
+	 *  cell is for). */
+	function pickCase(next: 'regular' | 'small-caps' | 'uppercase') {
+		if (!draft || draft.case === next) return;
+		draft.case = next;
+		applyDraftLive();
+	}
+	function pickLabelPosition(pos: MapMarkerLabelPosition) {
+		if (!draft) return;
+		draft.labelPosition = pos;
 		applyDraftLive();
 	}
 	function onDraftAngleInput(e: Event) {
@@ -493,12 +574,27 @@
 	 *  once `selectedMarker` returns to null. */
 	function cancelDraft() {
 		if (originalMarker && selectedMarker) {
+			const anyStyle =
+				originalMarker.bold ||
+				originalMarker.italic ||
+				originalMarker.underline ||
+				originalMarker.case !== 'regular';
 			updateMarker(selectedMarker.id, {
 				label: originalMarker.label,
 				icon: originalMarker.icon ?? undefined,
 				color: originalMarker.color,
 				angle: originalMarker.angle,
 				entityId: originalMarker.entityId || undefined,
+				labelStyle: anyStyle
+					? {
+							bold: originalMarker.bold || undefined,
+							italic: originalMarker.italic || undefined,
+							underline: originalMarker.underline || undefined,
+							case: originalMarker.case === 'regular' ? undefined : originalMarker.case,
+						}
+					: undefined,
+				labelPosition:
+					originalMarker.labelPosition === 'bottom' ? undefined : originalMarker.labelPosition,
 			});
 		}
 		propsDialogOpen = false;
@@ -526,17 +622,118 @@
 				/>
 				<div class="mp-props-body">
 					<label class="mp-props-field">
-						<span class="mp-props-label">Name</span>
+						<span class="mp-props-label">Label</span>
 						<input
 							id="mp-props-name"
 							name="mp-props-name"
 							class="mp-props-input"
 							type="text"
-							placeholder="Marker name…"
+							placeholder="Marker label…"
 							value={draft.label}
 							oninput={onDraftLabelInput}
 						/>
 					</label>
+
+					<!-- Text emphasis toggles — each one flips a single boolean on
+					     `draft.labelStyle` via toggleLabelStyle(). aria-pressed +
+					     data-active track the pressed state; the ↦ live preview is
+					     applied straight on the button label so a glance tells the
+					     user what the map will look like. -->
+					<div class="mp-props-row">
+						<div class="mp-props-field mp-props-field--style">
+							<span class="mp-props-label">Style</span>
+							<div class="mp-style-row" role="group" aria-label="Label text style">
+								<!-- Bold / Italic / Underline — independent boolean toggles.
+								     Disabled when there's no label to style. -->
+								<button
+									type="button"
+									class="mp-style-btn"
+									data-active={draft.bold}
+									aria-pressed={draft.bold}
+									aria-label="Bold"
+									disabled={!hasLabel}
+									onclick={() => toggleLabelStyle('bold')}
+									style="font-weight:700">B</button
+								>
+								<button
+									type="button"
+									class="mp-style-btn"
+									data-active={draft.italic}
+									aria-pressed={draft.italic}
+									aria-label="Italic"
+									disabled={!hasLabel}
+									onclick={() => toggleLabelStyle('italic')}
+									style="font-style:italic">I</button
+								>
+								<button
+									type="button"
+									class="mp-style-btn"
+									data-active={draft.underline}
+									aria-pressed={draft.underline}
+									aria-label="Underline"
+									disabled={!hasLabel}
+									onclick={() => toggleLabelStyle('underline')}
+									style="text-decoration:underline">U</button
+								>
+								<!-- Case — mutually exclusive radio group: Regular /
+							     Small caps / Uppercase. The active one is highlighted
+							     the same way pressed toggles are; role=radio +
+							     aria-checked carry the semantics for AT. -->
+								<span class="mp-style-sep" aria-hidden="true"></span>
+								<div class="mp-style-radios" role="radiogroup" aria-label="Case">
+									<button
+										type="button"
+										class="mp-style-btn"
+										role="radio"
+										aria-checked={draft.case === 'regular'}
+										data-active={draft.case === 'regular'}
+										aria-label="Regular case"
+										disabled={!hasLabel}
+										onclick={() => pickCase('regular')}>Aa</button
+									>
+									<button
+										type="button"
+										class="mp-style-btn mp-style-btn--sc"
+										role="radio"
+										aria-checked={draft.case === 'small-caps'}
+										data-active={draft.case === 'small-caps'}
+										aria-label="Small caps"
+										disabled={!hasLabel}
+										onclick={() => pickCase('small-caps')}
+										>A<span class="mp-style-btn-xheight">A</span></button
+									>
+									<button
+										type="button"
+										class="mp-style-btn"
+										role="radio"
+										aria-checked={draft.case === 'uppercase'}
+										data-active={draft.case === 'uppercase'}
+										aria-label="Uppercase"
+										disabled={!hasLabel}
+										onclick={() => pickCase('uppercase')}
+										style="text-transform:uppercase">AA</button
+									>
+								</div>
+							</div>
+						</div>
+
+						<!-- Label position (relative to the icon) — arrow-only
+						     Select trigger so it fits on the same row as the Style
+						     toggles. Values map 1:1 to the 8 compass points on
+						     `MapMarker.labelPosition`. Disabled when either half of
+						     the pair is missing — with no icon the label centres
+						     regardless, with no label there's nothing to position. -->
+						<label class="mp-props-field mp-props-field--position">
+							<span class="mp-props-label">Position</span>
+							<Select
+								value={draft.labelPosition}
+								options={LABEL_POSITION_OPTIONS}
+								ariaLabel="Label position"
+								disabled={!hasIcon || !hasLabel}
+								onchange={pickLabelPosition}
+							/>
+						</label>
+					</div>
 
 					<div class="mp-props-row">
 						<label class="mp-props-field mp-props-field--icon">
@@ -555,17 +752,20 @@
 							</button>
 						</label>
 
-						<label class="mp-props-field mp-props-field--angle">
+						<label
+							class="mp-props-field mp-props-field--angle"
+							class:mp-props-field--disabled={!hasIcon}
+						>
 							<span class="mp-props-label">Angle</span>
 							<div class="mp-sel-angle" role="group" aria-label="Marker rotation">
 								<button
 									type="button"
 									class="mp-sel-angle-step"
+									disabled={!hasIcon}
 									onclick={() => stepDraftAngle(-15)}
 									aria-label="Rotate counter-clockwise">{@html minusSvg}</button
 								>
 								<span class="mp-sel-angle-field">
-									<span class="mp-sel-angle-glyph" aria-hidden="true">{@html iconAngleSvg}</span>
 									<input
 										id="mp-props-angle"
 										name="mp-props-angle"
@@ -574,6 +774,7 @@
 										min="0"
 										max="359"
 										step="15"
+										disabled={!hasIcon}
 										value={draftAngle}
 										oninput={onDraftAngleInput}
 										aria-label="Marker rotation in degrees"
@@ -583,6 +784,7 @@
 								<button
 									type="button"
 									class="mp-sel-angle-step"
+									disabled={!hasIcon}
 									onclick={() => stepDraftAngle(15)}
 									aria-label="Rotate clockwise">{@html plusSvg}</button
 								>
@@ -613,8 +815,13 @@
 							</button>
 						</label>
 
+						<!-- No visible label — the input's value ("rgb(r, g, b)") is
+						     self-descriptive and dropping the label keeps the row's
+						     four controls at the same 32 px height. aria-label
+						     retained for screen readers. `align-items: flex-end` on
+						     the row still pins the input to the row's bottom edge, so
+						     it lines up with the icon / angle / colour buttons. -->
 						<label class="mp-props-field mp-props-field--rgb">
-							<span class="mp-props-label">RGB</span>
 							<input
 								class="mp-rgb-input"
 								type="text"
@@ -680,7 +887,12 @@
 					</button>
 					<div class="mp-props-footer-spacer"></div>
 					<button class="btn" onclick={cancelDraft}>Cancel</button>
-					<button class="btn btn-primary" onclick={commitDraft}>OK</button>
+					<button
+						class="btn btn-primary"
+						disabled={!canSave}
+						use:tooltip={canSave ? '' : 'A marker needs an icon or a label'}
+						onclick={commitDraft}>OK</button
+					>
 				</div>
 			</Dialog.Content>
 		</Dialog.Portal>

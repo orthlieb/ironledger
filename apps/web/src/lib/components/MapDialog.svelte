@@ -1041,6 +1041,58 @@
 	 *  Sized to clear the label's font-ascent PLUS a couple of pixels
 	 *  of breathing room so the text never bites into the glyph. */
 	const LABEL_GAP = $derived(isMobileViewport ? 0.5 : 0.3);
+
+	// Marker text emphasis — bold/italic/small-caps/underline flags on
+	// `m.labelStyle`. Serialised straight into the SVG `<text>`'s style
+	// attribute so every combination is legal and there's no need for
+	// a matrix of CSS classes. Empty for unstyled markers, which keeps
+	// the persisted marker byte-identical for pre-styling data.
+	// Where the label sits relative to the icon, expressed as SVG text
+	// placement (x, y, text-anchor, dominant-baseline). `extent` is the
+	// icon's world-unit half-size at the current zoom — the label offsets
+	// clear that edge by LABEL_GAP so it never bites into the icon. Diagonal
+	// positions use the icon's corner geometry (~0.7 × half-side) so the
+	// label sits outside the bounding rect, not straddling it.
+	type LabelPos = NonNullable<MapMarker['labelPosition']>;
+	interface LabelPlacement {
+		x: number;
+		y: number;
+		anchor: 'start' | 'middle' | 'end';
+		baseline: 'text-after-edge' | 'hanging' | 'central';
+	}
+	function labelPlacement(pos: LabelPos, extent: number, gap: number): LabelPlacement {
+		const straight = extent + gap;
+		const diag = extent * 0.72 + gap;
+		switch (pos) {
+			case 'top':
+				return { x: 0, y: -straight, anchor: 'middle', baseline: 'text-after-edge' };
+			case 'bottom':
+				return { x: 0, y: straight, anchor: 'middle', baseline: 'hanging' };
+			case 'left':
+				return { x: -straight, y: 0, anchor: 'end', baseline: 'central' };
+			case 'right':
+				return { x: straight, y: 0, anchor: 'start', baseline: 'central' };
+			case 'top-left':
+				return { x: -diag, y: -diag, anchor: 'end', baseline: 'text-after-edge' };
+			case 'top-right':
+				return { x: diag, y: -diag, anchor: 'start', baseline: 'text-after-edge' };
+			case 'bottom-left':
+				return { x: -diag, y: diag, anchor: 'end', baseline: 'hanging' };
+			case 'bottom-right':
+				return { x: diag, y: diag, anchor: 'start', baseline: 'hanging' };
+		}
+	}
+
+	function labelStyleCss(ls: MapMarker['labelStyle']): string {
+		if (!ls) return '';
+		const parts: string[] = [];
+		if (ls.bold) parts.push('font-weight:700');
+		if (ls.italic) parts.push('font-style:italic');
+		if (ls.underline) parts.push('text-decoration:underline');
+		if (ls.case === 'small-caps') parts.push('font-variant:small-caps');
+		else if (ls.case === 'uppercase') parts.push('text-transform:uppercase');
+		return parts.join(';');
+	}
 </script>
 
 <Dialog.Root bind:open={dialogOpen}>
@@ -1374,20 +1426,29 @@
 									/>
 								{/if}
 								{#if m.label}
+									{@const labelCss = labelStyleCss(m.labelStyle)}
 									{#if hasIcon}
+										{@const iconExtent = ICON_SIZE * (ic?.raster ? RASTER_ICON_SCALE : 1)}
+										{@const p = labelPlacement(
+											m.labelPosition ?? 'bottom',
+											iconExtent / 2,
+											LABEL_GAP,
+										)}
 										<text
 											class="mp-marker-label"
 											fill={color}
-											style="--halo:{halo}"
+											style={`--halo:${halo}${labelCss ? ';' + labelCss : ''}`}
 											vector-effect="non-scaling-stroke"
-											y={(ICON_SIZE * (ic?.raster ? RASTER_ICON_SCALE : 1)) / 2 + LABEL_GAP}
-											>{m.label}</text
+											x={p.x}
+											y={p.y}
+											text-anchor={p.anchor}
+											dominant-baseline={p.baseline}>{m.label}</text
 										>
 									{:else}
 										<text
 											class="mp-marker-label mp-marker-label--centered"
 											fill={color}
-											style="--halo:{halo}"
+											style={`--halo:${halo}${labelCss ? ';' + labelCss : ''}`}
 											vector-effect="non-scaling-stroke"
 											y="0">{m.label}</text
 										>
@@ -2380,10 +2441,12 @@
 	}
 	/* Icon (row 1) and Colour (row 2) are the same fixed width so the two
 	   swatch buttons match and line up in a column — the width is pinned on
-	   the field (not the label) so the longer "COLOUR" label can't widen it. */
+	   the field (not the label) so the longer "COLOUR" label can't widen it.
+	   Sized to fit the 22 px inline SVG plus the 8 px padding the buttons
+	   carry, matching the 32 px-tall angle field for a compact row. */
 	:global(.mp-props-field--icon),
 	:global(.mp-props-field--color) {
-		width: 3.5rem;
+		width: 2.5rem;
 	}
 	/* RGB field grows to fill the rest of the row; `min-width` is its wrap
 	   threshold — when the row can't spare ~7rem it drops to the next line
@@ -2393,6 +2456,102 @@
 		flex: 1 1 7rem;
 		min-width: 7rem;
 	}
+
+	/* Style row is wide (7 buttons + a divider). Position is a narrow
+	   Select whose trigger only shows the arrow glyph (~1 em). Flexing
+	   Style + Position onto one row lets Position ride the tail of the
+	   Style row on desktop and wrap under it on phone widths. */
+	:global(.mp-props-field--style) {
+		flex: 0 0 auto;
+	}
+	:global(.mp-props-field--position) {
+		flex: 0 0 auto;
+		width: 3rem;
+	}
+
+	/* Label text-style toggles (Bold / Italic / Small caps / Underline) —
+	   text-editor-toolbar feel. Each button previews its own effect on
+	   the letter it displays (B, I, Aa, U); the pressed state uses the
+	   accent-glow ground + accent border so a glance across the row tells
+	   the user which flags are on without reading aria-pressed. */
+	:global(.mp-style-row) {
+		display: flex;
+		gap: 4px;
+		align-items: center;
+	}
+	/* Nested radio group (Regular / Small caps / Uppercase) — same button
+	   family as the toggles, just gathered into a radiogroup so a11y
+	   knows they're mutually exclusive. */
+	:global(.mp-style-radios) {
+		display: flex;
+		gap: 4px;
+	}
+	/* Thin vertical rule between the boolean toggles (B / I / U) and the
+	   case radio group so the two families read as distinct at a glance. */
+	:global(.mp-style-sep) {
+		width: 1px;
+		align-self: stretch;
+		margin: 0 4px;
+		background: var(--border-mid);
+	}
+	/* Small-caps preview: the second character in the "A + x-height A"
+	   glyph. Drops to lowercase x-height while keeping the uppercase
+	   letterform, matching the CSS `font-variant: small-caps` look no
+	   matter what the UI font supports. */
+	:global(.mp-style-btn-xheight) {
+		font-size: 0.72em;
+		vertical-align: baseline;
+		margin-left: 0.02em;
+	}
+	:global(.mp-style-btn) {
+		min-width: 32px;
+		height: 32px;
+		padding: 0 8px;
+		font-family: var(--font-ui);
+		font-size: 0.95rem;
+		color: var(--text);
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		cursor: pointer;
+		transition:
+			background 120ms,
+			border-color 120ms;
+	}
+	:global(.mp-style-btn:hover) {
+		background: var(--bg-hover);
+	}
+	:global(.mp-style-btn[data-active='true']) {
+		background: var(--accent-glow);
+		border-color: var(--text-accent);
+		color: var(--text-accent);
+	}
+	:global(.mp-style-btn:focus-visible) {
+		outline: 2px solid var(--focus-ring);
+		outline-offset: 1px;
+	}
+	/* Disabled state — greyed and non-interactive. Applied when the
+	   feature the button controls has no target (Style buttons when
+	   there's no label to style; case radios likewise). */
+	:global(.mp-style-btn:disabled) {
+		opacity: 0.4;
+		cursor: not-allowed;
+		background: var(--bg-control);
+	}
+	:global(.mp-style-btn:disabled:hover) {
+		background: var(--bg-control);
+	}
+	/* Angle field — greys the whole widget when there's no icon to
+	   rotate. Applied via a container class since the field is composed
+	   of three separate elements (± steps + number input). */
+	:global(.mp-props-field--disabled .mp-sel-angle) {
+		opacity: 0.4;
+	}
+	:global(.mp-sel-angle-step:disabled),
+	:global(.mp-sel-angle-input:disabled) {
+		cursor: not-allowed;
+	}
+
 	:global(.mp-props-footer) {
 		display: flex;
 		align-items: center;
