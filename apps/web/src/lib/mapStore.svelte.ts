@@ -69,12 +69,13 @@ export interface MapMarker {
 	labelStyle?: {
 		bold?: boolean;
 		italic?: boolean;
-		smallCaps?: boolean;
 		underline?: boolean;
-		/** Uppercase presentational transform via CSS `text-transform:
-		 *  uppercase`. The stored `label` stays in whatever case the user
-		 *  typed — toggling this off restores it verbatim. */
-		uppercase?: boolean;
+		/** Case transform, mutually exclusive with the other options in
+		 *  the same group (regular text = field absent). Small-caps
+		 *  renders lowercase as x-height caps; uppercase transforms the
+		 *  rendered glyphs while the stored `label` stays in whatever
+		 *  case the user typed. */
+		case?: 'small-caps' | 'uppercase';
 	};
 	/** Where the label sits relative to the icon. Icon stays at the
 	 *  marker anchor (so hit-testing + selection behaviour are unchanged);

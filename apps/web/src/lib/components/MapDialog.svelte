@@ -1088,9 +1088,9 @@
 		const parts: string[] = [];
 		if (ls.bold) parts.push('font-weight:700');
 		if (ls.italic) parts.push('font-style:italic');
-		if (ls.smallCaps) parts.push('font-variant:small-caps');
 		if (ls.underline) parts.push('text-decoration:underline');
-		if (ls.uppercase) parts.push('text-transform:uppercase');
+		if (ls.case === 'small-caps') parts.push('font-variant:small-caps');
+		else if (ls.case === 'uppercase') parts.push('text-transform:uppercase');
 		return parts.join(';');
 	}
 </script>
@@ -2463,6 +2463,31 @@
 	:global(.mp-style-row) {
 		display: flex;
 		gap: 4px;
+		align-items: center;
+	}
+	/* Nested radio group (Regular / Small caps / Uppercase) — same button
+	   family as the toggles, just gathered into a radiogroup so a11y
+	   knows they're mutually exclusive. */
+	:global(.mp-style-radios) {
+		display: flex;
+		gap: 4px;
+	}
+	/* Thin vertical rule between the boolean toggles (B / I / U) and the
+	   case radio group so the two families read as distinct at a glance. */
+	:global(.mp-style-sep) {
+		width: 1px;
+		align-self: stretch;
+		margin: 0 4px;
+		background: var(--border-mid);
+	}
+	/* Small-caps preview: the second character in the "A + x-height A"
+	   glyph. Drops to lowercase x-height while keeping the uppercase
+	   letterform, matching the CSS `font-variant: small-caps` look no
+	   matter what the UI font supports. */
+	:global(.mp-style-btn-xheight) {
+		font-size: 0.72em;
+		vertical-align: baseline;
+		margin-left: 0.02em;
 	}
 	:global(.mp-style-btn) {
 		min-width: 32px;

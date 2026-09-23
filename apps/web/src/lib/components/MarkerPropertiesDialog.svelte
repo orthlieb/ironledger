@@ -43,7 +43,6 @@
 	import { getLinkableEntities, resolveEntity } from '$lib/mapEntityLinks.js';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
-	import iconAngleSvg from '$icons/angle-solid.svg?raw';
 	import iconPaletteSvg from '$icons/palette-solid.svg?raw';
 	import plusSvg from '$icons/plus-solid.svg?raw';
 	import minusSvg from '$icons/minus-solid.svg?raw';
@@ -399,9 +398,11 @@
 		 *  draft so the toggle buttons in the UI bind directly. */
 		bold: boolean;
 		italic: boolean;
-		smallCaps: boolean;
 		underline: boolean;
-		uppercase: boolean;
+		/** Case transform — 'regular' is the absent-field default; the
+		 *  other two are mutually exclusive alternatives (setting one
+		 *  clears the other). Stored as `labelStyle.case` when != 'regular'. */
+		case: 'regular' | 'small-caps' | 'uppercase';
 		labelPosition: MapMarkerLabelPosition;
 	};
 	let draft = $state<MarkerDraft | null>(null);
@@ -424,9 +425,8 @@
 			entityId: m.entityId ?? '',
 			bold: !!m.labelStyle?.bold,
 			italic: !!m.labelStyle?.italic,
-			smallCaps: !!m.labelStyle?.smallCaps,
 			underline: !!m.labelStyle?.underline,
-			uppercase: !!m.labelStyle?.uppercase,
+			case: m.labelStyle?.case ?? 'regular',
 			labelPosition: m.labelPosition ?? 'bottom',
 		};
 		originalMarker = snap;
@@ -444,15 +444,13 @@
 		// object round-trips as an empty object in JSON but shipping it
 		// forever wastes the "no styling" byte-savings for the 99 % of
 		// markers that never touch these toggles.
-		const anyStyle =
-			draft.bold || draft.italic || draft.smallCaps || draft.underline || draft.uppercase;
+		const anyStyle = draft.bold || draft.italic || draft.underline || draft.case !== 'regular';
 		const labelStyle = anyStyle
 			? {
 					bold: draft.bold || undefined,
 					italic: draft.italic || undefined,
-					smallCaps: draft.smallCaps || undefined,
 					underline: draft.underline || undefined,
-					uppercase: draft.uppercase || undefined,
+					case: draft.case === 'regular' ? undefined : draft.case,
 				}
 			: undefined;
 		updateMarker(selectedMarker.id, {
@@ -479,9 +477,18 @@
 		draft.label = (e.target as HTMLInputElement).value;
 		applyDraftLive();
 	}
-	function toggleLabelStyle(key: 'bold' | 'italic' | 'smallCaps' | 'underline' | 'uppercase') {
+	function toggleLabelStyle(key: 'bold' | 'italic' | 'underline') {
 		if (!draft) return;
 		draft[key] = !draft[key];
+		applyDraftLive();
+	}
+	/** Case is a radio group: picking a new option always replaces the
+	 *  current one. Clicking the already-active option is a no-op — we
+	 *  don't want a "clear" gesture on a radio (that's what the Regular
+	 *  cell is for). */
+	function pickCase(next: 'regular' | 'small-caps' | 'uppercase') {
+		if (!draft || draft.case === next) return;
+		draft.case = next;
 		applyDraftLive();
 	}
 	function pickLabelPosition(pos: MapMarkerLabelPosition) {
@@ -543,9 +550,8 @@
 			const anyStyle =
 				originalMarker.bold ||
 				originalMarker.italic ||
-				originalMarker.smallCaps ||
 				originalMarker.underline ||
-				originalMarker.uppercase;
+				originalMarker.case !== 'regular';
 			updateMarker(selectedMarker.id, {
 				label: originalMarker.label,
 				icon: originalMarker.icon ?? undefined,
@@ -556,9 +562,8 @@
 					? {
 							bold: originalMarker.bold || undefined,
 							italic: originalMarker.italic || undefined,
-							smallCaps: originalMarker.smallCaps || undefined,
 							underline: originalMarker.underline || undefined,
-							uppercase: originalMarker.uppercase || undefined,
+							case: originalMarker.case === 'regular' ? undefined : originalMarker.case,
 						}
 					: undefined,
 				labelPosition:
@@ -610,6 +615,7 @@
 					<div class="mp-props-field">
 						<span class="mp-props-label">Style</span>
 						<div class="mp-style-row" role="group" aria-label="Label text style">
+							<!-- Bold / Italic / Underline — independent boolean toggles. -->
 							<button
 								type="button"
 								class="mp-style-btn"
@@ -630,15 +636,6 @@
 							>
 							<button
 								type="button"
-								class="mp-style-btn mp-style-btn--sc"
-								data-active={draft.smallCaps}
-								aria-pressed={draft.smallCaps}
-								aria-label="Small caps"
-								onclick={() => toggleLabelStyle('smallCaps')}
-								style="font-variant:small-caps">Aa</button
-							>
-							<button
-								type="button"
 								class="mp-style-btn"
 								data-active={draft.underline}
 								aria-pressed={draft.underline}
@@ -646,15 +643,42 @@
 								onclick={() => toggleLabelStyle('underline')}
 								style="text-decoration:underline">U</button
 							>
-							<button
-								type="button"
-								class="mp-style-btn"
-								data-active={draft.uppercase}
-								aria-pressed={draft.uppercase}
-								aria-label="Uppercase"
-								onclick={() => toggleLabelStyle('uppercase')}
-								style="text-transform:uppercase">AA</button
-							>
+							<!-- Case — mutually exclusive radio group: Regular /
+							     Small caps / Uppercase. The active one is highlighted
+							     the same way pressed toggles are; role=radio +
+							     aria-checked carry the semantics for AT. -->
+							<span class="mp-style-sep" aria-hidden="true"></span>
+							<div class="mp-style-radios" role="radiogroup" aria-label="Case">
+								<button
+									type="button"
+									class="mp-style-btn"
+									role="radio"
+									aria-checked={draft.case === 'regular'}
+									data-active={draft.case === 'regular'}
+									aria-label="Regular case"
+									onclick={() => pickCase('regular')}>Aa</button
+								>
+								<button
+									type="button"
+									class="mp-style-btn mp-style-btn--sc"
+									role="radio"
+									aria-checked={draft.case === 'small-caps'}
+									data-active={draft.case === 'small-caps'}
+									aria-label="Small caps"
+									onclick={() => pickCase('small-caps')}
+									>A<span class="mp-style-btn-xheight">A</span></button
+								>
+								<button
+									type="button"
+									class="mp-style-btn"
+									role="radio"
+									aria-checked={draft.case === 'uppercase'}
+									data-active={draft.case === 'uppercase'}
+									aria-label="Uppercase"
+									onclick={() => pickCase('uppercase')}
+									style="text-transform:uppercase">AA</button
+								>
+							</div>
 						</div>
 					</div>
 
@@ -769,7 +793,6 @@
 									aria-label="Rotate counter-clockwise">{@html minusSvg}</button
 								>
 								<span class="mp-sel-angle-field">
-									<span class="mp-sel-angle-glyph" aria-hidden="true">{@html iconAngleSvg}</span>
 									<input
 										id="mp-props-angle"
 										name="mp-props-angle"
