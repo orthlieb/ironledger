@@ -160,6 +160,14 @@
 	const selectedMarker = $derived(
 		selectedMarkerId ? (mapState.markers.find((m) => m.id === selectedMarkerId) ?? null) : null,
 	);
+	/** MarkerPropertiesDialog is now open ↔ closed independently of selection.
+	 *  Click a marker → both selectedMarkerId + markerPropsOpen become true;
+	 *  Cancel / OK / ✕ / Escape → markerPropsOpen flips false but the marker
+	 *  stays selected (still outlined on the canvas). That "selected but
+	 *  dialog closed" state is what enables arrow-key nudging (see the
+	 *  keydown handler further down). Escape while the dialog is closed
+	 *  clears the selection outright. */
+	let markerPropsOpen = $state(false);
 
 	/** Open the dialog. Optional `target` lets callers jump directly to a
 	 *  specific map + marker — used by back-reference chips on entity
@@ -185,6 +193,7 @@
 			}
 			if (target?.markerId) {
 				selectedMarkerId = target.markerId;
+				markerPropsOpen = true;
 			}
 		});
 	}
@@ -730,10 +739,16 @@
 	 *  edits now (previously a click on a linked marker jumped to its entity and
 	 *  closed the map, which made linked markers hard to edit — that navigation
 	 *  is an explicit "Go to" action in the editor instead). */
-	function activateExisting(x: number, y: number): boolean {
+	/** Select the marker at (x, y). `edit=true` also opens the properties
+	 *  dialog — used by double-click, shift-click, long-press, and the
+	 *  external `open({ markerId })` deep-link. Bare single-clicks pass
+	 *  false so the marker is only outlined; arrow keys nudge from there
+	 *  and a subsequent double-click opens the editor. */
+	function activateExisting(x: number, y: number, edit = false): boolean {
 		const existing = markersAt(x, y, zoom)[0];
 		if (!existing) return false;
 		selectedMarkerId = existing.id;
+		if (edit) markerPropsOpen = true;
 		return true;
 	}
 
@@ -755,6 +770,7 @@
 			color: DEFAULT_MARKER_COLOR,
 		});
 		selectedMarkerId = id;
+		markerPropsOpen = true;
 	}
 
 	// ─── Drag-to-move + pile-up popover ────────────────────────────────────────
@@ -814,6 +830,9 @@
 			close();
 			return;
 		}
+		// Pick from a pile: same as a bare single-click on the map. Just
+		// select; a follow-up double-click / shift-click / long-press opens
+		// the editor.
 		selectedMarkerId = m.id;
 	}
 
@@ -849,7 +868,13 @@
 			return;
 		}
 		if (hits.length === 1) {
-			activateExisting(x, y);
+			// Bare click selects the marker (arrow keys nudge from here);
+			// shift-click opens the editor immediately. Double-click on the
+			// same marker is handled by onGridDblClick below — it fires
+			// AFTER this click, so a single-click always selects first and
+			// the second-click's activateExisting(_, _, edit=true) then
+			// opens the dialog.
+			activateExisting(x, y, ev.shiftKey);
 			clearSquareSelection();
 			return;
 		}
@@ -858,6 +883,17 @@
 		// selection so the outline switches to the square.
 		selectedSquare = { x, y };
 		selectedMarkerId = null;
+	}
+
+	/** Double-click on a marker opens the properties editor. The first
+	 *  click of the sequence already ran onGridClick and set the
+	 *  selection; this handler just adds the editor open. Any other
+	 *  double-click (empty spot, drag-just-ended, long-press) is a
+	 *  no-op — the single-click already handled the intent. */
+	function onGridDblClick(ev: MouseEvent) {
+		if (dragJustEnded || longPressFired) return;
+		const { x, y } = snapAndClamp(eventToWorld(ev));
+		if (markersAt(x, y, zoom).length >= 1) activateExisting(x, y, true);
 	}
 
 	function onGridPointerDown(e: PointerEvent) {
@@ -972,12 +1008,22 @@
 		clearSquareSelection();
 	}
 
-	/** Keyboard shortcut router. Only handles Escape for the pile
-	 *  picker — a non-dialog floating menu that would otherwise be
-	 *  bypassed and let Escape close the whole map. The entity-link
-	 *  picker is a nested `<dialog>` now, so its native Escape handler
-	 *  (wired via `oncancel`) closes it before Escape can reach the
-	 *  parent. */
+	/** Keyboard shortcut router. Handles:
+	 *
+	 *  - Escape while the pile picker is open — a non-dialog floating menu
+	 *    that would otherwise be bypassed and let Escape close the whole
+	 *    map. The entity-link picker is a nested `<dialog>` now, so its
+	 *    native Escape handler (wired via `oncancel`) closes it before
+	 *    Escape can reach the parent.
+	 *  - Escape while a marker is selected AND the properties dialog is
+	 *    closed — deselect the marker. (When the dialog is open, its own
+	 *    Escape handler closes the dialog first.)
+	 *  - Arrow keys while a marker is selected AND the properties dialog
+	 *    is closed — nudge the marker by one snap-cell at the current
+	 *    zoom. Held-Shift multiplies by 5 for coarse moves.
+	 *
+	 *  Skipped when the target is an editable input so typing in a form
+	 *  field doesn't move the map's selected marker underneath. */
 	$effect(() => {
 		const handler = (ev: KeyboardEvent) => {
 			if (!dialogOpen) return;
@@ -986,6 +1032,45 @@
 				ev.stopPropagation();
 				closePilePicker();
 				return;
+			}
+			// Only fire selection-scoped shortcuts when the marker editor
+			// isn't up and no form field currently owns focus.
+			if (markerPropsOpen) return;
+			const target = ev.target as HTMLElement | null;
+			if (
+				target &&
+				(target.isContentEditable ||
+					target.tagName === 'INPUT' ||
+					target.tagName === 'TEXTAREA' ||
+					target.tagName === 'SELECT')
+			) {
+				return;
+			}
+			if (!selectedMarker) return;
+			if (ev.key === 'Escape') {
+				ev.preventDefault();
+				selectedMarkerId = null;
+				return;
+			}
+			if (
+				ev.key === 'ArrowLeft' ||
+				ev.key === 'ArrowRight' ||
+				ev.key === 'ArrowUp' ||
+				ev.key === 'ArrowDown'
+			) {
+				ev.preventDefault();
+				const step = snapResolutionForZoom(zoom) * (ev.shiftKey ? 5 : 1);
+				let dx = 0;
+				let dy = 0;
+				if (ev.key === 'ArrowLeft') dx = -step;
+				else if (ev.key === 'ArrowRight') dx = step;
+				else if (ev.key === 'ArrowUp') dy = -step;
+				else if (ev.key === 'ArrowDown') dy = step;
+				const next = snapAndClamp({
+					x: selectedMarker.x + dx,
+					y: selectedMarker.y + dy,
+				});
+				updateMarker(selectedMarker.id, { x: next.x, y: next.y });
 			}
 		};
 		window.addEventListener('keydown', handler, true);
@@ -1313,6 +1398,7 @@
 							height={gridDims.rows}
 							fill="transparent"
 							onclick={onGridClick}
+							ondblclick={onGridDblClick}
 							onpointerdown={onGridPointerDown}
 							onpointermove={onGridPointerMove}
 							onpointerup={onGridPointerUp}
@@ -1593,7 +1679,15 @@
 -->
 <MarkerPropertiesDialog
 	{selectedMarker}
-	onClose={() => (selectedMarkerId = null)}
+	bind:open={markerPropsOpen}
+	onClose={() => {
+		/* Closing the editor no longer clears the selection — the marker
+		 * stays outlined on the canvas so the user can nudge it with the
+		 * arrow keys or reopen the editor with another double-click. A
+		 * plain Escape while the dialog is closed, or a click on empty
+		 * grid, is what clears the selection now (see onGridClick + the
+		 * keydown handler in the $effect earlier). */
+	}}
 	onNavigate={focusMarkerEntity}
 />
 
