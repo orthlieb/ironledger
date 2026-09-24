@@ -503,9 +503,12 @@
 			(m) => m.ownerKind === activeEntry.kind && m.ownerId === activeEntry.data.id,
 		);
 	});
-	/** True when the entity's map has no background image (or the map
-	 *  doesn't exist at all yet). Drives the "+ Map" vs "Map" button. */
-	const activeEntryMapEmpty = $derived(!activeEntryMap || !activeEntryMap.backgroundHash);
+	/** True when no map record exists yet for this entity. Drives the
+	 *  "+ Map" vs "Map" button — once the map exists (even if its
+	 *  background hasn't been uploaded yet), the button flips to "Map"
+	 *  and clicking it opens the dialog, which has its own affordance
+	 *  for uploading a background image. */
+	const activeEntryMapEmpty = $derived(!activeEntryMap);
 
 	const { openOwnedMap, handleAddMapWithFile, jumpToMarker } = createMapOwnerActions(
 		() =>
