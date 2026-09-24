@@ -841,7 +841,7 @@
 	 *  • Snap point with >1 markers → open pile-up popover to disambiguate.
 	 *  • Existing marker w/ link + bare click → jump to entity.
 	 *  • Existing marker w/ shift-click → open editor.
-	 *  • Empty spot → highlight the snap point as `selectedSquare` so the
+	 *  • Empty spot → deselect any marker (placement is armed via the
 	 *    toolbar "+ Marker" button can drop a marker on it. Empty clicks
 	 *    never create a marker directly — a stray tap on the map would
 	 *    otherwise litter it with unwanted pins.
@@ -861,10 +861,18 @@
 			return;
 		}
 		const { x, y } = snapAndClamp(eventToWorld(ev));
+		// Armed for placement — drop the marker here, exit the mode, done.
+		// Skips the hit-test entirely so a click on top of an existing
+		// marker while armed still creates a new one (matches the "you
+		// asked to place, so we place" contract of the toolbar button).
+		if (placingMarker) {
+			placeAt(x, y);
+			placingMarker = false;
+			return;
+		}
 		const hits = markersAt(x, y, zoom);
 		if (hits.length > 1) {
 			openPilePicker(hits, ev);
-			clearSquareSelection();
 			return;
 		}
 		if (hits.length === 1) {
@@ -875,13 +883,12 @@
 			// the second-click's activateExisting(_, _, edit=true) then
 			// opens the dialog.
 			activateExisting(x, y, ev.shiftKey);
-			clearSquareSelection();
 			return;
 		}
-		// Empty grid click: highlight the snap point so the toolbar's
-		// "+ Marker" knows where to drop the next pin. Clear any marker
-		// selection so the outline switches to the square.
-		selectedSquare = { x, y };
+		// Empty grid click: deselect any marker. The old "highlight a snap
+		// square for the + Marker button to drop onto" flow is gone —
+		// placement is now armed by clicking + Marker first, then clicking
+		// the map (see the placingMarker early-out above).
 		selectedMarkerId = null;
 	}
 
@@ -991,21 +998,19 @@
 		return n < 0 ? n + 360 : n;
 	}
 
-	/** Empty snap point the user tapped without a marker on it. Rendered
-	 *  with the same outline the selected marker uses, and acts as the
-	 *  target the "+ Marker" toolbar button drops a marker onto. Cleared
-	 *  on marker click, map switch, or after a marker is placed. */
-	let selectedSquare = $state<{ x: number; y: number } | null>(null);
-	function clearSquareSelection() {
-		selectedSquare = null;
+	/** "+ Marker" — enter placement mode. The next click on the map's
+	 *  click-capture <rect> drops a marker at those coords (see the
+	 *  early-out in onGridClick), and the cursor is swapped to a
+	 *  crosshair via the .mp-canvas--placing modifier so the arming
+	 *  state is visually obvious. Escape cancels; clicking the button
+	 *  a second time also cancels (toggle). */
+	let placingMarker = $state(false);
+	function togglePlacingMarker() {
+		placingMarker = !placingMarker;
+		if (placingMarker) selectedMarkerId = null;
 	}
-
-	/** "+ Marker" — drop a marker at the previously-selected square. No-op
-	 *  when no square is selected (button is disabled in that state). */
-	function addMarkerAtSelected() {
-		if (!selectedSquare) return;
-		placeAt(selectedSquare.x, selectedSquare.y);
-		clearSquareSelection();
+	function cancelPlacingMarker() {
+		placingMarker = false;
 	}
 
 	/** Keyboard shortcut router. Handles:
@@ -1031,6 +1036,14 @@
 				ev.preventDefault();
 				ev.stopPropagation();
 				closePilePicker();
+				return;
+			}
+			// Escape cancels armed placement — takes precedence over the
+			// marker editor and selection so a mis-armed + Marker click
+			// always has a one-key exit even if a marker is selected.
+			if (ev.key === 'Escape' && placingMarker) {
+				ev.preventDefault();
+				cancelPlacingMarker();
 				return;
 			}
 			// Only fire selection-scoped shortcuts when the marker editor
@@ -1212,11 +1225,12 @@
 				<div class="mp-tools mp-tools-actions">
 					<button
 						class="mp-btn mp-btn-add"
-						onclick={addMarkerAtSelected}
-						disabled={!selectedSquare}
-						use:tooltip={selectedSquare
-							? 'Drop a marker on the selected square'
-							: 'Click a square first, then hit + Marker to drop a pin.'}
+						class:mp-btn-add--armed={placingMarker}
+						onclick={togglePlacingMarker}
+						aria-pressed={placingMarker}
+						use:tooltip={placingMarker
+							? 'Click on the map to place the marker (Esc to cancel)'
+							: 'Click, then tap the map to place a marker'}
 						aria-label="Add marker">+ Marker</button
 					>
 					<div class="mp-zoom" role="group" aria-label="Zoom controls">
@@ -1288,7 +1302,12 @@
 				<!-- Placing / square-selected hint. Overlaid on top of the
 				<!-- Wheel listener is attached manually with `passive: false` in a
 		     $effect above so trackpad-pinch (ctrl+wheel) is preventable. -->
-				<div class="mp-canvas" bind:this={canvasEl} onscroll={onScroll}>
+				<div
+					class="mp-canvas"
+					class:mp-canvas--placing={placingMarker}
+					bind:this={canvasEl}
+					onscroll={onScroll}
+				>
 					<!--
 				viewBox is world-unit space (0 0 cols rows). SVG rendered
 				width/height = canvasPxW/H × zoom, so when zoom > 1 the SVG
@@ -1422,17 +1441,6 @@
 						     "+ Marker" (same visual language a selected marker
 						     uses). Rendered before markers so any marker placed
 						     at the same spot draws on top. -->
-						{#if selectedSquare}
-							{@const cell = snapResolutionForZoom(zoom)}
-							<rect
-								class="mp-marker-selection"
-								x={selectedSquare.x - cell / 2}
-								y={selectedSquare.y - cell / 2}
-								width={cell}
-								height={cell}
-								vector-effect="non-scaling-stroke"
-							/>
-						{/if}
 
 						{#each mapState.markers as m (m.id)}
 							{@const ic = resolveMapIcon(m.icon)}
@@ -2121,6 +2129,22 @@
 		   Wheel events are unaffected by touch-action so trackpad
 		   ctrl+wheel + bare-wheel pan both still work. */
 		touch-action: pan-x pan-y;
+	}
+	/* Armed placement — the "+ Marker" button was clicked and the next
+	   click on the map drops a marker at that spot. Swap to a crosshair
+	   cursor everywhere in the canvas so the arming state is impossible
+	   to miss. */
+	:global(.mp-canvas--placing),
+	:global(.mp-canvas--placing svg),
+	:global(.mp-canvas--placing rect) {
+		cursor: crosshair;
+	}
+	/* Toolbar "+ Marker" armed indicator — pressed styling so the button
+	   reads as "the next click goes here" without needing a legend. */
+	:global(.mp-btn-add--armed) {
+		background: var(--accent-glow);
+		border-color: var(--text-accent);
+		color: var(--text-accent);
 	}
 	:global(.mp-canvas svg) {
 		display: block;
