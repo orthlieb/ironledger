@@ -1,18 +1,17 @@
 {
-  "id": "gravestone",
-  "label": "Gravestone",
+  "id": "yorick",
+  "label": "Yorick",
   "default": false,
-  "description": "An epitaph in weathered granite — Metamorphous inscriptions carved into cold stone, lichen-green accents on a graveyard-at-dusk palette. Quiet, elegiac, memento mori.",
+  "description": "An epitaph in weathered granite — Cinzel Roman inscriptions carved into cold stone, lichen-green accents on a graveyard-at-dusk palette. Quiet, elegiac, memento mori.",
   "preview": "🪦",
   "font": {
-    "stack": "'Metamorphous', 'Cinzel', Georgia, serif",
-    "googleFamily": "Metamorphous",
+    "stack": "'Cinzel', 'Palatino Linotype', Georgia, serif",
+    "googleFamily": "Cinzel:wght@400;600;700;900",
     "weight": 400,
     "variant": "normal",
     "transform": "none",
     "scale": 0.96
   },
-  "transliterate": null,
   "dice": {
     "action": "#4a5c48",
     "challenge": "#1f2622",

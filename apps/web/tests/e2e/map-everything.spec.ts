@@ -85,10 +85,12 @@ async function createNamedMarker(page: Page, name: string): Promise<void> {
 	const grid = page.locator('.mp-grid-capture');
 	const box = await grid.boundingBox();
 	if (!box) throw new Error('grid capture has no bounding box');
-	await grid.click({ position: { x: box.width * 0.4, y: box.height * 0.45 } });
+	// New flow: arm placement via "+ Marker" first, then click the map to
+	// drop at those coords (used to be click-square-first, then + Marker).
 	const addBtn = page.locator('[aria-label="Add marker"]');
 	await expect(addBtn).toBeEnabled({ timeout: 3_000 });
 	await addBtn.click();
+	await grid.click({ position: { x: box.width * 0.4, y: box.height * 0.45 } });
 	await expect(page.locator('.mp-props-dialog')).toBeVisible({ timeout: 5_000 });
 	await page.locator('#mp-props-name').fill(name);
 	await expect(page.locator('.mp-marker-label')).toHaveText(name);

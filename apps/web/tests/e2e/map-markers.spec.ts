@@ -6,9 +6,10 @@
  * never touches a marker. This spec drives the full marker flow through the
  * real UI:
  *
- *   • Create — click an empty grid square (`.mp-grid-capture`) to arm the
- *     "+ Marker" toolbar button, then drop a pin. Placing opens the marker
- *     properties dialog (`.mp-props-dialog`) on the fresh, empty marker.
+ *   • Create — click the "+ Marker" toolbar button to arm placement mode,
+ *     then click the map (`.mp-grid-capture`) to drop the pin at those
+ *     coords. Placing opens the marker properties dialog
+ *     (`.mp-props-dialog`) on the fresh, empty marker.
  *   • Edit name — the `#mp-props-name` input live-writes the marker's label
  *     (`.mp-marker-label` on the canvas).
  *   • Edit icon — "Change icon" opens the icon picker (`.mp-icon-dialog`);
@@ -95,17 +96,22 @@ async function openMap(page: Page): Promise<void> {
 	await expect(page.locator('.mp-grid-capture')).toBeVisible({ timeout: 8_000 });
 }
 
-/** Click an empty grid square then "+ Marker" to drop a pin. Leaves the marker
- *  properties dialog open on the new (empty) marker. */
+/** Arm placement via the "+ Marker" toolbar button, then click the map to
+ *  drop a pin there. Fresh markers open their properties editor
+ *  automatically (they need at least a label / icon before they're
+ *  useful), so this leaves the marker properties dialog open on the new
+ *  (empty) marker. */
 async function placeMarker(page: Page): Promise<void> {
 	const grid = page.locator('.mp-grid-capture');
 	const box = await grid.boundingBox();
 	if (!box) throw new Error('grid capture has no bounding box');
-	// A modest inset lands on a real snap point without hugging an edge.
-	await grid.click({ position: { x: box.width * 0.4, y: box.height * 0.45 } });
+	// Arm placement first — the button used to be gated on a "click a
+	// square first" step, but the new flow is + Marker → click map.
 	const addBtn = page.locator('[aria-label="Add marker"]');
 	await expect(addBtn).toBeEnabled({ timeout: 3_000 });
 	await addBtn.click();
+	// A modest inset lands away from any canvas edge.
+	await grid.click({ position: { x: box.width * 0.4, y: box.height * 0.45 } });
 	await expect(page.locator('.mp-props-dialog')).toBeVisible({ timeout: 5_000 });
 }
 
@@ -129,7 +135,7 @@ test.describe('Map markers — lifecycle', () => {
 		await openMap(page);
 	});
 
-	test('clicking a square then + Marker creates a pin and opens its editor', async ({ page }) => {
+	test('clicking + Marker then the map creates a pin and opens its editor', async ({ page }) => {
 		await expect(page.locator('.mp-marker')).toHaveCount(0);
 
 		await placeMarker(page);

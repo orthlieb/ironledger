@@ -1,18 +1,17 @@
 {
-  "id": "futhark",
-  "label": "Futhark",
+  "id": "merlin",
+  "label": "Merlin",
   "default": false,
-  "description": "Names transliterated into Elder Futhark runes over a weathered-verdigris chrome. Uses system runic fonts — no web font required.",
-  "preview": "ᚠᚢᚦᚨᚱᚲ",
+  "description": "Calligraphic Simonetta titles in natural title-case over weathered verdigris — aged-bronze accents on forest-moss dark, lichen on bone in light.",
+  "preview": null,
   "font": {
-    "stack": "'Segoe UI Historic', 'Noto Sans Runic', 'Apple Symbols', system-ui, sans-serif",
-    "googleFamily": null,
+    "stack": "'Simonetta', 'Palatino Linotype', Georgia, serif",
+    "googleFamily": "Simonetta:ital,wght@0,400;0,900;1,400;1,900",
     "weight": 400,
     "variant": "normal",
     "transform": "none",
     "scale": 1.12
   },
-  "transliterate": "elder-futhark",
   "dice": {
     "action": "#3f6d5a",
     "challenge": "#7a4a2a",

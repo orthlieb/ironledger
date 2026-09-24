@@ -10,15 +10,13 @@
  *
  * The generated CSS owns the font stack (`--font-display`) and chrome, so
  * switching liveries is just flipping the `data-font` attribute the CSS keys
- * on. This store only tracks the active id + applies the transliteration a
- * livery may request (e.g. Elder Futhark runes).
+ * on. This store only tracks the active id and exposes helpers keyed off it.
  *
  * Usage in any component:
  *   import { headingText } from '$lib/fontStore.svelte.js';
  *   // in template: {headingText(character.name)}
  */
 
-import { toFuthark } from './futhark.js';
 import manifest from './liveries.manifest.json';
 
 /** A livery id (the folder slug). Kept as a string since liveries are data. */
@@ -50,7 +48,6 @@ export interface LiveryMeta {
 	default: boolean;
 	description: string;
 	preview: string | null;
-	transliterate: string | null;
 	googleFamily: string | null;
 	dice: LiveryDice | null;
 	previewColors: LiveryPreviewColors;
@@ -66,12 +63,6 @@ const IDS = new Set(LIVERIES.map((l) => l.id));
 
 export const FONT_DISPLAY_KEY = 'ironledger:font:display';
 
-// Named text transformers a livery may request via its `transliterate` field.
-// A livery with `transliterate: null` (the common case) uses the identity.
-const TRANSLITERATORS: Record<string, (t: string) => string> = {
-	'elder-futhark': toFuthark,
-};
-
 // ── Reactive state ────────────────────────────────────────────────────────────
 
 function _readSaved(): LiveryId {
@@ -80,7 +71,14 @@ function _readSaved(): LiveryId {
 	return v && IDS.has(v) ? v : DEFAULT_LIVERY;
 }
 
-let _font = $state<LiveryId>(_readSaved());
+// Start at the default on BOTH server and client so SSR and the first client
+// paint agree — otherwise the client would read localStorage at module load,
+// disagree with the SSR'd DOM, and Svelte's {@html …} hydration path would
+// keep the (stale) SSR content because the state matches the SSR-time value
+// only on the server. The real value lands after +layout.svelte's onMount
+// calls setFontDisplay(savedFont()), which is a genuine value change (default
+// → saved) and therefore fires the reactive updates the nav mark relies on.
+let _font = $state<LiveryId>(DEFAULT_LIVERY);
 
 // ── Getters / setters ─────────────────────────────────────────────────────────
 
@@ -113,6 +111,23 @@ function svgToDataUrl(svg: string, cacheKey: string): string {
 	return `data:image/svg+xml,${encodeURIComponent(svg)}#${cacheKey}`;
 }
 
+// Wrap a brand SVG for use as a favicon. Livery brand marks paint with
+// `fill="currentColor"` because they inherit their tint from the nav bar's
+// CSS; a favicon has no such context. The obvious `prefers-color-scheme`
+// media query inside the SVG reflects the OS mode, not the browser
+// chrome's tab-strip colour, so a light-OS user with a dark browser theme
+// still gets the light-mode branch (dark glyph on dark chrome — the bug
+// this replaces). Instead: hardcode `fill=…` to the livery's own accent
+// colour, which is by construction a saturated mid-tone that already
+// contrasts against the livery's own chrome and reads legibly against
+// both light and dark tab strips (amber for Beowulf, crimson for Vlad,
+// aged bronze for Merlin, …). Rebuilds `fill="currentColor"` on every
+// path — the nav-bar rendering path keeps the original source SVG, so
+// its currentColor cascade still works there.
+function toFaviconSvg(raw: string, glyphColor: string): string {
+	return raw.replaceAll('fill="currentColor"', `fill="${glyphColor}"`);
+}
+
 /** Swap the browser tab icon to the current livery's brand SVG, or restore
  *  the default static `/favicon.svg` when the active livery doesn't ship one.
  *  The old <link rel="icon" type="image/svg+xml"> is removed and a fresh one
@@ -120,7 +135,7 @@ function svgToDataUrl(svg: string, cacheKey: string): string {
  *  accept either an in-place href swap or a re-append, so re-append covers
  *  both. The `apple-touch-icon` stays static (it's baked in at "add to home
  *  screen" time, no way to swap it at runtime). */
-function updateFavicon(id: LiveryId, svg: string | null): void {
+function updateFavicon(id: LiveryId, svg: string | null, glyphColor: string): void {
 	if (typeof document === 'undefined') return;
 	const head = document.head;
 	const old = head.querySelector('link[rel="icon"][type="image/svg+xml"]');
@@ -128,7 +143,7 @@ function updateFavicon(id: LiveryId, svg: string | null): void {
 	const link = document.createElement('link');
 	link.rel = 'icon';
 	link.type = 'image/svg+xml';
-	link.href = svg ? svgToDataUrl(svg, id) : '/favicon.svg?v=2';
+	link.href = svg ? svgToDataUrl(toFaviconSvg(svg, glyphColor), id) : '/favicon.svg?v=2';
 	head.appendChild(link);
 }
 
@@ -151,21 +166,23 @@ export function setFontDisplay(f: LiveryId): void {
 		localStorage.setItem(FONT_DISPLAY_KEY, f);
 	}
 	document.documentElement.setAttribute('data-font', f);
-	updateFavicon(f, LIVERIES.find((l) => l.id === f)?.brandSvg ?? null);
+	// Use the livery's dark-theme text-accent as the favicon glyph colour —
+	// see toFaviconSvg() for why hardcoding beats `prefers-color-scheme`
+	// tricks in favicons.
+	const active = LIVERIES.find((l) => l.id === f);
+	updateFavicon(f, active?.brandSvg ?? null, active?.previewColors.dark.fg ?? '#e8a030');
 }
 
 // ── Text helper ───────────────────────────────────────────────────────────────
 
 /**
- * Return `text` unchanged, or transliterated when the active livery requests a
- * transformer (e.g. Elder Futhark runes in the Futhark livery).
- *
- * Because this function reads `_font` (a `$state`), calling it inside a
- * Svelte template or a `$derived` expression creates a reactive dependency —
- * the component re-renders automatically when the livery changes.
+ * Return `text` unchanged. Kept as a helper for two reasons: (1) call sites
+ * remain uniform whether or not a future livery ever wants to transform its
+ * display text again, and (2) reading `_font` (a `$state`) inside a Svelte
+ * template creates a reactive dependency, so components re-render when the
+ * livery changes even though the string is unmodified today.
  */
 export function headingText(text: string): string {
-	const lv = LIVERIES.find((l) => l.id === _font);
-	const fn = lv?.transliterate ? TRANSLITERATORS[lv.transliterate] : null;
-	return fn ? fn(text) : text;
+	void _font;
+	return text;
 }

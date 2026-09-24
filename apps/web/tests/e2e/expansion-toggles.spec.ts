@@ -16,6 +16,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { ensureCharacter } from './helpers/home';
+import { resetCommunities } from './helpers/reset';
 
 const CHAR_AREA = '.home-area--characters';
 const FOE_AREA = '.home-area--foes';
@@ -125,6 +126,15 @@ async function goHome(page: Page): Promise<void> {
 
 test.describe('Expansion toggles — Delve / YRT', () => {
 	test.beforeEach(async ({ page }) => {
+		// Server-side clean slate so the "firstLook survives Lodestar off" test
+		// (line 377) actually sees its own just-created NPC as entries[0] after
+		// reload — without this, an NPC persisted by a previous run of this
+		// same spec on the same fixture user stays behind, becomes entries[0]
+		// (oldest by createdAt), and activeEntry rehydrates to that old NPC
+		// (which has no firstLook), so the row assertion fails on the wrong
+		// card. The other tests in this describe don't create NPCs, so
+		// clearing the collection is a no-op for them.
+		await resetCommunities();
 		await goHome(page);
 		await resetExpansionToggles(page);
 		await page.reload();
@@ -391,6 +401,13 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 
 		// Toggle Lodestar off and reload — the concept oracle becomes unavailable
 		// but the saved value must not disappear (fallback: {#if n.firstLook || ...}).
+		// setExpansionsViaStorage already does page.reload() + waitForHome; the
+		// waitForHome BEFORE it is the fix — without it the newly added NPC and
+		// its rolled firstLook value may not have persisted to the session blob
+		// yet, so the reload rehydrates a stub NPC and the "value survives reload"
+		// assertion below is testing nothing (element-not-found rather than
+		// element-with-empty-value).
+		await waitForHome(page);
 		await setExpansionsViaStorage(page, { lodestar: false });
 
 		// After reload the same NPC is still the active card.

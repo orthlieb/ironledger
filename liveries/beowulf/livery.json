@@ -1,0 +1,23 @@
+{
+  "id": "beowulf",
+  "label": "Beowulf",
+  "default": true,
+  "description": "The house livery — Skranji stone-cut titles over the base forge-amber-on-obsidian chrome, sharp-axe brand mark. Iron Ledger as it ships.",
+  "preview": null,
+  "font": {
+    "stack": "'Skranji', 'Cinzel', 'Palatino Linotype', Georgia, serif",
+    "googleFamily": "Skranji:wght@400;700",
+    "weight": 400,
+    "variant": "normal",
+    "transform": "none",
+    "scale": 1
+  },
+  "dice": {
+    "action": "#9a5b12",
+    "challenge": "#6d1f2c",
+    "tens": "#2e1c0e",
+    "ones": "#e6cf96",
+    "texture": "paper"
+  },
+  "palette": null
+}

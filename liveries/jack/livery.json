@@ -1,6 +1,6 @@
 {
-  "id": "gourd",
-  "label": "Gourd",
+  "id": "jack",
+  "label": "Jack",
   "default": false,
   "description": "Berkshire Swash harvest-fair titles over a pumpkin-patch chrome — deep moss + pumpkin candlelight in dark, pale sage under harvest daylight in light. Vine-green borders, orange/green/moss/cream dice. Halloween-adjacent, harvest-forward.",
   "preview": "🎃",
@@ -12,7 +12,6 @@
     "transform": "none",
     "scale": 1
   },
-  "transliterate": null,
   "dice": {
     "action": "#f5761a",
     "challenge": "#6f8c4a",

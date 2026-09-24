@@ -29,6 +29,10 @@ import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { loadLiveries, LIVERIES_DIR, TOKEN_KEYS } from './lint-liveries.mjs';
+// svg-path-bounds is CJS with no types; the default export is
+// (pathD: string) => [left, top, right, bottom]. Node's CJS→ESM interop
+// picks up the default reliably at runtime.
+import pathBounds from 'svg-path-bounds';
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const LIB = path.join(ROOT, 'apps/web/src/lib');
@@ -94,11 +98,64 @@ function previewColors(livery) {
   };
 }
 
-// Read an optional `liveries/<id>/brand.svg` and return its trimmed contents,
-// or null when absent. The file is inlined verbatim into the manifest so the
-// client can render it as a currentColor glyph (nav brand + favicon) without
-// a runtime fetch. Same normalisation checklist as $lib/icons/ SVGs applies —
-// enforced by convention; the gen step only trims whitespace.
+// Rewrite an SVG's viewBox to hug its actual paint (union bounds across
+// every <path d="…">), with a small padding so anti-aliased edges aren't
+// clipped. Ensures the brand glyph fills its render box consistently
+// across liveries — game-icons.net sources ship with viewBox padding
+// that makes some icons paint at 60% of the box height while others
+// paint at 90%; without this fix, the nav mark's visual weight drifts
+// livery to livery. Falls back to the original SVG (with a warning) if
+// no parseable paths are found or the source contains non-path shapes we
+// don't measure (circle/rect/line/polygon) — those need per-shape bounds
+// support before we'd trust the rewrite.
+const PATH_D_RE = /d="([^"]+)"/g;
+const NON_PATH_SHAPE_RE = /<(?:circle|rect|line|polygon|polyline|ellipse)\b/;
+function tightenBrandViewBox(id, src) {
+  if (NON_PATH_SHAPE_RE.test(src)) {
+    console.warn(
+      `⚠ livery "${id}" brand.svg contains non-path shapes — viewBox tightening skipped`,
+    );
+    return src;
+  }
+  const ds = [...src.matchAll(PATH_D_RE)].map((m) => m[1]);
+  if (!ds.length) {
+    console.warn(`⚠ livery "${id}" brand.svg has no <path d="…"> — viewBox tightening skipped`);
+    return src;
+  }
+  let l = Infinity;
+  let t = Infinity;
+  let r = -Infinity;
+  let b = -Infinity;
+  for (const d of ds) {
+    try {
+      const [pl, pt, pr, pb] = pathBounds(d);
+      if (pl < l) l = pl;
+      if (pt < t) t = pt;
+      if (pr > r) r = pr;
+      if (pb > b) b = pb;
+    } catch (err) {
+      console.warn(`⚠ livery "${id}" brand.svg path failed to parse (${err.message}) — skipping`);
+      return src;
+    }
+  }
+  const w = r - l;
+  const h = b - t;
+  if (!(w > 0 && h > 0)) return src;
+  // 2 % of the smaller axis — invisible at typical render sizes, enough
+  // to keep hairline strokes off the render box's edge.
+  const pad = Math.min(w, h) * 0.02;
+  const vb = [l - pad, t - pad, w + pad * 2, h + pad * 2]
+    .map((n) => Number(n.toFixed(3)))
+    .join(' ');
+  return src.replace(/viewBox="[^"]*"/, `viewBox="${vb}"`);
+}
+
+// Read an optional `liveries/<id>/brand.svg` and return its trimmed
+// contents with a tightened viewBox, or null when absent. The file is
+// inlined into the manifest so the client can render it as a currentColor
+// glyph (nav brand + favicon) without a runtime fetch. Same normalisation
+// checklist as $lib/icons/ SVGs applies to the on-disk source — enforced
+// by convention; the gen step only trims whitespace and tightens viewBox.
 async function readBrandSvg(id) {
   const p = path.join(LIVERIES_DIR, id, 'brand.svg');
   if (!existsSync(p)) return null;
@@ -107,7 +164,7 @@ async function readBrandSvg(id) {
     console.warn(`⚠ livery "${id}" brand.svg does not start with <svg — skipped`);
     return null;
   }
-  return raw;
+  return tightenBrandViewBox(id, raw);
 }
 
 async function attachBrandSvgs(liveries) {
@@ -129,7 +186,6 @@ function buildManifest(liveries) {
       default: l.default,
       description: l.description,
       preview: l.preview ?? null,
-      transliterate: l.transliterate ?? null,
       googleFamily: l.font.googleFamily ?? null,
       dice: l.dice ?? null,
       // Compact per-livery swatch pair (bg-page + text-accent, per theme) so
@@ -300,8 +356,8 @@ function previewHtml(livery) {
     `\t\t\t.theme { border-radius: 12px; padding: 20px; box-shadow: 0 4px 18px rgba(0,0,0,0.35); }\n` +
     `\t\t\t.theme h2 { font-size: 1.2rem; margin: 0 0 12px; letter-spacing: 0.02em; font-weight: 400; }\n` +
     `\t\t\t.demo { border-radius: 8px; padding: 12px 14px; display: flex; align-items: center; gap: 10px; font-size: 0.9rem; }\n` +
-    `\t\t\t.demo-icon { display: inline-flex; width: 22px; height: 22px; flex: 0 0 22px; }\n` +
-    `\t\t\t.demo-icon svg { width: 100%; height: 100%; fill: currentColor; }\n` +
+    `\t\t\t.demo-icon { display: inline-flex; align-items: center; height: 22px; flex-shrink: 0; }\n` +
+    `\t\t\t.demo-icon svg { height: 22px; width: auto; max-width: 34px; fill: currentColor; }\n` +
     `\t\t\t.demo-title { font-size: 1.4rem; font-weight: 400; letter-spacing: 0.02em; }\n` +
     `\t\t\t.pill { display: inline-flex; padding: 3px 10px; border-radius: 999px; font-size: 0.65rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }\n` +
     `\t\t\t.dice { display: flex; gap: 8px; margin-top: 12px; }\n` +
