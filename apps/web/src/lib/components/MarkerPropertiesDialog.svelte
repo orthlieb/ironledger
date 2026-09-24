@@ -895,7 +895,10 @@
 									use:tooltip={`Go To ${ENTITY_KIND_META[linked.kind].label}`}
 									aria-label={`Go To ${ENTITY_KIND_META[linked.kind].label}`}
 									onclick={() => {
-										// Navigate to the entity (closes the map), then close this editor.
+										// Close this editor first, then navigate to the entity (which
+										// also closes the map). onClose is a no-op that preserves
+										// selection — setting open = false is what actually dismisses.
+										open = false;
 										onNavigate?.(linked);
 										onClose?.();
 									}}
