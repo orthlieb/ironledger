@@ -771,6 +771,7 @@
 								<button
 									type="button"
 									class="mp-sel-angle-step"
+									disabled={!canSave}
 									onclick={() => stepDraftAngle(-15)}
 									aria-label="Rotate counter-clockwise">{@html minusSvg}</button
 								>
@@ -783,6 +784,7 @@
 										min="0"
 										max="359"
 										step="15"
+										disabled={!canSave}
 										value={draftAngle}
 										oninput={onDraftAngleInput}
 										aria-label="Marker rotation in degrees"
@@ -792,6 +794,7 @@
 								<button
 									type="button"
 									class="mp-sel-angle-step"
+									disabled={!canSave}
 									onclick={() => stepDraftAngle(15)}
 									aria-label="Rotate clockwise">{@html plusSvg}</button
 								>
@@ -805,6 +808,7 @@
 								class="mp-sel-color-btn"
 								style="color: {draftColor}"
 								bind:this={pickrAnchor}
+								disabled={!canSave}
 								aria-label="Icon colour"
 							>
 								<svg viewBox="0 0 640 640" aria-hidden="true">
@@ -834,6 +838,7 @@
 								type="text"
 								spellcheck="false"
 								autocomplete="off"
+								disabled={!canSave}
 								value={hexToRgbString(draftColor)}
 								onchange={onRgbChange}
 								aria-label="Icon colour as RGB — select to copy, or paste to set"
