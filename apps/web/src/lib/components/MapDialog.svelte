@@ -67,10 +67,9 @@
 		haloPaddedViewBox,
 		mapGlyphInner,
 		resolveMapIcon,
-		snapResolutionForZoom,
 		subGridOctaveForZoom,
 	} from '$lib/mapConstants.js';
-	import { gridLineOffsets, isMajorLine, snapCoord } from '$lib/mapGeometry.js';
+	import { gridLineOffsets, isMajorLine } from '$lib/mapGeometry.js';
 	import {
 		mapState,
 		mapListState,
@@ -160,6 +159,14 @@
 	const selectedMarker = $derived(
 		selectedMarkerId ? (mapState.markers.find((m) => m.id === selectedMarkerId) ?? null) : null,
 	);
+	/** MarkerPropertiesDialog is now open ↔ closed independently of selection.
+	 *  Click a marker → both selectedMarkerId + markerPropsOpen become true;
+	 *  Cancel / OK / ✕ / Escape → markerPropsOpen flips false but the marker
+	 *  stays selected (still outlined on the canvas). That "selected but
+	 *  dialog closed" state is what enables arrow-key nudging (see the
+	 *  keydown handler further down). Escape while the dialog is closed
+	 *  clears the selection outright. */
+	let markerPropsOpen = $state(false);
 
 	/** Open the dialog. Optional `target` lets callers jump directly to a
 	 *  specific map + marker — used by back-reference chips on entity
@@ -185,6 +192,7 @@
 			}
 			if (target?.markerId) {
 				selectedMarkerId = target.markerId;
+				markerPropsOpen = true;
 			}
 		});
 	}
@@ -712,14 +720,16 @@
 		return { x: world.x, y: world.y };
 	}
 
-	/** Snap world coords to the deepest visible sub-grid intersection and
-	 *  clamp to the map bounds so a click at the edge doesn't produce an
-	 *  out-of-range marker. */
-	function snapAndClamp(coord: { x: number; y: number }): { x: number; y: number } {
-		const s = snapCoord(coord, zoom);
+	/** Clamp world coords to the map bounds so a click just past the edge
+	 *  still lands somewhere inside. Markers are no longer grid-snapped
+	 *  (placement / drag / nudge all preserve the raw fractional coords)
+	 *  so this is a plain box clamp — the old `snapCoord` intermediate is
+	 *  gone. Hit-testing now uses `markersAt(x, y, hitTolerance)` instead
+	 *  of a cell-index match. */
+	function clampToBounds(coord: { x: number; y: number }): { x: number; y: number } {
 		return {
-			x: Math.max(0, Math.min(gridDims.cols, s.x)),
-			y: Math.max(0, Math.min(gridDims.rows, s.y)),
+			x: Math.max(0, Math.min(gridDims.cols, coord.x)),
+			y: Math.max(0, Math.min(gridDims.rows, coord.y)),
 		};
 	}
 
@@ -730,10 +740,16 @@
 	 *  edits now (previously a click on a linked marker jumped to its entity and
 	 *  closed the map, which made linked markers hard to edit — that navigation
 	 *  is an explicit "Go to" action in the editor instead). */
-	function activateExisting(x: number, y: number): boolean {
-		const existing = markersAt(x, y, zoom)[0];
+	/** Select the marker at (x, y). `edit=true` also opens the properties
+	 *  dialog — used by double-click, shift-click, long-press, and the
+	 *  external `open({ markerId })` deep-link. Bare single-clicks pass
+	 *  false so the marker is only outlined; arrow keys nudge from there
+	 *  and a subsequent double-click opens the editor. */
+	function activateExisting(x: number, y: number, edit = false): boolean {
+		const existing = markersAt(x, y, hitTolerance)[0];
 		if (!existing) return false;
 		selectedMarkerId = existing.id;
+		if (edit) markerPropsOpen = true;
 		return true;
 	}
 
@@ -755,16 +771,17 @@
 			color: DEFAULT_MARKER_COLOR,
 		});
 		selectedMarkerId = id;
+		markerPropsOpen = true;
 	}
 
 	// ─── Drag-to-move + pile-up popover ────────────────────────────────────────
 	/**
-	 * Drag state. Populated on pointerdown when a marker sits at the
-	 * click's snap point; upgraded to a live drag once the pointer has
-	 * moved past `DRAG_THRESHOLD_PX`. Coords are world units; the marker's
-	 * visual `x, y` is overridden by `snapCoord(liveX, liveY, zoom)` while
-	 * dragging so the icon jumps between snap intersections as the user
-	 * moves — feels tactile and previews exactly where the drop will land.
+	 * Drag state. Populated on pointerdown when a marker sits under the
+	 * click; upgraded to a live drag once the pointer has moved past
+	 * `DRAG_THRESHOLD_PX`. Coords are raw fractional world units — markers
+	 * no longer snap to a grid, so the drag preview follows the pointer
+	 * pixel-for-pixel and the drop lands exactly where the pointer lifts
+	 * (only clamped into the map bounds).
 	 */
 	interface DragState {
 		id: string;
@@ -814,6 +831,9 @@
 			close();
 			return;
 		}
+		// Pick from a pile: same as a bare single-click on the map. Just
+		// select; a follow-up double-click / shift-click / long-press opens
+		// the editor.
 		selectedMarkerId = m.id;
 	}
 
@@ -822,7 +842,7 @@
 	 *  • Snap point with >1 markers → open pile-up popover to disambiguate.
 	 *  • Existing marker w/ link + bare click → jump to entity.
 	 *  • Existing marker w/ shift-click → open editor.
-	 *  • Empty spot → highlight the snap point as `selectedSquare` so the
+	 *  • Empty spot → deselect any marker (placement is armed via the
 	 *    toolbar "+ Marker" button can drop a marker on it. Empty clicks
 	 *    never create a marker directly — a stray tap on the map would
 	 *    otherwise litter it with unwanted pins.
@@ -841,23 +861,47 @@
 			longPressFired = false;
 			return;
 		}
-		const { x, y } = snapAndClamp(eventToWorld(ev));
-		const hits = markersAt(x, y, zoom);
+		const { x, y } = clampToBounds(eventToWorld(ev));
+		// Armed for placement — drop the marker here, exit the mode, done.
+		// Skips the hit-test entirely so a click on top of an existing
+		// marker while armed still creates a new one (matches the "you
+		// asked to place, so we place" contract of the toolbar button).
+		if (placingMarker) {
+			placeAt(x, y);
+			placingMarker = false;
+			return;
+		}
+		const hits = markersAt(x, y, hitTolerance);
 		if (hits.length > 1) {
 			openPilePicker(hits, ev);
-			clearSquareSelection();
 			return;
 		}
 		if (hits.length === 1) {
-			activateExisting(x, y);
-			clearSquareSelection();
+			// Bare click selects the marker (arrow keys nudge from here);
+			// shift-click opens the editor immediately. Double-click on the
+			// same marker is handled by onGridDblClick below — it fires
+			// AFTER this click, so a single-click always selects first and
+			// the second-click's activateExisting(_, _, edit=true) then
+			// opens the dialog.
+			activateExisting(x, y, ev.shiftKey);
 			return;
 		}
-		// Empty grid click: highlight the snap point so the toolbar's
-		// "+ Marker" knows where to drop the next pin. Clear any marker
-		// selection so the outline switches to the square.
-		selectedSquare = { x, y };
+		// Empty grid click: deselect any marker. The old "highlight a snap
+		// square for the + Marker button to drop onto" flow is gone —
+		// placement is now armed by clicking + Marker first, then clicking
+		// the map (see the placingMarker early-out above).
 		selectedMarkerId = null;
+	}
+
+	/** Double-click on a marker opens the properties editor. The first
+	 *  click of the sequence already ran onGridClick and set the
+	 *  selection; this handler just adds the editor open. Any other
+	 *  double-click (empty spot, drag-just-ended, long-press) is a
+	 *  no-op — the single-click already handled the intent. */
+	function onGridDblClick(ev: MouseEvent) {
+		if (dragJustEnded || longPressFired) return;
+		const { x, y } = clampToBounds(eventToWorld(ev));
+		if (markersAt(x, y, hitTolerance).length >= 1) activateExisting(x, y, true);
 	}
 
 	function onGridPointerDown(e: PointerEvent) {
@@ -865,7 +909,7 @@
 		if (e.pointerType !== 'mouse') {
 			longPressFired = false;
 			if (longPressTimer) clearTimeout(longPressTimer);
-			const { x, y } = snapAndClamp(eventToWorld(e));
+			const { x, y } = clampToBounds(eventToWorld(e));
 			longPressTimer = setTimeout(() => {
 				longPressFired = true;
 				longPressTimer = null;
@@ -877,8 +921,8 @@
 		// Drag intent — arm if there's a marker at this snap point. We
 		// only *commit* to dragging once the pointer moves past the
 		// threshold, so a static tap still routes as a normal click.
-		const { x, y } = snapAndClamp(eventToWorld(e));
-		const hit = markersAt(x, y, zoom)[0];
+		const { x, y } = clampToBounds(eventToWorld(e));
+		const hit = markersAt(x, y, hitTolerance)[0];
 		if (!hit) return;
 		try {
 			(e.currentTarget as SVGRectElement).setPointerCapture(e.pointerId);
@@ -922,7 +966,7 @@
 			// Best-effort — capture may have already been released.
 		}
 		if (!state.moved) return; // static tap — let onGridClick handle it
-		const snapped = snapAndClamp({ x: state.liveX, y: state.liveY });
+		const snapped = clampToBounds({ x: state.liveX, y: state.liveY });
 		updateMarker(state.id, { x: snapped.x, y: snapped.y });
 		selectedMarkerId = state.id;
 		// Suppress the click event that fires right after pointerup.
@@ -943,7 +987,7 @@
 	 *  Used both to render the icon at its drop-target intersection and
 	 *  to draw a small crosshair at the same spot. */
 	const dragPreview = $derived(
-		dragState?.moved ? snapAndClamp({ x: dragState.liveX, y: dragState.liveY }) : null,
+		dragState?.moved ? clampToBounds({ x: dragState.liveX, y: dragState.liveY }) : null,
 	);
 
 	/** Normalise a rotation to `[0, 360)` for display + storage. `undefined`
@@ -955,29 +999,37 @@
 		return n < 0 ? n + 360 : n;
 	}
 
-	/** Empty snap point the user tapped without a marker on it. Rendered
-	 *  with the same outline the selected marker uses, and acts as the
-	 *  target the "+ Marker" toolbar button drops a marker onto. Cleared
-	 *  on marker click, map switch, or after a marker is placed. */
-	let selectedSquare = $state<{ x: number; y: number } | null>(null);
-	function clearSquareSelection() {
-		selectedSquare = null;
+	/** "+ Marker" — enter placement mode. The next click on the map's
+	 *  click-capture <rect> drops a marker at those coords (see the
+	 *  early-out in onGridClick), and the cursor is swapped to a
+	 *  crosshair via the .mp-canvas--placing modifier so the arming
+	 *  state is visually obvious. Escape cancels; clicking the button
+	 *  a second time also cancels (toggle). */
+	let placingMarker = $state(false);
+	function togglePlacingMarker() {
+		placingMarker = !placingMarker;
+		if (placingMarker) selectedMarkerId = null;
+	}
+	function cancelPlacingMarker() {
+		placingMarker = false;
 	}
 
-	/** "+ Marker" — drop a marker at the previously-selected square. No-op
-	 *  when no square is selected (button is disabled in that state). */
-	function addMarkerAtSelected() {
-		if (!selectedSquare) return;
-		placeAt(selectedSquare.x, selectedSquare.y);
-		clearSquareSelection();
-	}
-
-	/** Keyboard shortcut router. Only handles Escape for the pile
-	 *  picker — a non-dialog floating menu that would otherwise be
-	 *  bypassed and let Escape close the whole map. The entity-link
-	 *  picker is a nested `<dialog>` now, so its native Escape handler
-	 *  (wired via `oncancel`) closes it before Escape can reach the
-	 *  parent. */
+	/** Keyboard shortcut router. Handles:
+	 *
+	 *  - Escape while the pile picker is open — a non-dialog floating menu
+	 *    that would otherwise be bypassed and let Escape close the whole
+	 *    map. The entity-link picker is a nested `<dialog>` now, so its
+	 *    native Escape handler (wired via `oncancel`) closes it before
+	 *    Escape can reach the parent.
+	 *  - Escape while a marker is selected AND the properties dialog is
+	 *    closed — deselect the marker. (When the dialog is open, its own
+	 *    Escape handler closes the dialog first.)
+	 *  - Arrow keys while a marker is selected AND the properties dialog
+	 *    is closed — nudge the marker by one snap-cell at the current
+	 *    zoom. Held-Shift multiplies by 5 for coarse moves.
+	 *
+	 *  Skipped when the target is an editable input so typing in a form
+	 *  field doesn't move the map's selected marker underneath. */
 	$effect(() => {
 		const handler = (ev: KeyboardEvent) => {
 			if (!dialogOpen) return;
@@ -986,6 +1038,56 @@
 				ev.stopPropagation();
 				closePilePicker();
 				return;
+			}
+			// Escape cancels armed placement — takes precedence over the
+			// marker editor and selection so a mis-armed + Marker click
+			// always has a one-key exit even if a marker is selected.
+			if (ev.key === 'Escape' && placingMarker) {
+				ev.preventDefault();
+				cancelPlacingMarker();
+				return;
+			}
+			// Only fire selection-scoped shortcuts when the marker editor
+			// isn't up and no form field currently owns focus.
+			if (markerPropsOpen) return;
+			const target = ev.target as HTMLElement | null;
+			if (
+				target &&
+				(target.isContentEditable ||
+					target.tagName === 'INPUT' ||
+					target.tagName === 'TEXTAREA' ||
+					target.tagName === 'SELECT')
+			) {
+				return;
+			}
+			if (!selectedMarker) return;
+			if (ev.key === 'Escape') {
+				ev.preventDefault();
+				selectedMarkerId = null;
+				return;
+			}
+			if (
+				ev.key === 'ArrowLeft' ||
+				ev.key === 'ArrowRight' ||
+				ev.key === 'ArrowUp' ||
+				ev.key === 'ArrowDown'
+			) {
+				ev.preventDefault();
+				// Fixed nudge step (quarter of an icon) instead of the old
+				// zoom-tied grid resolution — markers no longer snap, so the
+				// step doesn't need to match a grid interval. Shift = 5×.
+				const step = (ICON_SIZE / 4) * (ev.shiftKey ? 5 : 1);
+				let dx = 0;
+				let dy = 0;
+				if (ev.key === 'ArrowLeft') dx = -step;
+				else if (ev.key === 'ArrowRight') dx = step;
+				else if (ev.key === 'ArrowUp') dy = -step;
+				else if (ev.key === 'ArrowDown') dy = step;
+				const next = clampToBounds({
+					x: selectedMarker.x + dx,
+					y: selectedMarker.y + dy,
+				});
+				updateMarker(selectedMarker.id, { x: next.x, y: next.y });
 			}
 		};
 		window.addEventListener('keydown', handler, true);
@@ -1038,9 +1140,15 @@
 	const RASTER_ICON_SCALE = 2;
 	/** Vertical gap between the icon's bottom and the label's baseline,
 	 *  in world units. Scales with the icon so proportions stay stable.
-	 *  Sized to clear the label's font-ascent PLUS a couple of pixels
-	 *  of breathing room so the text never bites into the glyph. */
-	const LABEL_GAP = $derived(isMobileViewport ? 0.5 : 0.3);
+	 *  Just enough to keep descenders off the glyph's outline — earlier
+	 *  values (0.5 / 0.3) had the label floating too far from the icon
+	 *  once the tighter typography landed. */
+	const LABEL_GAP = $derived(isMobileViewport ? 0.25 : 0.15);
+	/** Hit-test radius (world units) used by `markersAt`. Half the icon's
+	 *  extent so a click inside the visible glyph counts as a hit; the
+	 *  ×1.05 buffer forgives 1-pixel finger jitter without noticeably
+	 *  overlapping neighbouring markers. */
+	const hitTolerance = $derived((ICON_SIZE / 2) * 1.05);
 
 	// Marker text emphasis — bold/italic/small-caps/underline flags on
 	// `m.labelStyle`. Serialised straight into the SVG `<text>`'s style
@@ -1126,11 +1234,12 @@
 				<div class="mp-tools mp-tools-actions">
 					<button
 						class="mp-btn mp-btn-add"
-						onclick={addMarkerAtSelected}
-						disabled={!selectedSquare}
-						use:tooltip={selectedSquare
-							? 'Drop a marker on the selected square'
-							: 'Click a square first, then hit + Marker to drop a pin.'}
+						class:mp-btn-add--armed={placingMarker}
+						onclick={togglePlacingMarker}
+						aria-pressed={placingMarker}
+						use:tooltip={placingMarker
+							? 'Click on the map to place the marker (Esc to cancel)'
+							: 'Click, then tap the map to place a marker'}
 						aria-label="Add marker">+ Marker</button
 					>
 					<div class="mp-zoom" role="group" aria-label="Zoom controls">
@@ -1202,7 +1311,12 @@
 				<!-- Placing / square-selected hint. Overlaid on top of the
 				<!-- Wheel listener is attached manually with `passive: false` in a
 		     $effect above so trackpad-pinch (ctrl+wheel) is preventable. -->
-				<div class="mp-canvas" bind:this={canvasEl} onscroll={onScroll}>
+				<div
+					class="mp-canvas"
+					class:mp-canvas--placing={placingMarker}
+					bind:this={canvasEl}
+					onscroll={onScroll}
+				>
 					<!--
 				viewBox is world-unit space (0 0 cols rows). SVG rendered
 				width/height = canvasPxW/H × zoom, so when zoom > 1 the SVG
@@ -1312,6 +1426,7 @@
 							height={gridDims.rows}
 							fill="transparent"
 							onclick={onGridClick}
+							ondblclick={onGridDblClick}
 							onpointerdown={onGridPointerDown}
 							onpointermove={onGridPointerMove}
 							onpointerup={onGridPointerUp}
@@ -1335,17 +1450,6 @@
 						     "+ Marker" (same visual language a selected marker
 						     uses). Rendered before markers so any marker placed
 						     at the same spot draws on top. -->
-						{#if selectedSquare}
-							{@const cell = snapResolutionForZoom(zoom)}
-							<rect
-								class="mp-marker-selection"
-								x={selectedSquare.x - cell / 2}
-								y={selectedSquare.y - cell / 2}
-								width={cell}
-								height={cell}
-								vector-effect="non-scaling-stroke"
-							/>
-						{/if}
 
 						{#each mapState.markers as m (m.id)}
 							{@const ic = resolveMapIcon(m.icon)}
@@ -1359,14 +1463,15 @@
 							{@const isSelected = m.id === selectedMarkerId}
 							{@const rot = normalizeAngle(m.angle)}
 							{#if isSelected}
-								<!-- Selection outline — the sub-cell the marker snaps into
-						     at the current zoom (1 unit at 100%, ½ at 200%, ¼ at
-						     400%, …). Drawn in world coords so it sits on top of
-						     the grid where the marker actually lives; the icon's
-						     scale(1/zoom) group is separate so shrinking the icon
-						     doesn't also shrink the highlight. `non-scaling-stroke`
-						     keeps the outline a fixed screen weight at any zoom. -->
-								{@const cell = snapResolutionForZoom(zoom)}
+								<!-- Selection outline — a small square wrapping the icon
+						     itself (markers no longer snap to a cell, so there
+						     is no "sub-cell" to trace). Drawn in world coords so
+						     it sits on top of the grid where the marker lives;
+						     the icon's scale(1/zoom) group is separate so
+						     shrinking the icon doesn't also shrink the
+						     highlight. `non-scaling-stroke` keeps the outline a
+						     fixed screen weight at any zoom. -->
+								{@const cell = ICON_SIZE * 1.15}
 								<rect
 									class="mp-marker-selection"
 									x={mx - cell / 2}
@@ -1592,7 +1697,15 @@
 -->
 <MarkerPropertiesDialog
 	{selectedMarker}
-	onClose={() => (selectedMarkerId = null)}
+	bind:open={markerPropsOpen}
+	onClose={() => {
+		/* Closing the editor no longer clears the selection — the marker
+		 * stays outlined on the canvas so the user can nudge it with the
+		 * arrow keys or reopen the editor with another double-click. A
+		 * plain Escape while the dialog is closed, or a click on empty
+		 * grid, is what clears the selection now (see onGridClick + the
+		 * keydown handler in the $effect earlier). */
+	}}
 	onNavigate={focusMarkerEntity}
 />
 
@@ -2026,6 +2139,22 @@
 		   Wheel events are unaffected by touch-action so trackpad
 		   ctrl+wheel + bare-wheel pan both still work. */
 		touch-action: pan-x pan-y;
+	}
+	/* Armed placement — the "+ Marker" button was clicked and the next
+	   click on the map drops a marker at that spot. Swap to a crosshair
+	   cursor everywhere in the canvas so the arming state is impossible
+	   to miss. */
+	:global(.mp-canvas--placing),
+	:global(.mp-canvas--placing svg),
+	:global(.mp-canvas--placing rect) {
+		cursor: crosshair;
+	}
+	/* Toolbar "+ Marker" armed indicator — pressed styling so the button
+	   reads as "the next click goes here" without needing a legend. */
+	:global(.mp-btn-add--armed) {
+		background: var(--accent-glow);
+		border-color: var(--text-accent);
+		color: var(--text-accent);
 	}
 	:global(.mp-canvas svg) {
 		display: block;
@@ -2540,16 +2669,6 @@
 	}
 	:global(.mp-style-btn:disabled:hover) {
 		background: var(--bg-control);
-	}
-	/* Angle field — greys the whole widget when there's no icon to
-	   rotate. Applied via a container class since the field is composed
-	   of three separate elements (± steps + number input). */
-	:global(.mp-props-field--disabled .mp-sel-angle) {
-		opacity: 0.4;
-	}
-	:global(.mp-sel-angle-step:disabled),
-	:global(.mp-sel-angle-input:disabled) {
-		cursor: not-allowed;
 	}
 
 	:global(.mp-props-footer) {

@@ -51,10 +51,17 @@
 
 	let {
 		selectedMarker,
+		open = $bindable(false),
 		onClose,
 		onNavigate,
 	}: {
 		selectedMarker: MapMarker | null;
+		/** Bindable open flag — the parent controls when the properties
+		 *  dialog is visible. Set true to open, false to close. Closing
+		 *  the dialog from inside (Cancel / ✕ / OK) flips this back
+		 *  without touching selection: the parent may leave the marker
+		 *  selected on the canvas to enable, e.g., arrow-key nudging. */
+		open?: boolean;
 		onClose: () => void;
 		/** Jump to the marker's linked entity (closes the map). */
 		onNavigate?: (link: { kind: string; id: string; name: string }) => void;
@@ -77,14 +84,14 @@
 	let iconDialogOpen = $state(false);
 	let entityPickerOpen = $state(false);
 
-	// One-way open sync: the dialog is open exactly when a marker is
-	// selected. `markerId` is derived off the prop and stays stable
-	// while the marker's *fields* change during live edit — so the
-	// snapshot effect below re-runs only on a genuine selection change,
-	// never on our own writes. Closing the dialog calls `onClose`,
-	// which is where the parent clears its selection.
+	// The dialog's open state is externally controlled via `bind:open` on
+	// the parent — MapDialog opens it on a marker click and leaves it
+	// closed after a Cancel / OK / ✕ so the marker can remain selected
+	// on the canvas for arrow-key nudging. `markerId` is derived off the
+	// selectedMarker prop and stays stable while the marker's *fields*
+	// change during live edit — so the snapshot effect below re-runs
+	// only on a genuine selection change, never on our own writes.
 	const markerId = $derived(selectedMarker?.id ?? null);
-	let propsDialogOpen = $state(false);
 	let stackDepth = $state(1);
 	// Dialog root element — bound to Dialog.Content so we can portal the
 	// Position <Select>'s popover into it. Without the explicit target,
@@ -98,7 +105,7 @@
 	// (see MapDialog.svelte `dialogEl` binding).
 	let dialogEl = $state<HTMLElement | null>(null);
 	$effect(() => {
-		if (!propsDialogOpen) return;
+		if (!open) return;
 		stackDepth = pushDialog();
 		return () => popDialog();
 	});
@@ -437,13 +444,20 @@
 	$effect(() => {
 		const id = markerId;
 		if (id === null) {
-			propsDialogOpen = false;
+			// Deselected — parent cleared selectedMarker. Close the dialog
+			// (in case it was open) and drop the draft so a subsequent
+			// re-selection starts from a fresh snapshot.
+			open = false;
 			draft = null;
 			originalMarker = null;
 			return;
 		}
 		const m = untrack(() => selectedMarker);
 		if (!m) return;
+		// Snapshot the marker into the draft on every genuine selection
+		// change. `open` is left alone here — the parent controls when the
+		// dialog is shown (this lets the marker be selected on the canvas
+		// with the dialog closed for arrow-key nudging).
 		const snap: MarkerDraft = {
 			label: m.label ?? '',
 			icon: m.icon ?? null,
@@ -458,7 +472,6 @@
 		};
 		originalMarker = snap;
 		draft = { ...snap };
-		propsDialogOpen = true;
 	});
 
 	/** Push the draft's current values straight through to the live
@@ -576,7 +589,7 @@
 
 	/** OK — the marker already carries every draft edit; just close. */
 	function commitDraft() {
-		propsDialogOpen = false;
+		open = false;
 	}
 
 	/** Cancel — re-apply the snapshot taken on open so the marker
@@ -608,13 +621,13 @@
 					originalMarker.labelPosition === 'bottom' ? undefined : originalMarker.labelPosition,
 			});
 		}
-		propsDialogOpen = false;
+		open = false;
 	}
 </script>
 
 {#if selectedMarker && draft}
 	<Dialog.Root
-		bind:open={propsDialogOpen}
+		bind:open
 		onOpenChange={(next) => {
 			if (!next) onClose();
 		}}
@@ -765,16 +778,13 @@
 							</button>
 						</label>
 
-						<label
-							class="mp-props-field mp-props-field--angle"
-							class:mp-props-field--disabled={!hasIcon}
-						>
+						<label class="mp-props-field mp-props-field--angle">
 							<span class="mp-props-label">Angle</span>
 							<div class="mp-sel-angle" role="group" aria-label="Marker rotation">
 								<button
 									type="button"
 									class="mp-sel-angle-step"
-									disabled={!hasIcon}
+									disabled={!canSave}
 									onclick={() => stepDraftAngle(-15)}
 									aria-label="Rotate counter-clockwise">{@html minusSvg}</button
 								>
@@ -787,7 +797,7 @@
 										min="0"
 										max="359"
 										step="15"
-										disabled={!hasIcon}
+										disabled={!canSave}
 										value={draftAngle}
 										oninput={onDraftAngleInput}
 										aria-label="Marker rotation in degrees"
@@ -797,7 +807,7 @@
 								<button
 									type="button"
 									class="mp-sel-angle-step"
-									disabled={!hasIcon}
+									disabled={!canSave}
 									onclick={() => stepDraftAngle(15)}
 									aria-label="Rotate clockwise">{@html plusSvg}</button
 								>
@@ -811,6 +821,7 @@
 								class="mp-sel-color-btn"
 								style="color: {draftColor}"
 								bind:this={pickrAnchor}
+								disabled={!canSave}
 								aria-label="Icon colour"
 							>
 								<svg viewBox="0 0 640 640" aria-hidden="true">
@@ -840,6 +851,7 @@
 								type="text"
 								spellcheck="false"
 								autocomplete="off"
+								disabled={!canSave}
 								value={hexToRgbString(draftColor)}
 								onchange={onRgbChange}
 								aria-label="Icon colour as RGB — select to copy, or paste to set"
