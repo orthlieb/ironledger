@@ -1143,7 +1143,7 @@
 	 *  Just enough to keep descenders off the glyph's outline — earlier
 	 *  values (0.5 / 0.3) had the label floating too far from the icon
 	 *  once the tighter typography landed. */
-	const LABEL_GAP = $derived(isMobileViewport ? 0.25 : 0.15);
+	const LABEL_GAP = $derived(isMobileViewport ? 0.125 : 0.075);
 	/** Hit-test radius (world units) used by `markersAt`. Half the icon's
 	 *  extent so a click inside the visible glyph counts as a hit; the
 	 *  ×1.05 buffer forgives 1-pixel finger jitter without noticeably
