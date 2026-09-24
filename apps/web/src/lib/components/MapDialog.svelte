@@ -67,10 +67,9 @@
 		haloPaddedViewBox,
 		mapGlyphInner,
 		resolveMapIcon,
-		snapResolutionForZoom,
 		subGridOctaveForZoom,
 	} from '$lib/mapConstants.js';
-	import { gridLineOffsets, isMajorLine, snapCoord } from '$lib/mapGeometry.js';
+	import { gridLineOffsets, isMajorLine } from '$lib/mapGeometry.js';
 	import {
 		mapState,
 		mapListState,
@@ -721,14 +720,16 @@
 		return { x: world.x, y: world.y };
 	}
 
-	/** Snap world coords to the deepest visible sub-grid intersection and
-	 *  clamp to the map bounds so a click at the edge doesn't produce an
-	 *  out-of-range marker. */
-	function snapAndClamp(coord: { x: number; y: number }): { x: number; y: number } {
-		const s = snapCoord(coord, zoom);
+	/** Clamp world coords to the map bounds so a click just past the edge
+	 *  still lands somewhere inside. Markers are no longer grid-snapped
+	 *  (placement / drag / nudge all preserve the raw fractional coords)
+	 *  so this is a plain box clamp — the old `snapCoord` intermediate is
+	 *  gone. Hit-testing now uses `markersAt(x, y, hitTolerance)` instead
+	 *  of a cell-index match. */
+	function clampToBounds(coord: { x: number; y: number }): { x: number; y: number } {
 		return {
-			x: Math.max(0, Math.min(gridDims.cols, s.x)),
-			y: Math.max(0, Math.min(gridDims.rows, s.y)),
+			x: Math.max(0, Math.min(gridDims.cols, coord.x)),
+			y: Math.max(0, Math.min(gridDims.rows, coord.y)),
 		};
 	}
 
@@ -745,7 +746,7 @@
 	 *  false so the marker is only outlined; arrow keys nudge from there
 	 *  and a subsequent double-click opens the editor. */
 	function activateExisting(x: number, y: number, edit = false): boolean {
-		const existing = markersAt(x, y, zoom)[0];
+		const existing = markersAt(x, y, hitTolerance)[0];
 		if (!existing) return false;
 		selectedMarkerId = existing.id;
 		if (edit) markerPropsOpen = true;
@@ -775,12 +776,12 @@
 
 	// ─── Drag-to-move + pile-up popover ────────────────────────────────────────
 	/**
-	 * Drag state. Populated on pointerdown when a marker sits at the
-	 * click's snap point; upgraded to a live drag once the pointer has
-	 * moved past `DRAG_THRESHOLD_PX`. Coords are world units; the marker's
-	 * visual `x, y` is overridden by `snapCoord(liveX, liveY, zoom)` while
-	 * dragging so the icon jumps between snap intersections as the user
-	 * moves — feels tactile and previews exactly where the drop will land.
+	 * Drag state. Populated on pointerdown when a marker sits under the
+	 * click; upgraded to a live drag once the pointer has moved past
+	 * `DRAG_THRESHOLD_PX`. Coords are raw fractional world units — markers
+	 * no longer snap to a grid, so the drag preview follows the pointer
+	 * pixel-for-pixel and the drop lands exactly where the pointer lifts
+	 * (only clamped into the map bounds).
 	 */
 	interface DragState {
 		id: string;
@@ -860,7 +861,7 @@
 			longPressFired = false;
 			return;
 		}
-		const { x, y } = snapAndClamp(eventToWorld(ev));
+		const { x, y } = clampToBounds(eventToWorld(ev));
 		// Armed for placement — drop the marker here, exit the mode, done.
 		// Skips the hit-test entirely so a click on top of an existing
 		// marker while armed still creates a new one (matches the "you
@@ -870,7 +871,7 @@
 			placingMarker = false;
 			return;
 		}
-		const hits = markersAt(x, y, zoom);
+		const hits = markersAt(x, y, hitTolerance);
 		if (hits.length > 1) {
 			openPilePicker(hits, ev);
 			return;
@@ -899,8 +900,8 @@
 	 *  no-op — the single-click already handled the intent. */
 	function onGridDblClick(ev: MouseEvent) {
 		if (dragJustEnded || longPressFired) return;
-		const { x, y } = snapAndClamp(eventToWorld(ev));
-		if (markersAt(x, y, zoom).length >= 1) activateExisting(x, y, true);
+		const { x, y } = clampToBounds(eventToWorld(ev));
+		if (markersAt(x, y, hitTolerance).length >= 1) activateExisting(x, y, true);
 	}
 
 	function onGridPointerDown(e: PointerEvent) {
@@ -908,7 +909,7 @@
 		if (e.pointerType !== 'mouse') {
 			longPressFired = false;
 			if (longPressTimer) clearTimeout(longPressTimer);
-			const { x, y } = snapAndClamp(eventToWorld(e));
+			const { x, y } = clampToBounds(eventToWorld(e));
 			longPressTimer = setTimeout(() => {
 				longPressFired = true;
 				longPressTimer = null;
@@ -920,8 +921,8 @@
 		// Drag intent — arm if there's a marker at this snap point. We
 		// only *commit* to dragging once the pointer moves past the
 		// threshold, so a static tap still routes as a normal click.
-		const { x, y } = snapAndClamp(eventToWorld(e));
-		const hit = markersAt(x, y, zoom)[0];
+		const { x, y } = clampToBounds(eventToWorld(e));
+		const hit = markersAt(x, y, hitTolerance)[0];
 		if (!hit) return;
 		try {
 			(e.currentTarget as SVGRectElement).setPointerCapture(e.pointerId);
@@ -965,7 +966,7 @@
 			// Best-effort — capture may have already been released.
 		}
 		if (!state.moved) return; // static tap — let onGridClick handle it
-		const snapped = snapAndClamp({ x: state.liveX, y: state.liveY });
+		const snapped = clampToBounds({ x: state.liveX, y: state.liveY });
 		updateMarker(state.id, { x: snapped.x, y: snapped.y });
 		selectedMarkerId = state.id;
 		// Suppress the click event that fires right after pointerup.
@@ -986,7 +987,7 @@
 	 *  Used both to render the icon at its drop-target intersection and
 	 *  to draw a small crosshair at the same spot. */
 	const dragPreview = $derived(
-		dragState?.moved ? snapAndClamp({ x: dragState.liveX, y: dragState.liveY }) : null,
+		dragState?.moved ? clampToBounds({ x: dragState.liveX, y: dragState.liveY }) : null,
 	);
 
 	/** Normalise a rotation to `[0, 360)` for display + storage. `undefined`
@@ -1072,14 +1073,17 @@
 				ev.key === 'ArrowDown'
 			) {
 				ev.preventDefault();
-				const step = snapResolutionForZoom(zoom) * (ev.shiftKey ? 5 : 1);
+				// Fixed nudge step (quarter of an icon) instead of the old
+				// zoom-tied grid resolution — markers no longer snap, so the
+				// step doesn't need to match a grid interval. Shift = 5×.
+				const step = (ICON_SIZE / 4) * (ev.shiftKey ? 5 : 1);
 				let dx = 0;
 				let dy = 0;
 				if (ev.key === 'ArrowLeft') dx = -step;
 				else if (ev.key === 'ArrowRight') dx = step;
 				else if (ev.key === 'ArrowUp') dy = -step;
 				else if (ev.key === 'ArrowDown') dy = step;
-				const next = snapAndClamp({
+				const next = clampToBounds({
 					x: selectedMarker.x + dx,
 					y: selectedMarker.y + dy,
 				});
@@ -1140,6 +1144,11 @@
 	 *  values (0.5 / 0.3) had the label floating too far from the icon
 	 *  once the tighter typography landed. */
 	const LABEL_GAP = $derived(isMobileViewport ? 0.25 : 0.15);
+	/** Hit-test radius (world units) used by `markersAt`. Half the icon's
+	 *  extent so a click inside the visible glyph counts as a hit; the
+	 *  ×1.05 buffer forgives 1-pixel finger jitter without noticeably
+	 *  overlapping neighbouring markers. */
+	const hitTolerance = $derived((ICON_SIZE / 2) * 1.05);
 
 	// Marker text emphasis — bold/italic/small-caps/underline flags on
 	// `m.labelStyle`. Serialised straight into the SVG `<text>`'s style
@@ -1454,14 +1463,15 @@
 							{@const isSelected = m.id === selectedMarkerId}
 							{@const rot = normalizeAngle(m.angle)}
 							{#if isSelected}
-								<!-- Selection outline — the sub-cell the marker snaps into
-						     at the current zoom (1 unit at 100%, ½ at 200%, ¼ at
-						     400%, …). Drawn in world coords so it sits on top of
-						     the grid where the marker actually lives; the icon's
-						     scale(1/zoom) group is separate so shrinking the icon
-						     doesn't also shrink the highlight. `non-scaling-stroke`
-						     keeps the outline a fixed screen weight at any zoom. -->
-								{@const cell = snapResolutionForZoom(zoom)}
+								<!-- Selection outline — a small square wrapping the icon
+						     itself (markers no longer snap to a cell, so there
+						     is no "sub-cell" to trace). Drawn in world coords so
+						     it sits on top of the grid where the marker lives;
+						     the icon's scale(1/zoom) group is separate so
+						     shrinking the icon doesn't also shrink the
+						     highlight. `non-scaling-stroke` keeps the outline a
+						     fixed screen weight at any zoom. -->
+								{@const cell = ICON_SIZE * 1.15}
 								<rect
 									class="mp-marker-selection"
 									x={mx - cell / 2}

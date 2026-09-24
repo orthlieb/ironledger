@@ -540,19 +540,19 @@ export async function unlinkEntityFromMaps(entityId: string): Promise<void> {
 // Readers
 // ---------------------------------------------------------------------------
 
-/** Markers that snap to the same sub-cell as `(x, y)` at the given zoom.
- *  Grid subdivision at zoom 2 means half-cells, zoom 4 means quarter-
- *  cells; two markers are "at the same cell" when they land on the same
- *  intersection under the current snap resolution. */
-export function markersAt(x: number, y: number, zoom = 1): MapMarker[] {
-	// Cell-centre snap: markers live at (cellIndex + 0.5) × cellSize on
-	// each axis, not at intersections. Compute the containing cell for
-	// the query point and match markers within a half-cell tolerance.
-	const step = 1 / Math.pow(2, Math.max(0, Math.floor(Math.log2(Math.max(1, zoom)))));
-	const sx = Math.floor(x / step) * step + step / 2;
-	const sy = Math.floor(y / step) * step + step / 2;
-	const eps = step / 2;
-	return mapState.markers.filter((m) => Math.abs(m.x - sx) < eps && Math.abs(m.y - sy) < eps);
+/** Markers whose icon overlaps a circle of radius `tolerance` centred at
+ *  `(x, y)`. Markers now live at arbitrary fractional world coords (no
+ *  grid snap on placement / drag / nudge), so hit-testing is a plain
+ *  proximity check instead of the old cell-index match. Caller passes
+ *  the effective icon half-size (world units) so mobile's 2× glyphs and
+ *  desktop's 1× glyphs both get a hit target sized to what's on screen. */
+export function markersAt(x: number, y: number, tolerance: number): MapMarker[] {
+	const tolSq = tolerance * tolerance;
+	return mapState.markers.filter((m) => {
+		const dx = m.x - x;
+		const dy = m.y - y;
+		return dx * dx + dy * dy <= tolSq;
+	});
 }
 
 export function hasAnyContent(): boolean {
