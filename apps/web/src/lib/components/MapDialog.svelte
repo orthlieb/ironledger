@@ -1038,9 +1038,10 @@
 	const RASTER_ICON_SCALE = 2;
 	/** Vertical gap between the icon's bottom and the label's baseline,
 	 *  in world units. Scales with the icon so proportions stay stable.
-	 *  Sized to clear the label's font-ascent PLUS a couple of pixels
-	 *  of breathing room so the text never bites into the glyph. */
-	const LABEL_GAP = $derived(isMobileViewport ? 0.5 : 0.3);
+	 *  Just enough to keep descenders off the glyph's outline — earlier
+	 *  values (0.5 / 0.3) had the label floating too far from the icon
+	 *  once the tighter typography landed. */
+	const LABEL_GAP = $derived(isMobileViewport ? 0.25 : 0.15);
 
 	// Marker text emphasis — bold/italic/small-caps/underline flags on
 	// `m.labelStyle`. Serialised straight into the SVG `<text>`'s style
