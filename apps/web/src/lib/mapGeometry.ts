@@ -19,6 +19,35 @@ export interface GridCoord {
 	y: number;
 }
 
+/** Walk out-of-bounds markers back into `[0, cols] × [0, rows]`. When
+ *  a new background image has a different aspect than the old one the
+ *  grid's `(cols, rows)` shrinks or grows, and markers that were legal
+ *  against the old bounds can land outside the canvas — the click-
+ *  capture `<rect>` in MapDialog only spans the current bounds, so a
+ *  click there just misses the icon and those markers become
+ *  unselectable and undeletable. Clamp them back to the nearest edge.
+ *
+ *  Pure and typed only against a `{x, y}`-plus-anything shape so the
+ *  helper is easy to unit-test without pulling the $state-carrying
+ *  mapStore module through vitest's node import path. Preserves the
+ *  input array's identity when no marker needed to move (===) so
+ *  callers can skip a persist. */
+export function clampMarkersToBounds<T extends GridCoord>(
+	markers: T[],
+	bounds: { cols: number; rows: number },
+): T[] {
+	const { cols, rows } = bounds;
+	let changed = false;
+	const out = markers.map((m) => {
+		const x = Math.max(0, Math.min(cols, m.x));
+		const y = Math.max(0, Math.min(rows, m.y));
+		if (x === m.x && y === m.y) return m;
+		changed = true;
+		return { ...m, x, y };
+	});
+	return changed ? out : markers;
+}
+
 /** Snap a world coordinate to the nearest sub-grid intersection at the
  *  given step (world units between adjacent snap lines). Used for
  *  rendering grid lines; markers themselves snap to cell CENTERS via

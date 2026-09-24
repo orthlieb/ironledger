@@ -26,6 +26,9 @@
 // init so they don't confuse anyone digging through devtools.
 // =============================================================================
 
+import { gridDimsForAspect } from '$lib/mapConstants.js';
+import { clampMarkersToBounds } from '$lib/mapGeometry.js';
+
 const LEGACY_STORAGE_KEY = 'ironledger:map';
 
 export interface MapMarker {
@@ -649,6 +652,14 @@ export async function setBackground(dataUrl: string, aspect?: number): Promise<v
 			if (mapState.settings.aspect !== aspect) {
 				mapState.settings.aspect = aspect;
 				void persistSettings();
+				// Bounds changed with the aspect — walk any markers now
+				// outside the new (cols, rows) back to the nearest edge so
+				// they stay clickable. No-op when everything's already inside.
+				const clamped = clampMarkersToBounds(mapState.markers, gridDimsForAspect(aspect));
+				if (clamped !== mapState.markers) {
+					mapState.markers = clamped;
+					void persistMarkers();
+				}
 			}
 		}
 	} catch (err) {
