@@ -925,7 +925,7 @@
 		const hit = markersAt(x, y, hitTolerance)[0];
 		if (!hit) return;
 		try {
-			(e.currentTarget as SVGRectElement).setPointerCapture(e.pointerId);
+			(e.currentTarget as Element).setPointerCapture(e.pointerId);
 		} catch {
 			// setPointerCapture can throw on stale targets; drag still works
 			// via the pointer-move listener, just without capture.
@@ -961,7 +961,7 @@
 		const state = dragState;
 		dragState = null;
 		try {
-			(e.currentTarget as SVGRectElement).releasePointerCapture(e.pointerId);
+			(e.currentTarget as Element).releasePointerCapture(e.pointerId);
 		} catch {
 			// Best-effort — capture may have already been released.
 		}
@@ -1143,7 +1143,7 @@
 	 *  Just enough to keep descenders off the glyph's outline — earlier
 	 *  values (0.5 / 0.3) had the label floating too far from the icon
 	 *  once the tighter typography landed. */
-	const LABEL_GAP = $derived(isMobileViewport ? 0.25 : 0.15);
+	const LABEL_GAP = $derived(isMobileViewport ? 0.125 : 0.075);
 	/** Hit-test radius (world units) used by `markersAt`. Half the icon's
 	 *  extent so a click inside the visible glyph counts as a hit; the
 	 *  ×1.05 buffer forgives 1-pixel finger jitter without noticeably
@@ -1324,6 +1324,8 @@
 				the pan. Canvas body's aspect-ratio matches gridDims exactly,
 				so cells render perfectly square with no letterbox at zoom 1.
 			-->
+					<!-- svelte-ignore a11y_click_events_have_key_events -->
+					<!-- svelte-ignore a11y_no_static_element_interactions -->
 					<svg
 						bind:this={svgEl}
 						width={svgWidth}
@@ -1331,6 +1333,12 @@
 						viewBox="0 0 {gridDims.cols} {gridDims.rows}"
 						preserveAspectRatio="none"
 						aria-label="Campaign map"
+						onclick={onGridClick}
+						ondblclick={onGridDblClick}
+						onpointerdown={onGridPointerDown}
+						onpointermove={onGridPointerMove}
+						onpointerup={onGridPointerUp}
+						onpointercancel={onGridPointerUp}
 					>
 						{#if mapState.backgroundHash}
 							<!-- Placeholder surface: a faint parchment fill + centred
@@ -1405,19 +1413,18 @@
 						</g>
 
 						<!--
-					Single invisible click-capture rect covering the whole
-					viewBox. onGridClick unprojects the event to world coords,
-					snaps, and routes to place/select. Kept below the marker
-					layer but markers themselves are pointer-events: none —
-					marker hits are resolved via markersAt() on the snapped
-					point, so a marker-adjacent click still selects it.
-					pointermove/pointerup here also drive drag-to-move:
-					pointerdown arms a drag intent when a marker is at the
-					snap point, and pointermove past the threshold engages
-					it (see onGridPointerDown).
+					Invisible fill rect covering the whole viewBox. It's the
+					pointer target for empty-map areas — unselected markers
+					are pointer-events: none, so a tap that misses every icon
+					lands here and bubbles up to the <svg> which owns the
+					click/pointer handlers (moved there so a tap on the
+					SELECTED marker — which flips to pointer-events: auto +
+					touch-action: none so mobile drag doesn't get eaten by
+					the native pan gesture — routes the same way). Marker
+					hits are still resolved via markersAt() against the
+					event's world coords, so a tap adjacent to any marker
+					(selected or not) still selects it.
 				-->
-						<!-- svelte-ignore a11y_click_events_have_key_events -->
-						<!-- svelte-ignore a11y_no_static_element_interactions -->
 						<rect
 							class="mp-grid-capture"
 							x="0"
@@ -1425,12 +1432,6 @@
 							width={gridDims.cols}
 							height={gridDims.rows}
 							fill="transparent"
-							onclick={onGridClick}
-							ondblclick={onGridDblClick}
-							onpointerdown={onGridPointerDown}
-							onpointermove={onGridPointerMove}
-							onpointerup={onGridPointerUp}
-							onpointercancel={onGridPointerUp}
 						/>
 
 						<!-- Drag preview crosshair — a small ring at the intersection
@@ -2237,8 +2238,18 @@
 	:global(.mp-marker) {
 		pointer-events: none;
 	}
+	/* Selected marker owns its own pointer/touch: pointer-events: auto so
+	   a tap lands on the icon (not the capture rect below), and
+	   touch-action: none so a mobile finger-drag on it moves the marker
+	   instead of the browser stealing the gesture as a native pan of the
+	   .mp-canvas container. Only the selected marker takes this — every
+	   other marker still falls through to markersAt hit-testing via the
+	   capture rect, so panning from anywhere else on the map still works
+	   naturally. */
 	:global(.mp-marker-selected) {
 		filter: drop-shadow(0 0 3px var(--text-accent));
+		pointer-events: auto;
+		touch-action: none;
 	}
 	/* Selection outline — a bright square around the snap-cell the
 	   selected marker sits in. Sizes with the sub-grid at current zoom
@@ -2285,12 +2296,17 @@
 		   as generic body text. Stroke uses `vector-effect: non-scaling-
 		   stroke` (set on the element) so `2` translates to 2 device
 		   pixels — a crisp white halo that traces cleanly against a
-		   busy background map. */
+		   busy background map. Labels never capture pointer events —
+		   they can extend well past the icon (esp. position: right /
+		   top-right / etc), and a tap on the far end of the label should
+		   not arm a drag or block a mobile pan gesture that starts
+		   there. Only the icon captures. */
 		font-family: var(--font-ui);
 		font-size: 0.24px;
 		font-weight: 600;
 		text-anchor: middle;
 		paint-order: stroke fill;
+		pointer-events: none;
 		/* Halo colour is set inline per marker via `--halo` (haloColor of
 		   the label colour): white behind a dark label, black behind a
 		   light one so it never vanishes on a light map. Falls back to
