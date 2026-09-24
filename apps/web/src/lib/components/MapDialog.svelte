@@ -2541,16 +2541,6 @@
 	:global(.mp-style-btn:disabled:hover) {
 		background: var(--bg-control);
 	}
-	/* Angle field — greys the whole widget when there's no icon to
-	   rotate. Applied via a container class since the field is composed
-	   of three separate elements (± steps + number input). */
-	:global(.mp-props-field--disabled .mp-sel-angle) {
-		opacity: 0.4;
-	}
-	:global(.mp-sel-angle-step:disabled),
-	:global(.mp-sel-angle-input:disabled) {
-		cursor: not-allowed;
-	}
 
 	:global(.mp-props-footer) {
 		display: flex;
