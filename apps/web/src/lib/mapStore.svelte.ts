@@ -28,6 +28,7 @@
 
 import { gridDimsForAspect } from '$lib/mapConstants.js';
 import { clampMarkersToBounds } from '$lib/mapGeometry.js';
+import { fetchSession } from '$lib/sessionData.js';
 
 const LEGACY_STORAGE_KEY = 'ironledger:map';
 
@@ -228,10 +229,11 @@ export function backgroundUrl(): string {
 
 // ---------------------------------------------------------------------------
 // Session-state bridge — the active map id lives on the server so the
-// same map opens on every device. We fetch it via /api/session/state,
-// which the home page also uses for charId/foeId/expeditionId. Keeping
-// this bridge local avoids threading yet another shared store through
-// the map subsystem.
+// same map opens on every device. sessionState is only exposed through
+// GET /api/session (the full user payload — /api/session/state is
+// PATCH-only), so we go through fetchSession() which already coalesces
+// concurrent readers of that endpoint. Keeping this bridge local avoids
+// threading yet another shared store through the map subsystem.
 // ---------------------------------------------------------------------------
 
 interface SessionStatePartial {
@@ -244,10 +246,9 @@ interface SessionStatePartial {
 
 async function fetchActiveMapIdFromSession(): Promise<string | null> {
 	try {
-		const res = await fetch('/api/session/state');
-		if (!res.ok) return null;
-		const body = (await res.json()) as { sessionState?: SessionStatePartial };
-		return body.sessionState?.activeMapId ?? null;
+		const body = await fetchSession();
+		const s = body.sessionState as SessionStatePartial | undefined;
+		return s?.activeMapId ?? null;
 	} catch {
 		return null;
 	}
@@ -257,8 +258,9 @@ async function persistActiveMapIdToSession(activeMapId: string): Promise<void> {
 	// Fetch current session state so we don't clobber unrelated fields
 	// (charId, foeId, expeditionId, activeTab).
 	try {
-		const cur = await fetch('/api/session/state').then((r) => (r.ok ? r.json() : null));
-		const s: SessionStatePartial = cur?.sessionState ?? {
+		const body = await fetchSession().catch(() => null);
+		const cur = body?.sessionState as SessionStatePartial | undefined;
+		const s: SessionStatePartial = cur ?? {
 			charId: '',
 			foeId: '',
 			expeditionId: '',
