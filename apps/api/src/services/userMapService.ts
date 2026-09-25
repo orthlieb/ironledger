@@ -26,6 +26,23 @@ export interface MapMarker {
   entityId?: string;
   /** Rotation in degrees, clockwise. Optional — omitted markers render at 0°. */
   angle?: number;
+  /** Typographic emphasis on the label — matches the client shape. */
+  labelStyle?: {
+    bold?: boolean;
+    italic?: boolean;
+    underline?: boolean;
+    case?: 'small-caps' | 'uppercase';
+  };
+  /** Compass position of the label relative to the icon. */
+  labelPosition?:
+    | 'top'
+    | 'bottom'
+    | 'left'
+    | 'right'
+    | 'top-left'
+    | 'top-right'
+    | 'bottom-left'
+    | 'bottom-right';
 }
 
 /** Free-form per-map settings JSONB. Client owns the shape (see

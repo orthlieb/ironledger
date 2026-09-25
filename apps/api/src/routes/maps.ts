@@ -46,6 +46,33 @@ const mapMarkerSchema = z.object({
   // Rotation in degrees, clockwise. Clamped to a wide range so a bug
   // upstream can't wedge NaN/Infinity into the JSONB row.
   angle: z.number().finite().min(-3600).max(3600).optional(),
+  // Optional typographic emphasis on the label — mirrors MapMarker's
+  // client-side shape. Without this stanza Zod's default object-strip
+  // silently drops the field, so the styling toggles in the marker
+  // editor never survived a reload.
+  labelStyle: z
+    .object({
+      bold: z.boolean().optional(),
+      italic: z.boolean().optional(),
+      underline: z.boolean().optional(),
+      case: z.enum(['small-caps', 'uppercase']).optional(),
+    })
+    .optional(),
+  // Where the label sits relative to the icon. Absent → 'bottom' (the
+  // client default). Same reason as labelStyle — has to be listed here
+  // or Zod strips it from the persisted row.
+  labelPosition: z
+    .enum([
+      'top',
+      'bottom',
+      'left',
+      'right',
+      'top-left',
+      'top-right',
+      'bottom-left',
+      'bottom-right',
+    ])
+    .optional(),
 });
 const putMarkersBody = z.object({ markers: z.array(mapMarkerSchema).max(500) });
 
