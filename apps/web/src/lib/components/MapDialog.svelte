@@ -1138,12 +1138,13 @@
 	 *  marker's `<svg>` element is enlarged and re-centred on the anchor
 	 *  point (not the image inside a fixed box), so nothing clips. */
 	const RASTER_ICON_SCALE = 2;
-	/** Vertical gap between the icon's bottom and the label's baseline,
+	/** Gap between the icon's SVG-box edge and the label's near edge,
 	 *  in world units. Scales with the icon so proportions stay stable.
-	 *  Just enough to keep descenders off the glyph's outline — earlier
-	 *  values (0.5 / 0.3) had the label floating too far from the icon
-	 *  once the tighter typography landed. */
-	const LABEL_GAP = $derived(isMobileViewport ? 0.125 : 0.075);
+	 *  Most glyphs leave a bit of inner padding inside their SVG box,
+	 *  so the visible gap between the drawn icon shape and the label
+	 *  reads noticeably larger than this value — small numbers here
+	 *  yield the tight-but-not-touching look labels want. */
+	const LABEL_GAP = $derived(isMobileViewport ? 0.06 : 0.04);
 	/** Hit-test radius (world units) used by `markersAt`. Half the icon's
 	 *  extent so a click inside the visible glyph counts as a hit; the
 	 *  ×1.05 buffer forgives 1-pixel finger jitter without noticeably
@@ -1556,6 +1557,7 @@
 											fill={color}
 											style={`--halo:${halo}${labelCss ? ';' + labelCss : ''}`}
 											vector-effect="non-scaling-stroke"
+											text-anchor="middle"
 											y="0">{m.label}</text
 										>
 									{/if}
@@ -2300,11 +2302,18 @@
 		   they can extend well past the icon (esp. position: right /
 		   top-right / etc), and a tap on the far end of the label should
 		   not arm a drag or block a mobile pan gesture that starts
-		   there. Only the icon captures. */
+		   there. Only the icon captures.
+		   No `text-anchor` here on purpose — each label carries its own
+		   text-anchor attribute (start/middle/end) matching its position
+		   (labelPlacement). A CSS `text-anchor` here beats the SVG
+		   presentation attribute per the spec, which used to force every
+		   label to `middle` and made left/right positioned labels sit
+		   centered on their anchor point instead of aligning to the far
+		   side of it — so a `left` label overlapped the icon by half its
+		   width. */
 		font-family: var(--font-ui);
 		font-size: 0.24px;
 		font-weight: 600;
-		text-anchor: middle;
 		paint-order: stroke fill;
 		pointer-events: none;
 		/* Halo colour is set inline per marker via `--halo` (haloColor of
