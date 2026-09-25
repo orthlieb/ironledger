@@ -204,7 +204,11 @@ test.describe('Map markers — lifecycle', () => {
 		// The persisted labelStyle serialises straight into the SVG text
 		// element's style attribute (see labelStyleCss in MapDialog.svelte);
 		// checking substrings avoids caring about serialisation order.
-		const style = await page.locator('.mp-marker-label').first().getAttribute('style');
+		// Strip whitespace before comparing — browsers normalise `foo:bar`
+		// to `foo: bar` (with a space after the colon) when reading the
+		// style attribute back, and the assertion shouldn't care either way.
+		const rawStyle = await page.locator('.mp-marker-label').first().getAttribute('style');
+		const style = (rawStyle ?? '').replace(/\s+/g, '');
 		expect(style).toContain('font-weight:700');
 		expect(style).toContain('text-decoration:underline');
 		expect(style).toContain('font-variant:small-caps');
