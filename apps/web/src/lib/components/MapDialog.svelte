@@ -1144,7 +1144,7 @@
 	 *  so the visible gap between the drawn icon shape and the label
 	 *  reads noticeably larger than this value — small numbers here
 	 *  yield the tight-but-not-touching look labels want. */
-	const LABEL_GAP = $derived(isMobileViewport ? 0.02 : 0.015);
+	const LABEL_GAP = $derived(isMobileViewport ? 0.5 : 0.3);
 	/** Label font size, in world units at zoom 1. Kept in JS so
 	 *  labelPlacement() can subtract the em-box leading from vertical
 	 *  positions — the CSS declaration below has to match. */

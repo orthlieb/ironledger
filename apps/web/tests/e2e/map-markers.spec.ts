@@ -183,6 +183,33 @@ test.describe('Map markers — lifecycle', () => {
 		await expect(markerLabel(page)).toHaveText('Persisted Keep', { timeout: 8_000 });
 	});
 
+	test('label style + position survive a full reload (server persistence)', async ({ page }) => {
+		// Regression: the API's Zod schema for markers didn't declare
+		// labelStyle / labelPosition, so Zod's default object-strip silently
+		// dropped both before persisting — the toggles worked mid-session
+		// and vanished on reload.
+		await placeMarker(page);
+		await page.locator('#mp-props-name').fill('Styled Manor');
+		await page.locator('[aria-label="Bold"]').click();
+		await page.locator('[aria-label="Underline"]').click();
+		await page.locator('[aria-label="Small caps"]').click();
+		await page.locator('.mp-props-footer .btn-primary').click(); // OK
+		await expect(page.locator('.mp-props-dialog')).not.toBeVisible();
+
+		await page.reload();
+		await waitForHome(page);
+		await openMap(page);
+		await expect(page.locator('.mp-marker')).toHaveCount(1);
+
+		// The persisted labelStyle serialises straight into the SVG text
+		// element's style attribute (see labelStyleCss in MapDialog.svelte);
+		// checking substrings avoids caring about serialisation order.
+		const style = await page.locator('.mp-marker-label').first().getAttribute('style');
+		expect(style).toContain('font-weight:700');
+		expect(style).toContain('text-decoration:underline');
+		expect(style).toContain('font-variant:small-caps');
+	});
+
 	test('deleting a marker removes it from the map', async ({ page }) => {
 		await placeMarker(page);
 		await page.locator('#mp-props-name').fill('Doomed Marker');
