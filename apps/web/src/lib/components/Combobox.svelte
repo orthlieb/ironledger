@@ -345,10 +345,15 @@
 		border: 1px solid var(--border-mid);
 		border-radius: 8px;
 		box-shadow: 0 16px 48px #00000070;
-		/* 90 — popovers must beat bits-ui modal content (81) so they still
-		   show when opened from inside a ConfirmDialog / AlertDialog. See the
-		   z-index budget in docs/ui-components.md. */
-		z-index: 90;
+		/* 100 — popovers must beat bits-ui modal content, which starts at
+		   z-index 81 for a top-level dialog and grows by 2 per nesting
+		   level (see dialogStack.svelte.ts). A popover opened from inside
+		   a deeply-nested dialog (MapDialog → MarkerPropertiesDialog →
+		   Combobox, depth 2 = content z-85) needs enough cushion to stay
+		   above; the original 90 landed uncomfortably close and could get
+		   covered when the popover flipped upward from a low anchor. See
+		   the z-index budget in docs/ui-components.md. */
+		z-index: 100;
 		outline: none;
 		overflow: hidden;
 	}
