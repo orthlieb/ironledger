@@ -28,6 +28,7 @@
 import { readFileSync, readdirSync, statSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { inflateSync } from 'node:zlib';
 // svg-path-bounds ships no TypeScript declarations; the exported default
 // is `(pathD: string) => [left, top, right, bottom]`.
 // @ts-expect-error — untyped module, treated as any
@@ -62,19 +63,126 @@ function walkIcons(dir) {
 	return out;
 }
 
-/** Read a PNG's pixel dimensions straight from the IHDR chunk (bytes
- *  16–24, big-endian) — no image library needed. Returns null if the file
- *  isn't a valid PNG.
+/** Read a PNG's pixel dimensions + a tight bounding box around the non-
+ *  transparent pixels. Returns just `{w, h}` when the PNG isn't in a
+ *  format we can decode (or has no alpha channel at all) — the caller
+ *  then falls back to the raw pixel box.
+ *
+ *  Supports the format the Caeora hand-drawn icons ship in: RGBA
+ *  (color type 6) at 8 bit depth. Other combinations return null-`bbox`
+ *  (safe default). Non-interlaced only (Adam7 rejects) — again a safe
+ *  fallback rather than a bad crop.
  * @param {string} abs
- * @returns {{w: number, h: number} | null}
+ * @returns {{w: number, h: number, bbox: {x: number, y: number, w: number, h: number} | null} | null}
  */
-function pngSize(abs) {
+function pngProbe(abs) {
 	const buf = readFileSync(abs);
 	// 8-byte signature + "IHDR" at offset 12; width/height are the two
 	// big-endian uint32s that follow at offsets 16 and 20.
 	const isPng = buf.length >= 24 && buf.readUInt32BE(0) === 0x89504e47;
 	if (!isPng || buf.toString('ascii', 12, 16) !== 'IHDR') return null;
-	return { w: buf.readUInt32BE(16), h: buf.readUInt32BE(20) };
+	const w = buf.readUInt32BE(16);
+	const h = buf.readUInt32BE(20);
+	// IHDR body layout (after w + h): bitDepth (1) · colorType (1) ·
+	// compression (1) · filter (1) · interlace (1). Compression + filter
+	// are always 0 in a compliant PNG. Interlace 1 = Adam7 — we don't
+	// deinterlace, so bail out.
+	const bitDepth = buf.readUInt8(24);
+	const colorType = buf.readUInt8(25);
+	const interlace = buf.readUInt8(28);
+	// Only fully-decode the shape most hand-drawn icons ship in.
+	if (bitDepth !== 8 || colorType !== 6 || interlace !== 0) return { w, h, bbox: null };
+
+	// Walk the chunks past the 8-byte signature. Each chunk: length (uint32
+	// BE) · type (4 chars) · data · CRC (uint32). Collect every IDAT into
+	// one buffer for a single inflate call.
+	/** @type {Buffer[]} */
+	const idats = [];
+	let off = 8;
+	while (off + 8 <= buf.length) {
+		const len = buf.readUInt32BE(off);
+		const type = buf.toString('ascii', off + 4, off + 8);
+		const dataStart = off + 8;
+		const dataEnd = dataStart + len;
+		if (dataEnd + 4 > buf.length) break;
+		if (type === 'IDAT') idats.push(buf.subarray(dataStart, dataEnd));
+		else if (type === 'IEND') break;
+		off = dataEnd + 4;
+	}
+	if (idats.length === 0) return { w, h, bbox: null };
+	/** @type {Buffer} */
+	let raw;
+	try {
+		raw = inflateSync(Buffer.concat(idats));
+	} catch {
+		return { w, h, bbox: null };
+	}
+	// Every scanline: 1-byte filter type + w*4 bytes of RGBA. Undo the
+	// filter in place, then scan for non-transparent pixels.
+	const stride = w * 4;
+	if (raw.length < (stride + 1) * h) return { w, h, bbox: null };
+	/** @param {number} a @param {number} b @param {number} c */
+	function paeth(a, b, c) {
+		const p = a + b - c;
+		const pa = Math.abs(p - a);
+		const pb = Math.abs(p - b);
+		const pc = Math.abs(p - c);
+		if (pa <= pb && pa <= pc) return a;
+		if (pb <= pc) return b;
+		return c;
+	}
+	// Decoded scanline bytes, packed contiguously (no filter byte).
+	const pixels = Buffer.alloc(stride * h);
+	for (let y = 0; y < h; y++) {
+		const filter = raw[y * (stride + 1)];
+		const rowStart = y * (stride + 1) + 1;
+		const outStart = y * stride;
+		for (let i = 0; i < stride; i++) {
+			const rawByte = raw[rowStart + i];
+			const left = i >= 4 ? pixels[outStart + i - 4] : 0;
+			const up = y > 0 ? pixels[outStart - stride + i] : 0;
+			const upLeft = y > 0 && i >= 4 ? pixels[outStart - stride + i - 4] : 0;
+			let val;
+			switch (filter) {
+				case 0:
+					val = rawByte;
+					break;
+				case 1:
+					val = (rawByte + left) & 0xff;
+					break;
+				case 2:
+					val = (rawByte + up) & 0xff;
+					break;
+				case 3:
+					val = (rawByte + ((left + up) >> 1)) & 0xff;
+					break;
+				case 4:
+					val = (rawByte + paeth(left, up, upLeft)) & 0xff;
+					break;
+				default:
+					return { w, h, bbox: null };
+			}
+			pixels[outStart + i] = val;
+		}
+	}
+	// Walk the alpha channel (byte 3 of each 4-byte pixel) for the tight
+	// bbox of any non-transparent pixel.
+	let minX = w;
+	let minY = h;
+	let maxX = -1;
+	let maxY = -1;
+	for (let y = 0; y < h; y++) {
+		for (let x = 0; x < w; x++) {
+			if (pixels[y * stride + x * 4 + 3] !== 0) {
+				if (x < minX) minX = x;
+				if (x > maxX) maxX = x;
+				if (y < minY) minY = y;
+				if (y > maxY) maxY = y;
+			}
+		}
+	}
+	if (maxX < 0) return { w, h, bbox: null };
+	return { w, h, bbox: { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 } };
 }
 
 /** hanging-spider -> Hanging Spider; snake_case -> Snake Case.
@@ -233,21 +341,36 @@ function parseSvg(source) {
  * `{@html ic.inner}` render path as vector icons. The image is referenced
  * by its served URL (`/map/<category>/<slug>.png`), NOT inlined as base64,
  * so the generated manifest stays tiny and the browser lazy-loads each PNG
- * only when it's actually drawn. viewBox is the raw pixel box; the render
- * site's nested `<svg viewBox … preserveAspectRatio="xMidYMid meet">` (the
- * SVG default) fits non-square art into the square marker slot undistorted.
- * Colouring happens at render time in mapGlyphInner() (mapConstants), which
- * tints raster icons through an alpha-keyed <filter> rather than `<g fill>`,
- * so the marker colour applies to the black line-art.
+ * only when it's actually drawn. The render site's nested `<svg viewBox …
+ * preserveAspectRatio="xMidYMid meet">` (the SVG default) fits the
+ * viewBox region into the square marker slot undistorted.
+ *
+ * The <image> stays at the raw pixel box (0, 0, w, h) so the file's own
+ * coordinates aren't stretched. When we can decode the alpha channel
+ * (see pngProbe), the viewBox is instead the tight bbox around every
+ * non-transparent pixel — the transparent margin many hand-drawn icons
+ * ship with then falls outside the viewBox and the drawn shape fills
+ * its slot edge-to-edge, matching the tightened-viewBox treatment
+ * vector SVGs already get. Falls back to the raw pixel box when we
+ * can't probe (unusual PNG variant, decode failure).
+ *
+ * Colouring happens at render time in mapGlyphInner() (mapConstants),
+ * which tints raster icons through an alpha-keyed <filter> rather than
+ * `<g fill>`, so the marker colour applies to the black line-art.
  * @param {string} rel  path relative to ICON_ROOT, e.g. "settlement/castle.png"
  * @param {number} w
  * @param {number} h
+ * @param {{x: number, y: number, w: number, h: number} | null} bbox
  * @returns {{viewBox: string, inner: string}}
  */
-function wrapPng(rel, w, h) {
+function wrapPng(rel, w, h, bbox) {
 	const href = `/map/${rel}`;
+	const vb =
+		bbox && bbox.w > 0 && bbox.h > 0
+			? `${fmtNum(bbox.x)} ${fmtNum(bbox.y)} ${fmtNum(bbox.w)} ${fmtNum(bbox.h)}`
+			: `0 0 ${w} ${h}`;
 	return {
-		viewBox: `0 0 ${w} ${h}`,
+		viewBox: vb,
 		inner: `<image href="${href}" x="0" y="0" width="${w}" height="${h}" preserveAspectRatio="xMidYMid meet" />`,
 	};
 }
@@ -279,9 +402,9 @@ function buildManifest() {
 		try {
 			let viewBox, inner;
 			if (isPng) {
-				const size = pngSize(abs);
-				if (!size) throw new Error('not a valid PNG');
-				({ viewBox, inner } = wrapPng(rel, size.w, size.h));
+				const probe = pngProbe(abs);
+				if (!probe) throw new Error('not a valid PNG');
+				({ viewBox, inner } = wrapPng(rel, probe.w, probe.h, probe.bbox));
 			} else {
 				({ viewBox, inner } = parseSvg(readFileSync(abs, 'utf-8')));
 			}
