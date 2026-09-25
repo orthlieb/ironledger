@@ -80,7 +80,15 @@
 		<span class="bui-select-caret" aria-hidden="true">{@html caretDownSvg}</span>
 	</BitsSelect.Trigger>
 	<BitsSelect.Portal to={portalTo}>
-		<BitsSelect.Content class="bui-select-content" sideOffset={4}>
+		<!--
+			Inline z-index mirrors the CSS below. bits-ui reads it off the
+			content node in a rAF and copies it to the Floating-UI wrapper
+			(the real stacking-context element); without it, the wrapper
+			has no z-index for the first frame or two after mount and can
+			paint behind a nested dialog. See the note on the CSS rule
+			below and the z-index budget in docs/ui-components.md.
+		-->
+		<BitsSelect.Content class="bui-select-content" sideOffset={4} style="z-index: 200">
 			{#each options as opt (opt.value)}
 				<BitsSelect.Item
 					value={opt.value}
@@ -194,15 +202,19 @@
 		border: 1px solid var(--border-mid);
 		border-radius: 6px;
 		box-shadow: 0 12px 32px #00000060;
-		/* 100 — popovers/menus must sit above bits-ui modal content,
-		   which starts at z-index 81 for a top-level dialog and grows
-		   by 2 per nesting level (see dialogStack.svelte.ts). A Select
-		   opened from inside a nested dialog (MapDialog →
-		   MarkerPropertiesDialog, depth 2 = content z-85) needs
-		   enough cushion to stay above; the original 90 was close
-		   enough that popovers flipping upward from a low anchor could
-		   get covered. See the z-index budget in docs/ui-components.md. */
-		z-index: 100;
+		/* 200 — popovers/menus must beat bits-ui modal content at any
+		   nesting depth (contentZ(depth) = 81 + depth*2, so 85 at
+		   depth 2, 87 at depth 3). bits-ui's Select has two nested
+		   divs (a Floating-UI wrapper and an inner content div): the
+		   class here is on the INNER one, and bits-ui reads its
+		   computed z-index in a rAF and copies it up to the wrapper
+		   (which is the real stacking-context element via its
+		   transform). Content also carries an inline
+		   `style="z-index: 200"` so the wrapper picks up the value on
+		   the first frame — before that copy landed, the wrapper had
+		   no z-index and could paint behind a nested dialog above it.
+		   See the z-index budget in docs/ui-components.md. */
+		z-index: 200;
 		outline: none;
 	}
 	:global(.bui-select-item) {
