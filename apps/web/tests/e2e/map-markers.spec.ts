@@ -209,7 +209,7 @@ test.describe('Map markers — lifecycle', () => {
 		// style attribute back, and the assertion shouldn't care either way.
 		const rawStyle = await page.locator('.mp-marker-label').first().getAttribute('style');
 		const style = (rawStyle ?? '').replace(/\s+/g, '');
-		expect(style).toContain('font-weight:700');
+		expect(style).toContain('font-weight:900');
 		expect(style).toContain('text-decoration:underline');
 		expect(style).toContain('font-variant:small-caps');
 	});
