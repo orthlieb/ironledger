@@ -1221,7 +1221,11 @@
 	function labelStyleCss(ls: MapMarker['labelStyle']): string {
 		if (!ls) return '';
 		const parts: string[] = [];
-		if (ls.bold) parts.push('font-weight:700');
+		// Base weight is 600 (semi-bold, for legibility against a busy map
+		// background); bumping "bold" to 900 gives an obvious visual
+		// contrast — 700 sat only one step above the base and read
+		// nearly identical in most UI fonts.
+		if (ls.bold) parts.push('font-weight:900');
 		if (ls.italic) parts.push('font-style:italic');
 		if (ls.underline) parts.push('text-decoration:underline');
 		if (ls.case === 'small-caps') parts.push('font-variant:small-caps');
