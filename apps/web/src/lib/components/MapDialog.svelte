@@ -2341,10 +2341,19 @@
 		   label to `middle` and made left/right positioned labels sit
 		   centered on their anchor point instead of aligning to the far
 		   side of it — so a `left` label overlapped the icon by half its
-		   width. */
-		font-family: var(--font-ui);
+		   width.
+		   Font: Simonetta — elegant flowing serif that fits the fantasy-
+		   cartography aesthetic and, more practically, loads REAL 400
+		   and 900 weights (see the Google Fonts URL in app.html). Roboto
+		   here only ships 400/500/600, so any request for 700+ got
+		   browser-synthesised fake bold that read identical to the 600
+		   base and made the label's "Bold" toggle appear to do nothing.
+		   Base 400 + bold 900 gives full weight contrast against a real
+		   font face. Falls back through the UI stack if Simonetta is
+		   ever pruned. */
+		font-family: 'Simonetta', var(--font-ui);
 		font-size: 0.24px;
-		font-weight: 600;
+		font-weight: 400;
 		paint-order: stroke fill;
 		pointer-events: none;
 		/* Halo colour is set inline per marker via `--halo` (haloColor of
@@ -2697,7 +2706,10 @@
 		min-width: 32px;
 		height: 32px;
 		padding: 0 8px;
-		font-family: var(--font-ui);
+		/* Simonetta so the B / I / U / Aa / small-caps / AA glyphs
+		   preview in the same font the marker label renders in. Falls
+		   back through the UI stack. */
+		font-family: 'Simonetta', var(--font-ui);
 		font-size: 0.95rem;
 		color: var(--text);
 		background: var(--bg-control);
