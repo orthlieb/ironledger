@@ -56,6 +56,7 @@ const mapMarkerSchema = z.object({
       italic: z.boolean().optional(),
       underline: z.boolean().optional(),
       case: z.enum(['small-caps', 'uppercase']).optional(),
+      size: z.enum(['sm', 'md', 'lg', 'xl']).optional(),
     })
     .optional(),
   // Where the label sits relative to the icon. Absent → 'bottom' (the

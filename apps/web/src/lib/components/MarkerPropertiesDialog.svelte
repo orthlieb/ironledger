@@ -134,6 +134,17 @@
 		{ value: 'bottom-right', label: '↘' },
 	];
 
+	/** Label size ramp — H4 → H1 typographic tiers. Stored as
+	 *  `labelStyle.size`; the render path multiplies the base font-size
+	 *  by the corresponding factor (see LABEL_SIZE_MULT in MapDialog). */
+	type LabelSize = 'sm' | 'md' | 'lg' | 'xl';
+	const LABEL_SIZE_OPTIONS: { value: LabelSize; label: string }[] = [
+		{ value: 'sm', label: 'S' },
+		{ value: 'md', label: 'M' },
+		{ value: 'lg', label: 'L' },
+		{ value: 'xl', label: 'XL' },
+	];
+
 	function openIconPicker() {
 		if (!selectedMarker) return;
 		iconDialogOpen = true;
@@ -438,6 +449,9 @@
 		 *  clears the other). Stored as `labelStyle.case` when != 'regular'. */
 		case: 'regular' | 'small-caps' | 'uppercase';
 		labelPosition: MapMarkerLabelPosition;
+		/** Label size tier — H4 → H1. 'md' is the absent-field default;
+		 *  serialised as `labelStyle.size` when != 'md'. */
+		size: LabelSize;
 	};
 	let draft = $state<MarkerDraft | null>(null);
 	let originalMarker = $state<MarkerDraft | null>(null);
@@ -469,6 +483,7 @@
 			underline: !!m.labelStyle?.underline,
 			case: m.labelStyle?.case ?? 'regular',
 			labelPosition: m.labelPosition ?? 'bottom',
+			size: m.labelStyle?.size ?? 'md',
 		};
 		originalMarker = snap;
 		draft = { ...snap };
@@ -484,13 +499,19 @@
 		// object round-trips as an empty object in JSON but shipping it
 		// forever wastes the "no styling" byte-savings for the 99 % of
 		// markers that never touch these toggles.
-		const anyStyle = draft.bold || draft.italic || draft.underline || draft.case !== 'regular';
+		const anyStyle =
+			draft.bold ||
+			draft.italic ||
+			draft.underline ||
+			draft.case !== 'regular' ||
+			draft.size !== 'md';
 		const labelStyle = anyStyle
 			? {
 					bold: draft.bold || undefined,
 					italic: draft.italic || undefined,
 					underline: draft.underline || undefined,
 					case: draft.case === 'regular' ? undefined : draft.case,
+					size: draft.size === 'md' ? undefined : draft.size,
 				}
 			: undefined;
 		updateMarker(selectedMarker.id, {
@@ -545,6 +566,11 @@
 	function pickLabelPosition(pos: MapMarkerLabelPosition) {
 		if (!draft) return;
 		draft.labelPosition = pos;
+		applyDraftLive();
+	}
+	function pickLabelSize(next: LabelSize) {
+		if (!draft || draft.size === next) return;
+		draft.size = next;
 		applyDraftLive();
 	}
 	function onDraftAngleInput(e: Event) {
@@ -602,7 +628,8 @@
 				originalMarker.bold ||
 				originalMarker.italic ||
 				originalMarker.underline ||
-				originalMarker.case !== 'regular';
+				originalMarker.case !== 'regular' ||
+				originalMarker.size !== 'md';
 			updateMarker(selectedMarker.id, {
 				label: originalMarker.label,
 				icon: originalMarker.icon ?? undefined,
@@ -615,6 +642,7 @@
 							italic: originalMarker.italic || undefined,
 							underline: originalMarker.underline || undefined,
 							case: originalMarker.case === 'regular' ? undefined : originalMarker.case,
+							size: originalMarker.size === 'md' ? undefined : originalMarker.size,
 						}
 					: undefined,
 				labelPosition:
@@ -646,18 +674,35 @@
 					radius="8px 8px 0 0"
 				/>
 				<div class="mp-props-body">
-					<label class="mp-props-field">
-						<span class="mp-props-label">Label</span>
-						<input
-							id="mp-props-name"
-							name="mp-props-name"
-							class="mp-props-input"
-							type="text"
-							placeholder="Marker label…"
-							value={draft.label}
-							oninput={onDraftLabelInput}
-						/>
-					</label>
+					<!-- Label input + label position share the first row. Position
+					     rides at the tail so the arrow glyph doesn't crowd the
+					     name input; disabled when either half of the pair is
+					     missing (no icon → label centres regardless, no label
+					     → nothing to position). -->
+					<div class="mp-props-row">
+						<label class="mp-props-field mp-props-field--label">
+							<span class="mp-props-label">Label</span>
+							<input
+								id="mp-props-name"
+								name="mp-props-name"
+								class="mp-props-input"
+								type="text"
+								placeholder="Marker label…"
+								value={draft.label}
+								oninput={onDraftLabelInput}
+							/>
+						</label>
+						<label class="mp-props-field mp-props-field--position">
+							<span class="mp-props-label">Position</span>
+							<Select
+								value={draft.labelPosition}
+								options={LABEL_POSITION_OPTIONS}
+								ariaLabel="Label position"
+								disabled={!hasIcon || !hasLabel}
+								onchange={pickLabelPosition}
+							/>
+						</label>
+					</div>
 
 					<!-- Text emphasis toggles — each one flips a single boolean on
 					     `draft.labelStyle` via toggleLabelStyle(). aria-pressed +
@@ -742,20 +787,18 @@
 							</div>
 						</div>
 
-						<!-- Label position (relative to the icon) — arrow-only
-						     Select trigger so it fits on the same row as the Style
-						     toggles. Values map 1:1 to the 8 compass points on
-						     `MapMarker.labelPosition`. Disabled when either half of
-						     the pair is missing — with no icon the label centres
-						     regardless, with no label there's nothing to position. -->
-						<label class="mp-props-field mp-props-field--position">
-							<span class="mp-props-label">Position</span>
+						<!-- Label size — H4 → H1 typographic tiers. Sits on the
+						     Style row so all label-typography controls (emphasis,
+						     case, size) group in one place. Disabled when there's
+						     no label to size. -->
+						<label class="mp-props-field mp-props-field--size">
+							<span class="mp-props-label">Size</span>
 							<Select
-								value={draft.labelPosition}
-								options={LABEL_POSITION_OPTIONS}
-								ariaLabel="Label position"
-								disabled={!hasIcon || !hasLabel}
-								onchange={pickLabelPosition}
+								value={draft.size}
+								options={LABEL_SIZE_OPTIONS}
+								ariaLabel="Label size"
+								disabled={!hasLabel}
+								onchange={pickLabelSize}
 							/>
 						</label>
 					</div>

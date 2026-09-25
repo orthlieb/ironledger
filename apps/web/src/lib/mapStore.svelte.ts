@@ -80,6 +80,14 @@ export interface MapMarker {
 		 *  rendered glyphs while the stored `label` stays in whatever
 		 *  case the user typed. */
 		case?: 'small-caps' | 'uppercase';
+		/** Label size relative to the base — H4 → H1 style ramp
+		 *  (`sm` = 0.75×, `md` = 1× default, `lg` = 1.5×, `xl` = 2.25×).
+		 *  Absent → `md`, which keeps every pre-sizing marker unchanged
+		 *  and drops the field from the persisted row. Rendered via a
+		 *  `--label-size-mult` custom property on the SVG text element
+		 *  so the multiplier composes with the mobile-vs-desktop base
+		 *  font-size CSS. */
+		size?: 'sm' | 'md' | 'lg' | 'xl';
 	};
 	/** Where the label sits relative to the icon. Icon stays at the
 	 *  marker anchor (so hit-testing + selection behaviour are unchanged);
