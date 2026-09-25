@@ -54,17 +54,14 @@
 	import {
 		entityMarkerIndexState,
 		loadEntityMarkerIndex,
-		mapListState,
 		markersForEntity,
 		unlinkEntityFromMaps,
 		type EntityMarkerRef,
 	} from '$lib/mapStore.svelte.js';
 	import { formatEntityId } from '$lib/mapEntityLinks.js';
-	import { createMapOwnerActions, fmtCoord } from '$lib/mapOwnerActions.js';
 	import iconGearSvg from '$icons/gear-solid.svg?raw';
 	import checkSvg from '$icons/circle-check-solid.svg?raw';
 	import locationSvg from '$icons/location-dot-solid.svg?raw';
-	import iconMapSvg from '$icons/compass-rose.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
 	import { Tabs } from 'bits-ui';
 	import Combobox from '$lib/components/Combobox.svelte';
@@ -251,31 +248,16 @@
 		return markersForEntity(formatEntityId(activeExp.type, activeExp.id));
 	});
 
-	/** The (possibly-not-yet-created) map summary for the active
-	 *  expedition, looked up by (ownerKind, ownerId). Undefined until
-	 *  either the summary list loads or the map is get-or-created. */
-	const activeExpMap = $derived.by(() => {
-		if (!activeExp || activeExp.type === 'scene') return undefined;
-		return mapListState.maps.find(
-			(m) => m.ownerKind === activeExp.type && m.ownerId === activeExp.id,
-		);
-	});
-	/** True when no map record exists yet for this entity. Drives the
-	 *  "+ Map" vs "Map" button — once the map exists (even if its
-	 *  background hasn't been uploaded yet), the button flips to "Map"
-	 *  and clicking it opens the dialog, which has its own affordance
-	 *  for uploading a background image. */
-	const activeExpMapEmpty = $derived(!activeExpMap);
+	/** Short "(x, y)" for marker chip labels — integers stay integer, else 2 dp. */
+	function fmtCoord(v: number): string {
+		return Number.isInteger(v) ? String(v) : v.toFixed(2);
+	}
 
-	/** Open the entity's existing map — the "Map" button variant when
-	 *  the owner already has a background uploaded. */
-	const { openOwnedMap, handleAddMapWithFile, jumpToMarker } = createMapOwnerActions(
-		() =>
-			activeExp && activeExp.type !== 'scene'
-				? { kind: activeExp.type, id: activeExp.id, name: activeExp.name || 'Untitled' }
-				: null,
-		() => mapDialogRef,
-	);
+	/** Jump the dialog directly to a marker back-reference (the chips
+	 *  under the stage header). */
+	function jumpToMarker(ref: EntityMarkerRef): void {
+		mapDialogRef?.open({ mapId: ref.mapId, markerId: ref.markerId });
+	}
 
 	// Publish active expedition id so MovesDialog / preconditions can see it.
 	$effect(() => {
@@ -756,26 +738,6 @@
 				actions={expActions}
 			/>
 			{#if activeExp}
-				<!-- Scenes are non-map-spatial — no map affordance. -->
-				{#if activeExp.type !== 'scene'}
-					{#if activeExpMapEmpty}
-						<label
-							class="btn btn-icon icon-btn ea-hdr-icon-btn"
-							use:tooltip={'Add a map to this ' + activeExp.type}
-							aria-label="Add map"
-						>
-							<span class="ea-hdr-icon-plus" aria-hidden="true">+</span>{@html iconMapSvg}
-							<input type="file" accept="image/*" hidden onchange={handleAddMapWithFile} />
-						</label>
-					{:else}
-						<button
-							class="btn btn-icon icon-btn ea-hdr-icon-btn"
-							onclick={openOwnedMap}
-							use:tooltip={'Open the map for this ' + activeExp.type}
-							aria-label="Open map">{@html iconMapSvg}</button
-						>
-					{/if}
-				{/if}
 				<button
 					class="btn btn-icon icon-btn ea-hdr-settings-btn"
 					onclick={() => expOptionsRef?.open()}
@@ -1573,31 +1535,6 @@
 		min-width: 0;
 	}
 
-	/* Header +/plain icon button (used for the per-expedition Map btn) —
-	   matches Characters' Vow/Asset shape. */
-	:global(.ea-hdr-icon-btn) {
-		display: inline-flex;
-		align-items: center;
-		gap: 3px;
-		padding: 4px 6px;
-		flex-shrink: 0;
-	}
-	:global(.ea-hdr-icon-btn svg) {
-		width: 12px;
-		height: 12px;
-		fill: currentColor;
-		flex-shrink: 0;
-	}
-	:global(.ea-hdr-icon-btn svg path) {
-		fill: currentColor;
-	}
-	:global(.ea-hdr-icon-plus) {
-		font-family: var(--font-ui);
-		font-size: 0.85rem;
-		font-weight: 700;
-		line-height: 1;
-		color: currentColor;
-	}
 	/* Status toggle (Active/Complete) lives above the progress track in
 	   the Core card. Label + SegmentedRadio, separator BELOW so the
 	   line reads as a section divider under the toggle rather than

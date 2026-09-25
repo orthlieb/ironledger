@@ -21,14 +21,16 @@
  *     survives a full reload.
  *   • Delete — the editor's DELETE button removes the pin outright.
  *
+ * The map is opened via the top-nav "Map" button (the per-entity Map
+ * buttons were removed); if no background has been uploaded yet, the
+ * dialog's own "Add background image" CTA does the initial upload.
+ *
  * Idempotency: markers persist server-side, so `clearMapMarkers()` runs before
  * each test (the map + its background stay; only markers are wiped). A fresh
  * page each test then loads a marker-free map from the server.
  */
 import { test, expect, type Page } from '@playwright/test';
-import { resetAll, seedCommunity, clearMapMarkers } from './helpers/reset';
-
-const CM_AREA = '.home-area--communities';
+import { resetAll, clearMapMarkers } from './helpers/reset';
 
 // Tiny 1×1 red PNG — same fixture map.spec uses for a background.
 const PNG_1X1 = Buffer.from(
@@ -53,46 +55,26 @@ const SWATCHES = [
 
 async function waitForHome(page: Page): Promise<void> {
 	await page
-		.locator(`${CM_AREA} .cm-empty, ${CM_AREA} .cm-body`)
+		.locator('[aria-label="Open the campaign map"]')
 		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
-}
-
-/** Make the seeded community the active connection so its stage shows the map
- *  button. v2 auto-selects the first connection; if not, pick it from the
- *  header switcher. Waits for either the "Add map" (empty) or "Open map"
- *  (has-background) affordance. */
-async function selectSeededCommunity(page: Page): Promise<void> {
 	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
-	if (
-		!(await page
-			.locator(`${CM_AREA} .cm-tab`)
-			.first()
-			.isVisible()
-			.catch(() => false))
-	) {
-		await page.locator(`${CM_AREA} .cm-hdr-combobox`).click();
-		await page.locator('.cb-popover .cb-item:not(.cb-item--action)').first().click();
-	}
-	await expect(
-		page.locator(`${CM_AREA} [aria-label="Add map"], ${CM_AREA} [aria-label="Open map"]`).first(),
-	).toBeVisible({ timeout: 6_000 });
 }
 
-/** Open the MapDialog for the active community. Uploads a background the first
- *  time (empty map → "Add map" file input), or clicks "Open map" thereafter. */
+/** Open the shared MapDialog via the top-nav "Map" button. If the active
+ *  map has no background yet, upload the 1×1 PNG through the dialog's
+ *  own file input so the grid comes into view. */
 async function openMap(page: Page): Promise<void> {
-	const add = page.locator(`${CM_AREA} [aria-label="Add map"]`);
-	if (await add.count()) {
-		await add.locator('input[type="file"]').setInputFiles({
-			name: 'community-map.png',
+	await page.locator('[aria-label="Open the campaign map"]').first().click();
+	await expect(page.locator('.mp-dialog')).toBeVisible({ timeout: 15_000 });
+	const cta = page.locator('.mp-empty-cta-btn');
+	if (await cta.count()) {
+		await page.locator('#mp-file-input').setInputFiles({
+			name: 'campaign-map.png',
 			mimeType: 'image/png',
 			buffer: PNG_1X1,
 		});
-	} else {
-		await page.locator(`${CM_AREA} [aria-label="Open map"]`).click();
 	}
-	await expect(page.locator('.mp-dialog')).toBeVisible({ timeout: 15_000 });
 	await expect(page.locator('.mp-grid-capture')).toBeVisible({ timeout: 8_000 });
 }
 
@@ -124,14 +106,12 @@ const markerIconFill = (page: Page) => page.locator('.mp-marker .mp-marker-icon 
 test.describe('Map markers — lifecycle', () => {
 	test.beforeAll(async () => {
 		await resetAll();
-		await seedCommunity('Marker Test Community');
 	});
 
 	test.beforeEach(async ({ page }) => {
 		await clearMapMarkers(); // markers persist server-side — start each test clean
 		await page.goto('/home');
 		await waitForHome(page);
-		await selectSeededCommunity(page);
 		await openMap(page);
 	});
 
@@ -197,7 +177,6 @@ test.describe('Map markers — lifecycle', () => {
 		// Full reload — the marker must come back from the server.
 		await page.reload();
 		await waitForHome(page);
-		await selectSeededCommunity(page);
 		await openMap(page);
 
 		await expect(page.locator('.mp-marker')).toHaveCount(1);
