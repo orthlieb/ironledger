@@ -170,24 +170,6 @@ export async function fetchMaps(token?: string): Promise<MapDetail[]> {
 	return out;
 }
 
-/** Create a map owned by a first-class entity (for conflict-path tests) and
- *  return its id. Mirrors the app's POST /maps with owner linkage. */
-export async function createOwnedMap(
-	ownerKind: 'community' | 'place' | 'journey' | 'site',
-	ownerId: string,
-	name = 'Owned Map',
-	token?: string,
-): Promise<string> {
-	const tok = token ?? (await getTestToken());
-	const res = await fetch(`${API}/session/maps`, {
-		method: 'POST',
-		headers: json(tok),
-		body: JSON.stringify({ name, ownerKind, ownerId }),
-	});
-	if (!res.ok) throw new Error(`create owned map failed: ${res.status} ${await res.text()}`);
-	return ((await res.json()) as { id: string }).id;
-}
-
 // ── Seeding ───────────────────────────────────────────────────────────────────
 
 /**

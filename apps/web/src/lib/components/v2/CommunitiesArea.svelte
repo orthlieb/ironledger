@@ -90,15 +90,12 @@
 	import {
 		entityMarkerIndexState,
 		loadEntityMarkerIndex,
-		mapListState,
 		markersForEntity,
 		unlinkEntityFromMaps,
 		type EntityMarkerRef,
 	} from '$lib/mapStore.svelte.js';
 	import { formatEntityId } from '$lib/mapEntityLinks.js';
-	import { createMapOwnerActions, fmtCoord } from '$lib/mapOwnerActions.js';
 	import iconGearSvg from '$icons/gear-solid.svg?raw';
-	import iconMapSvg from '$icons/compass-rose.svg?raw';
 	import heartPulseSvg from '$icons/heart-pulse-solid.svg?raw';
 	import skullSvg from '$icons/skull-crossbones-solid.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
@@ -482,45 +479,29 @@
 		void loadEntityMarkerIndex();
 	});
 
-	/** True when the active entry is map-owner-eligible (community or place). */
-	const activeIsMapOwner = $derived(activeKind === 'community' || activeKind === 'place');
+	/** True for entry kinds that surface entity → marker back-reference
+	 *  chips (community, place). NPCs stay chip-less by design. */
+	const activeShowsMarkerChips = $derived(activeKind === 'community' || activeKind === 'place');
 
 	/** Back-references for the active entry, if any. Empty until index loads. */
 	const activeEntryMarkers = $derived.by<EntityMarkerRef[]>(() => {
-		if (!activeEntry || !activeIsMapOwner) return [];
+		if (!activeEntry || !activeShowsMarkerChips) return [];
 		void entityMarkerIndexState.index; // subscribe
 		return markersForEntity(
 			formatEntityId(activeEntry.kind as 'community' | 'place', activeEntry.data.id),
 		);
 	});
 
-	/** The (possibly-not-yet-created) map summary for the active
-	 *  community/place, looked up by (ownerKind, ownerId). Undefined
-	 *  until either the summary list loads or the map is get-or-created. */
-	const activeEntryMap = $derived.by(() => {
-		if (!activeEntry || !activeIsMapOwner) return undefined;
-		return mapListState.maps.find(
-			(m) => m.ownerKind === activeEntry.kind && m.ownerId === activeEntry.data.id,
-		);
-	});
-	/** True when no map record exists yet for this entity. Drives the
-	 *  "+ Map" vs "Map" button — once the map exists (even if its
-	 *  background hasn't been uploaded yet), the button flips to "Map"
-	 *  and clicking it opens the dialog, which has its own affordance
-	 *  for uploading a background image. */
-	const activeEntryMapEmpty = $derived(!activeEntryMap);
+	/** Short "(x, y)" for marker chip labels — integers stay integer, else 2 dp. */
+	function fmtCoord(v: number): string {
+		return Number.isInteger(v) ? String(v) : v.toFixed(2);
+	}
 
-	const { openOwnedMap, handleAddMapWithFile, jumpToMarker } = createMapOwnerActions(
-		() =>
-			activeEntry && activeIsMapOwner
-				? {
-						kind: activeEntry.kind as 'community' | 'place',
-						id: activeEntry.data.id,
-						name: activeEntry.data.name || 'Untitled',
-					}
-				: null,
-		() => mapDialogRef,
-	);
+	/** Jump the dialog directly to a marker back-reference (the chips
+	 *  under the stage header). */
+	function jumpToMarker(ref: EntityMarkerRef): void {
+		mapDialogRef?.open({ mapId: ref.mapId, markerId: ref.markerId });
+	}
 
 	// The Notes/description tab is labelled "Background" for NPCs (origin,
 	// upbringing, major traits — fits a person) and "Description" for
@@ -948,25 +929,6 @@
 				actions={cmActions}
 			/>
 			{#if activeEntry}
-				{#if activeIsMapOwner}
-					{#if activeEntryMapEmpty}
-						<label
-							class="btn btn-icon icon-btn cm-hdr-icon-btn"
-							use:tooltip={`Add a map to this ${kindLabelSingular(activeEntry.kind).toLowerCase()}`}
-							aria-label="Add map"
-						>
-							<span class="cm-hdr-icon-plus" aria-hidden="true">+</span>{@html iconMapSvg}
-							<input type="file" accept="image/*" hidden onchange={handleAddMapWithFile} />
-						</label>
-					{:else}
-						<button
-							class="btn btn-icon icon-btn cm-hdr-icon-btn"
-							onclick={openOwnedMap}
-							use:tooltip={`Open the map for this ${kindLabelSingular(activeEntry.kind).toLowerCase()}`}
-							aria-label="Open map">{@html iconMapSvg}</button
-						>
-					{/if}
-				{/if}
 				<button
 					class="btn btn-icon icon-btn cm-hdr-settings-btn"
 					onclick={() => entryOptionsRef?.open()}
@@ -2120,30 +2082,6 @@
 	   panel header is tight — combobox shrinks instead. */
 	.cm-header-actions :global(.sr) {
 		flex-shrink: 0;
-	}
-	/* Header +/plain icon button (map btn) — matches Chars/Exp shape. */
-	:global(.cm-hdr-icon-btn) {
-		display: inline-flex;
-		align-items: center;
-		gap: 3px;
-		padding: 4px 6px;
-		flex-shrink: 0;
-	}
-	:global(.cm-hdr-icon-btn svg) {
-		width: 12px;
-		height: 12px;
-		fill: currentColor;
-		flex-shrink: 0;
-	}
-	:global(.cm-hdr-icon-btn svg path) {
-		fill: currentColor;
-	}
-	:global(.cm-hdr-icon-plus) {
-		font-family: var(--font-ui);
-		font-size: 0.85rem;
-		font-weight: 700;
-		line-height: 1;
-		color: currentColor;
 	}
 	/* NPC status toggle (Alive/Deceased) — lives at the top of the NPC
 	   Core tab. Same shape as CharactersArea's initiative row.

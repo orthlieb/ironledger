@@ -183,53 +183,6 @@ export async function listEntityMarkers(
   });
 }
 
-/** Look up (or create) the map owned by an entity. Enforces the
- *  `UNIQUE (user_id, owner_kind, owner_id)` constraint at the app
- *  layer — a get-or-create so the caller doesn't need to handle the
- *  race between "check exists" and "insert". Returns the full detail
- *  row so the client can hydrate its map state in one round-trip.
- *
- *  When the entity's owning map doesn't exist yet, `nameForNew` seeds
- *  the map name (e.g. `${entityName} — Map`). */
-export async function getOrCreateMapForOwner(
-  userId: string,
-  ownerKind: string,
-  ownerId: string,
-  nameForNew: string,
-): Promise<UserMap> {
-  return withUserContext(userId, async (tx) => {
-    const existing = await tx.execute<MapRow>(sql`
-      SELECT id, name, sort_order, owner_kind, owner_id,
-             markers, background_hash, settings, updated_at
-      FROM maps
-      WHERE user_id = ${userId}::uuid
-        AND owner_kind = ${ownerKind}
-        AND owner_id = ${ownerId}
-      LIMIT 1
-    `);
-    if (existing[0]) return rowToMap(existing[0]);
-    const created = await tx.execute<MapRow>(sql`
-      WITH next_sort AS (
-        SELECT COALESCE(MAX(sort_order), -1) + 1 AS n
-        FROM maps WHERE user_id = ${userId}::uuid
-      )
-      INSERT INTO maps (user_id, name, sort_order, owner_kind, owner_id)
-      VALUES (
-        ${userId}::uuid,
-        ${nameForNew.trim() || 'Untitled Map'},
-        (SELECT n FROM next_sort),
-        ${ownerKind},
-        ${ownerId}
-      )
-      RETURNING id, name, sort_order, owner_kind, owner_id,
-                markers, background_hash, settings, updated_at
-    `);
-    const row = created[0];
-    if (!row) throw new Error('getOrCreateMapForOwner: INSERT returned no row');
-    return rowToMap(row);
-  });
-}
-
 export interface CreateMapInput {
   name?: string;
   ownerKind?: string | null;

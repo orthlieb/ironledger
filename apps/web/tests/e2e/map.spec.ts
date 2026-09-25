@@ -3,21 +3,19 @@
  *
  * Focused on the failure modes we've hit that had zero automated
  * detection until now:
- *   1. Dialog fails to open when triggered from an entity stage.
+ *   1. Dialog fails to open from the top-nav "Map" button.
  *   2. Toolbar renders but its icon buttons are chromeless (the mass-sed
  *      that globbed `.mp-*` selectors produced nested `:global()` that
  *      Svelte silently dropped, so `.mp-btn-icon svg` had 0×0 sizing
  *      and the zoom / settings buttons showed as empty pills).
  *
- * We upload a real (1×1) PNG through the `+ Map` file input on a seeded
- * community, wait for the dialog, then assert the toolbar's SVGs render
- * at their expected pixel size. Anything that breaks icon CSS again
- * fails here.
+ * We open the map from the top-nav bar, upload a real (1×1) PNG through
+ * the dialog's own "Add background image" CTA, then assert the toolbar's
+ * SVGs render at their expected pixel size. Anything that breaks icon
+ * CSS again fails here.
  */
 import { test, expect, type Page } from '@playwright/test';
-import { resetAll, seedCommunity } from './helpers/reset';
-
-const CM_AREA = '.home-area--communities';
+import { resetAll } from './helpers/reset';
 
 // Tiny 1×1 red PNG — same fixture the expeditions spec uses.
 const PNG_1X1 = Buffer.from(
@@ -26,53 +24,38 @@ const PNG_1X1 = Buffer.from(
 );
 
 async function waitForHome(page: Page): Promise<void> {
-	// Wait for at least one card area to render past its loading gate.
+	// Wait for the top-nav Map button to attach — proxy for the shell
+	// being fully hydrated.
 	await page
-		.locator(`${CM_AREA} .cm-empty, ${CM_AREA} .cm-body`)
+		.locator('[aria-label="Open the campaign map"]')
 		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
 }
 
-/** Ensure the seeded community is the active connection so its stage shows the
- *  map button. v2 auto-selects the first connection; if not, pick it from the
- *  header switcher (there's no rail of `.cm-row`s any more). */
-async function selectSeededCommunity(page: Page): Promise<void> {
-	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
-	if (
-		!(await page
-			.locator(`${CM_AREA} .cm-tab`)
-			.first()
-			.isVisible()
-			.catch(() => false))
-	) {
-		await page.locator(`${CM_AREA} .cm-hdr-combobox`).click();
-		await page.locator('.cb-popover .cb-item:not(.cb-item--action)').first().click();
-	}
-	await expect(page.locator(`${CM_AREA} [aria-label="Add map"]`).first()).toBeVisible({
-		timeout: 6_000,
-	});
-}
-
-/** Trigger the map-dialog via the "+ Map" file-input on the active entity. */
+/** Open the shared MapDialog via the top-nav "Map" button, then upload
+ *  a background image through the dialog's own "Add background image"
+ *  CTA. The upload path is the same one the per-entity buttons used to
+ *  hand-roll; going through the dialog's CTA exercises the singular
+ *  supported flow now that the per-entity affordances are gone. */
 async function openMapDialogViaUpload(page: Page): Promise<void> {
-	// The trigger is a <label> wrapping a hidden <input type="file">.
-	// setInputFiles resolves the picker without needing a real click.
-	const fileInput = page.locator(`${CM_AREA} [aria-label="Add map"] input[type="file"]`).first();
+	await page.locator('[aria-label="Open the campaign map"]').first().click();
+	await expect(page.locator('.mp-dialog')).toBeVisible({ timeout: 15_000 });
+	// A fresh session starts with no background — the CTA is on-screen.
+	// Upload directly via the file input the CTA triggers.
+	const fileInput = page.locator('#mp-file-input');
 	await fileInput.setInputFiles({
-		name: 'community-map.png',
+		name: 'campaign-map.png',
 		mimeType: 'image/png',
 		buffer: PNG_1X1,
 	});
-
-	// Upload + downscale + persist + open — allow a generous window for
-	// the round-trip when CI is slow.
-	await expect(page.locator('.mp-dialog')).toBeVisible({ timeout: 15_000 });
+	// Upload + downscale + persist — allow a generous window for the
+	// round-trip when CI is slow.
+	await expect(page.locator('.mp-grid-capture')).toBeVisible({ timeout: 8_000 });
 }
 
 test.describe('MapDialog — smoke', () => {
 	test.beforeAll(async () => {
 		await resetAll();
-		await seedCommunity('Map Test Community');
 	});
 
 	test.beforeEach(async ({ page }) => {
@@ -80,8 +63,7 @@ test.describe('MapDialog — smoke', () => {
 		await waitForHome(page);
 	});
 
-	test('opens from a community stage', async ({ page }) => {
-		await selectSeededCommunity(page);
+	test('opens from the top-nav Map button', async ({ page }) => {
 		await openMapDialogViaUpload(page);
 
 		// The toolbar band must render with real buttons. (Markers now drop on
@@ -94,7 +76,6 @@ test.describe('MapDialog — smoke', () => {
 	});
 
 	test('toolbar zoom + settings icons render at non-zero size', async ({ page }) => {
-		await selectSeededCommunity(page);
 		await openMapDialogViaUpload(page);
 
 		// The zoom cluster: three icon-only buttons (out / in / fit).
@@ -124,7 +105,6 @@ test.describe('MapDialog — smoke', () => {
 	});
 
 	test('gear button opens the Map Options sub-dialog', async ({ page }) => {
-		await selectSeededCommunity(page);
 		await openMapDialogViaUpload(page);
 
 		await page.locator('.mp-btn-gear').first().click();

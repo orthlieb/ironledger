@@ -292,12 +292,10 @@ export function initMap(): Promise<void> {
 			mapState.error = '';
 		}
 		try {
-			// Fetch the list unconditionally — even if `mapState` was pre-
-			// hydrated (openMapForOwner from an entity's "+ Map" button),
-			// the picker still needs the full list. Only touch mapState if
-			// it hasn't already been populated, otherwise we'd stomp a
-			// caller-preloaded map with whatever the server's saved
-			// activeMapId points at.
+			// Fetch the list unconditionally so the map switcher has every
+			// map available. Only touch mapState if it hasn't already been
+			// populated, otherwise we'd stomp a caller-preloaded map with
+			// whatever the server's saved activeMapId points at.
 			const listReq = fetch('/api/session/maps');
 			const activeIdReq = mapState.loaded
 				? Promise.resolve<string | null>(null)
@@ -797,72 +795,4 @@ function pruneEntityMarkerRefs(shouldDrop: (ref: EntityMarkerRef) => boolean): v
  *  isn't loaded yet — the caller can trigger a load and re-render. */
 export function markersForEntity(entityId: string): EntityMarkerRef[] {
 	return entityMarkerIndexState.index[entityId] ?? [];
-}
-
-// ---------------------------------------------------------------------------
-// Map-per-entity — open (or create) the map owned by a first-class entity.
-// ---------------------------------------------------------------------------
-
-/** Get-or-create the map for `(ownerKind, ownerId)` and switch to it.
- *  Called by the "Open Map" button on entity cards. Returns the map's
- *  id, or null on failure. */
-export async function openMapForOwner(
-	ownerKind: MapOwnerKind,
-	ownerId: string,
-	entityName: string,
-): Promise<string | null> {
-	try {
-		const qs = new URLSearchParams({
-			kind: ownerKind,
-			id: ownerId,
-			name: `${entityName} — Map`,
-		});
-		const res = await fetch(`/api/session/maps/for-owner?${qs.toString()}`);
-		if (!res.ok) throw new Error(`Server returned ${res.status}`);
-		const detail = (await res.json()) as {
-			id: string;
-			name: string;
-			markers?: MapMarker[];
-			backgroundHash?: string | null;
-			settings?: MapServerSettings | null;
-			sortOrder: number;
-			ownerKind: MapOwnerKind | null;
-			ownerId: string | null;
-			updatedAt: string;
-		};
-		// Hydrate mapState directly and register in the list if new so the
-		// picker chip shows it immediately.
-		mapState.activeId = detail.id;
-		mapState.name = detail.name;
-		mapState.markers = Array.isArray(detail.markers) ? detail.markers : [];
-		mapState.backgroundHash = detail.backgroundHash ?? '';
-		mapState.settings =
-			detail.settings && typeof detail.settings === 'object' ? detail.settings : {};
-		mapState.loaded = true;
-		if (!mapListState.maps.some((m) => m.id === detail.id)) {
-			mapListState.maps = [
-				...mapListState.maps,
-				{
-					id: detail.id,
-					name: detail.name,
-					sortOrder: detail.sortOrder,
-					ownerKind: detail.ownerKind,
-					ownerId: detail.ownerId,
-					updatedAt: detail.updatedAt,
-					backgroundHash: detail.backgroundHash ?? '',
-				},
-			];
-		} else {
-			// Refresh the cached backgroundHash so the caller's "+ Map" vs
-			// "Map" affordance flips as soon as a background upload lands.
-			mapListState.maps = mapListState.maps.map((m) =>
-				m.id === detail.id ? { ...m, backgroundHash: detail.backgroundHash ?? '' } : m,
-			);
-		}
-		void persistActiveMapIdToSession(detail.id);
-		return detail.id;
-	} catch (err) {
-		mapState.error = err instanceof Error ? err.message : 'Failed to open entity map';
-		return null;
-	}
 }

@@ -298,12 +298,14 @@
 					</button>
 					<!-- Campaign map — opens the last-active map in a modal.
 					     Dispatches a global event rather than importing
-					     MapDialog here; ExpeditionsArea already owns the ref
-					     and listens for the event. -->
+					     MapDialog here; ExpeditionsArea and CommunitiesArea
+					     both own a ref and listen for the event so the
+					     dialog is available from either tab on mobile. -->
 					<button
 						class="btn btn-primary act-btn"
 						onclick={() => document.dispatchEvent(new CustomEvent('ironledger:open-campaign-map'))}
 						use:tooltip={'Open the campaign map'}
+						aria-label="Open the campaign map"
 					>
 						<span class="act-icon">{@html iconMap}</span><span class="act-label">Map</span>
 					</button>

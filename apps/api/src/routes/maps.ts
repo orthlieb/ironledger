@@ -6,7 +6,6 @@
  *
  * GET    /api/v1/session/maps                    → summary list of maps
  * GET    /api/v1/session/maps/entity-markers     → { entityId → [marker refs] } (back-references)
- * GET    /api/v1/session/maps/for-owner?kind=&id= → get-or-create the entity-owned map
  * POST   /api/v1/session/maps                    → create a new map
  * GET    /api/v1/session/maps/:mapId             → full map (markers, bg, settings)
  * PATCH  /api/v1/session/maps/:mapId             → update name / sort_order
@@ -71,12 +70,6 @@ const updateMapBody = z.object({
   sortOrder: z.number().int().optional(),
 });
 
-const forOwnerQuery = z.object({
-  kind: z.enum(['community', 'place', 'journey', 'site']),
-  id: z.string().min(1).max(200),
-  name: z.string().max(120).optional(),
-});
-
 // ---------------------------------------------------------------------------
 // Routes
 // ---------------------------------------------------------------------------
@@ -99,39 +92,6 @@ export const mapRoutes: FastifyPluginAsyncZod = async (server) => {
     try {
       const index = await maps.listEntityMarkers(req.user!.id);
       return reply.status(200).send({ index });
-    } catch (err) {
-      return handleError(reply)(err);
-    }
-  });
-
-  // Get-or-create the map owned by an entity — enforces the
-  // UNIQUE (user_id, owner_kind, owner_id) constraint at the app layer.
-  // `?kind=&id=&name=` in the query so it works as an idempotent GET.
-  server.get('/maps/for-owner', { schema: { querystring: forOwnerQuery } }, async (req, reply) => {
-    try {
-      const count = await maps.countMaps(req.user!.id);
-      if (count >= maps.MAX_MAPS_PER_USER) {
-        // Only relevant if we're going to CREATE; but easier to check
-        // up-front than to distinguish inside the service.
-        const existing = await maps.listMaps(req.user!.id);
-        const already = existing.find(
-          (m) => m.ownerKind === req.query.kind && m.ownerId === req.query.id,
-        );
-        if (!already) {
-          return reply.status(422).send({
-            statusCode: 422,
-            error: 'Unprocessable Entity',
-            message: `Map limit reached (max ${maps.MAX_MAPS_PER_USER})`,
-          });
-        }
-      }
-      const m = await maps.getOrCreateMapForOwner(
-        req.user!.id,
-        req.query.kind,
-        req.query.id,
-        req.query.name ?? `${req.query.kind} map`,
-      );
-      return reply.status(200).send(m);
     } catch (err) {
       return handleError(reply)(err);
     }
