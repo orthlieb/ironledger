@@ -1144,7 +1144,7 @@
 	 *  so the visible gap between the drawn icon shape and the label
 	 *  reads noticeably larger than this value — small numbers here
 	 *  yield the tight-but-not-touching look labels want. */
-	const LABEL_GAP = $derived(isMobileViewport ? 0.06 : 0.04);
+	const LABEL_GAP = $derived(isMobileViewport ? 0.02 : 0.015);
 	/** Hit-test radius (world units) used by `markersAt`. Half the icon's
 	 *  extent so a click inside the visible glyph counts as a hit; the
 	 *  ×1.05 buffer forgives 1-pixel finger jitter without noticeably
