@@ -93,16 +93,16 @@
 	// only on a genuine selection change, never on our own writes.
 	const markerId = $derived(selectedMarker?.id ?? null);
 	let stackDepth = $state(1);
-	// Dialog root element — bound to Dialog.Content so we can portal the
-	// Position <Select>'s popover into it. Without the explicit target,
-	// bits-ui portals the popover to <body>, and since this dialog is
-	// itself opened from within MapDialog (stack depth 2, z-index 85),
-	// the .bui-select-content default z-index (90) can still land behind
-	// the MapDialog's own overlay when the two are drawn as siblings of
-	// <body>. Portalling into `dialogEl` puts the popover inside this
-	// dialog's stacking context, so it sits above this dialog's own
-	// content — the same trick MapDialog uses for its inner popovers
-	// (see MapDialog.svelte `dialogEl` binding).
+	// Dialog root element — bound to Dialog.Content. Kept as a ref for
+	// callers that need it, but popovers inside this dialog portal to
+	// <body> now (default): the app-wide z-index budget puts popovers
+	// at 90 and modal content at 81 + depth*2 (max 85 for a two-deep
+	// stack like MapDialog → MarkerPropertiesDialog), so a body-portalled
+	// popover always beats the dialog above it, and portalling into the
+	// dialog itself only clipped the popover to the dialog's overflow
+	// (a right-side "Position" dropdown lost its right edge inside the
+	// dialog frame). Same pattern MapDialog's own map-switcher combobox
+	// already uses.
 	let dialogEl = $state<HTMLElement | null>(null);
 	$effect(() => {
 		if (!open) return;
@@ -754,7 +754,6 @@
 								value={draft.labelPosition}
 								options={LABEL_POSITION_OPTIONS}
 								ariaLabel="Label position"
-								portalTo={dialogEl ?? undefined}
 								disabled={!hasIcon || !hasLabel}
 								onchange={pickLabelPosition}
 							/>

@@ -850,12 +850,12 @@ dialog can override.
 Portalled bits-ui content is a plain `<div>` (not top-layer). We
 reserve **z-index 80+** for it so it wins over the app chrome:
 
-| Layer          | z-index | Notes                                                           |
-| -------------- | ------- | --------------------------------------------------------------- |
-| Popover / menu | `90`    | `.bui-select-content`, `.cb-popover`, `.hm-menu` — must beat 81 |
-| Modal content  | `81`    | `.confirm-modal`, dialog body                                   |
-| Modal overlay  | `80`    | `.cm-overlay`, other alert-dialog scrims                        |
-| App chrome     | `< 20`  | Toolbars, sidebar                                               |
+| Layer          | z-index | Notes                                                                                                                          |
+| -------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| Popover / menu | `100`   | `.bui-select-content`, `.cb-popover` — must beat modal content at every nesting depth (`81 + depth*2`, so 85 at depth 2, etc.) |
+| Modal content  | `81+`   | `.confirm-modal`, dialog body (`contentZ(depth) = 81 + depth*2`)                                                               |
+| Modal overlay  | `80+`   | `.cm-overlay`, other alert-dialog scrims (`overlayZ(depth) = 80 + depth*2`)                                                    |
+| App chrome     | `< 20`  | Toolbars, sidebar                                                                                                              |
 
 Popovers / menus sit **above** modal content on purpose: a
 `<Select>`, combobox, or `DropdownMenu` opened from inside a

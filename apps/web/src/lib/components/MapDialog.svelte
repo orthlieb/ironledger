@@ -1158,9 +1158,10 @@
 	// Where the label sits relative to the icon, expressed as SVG text
 	// placement (x, y, text-anchor, dominant-baseline). `extent` is the
 	// icon's world-unit half-size at the current zoom — the label offsets
-	// clear that edge by LABEL_GAP so it never bites into the icon. Diagonal
-	// positions use the icon's corner geometry (~0.7 × half-side) so the
-	// label sits outside the bounding rect, not straddling it.
+	// clear that edge by LABEL_GAP so it never bites into the icon.
+	// Diagonals use the same edge offset on both axes, so the label sits
+	// outside the icon's bounding rect (its inner corner is one `gap`
+	// from the icon's corner) rather than straddling it.
 	type LabelPos = NonNullable<MapMarker['labelPosition']>;
 	interface LabelPlacement {
 		x: number;
@@ -1170,7 +1171,6 @@
 	}
 	function labelPlacement(pos: LabelPos, extent: number, gap: number): LabelPlacement {
 		const straight = extent + gap;
-		const diag = extent * 0.72 + gap;
 		switch (pos) {
 			case 'top':
 				return { x: 0, y: -straight, anchor: 'middle', baseline: 'text-after-edge' };
@@ -1181,13 +1181,13 @@
 			case 'right':
 				return { x: straight, y: 0, anchor: 'start', baseline: 'central' };
 			case 'top-left':
-				return { x: -diag, y: -diag, anchor: 'end', baseline: 'text-after-edge' };
+				return { x: -straight, y: -straight, anchor: 'end', baseline: 'text-after-edge' };
 			case 'top-right':
-				return { x: diag, y: -diag, anchor: 'start', baseline: 'text-after-edge' };
+				return { x: straight, y: -straight, anchor: 'start', baseline: 'text-after-edge' };
 			case 'bottom-left':
-				return { x: -diag, y: diag, anchor: 'end', baseline: 'hanging' };
+				return { x: -straight, y: straight, anchor: 'end', baseline: 'hanging' };
 			case 'bottom-right':
-				return { x: diag, y: diag, anchor: 'start', baseline: 'hanging' };
+				return { x: straight, y: straight, anchor: 'start', baseline: 'hanging' };
 		}
 	}
 
@@ -2609,9 +2609,14 @@
 	:global(.mp-props-field--style) {
 		flex: 0 0 auto;
 	}
+	/* Position field trigger: the Select shows an arrow glyph (~1 em) plus
+	   the caret + padding, so ~4.5rem gives both room without letting the
+	   trigger fight the Style row's B/I/U cluster for space. */
 	:global(.mp-props-field--position) {
 		flex: 0 0 auto;
-		width: 3rem;
+	}
+	:global(.mp-props-field--position .bui-select-trigger) {
+		min-width: 4.5rem;
 	}
 
 	/* Label text-style toggles (Bold / Italic / Small caps / Underline) —

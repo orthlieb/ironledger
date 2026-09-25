@@ -194,11 +194,15 @@
 		border: 1px solid var(--border-mid);
 		border-radius: 6px;
 		box-shadow: 0 12px 32px #00000060;
-		/* 90 — popovers/menus must sit above bits-ui modal content
-		   (z-index 81) so a Select opened from inside a ConfirmDialog
-		   isn't covered by the dialog itself. See the z-index budget
-		   in docs/ui-components.md. */
-		z-index: 90;
+		/* 100 — popovers/menus must sit above bits-ui modal content,
+		   which starts at z-index 81 for a top-level dialog and grows
+		   by 2 per nesting level (see dialogStack.svelte.ts). A Select
+		   opened from inside a nested dialog (MapDialog →
+		   MarkerPropertiesDialog, depth 2 = content z-85) needs
+		   enough cushion to stay above; the original 90 was close
+		   enough that popovers flipping upward from a low anchor could
+		   get covered. See the z-index budget in docs/ui-components.md. */
+		z-index: 100;
 		outline: none;
 	}
 	:global(.bui-select-item) {
