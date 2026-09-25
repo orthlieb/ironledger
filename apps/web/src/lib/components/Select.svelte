@@ -13,6 +13,7 @@
 	 */
 	import { Select as BitsSelect } from 'bits-ui';
 	import caretDownSvg from '$icons/caret-large-down-solid.svg?raw';
+	import { pushDialog, popDialog, contentZ } from '$lib/dialogStack.svelte.js';
 
 	interface Option {
 		value: T;
@@ -63,9 +64,29 @@
 	const selected = $derived(options.find((o) => o.value === value));
 	const selectedLabel = $derived(selected?.label ?? '');
 	const isPlaceholder = $derived(selectedLabel === '');
+
+	// Register the popover with the shared dialog stack while it's open so
+	// its z-index is `contentZ(depth)` — always one tier above whatever
+	// dialog opened it, even under deep nesting. Without this, a fixed
+	// z-index has to be big enough to beat the deepest possible dialog,
+	// which is fragile once nesting grows.
+	let open = $state(false);
+	let stackDepth = $state(0);
+	$effect(() => {
+		if (!open) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 </script>
 
-<BitsSelect.Root type="single" {value} onValueChange={handleValueChange} {disabled} {required}>
+<BitsSelect.Root
+	type="single"
+	{value}
+	bind:open
+	onValueChange={handleValueChange}
+	{disabled}
+	{required}
+>
 	<BitsSelect.Trigger {id} class={`bui-select-trigger ${cls}`.trim()} aria-label={ariaLabel}>
 		{#if selected?.icon}
 			<span
@@ -80,7 +101,21 @@
 		<span class="bui-select-caret" aria-hidden="true">{@html caretDownSvg}</span>
 	</BitsSelect.Trigger>
 	<BitsSelect.Portal to={portalTo}>
-		<BitsSelect.Content class="bui-select-content" sideOffset={4}>
+		<!--
+			z-index comes from the shared dialog stack — `contentZ(depth)`
+			always sits one tier above whatever dialog opened this Select,
+			so nesting stays ordered without a magic fixed number. Set
+			inline because bits-ui reads the computed z-index off the
+			content node inside a rAF and copies it up to the Floating-UI
+			wrapper; without a synchronous value the wrapper has no
+			z-index for the first frame or two after mount and can paint
+			behind a nested dialog above it.
+		-->
+		<BitsSelect.Content
+			class="bui-select-content"
+			sideOffset={4}
+			style={`z-index: ${contentZ(stackDepth)}`}
+		>
 			{#each options as opt (opt.value)}
 				<BitsSelect.Item
 					value={opt.value}
@@ -194,15 +229,13 @@
 		border: 1px solid var(--border-mid);
 		border-radius: 6px;
 		box-shadow: 0 12px 32px #00000060;
-		/* 100 — popovers/menus must sit above bits-ui modal content,
-		   which starts at z-index 81 for a top-level dialog and grows
-		   by 2 per nesting level (see dialogStack.svelte.ts). A Select
-		   opened from inside a nested dialog (MapDialog →
-		   MarkerPropertiesDialog, depth 2 = content z-85) needs
-		   enough cushion to stay above; the original 90 was close
-		   enough that popovers flipping upward from a low anchor could
-		   get covered. See the z-index budget in docs/ui-components.md. */
-		z-index: 100;
+		/* z-index is set inline on BitsSelect.Content using the shared
+		   dialog stack (`contentZ(depth)`), so it always sits one tier
+		   above whatever opened it. This static fallback matches the
+		   depth-1 value and only matters if the inline attribute is
+		   somehow missing. See the z-index budget in
+		   docs/ui-components.md. */
+		z-index: 83;
 		outline: none;
 	}
 	:global(.bui-select-item) {

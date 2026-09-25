@@ -1145,6 +1145,10 @@
 	 *  reads noticeably larger than this value — small numbers here
 	 *  yield the tight-but-not-touching look labels want. */
 	const LABEL_GAP = $derived(isMobileViewport ? 0.02 : 0.015);
+	/** Label font size, in world units at zoom 1. Kept in JS so
+	 *  labelPlacement() can subtract the em-box leading from vertical
+	 *  positions — the CSS declaration below has to match. */
+	const LABEL_FONT_SIZE = $derived(isMobileViewport ? 0.48 : 0.24);
 	/** Hit-test radius (world units) used by `markersAt`. Half the icon's
 	 *  extent so a click inside the visible glyph counts as a hit; the
 	 *  ×1.05 buffer forgives 1-pixel finger jitter without noticeably
@@ -1163,6 +1167,16 @@
 	// Diagonals use the same edge offset on both axes, so the label sits
 	// outside the icon's bounding rect (its inner corner is one `gap`
 	// from the icon's corner) rather than straddling it.
+	//
+	// Vertical positions (top/bottom + the four diagonals) subtract a
+	// leading compensation from y: SVG's `dominant-baseline: hanging`
+	// aligns the em-box top (not the cap-height) to y in every major
+	// browser, so a Latin label at y = icon-bottom + gap actually paints
+	// its visible glyph tops another ~15% of font-size below y and the
+	// LABEL_GAP looks bigger than it is. Pull y back by that fraction so
+	// the visible cap top / descender bottom lands where the gap says.
+	// Left / right (`central` baseline) are already glyph-centered on y,
+	// no correction needed.
 	type LabelPos = NonNullable<MapMarker['labelPosition']>;
 	interface LabelPlacement {
 		x: number;
@@ -1170,25 +1184,37 @@
 		anchor: 'start' | 'middle' | 'end';
 		baseline: 'text-after-edge' | 'hanging' | 'central';
 	}
-	function labelPlacement(pos: LabelPos, extent: number, gap: number): LabelPlacement {
+	function labelPlacement(
+		pos: LabelPos,
+		extent: number,
+		gap: number,
+		fontSize: number,
+	): LabelPlacement {
 		const straight = extent + gap;
+		const leading = fontSize * 0.15;
+		// For `hanging` (bottom): pull the y coord up by `leading` so the
+		// visible cap top lands at extent+gap below the icon. For
+		// `text-after-edge` (top): push y down by `leading` so the visible
+		// descender bottom lands at extent+gap above the icon.
+		const yBottom = straight - leading;
+		const yTop = -(straight - leading);
 		switch (pos) {
 			case 'top':
-				return { x: 0, y: -straight, anchor: 'middle', baseline: 'text-after-edge' };
+				return { x: 0, y: yTop, anchor: 'middle', baseline: 'text-after-edge' };
 			case 'bottom':
-				return { x: 0, y: straight, anchor: 'middle', baseline: 'hanging' };
+				return { x: 0, y: yBottom, anchor: 'middle', baseline: 'hanging' };
 			case 'left':
 				return { x: -straight, y: 0, anchor: 'end', baseline: 'central' };
 			case 'right':
 				return { x: straight, y: 0, anchor: 'start', baseline: 'central' };
 			case 'top-left':
-				return { x: -straight, y: -straight, anchor: 'end', baseline: 'text-after-edge' };
+				return { x: -straight, y: yTop, anchor: 'end', baseline: 'text-after-edge' };
 			case 'top-right':
-				return { x: straight, y: -straight, anchor: 'start', baseline: 'text-after-edge' };
+				return { x: straight, y: yTop, anchor: 'start', baseline: 'text-after-edge' };
 			case 'bottom-left':
-				return { x: -straight, y: straight, anchor: 'end', baseline: 'hanging' };
+				return { x: -straight, y: yBottom, anchor: 'end', baseline: 'hanging' };
 			case 'bottom-right':
-				return { x: straight, y: straight, anchor: 'start', baseline: 'hanging' };
+				return { x: straight, y: yBottom, anchor: 'start', baseline: 'hanging' };
 		}
 	}
 
@@ -1540,6 +1566,7 @@
 											m.labelPosition ?? 'bottom',
 											iconExtent / 2,
 											LABEL_GAP,
+											LABEL_FONT_SIZE,
 										)}
 										<text
 											class="mp-marker-label"

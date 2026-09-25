@@ -22,6 +22,7 @@
 	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
 	import clearFiltersSvg from '$icons/filter-circle-xmark-solid.svg?raw';
 	import { tooltip } from '$lib/actions/tooltip.js';
+	import { pushDialog, popDialog, contentZ } from '$lib/dialogStack.svelte.js';
 
 	interface FilterPill {
 		key: string;
@@ -156,6 +157,18 @@
 		onselect(item);
 		open = false;
 	}
+
+	// Register the popover with the shared dialog stack while it's open so
+	// its z-index is `contentZ(depth)` — always one tier above whatever
+	// dialog opened it, even under deep nesting. Without this, a fixed
+	// z-index has to be big enough to beat the deepest possible dialog,
+	// which is fragile once nesting grows.
+	let stackDepth = $state(0);
+	$effect(() => {
+		if (!open) return;
+		stackDepth = pushDialog();
+		return () => popDialog();
+	});
 </script>
 
 {#snippet checkMark(on: boolean)}
@@ -188,7 +201,25 @@
 		{/if}
 	</Popover.Trigger>
 	<Popover.Portal to={portalTo}>
-		<Popover.Content class="cb-popover" sideOffset={4} align="start" collisionPadding={8}>
+		<!--
+			z-index comes from the shared dialog stack — `contentZ(depth)`
+			always sits one tier above whatever dialog opened this
+			popover, so nesting stays ordered without a magic fixed
+			number. It's set inline on Content because bits-ui reads the
+			computed z-index off the content node inside a rAF and
+			copies it up to the Floating-UI wrapper (the real
+			stacking-context element via its transform). Without a
+			synchronous value the wrapper has no z-index for the first
+			frame or two after mount and can paint behind a nested
+			dialog above it.
+		-->
+		<Popover.Content
+			class="cb-popover"
+			sideOffset={4}
+			align="start"
+			collisionPadding={8}
+			style={`z-index: ${contentZ(stackDepth)}`}
+		>
 			<Command.Root class="cb-cmd">
 				<div class="cb-search-row">
 					<span class="cb-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
@@ -345,15 +376,13 @@
 		border: 1px solid var(--border-mid);
 		border-radius: 8px;
 		box-shadow: 0 16px 48px #00000070;
-		/* 100 — popovers must beat bits-ui modal content, which starts at
-		   z-index 81 for a top-level dialog and grows by 2 per nesting
-		   level (see dialogStack.svelte.ts). A popover opened from inside
-		   a deeply-nested dialog (MapDialog → MarkerPropertiesDialog →
-		   Combobox, depth 2 = content z-85) needs enough cushion to stay
-		   above; the original 90 landed uncomfortably close and could get
-		   covered when the popover flipped upward from a low anchor. See
-		   the z-index budget in docs/ui-components.md. */
-		z-index: 100;
+		/* z-index is set inline on Popover.Content using the shared
+		   dialog stack (`contentZ(depth)`), so it always sits one tier
+		   above whatever opened it. This static fallback matches the
+		   depth-1 value and only matters if the inline attribute is
+		   somehow missing. See the z-index budget in
+		   docs/ui-components.md. */
+		z-index: 83;
 		outline: none;
 		overflow: hidden;
 	}

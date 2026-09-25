@@ -1,5 +1,6 @@
 /**
- * dialogStack — single source of truth for how modal dialogs stack.
+ * dialogStack — single source of truth for how modal dialogs (and the
+ * popovers / dropdowns opened from them) stack.
  *
  * bits-ui `Dialog` / `AlertDialog` are individually modal (focus trap +
  * aria-modal), but nothing arbitrates z-index BETWEEN two open dialogs.
@@ -9,14 +10,16 @@
  * user can still click the underlying dialog's header ✕ or buttons — a
  * modality break.
  *
- * Every `Dialog.Root` / `AlertDialog.Root` in the app calls `pushDialog()`
- * on open and `popDialog()` on close (via `$effect`). `pushDialog` returns
- * a monotonic depth (1, 2, 3, …); the caller uses it to compute inline
- * z-indexes for the Overlay and Content:
+ * Every `Dialog.Root` / `AlertDialog.Root` in the app — and every popover
+ * / dropdown built on the shared `Combobox` / `Select` wrappers — calls
+ * `pushDialog()` on open and `popDialog()` on close (via `$effect`).
+ * `pushDialog` returns a monotonic depth (1, 2, 3, …); the caller uses
+ * it to compute inline z-indexes for the Overlay and Content:
  *
  *     overlayZ = 80 + depth * 2   // overlay of dialog N sits above content of N-1
  *     contentZ = 81 + depth * 2   // content of dialog N sits above its overlay
  *
+ * A popover has no overlay of its own, so it just uses `contentZ(depth)`.
  * Once the stack drains to zero, the depth counter resets so numbers stay
  * small (a few hundred is comfortably below the 9999 tooltip tier — tooltips
  * always float above regardless).
