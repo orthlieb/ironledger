@@ -333,18 +333,26 @@ so cells render exactly square with no letterbox at zoom 1.
 
 Marker labels sit at one of eight compass positions around the icon
 (top / bottom / left / right and the four diagonals), governed by
-`labelPlacement()` in `MapDialog.svelte`. Vertical positions key off
-`dominant-baseline: alphabetic` — the alphabetic baseline is
-unambiguously `y = y` in every browser — with a cap-height offset so
-the visible cap top or baseline lands exactly on the gap boundary
-(`extent + gap`) regardless of the label's size (sm / md / lg / xl).
+`labelPlacement()` in `MapDialog.svelte`. Every position keys off
+`dominant-baseline: alphabetic` — unambiguously `y = y` in every
+browser — with a cap-height-derived offset per position so the
+visible glyph edges land at the intended anchor regardless of the
+label's size (sm / md / lg / xl).
 
-- **Top / diagonals-top:** baseline at `y = −straight` → visible bottom
-  of caps lands on the gap boundary (descender letters like `g` hang a
-  hair below on purpose — reads as top-anchored, not as clipping).
+- **Top / diagonals-top:** baseline at `y = −straight` → visible
+  bottom of caps lands on the gap boundary (descender letters like
+  `g` hang a hair below on purpose — reads as top-anchored, not as
+  clipping).
 - **Bottom / diagonals-bottom:** baseline at `y = +straight + capHeight`
   → visible cap top lands on the gap boundary.
-- **Left / right:** `central` baseline, already glyph-centered on `y`.
+- **Left / right:** `text-anchor: end` / `start` at `x = ±(straight + hExtra)`
+  → label's icon-facing edge lands on the standoff (mirror of top /
+  bottom), rest of the label extends outward. Baseline at
+  `y = capHeight/2` so the cap-height vertical center sits on the
+  icon's y-axis. (`dominant-baseline: central` would center the em
+  box instead, and EB Garamond's em is asymmetric around its caps —
+  sTypoAscender 1.007, sTypoDescender 0.298 — so the visible caps
+  would drift ~0.03·fontSize below y=0.)
 
 `capHeight` is a per-font constant — `EB_GARAMOND_CAP_HEIGHT = 0.65`
 in the source, matching `sCapHeight / unitsPerEm` for EB Garamond.

@@ -1171,33 +1171,34 @@
 	// Vertical positions (top/bottom + the four diagonals) key off the
 	// alphabetic baseline, which every browser agrees is at y=y — no
 	// interpretation of em-box top / hanging line / ascender vs cap
-	// height is involved. `dominant-baseline: hanging` and
-	// `text-after-edge` (the earlier choice) both drift for fonts
-	// whose em-box is larger than their cap+descender extremes; EB
-	// Garamond is one such font (sTypoAscender 1.007, sCapHeight 0.65,
-	// sTypoDescender 0.298), so tuning the leading compensation to
-	// the font is a game of empirical constants that break next
-	// font-swap. `alphabetic` sidesteps that entirely.
+	// height is involved.
 	//
-	//   • Top labels: place the alphabetic baseline at −straight, so
-	//     the visible bottom of the caps lands exactly on the gap
-	//     boundary. Descender-only glyphs (g / p / y) hang a small
-	//     amount below, which reads as intended for a top-anchored
-	//     label rather than as clipping.
-	//   • Bottom labels: place the baseline at +straight + capHeight,
-	//     so the visible cap top lands exactly on the gap boundary.
-	//   • Left / right (`central` baseline): already glyph-centered
-	//     on y, no compensation.
+	//   • Top / diagonals-top: baseline at y = −straight → visible
+	//     bottom of caps lands on the gap boundary.
+	//   • Bottom / diagonals-bottom: baseline at y = +straight +
+	//     capHeight → visible cap top lands on the gap boundary.
+	//   • Left / right: label's icon-facing edge at x =
+	//     ±(straight + hExtra) — text-anchor: end for left, start
+	//     for right — so the label respects the standoff the same
+	//     way top / bottom do (nearest edge on the boundary, rest of
+	//     the label extending outward). Vertically centered on the
+	//     CAP height (baseline at y = capHeight/2) so the caps'
+	//     vertical center lands on the icon's y-axis.
+	//     `dominant-baseline: central` would center the em box, but
+	//     EB Garamond's em is asymmetric around its caps
+	//     (sTypoAscender 1.007, sTypoDescender 0.298) — em center
+	//     sits ~0.03·fontSize above cap center, so `central` would
+	//     drift the visible caps below y=0.
 	//
-	// The cap-height and descender constants are fractions of the
-	// *actual rendered* font-size (base × labelStyle.size multiplier),
-	// so xl labels don't drift outward as they scale up.
+	// The cap-height constant is a fraction of the *actual rendered*
+	// font-size (base × labelStyle.size multiplier), so xl labels don't
+	// drift outward as they scale up.
 	type LabelPos = NonNullable<MapMarker['labelPosition']>;
 	interface LabelPlacement {
 		x: number;
 		y: number;
 		anchor: 'start' | 'middle' | 'end';
-		baseline: 'alphabetic' | 'central';
+		baseline: 'alphabetic';
 	}
 	// EB Garamond cap-height = 650 / 1000 units. Swap this if the
 	// label font family changes.
@@ -1212,6 +1213,7 @@
 		const capHeight = fontSize * EB_GARAMOND_CAP_HEIGHT;
 		const yTop = -straight;
 		const yBottom = straight + capHeight;
+		const yCapCenter = capHeight / 2;
 		// Horizontal labels get a small extra offset: horizontal text next
 		// to a small icon reads visually tighter than the same distance
 		// vertically, and a hair more breathing room brings them in line
@@ -1226,9 +1228,9 @@
 			case 'bottom':
 				return { x: 0, y: yBottom, anchor: 'middle', baseline: 'alphabetic' };
 			case 'left':
-				return { x: xLeft, y: 0, anchor: 'end', baseline: 'central' };
+				return { x: xLeft, y: yCapCenter, anchor: 'end', baseline: 'alphabetic' };
 			case 'right':
-				return { x: xRight, y: 0, anchor: 'start', baseline: 'central' };
+				return { x: xRight, y: yCapCenter, anchor: 'start', baseline: 'alphabetic' };
 			case 'top-left':
 				return { x: -straight, y: yTop, anchor: 'end', baseline: 'alphabetic' };
 			case 'top-right':

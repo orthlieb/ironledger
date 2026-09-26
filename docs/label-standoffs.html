@@ -145,12 +145,6 @@
     stroke-width: 0.02;
     stroke-linejoin: round;
   }
-  .diagram text.annot {
-    font-family: 'Roboto', system-ui, sans-serif;
-    font-weight: 500;
-    font-size: 0.09px;
-    fill: #b06a10;
-  }
   .diagram .box {
     fill: none;
     stroke: #a5987a;
@@ -256,11 +250,11 @@
     <h1>Marker Label Standoffs</h1>
     <p class="subtitle">
       All eight compass positions, drawn at the exact world-unit offsets
-      <code>labelPlacement()</code> produces. Top / bottom labels key off
-      <code>dominant-baseline: alphabetic</code> — the alphabetic baseline is unambiguously
-      <code>y = y</code> in every browser — with a cap-height offset (0.65 × fontSize for EB
-      Garamond) so the visible cap top or baseline lands exactly on the gap boundary regardless of
-      font-size (sm → xl).
+      <code>labelPlacement()</code> produces. Every label's icon-facing edge lands on the gap
+      boundary at <code>extent + gap</code>: baseline for top labels, cap top for bottom, and the
+      right / left glyph edge for left / right (<code>text-anchor: end</code> / <code>start</code>).
+      All positions use <code>dominant-baseline: alphabetic</code>; left / right add a
+      <code>y = capHeight/2</code> offset so the caps' vertical center sits on the icon's y-axis.
     </p>
   </header>
 
@@ -273,13 +267,13 @@
       </div>
       <svg
         class="diagram"
-        viewBox="-1.8 -1.8 3.6 3.6"
+        viewBox="-3.6 -3.6 7.2 7.2"
         xmlns="http://www.w3.org/2000/svg"
         aria-labelledby="mobile-desc"
       >
         <desc id="mobile-desc">
-          Mobile viewport. Icon bounding box 0.84375 world units wide; sample label positioned at
-          each of the 8 compass points.
+          Mobile viewport. Icon bounding box 0.84375 world units wide; sample label at each of the 8
+          compass points.
         </desc>
         <rect class="box" x="-0.421875" y="-0.421875" width="0.84375" height="0.84375" rx="0.06" />
         <circle class="icon" cx="0" cy="0" r="0.28" />
@@ -287,10 +281,8 @@
 
         <!-- straight = extent + gap = 0.421875 + 0.125 = 0.546875
 				     capHeight = 0.48 × 0.65 = 0.312
-				     Top labels: baseline sits at y = -straight (visible bottom
-				     of caps lands on the gap boundary).
-				     Bottom labels: baseline sits at y = straight + capHeight
-				     (visible cap top lands on the gap boundary). -->
+				     Top: baseline at y = -straight → visible bottom of caps at the boundary.
+				     Bottom: baseline at y = +straight + capHeight → cap top at the boundary. -->
 
         <!-- TOP -->
         <line class="standoff" x1="0" y1="-0.421875" x2="0" y2="-0.546875" />
@@ -303,7 +295,7 @@
           text-anchor="middle"
           dominant-baseline="alphabetic"
         >
-          top
+          Top
         </text>
 
         <!-- BOTTOM -->
@@ -317,35 +309,35 @@
           text-anchor="middle"
           dominant-baseline="alphabetic"
         >
-          bottom
+          Bottom
         </text>
 
-        <!-- LEFT (nudged 0.03 further left) -->
+        <!-- LEFT (nudged 0.03 further left, then horizontally centered on that x) -->
         <line class="standoff" x1="-0.421875" y1="0" x2="-0.576875" y2="0" />
         <circle class="anchor" cx="-0.576875" cy="0" r="0.02" />
         <text
           class="label"
           x="-0.576875"
-          y="0"
+          y="0.156"
           font-size="0.48"
           text-anchor="end"
-          dominant-baseline="central"
+          dominant-baseline="alphabetic"
         >
-          left
+          Left
         </text>
 
-        <!-- RIGHT (nudged 0.03 further right) -->
+        <!-- RIGHT -->
         <line class="standoff" x1="0.421875" y1="0" x2="0.576875" y2="0" />
         <circle class="anchor" cx="0.576875" cy="0" r="0.02" />
         <text
           class="label"
           x="0.576875"
-          y="0"
+          y="0.156"
           font-size="0.48"
           text-anchor="start"
-          dominant-baseline="central"
+          dominant-baseline="alphabetic"
         >
-          right
+          Right
         </text>
 
         <!-- TOP-LEFT -->
@@ -359,7 +351,7 @@
           text-anchor="end"
           dominant-baseline="alphabetic"
         >
-          top-left
+          Top-Left
         </text>
 
         <!-- TOP-RIGHT -->
@@ -373,7 +365,7 @@
           text-anchor="start"
           dominant-baseline="alphabetic"
         >
-          top-right
+          Top-Right
         </text>
 
         <!-- BOTTOM-LEFT -->
@@ -387,7 +379,7 @@
           text-anchor="end"
           dominant-baseline="alphabetic"
         >
-          bottom-left
+          Bottom-Left
         </text>
 
         <!-- BOTTOM-RIGHT -->
@@ -401,10 +393,10 @@
           text-anchor="start"
           dominant-baseline="alphabetic"
         >
-          bottom-right
+          Bottom-Right
         </text>
 
-        <g transform="translate(-1.55, 1.55)">
+        <g transform="translate(-3.35, 3.35)">
           <line class="scale-bar" x1="0" y1="0" x2="0.5" y2="0" />
           <line class="scale-bar" x1="0" y1="-0.04" x2="0" y2="0.04" />
           <line class="scale-bar" x1="0.5" y1="-0.04" x2="0.5" y2="0.04" />
@@ -423,56 +415,56 @@
         </thead>
         <tbody>
           <tr>
-            <td class="pos">top</td>
+            <td class="pos">Top</td>
             <td class="num">0</td>
             <td class="num">−0.547</td>
             <td class="kw">middle</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">bottom</td>
+            <td class="pos">Bottom</td>
             <td class="num">0</td>
             <td class="num">0.859</td>
             <td class="kw">middle</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">left</td>
+            <td class="pos">Left</td>
             <td class="num">−0.577</td>
-            <td class="num">0</td>
+            <td class="num">0.156</td>
             <td class="kw">end</td>
-            <td class="kw">central</td>
+            <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">right</td>
+            <td class="pos">Right</td>
             <td class="num">0.577</td>
-            <td class="num">0</td>
+            <td class="num">0.156</td>
             <td class="kw">start</td>
-            <td class="kw">central</td>
+            <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">top-left</td>
+            <td class="pos">Top-Left</td>
             <td class="num">−0.547</td>
             <td class="num">−0.547</td>
             <td class="kw">end</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">top-right</td>
+            <td class="pos">Top-Right</td>
             <td class="num">0.547</td>
             <td class="num">−0.547</td>
             <td class="kw">start</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">bottom-left</td>
+            <td class="pos">Bottom-Left</td>
             <td class="num">−0.547</td>
             <td class="num">0.859</td>
             <td class="kw">end</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">bottom-right</td>
+            <td class="pos">Bottom-Right</td>
             <td class="num">0.547</td>
             <td class="num">0.859</td>
             <td class="kw">start</td>
@@ -520,7 +512,7 @@
           text-anchor="middle"
           dominant-baseline="alphabetic"
         >
-          top
+          Top
         </text>
 
         <!-- BOTTOM -->
@@ -534,7 +526,7 @@
           text-anchor="middle"
           dominant-baseline="alphabetic"
         >
-          bottom
+          Bottom
         </text>
 
         <!-- LEFT -->
@@ -543,12 +535,12 @@
         <text
           class="label"
           x="-0.315937"
-          y="0"
+          y="0.078"
           font-size="0.24"
           text-anchor="end"
-          dominant-baseline="central"
+          dominant-baseline="alphabetic"
         >
-          left
+          Left
         </text>
 
         <!-- RIGHT -->
@@ -557,12 +549,12 @@
         <text
           class="label"
           x="0.315937"
-          y="0"
+          y="0.078"
           font-size="0.24"
           text-anchor="start"
-          dominant-baseline="central"
+          dominant-baseline="alphabetic"
         >
-          right
+          Right
         </text>
 
         <!-- TOP-LEFT -->
@@ -576,7 +568,7 @@
           text-anchor="end"
           dominant-baseline="alphabetic"
         >
-          top-left
+          Top-Left
         </text>
 
         <!-- TOP-RIGHT -->
@@ -590,7 +582,7 @@
           text-anchor="start"
           dominant-baseline="alphabetic"
         >
-          top-right
+          Top-Right
         </text>
 
         <!-- BOTTOM-LEFT -->
@@ -604,7 +596,7 @@
           text-anchor="end"
           dominant-baseline="alphabetic"
         >
-          bottom-left
+          Bottom-Left
         </text>
 
         <!-- BOTTOM-RIGHT -->
@@ -618,7 +610,7 @@
           text-anchor="start"
           dominant-baseline="alphabetic"
         >
-          bottom-right
+          Bottom-Right
         </text>
 
         <g transform="translate(-1.55, 1.55)">
@@ -640,56 +632,56 @@
         </thead>
         <tbody>
           <tr>
-            <td class="pos">top</td>
+            <td class="pos">Top</td>
             <td class="num">0</td>
             <td class="num">−0.286</td>
             <td class="kw">middle</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">bottom</td>
+            <td class="pos">Bottom</td>
             <td class="num">0</td>
             <td class="num">0.442</td>
             <td class="kw">middle</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">left</td>
+            <td class="pos">Left</td>
             <td class="num">−0.316</td>
-            <td class="num">0</td>
+            <td class="num">0.078</td>
             <td class="kw">end</td>
-            <td class="kw">central</td>
+            <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">right</td>
+            <td class="pos">Right</td>
             <td class="num">0.316</td>
-            <td class="num">0</td>
+            <td class="num">0.078</td>
             <td class="kw">start</td>
-            <td class="kw">central</td>
+            <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">top-left</td>
+            <td class="pos">Top-Left</td>
             <td class="num">−0.286</td>
             <td class="num">−0.286</td>
             <td class="kw">end</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">top-right</td>
+            <td class="pos">Top-Right</td>
             <td class="num">0.286</td>
             <td class="num">−0.286</td>
             <td class="kw">start</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">bottom-left</td>
+            <td class="pos">Bottom-Left</td>
             <td class="num">−0.286</td>
             <td class="num">0.442</td>
             <td class="kw">end</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">bottom-right</td>
+            <td class="pos">Bottom-Right</td>
             <td class="num">0.286</td>
             <td class="num">0.442</td>
             <td class="kw">start</td>
@@ -711,16 +703,17 @@
       <li>
         <span class="swatch" style="background: #b06a10"></span>
         <strong>Amber line + dot</strong> — the standoff (icon edge → gap boundary at
-        <code>extent + gap</code>). The label's closest visible edge lands on the dot: the baseline
-        for top labels (so caps sit above), the cap top for bottom labels (so text sits below), and
-        the vertical center for left / right. Descenders on top-labels (the <code>p</code> in
-        <em>top</em>) intentionally hang a hair into the gap — that reads as a top-anchored label,
-        not as clipping.
+        <code>extent + gap</code>). Every label's icon-facing edge lands on the dot: baseline for
+        top labels (caps sit above), cap top for bottom labels (text sits below), right / left glyph
+        edge for left / right labels (rest of the label extends outward). Left / right also offset y
+        by <code>capHeight/2</code> so the caps' visual center sits on the icon's y-axis.
       </li>
       <li>
-        <strong>Both diagrams share one viewBox</strong> (3.6 × 3.6 world units), so the desktop
-        marker visibly renders at half the mobile size — the constants scale in lockstep. Compare
-        each diagram's 0.5-unit scale bar to see it at a glance.
+        <strong>Mobile's viewBox is 2× desktop's</strong> (7.2 × 7.2 vs 3.6 × 3.6 world units)
+        because mobile's icon and font-size are both 2× — sharing a viewBox would clip the mobile
+        panel. Each panel's 0.5-unit scale bar shows the real per-panel scale at a glance: mobile's
+        bar is half the visible length of desktop's, correctly reading as "mobile's world unit is
+        half as many pixels wide because there's twice as much content in the same panel."
       </li>
       <li>
         <strong>Cap-height constant</strong> is EB Garamond's
