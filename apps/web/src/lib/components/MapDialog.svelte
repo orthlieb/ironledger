@@ -1250,15 +1250,17 @@
 		if (ls.bold) parts.push('font-weight:800');
 		if (ls.italic) parts.push('font-style:italic');
 		if (ls.underline) parts.push('text-decoration:underline');
-		// Small caps via the OpenType `smcp` feature. `font-variant:
-		// small-caps` would tell the browser to synthesise them by
-		// scaling full caps if the font doesn't ship a real set —
-		// `font-feature-settings: "smcp"` explicitly asks the font for
-		// its designed small-cap glyphs and falls back to lowercase
-		// when the feature isn't present. EB Garamond ships real small
-		// caps in both roman and italic, so this catches "italic +
-		// small caps" as designed italic small caps too.
-		if (ls.case === 'small-caps') parts.push('font-feature-settings:"smcp"');
+		// Small caps via `font-variant: small-caps`. The font's real
+		// `smcp` OpenType feature is used when present; otherwise the
+		// browser synthesises small caps by scaling full caps. Google
+		// Fonts strips advanced OpenType features (smcp / c2sc) when it
+		// subsets EB Garamond for the css2 endpoint — its served TTF
+		// carries only `dnom frac liga locl numr pnum rlig tnum` — so
+		// in practice this always synthesises today. Using
+		// `font-feature-settings: "smcp"` here would silently render as
+		// lowercase (no fallback path), so the variant form is the
+		// right choice until we self-host a full-feature EB Garamond.
+		if (ls.case === 'small-caps') parts.push('font-variant:small-caps');
 		else if (ls.case === 'uppercase') parts.push('text-transform:uppercase');
 		// Only emit a size override for non-default tiers so labels that
 		// stay at `md` (or omit the field entirely) don't carry a
@@ -2377,11 +2379,13 @@
 		   side of it — so a `left` label overlapped the icon by half its
 		   width.
 		   Font: EB Garamond — classic Garamond revival with real bold
-		   (loaded at 400/700/800), true italics for every roman weight
-		   (400/700 italic loaded), and designed small-caps via the
-		   OpenType `smcp` feature (see labelStyleCss — it turns on smcp
-		   through `font-feature-settings` so we get real designed small
-		   caps, not the browser's synthesised scale-down). Falls back
+		   (loaded at 400/700/800) and true italics for every roman
+		   weight (400/700/800 italic loaded). Small-caps go through
+		   `font-variant: small-caps` (see labelStyleCss) and are
+		   browser-synthesised today: Google Fonts strips the `smcp` /
+		   `c2sc` OpenType features when it subsets EB Garamond, so
+		   there is no real designed set to use. Self-hosting the
+		   upstream TTF would restore real small caps. Falls back
 		   through the UI stack when EB Garamond isn't available. */
 		font-family: 'EB Garamond', var(--font-ui);
 		font-size: calc(0.24px * var(--label-size-mult, 1));

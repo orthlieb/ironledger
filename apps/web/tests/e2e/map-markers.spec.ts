@@ -211,7 +211,7 @@ test.describe('Map markers — lifecycle', () => {
 		const style = (rawStyle ?? '').replace(/\s+/g, '');
 		expect(style).toContain('font-weight:800');
 		expect(style).toContain('text-decoration:underline');
-		expect(style).toContain('font-feature-settings:"smcp"');
+		expect(style).toContain('font-variant:small-caps');
 	});
 
 	test('deleting a marker removes it from the map', async ({ page }) => {
