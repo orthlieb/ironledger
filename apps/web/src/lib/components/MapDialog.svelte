@@ -1243,13 +1243,22 @@
 	function labelStyleCss(ls: MapMarker['labelStyle']): string {
 		if (!ls) return '';
 		const parts: string[] = [];
-		// Simonetta loads real 400 + 900 (see .mp-marker-label CSS); bold
-		// uses 900 so the browser paints a distinct heavier face instead
-		// of the synthesised fake-bold Roboto used to give us at 700+.
-		if (ls.bold) parts.push('font-weight:900');
+		// EB Garamond loads real 400 / 700 / 800 (roman + italic — see
+		// app.html); bold uses 800 for maximum weight contrast against
+		// the 400 base while still keeping a real italic face when
+		// bold and italic combine.
+		if (ls.bold) parts.push('font-weight:800');
 		if (ls.italic) parts.push('font-style:italic');
 		if (ls.underline) parts.push('text-decoration:underline');
-		if (ls.case === 'small-caps') parts.push('font-variant:small-caps');
+		// Small caps via the OpenType `smcp` feature. `font-variant:
+		// small-caps` would tell the browser to synthesise them by
+		// scaling full caps if the font doesn't ship a real set —
+		// `font-feature-settings: "smcp"` explicitly asks the font for
+		// its designed small-cap glyphs and falls back to lowercase
+		// when the feature isn't present. EB Garamond ships real small
+		// caps in both roman and italic, so this catches "italic +
+		// small caps" as designed italic small caps too.
+		if (ls.case === 'small-caps') parts.push('font-feature-settings:"smcp"');
 		else if (ls.case === 'uppercase') parts.push('text-transform:uppercase');
 		// Only emit a size override for non-default tiers so labels that
 		// stay at `md` (or omit the field entirely) don't carry a
@@ -2367,16 +2376,14 @@
 		   centered on their anchor point instead of aligning to the far
 		   side of it — so a `left` label overlapped the icon by half its
 		   width.
-		   Font: Simonetta — elegant flowing serif that fits the fantasy-
-		   cartography aesthetic and, more practically, loads REAL 400
-		   and 900 weights (see the Google Fonts URL in app.html). Roboto
-		   here only ships 400/500/600, so any request for 700+ got
-		   browser-synthesised fake bold that read identical to the 600
-		   base and made the label's "Bold" toggle appear to do nothing.
-		   Base 400 + bold 900 gives full weight contrast against a real
-		   font face. Falls back through the UI stack if Simonetta is
-		   ever pruned. */
-		font-family: 'Simonetta', var(--font-ui);
+		   Font: EB Garamond — classic Garamond revival with real bold
+		   (loaded at 400/700/800), true italics for every roman weight
+		   (400/700 italic loaded), and designed small-caps via the
+		   OpenType `smcp` feature (see labelStyleCss — it turns on smcp
+		   through `font-feature-settings` so we get real designed small
+		   caps, not the browser's synthesised scale-down). Falls back
+		   through the UI stack when EB Garamond isn't available. */
+		font-family: 'EB Garamond', var(--font-ui);
 		font-size: calc(0.24px * var(--label-size-mult, 1));
 		font-weight: 400;
 		paint-order: stroke fill;
@@ -2740,10 +2747,10 @@
 		min-width: 32px;
 		height: 32px;
 		padding: 0 8px;
-		/* Simonetta so the B / I / U / Aa / small-caps / AA glyphs
+		/* EB Garamond so the B / I / U / Aa / small-caps / AA glyphs
 		   preview in the same font the marker label renders in. Falls
 		   back through the UI stack. */
-		font-family: 'Simonetta', var(--font-ui);
+		font-family: 'EB Garamond', var(--font-ui);
 		font-size: 0.95rem;
 		color: var(--text);
 		background: var(--bg-control);

@@ -723,7 +723,7 @@
 									aria-label="Bold"
 									disabled={!hasLabel}
 									onclick={() => toggleLabelStyle('bold')}
-									style="font-weight:900">B</button
+									style="font-weight:800">B</button
 								>
 								<button
 									type="button"
