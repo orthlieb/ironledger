@@ -1218,18 +1218,35 @@
 		}
 	}
 
+	/** Multiplier ramp for labelStyle.size. `md` is the default (1×) and
+	 *  emits no override, keeping every pre-sizing marker's persisted row
+	 *  byte-identical. sm / lg / xl scale relative to the base font-size
+	 *  set in .mp-marker-label CSS (mobile 0.48 px, desktop 0.24 px world
+	 *  units at zoom 1). */
+	const LABEL_SIZE_MULT: Record<
+		NonNullable<NonNullable<MapMarker['labelStyle']>['size']>,
+		number
+	> = {
+		sm: 0.75,
+		md: 1,
+		lg: 1.5,
+		xl: 2.25,
+	};
 	function labelStyleCss(ls: MapMarker['labelStyle']): string {
 		if (!ls) return '';
 		const parts: string[] = [];
-		// Base weight is 600 (semi-bold, for legibility against a busy map
-		// background); bumping "bold" to 900 gives an obvious visual
-		// contrast — 700 sat only one step above the base and read
-		// nearly identical in most UI fonts.
+		// Simonetta loads real 400 + 900 (see .mp-marker-label CSS); bold
+		// uses 900 so the browser paints a distinct heavier face instead
+		// of the synthesised fake-bold Roboto used to give us at 700+.
 		if (ls.bold) parts.push('font-weight:900');
 		if (ls.italic) parts.push('font-style:italic');
 		if (ls.underline) parts.push('text-decoration:underline');
 		if (ls.case === 'small-caps') parts.push('font-variant:small-caps');
 		else if (ls.case === 'uppercase') parts.push('text-transform:uppercase');
+		// Only emit a size override for non-default tiers so labels that
+		// stay at `md` (or omit the field entirely) don't carry a
+		// redundant CSS custom property.
+		if (ls.size && ls.size !== 'md') parts.push(`--label-size-mult:${LABEL_SIZE_MULT[ls.size]}`);
 		return parts.join(';');
 	}
 </script>
@@ -2341,10 +2358,19 @@
 		   label to `middle` and made left/right positioned labels sit
 		   centered on their anchor point instead of aligning to the far
 		   side of it — so a `left` label overlapped the icon by half its
-		   width. */
-		font-family: var(--font-ui);
-		font-size: 0.24px;
-		font-weight: 600;
+		   width.
+		   Font: Simonetta — elegant flowing serif that fits the fantasy-
+		   cartography aesthetic and, more practically, loads REAL 400
+		   and 900 weights (see the Google Fonts URL in app.html). Roboto
+		   here only ships 400/500/600, so any request for 700+ got
+		   browser-synthesised fake bold that read identical to the 600
+		   base and made the label's "Bold" toggle appear to do nothing.
+		   Base 400 + bold 900 gives full weight contrast against a real
+		   font face. Falls back through the UI stack if Simonetta is
+		   ever pruned. */
+		font-family: 'Simonetta', var(--font-ui);
+		font-size: calc(0.24px * var(--label-size-mult, 1));
+		font-weight: 400;
 		paint-order: stroke fill;
 		pointer-events: none;
 		/* Halo colour is set inline per marker via `--halo` (haloColor of
@@ -2360,7 +2386,7 @@
 	   doubling in the marker render loop. */
 	@media (max-width: 640px) {
 		.mp-marker-label {
-			font-size: 0.48px;
+			font-size: calc(0.48px * var(--label-size-mult, 1));
 		}
 	}
 	/* Label-only markers (no icon chosen) centre both axes on the point
@@ -2642,20 +2668,29 @@
 		min-width: 7rem;
 	}
 
-	/* Style row is wide (7 buttons + a divider). Position is a narrow
-	   Select whose trigger only shows the arrow glyph (~1 em). Flexing
-	   Style + Position onto one row lets Position ride the tail of the
-	   Style row on desktop and wrap under it on phone widths. */
+	/* Label field: the text input grows to fill the row; Position rides
+	   at the tail as a narrow Select whose trigger only shows the arrow
+	   glyph (~1 em). Position wraps under Label on phone widths when the
+	   flex row can't spare its ~4.5rem tail. */
+	:global(.mp-props-field--label) {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+	/* Style row is wide (7 buttons + a divider). Size (S / M / L / XL)
+	   sits at the tail on the same row so all label-typography controls
+	   live together. */
 	:global(.mp-props-field--style) {
 		flex: 0 0 auto;
 	}
-	/* Position field trigger: the Select shows an arrow glyph (~1 em) plus
-	   the caret + padding, so ~4.5rem gives both room without letting the
-	   trigger fight the Style row's B/I/U cluster for space. */
-	:global(.mp-props-field--position) {
+	/* Position + Size are both narrow Select triggers (arrow glyph or one
+	   or two letters). ~4.5rem gives the trigger + caret + padding room
+	   without letting them fight their row-mates for space. */
+	:global(.mp-props-field--position),
+	:global(.mp-props-field--size) {
 		flex: 0 0 auto;
 	}
-	:global(.mp-props-field--position .bui-select-trigger) {
+	:global(.mp-props-field--position .bui-select-trigger),
+	:global(.mp-props-field--size .bui-select-trigger) {
 		min-width: 4.5rem;
 	}
 
@@ -2697,7 +2732,10 @@
 		min-width: 32px;
 		height: 32px;
 		padding: 0 8px;
-		font-family: var(--font-ui);
+		/* Simonetta so the B / I / U / Aa / small-caps / AA glyphs
+		   preview in the same font the marker label renders in. Falls
+		   back through the UI stack. */
+		font-family: 'Simonetta', var(--font-ui);
 		font-size: 0.95rem;
 		color: var(--text);
 		background: var(--bg-control);

@@ -32,6 +32,7 @@ export interface MapMarker {
     italic?: boolean;
     underline?: boolean;
     case?: 'small-caps' | 'uppercase';
+    size?: 'sm' | 'md' | 'lg' | 'xl';
   };
   /** Compass position of the label relative to the icon. */
   labelPosition?:
