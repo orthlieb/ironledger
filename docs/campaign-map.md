@@ -333,12 +333,11 @@ so cells render exactly square with no letterbox at zoom 1.
 
 Marker labels sit at one of eight compass positions around the icon
 (top / bottom / left / right and the four diagonals), governed by
-`labelPlacement()` in `MapDialog.svelte`. Vertical positions key off
+`labelPlacement()` in `MapDialog.svelte`. Every position keys off
 `dominant-baseline: alphabetic` — unambiguously `y = y` in every
-browser — with a cap-height offset for bottom labels so the visible
-cap top / baseline lands on the gap boundary (`extent + gap`)
-regardless of the label's size (sm / md / lg / xl). Left / right
-labels are horizontally centered on their standoff.
+browser — with a cap-height-derived offset per position so the
+visible glyph edges land at the intended anchor regardless of the
+label's size (sm / md / lg / xl).
 
 - **Top / diagonals-top:** baseline at `y = −straight` → visible
   bottom of caps lands on the gap boundary (descender letters like
@@ -347,8 +346,12 @@ labels are horizontally centered on their standoff.
 - **Bottom / diagonals-bottom:** baseline at `y = +straight + capHeight`
   → visible cap top lands on the gap boundary.
 - **Left / right:** `text-anchor: middle` at `x = ±(straight + hExtra)`
-  → label horizontally centered on the standoff. `dominant-baseline:
-central` keeps the glyph vertical-center on the icon's y-axis.
+  → label horizontally centered on the standoff. Baseline at
+  `y = capHeight/2` so the cap-height vertical center sits on the
+  icon's y-axis. (`dominant-baseline: central` would center the em
+  box instead, and EB Garamond's em is asymmetric around its caps —
+  sTypoAscender 1.007, sTypoDescender 0.298 — so the visible caps
+  would drift ~0.03·fontSize below y=0.)
 
 `capHeight` is a per-font constant — `EB_GARAMOND_CAP_HEIGHT = 0.65`
 in the source, matching `sCapHeight / unitsPerEm` for EB Garamond.
