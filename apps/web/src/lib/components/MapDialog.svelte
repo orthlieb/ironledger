@@ -1168,22 +1168,40 @@
 	// outside the icon's bounding rect (its inner corner is one `gap`
 	// from the icon's corner) rather than straddling it.
 	//
-	// Vertical positions (top/bottom + the four diagonals) subtract a
-	// leading compensation from y: SVG's `dominant-baseline: hanging`
-	// aligns the em-box top (not the cap-height) to y in every major
-	// browser, so a Latin label at y = icon-bottom + gap actually paints
-	// its visible glyph tops another ~15% of font-size below y and the
-	// LABEL_GAP looks bigger than it is. Pull y back by that fraction so
-	// the visible cap top / descender bottom lands where the gap says.
-	// Left / right (`central` baseline) are already glyph-centered on y,
-	// no correction needed.
+	// Vertical positions (top/bottom + the four diagonals) key off the
+	// alphabetic baseline, which every browser agrees is at y=y — no
+	// interpretation of em-box top / hanging line / ascender vs cap
+	// height is involved. `dominant-baseline: hanging` and
+	// `text-after-edge` (the earlier choice) both drift for fonts
+	// whose em-box is larger than their cap+descender extremes; EB
+	// Garamond is one such font (sTypoAscender 1.007, sCapHeight 0.65,
+	// sTypoDescender 0.298), so tuning the leading compensation to
+	// the font is a game of empirical constants that break next
+	// font-swap. `alphabetic` sidesteps that entirely.
+	//
+	//   • Top labels: place the alphabetic baseline at −straight, so
+	//     the visible bottom of the caps lands exactly on the gap
+	//     boundary. Descender-only glyphs (g / p / y) hang a small
+	//     amount below, which reads as intended for a top-anchored
+	//     label rather than as clipping.
+	//   • Bottom labels: place the baseline at +straight + capHeight,
+	//     so the visible cap top lands exactly on the gap boundary.
+	//   • Left / right (`central` baseline): already glyph-centered
+	//     on y, no compensation.
+	//
+	// The cap-height and descender constants are fractions of the
+	// *actual rendered* font-size (base × labelStyle.size multiplier),
+	// so xl labels don't drift outward as they scale up.
 	type LabelPos = NonNullable<MapMarker['labelPosition']>;
 	interface LabelPlacement {
 		x: number;
 		y: number;
 		anchor: 'start' | 'middle' | 'end';
-		baseline: 'text-after-edge' | 'hanging' | 'central';
+		baseline: 'alphabetic' | 'central';
 	}
+	// EB Garamond cap-height = 650 / 1000 units. Swap this if the
+	// label font family changes.
+	const EB_GARAMOND_CAP_HEIGHT = 0.65;
 	function labelPlacement(
 		pos: LabelPos,
 		extent: number,
@@ -1191,13 +1209,9 @@
 		fontSize: number,
 	): LabelPlacement {
 		const straight = extent + gap;
-		const leading = fontSize * 0.15;
-		// For `hanging` (bottom): pull the y coord up by `leading` so the
-		// visible cap top lands at extent+gap below the icon. For
-		// `text-after-edge` (top): push y down by `leading` so the visible
-		// descender bottom lands at extent+gap above the icon.
-		const yBottom = straight - leading;
-		const yTop = -(straight - leading);
+		const capHeight = fontSize * EB_GARAMOND_CAP_HEIGHT;
+		const yTop = -straight;
+		const yBottom = straight + capHeight;
 		// Horizontal labels get a small extra offset: horizontal text next
 		// to a small icon reads visually tighter than the same distance
 		// vertically, and a hair more breathing room brings them in line
@@ -1208,21 +1222,21 @@
 		const xRight = straight + hExtra;
 		switch (pos) {
 			case 'top':
-				return { x: 0, y: yTop, anchor: 'middle', baseline: 'text-after-edge' };
+				return { x: 0, y: yTop, anchor: 'middle', baseline: 'alphabetic' };
 			case 'bottom':
-				return { x: 0, y: yBottom, anchor: 'middle', baseline: 'hanging' };
+				return { x: 0, y: yBottom, anchor: 'middle', baseline: 'alphabetic' };
 			case 'left':
 				return { x: xLeft, y: 0, anchor: 'end', baseline: 'central' };
 			case 'right':
 				return { x: xRight, y: 0, anchor: 'start', baseline: 'central' };
 			case 'top-left':
-				return { x: -straight, y: yTop, anchor: 'end', baseline: 'text-after-edge' };
+				return { x: -straight, y: yTop, anchor: 'end', baseline: 'alphabetic' };
 			case 'top-right':
-				return { x: straight, y: yTop, anchor: 'start', baseline: 'text-after-edge' };
+				return { x: straight, y: yTop, anchor: 'start', baseline: 'alphabetic' };
 			case 'bottom-left':
-				return { x: -straight, y: yBottom, anchor: 'end', baseline: 'hanging' };
+				return { x: -straight, y: yBottom, anchor: 'end', baseline: 'alphabetic' };
 			case 'bottom-right':
-				return { x: straight, y: yBottom, anchor: 'start', baseline: 'hanging' };
+				return { x: straight, y: yBottom, anchor: 'start', baseline: 'alphabetic' };
 		}
 	}
 
@@ -1606,7 +1620,7 @@
 											m.labelPosition ?? 'bottom',
 											iconExtent / 2,
 											LABEL_GAP,
-											LABEL_FONT_SIZE,
+											LABEL_FONT_SIZE * LABEL_SIZE_MULT[m.labelStyle?.size ?? 'md'],
 										)}
 										<text
 											class="mp-marker-label"

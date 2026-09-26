@@ -1,0 +1,733 @@
+<title>Label Standoffs</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link
+  rel="stylesheet"
+  href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,700;0,800;1,400;1,700;1,800&family=Roboto:wght@400;500;600&display=swap"
+/>
+<style>
+  :root {
+    --bg: #f4efe4;
+    --surface: #ffffff;
+    --surface-2: #f0e6cc;
+    --ink: #1a1611;
+    --ink-2: #4a4237;
+    --rule: #d9cfb6;
+    --rule-strong: #a5987a;
+    --amber: #b06a10;
+    --amber-2: #d69538;
+    --dim: #877962;
+    color-scheme: light;
+  }
+  :root:not([data-theme='light']) {
+    @media (prefers-color-scheme: dark) {
+      --bg: #0f0e0c;
+      --surface: #1a1815;
+      --surface-2: #f0e6cc;
+      --ink: #eae3d1;
+      --ink-2: #b5ab94;
+      --rule: #2b2822;
+      --rule-strong: #4a4438;
+      --amber: #e0a030;
+      --amber-2: #f2c169;
+      --dim: #7a7060;
+    }
+  }
+  :root[data-theme='dark'] {
+    --bg: #0f0e0c;
+    --surface: #1a1815;
+    --surface-2: #f0e6cc;
+    --ink: #eae3d1;
+    --ink-2: #b5ab94;
+    --rule: #2b2822;
+    --rule-strong: #4a4438;
+    --amber: #e0a030;
+    --amber-2: #f2c169;
+    --dim: #7a7060;
+    color-scheme: dark;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme='light']) {
+      color-scheme: dark;
+    }
+  }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Roboto', system-ui, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .page {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 32px 16px 48px;
+  }
+  header {
+    margin-bottom: 32px;
+  }
+  h1 {
+    font-family: 'EB Garamond', 'Palatino Linotype', Georgia, serif;
+    font-weight: 800;
+    font-size: clamp(1.9rem, 4vw, 2.7rem);
+    letter-spacing: -0.005em;
+    margin: 0 0 6px;
+    text-wrap: balance;
+  }
+  .subtitle {
+    color: var(--ink-2);
+    font-size: 15px;
+    max-width: 66ch;
+    margin: 0;
+  }
+  .subtitle code {
+    font-family: ui-monospace, 'Roboto Mono', monospace;
+    font-size: 13px;
+    background: color-mix(in srgb, var(--amber) 12%, transparent);
+    color: var(--amber);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 24px;
+  }
+  @media (max-width: 780px) {
+    .panels {
+      grid-template-columns: 1fr;
+    }
+  }
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .panel-head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--rule);
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .panel-head h2 {
+    font-family: 'EB Garamond', 'Palatino Linotype', Georgia, serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    margin: 0;
+    letter-spacing: 0.005em;
+  }
+  .panel-head .meta {
+    color: var(--dim);
+    font-size: 12px;
+    font-family: ui-monospace, 'Roboto Mono', monospace;
+    letter-spacing: -0.01em;
+  }
+
+  .diagram {
+    background: var(--surface-2);
+    aspect-ratio: 1 / 1;
+    display: block;
+  }
+
+  /* Diagram SVG typography — EB Garamond (matches the app). */
+  .diagram text.label {
+    font-family: 'EB Garamond', 'Palatino Linotype', Georgia, serif;
+    font-weight: 400;
+    fill: #1a1611;
+    paint-order: stroke fill;
+    stroke: #ffffff;
+    stroke-width: 0.02;
+    stroke-linejoin: round;
+  }
+  .diagram text.annot {
+    font-family: 'Roboto', system-ui, sans-serif;
+    font-weight: 500;
+    font-size: 0.09px;
+    fill: #b06a10;
+  }
+  .diagram .box {
+    fill: none;
+    stroke: #a5987a;
+    stroke-width: 0.014;
+    stroke-dasharray: 0.05 0.04;
+  }
+  .diagram .icon {
+    fill: #1a1611;
+  }
+  .diagram .anchor {
+    fill: #b06a10;
+  }
+  .diagram .standoff {
+    stroke: #b06a10;
+    stroke-width: 0.014;
+  }
+  .diagram .scale-bar {
+    stroke: #4a4237;
+    stroke-width: 0.014;
+  }
+  .diagram text.scale-label {
+    font-family: 'Roboto', system-ui, sans-serif;
+    font-size: 0.08px;
+    fill: #4a4237;
+  }
+
+  /* Table below each SVG — real numbers behind the drawing. */
+  .data {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 12px;
+    font-variant-numeric: tabular-nums;
+  }
+  .data th,
+  .data td {
+    padding: 6px 12px;
+    text-align: left;
+    border-top: 1px solid var(--rule);
+  }
+  .data th {
+    font-weight: 600;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--dim);
+    background: color-mix(in srgb, var(--rule) 40%, transparent);
+  }
+  .data td.pos {
+    font-family: 'EB Garamond', 'Palatino Linotype', Georgia, serif;
+    font-weight: 800;
+    color: var(--amber);
+  }
+  .data td.num {
+    font-family: ui-monospace, 'Roboto Mono', monospace;
+    text-align: right;
+  }
+  .data td.kw {
+    color: var(--ink-2);
+    font-family: ui-monospace, 'Roboto Mono', monospace;
+    font-size: 11px;
+  }
+
+  .legend {
+    margin-top: 28px;
+    padding: 16px 18px;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    font-size: 13px;
+    color: var(--ink-2);
+  }
+  .legend h3 {
+    font-family: 'EB Garamond', 'Palatino Linotype', Georgia, serif;
+    font-weight: 800;
+    font-size: 1.15rem;
+    margin: 0 0 8px;
+    color: var(--ink);
+  }
+  .legend ul {
+    margin: 0;
+    padding-left: 20px;
+  }
+  .legend li {
+    margin-bottom: 4px;
+  }
+  .legend code {
+    font-family: ui-monospace, 'Roboto Mono', monospace;
+    font-size: 12px;
+    color: var(--amber);
+  }
+  .swatch {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    border-radius: 2px;
+    vertical-align: middle;
+    margin-right: 4px;
+  }
+</style>
+
+<div class="page">
+  <header>
+    <h1>Marker Label Standoffs</h1>
+    <p class="subtitle">
+      All eight compass positions, drawn at the exact world-unit offsets
+      <code>labelPlacement()</code> produces. Top / bottom labels key off
+      <code>dominant-baseline: alphabetic</code> — the alphabetic baseline is unambiguously
+      <code>y = y</code> in every browser — with a cap-height offset (0.65 × fontSize for EB
+      Garamond) so the visible cap top or baseline lands exactly on the gap boundary regardless of
+      font-size (sm → xl).
+    </p>
+  </header>
+
+  <section class="panels">
+    <!-- =============== MOBILE =============== -->
+    <article class="panel">
+      <div class="panel-head">
+        <h2>Mobile</h2>
+        <span class="meta">ICON_SIZE 0.84375 · LABEL_GAP 0.125 · font 0.48 · capHeight 0.312</span>
+      </div>
+      <svg
+        class="diagram"
+        viewBox="-1.8 -1.8 3.6 3.6"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-labelledby="mobile-desc"
+      >
+        <desc id="mobile-desc">
+          Mobile viewport. Icon bounding box 0.84375 world units wide; sample label positioned at
+          each of the 8 compass points.
+        </desc>
+        <rect class="box" x="-0.421875" y="-0.421875" width="0.84375" height="0.84375" rx="0.06" />
+        <circle class="icon" cx="0" cy="0" r="0.28" />
+        <circle cx="0" cy="0" r="0.12" fill="#f0e6cc" />
+
+        <!-- straight = extent + gap = 0.421875 + 0.125 = 0.546875
+				     capHeight = 0.48 × 0.65 = 0.312
+				     Top labels: baseline sits at y = -straight (visible bottom
+				     of caps lands on the gap boundary).
+				     Bottom labels: baseline sits at y = straight + capHeight
+				     (visible cap top lands on the gap boundary). -->
+
+        <!-- TOP -->
+        <line class="standoff" x1="0" y1="-0.421875" x2="0" y2="-0.546875" />
+        <circle class="anchor" cx="0" cy="-0.546875" r="0.02" />
+        <text
+          class="label"
+          x="0"
+          y="-0.546875"
+          font-size="0.48"
+          text-anchor="middle"
+          dominant-baseline="alphabetic"
+        >
+          top
+        </text>
+
+        <!-- BOTTOM -->
+        <line class="standoff" x1="0" y1="0.421875" x2="0" y2="0.546875" />
+        <circle class="anchor" cx="0" cy="0.546875" r="0.02" />
+        <text
+          class="label"
+          x="0"
+          y="0.858875"
+          font-size="0.48"
+          text-anchor="middle"
+          dominant-baseline="alphabetic"
+        >
+          bottom
+        </text>
+
+        <!-- LEFT (nudged 0.03 further left) -->
+        <line class="standoff" x1="-0.421875" y1="0" x2="-0.576875" y2="0" />
+        <circle class="anchor" cx="-0.576875" cy="0" r="0.02" />
+        <text
+          class="label"
+          x="-0.576875"
+          y="0"
+          font-size="0.48"
+          text-anchor="end"
+          dominant-baseline="central"
+        >
+          left
+        </text>
+
+        <!-- RIGHT (nudged 0.03 further right) -->
+        <line class="standoff" x1="0.421875" y1="0" x2="0.576875" y2="0" />
+        <circle class="anchor" cx="0.576875" cy="0" r="0.02" />
+        <text
+          class="label"
+          x="0.576875"
+          y="0"
+          font-size="0.48"
+          text-anchor="start"
+          dominant-baseline="central"
+        >
+          right
+        </text>
+
+        <!-- TOP-LEFT -->
+        <line class="standoff" x1="-0.298" y1="-0.298" x2="-0.546875" y2="-0.546875" />
+        <circle class="anchor" cx="-0.546875" cy="-0.546875" r="0.02" />
+        <text
+          class="label"
+          x="-0.546875"
+          y="-0.546875"
+          font-size="0.48"
+          text-anchor="end"
+          dominant-baseline="alphabetic"
+        >
+          top-left
+        </text>
+
+        <!-- TOP-RIGHT -->
+        <line class="standoff" x1="0.298" y1="-0.298" x2="0.546875" y2="-0.546875" />
+        <circle class="anchor" cx="0.546875" cy="-0.546875" r="0.02" />
+        <text
+          class="label"
+          x="0.546875"
+          y="-0.546875"
+          font-size="0.48"
+          text-anchor="start"
+          dominant-baseline="alphabetic"
+        >
+          top-right
+        </text>
+
+        <!-- BOTTOM-LEFT -->
+        <line class="standoff" x1="-0.298" y1="0.298" x2="-0.546875" y2="0.546875" />
+        <circle class="anchor" cx="-0.546875" cy="0.546875" r="0.02" />
+        <text
+          class="label"
+          x="-0.546875"
+          y="0.858875"
+          font-size="0.48"
+          text-anchor="end"
+          dominant-baseline="alphabetic"
+        >
+          bottom-left
+        </text>
+
+        <!-- BOTTOM-RIGHT -->
+        <line class="standoff" x1="0.298" y1="0.298" x2="0.546875" y2="0.546875" />
+        <circle class="anchor" cx="0.546875" cy="0.546875" r="0.02" />
+        <text
+          class="label"
+          x="0.546875"
+          y="0.858875"
+          font-size="0.48"
+          text-anchor="start"
+          dominant-baseline="alphabetic"
+        >
+          bottom-right
+        </text>
+
+        <g transform="translate(-1.55, 1.55)">
+          <line class="scale-bar" x1="0" y1="0" x2="0.5" y2="0" />
+          <line class="scale-bar" x1="0" y1="-0.04" x2="0" y2="0.04" />
+          <line class="scale-bar" x1="0.5" y1="-0.04" x2="0.5" y2="0.04" />
+          <text class="scale-label" x="0.25" y="-0.08" text-anchor="middle">0.5 world units</text>
+        </g>
+      </svg>
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Position</th>
+            <th class="num">x</th>
+            <th class="num">y</th>
+            <th>anchor</th>
+            <th>baseline</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="pos">top</td>
+            <td class="num">0</td>
+            <td class="num">−0.547</td>
+            <td class="kw">middle</td>
+            <td class="kw">alphabetic</td>
+          </tr>
+          <tr>
+            <td class="pos">bottom</td>
+            <td class="num">0</td>
+            <td class="num">0.859</td>
+            <td class="kw">middle</td>
+            <td class="kw">alphabetic</td>
+          </tr>
+          <tr>
+            <td class="pos">left</td>
+            <td class="num">−0.577</td>
+            <td class="num">0</td>
+            <td class="kw">end</td>
+            <td class="kw">central</td>
+          </tr>
+          <tr>
+            <td class="pos">right</td>
+            <td class="num">0.577</td>
+            <td class="num">0</td>
+            <td class="kw">start</td>
+            <td class="kw">central</td>
+          </tr>
+          <tr>
+            <td class="pos">top-left</td>
+            <td class="num">−0.547</td>
+            <td class="num">−0.547</td>
+            <td class="kw">end</td>
+            <td class="kw">alphabetic</td>
+          </tr>
+          <tr>
+            <td class="pos">top-right</td>
+            <td class="num">0.547</td>
+            <td class="num">−0.547</td>
+            <td class="kw">start</td>
+            <td class="kw">alphabetic</td>
+          </tr>
+          <tr>
+            <td class="pos">bottom-left</td>
+            <td class="num">−0.547</td>
+            <td class="num">0.859</td>
+            <td class="kw">end</td>
+            <td class="kw">alphabetic</td>
+          </tr>
+          <tr>
+            <td class="pos">bottom-right</td>
+            <td class="num">0.547</td>
+            <td class="num">0.859</td>
+            <td class="kw">start</td>
+            <td class="kw">alphabetic</td>
+          </tr>
+        </tbody>
+      </table>
+    </article>
+
+    <!-- =============== DESKTOP =============== -->
+    <article class="panel">
+      <div class="panel-head">
+        <h2>Desktop</h2>
+        <span class="meta">ICON_SIZE 0.421875 · LABEL_GAP 0.075 · font 0.24 · capHeight 0.156</span>
+      </div>
+      <svg
+        class="diagram"
+        viewBox="-1.8 -1.8 3.6 3.6"
+        xmlns="http://www.w3.org/2000/svg"
+        aria-labelledby="desktop-desc"
+      >
+        <desc id="desktop-desc">Desktop viewport. Same shape as mobile at exactly half scale.</desc>
+        <rect
+          class="box"
+          x="-0.2109375"
+          y="-0.2109375"
+          width="0.421875"
+          height="0.421875"
+          rx="0.03"
+        />
+        <circle class="icon" cx="0" cy="0" r="0.14" />
+        <circle cx="0" cy="0" r="0.06" fill="#f0e6cc" />
+
+        <!-- straight = 0.210937 + 0.075 = 0.285937
+				     capHeight = 0.24 × 0.65 = 0.156 -->
+
+        <!-- TOP -->
+        <line class="standoff" x1="0" y1="-0.210937" x2="0" y2="-0.285937" />
+        <circle class="anchor" cx="0" cy="-0.285937" r="0.014" />
+        <text
+          class="label"
+          x="0"
+          y="-0.285937"
+          font-size="0.24"
+          text-anchor="middle"
+          dominant-baseline="alphabetic"
+        >
+          top
+        </text>
+
+        <!-- BOTTOM -->
+        <line class="standoff" x1="0" y1="0.210937" x2="0" y2="0.285937" />
+        <circle class="anchor" cx="0" cy="0.285937" r="0.014" />
+        <text
+          class="label"
+          x="0"
+          y="0.441937"
+          font-size="0.24"
+          text-anchor="middle"
+          dominant-baseline="alphabetic"
+        >
+          bottom
+        </text>
+
+        <!-- LEFT -->
+        <line class="standoff" x1="-0.210937" y1="0" x2="-0.315937" y2="0" />
+        <circle class="anchor" cx="-0.315937" cy="0" r="0.014" />
+        <text
+          class="label"
+          x="-0.315937"
+          y="0"
+          font-size="0.24"
+          text-anchor="end"
+          dominant-baseline="central"
+        >
+          left
+        </text>
+
+        <!-- RIGHT -->
+        <line class="standoff" x1="0.210937" y1="0" x2="0.315937" y2="0" />
+        <circle class="anchor" cx="0.315937" cy="0" r="0.014" />
+        <text
+          class="label"
+          x="0.315937"
+          y="0"
+          font-size="0.24"
+          text-anchor="start"
+          dominant-baseline="central"
+        >
+          right
+        </text>
+
+        <!-- TOP-LEFT -->
+        <line class="standoff" x1="-0.149" y1="-0.149" x2="-0.285937" y2="-0.285937" />
+        <circle class="anchor" cx="-0.285937" cy="-0.285937" r="0.014" />
+        <text
+          class="label"
+          x="-0.285937"
+          y="-0.285937"
+          font-size="0.24"
+          text-anchor="end"
+          dominant-baseline="alphabetic"
+        >
+          top-left
+        </text>
+
+        <!-- TOP-RIGHT -->
+        <line class="standoff" x1="0.149" y1="-0.149" x2="0.285937" y2="-0.285937" />
+        <circle class="anchor" cx="0.285937" cy="-0.285937" r="0.014" />
+        <text
+          class="label"
+          x="0.285937"
+          y="-0.285937"
+          font-size="0.24"
+          text-anchor="start"
+          dominant-baseline="alphabetic"
+        >
+          top-right
+        </text>
+
+        <!-- BOTTOM-LEFT -->
+        <line class="standoff" x1="-0.149" y1="0.149" x2="-0.285937" y2="0.285937" />
+        <circle class="anchor" cx="-0.285937" cy="0.285937" r="0.014" />
+        <text
+          class="label"
+          x="-0.285937"
+          y="0.441937"
+          font-size="0.24"
+          text-anchor="end"
+          dominant-baseline="alphabetic"
+        >
+          bottom-left
+        </text>
+
+        <!-- BOTTOM-RIGHT -->
+        <line class="standoff" x1="0.149" y1="0.149" x2="0.285937" y2="0.285937" />
+        <circle class="anchor" cx="0.285937" cy="0.285937" r="0.014" />
+        <text
+          class="label"
+          x="0.285937"
+          y="0.441937"
+          font-size="0.24"
+          text-anchor="start"
+          dominant-baseline="alphabetic"
+        >
+          bottom-right
+        </text>
+
+        <g transform="translate(-1.55, 1.55)">
+          <line class="scale-bar" x1="0" y1="0" x2="0.5" y2="0" />
+          <line class="scale-bar" x1="0" y1="-0.04" x2="0" y2="0.04" />
+          <line class="scale-bar" x1="0.5" y1="-0.04" x2="0.5" y2="0.04" />
+          <text class="scale-label" x="0.25" y="-0.08" text-anchor="middle">0.5 world units</text>
+        </g>
+      </svg>
+      <table class="data">
+        <thead>
+          <tr>
+            <th>Position</th>
+            <th class="num">x</th>
+            <th class="num">y</th>
+            <th>anchor</th>
+            <th>baseline</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td class="pos">top</td>
+            <td class="num">0</td>
+            <td class="num">−0.286</td>
+            <td class="kw">middle</td>
+            <td class="kw">alphabetic</td>
+          </tr>
+          <tr>
+            <td class="pos">bottom</td>
+            <td class="num">0</td>
+            <td class="num">0.442</td>
+            <td class="kw">middle</td>
+            <td class="kw">alphabetic</td>
+          </tr>
+          <tr>
+            <td class="pos">left</td>
+            <td class="num">−0.316</td>
+            <td class="num">0</td>
+            <td class="kw">end</td>
+            <td class="kw">central</td>
+          </tr>
+          <tr>
+            <td class="pos">right</td>
+            <td class="num">0.316</td>
+            <td class="num">0</td>
+            <td class="kw">start</td>
+            <td class="kw">central</td>
+          </tr>
+          <tr>
+            <td class="pos">top-left</td>
+            <td class="num">−0.286</td>
+            <td class="num">−0.286</td>
+            <td class="kw">end</td>
+            <td class="kw">alphabetic</td>
+          </tr>
+          <tr>
+            <td class="pos">top-right</td>
+            <td class="num">0.286</td>
+            <td class="num">−0.286</td>
+            <td class="kw">start</td>
+            <td class="kw">alphabetic</td>
+          </tr>
+          <tr>
+            <td class="pos">bottom-left</td>
+            <td class="num">−0.286</td>
+            <td class="num">0.442</td>
+            <td class="kw">end</td>
+            <td class="kw">alphabetic</td>
+          </tr>
+          <tr>
+            <td class="pos">bottom-right</td>
+            <td class="num">0.286</td>
+            <td class="num">0.442</td>
+            <td class="kw">start</td>
+            <td class="kw">alphabetic</td>
+          </tr>
+        </tbody>
+      </table>
+    </article>
+  </section>
+
+  <section class="legend">
+    <h3>Reading the diagram</h3>
+    <ul>
+      <li>
+        <span class="swatch" style="background: #a5987a"></span>
+        <strong>Dashed square</strong> — the icon's bounding box (side = <code>ICON_SIZE</code>).
+        All standoffs are measured from this edge.
+      </li>
+      <li>
+        <span class="swatch" style="background: #b06a10"></span>
+        <strong>Amber line + dot</strong> — the standoff (icon edge → gap boundary at
+        <code>extent + gap</code>). The label's closest visible edge lands on the dot: the baseline
+        for top labels (so caps sit above), the cap top for bottom labels (so text sits below), and
+        the vertical center for left / right. Descenders on top-labels (the <code>p</code> in
+        <em>top</em>) intentionally hang a hair into the gap — that reads as a top-anchored label,
+        not as clipping.
+      </li>
+      <li>
+        <strong>Both diagrams share one viewBox</strong> (3.6 × 3.6 world units), so the desktop
+        marker visibly renders at half the mobile size — the constants scale in lockstep. Compare
+        each diagram's 0.5-unit scale bar to see it at a glance.
+      </li>
+      <li>
+        <strong>Cap-height constant</strong> is EB Garamond's
+        <code>sCapHeight / unitsPerEm = 650 / 1000 = 0.65</code>. Change the label font and this
+        constant needs to change with it — the app's <code>EB_GARAMOND_CAP_HEIGHT</code> is where it
+        lives.
+      </li>
+    </ul>
+  </section>
+</div>

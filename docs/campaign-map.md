@@ -329,6 +329,35 @@ so cells render exactly square with no letterbox at zoom 1.
      for the halo. `ICON_SIZE = 0.75` world units (three-quarters of a
      cell) — scales with zoom because icons are part of the annotation.
 
+### Label placement
+
+Marker labels sit at one of eight compass positions around the icon
+(top / bottom / left / right and the four diagonals), governed by
+`labelPlacement()` in `MapDialog.svelte`. Vertical positions key off
+`dominant-baseline: alphabetic` — the alphabetic baseline is
+unambiguously `y = y` in every browser — with a cap-height offset so
+the visible cap top or baseline lands exactly on the gap boundary
+(`extent + gap`) regardless of the label's size (sm / md / lg / xl).
+
+- **Top / diagonals-top:** baseline at `y = −straight` → visible bottom
+  of caps lands on the gap boundary (descender letters like `g` hang a
+  hair below on purpose — reads as top-anchored, not as clipping).
+- **Bottom / diagonals-bottom:** baseline at `y = +straight + capHeight`
+  → visible cap top lands on the gap boundary.
+- **Left / right:** `central` baseline, already glyph-centered on `y`.
+
+`capHeight` is a per-font constant — `EB_GARAMOND_CAP_HEIGHT = 0.65`
+in the source, matching `sCapHeight / unitsPerEm` for EB Garamond.
+Change the label font family and this constant needs to change with
+it.
+
+See [`docs/label-standoffs.html`](./label-standoffs.html) for a
+visual reference: both mobile and desktop viewports, all eight
+positions, drawn at the exact world-unit offsets `labelPlacement()`
+produces. Open it in a browser (or the published copy at
+<https://claude.ai/artifact/RV3MKR2mCFZYxrWjuiz6pC>) when tuning the
+constants.
+
 ## Interaction
 
 The dialog stacks two toolbars above the map canvas: a file/export
