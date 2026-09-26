@@ -1198,15 +1198,23 @@
 		// descender bottom lands at extent+gap above the icon.
 		const yBottom = straight - leading;
 		const yTop = -(straight - leading);
+		// Horizontal labels get a small extra offset: horizontal text next
+		// to a small icon reads visually tighter than the same distance
+		// vertically, and a hair more breathing room brings them in line
+		// with how top / bottom feel. Empirically matched against the
+		// label-standoffs reference diagram.
+		const hExtra = 0.03;
+		const xLeft = -(straight + hExtra);
+		const xRight = straight + hExtra;
 		switch (pos) {
 			case 'top':
 				return { x: 0, y: yTop, anchor: 'middle', baseline: 'text-after-edge' };
 			case 'bottom':
 				return { x: 0, y: yBottom, anchor: 'middle', baseline: 'hanging' };
 			case 'left':
-				return { x: -straight, y: 0, anchor: 'end', baseline: 'central' };
+				return { x: xLeft, y: 0, anchor: 'end', baseline: 'central' };
 			case 'right':
-				return { x: straight, y: 0, anchor: 'start', baseline: 'central' };
+				return { x: xRight, y: 0, anchor: 'start', baseline: 'central' };
 			case 'top-left':
 				return { x: -straight, y: yTop, anchor: 'end', baseline: 'text-after-edge' };
 			case 'top-right':
