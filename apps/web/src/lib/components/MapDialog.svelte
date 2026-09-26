@@ -1172,26 +1172,27 @@
 	// alphabetic baseline, which every browser agrees is at y=y — no
 	// interpretation of em-box top / hanging line / ascender vs cap
 	// height is involved. `dominant-baseline: hanging` and
-	// `text-after-edge` (the earlier choice) both drift for fonts
-	// whose em-box is larger than their cap+descender extremes; EB
-	// Garamond is one such font (sTypoAscender 1.007, sCapHeight 0.65,
-	// sTypoDescender 0.298), so tuning the leading compensation to
-	// the font is a game of empirical constants that break next
-	// font-swap. `alphabetic` sidesteps that entirely.
+	// `text-after-edge` (an earlier choice) both drift for fonts whose
+	// em-box is larger than their cap+descender extremes (EB Garamond
+	// is one such: sTypoAscender 1.007, sCapHeight 0.65). `alphabetic`
+	// sidesteps that entirely.
 	//
-	//   • Top labels: place the alphabetic baseline at −straight, so
-	//     the visible bottom of the caps lands exactly on the gap
-	//     boundary. Descender-only glyphs (g / p / y) hang a small
-	//     amount below, which reads as intended for a top-anchored
-	//     label rather than as clipping.
-	//   • Bottom labels: place the baseline at +straight + capHeight,
-	//     so the visible cap top lands exactly on the gap boundary.
+	// The label's cap CENTER lands on the gap boundary (extent + gap),
+	// so a top or bottom label appears vertically centered on its
+	// standoff line — half the caps sit inside the gap area toward the
+	// icon, half beyond it. This gives labels a "floating on the
+	// standoff" look instead of "sitting on top of it".
+	//
+	//   • Top labels: baseline at y = −straight + capHeight/2 so
+	//     capCenter = −straight.
+	//   • Bottom labels: baseline at y = +straight + capHeight/2 so
+	//     capCenter = +straight.
 	//   • Left / right (`central` baseline): already glyph-centered
 	//     on y, no compensation.
 	//
-	// The cap-height and descender constants are fractions of the
-	// *actual rendered* font-size (base × labelStyle.size multiplier),
-	// so xl labels don't drift outward as they scale up.
+	// The cap-height constant is a fraction of the *actual rendered*
+	// font-size (base × labelStyle.size multiplier), so xl labels don't
+	// drift outward as they scale up.
 	type LabelPos = NonNullable<MapMarker['labelPosition']>;
 	interface LabelPlacement {
 		x: number;
@@ -1209,9 +1210,9 @@
 		fontSize: number,
 	): LabelPlacement {
 		const straight = extent + gap;
-		const capHeight = fontSize * EB_GARAMOND_CAP_HEIGHT;
-		const yTop = -straight;
-		const yBottom = straight + capHeight;
+		const capHalf = (fontSize * EB_GARAMOND_CAP_HEIGHT) / 2;
+		const yTop = -straight + capHalf;
+		const yBottom = straight + capHalf;
 		// Horizontal labels get a small extra offset: horizontal text next
 		// to a small icon reads visually tighter than the same distance
 		// vertically, and a hair more breathing room brings them in line

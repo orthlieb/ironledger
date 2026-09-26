@@ -335,15 +335,18 @@ Marker labels sit at one of eight compass positions around the icon
 (top / bottom / left / right and the four diagonals), governed by
 `labelPlacement()` in `MapDialog.svelte`. Vertical positions key off
 `dominant-baseline: alphabetic` — the alphabetic baseline is
-unambiguously `y = y` in every browser — with a cap-height offset so
-the visible cap top or baseline lands exactly on the gap boundary
-(`extent + gap`) regardless of the label's size (sm / md / lg / xl).
+unambiguously `y = y` in every browser — with a half-cap-height
+offset so the vertical **center of the caps** lands on the gap
+boundary (`extent + gap`) regardless of the label's size (sm / md /
+lg / xl). Top and bottom labels therefore straddle their standoff
+line: half the cap height sits inside the gap area toward the icon,
+half beyond it. Reads as "label floats on the standoff" rather than
+"label sits on top of the standoff".
 
-- **Top / diagonals-top:** baseline at `y = −straight` → visible bottom
-  of caps lands on the gap boundary (descender letters like `g` hang a
-  hair below on purpose — reads as top-anchored, not as clipping).
-- **Bottom / diagonals-bottom:** baseline at `y = +straight + capHeight`
-  → visible cap top lands on the gap boundary.
+- **Top / diagonals-top:** baseline at `y = −straight + capHeight/2`
+  → cap center at `−straight`.
+- **Bottom / diagonals-bottom:** baseline at `y = +straight + capHeight/2`
+  → cap center at `+straight`.
 - **Left / right:** `central` baseline, already glyph-centered on `y`.
 
 `capHeight` is a per-font constant — `EB_GARAMOND_CAP_HEIGHT = 0.65`
