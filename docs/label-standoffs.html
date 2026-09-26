@@ -250,11 +250,11 @@
     <h1>Marker Label Standoffs</h1>
     <p class="subtitle">
       All eight compass positions, drawn at the exact world-unit offsets
-      <code>labelPlacement()</code> produces. Top / bottom labels key off
-      <code>dominant-baseline: alphabetic</code> with a half-cap-height offset — the vertical
-      <strong>center of the caps</strong> lands on the gap boundary, so the label straddles its
-      standoff line (half the cap sits inside the gap area, half beyond it). Left / right stay on
-      <code>central</code>.
+      <code>labelPlacement()</code> produces. Top / bottom / diagonals use
+      <code>dominant-baseline: alphabetic</code> so the visible cap top (or baseline) sits on the
+      gap boundary. Left / right are horizontally centered on their standoff (<code
+        >text-anchor: middle</code
+      >) with <code>central</code> baseline.
     </p>
   </header>
 
@@ -263,7 +263,7 @@
     <article class="panel">
       <div class="panel-head">
         <h2>Mobile</h2>
-        <span class="meta">ICON_SIZE 0.84375 · LABEL_GAP 0.125 · font 0.48 · capHalf 0.156</span>
+        <span class="meta">ICON_SIZE 0.84375 · LABEL_GAP 0.125 · font 0.48 · capHeight 0.312</span>
       </div>
       <svg
         class="diagram"
@@ -272,17 +272,17 @@
         aria-labelledby="mobile-desc"
       >
         <desc id="mobile-desc">
-          Mobile viewport. Icon bounding box 0.84375 world units wide; sample label positioned at
-          each of the 8 compass points with cap-center at the standoff.
+          Mobile viewport. Icon bounding box 0.84375 world units wide; sample label at each of the 8
+          compass points.
         </desc>
         <rect class="box" x="-0.421875" y="-0.421875" width="0.84375" height="0.84375" rx="0.06" />
         <circle class="icon" cx="0" cy="0" r="0.28" />
         <circle cx="0" cy="0" r="0.12" fill="#f0e6cc" />
 
         <!-- straight = extent + gap = 0.421875 + 0.125 = 0.546875
-				     capHeight = 0.48 × 0.65 = 0.312 → capHalf = 0.156
-				     Top labels: baseline at y = -straight + capHalf = -0.390875 → capCenter at -straight.
-				     Bottom labels: baseline at y = +straight + capHalf = +0.702875 → capCenter at +straight. -->
+				     capHeight = 0.48 × 0.65 = 0.312
+				     Top: baseline at y = -straight → visible bottom of caps at the boundary.
+				     Bottom: baseline at y = +straight + capHeight → cap top at the boundary. -->
 
         <!-- TOP -->
         <line class="standoff" x1="0" y1="-0.421875" x2="0" y2="-0.546875" />
@@ -290,12 +290,12 @@
         <text
           class="label"
           x="0"
-          y="-0.390875"
+          y="-0.546875"
           font-size="0.48"
           text-anchor="middle"
           dominant-baseline="alphabetic"
         >
-          top
+          TOP
         </text>
 
         <!-- BOTTOM -->
@@ -304,15 +304,15 @@
         <text
           class="label"
           x="0"
-          y="0.702875"
+          y="0.858875"
           font-size="0.48"
           text-anchor="middle"
           dominant-baseline="alphabetic"
         >
-          bottom
+          BOTTOM
         </text>
 
-        <!-- LEFT (nudged 0.03 further left) -->
+        <!-- LEFT (nudged 0.03 further left, then horizontally centered on that x) -->
         <line class="standoff" x1="-0.421875" y1="0" x2="-0.576875" y2="0" />
         <circle class="anchor" cx="-0.576875" cy="0" r="0.02" />
         <text
@@ -320,13 +320,13 @@
           x="-0.576875"
           y="0"
           font-size="0.48"
-          text-anchor="end"
+          text-anchor="middle"
           dominant-baseline="central"
         >
-          left
+          LEFT
         </text>
 
-        <!-- RIGHT (nudged 0.03 further right) -->
+        <!-- RIGHT -->
         <line class="standoff" x1="0.421875" y1="0" x2="0.576875" y2="0" />
         <circle class="anchor" cx="0.576875" cy="0" r="0.02" />
         <text
@@ -334,10 +334,10 @@
           x="0.576875"
           y="0"
           font-size="0.48"
-          text-anchor="start"
+          text-anchor="middle"
           dominant-baseline="central"
         >
-          right
+          RIGHT
         </text>
 
         <!-- TOP-LEFT -->
@@ -346,12 +346,12 @@
         <text
           class="label"
           x="-0.546875"
-          y="-0.390875"
+          y="-0.546875"
           font-size="0.48"
           text-anchor="end"
           dominant-baseline="alphabetic"
         >
-          top-left
+          TOP-LEFT
         </text>
 
         <!-- TOP-RIGHT -->
@@ -360,12 +360,12 @@
         <text
           class="label"
           x="0.546875"
-          y="-0.390875"
+          y="-0.546875"
           font-size="0.48"
           text-anchor="start"
           dominant-baseline="alphabetic"
         >
-          top-right
+          TOP-RIGHT
         </text>
 
         <!-- BOTTOM-LEFT -->
@@ -374,12 +374,12 @@
         <text
           class="label"
           x="-0.546875"
-          y="0.702875"
+          y="0.858875"
           font-size="0.48"
           text-anchor="end"
           dominant-baseline="alphabetic"
         >
-          bottom-left
+          BOTTOM-LEFT
         </text>
 
         <!-- BOTTOM-RIGHT -->
@@ -388,12 +388,12 @@
         <text
           class="label"
           x="0.546875"
-          y="0.702875"
+          y="0.858875"
           font-size="0.48"
           text-anchor="start"
           dominant-baseline="alphabetic"
         >
-          bottom-right
+          BOTTOM-RIGHT
         </text>
 
         <g transform="translate(-1.55, 1.55)">
@@ -415,58 +415,58 @@
         </thead>
         <tbody>
           <tr>
-            <td class="pos">top</td>
+            <td class="pos">TOP</td>
             <td class="num">0</td>
-            <td class="num">−0.391</td>
+            <td class="num">−0.547</td>
             <td class="kw">middle</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">bottom</td>
+            <td class="pos">BOTTOM</td>
             <td class="num">0</td>
-            <td class="num">0.703</td>
+            <td class="num">0.859</td>
             <td class="kw">middle</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">left</td>
+            <td class="pos">LEFT</td>
             <td class="num">−0.577</td>
             <td class="num">0</td>
-            <td class="kw">end</td>
+            <td class="kw">middle</td>
             <td class="kw">central</td>
           </tr>
           <tr>
-            <td class="pos">right</td>
+            <td class="pos">RIGHT</td>
             <td class="num">0.577</td>
             <td class="num">0</td>
-            <td class="kw">start</td>
+            <td class="kw">middle</td>
             <td class="kw">central</td>
           </tr>
           <tr>
-            <td class="pos">top-left</td>
+            <td class="pos">TOP-LEFT</td>
             <td class="num">−0.547</td>
-            <td class="num">−0.391</td>
+            <td class="num">−0.547</td>
             <td class="kw">end</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">top-right</td>
+            <td class="pos">TOP-RIGHT</td>
             <td class="num">0.547</td>
-            <td class="num">−0.391</td>
+            <td class="num">−0.547</td>
             <td class="kw">start</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">bottom-left</td>
+            <td class="pos">BOTTOM-LEFT</td>
             <td class="num">−0.547</td>
-            <td class="num">0.703</td>
+            <td class="num">0.859</td>
             <td class="kw">end</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">bottom-right</td>
+            <td class="pos">BOTTOM-RIGHT</td>
             <td class="num">0.547</td>
-            <td class="num">0.703</td>
+            <td class="num">0.859</td>
             <td class="kw">start</td>
             <td class="kw">alphabetic</td>
           </tr>
@@ -478,7 +478,7 @@
     <article class="panel">
       <div class="panel-head">
         <h2>Desktop</h2>
-        <span class="meta">ICON_SIZE 0.421875 · LABEL_GAP 0.075 · font 0.24 · capHalf 0.078</span>
+        <span class="meta">ICON_SIZE 0.421875 · LABEL_GAP 0.075 · font 0.24 · capHeight 0.156</span>
       </div>
       <svg
         class="diagram"
@@ -499,7 +499,7 @@
         <circle cx="0" cy="0" r="0.06" fill="#f0e6cc" />
 
         <!-- straight = 0.210937 + 0.075 = 0.285937
-				     capHeight = 0.24 × 0.65 = 0.156 → capHalf = 0.078 -->
+				     capHeight = 0.24 × 0.65 = 0.156 -->
 
         <!-- TOP -->
         <line class="standoff" x1="0" y1="-0.210937" x2="0" y2="-0.285937" />
@@ -507,12 +507,12 @@
         <text
           class="label"
           x="0"
-          y="-0.207937"
+          y="-0.285937"
           font-size="0.24"
           text-anchor="middle"
           dominant-baseline="alphabetic"
         >
-          top
+          TOP
         </text>
 
         <!-- BOTTOM -->
@@ -521,12 +521,12 @@
         <text
           class="label"
           x="0"
-          y="0.363937"
+          y="0.441937"
           font-size="0.24"
           text-anchor="middle"
           dominant-baseline="alphabetic"
         >
-          bottom
+          BOTTOM
         </text>
 
         <!-- LEFT -->
@@ -537,10 +537,10 @@
           x="-0.315937"
           y="0"
           font-size="0.24"
-          text-anchor="end"
+          text-anchor="middle"
           dominant-baseline="central"
         >
-          left
+          LEFT
         </text>
 
         <!-- RIGHT -->
@@ -551,10 +551,10 @@
           x="0.315937"
           y="0"
           font-size="0.24"
-          text-anchor="start"
+          text-anchor="middle"
           dominant-baseline="central"
         >
-          right
+          RIGHT
         </text>
 
         <!-- TOP-LEFT -->
@@ -563,12 +563,12 @@
         <text
           class="label"
           x="-0.285937"
-          y="-0.207937"
+          y="-0.285937"
           font-size="0.24"
           text-anchor="end"
           dominant-baseline="alphabetic"
         >
-          top-left
+          TOP-LEFT
         </text>
 
         <!-- TOP-RIGHT -->
@@ -577,12 +577,12 @@
         <text
           class="label"
           x="0.285937"
-          y="-0.207937"
+          y="-0.285937"
           font-size="0.24"
           text-anchor="start"
           dominant-baseline="alphabetic"
         >
-          top-right
+          TOP-RIGHT
         </text>
 
         <!-- BOTTOM-LEFT -->
@@ -591,12 +591,12 @@
         <text
           class="label"
           x="-0.285937"
-          y="0.363937"
+          y="0.441937"
           font-size="0.24"
           text-anchor="end"
           dominant-baseline="alphabetic"
         >
-          bottom-left
+          BOTTOM-LEFT
         </text>
 
         <!-- BOTTOM-RIGHT -->
@@ -605,12 +605,12 @@
         <text
           class="label"
           x="0.285937"
-          y="0.363937"
+          y="0.441937"
           font-size="0.24"
           text-anchor="start"
           dominant-baseline="alphabetic"
         >
-          bottom-right
+          BOTTOM-RIGHT
         </text>
 
         <g transform="translate(-1.55, 1.55)">
@@ -632,58 +632,58 @@
         </thead>
         <tbody>
           <tr>
-            <td class="pos">top</td>
+            <td class="pos">TOP</td>
             <td class="num">0</td>
-            <td class="num">−0.208</td>
+            <td class="num">−0.286</td>
             <td class="kw">middle</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">bottom</td>
+            <td class="pos">BOTTOM</td>
             <td class="num">0</td>
-            <td class="num">0.364</td>
+            <td class="num">0.442</td>
             <td class="kw">middle</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">left</td>
+            <td class="pos">LEFT</td>
             <td class="num">−0.316</td>
             <td class="num">0</td>
-            <td class="kw">end</td>
+            <td class="kw">middle</td>
             <td class="kw">central</td>
           </tr>
           <tr>
-            <td class="pos">right</td>
+            <td class="pos">RIGHT</td>
             <td class="num">0.316</td>
             <td class="num">0</td>
-            <td class="kw">start</td>
+            <td class="kw">middle</td>
             <td class="kw">central</td>
           </tr>
           <tr>
-            <td class="pos">top-left</td>
+            <td class="pos">TOP-LEFT</td>
             <td class="num">−0.286</td>
-            <td class="num">−0.208</td>
+            <td class="num">−0.286</td>
             <td class="kw">end</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">top-right</td>
+            <td class="pos">TOP-RIGHT</td>
             <td class="num">0.286</td>
-            <td class="num">−0.208</td>
+            <td class="num">−0.286</td>
             <td class="kw">start</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">bottom-left</td>
+            <td class="pos">BOTTOM-LEFT</td>
             <td class="num">−0.286</td>
-            <td class="num">0.364</td>
+            <td class="num">0.442</td>
             <td class="kw">end</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
-            <td class="pos">bottom-right</td>
+            <td class="pos">BOTTOM-RIGHT</td>
             <td class="num">0.286</td>
-            <td class="num">0.364</td>
+            <td class="num">0.442</td>
             <td class="kw">start</td>
             <td class="kw">alphabetic</td>
           </tr>
@@ -703,9 +703,9 @@
       <li>
         <span class="swatch" style="background: #b06a10"></span>
         <strong>Amber line + dot</strong> — the standoff (icon edge → gap boundary at
-        <code>extent + gap</code>). The label's <strong>cap center</strong> lands on the dot, so the
-        caps straddle the boundary — half above, half below. Left / right center vertically on the
-        icon (y = 0) with <code>central</code> baseline.
+        <code>extent + gap</code>). The label's closest visible edge lands on the dot: baseline for
+        top labels (caps sit above), cap top for bottom labels (text sits below). Left / right are
+        horizontally centered on the dot; the caps then extend equally on either side of it.
       </li>
       <li>
         <strong>Both diagrams share one viewBox</strong> (3.6 × 3.6 world units), so the desktop

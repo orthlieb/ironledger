@@ -1171,24 +1171,16 @@
 	// Vertical positions (top/bottom + the four diagonals) key off the
 	// alphabetic baseline, which every browser agrees is at y=y — no
 	// interpretation of em-box top / hanging line / ascender vs cap
-	// height is involved. `dominant-baseline: hanging` and
-	// `text-after-edge` (an earlier choice) both drift for fonts whose
-	// em-box is larger than their cap+descender extremes (EB Garamond
-	// is one such: sTypoAscender 1.007, sCapHeight 0.65). `alphabetic`
-	// sidesteps that entirely.
+	// height is involved.
 	//
-	// The label's cap CENTER lands on the gap boundary (extent + gap),
-	// so a top or bottom label appears vertically centered on its
-	// standoff line — half the caps sit inside the gap area toward the
-	// icon, half beyond it. This gives labels a "floating on the
-	// standoff" look instead of "sitting on top of it".
-	//
-	//   • Top labels: baseline at y = −straight + capHeight/2 so
-	//     capCenter = −straight.
-	//   • Bottom labels: baseline at y = +straight + capHeight/2 so
-	//     capCenter = +straight.
-	//   • Left / right (`central` baseline): already glyph-centered
-	//     on y, no compensation.
+	//   • Top / diagonals-top: baseline at y = −straight → visible
+	//     bottom of caps lands on the gap boundary.
+	//   • Bottom / diagonals-bottom: baseline at y = +straight +
+	//     capHeight → visible cap top lands on the gap boundary.
+	//   • Left / right: horizontally centered on the standoff
+	//     (text-anchor: middle at x = ±(straight + hExtra)), with
+	//     `central` baseline so the glyph vertical center sits on
+	//     the icon's y-axis.
 	//
 	// The cap-height constant is a fraction of the *actual rendered*
 	// font-size (base × labelStyle.size multiplier), so xl labels don't
@@ -1210,9 +1202,9 @@
 		fontSize: number,
 	): LabelPlacement {
 		const straight = extent + gap;
-		const capHalf = (fontSize * EB_GARAMOND_CAP_HEIGHT) / 2;
-		const yTop = -straight + capHalf;
-		const yBottom = straight + capHalf;
+		const capHeight = fontSize * EB_GARAMOND_CAP_HEIGHT;
+		const yTop = -straight;
+		const yBottom = straight + capHeight;
 		// Horizontal labels get a small extra offset: horizontal text next
 		// to a small icon reads visually tighter than the same distance
 		// vertically, and a hair more breathing room brings them in line
@@ -1227,9 +1219,9 @@
 			case 'bottom':
 				return { x: 0, y: yBottom, anchor: 'middle', baseline: 'alphabetic' };
 			case 'left':
-				return { x: xLeft, y: 0, anchor: 'end', baseline: 'central' };
+				return { x: xLeft, y: 0, anchor: 'middle', baseline: 'central' };
 			case 'right':
-				return { x: xRight, y: 0, anchor: 'start', baseline: 'central' };
+				return { x: xRight, y: 0, anchor: 'middle', baseline: 'central' };
 			case 'top-left':
 				return { x: -straight, y: yTop, anchor: 'end', baseline: 'alphabetic' };
 			case 'top-right':

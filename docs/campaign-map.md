@@ -334,20 +334,21 @@ so cells render exactly square with no letterbox at zoom 1.
 Marker labels sit at one of eight compass positions around the icon
 (top / bottom / left / right and the four diagonals), governed by
 `labelPlacement()` in `MapDialog.svelte`. Vertical positions key off
-`dominant-baseline: alphabetic` — the alphabetic baseline is
-unambiguously `y = y` in every browser — with a half-cap-height
-offset so the vertical **center of the caps** lands on the gap
-boundary (`extent + gap`) regardless of the label's size (sm / md /
-lg / xl). Top and bottom labels therefore straddle their standoff
-line: half the cap height sits inside the gap area toward the icon,
-half beyond it. Reads as "label floats on the standoff" rather than
-"label sits on top of the standoff".
+`dominant-baseline: alphabetic` — unambiguously `y = y` in every
+browser — with a cap-height offset for bottom labels so the visible
+cap top / baseline lands on the gap boundary (`extent + gap`)
+regardless of the label's size (sm / md / lg / xl). Left / right
+labels are horizontally centered on their standoff.
 
-- **Top / diagonals-top:** baseline at `y = −straight + capHeight/2`
-  → cap center at `−straight`.
-- **Bottom / diagonals-bottom:** baseline at `y = +straight + capHeight/2`
-  → cap center at `+straight`.
-- **Left / right:** `central` baseline, already glyph-centered on `y`.
+- **Top / diagonals-top:** baseline at `y = −straight` → visible
+  bottom of caps lands on the gap boundary (descender letters like
+  `g` hang a hair below on purpose — reads as top-anchored, not as
+  clipping).
+- **Bottom / diagonals-bottom:** baseline at `y = +straight + capHeight`
+  → visible cap top lands on the gap boundary.
+- **Left / right:** `text-anchor: middle` at `x = ±(straight + hExtra)`
+  → label horizontally centered on the standoff. `dominant-baseline:
+central` keeps the glyph vertical-center on the icon's y-axis.
 
 `capHeight` is a per-font constant — `EB_GARAMOND_CAP_HEIGHT = 0.65`
 in the source, matching `sCapHeight / unitsPerEm` for EB Garamond.
