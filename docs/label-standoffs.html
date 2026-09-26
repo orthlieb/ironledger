@@ -250,11 +250,11 @@
     <h1>Marker Label Standoffs</h1>
     <p class="subtitle">
       All eight compass positions, drawn at the exact world-unit offsets
-      <code>labelPlacement()</code> produces. Every position uses
-      <code>dominant-baseline: alphabetic</code> with a cap-height-derived y offset: top / bottom /
-      diagonals land the visible cap top (or baseline) on the gap boundary; left / right are
-      horizontally centered on their standoff and vertically centered on the cap height (baseline at
-      <code>y = capHeight/2</code>), so the caps' visual center sits on the icon's y-axis.
+      <code>labelPlacement()</code> produces. Every label's icon-facing edge lands on the gap
+      boundary at <code>extent + gap</code>: baseline for top labels, cap top for bottom, and the
+      right / left glyph edge for left / right (<code>text-anchor: end</code> / <code>start</code>).
+      All positions use <code>dominant-baseline: alphabetic</code>; left / right add a
+      <code>y = capHeight/2</code> offset so the caps' vertical center sits on the icon's y-axis.
     </p>
   </header>
 
@@ -320,7 +320,7 @@
           x="-0.576875"
           y="0.156"
           font-size="0.48"
-          text-anchor="middle"
+          text-anchor="end"
           dominant-baseline="alphabetic"
         >
           Left
@@ -334,7 +334,7 @@
           x="0.576875"
           y="0.156"
           font-size="0.48"
-          text-anchor="middle"
+          text-anchor="start"
           dominant-baseline="alphabetic"
         >
           Right
@@ -432,14 +432,14 @@
             <td class="pos">Left</td>
             <td class="num">−0.577</td>
             <td class="num">0.156</td>
-            <td class="kw">middle</td>
+            <td class="kw">end</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
             <td class="pos">Right</td>
             <td class="num">0.577</td>
             <td class="num">0.156</td>
-            <td class="kw">middle</td>
+            <td class="kw">start</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
@@ -537,7 +537,7 @@
           x="-0.315937"
           y="0.078"
           font-size="0.24"
-          text-anchor="middle"
+          text-anchor="end"
           dominant-baseline="alphabetic"
         >
           Left
@@ -551,7 +551,7 @@
           x="0.315937"
           y="0.078"
           font-size="0.24"
-          text-anchor="middle"
+          text-anchor="start"
           dominant-baseline="alphabetic"
         >
           Right
@@ -649,14 +649,14 @@
             <td class="pos">Left</td>
             <td class="num">−0.316</td>
             <td class="num">0.078</td>
-            <td class="kw">middle</td>
+            <td class="kw">end</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
             <td class="pos">Right</td>
             <td class="num">0.316</td>
             <td class="num">0.078</td>
-            <td class="kw">middle</td>
+            <td class="kw">start</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
@@ -703,16 +703,17 @@
       <li>
         <span class="swatch" style="background: #b06a10"></span>
         <strong>Amber line + dot</strong> — the standoff (icon edge → gap boundary at
-        <code>extent + gap</code>). The label's closest visible edge lands on the dot: baseline for
-        top labels (caps sit above), cap top for bottom labels (text sits below). Left / right
-        center the caps <em>on</em> the dot both horizontally (text-anchor: middle) and vertically
-        (baseline at <code>y = capHeight/2</code>, so the caps' visual center sits on the icon's
-        y-axis).
+        <code>extent + gap</code>). Every label's icon-facing edge lands on the dot: baseline for
+        top labels (caps sit above), cap top for bottom labels (text sits below), right / left glyph
+        edge for left / right labels (rest of the label extends outward). Left / right also offset y
+        by <code>capHeight/2</code> so the caps' visual center sits on the icon's y-axis.
       </li>
       <li>
-        <strong>Both diagrams share one viewBox</strong> (3.6 × 3.6 world units), so the desktop
-        marker visibly renders at half the mobile size — the constants scale in lockstep. Compare
-        each diagram's 0.5-unit scale bar to see it at a glance.
+        <strong>Mobile's viewBox is 2× desktop's</strong> (7.2 × 7.2 vs 3.6 × 3.6 world units)
+        because mobile's icon and font-size are both 2× — sharing a viewBox would clip the mobile
+        panel. Each panel's 0.5-unit scale bar shows the real per-panel scale at a glance: mobile's
+        bar is half the visible length of desktop's, correctly reading as "mobile's world unit is
+        half as many pixels wide because there's twice as much content in the same panel."
       </li>
       <li>
         <strong>Cap-height constant</strong> is EB Garamond's

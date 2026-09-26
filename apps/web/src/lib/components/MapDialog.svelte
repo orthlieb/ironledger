@@ -1177,15 +1177,18 @@
 	//     bottom of caps lands on the gap boundary.
 	//   • Bottom / diagonals-bottom: baseline at y = +straight +
 	//     capHeight → visible cap top lands on the gap boundary.
-	//   • Left / right: horizontally centered on the standoff
-	//     (text-anchor: middle at x = ±(straight + hExtra)), and
-	//     vertically centered on the CAP height (baseline at y =
-	//     capHeight/2) so the caps' vertical center lands on the
-	//     icon's y-axis. `dominant-baseline: central` would center
-	//     the em box, but EB Garamond's em is asymmetric around its
-	//     caps (sTypoAscender 1.007, sTypoDescender 0.298) — em
-	//     center sits ~0.03·fontSize above cap center, so `central`
-	//     would drift the visible caps below y=0.
+	//   • Left / right: label's icon-facing edge at x =
+	//     ±(straight + hExtra) — text-anchor: end for left, start
+	//     for right — so the label respects the standoff the same
+	//     way top / bottom do (nearest edge on the boundary, rest of
+	//     the label extending outward). Vertically centered on the
+	//     CAP height (baseline at y = capHeight/2) so the caps'
+	//     vertical center lands on the icon's y-axis.
+	//     `dominant-baseline: central` would center the em box, but
+	//     EB Garamond's em is asymmetric around its caps
+	//     (sTypoAscender 1.007, sTypoDescender 0.298) — em center
+	//     sits ~0.03·fontSize above cap center, so `central` would
+	//     drift the visible caps below y=0.
 	//
 	// The cap-height constant is a fraction of the *actual rendered*
 	// font-size (base × labelStyle.size multiplier), so xl labels don't
@@ -1225,9 +1228,9 @@
 			case 'bottom':
 				return { x: 0, y: yBottom, anchor: 'middle', baseline: 'alphabetic' };
 			case 'left':
-				return { x: xLeft, y: yCapCenter, anchor: 'middle', baseline: 'alphabetic' };
+				return { x: xLeft, y: yCapCenter, anchor: 'end', baseline: 'alphabetic' };
 			case 'right':
-				return { x: xRight, y: yCapCenter, anchor: 'middle', baseline: 'alphabetic' };
+				return { x: xRight, y: yCapCenter, anchor: 'start', baseline: 'alphabetic' };
 			case 'top-left':
 				return { x: -straight, y: yTop, anchor: 'end', baseline: 'alphabetic' };
 			case 'top-right':

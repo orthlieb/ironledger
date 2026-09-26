@@ -345,8 +345,9 @@ label's size (sm / md / lg / xl).
   clipping).
 - **Bottom / diagonals-bottom:** baseline at `y = +straight + capHeight`
   → visible cap top lands on the gap boundary.
-- **Left / right:** `text-anchor: middle` at `x = ±(straight + hExtra)`
-  → label horizontally centered on the standoff. Baseline at
+- **Left / right:** `text-anchor: end` / `start` at `x = ±(straight + hExtra)`
+  → label's icon-facing edge lands on the standoff (mirror of top /
+  bottom), rest of the label extends outward. Baseline at
   `y = capHeight/2` so the cap-height vertical center sits on the
   icon's y-axis. (`dominant-baseline: central` would center the em
   box instead, and EB Garamond's em is asymmetric around its caps —
