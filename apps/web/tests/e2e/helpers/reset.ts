@@ -214,6 +214,39 @@ export async function seedCommunity(name = 'Seed Community', token?: string): Pr
 	return id;
 }
 
+/**
+ * Seed one foe encounter (the transient "combat card" a session tracks —
+ * not the catalogue FoeDef). Returns the created id. `foeId` defaults to
+ * a real base-catalogue slug so `findFoe()` in the exporter resolves to a
+ * real name if the encounter's customName is left blank; passing a
+ * bespoke foeId is fine, the tests care about the encounter's own id +
+ * customName.
+ */
+export async function seedFoeEncounter(
+	{ name = 'Seed Foe', foeId = 'brigands' }: { name?: string; foeId?: string } = {},
+	token?: string,
+): Promise<string> {
+	const tok = token ?? (await getTestToken());
+	const id = crypto.randomUUID();
+	const encounter = {
+		id,
+		foeId,
+		quantity: 'few',
+		effectiveRank: 2,
+		ticks: 0,
+		notes: '',
+		customName: name,
+		vanquished: false,
+	};
+	const res = await fetch(`${API}/session/encounters`, {
+		method: 'PATCH',
+		headers: json(tok),
+		body: JSON.stringify({ encounters: [encounter] }),
+	});
+	if (!res.ok) throw new Error(`seed foe encounter failed: ${res.status} ${await res.text()}`);
+	return id;
+}
+
 /** Seed one NPC (see seedCommunity). Returns the created id. */
 export async function seedNpc(name = 'Seed NPC', token?: string): Promise<string> {
 	const tok = token ?? (await getTestToken());

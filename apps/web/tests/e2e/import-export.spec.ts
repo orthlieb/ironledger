@@ -1446,3 +1446,145 @@ function exportMarkdownNames(entries: Record<string, Uint8Array>) {
 		readme: read('README.md'),
 	};
 }
+
+// ---------------------------------------------------------------------------
+// Foes selection in markdown export
+//
+// The ExportDialog surfaces current foe encounters as a "Foes" facet. The
+// markdown zip must reflect the user's checklist decisions: everything
+// selected → both foes in foes.md; only one selected → only that one;
+// none selected → no foes.md file at all (and no "## Foes" README link).
+// Guards against a regression where the exporter always dumped every
+// encounter regardless of the checklist.
+// ---------------------------------------------------------------------------
+
+test.describe('Import / Export — Foes selection in markdown', () => {
+	test.beforeAll(async () => {
+		await resetAll();
+		const tok = await getTestToken();
+		const h = { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' };
+		// Two encounters via one PATCH — the PATCH replaces the list. Real
+		// foeIds so `findFoe()` inside the exporter resolves; the tests
+		// key off customName which the exporter prefers.
+		await fetch(`${V1}/session/encounters`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify({
+				encounters: [
+					{
+						id: 'md-foe-bear',
+						foeId: 'brigands',
+						quantity: 'few',
+						effectiveRank: 2,
+						ticks: 0,
+						notes: '',
+						customName: 'Angry Bear',
+						vanquished: false,
+					},
+					{
+						id: 'md-foe-bandit',
+						foeId: 'brigands',
+						quantity: 'few',
+						effectiveRank: 2,
+						ticks: 0,
+						notes: '',
+						customName: 'Sneaky Bandit',
+						vanquished: false,
+					},
+				],
+			}),
+		});
+		// A community so the "no foes selected" case can still produce a
+		// full zip (rather than falling through to the log-only .md
+		// early-out path).
+		await fetch(`${V1}/session/communities`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify({
+				communities: [
+					{
+						id: 'md-foe-town',
+						name: 'Foe Test Town',
+						region: '',
+						location: '',
+						locationDescription: '',
+						trouble: '',
+						notes: '',
+						createdAt: Date.now(),
+					},
+				],
+			}),
+		});
+	});
+
+	test('picks up the Foes facet and lists each encounter by name', async ({ page }) => {
+		await gotoHome(page);
+		await openExportDialog(page);
+		// Both encounters are seeded and default to selected — they show up
+		// in the flat checklist by their customName.
+		await expect(page.locator('.exd-item', { hasText: 'Angry Bear' })).toBeVisible();
+		await expect(page.locator('.exd-item', { hasText: 'Sneaky Bandit' })).toBeVisible();
+	});
+
+	test('exports every selected foe into foes.md', async ({ page }) => {
+		await gotoHome(page);
+		await openExportDialog(page);
+		await page.locator('.exd-segbtn', { hasText: 'Markdown' }).click();
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.exd-dialog .btn-primary').click(),
+		]);
+		const entries = unzipSync(new Uint8Array(await downloadBuffer(download)));
+		expect(Object.keys(entries)).toContain('foes.md');
+		const foesMd = strFromU8(entries['foes.md']);
+		expect(foesMd).toContain('## Angry Bear');
+		expect(foesMd).toContain('## Sneaky Bandit');
+		// README indexes the bestiary when it's present.
+		const readme = strFromU8(entries['README.md']);
+		expect(readme).toContain('[Bestiary](foes.md)');
+	});
+
+	test('a deselected foe is dropped from foes.md', async ({ page }) => {
+		await gotoHome(page);
+		await openExportDialog(page);
+		await page.locator('.exd-segbtn', { hasText: 'Markdown' }).click();
+		// Clear everything, then re-pick a non-foe item (a bare foes.md
+		// export is legal, but pairing it with something else exercises
+		// the "some other content plus one foe" ordinary case) plus the
+		// single foe we want.
+		await page.locator('.exd-selectall').click();
+		await page.locator('.fb-input').fill('Angry Bear');
+		await page.locator('.exd-item', { hasText: 'Angry Bear' }).click();
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.exd-dialog .btn-primary').click(),
+		]);
+		const entries = unzipSync(new Uint8Array(await downloadBuffer(download)));
+		expect(Object.keys(entries)).toContain('foes.md');
+		const foesMd = strFromU8(entries['foes.md']);
+		expect(foesMd).toContain('## Angry Bear');
+		expect(foesMd).not.toContain('## Sneaky Bandit');
+	});
+
+	test('no foes selected → foes.md and its README link are omitted', async ({ page }) => {
+		await gotoHome(page);
+		await openExportDialog(page);
+		await page.locator('.exd-segbtn', { hasText: 'Markdown' }).click();
+		// Clear "everything", then pick only the seeded community so the
+		// export still produces a full zip (bypasses the log-only .md
+		// early-out) but has no foes checked at all.
+		await page.locator('.exd-selectall').click();
+		await page.locator('.fb-input').fill('Foe Test Town');
+		await page.locator('.exd-item', { hasText: 'Foe Test Town' }).click();
+		await page.locator('.fb-input').fill('');
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.exd-dialog .btn-primary').click(),
+		]);
+		const entries = unzipSync(new Uint8Array(await downloadBuffer(download)));
+		// The bestiary file is gone entirely — no foes.md, no README pointer.
+		expect(Object.keys(entries)).not.toContain('foes.md');
+		const readme = strFromU8(entries['README.md']);
+		expect(readme).not.toContain('Bestiary');
+	});
+});
