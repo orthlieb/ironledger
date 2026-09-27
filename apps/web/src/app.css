@@ -259,9 +259,16 @@ main.app-main {
 /* Safe-area fallback for routes without an edge-to-edge shell. /home owns
    the home-shell which carries its own bottom/sides padding so the app
    surface extends all the way to the viewport edges. Every other route
-   (admin, about, login, …) gets the padding here. */
+   (admin, about, login, …) gets the padding here.
+   `margin-inline: auto` keeps main horizontally centered when the
+   viewport is wider than max-width — the default flex-child cross-axis
+   behaviour under a stretched item that's then capped by max-width is
+   flex-start (left), which used to stick /login and every other
+   non-home page to the left of the viewport on wide desktops. */
 main.app-main:not(:has(.home-shell)) {
+	width: 100%;
 	max-width: 1600px;
+	margin-inline: auto;
 	padding-bottom: env(safe-area-inset-bottom);
 	padding-left: env(safe-area-inset-left);
 	padding-right: env(safe-area-inset-right);

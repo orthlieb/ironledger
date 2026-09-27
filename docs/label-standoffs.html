@@ -243,6 +243,108 @@
     vertical-align: middle;
     margin-right: 4px;
   }
+
+  /* Style / size samples above the anchor panels. Each chip shows the
+     labelStyle option applied to a placeholder word in EB Garamond, so
+     the whole surface of a marker label's typography is browsable in
+     one place. */
+  .samples {
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 16px 18px;
+    margin-bottom: 24px;
+  }
+  .samples h2 {
+    font-family: 'EB Garamond', 'Palatino Linotype', Georgia, serif;
+    font-weight: 800;
+    font-size: 1.5rem;
+    margin: 0 0 4px;
+  }
+  .samples .samples-note {
+    color: var(--dim);
+    font-size: 12px;
+    font-family: ui-monospace, 'Roboto Mono', monospace;
+    margin: 0 0 14px;
+  }
+  .samples .samples-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 8px 14px;
+    padding: 10px 0;
+    border-top: 1px solid var(--rule);
+  }
+  .samples .samples-row:first-of-type {
+    border-top: none;
+    padding-top: 0;
+  }
+  .samples .row-label {
+    flex: 0 0 auto;
+    min-width: 84px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--dim);
+  }
+  .samples .chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 4px 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    color: var(--ink);
+  }
+  .samples .chip-tag {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--dim);
+    font-family: ui-monospace, 'Roboto Mono', monospace;
+  }
+  .samples .sample {
+    font-family: 'EB Garamond', 'Palatino Linotype', Georgia, serif;
+    font-weight: 400;
+    font-size: 20px;
+    line-height: 1;
+    color: var(--ink);
+  }
+  .samples .sample.bold {
+    font-weight: 800;
+  }
+  .samples .sample.italic {
+    font-style: italic;
+  }
+  .samples .sample.underline {
+    text-decoration: underline;
+  }
+  /* Small caps: same story as the app — Google Fonts strips EB
+     Garamond's smcp OpenType feature, so `font-variant: small-caps`
+     is the workable choice (real smcp when present, synthesised
+     from full caps otherwise). */
+  .samples .sample.smcp {
+    font-variant: small-caps;
+  }
+  .samples .sample.upper {
+    text-transform: uppercase;
+  }
+  /* Size ramp matches LABEL_SIZE_MULT in MapDialog.svelte: sm 0.75,
+     md 1, lg 1.5, xl 2.25 — anchored on a 20 px md so md renders
+     identically to the un-styled samples above. */
+  .samples .sample.sz-sm {
+    font-size: 15px;
+  }
+  .samples .sample.sz-md {
+    font-size: 20px;
+  }
+  .samples .sample.sz-lg {
+    font-size: 30px;
+  }
+  .samples .sample.sz-xl {
+    font-size: 45px;
+  }
 </style>
 
 <div class="page">
@@ -257,6 +359,62 @@
       <code>y = capHeight/2</code> offset so the caps' vertical center sits on the icon's y-axis.
     </p>
   </header>
+
+  <section class="samples" aria-labelledby="samples-heading">
+    <h2 id="samples-heading">Style samples</h2>
+    <p class="samples-note">
+      Every labelStyle option applied to a placeholder in EB Garamond — the marker editor's B / I /
+      U toggles, the case picker (Aa · SC · AA), and the size ramp (sm / md / lg / xl).
+    </p>
+    <div class="samples-row">
+      <span class="row-label">Weight / decoration</span>
+      <span class="chip"
+        ><span class="chip-tag">regular</span><span class="sample">Fluenti</span></span
+      >
+      <span class="chip"
+        ><span class="chip-tag">bold</span><span class="sample bold">Fluenti</span></span
+      >
+      <span class="chip"
+        ><span class="chip-tag">italic</span><span class="sample italic">Fluenti</span></span
+      >
+      <span class="chip"
+        ><span class="chip-tag">bold+italic</span
+        ><span class="sample bold italic">Fluenti</span></span
+      >
+      <span class="chip"
+        ><span class="chip-tag">underline</span><span class="sample underline">Fluenti</span></span
+      >
+    </div>
+    <div class="samples-row">
+      <span class="row-label">Case</span>
+      <span class="chip"
+        ><span class="chip-tag">regular</span><span class="sample">Ancient Ruins</span></span
+      >
+      <span class="chip"
+        ><span class="chip-tag">small-caps</span
+        ><span class="sample smcp">Ancient Ruins</span></span
+      >
+      <span class="chip"
+        ><span class="chip-tag">uppercase</span
+        ><span class="sample upper">Ancient Ruins</span></span
+      >
+    </div>
+    <div class="samples-row">
+      <span class="row-label">Size (× md)</span>
+      <span class="chip"
+        ><span class="chip-tag">sm · 0.75×</span><span class="sample sz-sm">Fluenti</span></span
+      >
+      <span class="chip"
+        ><span class="chip-tag">md · 1×</span><span class="sample sz-md">Fluenti</span></span
+      >
+      <span class="chip"
+        ><span class="chip-tag">lg · 1.5×</span><span class="sample sz-lg">Fluenti</span></span
+      >
+      <span class="chip"
+        ><span class="chip-tag">xl · 2.25×</span><span class="sample sz-xl">Fluenti</span></span
+      >
+    </div>
+  </section>
 
   <section class="panels">
     <!-- =============== MOBILE =============== -->
