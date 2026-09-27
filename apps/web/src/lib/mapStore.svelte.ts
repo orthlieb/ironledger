@@ -602,6 +602,8 @@ export function addMarker(input: {
 	color?: string;
 	entityId?: string;
 	angle?: number;
+	labelStyle?: MapMarker['labelStyle'];
+	labelPosition?: MapMarkerLabelPosition;
 }): string {
 	const id = crypto.randomUUID();
 	mapState.markers.push({ id, ...input });
