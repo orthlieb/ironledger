@@ -1588,3 +1588,123 @@ test.describe('Import / Export — Foes selection in markdown', () => {
 		expect(readme).not.toContain('Bestiary');
 	});
 });
+
+// ---------------------------------------------------------------------------
+// Iconless map markers in the markdown export
+//
+// A marker without an icon (icon === '') is a legit configuration — the
+// canvas centres its label on the anchor and skips the glyph. The
+// markdown map export must still draw a numbered pin for it AND list it
+// under "## Markers", or the numbering downstream drifts silently.
+// Regression guard for a hypothetical "skip iconless markers in the map
+// SVG" bug — buildMapSvg iterates every marker unconditionally today.
+// ---------------------------------------------------------------------------
+
+test.describe('Import / Export — Iconless markers on the map', () => {
+	test.beforeAll(async () => {
+		await resetAll();
+		const tok = await getTestToken();
+		const h = { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' };
+		// A community so the export has some non-map content to produce
+		// a proper zip. No entity link on the markers — they're bare pins.
+		await fetch(`${V1}/session/communities`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify({
+				communities: [
+					{
+						id: 'iconless-town',
+						name: 'Iconless Town',
+						region: '',
+						location: '',
+						locationDescription: '',
+						trouble: '',
+						notes: '',
+						createdAt: Date.now(),
+					},
+				],
+			}),
+		});
+		// Fresh map + 1×1 PNG background so the SVG path is exercised.
+		const mapRes = await fetch(`${V1}/session/maps`, {
+			method: 'POST',
+			headers: h,
+			body: JSON.stringify({ name: 'Iconless Map' }),
+		});
+		const mapId = ((await mapRes.json()) as { id: string }).id;
+		const TINY_PNG =
+			'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI6QAAAABJRU5ErkJggg==';
+		await fetch(`${V1}/session/maps/${mapId}/background`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({ dataUrl: `data:image/png;base64,${TINY_PNG}` }),
+		});
+		// Two markers: an ordinary iconed one, plus a label-only (iconless)
+		// sibling. Both should end up as numbered pins in the exported map
+		// SVG and as numbered rows in the map's Markers list.
+		await fetch(`${V1}/session/maps/${mapId}/markers`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({
+				markers: [
+					{
+						id: 'mk-iconed',
+						x: 4,
+						y: 4,
+						label: 'With Icon',
+						icon: 'settlement',
+						color: '#e63946',
+					},
+					{
+						id: 'mk-iconless',
+						x: 8,
+						y: 6,
+						label: 'Label Only',
+						icon: '',
+						color: '#457b9d',
+					},
+				],
+			}),
+		});
+	});
+
+	test('draws a numbered pin per marker, including iconless ones', async ({ page }) => {
+		await gotoHome(page);
+		await openExportDialog(page);
+		await page.locator('.exd-segbtn', { hasText: 'Markdown' }).click();
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.exd-dialog .btn-primary').click(),
+		]);
+		const entries = unzipSync(new Uint8Array(await downloadBuffer(download)));
+		const names = Object.keys(entries);
+		const svgName = names.find((n) => n.startsWith('images/map-') && n.endsWith('.svg'));
+		expect(svgName, 'the map SVG was written').toBeTruthy();
+		const svg = strFromU8(entries[svgName as string]);
+		// Both markers get their own numbered pin — iconless doesn't drop
+		// out of the SVG loop.
+		expect(svg).toContain('>1</text>');
+		expect(svg).toContain('>2</text>');
+		// Two <circle> pins (the map's background <image> is the only other
+		// SVG element and it isn't a circle).
+		expect((svg.match(/<circle /g) ?? []).length).toBe(2);
+	});
+
+	test('lists both markers in the map file, iconless included', async ({ page }) => {
+		await gotoHome(page);
+		await openExportDialog(page);
+		await page.locator('.exd-segbtn', { hasText: 'Markdown' }).click();
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.exd-dialog .btn-primary').click(),
+		]);
+		const entries = unzipSync(new Uint8Array(await downloadBuffer(download)));
+		const mapMdName = Object.keys(entries).find((n) => n.startsWith('maps/') && n.endsWith('.md'));
+		expect(mapMdName, 'the map .md file was written').toBeTruthy();
+		const md = strFromU8(entries[mapMdName as string]);
+		expect(md).toContain('## Markers');
+		// Each label + its ordinal shows up in the Markers list.
+		expect(md).toMatch(/1\.\s+With Icon/);
+		expect(md).toMatch(/2\.\s+Label Only/);
+	});
+});
