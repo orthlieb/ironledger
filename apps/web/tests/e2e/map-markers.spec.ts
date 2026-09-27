@@ -224,4 +224,126 @@ test.describe('Map markers — lifecycle', () => {
 		await expect(page.locator('.mp-props-dialog')).not.toBeVisible();
 		await expect(page.locator('.mp-marker')).toHaveCount(0);
 	});
+
+	// ── Edit toolbar button + Ctrl/Cmd+E ──────────────────────────────────
+	test('Edit button and Ctrl+E open the properties dialog on a selected marker', async ({
+		page,
+	}) => {
+		const editBtn = page.locator('[aria-label="Edit marker"]');
+
+		// With no marker selected the button is disabled — nothing to edit.
+		await expect(editBtn).toBeDisabled();
+
+		// Place a marker, name it, close via OK — the marker stays selected
+		// (that's the whole "editor closed but selection kept" contract).
+		await placeMarker(page);
+		await page.locator('#mp-props-name').fill('Edit Test');
+		await page.locator('.mp-props-footer .btn-primary').click(); // OK
+		await expect(page.locator('.mp-props-dialog')).not.toBeVisible();
+
+		// The Edit button is now enabled and reopens the editor.
+		await expect(editBtn).toBeEnabled();
+		await editBtn.click();
+		await expect(page.locator('.mp-props-dialog')).toBeVisible();
+
+		// Close the reopened dialog — first Escape shuts the dialog, the
+		// marker stays selected (per the parent's Escape guard).
+		await page.keyboard.press('Escape');
+		await expect(page.locator('.mp-props-dialog')).not.toBeVisible();
+
+		// Ctrl+E is the keyboard shortcut for the same action.
+		await page.keyboard.press('Control+e');
+		await expect(page.locator('.mp-props-dialog')).toBeVisible();
+		await page.keyboard.press('Escape');
+		await expect(page.locator('.mp-props-dialog')).not.toBeVisible();
+
+		// Deselecting (empty-grid click) disables the button again.
+		const grid = page.locator('.mp-grid-capture');
+		const box = await grid.boundingBox();
+		if (!box) throw new Error('grid capture has no bounding box');
+		await grid.click({ position: { x: box.width * 0.1, y: box.height * 0.1 } });
+		await expect(editBtn).toBeDisabled();
+	});
+
+	// ── Copy / Paste round-trip ───────────────────────────────────────────
+	test('Ctrl+C then Ctrl+V pastes a copy of the selected marker', async ({ page }) => {
+		await placeMarker(page);
+		await page.locator('#mp-props-name').fill('Copy Source');
+		await page.locator('.mp-props-footer .btn-primary').click(); // OK
+		await expect(page.locator('.mp-props-dialog')).not.toBeVisible();
+		await expect(page.locator('.mp-marker')).toHaveCount(1);
+
+		await page.keyboard.press('Control+c');
+		await page.keyboard.press('Control+v');
+
+		// Two markers on the canvas; both carry the source label.
+		await expect(page.locator('.mp-marker')).toHaveCount(2);
+		await expect(page.locator('.mp-marker-label')).toHaveCount(2);
+		const labels = await page.locator('.mp-marker-label').allTextContents();
+		expect(labels.filter((t) => t === 'Copy Source')).toHaveLength(2);
+	});
+
+	// ── Cut / Paste round-trip ────────────────────────────────────────────
+	test('Ctrl+X removes the marker; Ctrl+V drops the copy back on the map', async ({ page }) => {
+		await placeMarker(page);
+		await page.locator('#mp-props-name').fill('Cut Source');
+		await page.locator('.mp-props-footer .btn-primary').click(); // OK
+		await expect(page.locator('.mp-props-dialog')).not.toBeVisible();
+		await expect(page.locator('.mp-marker')).toHaveCount(1);
+
+		await page.keyboard.press('Control+x');
+		await expect(page.locator('.mp-marker')).toHaveCount(0);
+
+		await page.keyboard.press('Control+v');
+		await expect(page.locator('.mp-marker')).toHaveCount(1);
+		await expect(page.locator('.mp-marker-label')).toHaveText('Cut Source');
+	});
+
+	// ── Clipboard preserves labelStyle + labelPosition ────────────────────
+	test('paste preserves labelStyle and labelPosition on the copy', async ({ page }) => {
+		// Style + position the source: bold + italic + small-caps, top
+		// position. Every field flows through the clipboard payload — the
+		// pasted copy must render the same style attribute and land at the
+		// same relative position around its icon.
+		await placeMarker(page);
+		await page.locator('#mp-props-name').fill('Styled Source');
+		await page.locator('[aria-label="Bold"]').click();
+		await page.locator('[aria-label="Italic"]').click();
+		await page.locator('[aria-label="Small caps"]').click();
+
+		// Switch to the top position (default is bottom). The Select
+		// portal's items carry `data-value` from the bits-ui wrapper, so
+		// the option can be reached without depending on the arrow-glyph
+		// label text.
+		await page.locator('[aria-label="Label position"]').click();
+		await page.locator('[role="option"][data-value="top"]').click();
+
+		await page.locator('.mp-props-footer .btn-primary').click(); // OK
+		await expect(page.locator('.mp-props-dialog')).not.toBeVisible();
+
+		await page.keyboard.press('Control+c');
+		await page.keyboard.press('Control+v');
+		await expect(page.locator('.mp-marker')).toHaveCount(2);
+		await expect(page.locator('.mp-marker-label')).toHaveCount(2);
+
+		// Both labels carry the styled string.
+		const styles = await page.locator('.mp-marker-label').evaluateAll((els) =>
+			els.map((el) => ({
+				style: (el.getAttribute('style') ?? '').replace(/\s+/g, ''),
+				y: parseFloat(el.getAttribute('y') ?? '0'),
+				text: el.textContent ?? '',
+			})),
+		);
+		expect(styles).toHaveLength(2);
+		for (const s of styles) {
+			expect(s.text).toBe('Styled Source');
+			expect(s.style).toContain('font-weight:800');
+			expect(s.style).toContain('font-style:italic');
+			expect(s.style).toContain('font-variant:small-caps');
+			// Top-positioned labels sit ABOVE the icon anchor — negative y.
+			// (Bottom would be positive.) Preserving labelPosition means
+			// both markers have y < 0 here.
+			expect(s.y).toBeLessThan(0);
+		}
+	});
 });
