@@ -1958,10 +1958,16 @@
 
 		// ── Foes ─────────────────────────────────────────────────────────
 		// Markdown only: encounters are transient (deleted session to session)
-		// and are deliberately excluded from the JSON export.
-		if (encounters.length) {
+		// and are deliberately excluded from the JSON export. The
+		// ExportDialog surfaces a per-foe checklist under the Foes facet;
+		// `sel.foes` names which encounter ids the user opted into. An
+		// empty set means "no bestiary" (nothing rendered), which is why
+		// we early-out here rather than defaulting to every encounter.
+		const foeSet = new Set(sel.foes);
+		const selEncounters = encounters.filter((e) => foeSet.has(e.id));
+		if (selEncounters.length) {
 			const lines: string[] = ['# Foes', ''];
-			for (const enc of encounters) {
+			for (const enc of selEncounters) {
 				const def = findFoe(enc.foeId);
 				const name = enc.customName?.trim() || def?.name || enc.foeId;
 				lines.push(`## ${name}`);
@@ -2301,6 +2307,7 @@
 		const journeys = selExps.filter((e) => e.type === 'journey').length;
 		const sites = selExps.filter((e) => e.type === 'site').length;
 		const scenes = selExps.filter((e) => e.type === 'scene').length;
+		const foeCount = sel.format === 'md' ? sel.foes.length : 0;
 		const tally: Array<{ key: string; total: number; label: string }> = [
 			{ key: 'char', total: selChars.length, label: word(selChars.length, 'character') },
 			{ key: 'comm', total: selComms.length, label: word(selComms.length, 'settlement') },
@@ -2310,6 +2317,7 @@
 			{ key: 'site', total: sites, label: word(sites, 'site') },
 			{ key: 'scene', total: scenes, label: word(scenes, 'scene') },
 			{ key: 'map', total: mapSet.size, label: word(mapSet.size, 'map') },
+			{ key: 'foe', total: foeCount, label: word(foeCount, 'foe') },
 			{
 				key: 'log',
 				total: sel.log ? sessionLog.entries.length : 0,
@@ -2334,6 +2342,7 @@
 					selExps.length === 0 &&
 					!wantConn &&
 					mapSet.size === 0 &&
+					sel.foes.length === 0 &&
 					sel.log;
 				if (onlyLog) {
 					downloadFile(
@@ -2356,9 +2365,10 @@
 						renderSummary();
 					},
 				);
-				// The markdown bundle also writes maps + the log; reflect them in the
-				// final tally.
+				// The markdown bundle also writes maps + the log + the foes
+				// bestiary; reflect all three in the final tally.
 				doneBy['map'] = mapSet.size;
+				doneBy['foe'] = sel.foes.length;
 				if (sel.log) doneBy['log'] = sessionLog.entries.length;
 				renderSummary();
 				exportProgress = { done: 1, total: 1, label: 'Done' };

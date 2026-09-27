@@ -29,11 +29,14 @@
 	import { getPlaces } from '$lib/placeStore.svelte.js';
 	import { mapListState, initMap } from '$lib/mapStore.svelte.js';
 	import { sessionLog } from '$lib/log.svelte.js';
+	import { getEncounters } from '$lib/encounterStore.svelte.js';
+	import { findFoe } from '$lib/foeStore.svelte.js';
 	import type { ExportSelection } from '$lib/exportSelection.js';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import charactersIconSvg from '$icons/Characters.svg?raw';
 	import treasureMapIconSvg from '$icons/treasure-map.svg?raw';
 	import logIconSvg from '$icons/log.svg?raw';
+	import foesIconSvg from '$icons/Foes.svg?raw';
 
 	const CHECK =
 		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>';
@@ -63,8 +66,9 @@
 	const placesL = $derived(getPlaces());
 	const maps = $derived(mapListState.maps);
 	const logEntries = $derived(sessionLog.entries);
+	const foeEncounters = $derived(getEncounters());
 
-	type Cat = 'char' | 'exp' | 'conn' | 'map' | 'log';
+	type Cat = 'char' | 'exp' | 'conn' | 'map' | 'log' | 'foe';
 	type Item = {
 		key: string;
 		cat: Cat;
@@ -193,6 +197,22 @@
 			})),
 		},
 		{
+			// Foes are current encounter cards, not the catalogue bestiary.
+			// The zip format doesn't carry encounters, so foe selection
+			// only shows up in the markdown export (the format toggle
+			// wires that constraint through the summary + doExport).
+			key: 'foe',
+			label: 'Foes',
+			color: '#b04a3a',
+			icon: foesIconSvg,
+			items: foeEncounters.map((enc) => ({
+				key: `foe:${enc.id}`,
+				cat: 'foe',
+				id: enc.id,
+				name: enc.customName?.trim() || findFoe(enc.foeId)?.name || 'Foe',
+			})),
+		},
+		{
 			key: 'log',
 			label: 'Session Log',
 			color: '#a46fb0',
@@ -304,6 +324,7 @@
 			npcs: idsOf('conn', 'npc'),
 			places: idsOf('conn', 'place'),
 			maps: idsOf('map'),
+			foes: idsOf('foe'),
 			log: sel.has('log'),
 			format,
 		});
@@ -317,10 +338,12 @@
 		const exN = idsOf('exp').length;
 		const coN = idsOf('conn').length;
 		const maN = idsOf('map').length;
+		const foN = idsOf('foe').length;
 		if (chN) p.push(`${chN} character${chN === 1 ? '' : 's'}`);
 		if (exN) p.push(`${exN} expedition${exN === 1 ? '' : 's'}`);
 		if (coN) p.push(`${coN} connection${coN === 1 ? '' : 's'}`);
 		if (maN) p.push(`${maN} map${maN === 1 ? '' : 's'}`);
+		if (foN) p.push(`${foN} foe${foN === 1 ? '' : 's'}`);
 		if (sel.has('log')) p.push(`${logEntries.length} log entries`);
 		return p;
 	});
@@ -401,7 +424,7 @@
 					</ToggleGroup.Item>
 					<ToggleGroup.Item value="md" class="exd-segbtn">
 						<strong>Markdown</strong>
-						<span>Readable · not re-importable · adds foe bestiary</span>
+						<span>Readable · not re-importable · foes only in this format</span>
 					</ToggleGroup.Item>
 				</ToggleGroup.Root>
 			</div>
