@@ -55,9 +55,6 @@
 	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid.svg?raw';
 	import iconGearSvg from '$icons/gear-solid.svg?raw';
 	import iconEditSvg from '$icons/pen-to-square-solid.svg?raw';
-	import iconCutSvg from '$icons/scissors-solid.svg?raw';
-	import iconCopySvg from '$icons/copy-solid.svg?raw';
-	import iconPasteSvg from '$icons/paste-solid.svg?raw';
 	import { Dialog } from 'bits-ui';
 	import Combobox from '$lib/components/Combobox.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
@@ -1420,41 +1417,17 @@
 							: 'Click, then tap the map to place a marker'}
 						aria-label="Add marker">+ Marker</button
 					>
-					<!-- Marker clipboard / edit cluster. Same group so the four
-					     actions stay together when the toolbar wraps on mobile.
-					     Edit / Cut / Copy require a selection; Paste requires
-					     the clipboard to hold something. Keyboard shortcuts:
-					     Ctrl/Cmd+E (edit), +X (cut), +C (copy), +V (paste). -->
-					<div class="mp-marker-clip" role="group" aria-label="Marker actions">
-						<button
-							class="mp-btn mp-btn-icon"
-							onclick={editSelected}
-							disabled={!selectedMarker}
-							use:tooltip={'Edit selected marker (double-click / Ctrl+E)'}
-							aria-label="Edit marker">{@html iconEditSvg}</button
-						>
-						<button
-							class="mp-btn mp-btn-icon"
-							onclick={cutSelected}
-							disabled={!selectedMarker}
-							use:tooltip={'Cut selected marker (Ctrl+X)'}
-							aria-label="Cut marker">{@html iconCutSvg}</button
-						>
-						<button
-							class="mp-btn mp-btn-icon"
-							onclick={copySelected}
-							disabled={!selectedMarker}
-							use:tooltip={'Copy selected marker (Ctrl+C)'}
-							aria-label="Copy marker">{@html iconCopySvg}</button
-						>
-						<button
-							class="mp-btn mp-btn-icon"
-							onclick={pasteClipboard}
-							disabled={!clipboard}
-							use:tooltip={clipboard ? 'Paste marker (Ctrl+V)' : 'Copy or cut a marker first'}
-							aria-label="Paste marker">{@html iconPasteSvg}</button
-						>
-					</div>
+					<!-- Edit selected marker — double-click and Ctrl/Cmd+E do the
+					     same thing; the button surfaces the affordance for touch
+					     users. Cut / copy / paste stay keyboard-only (Ctrl+X /
+					     +C / +V) to keep the toolbar tight. -->
+					<button
+						class="mp-btn mp-btn-icon"
+						onclick={editSelected}
+						disabled={!selectedMarker}
+						use:tooltip={'Edit selected marker (double-click / Ctrl+E)'}
+						aria-label="Edit marker">{@html iconEditSvg}</button
+					>
 					<div class="mp-zoom" role="group" aria-label="Zoom controls">
 						<button
 							class="mp-btn mp-btn-icon"
@@ -2058,14 +2031,6 @@
 	/* Zoom control chip — minus + percentage + plus + fit, laid out
 	   inline so the toolbar row stays a single band on desktop. */
 	:global(.mp-zoom) {
-		display: inline-flex;
-		align-items: center;
-		gap: 2px;
-	}
-	/* Marker clipboard cluster — edit / cut / copy / paste. Same
-	   inline-group treatment as `.mp-zoom` so the four buttons stay
-	   together when the toolbar wraps to a second row on mobile. */
-	:global(.mp-marker-clip) {
 		display: inline-flex;
 		align-items: center;
 		gap: 2px;
