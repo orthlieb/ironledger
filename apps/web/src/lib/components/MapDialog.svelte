@@ -54,6 +54,7 @@
 	import iconZoomInSvg from '$icons/magnifying-glass-plus-solid.svg?raw';
 	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid.svg?raw';
 	import iconGearSvg from '$icons/gear-solid.svg?raw';
+	import iconEditSvg from '$icons/pen-to-square-solid.svg?raw';
 	import { Dialog } from 'bits-ui';
 	import Combobox from '$lib/components/Combobox.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
@@ -76,6 +77,7 @@
 		markersAt,
 		addMarker,
 		updateMarker,
+		removeMarker,
 		setBackground,
 		initMap,
 		backgroundUrl,
@@ -1014,6 +1016,62 @@
 		placingMarker = false;
 	}
 
+	/** In-app clipboard for cut / copy / paste. Component-scoped so it
+	 *  survives dialog close/reopen for the life of the page, but resets
+	 *  on reload — the OS clipboard would need permissions and doesn't
+	 *  round-trip our marker fields cleanly. Everything except id / x / y
+	 *  is preserved; paste drops the copy at a small offset from the
+	 *  source coords so it's visible on top of (rather than fused with)
+	 *  the original. */
+	type MarkerCopyPayload = Omit<MapMarker, 'id' | 'x' | 'y'> & {
+		sourceX: number;
+		sourceY: number;
+	};
+	let clipboard = $state<MarkerCopyPayload | null>(null);
+
+	/** Open the editor for the currently selected marker. Same effect as
+	 *  double-clicking the marker on the canvas — see the "+ Marker"
+	 *  button's Edit sibling and the Ctrl/Cmd+E shortcut below. */
+	function editSelected() {
+		if (!selectedMarker) return;
+		markerPropsOpen = true;
+	}
+
+	/** Copy the selected marker into the clipboard. Every field except
+	 *  id / x / y is snapshotted; the original stays put. */
+	function copySelected() {
+		const m = selectedMarker;
+		if (!m) return;
+		const { id: _id, x, y, ...rest } = m;
+		void _id;
+		clipboard = { ...rest, sourceX: x, sourceY: y };
+	}
+
+	/** Cut = copy + delete. Same clipboard payload as copySelected(). */
+	function cutSelected() {
+		const m = selectedMarker;
+		if (!m) return;
+		const { id: _id, x, y, ...rest } = m;
+		void _id;
+		clipboard = { ...rest, sourceX: x, sourceY: y };
+		selectedMarkerId = null;
+		removeMarker(m.id);
+	}
+
+	/** Paste the clipboard payload as a new marker. Drops it a quarter
+	 *  of an icon's worth down-and-right of the source position so it
+	 *  reads as a distinct pin rather than fusing with the original,
+	 *  clamped into the map bounds. Selects the fresh marker so the
+	 *  user can immediately arrow-nudge or double-click to edit. */
+	function pasteClipboard() {
+		if (!clipboard) return;
+		const { sourceX, sourceY, ...rest } = clipboard;
+		const offset = ICON_SIZE / 4;
+		const target = clampToBounds({ x: sourceX + offset, y: sourceY + offset });
+		const id = addMarker({ x: target.x, y: target.y, ...rest });
+		selectedMarkerId = id;
+	}
+
 	/** Keyboard shortcut router. Handles:
 	 *
 	 *  - Escape while the pile picker is open — a non-dialog floating menu
@@ -1027,6 +1085,11 @@
 	 *  - Arrow keys while a marker is selected AND the properties dialog
 	 *    is closed — nudge the marker by one snap-cell at the current
 	 *    zoom. Held-Shift multiplies by 5 for coarse moves.
+	 *  - Ctrl/Cmd+X / +C on a selected marker — cut / copy it to the
+	 *    in-app clipboard. Ctrl/Cmd+V pastes at the source coords
+	 *    offset by a quarter-icon so the paste is visible on top of
+	 *    the original. Ctrl/Cmd+E opens the marker properties editor
+	 *    (same as double-click and the toolbar's Edit button).
 	 *
 	 *  Skipped when the target is an editable input so typing in a form
 	 *  field doesn't move the map's selected marker underneath. */
@@ -1059,6 +1122,35 @@
 					target.tagName === 'SELECT')
 			) {
 				return;
+			}
+			// Ctrl/Cmd + X / C / V / E — clipboard + edit shortcuts. Fire
+			// before the selection-required guard so paste works even when
+			// nothing is selected (as long as the clipboard has content).
+			const mod = ev.ctrlKey || ev.metaKey;
+			if (mod && !ev.shiftKey && !ev.altKey) {
+				const k = ev.key.toLowerCase();
+				if (k === 'v' && clipboard) {
+					ev.preventDefault();
+					pasteClipboard();
+					return;
+				}
+				if (selectedMarker) {
+					if (k === 'x') {
+						ev.preventDefault();
+						cutSelected();
+						return;
+					}
+					if (k === 'c') {
+						ev.preventDefault();
+						copySelected();
+						return;
+					}
+					if (k === 'e') {
+						ev.preventDefault();
+						editSelected();
+						return;
+					}
+				}
 			}
 			if (!selectedMarker) return;
 			if (ev.key === 'Escape') {
@@ -1324,6 +1416,17 @@
 							? 'Click on the map to place the marker (Esc to cancel)'
 							: 'Click, then tap the map to place a marker'}
 						aria-label="Add marker">+ Marker</button
+					>
+					<!-- Edit selected marker — double-click and Ctrl/Cmd+E do the
+					     same thing; the button surfaces the affordance for touch
+					     users. Cut / copy / paste stay keyboard-only (Ctrl+X /
+					     +C / +V) to keep the toolbar tight. -->
+					<button
+						class="mp-btn mp-btn-icon"
+						onclick={editSelected}
+						disabled={!selectedMarker}
+						use:tooltip={'Edit selected marker (double-click / Ctrl+E)'}
+						aria-label="Edit marker">{@html iconEditSvg}</button
 					>
 					<div class="mp-zoom" role="group" aria-label="Zoom controls">
 						<button
