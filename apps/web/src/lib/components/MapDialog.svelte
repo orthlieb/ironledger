@@ -2482,8 +2482,8 @@
 		   constant screen size at any zoom level. Fill is set inline to
 		   the marker's colour so the label reads as the annotation, not
 		   as generic body text. Stroke uses `vector-effect: non-scaling-
-		   stroke` (set on the element) so `2` translates to 2 device
-		   pixels — a crisp white halo that traces cleanly against a
+		   stroke` (set on the element) so `1` translates to 1 device
+		   pixel — a crisp white halo that traces cleanly against a
 		   busy background map. Labels never capture pointer events —
 		   they can extend well past the icon (esp. position: right /
 		   top-right / etc), and a tap on the far end of the label should
@@ -2516,7 +2516,7 @@
 		   light one so it never vanishes on a light map. Falls back to
 		   white when `--halo` is absent. */
 		stroke: var(--halo, #fff);
-		stroke-width: 2;
+		stroke-width: 1;
 		stroke-linejoin: round;
 	}
 	/* Doubled on mobile so labels stay legible when the whole map
