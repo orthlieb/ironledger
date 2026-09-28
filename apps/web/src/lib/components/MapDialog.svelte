@@ -56,6 +56,7 @@
 	import iconGearSvg from '$icons/gear-solid.svg?raw';
 	import iconEditSvg from '$icons/pen-to-square-solid.svg?raw';
 	import iconRulerSvg from '$icons/ruler-solid.svg?raw';
+	import iconLocationDotSvg from '$icons/location-dot-solid.svg?raw';
 	import { Dialog } from 'bits-ui';
 	import Combobox from '$lib/components/Combobox.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
@@ -933,6 +934,10 @@
 	}
 
 	function onGridPointerDown(e: PointerEvent) {
+		// Measure mode owns the whole map surface — no marker drag arming,
+		// no long-press editor, no selection reroute. A tap on a pin
+		// should add a waypoint like a tap on bare terrain.
+		if (measuring) return;
 		// Long-press timer for touch (opens editor even on a linked marker).
 		if (e.pointerType !== 'mouse') {
 			longPressFired = false;
@@ -1124,12 +1129,17 @@
 		measureCursor = null;
 	}
 
-	/** Toolbar button toggle. If a polyline is already on the canvas
-	 *  from a prior committed measurement, re-arming clears it and
-	 *  starts a new one. */
+	/** Toolbar button toggle. Clicking the ruler while it is armed
+	 *  cancels the whole measurement and clears the polyline — this
+	 *  is the only mobile-friendly way to abort (there is no Escape
+	 *  key on touch, and re-clicking a "commit" button that left the
+	 *  polyline behind meant a second tap to actually reset). Desktop
+	 *  users still get Escape as an equivalent shortcut, and
+	 *  double-clicking on the map is the "commit + keep the pins
+	 *  visible for screen-capture" path. */
 	function toggleMeasuring() {
-		if (measuring) {
-			endMeasuring();
+		if (measuring || measurePoints.length > 0) {
+			cancelMeasuring();
 		} else {
 			startMeasuring();
 		}
@@ -1247,6 +1257,21 @@
 					target.tagName === 'TEXTAREA' ||
 					target.tagName === 'SELECT')
 			) {
+				return;
+			}
+			// Backspace / Delete while measuring — pop the last waypoint.
+			// Skips the selection-scoped guard below so it works with no
+			// marker selected. When the last waypoint comes off, the
+			// preview segment (if any) collapses and only the earlier
+			// dots stay on the canvas; another Backspace pops the
+			// next-latest, etc. If the polyline is empty already, the
+			// key falls through to the browser default (nav back on some
+			// setups), which is fine — nothing to undo.
+			if (measuring && (ev.key === 'Backspace' || ev.key === 'Delete')) {
+				if (measurePoints.length > 0) {
+					ev.preventDefault();
+					measurePoints = measurePoints.slice(0, -1);
+				}
 				return;
 			}
 			// Ctrl/Cmd + X / C / V / E — clipboard + edit shortcuts. Fire
@@ -1534,14 +1559,16 @@
 				</div>
 				<div class="mp-tools mp-tools-actions">
 					<button
-						class="mp-btn mp-btn-add"
+						class="mp-btn mp-btn-add mp-btn-icon mp-btn-add-marker"
 						class:mp-btn-add--armed={placingMarker}
 						onclick={togglePlacingMarker}
 						aria-pressed={placingMarker}
 						use:tooltip={placingMarker
 							? 'Click on the map to place the marker (Esc to cancel)'
 							: 'Click, then tap the map to place a marker'}
-						aria-label="Add marker">+ Marker</button
+						aria-label="Add marker"
+						><span class="mp-btn-add-plus" aria-hidden="true">+</span
+						>{@html iconLocationDotSvg}</button
 					>
 					<!-- Edit selected marker — double-click and Ctrl/Cmd+E do the
 					     same thing; the button surfaces the affordance for touch
@@ -1557,7 +1584,10 @@
 					<!-- Measure distance — polyline ruler that only lights up when
 					     the map has a scale defined (Map options → Scale). Click
 					     to arm, click on the map to drop each waypoint, double-
-					     click / re-click the button to commit; Escape clears. -->
+					     click on the map to commit + keep the pins visible.
+					     Click the ruler button again (or Esc on desktop) to clear
+					     the measurement entirely — this is the mobile abort path
+					     since there's no Escape key on touch. -->
 					<button
 						class="mp-btn mp-btn-icon"
 						class:mp-btn-add--armed={measuring}
@@ -1566,7 +1596,7 @@
 						aria-pressed={measuring}
 						use:tooltip={hasScale
 							? measuring
-								? 'Click the map to add waypoints; double-click to finish (Esc clears)'
+								? 'Click the map to add waypoints; Backspace undoes; double-click to commit — click Ruler again to clear'
 								: 'Measure distance — click to arm the ruler'
 							: 'Turn on Scale in Map options to measure distances'}
 						aria-label="Measure distance">{@html iconRulerSvg}</button
@@ -2209,6 +2239,18 @@
 	}
 	:global(.mp-btn-icon svg path) {
 		fill: currentColor;
+	}
+	/* Add-marker button — a small "+" glyph next to the location-pin
+	   icon. Slightly tighter horizontal padding than a bare icon
+	   button so the "+" and the pin read as one compound glyph. */
+	:global(.mp-btn-add-marker) {
+		gap: 3px;
+	}
+	:global(.mp-btn-add-plus) {
+		font-family: var(--font-ui);
+		font-size: 1rem;
+		font-weight: 700;
+		line-height: 1;
 	}
 	/* Zoom control chip — minus + percentage + plus + fit, laid out
 	   inline so the toolbar row stays a single band on desktop. */
