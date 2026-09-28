@@ -56,6 +56,7 @@
 	import iconGearSvg from '$icons/gear-solid.svg?raw';
 	import iconEditSvg from '$icons/pen-to-square-solid.svg?raw';
 	import iconRulerSvg from '$icons/ruler-solid.svg?raw';
+	import iconLocationDotSvg from '$icons/location-dot-solid.svg?raw';
 	import { Dialog } from 'bits-ui';
 	import Combobox from '$lib/components/Combobox.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
@@ -933,6 +934,10 @@
 	}
 
 	function onGridPointerDown(e: PointerEvent) {
+		// Measure mode owns the whole map surface — no marker drag arming,
+		// no long-press editor, no selection reroute. A tap on a pin
+		// should add a waypoint like a tap on bare terrain.
+		if (measuring) return;
 		// Long-press timer for touch (opens editor even on a linked marker).
 		if (e.pointerType !== 'mouse') {
 			longPressFired = false;
@@ -1539,14 +1544,16 @@
 				</div>
 				<div class="mp-tools mp-tools-actions">
 					<button
-						class="mp-btn mp-btn-add"
+						class="mp-btn mp-btn-add mp-btn-icon mp-btn-add-marker"
 						class:mp-btn-add--armed={placingMarker}
 						onclick={togglePlacingMarker}
 						aria-pressed={placingMarker}
 						use:tooltip={placingMarker
 							? 'Click on the map to place the marker (Esc to cancel)'
 							: 'Click, then tap the map to place a marker'}
-						aria-label="Add marker">+ Marker</button
+						aria-label="Add marker"
+						><span class="mp-btn-add-plus" aria-hidden="true">+</span
+						>{@html iconLocationDotSvg}</button
 					>
 					<!-- Edit selected marker — double-click and Ctrl/Cmd+E do the
 					     same thing; the button surfaces the affordance for touch
@@ -2217,6 +2224,18 @@
 	}
 	:global(.mp-btn-icon svg path) {
 		fill: currentColor;
+	}
+	/* Add-marker button — a small "+" glyph next to the location-pin
+	   icon. Slightly tighter horizontal padding than a bare icon
+	   button so the "+" and the pin read as one compound glyph. */
+	:global(.mp-btn-add-marker) {
+		gap: 3px;
+	}
+	:global(.mp-btn-add-plus) {
+		font-family: var(--font-ui);
+		font-size: 1rem;
+		font-weight: 700;
+		line-height: 1;
 	}
 	/* Zoom control chip — minus + percentage + plus + fit, laid out
 	   inline so the toolbar row stays a single band on desktop. */
