@@ -1259,6 +1259,21 @@
 			) {
 				return;
 			}
+			// Backspace / Delete while measuring — pop the last waypoint.
+			// Skips the selection-scoped guard below so it works with no
+			// marker selected. When the last waypoint comes off, the
+			// preview segment (if any) collapses and only the earlier
+			// dots stay on the canvas; another Backspace pops the
+			// next-latest, etc. If the polyline is empty already, the
+			// key falls through to the browser default (nav back on some
+			// setups), which is fine — nothing to undo.
+			if (measuring && (ev.key === 'Backspace' || ev.key === 'Delete')) {
+				if (measurePoints.length > 0) {
+					ev.preventDefault();
+					measurePoints = measurePoints.slice(0, -1);
+				}
+				return;
+			}
 			// Ctrl/Cmd + X / C / V / E — clipboard + edit shortcuts. Fire
 			// before the selection-required guard so paste works even when
 			// nothing is selected (as long as the clipboard has content).
@@ -1581,7 +1596,7 @@
 						aria-pressed={measuring}
 						use:tooltip={hasScale
 							? measuring
-								? 'Click the map to add waypoints; double-click to commit — click Ruler again to clear'
+								? 'Click the map to add waypoints; Backspace undoes; double-click to commit — click Ruler again to clear'
 								: 'Measure distance — click to arm the ruler'
 							: 'Turn on Scale in Map options to measure distances'}
 						aria-label="Measure distance">{@html iconRulerSvg}</button

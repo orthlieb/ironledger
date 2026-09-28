@@ -130,6 +130,26 @@ test.describe('Map ruler — scale enabled', () => {
 		);
 	});
 
+	test('Backspace / Delete pops the most-recent waypoint', async ({ page }) => {
+		await page.locator('[aria-label="Measure distance"]').click();
+		await drawTwoWaypoints(page);
+		await expect(page.locator('.mp-measure-dot')).toHaveCount(2);
+
+		// One Backspace drops the second waypoint — line disappears
+		// (needs 2+ points), one dot remains, tool stays armed.
+		await page.keyboard.press('Backspace');
+		await expect(page.locator('.mp-measure-dot')).toHaveCount(1);
+		await expect(page.locator('.mp-measure-line')).toHaveCount(0);
+		await expect(page.locator('[aria-label="Measure distance"]')).toHaveAttribute(
+			'aria-pressed',
+			'true',
+		);
+
+		// Delete pops the first waypoint too — polyline is now empty.
+		await page.keyboard.press('Delete');
+		await expect(page.locator('.mp-measure-dot')).toHaveCount(0);
+	});
+
 	test('double-click commits and disarms; polyline stays visible', async ({ page }) => {
 		const rulerBtn = page.locator('[aria-label="Measure distance"]');
 		await rulerBtn.click();
