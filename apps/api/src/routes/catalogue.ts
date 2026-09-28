@@ -68,13 +68,7 @@ function makeEtag(data: unknown): string {
 
 /** One content type an extension can provide, keyed by the merged catalogue. */
 type ProvidesType =
-  | 'assets'
-  | 'moves'
-  | 'moveOverrides'
-  | 'oracles'
-  | 'foes'
-  | 'foeOverrides'
-  | 'delveTables';
+  'assets' | 'moves' | 'moveOverrides' | 'oracles' | 'foes' | 'foeOverrides' | 'delveTables';
 
 /** Per-category icon/tint/order a manifest entry declares. Mirrors
  *  `CategoryDef` in @ironledger/shared (kept local — the API doesn't import

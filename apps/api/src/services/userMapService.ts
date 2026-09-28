@@ -36,14 +36,7 @@ export interface MapMarker {
   };
   /** Compass position of the label relative to the icon. */
   labelPosition?:
-    | 'top'
-    | 'bottom'
-    | 'left'
-    | 'right'
-    | 'top-left'
-    | 'top-right'
-    | 'bottom-left'
-    | 'bottom-right';
+    'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 }
 
 /** Free-form per-map settings JSONB. Client owns the shape (see
