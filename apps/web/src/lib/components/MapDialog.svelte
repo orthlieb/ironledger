@@ -438,8 +438,48 @@
 	 *  0 0 cols rows so at zoom = 2 the SVG renders internally at 2× its
 	 *  viewBox, visually enlarging everything (image, grid, markers,
 	 *  scale bar) in lockstep. */
-	const svgWidth = $derived(canvasPxW * zoom);
-	const svgHeight = $derived(canvasPxH * zoom);
+	/**
+	 * SVG pixel dimensions. In the default (aspect-fit) path the body
+	 * has already been sized to the map's aspect via `.mp-body {
+	 * aspect-ratio }` + the outer dialog sizing effect, so the SVG
+	 * simply fills the body: `canvasPxW × zoom`.
+	 *
+	 * In fullscreen the body drops its aspect-ratio and grows to fill
+	 * the leftover dialog space, so `canvasPxW × canvasPxH` no longer
+	 * matches the map's aspect. Sizing the SVG to those raw dims would
+	 * stretch the map non-uniformly (`preserveAspectRatio="none"`
+	 * distorts the artwork). Instead compute a `cover`-style aspect
+	 * fit: the map's smaller-relative dimension fills the container
+	 * and the larger extends past the visible edge, which
+	 * `.mp-canvas`'s `overflow: auto` renders as a pan surface. That
+	 * gives the "map fills the screen; drag to see the cropped edges"
+	 * feel a mobile-fullscreen dialog needs.
+	 */
+	const svgWidth = $derived.by(() => {
+		if (!effectiveFullscreen) return canvasPxW * zoom;
+		const mapAspect = gridDims.cols / gridDims.rows;
+		const bodyAspect = canvasPxW / canvasPxH;
+		if (!Number.isFinite(mapAspect) || !Number.isFinite(bodyAspect) || bodyAspect <= 0) {
+			return canvasPxW * zoom;
+		}
+		// Body is more portrait than the map → fill height, extend
+		// width past canvasPxW (horizontal pan). Otherwise the body is
+		// wider than the map → fill width normally.
+		const baseW = bodyAspect < mapAspect ? canvasPxH * mapAspect : canvasPxW;
+		return baseW * zoom;
+	});
+	const svgHeight = $derived.by(() => {
+		if (!effectiveFullscreen) return canvasPxH * zoom;
+		const mapAspect = gridDims.cols / gridDims.rows;
+		const bodyAspect = canvasPxW / canvasPxH;
+		if (!Number.isFinite(mapAspect) || !Number.isFinite(bodyAspect) || bodyAspect <= 0) {
+			return canvasPxH * zoom;
+		}
+		// Mirror the svgWidth branch: body more portrait → fill height,
+		// wider body → extend height past canvasPxH (vertical pan).
+		const baseH = bodyAspect < mapAspect ? canvasPxH : canvasPxW / mapAspect;
+		return baseH * zoom;
+	});
 
 	// Zoom + pan are restored once per (open × active map) via these guards.
 	// `armViewRestore()` re-arms them so a reopen or a map switch re-applies the
@@ -2246,6 +2286,17 @@
 		max-width: none !important;
 		max-height: none !important;
 		border-radius: 0 !important;
+	}
+	/* Fullscreen body loses its aspect-ratio and flex-grows to fill
+	   the leftover dialog space (title + toolbars sit above). The SVG
+	   inside is then sized in `cover` mode from the derived
+	   svgWidth / svgHeight so the map fills the larger dimension and
+	   overflows the smaller one; `.mp-canvas`'s existing `overflow:
+	   auto` renders the overflow as a pan surface. */
+	:global(.mp-dialog--fullscreen .mp-body) {
+		aspect-ratio: auto !important;
+		flex: 1 1 auto;
+		min-height: 0;
 	}
 	/* Fullscreen toggle in the dialog header — same base styling as ✕
 	   (via .dh-close), just an armed-pressed treatment for the "you're
