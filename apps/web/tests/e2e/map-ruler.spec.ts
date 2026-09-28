@@ -151,21 +151,22 @@ test.describe('Map ruler — scale enabled', () => {
 		await expect(page.locator('.mp-measure-total')).toBeVisible();
 	});
 
-	test('re-arming clears the previous polyline and starts fresh', async ({ page }) => {
-		// Commit one polyline first, then re-arm — the earlier waypoints
-		// must disappear so the second measurement is not confused by
-		// leftover dots.
+	test('clicking the ruler while armed clears the measurement (mobile abort)', async ({ page }) => {
+		// Mobile has no Escape key, so the toolbar button doubles as the
+		// abort — clicking it while measuring wipes every waypoint and
+		// disarms. Desktop still has Escape, and double-click on the map
+		// stays the "commit + keep visible" path.
 		const rulerBtn = page.locator('[aria-label="Measure distance"]');
 		await rulerBtn.click();
 		await drawTwoWaypoints(page);
-		// End measuring — the polyline stays visible via re-click.
-		await rulerBtn.click();
 		await expect(page.locator('.mp-measure-dot')).toHaveCount(2);
 
-		// Re-arm — the fresh-start rule kicks in and clears the old polyline.
 		await rulerBtn.click();
+
 		await expect(page.locator('.mp-measure-dot')).toHaveCount(0);
 		await expect(page.locator('.mp-measure-line')).toHaveCount(0);
+		await expect(page.locator('.mp-measure-total')).toHaveCount(0);
+		await expect(rulerBtn).toHaveAttribute('aria-pressed', 'false');
 	});
 });
 

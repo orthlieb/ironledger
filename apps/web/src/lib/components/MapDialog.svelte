@@ -1124,12 +1124,17 @@
 		measureCursor = null;
 	}
 
-	/** Toolbar button toggle. If a polyline is already on the canvas
-	 *  from a prior committed measurement, re-arming clears it and
-	 *  starts a new one. */
+	/** Toolbar button toggle. Clicking the ruler while it is armed
+	 *  cancels the whole measurement and clears the polyline — this
+	 *  is the only mobile-friendly way to abort (there is no Escape
+	 *  key on touch, and re-clicking a "commit" button that left the
+	 *  polyline behind meant a second tap to actually reset). Desktop
+	 *  users still get Escape as an equivalent shortcut, and
+	 *  double-clicking on the map is the "commit + keep the pins
+	 *  visible for screen-capture" path. */
 	function toggleMeasuring() {
-		if (measuring) {
-			endMeasuring();
+		if (measuring || measurePoints.length > 0) {
+			cancelMeasuring();
 		} else {
 			startMeasuring();
 		}
@@ -1557,7 +1562,10 @@
 					<!-- Measure distance — polyline ruler that only lights up when
 					     the map has a scale defined (Map options → Scale). Click
 					     to arm, click on the map to drop each waypoint, double-
-					     click / re-click the button to commit; Escape clears. -->
+					     click on the map to commit + keep the pins visible.
+					     Click the ruler button again (or Esc on desktop) to clear
+					     the measurement entirely — this is the mobile abort path
+					     since there's no Escape key on touch. -->
 					<button
 						class="mp-btn mp-btn-icon"
 						class:mp-btn-add--armed={measuring}
@@ -1566,7 +1574,7 @@
 						aria-pressed={measuring}
 						use:tooltip={hasScale
 							? measuring
-								? 'Click the map to add waypoints; double-click to finish (Esc clears)'
+								? 'Click the map to add waypoints; double-click to commit — click Ruler again to clear'
 								: 'Measure distance — click to arm the ruler'
 							: 'Turn on Scale in Map options to measure distances'}
 						aria-label="Measure distance">{@html iconRulerSvg}</button
