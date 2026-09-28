@@ -1286,10 +1286,18 @@
 			// next-latest, etc. If the polyline is empty already, the
 			// key falls through to the browser default (nav back on some
 			// setups), which is fine — nothing to undo.
+			//
+			// Also clear the stale `measureCursor` from the last
+			// pointermove — otherwise the template would still splice
+			// it into `pts` (`[remainingPoint, staleCursor]`), keeping
+			// a phantom preview `.mp-measure-line` on screen until the
+			// user nudges the mouse. The next pointermove repopulates
+			// `measureCursor` and the live preview resumes as usual.
 			if (measuring && (ev.key === 'Backspace' || ev.key === 'Delete')) {
 				if (measurePoints.length > 0) {
 					ev.preventDefault();
 					measurePoints = measurePoints.slice(0, -1);
+					measureCursor = null;
 				}
 				return;
 			}
