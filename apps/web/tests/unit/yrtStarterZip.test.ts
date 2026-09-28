@@ -41,7 +41,7 @@ describe('YRT starter zip', () => {
 	it('carries the advertised settlements and places', () => {
 		const d = body();
 		expect(d.communities).toHaveLength(15);
-		expect(d.places).toHaveLength(22);
+		expect(d.places).toHaveLength(23);
 	});
 
 	it('reassembles every bundled figure into an inline imageUrl', () => {
