@@ -57,6 +57,9 @@
 	import iconEditSvg from '$icons/pen-to-square-solid.svg?raw';
 	import iconRulerSvg from '$icons/ruler-solid.svg?raw';
 	import iconLocationDotSvg from '$icons/location-dot-solid.svg?raw';
+	import iconMaximizeSvg from '$icons/maximize-solid.svg?raw';
+	import iconMinimizeSvg from '$icons/minimize-solid.svg?raw';
+	import xmarkSvg from '$icons/xmark-solid.svg?raw';
 	import { Dialog } from 'bits-ui';
 	import Combobox from '$lib/components/Combobox.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
@@ -351,12 +354,28 @@
 		const pw = gridDims.cols;
 		const ph = gridDims.rows;
 		if (pw <= 0 || ph <= 0) return;
+		// Tracked so a fullscreen-toggle click re-runs this effect and
+		// re-attaches the ResizeObserver + calls settle() with the new
+		// state — the settle() early-out otherwise wouldn't fire from
+		// the same-frame observer callbacks.
+		void effectiveFullscreen;
 
 		let raf: number | null = null;
 		const settle = () => {
 			raf = null;
 			const bodyEl = el.querySelector('.mp-body') as HTMLElement | null;
 			if (!bodyEl) return;
+			// Fullscreen (either the desktop toggle or the mobile-forced
+			// mode) drops the aspect-preserving px sizing — the CSS
+			// variant `.mp-dialog--fullscreen` takes over with
+			// `width: 100vw; height: 100dvh`. Clear whatever inline
+			// dims a previous non-fullscreen frame left behind so the
+			// CSS isn't fighting a stale `style="width: 640px..."`.
+			if (effectiveFullscreen) {
+				if (el.style.width) el.style.width = '';
+				if (el.style.height) el.style.height = '';
+				return;
+			}
 			const ahh = bodyEl.offsetTop;
 			if (ahh < 0) return;
 			// Give phone-width viewports more room — a fixed-aspect map at
@@ -1374,6 +1393,40 @@
 		mq.addEventListener('change', sync);
 		return () => mq.removeEventListener('change', sync);
 	});
+
+	// ─── Fullscreen (desktop toggle; always-on for mobile) ──────────────────
+	/**
+	 * Fullscreen state — a desktop-only toggle that fills the viewport
+	 * with the dialog. Mobile is effectively always fullscreen because
+	 * an 80–90 % dialog on a phone leaves too little map surface;
+	 * `effectiveFullscreen` collapses the two into one flag the sizing
+	 * effect + CSS variant both key off.
+	 *
+	 * The toggle value persists per-device via localStorage so a user
+	 * who prefers the wide layout doesn't have to re-open it every
+	 * time. Read once on module init; writes fire from
+	 * `toggleFullscreen()`.
+	 */
+	const FS_KEY = 'ironledger:map:fullscreen';
+	function readSavedFullscreen(): boolean {
+		if (typeof localStorage === 'undefined') return false;
+		try {
+			return localStorage.getItem(FS_KEY) === '1';
+		} catch {
+			return false;
+		}
+	}
+	let fullscreen = $state(readSavedFullscreen());
+	const effectiveFullscreen = $derived(isMobileViewport || fullscreen);
+	function toggleFullscreen() {
+		fullscreen = !fullscreen;
+		try {
+			localStorage.setItem(FS_KEY, fullscreen ? '1' : '0');
+		} catch {
+			// Private mode / storage disabled — the toggle still works
+			// for this session, just doesn't persist.
+		}
+	}
 	const ICON_SIZE = $derived(isMobileViewport ? 0.84375 : 0.421875);
 	/** Raster (PNG) icons are detailed line-art that reads visually smaller
 	 *  than the bold vector glyph silhouettes at the same box size, so they
@@ -1532,8 +1585,26 @@
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
 		<Dialog.Overlay class="mp-overlay" style="z-index: {overlayZ(stackDepth)}" />
-		<Dialog.Content bind:ref={dialogEl} class="mp-dialog" style="z-index: {contentZ(stackDepth)}">
-			<DialogHeader title={headingText('Edit Map')} onclose={close} />
+		<Dialog.Content
+			bind:ref={dialogEl}
+			class={effectiveFullscreen ? 'mp-dialog mp-dialog--fullscreen' : 'mp-dialog'}
+			style="z-index: {contentZ(stackDepth)}"
+		>
+			<DialogHeader title={headingText('Edit Map')}>
+				{#snippet trailing()}
+					{#if !isMobileViewport}
+						<button
+							class="dh-close mp-fs-btn"
+							onclick={toggleFullscreen}
+							aria-pressed={fullscreen}
+							use:tooltip={fullscreen ? 'Restore dialog size' : 'Fullscreen'}
+							aria-label={fullscreen ? 'Restore dialog size' : 'Fullscreen'}
+							>{@html fullscreen ? iconMinimizeSvg : iconMaximizeSvg}</button
+						>
+					{/if}
+					<button class="dh-close" onclick={close} aria-label="Close">{@html xmarkSvg}</button>
+				{/snippet}
+			</DialogHeader>
 
 			<div class="mp-toolbar">
 				<div class="mp-tools mp-tools-map">
@@ -2151,6 +2222,28 @@
 			max-width: 90vw;
 			max-height: 90vh;
 		}
+	}
+	/* Fullscreen variant — either the desktop toggle or the mobile
+	   auto-mode sets `.mp-dialog--fullscreen`. Fills the viewport and
+	   drops the border-radius so the dialog reads as a full-page
+	   surface. The sizing effect above clears any inline width/height
+	   left over from the aspect-fit path when this class flips on, so
+	   the CSS wins by default. */
+	:global(.mp-dialog--fullscreen) {
+		top: 0 !important;
+		left: 0 !important;
+		transform: none !important;
+		width: 100vw !important;
+		height: 100dvh !important;
+		max-width: none !important;
+		max-height: none !important;
+		border-radius: 0 !important;
+	}
+	/* Fullscreen toggle in the dialog header — same base styling as ✕
+	   (via .dh-close), just an armed-pressed treatment for the "you're
+	   in fullscreen" state so the icon-only button reads as a toggle. */
+	:global(.mp-fs-btn[aria-pressed='true']) {
+		color: var(--text-accent);
 	}
 
 	/* On desktop the picker + action cluster sit on the same row,
