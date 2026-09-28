@@ -23,7 +23,7 @@
  * fixture.
  */
 import { test, expect, type Page } from '@playwright/test';
-import { resetAll, getTestToken } from './helpers/reset';
+import { resetAll, clearMapMarkers, getTestToken } from './helpers/reset';
 
 const V1 = 'http://127.0.0.1:3000/api/v1';
 
@@ -87,6 +87,11 @@ test.describe('Map ruler — scale enabled', () => {
 	});
 
 	test.beforeEach(async ({ page }) => {
+		// Markers persist server-side — start each test clean so the
+		// "markers frozen while measuring" test doesn't inherit leftover
+		// pins from an earlier run, and other tests aren't confused by a
+		// stray dot from the newest addition.
+		await clearMapMarkers();
 		await page.goto('/home');
 		await waitForHome(page);
 		await openMap(page);
@@ -148,6 +153,47 @@ test.describe('Map ruler — scale enabled', () => {
 		// Delete pops the first waypoint too — polyline is now empty.
 		await page.keyboard.press('Delete');
 		await expect(page.locator('.mp-measure-dot')).toHaveCount(0);
+	});
+
+	test('a tap on a marker while measuring adds a waypoint, not a selection', async ({ page }) => {
+		// Drop a marker at a known spot via the toolbar flow so there is
+		// a pin to interact with. The tap that arms placement + the
+		// second tap that drops the pin land at the same coord, and the
+		// editor opens on the fresh marker as usual.
+		await page.locator('[aria-label="Add marker"]').click();
+		const grid = page.locator('.mp-grid-capture');
+		const box = await grid.boundingBox();
+		if (!box) throw new Error('grid capture has no bounding box');
+		const markerX = box.width * 0.5;
+		const markerY = box.height * 0.5;
+		await grid.click({ position: { x: markerX, y: markerY } });
+		await expect(page.locator('.mp-props-dialog')).toBeVisible();
+		await page.locator('#mp-props-name').fill('Frozen Pin');
+		await page.locator('.mp-props-footer .btn-primary').click(); // OK
+		await expect(page.locator('.mp-props-dialog')).not.toBeVisible();
+		await expect(page.locator('.mp-marker')).toHaveCount(1);
+
+		// Arm the ruler. `startMeasuring()` clears the marker selection so
+		// the pin is no longer highlighted and the toolbar Edit button
+		// disables — the map is now the ruler's canvas.
+		await page.locator('[aria-label="Measure distance"]').click();
+
+		// Tap on the pin. Without the pointer-down guard, this would arm
+		// a drag on the marker AND schedule a long-press on touch — either
+		// of which routes into the editor. With the guard, onGridPointerDown
+		// short-circuits and onGridClick routes the tap to `measurePoints`.
+		await grid.click({ position: { x: markerX, y: markerY } });
+
+		// A waypoint landed at the pin's coord; the editor did not open;
+		// the ruler is still armed.
+		await expect(page.locator('.mp-measure-dot')).toHaveCount(1);
+		await expect(page.locator('.mp-props-dialog')).not.toBeVisible();
+		await expect(page.locator('[aria-label="Measure distance"]')).toHaveAttribute(
+			'aria-pressed',
+			'true',
+		);
+		// The marker itself is untouched — still present, still labelled.
+		await expect(page.locator('.mp-marker')).toHaveCount(1);
 	});
 
 	test('double-click commits and disarms; polyline stays visible', async ({ page }) => {
