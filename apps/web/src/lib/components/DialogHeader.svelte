@@ -86,13 +86,17 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
-	.dh-close :global(svg) {
+	/* :global so hosts that use the `trailing` snippet can reuse the
+	   exact close-button styling (a fullscreen toggle sitting next to
+	   the ✕ is one such case) rather than re-implementing the padding
+	   + colour + hover cascade. */
+	:global(.dh-close svg) {
 		width: 0.78rem;
 		height: 0.78rem;
 		fill: currentColor;
 		display: block;
 	}
-	.dh-close {
+	:global(.dh-close) {
 		background: transparent;
 		border: none;
 		color: var(--text-dimmer);
@@ -104,7 +108,16 @@
 		font-family: inherit;
 		flex-shrink: 0;
 	}
-	.dh-close:hover {
+	:global(.dh-close:hover) {
 		color: var(--text);
+	}
+	/* On mobile every dialog is effectively full-page (see app.css →
+	   "App-level scroll architecture" in CLAUDE.md), so there is no
+	   parent surface to drag against. Hide the grip so the title bar
+	   isn't cluttered by an affordance that does nothing on touch. */
+	@media (max-width: 640px) {
+		.dh-header :global(.drag-grip) {
+			display: none;
+		}
 	}
 </style>
