@@ -2305,7 +2305,16 @@
 	}
 	:global(.mp-dialog--fullscreen .mp-canvas) {
 		display: grid;
-		place-items: center;
+		/* `safe center` — center the SVG when it fits (letterbox stays
+		   even) but fall back to `start` alignment when the user zooms
+		   past the viewport. The `zoomAround` math computes the new
+		   scroll position from `scrollLeft + anchorX`, assuming the SVG
+		   starts at the canvas content origin (0, 0). Unsafe centering
+		   parks half the overflow above/left of the container's scroll
+		   origin (unreachable), so scrolls land in the wrong place after
+		   a pinch-zoom and markers appear to drift onto neighbouring
+		   features. `safe` prevents that. */
+		place-items: safe center;
 	}
 	/* Fullscreen toggle in the dialog header — same base styling as ✕
 	   (via .dh-close), just an armed-pressed treatment for the "you're
