@@ -871,7 +871,12 @@
 		// Double-click commits + disarms (handled in onGridDblClick).
 		if (measuring) {
 			measurePoints = [...measurePoints, { x, y }];
-			measureCursor = { x, y };
+			// Leave measureCursor as it was (null on the first tap, or the
+			// last hovered position on desktop) — a pointer-move (or the
+			// next tap) will refresh it. Setting it to the click coord
+			// here would immediately synthesise a zero-length preview
+			// segment on touch devices, where there is no hover, and the
+			// distance chip would flash "0 km" on top of the first dot.
 			return;
 		}
 		// Armed for placement — drop the marker here, exit the mode, done.
@@ -1911,25 +1916,19 @@
 								/>
 							{/if}
 							{#each measurePoints as pt, i (`mp-${i}`)}
-								<circle
-									class="mp-measure-dot"
-									cx={pt.x}
-									cy={pt.y}
-									r="0.15"
-									vector-effect="non-scaling-stroke"
-								/>
+								<circle class="mp-measure-dot" cx={pt.x} cy={pt.y} r="0.06" />
 							{/each}
 							{#if pts.length > 1}
 								{@const last = pts[pts.length - 1]}
 								<text
 									class="mp-measure-total"
-									x={last.x + 0.3}
-									y={last.y - 0.3}
+									x={last.x + 0.15}
+									y={last.y - 0.15}
+									font-size="0.35"
 									paint-order="stroke"
 									stroke="#fff"
-									stroke-width="3"
-									stroke-linejoin="round"
-									vector-effect="non-scaling-stroke">{formatDistance(measureTotal)}</text
+									stroke-width="0.05"
+									stroke-linejoin="round">{formatDistance(measureTotal)}</text
 								>
 							{/if}
 						{/if}
@@ -2559,15 +2558,23 @@
 		stroke-linejoin: round;
 		pointer-events: none;
 	}
+	/* Waypoint dot: `r` is in the map's world units (grid cells), and
+	   the halo is a narrow world-unit stroke rather than a
+	   non-scaling-stroke — iOS Safari doesn't honour non-scaling-stroke
+	   on descendants of an SVG with `preserveAspectRatio: none`, so a
+	   `stroke-width: 1.5` there would render as 1.5 world units (~40 px
+	   at typical mobile scales), which is what the initial ruler
+	   commit shipped and looked like a giant translucent blob. Small
+	   world-unit values keep the render consistent between desktop and
+	   mobile. */
 	:global(.mp-measure-dot) {
 		fill: var(--text-accent);
 		stroke: #fff;
-		stroke-width: 1.5;
+		stroke-width: 0.02;
 		pointer-events: none;
 	}
 	:global(.mp-measure-total) {
 		font-family: var(--font-ui);
-		font-size: 0.4px;
 		font-weight: 700;
 		fill: var(--text-accent);
 		pointer-events: none;
