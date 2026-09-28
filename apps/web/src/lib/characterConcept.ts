@@ -15,12 +15,7 @@
 
 /** Character-composition concepts the NewNPC dialog + NPC card understand. */
 export type CharacterConcept =
-	| 'role'
-	| 'goal'
-	| 'revealedDetails'
-	| 'activity'
-	| 'disposition'
-	| 'firstLook';
+	'role' | 'goal' | 'revealedDetails' | 'activity' | 'disposition' | 'firstLook';
 
 /** Minimal oracle shape the resolver needs. */
 export interface CharacterOracleCandidate {

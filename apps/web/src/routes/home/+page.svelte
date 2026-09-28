@@ -240,20 +240,16 @@
 	}
 	const containmentGraph = $derived(
 		buildGraph([
-			...communities.map(
-				(c): ContainmentNode => ({
-					ref: refOf('community', c.id),
-					within: entityWithin(c),
-					region: c.region,
-				}),
-			),
-			...places.map(
-				(p): ContainmentNode => ({
-					ref: refOf('place', p.id),
-					within: entityWithin(p),
-					region: p.region,
-				}),
-			),
+			...communities.map((c): ContainmentNode => ({
+				ref: refOf('community', c.id),
+				within: entityWithin(c),
+				region: c.region,
+			})),
+			...places.map((p): ContainmentNode => ({
+				ref: refOf('place', p.id),
+				within: entityWithin(p),
+				region: p.region,
+			})),
 			...npcs.map((n): ContainmentNode => ({ ref: refOf('npc', n.id), within: entityWithin(n) })),
 		]),
 	);

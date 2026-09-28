@@ -2743,11 +2743,21 @@
 	}
 	/* Toolbar "+ Marker" armed indicator — pressed styling so the button
 	   reads as "the next click goes here" without needing a legend. Also
-	   applied to the ruler button while measuring. */
-	:global(.mp-btn-add--armed) {
-		background: var(--accent-glow);
+	   applied to the ruler button while measuring. Solid-accent fill +
+	   inverted icon colour so the toggled-on state stays legible on both
+	   themes; the outer accent-glow ring reinforces the "hot" affordance
+	   without covering neighbouring buttons. Repeated on the hover
+	   compound selector so hovering an armed button doesn't fall back to
+	   the base `.mp-btn:hover` rule (which would swap the fill back). */
+	:global(.mp-btn-add--armed),
+	:global(.mp-btn-add--armed:hover:not(:disabled)) {
+		background: var(--text-accent);
 		border-color: var(--text-accent);
-		color: var(--text-accent);
+		color: var(--bg-control);
+		box-shadow: 0 0 0 2px var(--accent-glow);
+	}
+	:global(.mp-btn-add--armed:hover:not(:disabled)) {
+		filter: brightness(1.1);
 	}
 
 	/* Measure-ruler overlay drawn inside the world-coord SVG. Colour is

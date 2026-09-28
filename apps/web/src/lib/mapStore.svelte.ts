@@ -101,14 +101,7 @@ export interface MapMarker {
  *  stays at the marker anchor). Exported so the marker-properties
  *  dialog can strongly type its picker options. */
 export type MapMarkerLabelPosition =
-	| 'top'
-	| 'bottom'
-	| 'left'
-	| 'right'
-	| 'top-left'
-	| 'top-right'
-	| 'bottom-left'
-	| 'bottom-right';
+	'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right';
 
 /** Server-persisted per-map settings — things that describe the MAP
  *  itself (not the current viewer's device preferences). Scale in
