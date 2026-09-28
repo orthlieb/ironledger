@@ -45,13 +45,18 @@ async function openMap(page: Page): Promise<void> {
 	await expect(page.locator('.mp-grid-capture')).toBeVisible({ timeout: 8_000 });
 }
 
-/** Two grid clicks that leave the polyline with dots at both endpoints. */
+/** Two grid clicks that leave the polyline with dots at both endpoints.
+ *  The two waypoints deliberately differ in BOTH x and y so the resulting
+ *  polyline has a non-zero bounding-box on each axis — Playwright's
+ *  `toBeVisible()` treats an SVG element with a zero-area bounding box as
+ *  hidden, so a purely horizontal (or purely vertical) line would trip the
+ *  `.mp-measure-line` visibility asserts even though it renders fine. */
 async function drawTwoWaypoints(page: Page): Promise<void> {
 	const grid = page.locator('.mp-grid-capture');
 	const box = await grid.boundingBox();
 	if (!box) throw new Error('grid capture has no bounding box');
 	await grid.click({ position: { x: box.width * 0.2, y: box.height * 0.3 } });
-	await grid.click({ position: { x: box.width * 0.8, y: box.height * 0.3 } });
+	await grid.click({ position: { x: box.width * 0.8, y: box.height * 0.6 } });
 }
 
 test.describe('Map ruler — scale enabled', () => {
@@ -134,8 +139,11 @@ test.describe('Map ruler — scale enabled', () => {
 		await grid.click({ position: { x: box.width * 0.2, y: box.height * 0.3 } });
 		// Double-click at a second location — the dblclick handler pops
 		// the duplicate point the second click of the pair otherwise adds,
-		// so the polyline ends at where the double-click landed.
-		await grid.dblclick({ position: { x: box.width * 0.8, y: box.height * 0.3 } });
+		// so the polyline ends at where the double-click landed. The y
+		// deliberately differs from the first click's so the resulting
+		// polyline has a non-zero bounding-box height (see the
+		// `drawTwoWaypoints` docstring for why that matters).
+		await grid.dblclick({ position: { x: box.width * 0.8, y: box.height * 0.6 } });
 
 		await expect(rulerBtn).toHaveAttribute('aria-pressed', 'false');
 		await expect(page.locator('.mp-measure-dot')).toHaveCount(2);
