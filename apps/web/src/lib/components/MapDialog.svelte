@@ -1031,9 +1031,10 @@
 	/** "+ Marker" — enter placement mode. The next click on the map's
 	 *  click-capture <rect> drops a marker at those coords (see the
 	 *  early-out in onGridClick), and the cursor is swapped to a
-	 *  crosshair via the .mp-canvas--placing modifier so the arming
-	 *  state is visually obvious. Escape cancels; clicking the button
-	 *  a second time also cancels (toggle). */
+	 *  location-pin glyph via the .mp-canvas--placing modifier (with a
+	 *  crosshair fallback) so the arming state is visually obvious.
+	 *  Escape cancels; clicking the button a second time also cancels
+	 *  (toggle). */
 	let placingMarker = $state(false);
 	function togglePlacingMarker() {
 		placingMarker = !placingMarker;
@@ -2515,9 +2516,24 @@
 	   click on the map drops a marker at that spot. Swap to a crosshair
 	   cursor everywhere in the canvas so the arming state is impossible
 	   to miss. */
+	/* Placing a marker — swap to a location-pin cursor with the hotspot
+	   at the tip so the "you're about to drop here" affordance is
+	   unmistakable AND lines up with the pin the click actually creates.
+	   The pin is a URL-encoded location-dot SVG (mirrors
+	   $icons/location-dot-solid.svg), rendered at 24×32 with a white
+	   stroke halo so it reads on both dark and pale map backgrounds. The
+	   `crosshair` fallback keeps the affordance obvious on the handful of
+	   browsers / hardened profiles that ignore SVG cursors. */
 	:global(.mp-canvas--placing),
 	:global(.mp-canvas--placing svg),
-	:global(.mp-canvas--placing rect),
+	:global(.mp-canvas--placing rect) {
+		cursor:
+			url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 384 512"><path fill="%23111" stroke="%23fff" stroke-width="24" d="M215.7 499.2C267 435 384 279.4 384 192C384 86 298 0 192 0S0 86 0 192c0 87.4 117 243 168.3 307.2c12.3 15.3 35.1 15.3 47.4 0zM192 128a64 64 0 1 1 0 128 64 64 0 1 1 0-128z"/></svg>')
+				12 32,
+			crosshair;
+	}
+	/* Measuring — plain crosshair. The click point is precise, so the
+	   OS crosshair is a better affordance than any custom pointer. */
 	:global(.mp-canvas--measuring),
 	:global(.mp-canvas--measuring svg),
 	:global(.mp-canvas--measuring rect) {
