@@ -55,6 +55,7 @@
 	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid.svg?raw';
 	import iconGearSvg from '$icons/gear-solid.svg?raw';
 	import iconEditSvg from '$icons/pen-to-square-solid.svg?raw';
+	import iconRulerSvg from '$icons/ruler-solid.svg?raw';
 	import { Dialog } from 'bits-ui';
 	import Combobox from '$lib/components/Combobox.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
@@ -864,6 +865,15 @@
 			return;
 		}
 		const { x, y } = clampToBounds(eventToWorld(ev));
+		// Measure mode — each click extends the polyline. Skips the marker
+		// hit-test entirely so a click near a pin still adds a waypoint,
+		// matching the "you asked to measure, so we measure" contract.
+		// Double-click commits + disarms (handled in onGridDblClick).
+		if (measuring) {
+			measurePoints = [...measurePoints, { x, y }];
+			measureCursor = { x, y };
+			return;
+		}
 		// Armed for placement — drop the marker here, exit the mode, done.
 		// Skips the hit-test entirely so a click on top of an existing
 		// marker while armed still creates a new one (matches the "you
@@ -902,6 +912,17 @@
 	 *  no-op — the single-click already handled the intent. */
 	function onGridDblClick(ev: MouseEvent) {
 		if (dragJustEnded || longPressFired) return;
+		// Measure mode: double-click commits the polyline and disarms
+		// the tool — the last waypoint recorded by the preceding single
+		// click stays as the endpoint. Undo the accidental extra point
+		// the double-click's second onGridClick queued.
+		if (measuring) {
+			if (measurePoints.length > 1) {
+				measurePoints = measurePoints.slice(0, -1);
+			}
+			endMeasuring();
+			return;
+		}
 		const { x, y } = clampToBounds(eventToWorld(ev));
 		if (markersAt(x, y, hitTolerance).length >= 1) activateExisting(x, y, true);
 	}
@@ -943,6 +964,12 @@
 	}
 
 	function onGridPointerMove(e: PointerEvent) {
+		// Measure mode: track the pointer so the pending segment from the
+		// last waypoint updates live. Runs before the drag-state guard so
+		// measuring never routes through the marker drag path.
+		if (measuring && measurePoints.length > 0) {
+			measureCursor = clampToBounds(eventToWorld(e));
+		}
 		if (!dragState) return;
 		const dxPx = e.clientX - dragState.startClientX;
 		const dyPx = e.clientY - dragState.startClientY;
@@ -1004,9 +1031,10 @@
 	/** "+ Marker" — enter placement mode. The next click on the map's
 	 *  click-capture <rect> drops a marker at those coords (see the
 	 *  early-out in onGridClick), and the cursor is swapped to a
-	 *  crosshair via the .mp-canvas--placing modifier so the arming
-	 *  state is visually obvious. Escape cancels; clicking the button
-	 *  a second time also cancels (toggle). */
+	 *  location-pin glyph via the .mp-canvas--placing modifier (with a
+	 *  crosshair fallback) so the arming state is visually obvious.
+	 *  Escape cancels; clicking the button a second time also cancels
+	 *  (toggle). */
 	let placingMarker = $state(false);
 	function togglePlacingMarker() {
 		placingMarker = !placingMarker;
@@ -1014,6 +1042,92 @@
 	}
 	function cancelPlacingMarker() {
 		placingMarker = false;
+	}
+
+	// ─── Measuring tool ────────────────────────────────────────────────────
+	/**
+	 * Polyline distance ruler. Armed via the toolbar's ruler button
+	 * (disabled unless the map has a scale defined in Map options).
+	 * Each grid click drops a waypoint; the segment from the last
+	 * waypoint to the cursor tracks live via onGridPointerMove; the
+	 * running total appears next to the current endpoint. Escape,
+	 * double-click on the canvas, or re-clicking the ruler button
+	 * commits + disarms — the polyline stays visible on the canvas
+	 * until the tool is re-armed (which clears it and starts fresh),
+	 * except for Escape which also clears it.
+	 *
+	 * All coordinates are in world units (grid cells). Distances are
+	 * Euclidean world-unit distance × mapState.settings.scale.perHex,
+	 * with the map's configured unit ('miles' | 'km').
+	 */
+	let measuring = $state(false);
+	let measurePoints = $state<{ x: number; y: number }[]>([]);
+	let measureCursor = $state<{ x: number; y: number } | null>(null);
+
+	const mapScale = $derived(mapState.settings.scale ?? {});
+	const hasScale = $derived(
+		mapScale.enabled === true && typeof mapScale.perHex === 'number' && mapScale.perHex > 0,
+	);
+	const scaleUnit = $derived<'miles' | 'km'>(mapScale.unit === 'km' ? 'km' : 'miles');
+	const scalePerCell = $derived(typeof mapScale.perHex === 'number' ? mapScale.perHex : 0);
+
+	/** Format a world-unit distance in the map's scale units. `1` decimal
+	 *  is enough for the ruler chip — sub-tenth precision on a hand-drawn
+	 *  map is false precision. */
+	function formatDistance(worldUnits: number): string {
+		const value = worldUnits * scalePerCell;
+		const shown = value >= 100 ? Math.round(value) : Math.round(value * 10) / 10;
+		return `${shown} ${scaleUnit}`;
+	}
+
+	/** Cumulative polyline distance in world units — sum of Euclidean
+	 *  segment lengths across the committed waypoints, plus the pending
+	 *  segment from the last waypoint to the cursor if we're mid-drag. */
+	const measureTotal = $derived.by(() => {
+		const pts = measureCursor ? [...measurePoints, measureCursor] : measurePoints;
+		let d = 0;
+		for (let i = 1; i < pts.length; i++) {
+			const dx = pts[i].x - pts[i - 1].x;
+			const dy = pts[i].y - pts[i - 1].y;
+			d += Math.hypot(dx, dy);
+		}
+		return d;
+	});
+
+	/** Enter measure mode. Clears any previous polyline so the user
+	 *  starts fresh — a re-arm always means "new measurement". */
+	function startMeasuring() {
+		if (!hasScale) return;
+		measuring = true;
+		measurePoints = [];
+		measureCursor = null;
+		selectedMarkerId = null;
+		placingMarker = false;
+	}
+
+	/** Commit the current polyline (leaves it visible for
+	 *  screen-capture, but the tool is no longer accepting clicks). */
+	function endMeasuring() {
+		measuring = false;
+		measureCursor = null;
+	}
+
+	/** Full reset — Escape closes and clears everything. */
+	function cancelMeasuring() {
+		measuring = false;
+		measurePoints = [];
+		measureCursor = null;
+	}
+
+	/** Toolbar button toggle. If a polyline is already on the canvas
+	 *  from a prior committed measurement, re-arming clears it and
+	 *  starts a new one. */
+	function toggleMeasuring() {
+		if (measuring) {
+			endMeasuring();
+		} else {
+			startMeasuring();
+		}
 	}
 
 	/** In-app clipboard for cut / copy / paste. Component-scoped so it
@@ -1108,6 +1222,13 @@
 			if (ev.key === 'Escape' && placingMarker) {
 				ev.preventDefault();
 				cancelPlacingMarker();
+				return;
+			}
+			// Escape wipes the measuring polyline entirely — commit +
+			// re-toggle if you want to keep the pins visible.
+			if (ev.key === 'Escape' && (measuring || measurePoints.length > 0)) {
+				ev.preventDefault();
+				cancelMeasuring();
 				return;
 			}
 			// Only fire selection-scoped shortcuts when the marker editor
@@ -1428,6 +1549,23 @@
 						use:tooltip={'Edit selected marker (double-click / Ctrl+E)'}
 						aria-label="Edit marker">{@html iconEditSvg}</button
 					>
+					<!-- Measure distance — polyline ruler that only lights up when
+					     the map has a scale defined (Map options → Scale). Click
+					     to arm, click on the map to drop each waypoint, double-
+					     click / re-click the button to commit; Escape clears. -->
+					<button
+						class="mp-btn mp-btn-icon"
+						class:mp-btn-add--armed={measuring}
+						onclick={toggleMeasuring}
+						disabled={!hasScale}
+						aria-pressed={measuring}
+						use:tooltip={hasScale
+							? measuring
+								? 'Click the map to add waypoints; double-click to finish (Esc clears)'
+								: 'Measure distance — click to arm the ruler'
+							: 'Turn on Scale in Map options to measure distances'}
+						aria-label="Measure distance">{@html iconRulerSvg}</button
+					>
 					<div class="mp-zoom" role="group" aria-label="Zoom controls">
 						<button
 							class="mp-btn mp-btn-icon"
@@ -1500,6 +1638,7 @@
 				<div
 					class="mp-canvas"
 					class:mp-canvas--placing={placingMarker}
+					class:mp-canvas--measuring={measuring}
 					bind:this={canvasEl}
 					onscroll={onScroll}
 				>
@@ -1750,6 +1889,50 @@
 								{/if}
 							</g>
 						{/each}
+
+						<!-- Measure ruler overlay — drawn after markers so the line
+						     is never hidden under a dense pin cluster. Lives in
+						     world coords so the polyline pans / zooms with the
+						     map; strokes carry `vector-effect: non-scaling-stroke`
+						     so their pixel weight stays constant. Only rendered
+						     when there's an active or committed polyline AND the
+						     map has a scale defined. -->
+						{#if hasScale && (measuring || measurePoints.length > 0)}
+							{@const pts =
+								measuring && measureCursor && measurePoints.length > 0
+									? [...measurePoints, measureCursor]
+									: measurePoints}
+							{#if pts.length > 1}
+								<polyline
+									class="mp-measure-line"
+									points={pts.map((p) => `${p.x},${p.y}`).join(' ')}
+									fill="none"
+									vector-effect="non-scaling-stroke"
+								/>
+							{/if}
+							{#each measurePoints as pt, i (`mp-${i}`)}
+								<circle
+									class="mp-measure-dot"
+									cx={pt.x}
+									cy={pt.y}
+									r="0.15"
+									vector-effect="non-scaling-stroke"
+								/>
+							{/each}
+							{#if pts.length > 1}
+								{@const last = pts[pts.length - 1]}
+								<text
+									class="mp-measure-total"
+									x={last.x + 0.3}
+									y={last.y - 0.3}
+									paint-order="stroke"
+									stroke="#fff"
+									stroke-width="3"
+									stroke-linejoin="round"
+									vector-effect="non-scaling-stroke">{formatDistance(measureTotal)}</text
+								>
+							{/if}
+						{/if}
 					</svg>
 				</div>
 
@@ -2333,17 +2516,61 @@
 	   click on the map drops a marker at that spot. Swap to a crosshair
 	   cursor everywhere in the canvas so the arming state is impossible
 	   to miss. */
+	/* Placing a marker — swap to a location-pin cursor with the hotspot
+	   at the tip so the "you're about to drop here" affordance is
+	   unmistakable AND lines up with the pin the click actually creates.
+	   The pin is a URL-encoded location-dot SVG (mirrors
+	   $icons/location-dot-solid.svg), rendered at 24×32 with a white
+	   stroke halo so it reads on both dark and pale map backgrounds. The
+	   `crosshair` fallback keeps the affordance obvious on the handful of
+	   browsers / hardened profiles that ignore SVG cursors. */
 	:global(.mp-canvas--placing),
 	:global(.mp-canvas--placing svg),
 	:global(.mp-canvas--placing rect) {
+		cursor:
+			url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="24" height="32" viewBox="0 0 384 512"><path fill="%23111" stroke="%23fff" stroke-width="24" d="M215.7 499.2C267 435 384 279.4 384 192C384 86 298 0 192 0S0 86 0 192c0 87.4 117 243 168.3 307.2c12.3 15.3 35.1 15.3 47.4 0zM192 128a64 64 0 1 1 0 128 64 64 0 1 1 0-128z"/></svg>')
+				12 32,
+			crosshair;
+	}
+	/* Measuring — plain crosshair. The click point is precise, so the
+	   OS crosshair is a better affordance than any custom pointer. */
+	:global(.mp-canvas--measuring),
+	:global(.mp-canvas--measuring svg),
+	:global(.mp-canvas--measuring rect) {
 		cursor: crosshair;
 	}
 	/* Toolbar "+ Marker" armed indicator — pressed styling so the button
-	   reads as "the next click goes here" without needing a legend. */
+	   reads as "the next click goes here" without needing a legend. Also
+	   applied to the ruler button while measuring. */
 	:global(.mp-btn-add--armed) {
 		background: var(--accent-glow);
 		border-color: var(--text-accent);
 		color: var(--text-accent);
+	}
+
+	/* Measure-ruler overlay drawn inside the world-coord SVG. Colour is
+	   the app accent so it reads as a UI overlay, not map content; the
+	   dashed line makes it easy to tell from a marker's radial link. */
+	:global(.mp-measure-line) {
+		stroke: var(--text-accent);
+		stroke-width: 2;
+		stroke-dasharray: 6 4;
+		stroke-linecap: round;
+		stroke-linejoin: round;
+		pointer-events: none;
+	}
+	:global(.mp-measure-dot) {
+		fill: var(--text-accent);
+		stroke: #fff;
+		stroke-width: 1.5;
+		pointer-events: none;
+	}
+	:global(.mp-measure-total) {
+		font-family: var(--font-ui);
+		font-size: 0.4px;
+		font-weight: 700;
+		fill: var(--text-accent);
+		pointer-events: none;
 	}
 	:global(.mp-canvas svg) {
 		display: block;
