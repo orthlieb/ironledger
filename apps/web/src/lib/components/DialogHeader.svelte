@@ -111,4 +111,13 @@
 	:global(.dh-close:hover) {
 		color: var(--text);
 	}
+	/* On mobile every dialog is effectively full-page (see app.css →
+	   "App-level scroll architecture" in CLAUDE.md), so there is no
+	   parent surface to drag against. Hide the grip so the title bar
+	   isn't cluttered by an affordance that does nothing on touch. */
+	@media (max-width: 640px) {
+		.dh-header :global(.drag-grip) {
+			display: none;
+		}
+	}
 </style>

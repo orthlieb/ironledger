@@ -1590,7 +1590,7 @@
 			class={effectiveFullscreen ? 'mp-dialog mp-dialog--fullscreen' : 'mp-dialog'}
 			style="z-index: {contentZ(stackDepth)}"
 		>
-			<DialogHeader title={headingText('Edit Map')}>
+			<DialogHeader title={headingText('Maps')}>
 				{#snippet trailing()}
 					{#if !isMobileViewport}
 						<button
