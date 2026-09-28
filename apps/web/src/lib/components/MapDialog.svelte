@@ -448,12 +448,13 @@
 	 * the leftover dialog space, so `canvasPxW × canvasPxH` no longer
 	 * matches the map's aspect. Sizing the SVG to those raw dims would
 	 * stretch the map non-uniformly (`preserveAspectRatio="none"`
-	 * distorts the artwork). Instead compute a `cover`-style aspect
-	 * fit: the map's smaller-relative dimension fills the container
-	 * and the larger extends past the visible edge, which
-	 * `.mp-canvas`'s `overflow: auto` renders as a pan surface. That
-	 * gives the "map fills the screen; drag to see the cropped edges"
-	 * feel a mobile-fullscreen dialog needs.
+	 * distorts the artwork). Instead compute a `contain`-style aspect
+	 * fit: fill the smaller-relative axis, letterbox the other so the
+	 * whole map is visible at its natural cell scale — labels + icons
+	 * stay the same size they'd be at in non-fullscreen mode; the
+	 * user just gets more of the map on screen. `.mp-canvas`'s grid
+	 * centering (see the CSS block below) keeps the letterbox even on
+	 * both sides.
 	 */
 	const svgWidth = $derived.by(() => {
 		if (!effectiveFullscreen) return canvasPxW * zoom;
@@ -462,10 +463,10 @@
 		if (!Number.isFinite(mapAspect) || !Number.isFinite(bodyAspect) || bodyAspect <= 0) {
 			return canvasPxW * zoom;
 		}
-		// Body is more portrait than the map → fill height, extend
-		// width past canvasPxW (horizontal pan). Otherwise the body is
-		// wider than the map → fill width normally.
-		const baseW = bodyAspect < mapAspect ? canvasPxH * mapAspect : canvasPxW;
+		// Body is more portrait than the map → fill width, letterbox
+		// vertically. Otherwise the body is wider → letterbox
+		// horizontally by fitting the width to the map's height.
+		const baseW = bodyAspect < mapAspect ? canvasPxW : canvasPxH * mapAspect;
 		return baseW * zoom;
 	});
 	const svgHeight = $derived.by(() => {
@@ -475,9 +476,10 @@
 		if (!Number.isFinite(mapAspect) || !Number.isFinite(bodyAspect) || bodyAspect <= 0) {
 			return canvasPxH * zoom;
 		}
-		// Mirror the svgWidth branch: body more portrait → fill height,
-		// wider body → extend height past canvasPxH (vertical pan).
-		const baseH = bodyAspect < mapAspect ? canvasPxH : canvasPxW / mapAspect;
+		// Mirror svgWidth: body more portrait → derive height from
+		// the map aspect; wider body → fill height, letterbox
+		// horizontally.
+		const baseH = bodyAspect < mapAspect ? canvasPxW / mapAspect : canvasPxH;
 		return baseH * zoom;
 	});
 
@@ -2289,14 +2291,21 @@
 	}
 	/* Fullscreen body loses its aspect-ratio and flex-grows to fill
 	   the leftover dialog space (title + toolbars sit above). The SVG
-	   inside is then sized in `cover` mode from the derived
-	   svgWidth / svgHeight so the map fills the larger dimension and
-	   overflows the smaller one; `.mp-canvas`'s existing `overflow:
-	   auto` renders the overflow as a pan surface. */
+	   inside is sized in `contain` mode from the derived
+	   svgWidth / svgHeight so the map fits fully with even letterbox
+	   bars on whichever axis doesn't match. The canvas becomes a grid
+	   container with `place-items: center` so the SVG lands centered
+	   (letterbox stays even), and `overflow: auto` still lets the
+	   canvas scroll normally when the user zooms the map past the
+	   viewport dims. */
 	:global(.mp-dialog--fullscreen .mp-body) {
 		aspect-ratio: auto !important;
 		flex: 1 1 auto;
 		min-height: 0;
+	}
+	:global(.mp-dialog--fullscreen .mp-canvas) {
+		display: grid;
+		place-items: center;
 	}
 	/* Fullscreen toggle in the dialog header — same base styling as ✕
 	   (via .dh-close), just an armed-pressed treatment for the "you're
