@@ -161,6 +161,21 @@ test.describe('Map ruler — scale enabled', () => {
 		await expect(page.locator('.mp-dialog')).toBeVisible();
 	});
 
+	test('Enter with no waypoints yet is a safe no-op', async ({ page }) => {
+		const rulerBtn = page.locator('[aria-label="Measure distance"]');
+		await rulerBtn.click();
+		await expect(rulerBtn).toHaveAttribute('aria-pressed', 'true');
+
+		// Fire Enter before any waypoint is placed — the Enter handler is
+		// gated on `measurePoints.length > 0`, so nothing commits, nothing
+		// disarms, and (critically) the dialog does NOT eat the keypress.
+		await page.keyboard.press('Enter');
+
+		await expect(rulerBtn).toHaveAttribute('aria-pressed', 'true');
+		await expect(page.locator('.mp-measure-dot')).toHaveCount(0);
+		await expect(page.locator('.mp-dialog')).toBeVisible();
+	});
+
 	test('Backspace / Delete pops the most-recent waypoint', async ({ page }) => {
 		await page.locator('[aria-label="Measure distance"]').click();
 		await drawTwoWaypoints(page);

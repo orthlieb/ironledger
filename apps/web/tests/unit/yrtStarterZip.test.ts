@@ -44,6 +44,15 @@ describe('YRT starter zip', () => {
 		expect(d.places).toHaveLength(23);
 	});
 
+	// Smoke check for the most recent content bump — if this ever regresses
+	// (someone rebuilds the starter without Providence Mine) the failure
+	// message is a lot clearer than a bare count assertion.
+	it('includes Providence Mine among the Pinna Mtns places', () => {
+		const providence = body().places.find((p) => p.name === 'Providence Mine');
+		expect(providence, 'Providence Mine missing from the starter zip').toBeDefined();
+		expect((providence as unknown as { region?: string }).region).toBe('Pinna Mtns');
+	});
+
 	it('reassembles every bundled figure into an inline imageUrl', () => {
 		const d = body();
 		const rows = [...d.communities, ...d.places];
