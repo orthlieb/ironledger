@@ -41,7 +41,16 @@ describe('YRT starter zip', () => {
 	it('carries the advertised settlements and places', () => {
 		const d = body();
 		expect(d.communities).toHaveLength(15);
-		expect(d.places).toHaveLength(22);
+		expect(d.places).toHaveLength(23);
+	});
+
+	// Smoke check for the most recent content bump — if this ever regresses
+	// (someone rebuilds the starter without Providence Mine) the failure
+	// message is a lot clearer than a bare count assertion.
+	it('includes Providence Mine among the Pinna Mtns places', () => {
+		const providence = body().places.find((p) => p.name === 'Providence Mine');
+		expect(providence, 'Providence Mine missing from the starter zip').toBeDefined();
+		expect((providence as unknown as { region?: string }).region).toBe('Pinna Mtns');
 	});
 
 	it('reassembles every bundled figure into an inline imageUrl', () => {

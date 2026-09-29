@@ -119,7 +119,7 @@ test.describe('Map ruler — scale enabled', () => {
 		await expect(total).toHaveText(/\d+(\.\d+)?\s+miles$/);
 	});
 
-	test('Escape wipes every waypoint and disarms', async ({ page }) => {
+	test('Escape wipes every waypoint and disarms — leaves the dialog open', async ({ page }) => {
 		await page.locator('[aria-label="Measure distance"]').click();
 		await drawTwoWaypoints(page);
 		await expect(page.locator('.mp-measure-dot')).toHaveCount(2);
@@ -133,6 +133,47 @@ test.describe('Map ruler — scale enabled', () => {
 			'aria-pressed',
 			'false',
 		);
+		// The measuring-scoped Escape stops propagation so bits-ui's Dialog
+		// Escape handler doesn't ALSO close the dialog underneath. Without
+		// stopPropagation an armed-ruler Escape ate the whole dialog and
+		// the user had to re-open the map to start over.
+		await expect(page.locator('.mp-dialog')).toBeVisible();
+	});
+
+	test('Enter commits the polyline — pins stay, tool disarms, dialog stays open', async ({
+		page,
+	}) => {
+		await page.locator('[aria-label="Measure distance"]').click();
+		await drawTwoWaypoints(page);
+		await expect(page.locator('.mp-measure-dot')).toHaveCount(2);
+
+		await page.keyboard.press('Enter');
+
+		// Tool disarms; pins remain on screen for a screen capture.
+		await expect(page.locator('[aria-label="Measure distance"]')).toHaveAttribute(
+			'aria-pressed',
+			'false',
+		);
+		await expect(page.locator('.mp-measure-dot')).toHaveCount(2);
+		await expect(page.locator('.mp-measure-line')).toBeVisible();
+		// Enter mirrors the desktop double-click gesture — no accidental
+		// side effects on the dialog or on any selection.
+		await expect(page.locator('.mp-dialog')).toBeVisible();
+	});
+
+	test('Enter with no waypoints yet is a safe no-op', async ({ page }) => {
+		const rulerBtn = page.locator('[aria-label="Measure distance"]');
+		await rulerBtn.click();
+		await expect(rulerBtn).toHaveAttribute('aria-pressed', 'true');
+
+		// Fire Enter before any waypoint is placed — the Enter handler is
+		// gated on `measurePoints.length > 0`, so nothing commits, nothing
+		// disarms, and (critically) the dialog does NOT eat the keypress.
+		await page.keyboard.press('Enter');
+
+		await expect(rulerBtn).toHaveAttribute('aria-pressed', 'true');
+		await expect(page.locator('.mp-measure-dot')).toHaveCount(0);
+		await expect(page.locator('.mp-dialog')).toBeVisible();
 	});
 
 	test('Backspace / Delete pops the most-recent waypoint', async ({ page }) => {

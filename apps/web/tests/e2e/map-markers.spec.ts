@@ -346,4 +346,23 @@ test.describe('Map markers — lifecycle', () => {
 			expect(s.y).toBeLessThan(0);
 		}
 	});
+
+	test('Escape while armed for placement exits placing mode and keeps the dialog open', async ({
+		page,
+	}) => {
+		const addBtn = page.locator('[aria-label="Add marker"]');
+		await addBtn.click();
+		// Armed — button reads as pressed.
+		await expect(addBtn).toHaveClass(/mp-btn-add--armed/);
+
+		await page.keyboard.press('Escape');
+
+		// Placement disarmed, no marker created, dialog still up.
+		await expect(addBtn).not.toHaveClass(/mp-btn-add--armed/);
+		await expect(page.locator('.mp-marker')).toHaveCount(0);
+		// The placingMarker-scoped Escape stopPropagates so bits-ui's
+		// Dialog Escape handler doesn't ALSO close the map dialog
+		// underneath — same fix as on the ruler tool.
+		await expect(page.locator('.mp-dialog')).toBeVisible();
+	});
 });
