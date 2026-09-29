@@ -2994,15 +2994,19 @@
 		   light one so it never vanishes on a light map. Falls back to
 		   white when `--halo` is absent. */
 		stroke: var(--halo, #fff);
-		stroke-width: 1;
+		stroke-width: 2;
 		stroke-linejoin: round;
 	}
 	/* Doubled on mobile so labels stay legible when the whole map
 	   is inside a phone-width viewport. Matches the ICON_SIZE
-	   doubling in the marker render loop. */
+	   doubling in the marker render loop. Mobile keeps stroke-width
+	   at 1 device px: phone displays are 2–3× DPR, so a non-scaling-
+	   `stroke-width: 1` already renders as a thicker halo there, and
+	   the desktop bump (2) would swallow the label glyphs. */
 	@media (max-width: 640px) {
-		.mp-marker-label {
+		:global(.mp-marker-label) {
 			font-size: calc(0.48px * var(--label-size-mult, 1));
+			stroke-width: 1;
 		}
 	}
 	/* Label-only markers (no icon chosen) centre both axes on the point
