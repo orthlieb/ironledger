@@ -1295,16 +1295,34 @@
 			// Escape cancels armed placement — takes precedence over the
 			// marker editor and selection so a mis-armed + Marker click
 			// always has a one-key exit even if a marker is selected.
+			// stopPropagation so bits-ui's Dialog Escape handler doesn't
+			// also fire and close the whole dialog.
 			if (ev.key === 'Escape' && placingMarker) {
 				ev.preventDefault();
+				ev.stopPropagation();
 				cancelPlacingMarker();
 				return;
 			}
-			// Escape wipes the measuring polyline entirely — commit +
-			// re-toggle if you want to keep the pins visible.
+			// Escape wipes the measuring polyline entirely — Enter is the
+			// commit key that keeps the pins visible (mirror of the
+			// double-click gesture on desktop). stopPropagation so
+			// bits-ui's Dialog Escape handler doesn't also close the map
+			// dialog underneath — armed rulers shouldn't cost a click to
+			// re-open.
 			if (ev.key === 'Escape' && (measuring || measurePoints.length > 0)) {
 				ev.preventDefault();
+				ev.stopPropagation();
 				cancelMeasuring();
+				return;
+			}
+			// Enter commits the polyline (leaves pins on screen, disarms
+			// the tool) — same effect as the desktop double-click. Only
+			// fires while actively measuring; a committed polyline is
+			// already committed, so Enter is a no-op there.
+			if (ev.key === 'Enter' && measuring && measurePoints.length > 0) {
+				ev.preventDefault();
+				ev.stopPropagation();
+				endMeasuring();
 				return;
 			}
 			// Only fire selection-scoped shortcuts when the marker editor
@@ -1717,7 +1735,7 @@
 						aria-pressed={measuring}
 						use:tooltip={hasScale
 							? measuring
-								? 'Click the map to add waypoints; Backspace undoes; double-click to commit — click Ruler again to clear'
+								? 'Click the map to add waypoints; Backspace undoes; Enter or double-click commits; Esc cancels'
 								: 'Measure distance — click to arm the ruler'
 							: 'Turn on Scale in Map options to measure distances'}
 						aria-label="Measure distance">{@html iconRulerSvg}</button
