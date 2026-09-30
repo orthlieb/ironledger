@@ -193,7 +193,13 @@
 		// Re-arm view restore so reopening re-applies the saved zoom/pan (the
 		// canvas is recreated each open, so scroll would otherwise reset to 0).
 		armViewRestore();
-		void initMap().then(async () => {
+		// `createIfMissing: true` — this is the only entry point that reflects
+		// a deliberate "open the map" gesture, so a fresh user with zero maps
+		// gets a starter "Regional Map" created here. Every other caller of
+		// initMap() (export bridge, ExportDialog list, etc.) leaves the list
+		// empty so no phantom map appears without the user pressing the map
+		// button first.
+		void initMap({ createIfMissing: true }).then(async () => {
 			if (target?.mapId && target.mapId !== mapState.activeId) {
 				await switchMap(target.mapId);
 			}

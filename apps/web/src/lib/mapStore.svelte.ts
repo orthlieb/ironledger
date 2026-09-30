@@ -298,7 +298,24 @@ async function persistActiveMapIdToSession(activeMapId: string): Promise<void> {
 
 let _initPromise: Promise<void> | null = null;
 
-export function initMap(): Promise<void> {
+/**
+ * Load the map list + the active map. Idempotent + concurrency-safe.
+ *
+ * `createIfMissing` (default false): when the user has zero maps AND
+ * this call is happening because the user actively opened the map
+ * dialog to VIEW / INTERACT with a map, create a fresh "Regional Map"
+ * so they land on something clickable. Every other caller (the
+ * hamburger Export dialog listing maps, the map-export event bridge in
+ * MapDialog that fires on the Export dialog's Map choice, thumbnail /
+ * snapshot capture paths, anything that just wants to know "does this
+ * user have a map yet?") passes false — those flows should observe an
+ * empty map list rather than silently creating a phantom one behind
+ * the user's back. That silent-create was the source of "Regional Map"
+ * appearing on user load / from an export click before the user had
+ * ever pressed the map button.
+ */
+export function initMap(options: { createIfMissing?: boolean } = {}): Promise<void> {
+	const createIfMissing = options.createIfMissing === true;
 	if (mapListState.loaded && mapState.loaded) return Promise.resolve();
 	if (_initPromise) return _initPromise;
 	_initPromise = (async () => {
@@ -325,14 +342,17 @@ export function initMap(): Promise<void> {
 
 			if (!mapState.loaded) {
 				// Pick the map to open: server's active-map preference if it still
-				// exists, otherwise the first entry, otherwise create a brand new
-				// "Regional Map" so a fresh user has something to click into.
+				// exists, otherwise the first entry. Only the map-dialog OPEN
+				// path (createIfMissing: true) creates a brand new "Regional
+				// Map" when nothing exists — every other caller returns with an
+				// empty list so it can render its own "no maps yet" state
+				// rather than triggering a phantom map behind the user's back.
 				let target = mapListState.maps.find((m) => m.id === activeId) ?? mapListState.maps[0];
-				if (!target) {
+				if (!target && createIfMissing) {
 					const created = await createMap({ name: 'Regional Map' });
 					target = created;
 				}
-				await loadMapInto(target.id);
+				if (target) await loadMapInto(target.id);
 			}
 			// Sweep the legacy localStorage payload.
 			if (typeof window !== 'undefined') localStorage.removeItem(LEGACY_STORAGE_KEY);
