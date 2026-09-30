@@ -88,7 +88,7 @@ Hydration is synchronous on first import (with a `typeof window` guard for SSR).
 | ----------------- | -------------------------------------------------------------------------------------------- |
 | `MovesDialog`     | Hides Yrt chip and `yrt.json` (Cast Conclave Ritual, etc.)                                   |
 | `OraclesDialog`   | Hides freeport-denizen, mana-backlash, touched-features, yrt-animal, yrt-region, yrt-touched |
-| `FoePickerDialog` | Hides Blighted Guilder, Mana Wraith, Verdant Crawler, Amber Schemer                          |
+| `FoePickerDialog` | Hides Mana Wraith, Verdant Crawler (and every other YRT foe)                                 |
 | `AssetPicker`     | Hides Touched chip and YRT assets (2 Touched, 4 Ritual, 2 Path from `assets_yrt.json`)       |
 | Communities       | Hides the YRT radio in the region picker                                                     |
 

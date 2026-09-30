@@ -36,7 +36,7 @@ The Verdani are the exception.\*\* Through training, lifestyle, and possibly som
 | Mana-saturated bodies         | Coldhusk, Bloater, Verdant Crawler                                     |
 | Pre-Fall artefacts            | The Whispering Stones, Echo, War Pile                                  |
 | Deliberately built constructs | Puppet Bones, Mask Risen, Greatmask, Vow Walker                        |
-| Altered living people         | Carrier, Tomb Walker, Blighted Guilder, Amber Schemer, The Tainted     |
+| Altered living people         | Carrier, Tomb Walker, The Tainted                                      |
 | Contaminated sites            | Rotwell                                                                |
 
 ---
@@ -75,4 +75,4 @@ Some foes carry a Gray-mana defense that builds up on each miss, making progress
 | 4 – Extreme     | 2              | 1           |
 | 5 – Epic        | 1              | 0           |
 
-_Foes: Blighted Guilder, Tomb Walker._
+_Foes: Tomb Walker._
