@@ -144,71 +144,98 @@ that was shipped. Example:
 
 > Shipped `claude/fix-foo` via PR #42 → `a1b2c3d` on main. Remote + local branches deleted.
 
-## 7. Spawn E2E watcher (always)
+## 7. Spawn post-merge workflow watcher (always)
 
-Every /engage ships to `main`, which triggers the long-running E2E
-workflow (~15–30 min). Lint + format-check catch static issues but the
-E2E is where real regressions surface. Immediately after emitting the
-ship report — same turn, do not wait — spawn a background worker to
-watch that run. The main session ends its turn as soon as the worker
-is spawned; when the worker finishes, a task-notification wakes this
+Every /engage ships to `main`, which triggers three parallel
+workflows: **CI** (~2 min: lint, format-check, drift-guard checks,
+unit tests + build), **E2E (Web — Playwright)** (~10–15 min: full
+UI regression suite), and **Deploy** (~3 min: whatever the deploy
+job does — build image, push, roll). Any one of them going red is a
+failure of this ship. Immediately after emitting the ship report —
+same turn, do not wait — spawn a background worker to watch all
+three. The main session ends its turn as soon as the worker is
+spawned; when the worker finishes, a task-notification wakes this
 session with its report. Never poll for the worker's status.
 
 Call the `Agent` tool with:
 - `subagent_type`: `"general-purpose"`
 - `run_in_background`: `true`
-- `description`: `"Watch E2E for PR #<n>"`
+- `description`: `"Watch CI+E2E+Deploy for PR #<n>"`
 - `prompt`: a self-contained brief containing the shipped PR number
   and merge SHA (the worker starts with no session context). Instruct
   it to:
 
-  1. Locate the E2E workflow run on the merge SHA. Use
-     `mcp__github__actions_list` with `head_sha=<merge SHA>`; the
-     workflow is named `E2E` (double-check by listing
-     `.github/workflows/*.yml` on fresh `main` if the id is
-     ambiguous). If the run is not yet present, sleep 30 s and
-     retry — workflow_dispatch after a squash-merge can lag.
-  2. Poll `mcp__github__actions_get` every ~90 s until the run
-     reaches a terminal `conclusion` (`success`, `failure`,
-     `cancelled`, `timed_out`, `action_required`). Use plain Bash
-     `sleep` between calls — that's fine inside a background agent.
-  3. On `success`: report back one line ("E2E on `<sha>` (PR #<n>)
-     passed in <duration>") and exit.
-  4. On any non-success terminal conclusion: triage and fix.
+  1. Locate ALL THREE workflow runs on the merge SHA. Use
+     `mcp__github__actions_list` with
+     `method: "list_workflow_runs"` and
+     `workflow_runs_filter: { "branch": "main" }`, then filter the
+     result to `head_sha === <merge SHA>`. Expect at least three
+     runs named `CI`, `E2E (Web — Playwright)`, and `Deploy` (the
+     workflow files are `.github/workflows/{ci.yml,e2e-web.yml,deploy.yml}` —
+     list them on fresh `main` if the names are ambiguous). If any
+     of the three is not yet present, sleep 30 s and retry —
+     GitHub can lag scheduling a run after a squash-merge.
+  2. Poll `mcp__github__actions_get` every ~60 s for each still-
+     running workflow until ALL THREE reach a terminal `conclusion`
+     (`success`, `failure`, `cancelled`, `timed_out`,
+     `action_required`). Use plain Bash `sleep` between polls —
+     that's fine inside a background agent. CI usually terminates
+     first (~2 min), then Deploy (~3 min), then E2E (~12 min).
+  3. **On all three green**: report back one line ("CI + E2E +
+     Deploy on `<sha>` (PR #<n>) all passed — CI <t>, E2E <t>,
+     Deploy <t>") and exit.
+  4. **On any non-success terminal conclusion (on any of the
+     three)**: triage and fix.
      - Fetch failing job logs with `mcp__github__get_job_logs`
-       (pass `failed_only: true`) to identify the failing spec and
-       assertion.
-     - If the root cause is tractable and small — a drift-guard
-       count in `apps/api/tests/unit/extensionsManifest.test.ts` (see
+       (pass `failed_only: true` and `return_content: true`) to
+       identify the failing step. If the tail is just docker
+       teardown, bump `tail_lines` to 300+ to reach the real error.
+     - **CI**-typical failures — drift-guard counts in
+       `apps/api/tests/unit/extensionsManifest.test.ts` (see
        `CLAUDE.md` → "Standing order — bump catalogue count tests"),
-       a stale Playwright selector after a UI move, a
-       count-of-cards assertion changed by content, a
-       timing/retry bump on a known-flaky race — build the fix:
+       stale `gen:*-ref:check` / `gen:manifest:check` output (run
+       the corresponding generator + commit), format-check drift,
+       unit-test regressions.
+     - **E2E**-typical failures — stale Playwright selectors after
+       a UI move, a count-of-cards assertion changed by content, a
+       timing/retry bump on a known-flaky race, cursor / focus
+       assertions that don't match a new interaction pattern.
+     - **Deploy**-typical failures — usually infrastructure
+       (docker registry auth, deploy secret rotated, target
+       runtime down); rarely code-caused. Report the specific
+       failure verbatim rather than guessing a fix.
+     - If the root cause is tractable and small:
          * Create branch `claude/fix-ci-e2e-<pr#>` from fresh
            `origin/main` (never reuse the merged branch).
          * Apply the minimal fix. Never disable, skip, or
            `test.fixme` a test to get green.
-         * Run `pnpm lint`, `npm run format:check`, and (when the
+         * Run `pnpm lint`, `./node_modules/.bin/prettier --check .`
+           (use the locally-installed pinned versions — `npx prettier`
+           may resolve a newer plugin patch that gives a different
+           opinion; the pinned pair is prettier@3.8.3 +
+           prettier-plugin-svelte@3.5.2), the unit test for the
+           failing area if it's a `--check` script (e.g. `node
+           scripts/gen-yrt-reference.mjs --check`), and (when the
            sandbox has Postgres+Redis + a Playwright browser) the
-           single failing spec locally to verify green before
-           pushing: `pnpm --filter @ironledger/web exec playwright
-           test <spec> --project=<project>`.
+           single failing E2E spec locally.
          * Commit, `git push -u origin <branch>`, open a
            `fix(ci): …` PR via `mcp__github__create_pull_request`
-           referencing the failing PR (`Fixes E2E regression from
-           #<n>`).
+           referencing the failing PR (`Fixes CI/E2E regression
+           from #<n>`).
          * Do NOT squash-merge it yourself — leave the PR open for
            the user to review the fix, since a speculative CI-fix
            merge that lands red is expensive. Report back with the
-           fix PR link and a one-paragraph triage.
+           fix PR link and a one-paragraph triage that names WHICH
+           workflow(s) failed and what the fix does.
      - If the fix would need larger judgment (unclear test intent,
        multi-file refactor implied, real product regression, or
-       apparent infra flake with no repro), do NOT push a
-       speculative fix. Report back a triage: failing job + step +
-       line, root-cause hypothesis, and the proposed patch as a
-       diff so the user can decide.
+       apparent infra flake with no repro — Deploy failures are
+       almost always in this bucket), do NOT push a speculative fix.
+       Report back a triage: failing workflow + job + step + line,
+       root-cause hypothesis, and the proposed patch as a diff so
+       the user can decide.
 
-Do not include the E2E-watcher status in the step 6 ship report —
-its outcome arrives later as its own notification. When that
+Do not include the watcher status in the step 6 ship report — its
+outcome arrives later as its own notification. When that
 notification wakes the session, relay the worker's report to the
 user then.
