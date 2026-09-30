@@ -45,7 +45,13 @@ export interface CharacterAsset {
 // ---------------------------------------------------------------------------
 
 export type FoeNature =
-	'Ironlander' | 'Firstborn' | 'Animal' | 'Beast' | 'Horror' | 'Anomaly' | 'Construct';
+	| 'Ironlander'
+	| 'Firstborn'
+	| 'Animal'
+	| 'Beast'
+	| 'Horror'
+	| 'Anomaly'
+	| 'Construct';
 export type FoeQuantity = 'solo' | 'pack' | 'horde';
 
 /**
@@ -173,7 +179,14 @@ export interface Journey {
 
 /** The 8 Delve themes */
 export type DelveTheme =
-	'Ancient' | 'Corrupted' | 'Fortified' | 'Hallowed' | 'Haunted' | 'Infested' | 'Ravaged' | 'Wild';
+	| 'Ancient'
+	| 'Corrupted'
+	| 'Fortified'
+	| 'Hallowed'
+	| 'Haunted'
+	| 'Infested'
+	| 'Ravaged'
+	| 'Wild';
 
 export const DELVE_THEMES: DelveTheme[] = [
 	'Ancient',

@@ -1317,12 +1317,16 @@
 			}
 			// Enter commits the polyline (leaves pins on screen, disarms
 			// the tool) — same effect as the desktop double-click. Only
-			// fires while actively measuring; a committed polyline is
-			// already committed, so Enter is a no-op there.
-			if (ev.key === 'Enter' && measuring && measurePoints.length > 0) {
+			// commits when at least one waypoint is on screen; with none
+			// yet it's a safe no-op. Crucially, we still preventDefault
+			// + stopPropagation for the no-op case so the browser doesn't
+			// synthesize an Enter-activate click on the still-focused
+			// ruler button (which would toggle `measuring` off and
+			// silently disarm the ruler the user just armed).
+			if (ev.key === 'Enter' && measuring) {
 				ev.preventDefault();
 				ev.stopPropagation();
-				endMeasuring();
+				if (measurePoints.length > 0) endMeasuring();
 				return;
 			}
 			// Only fire selection-scoped shortcuts when the marker editor
