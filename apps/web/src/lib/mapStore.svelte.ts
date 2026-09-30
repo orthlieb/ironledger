@@ -303,14 +303,14 @@ let _initPromise: Promise<void> | null = null;
  *
  * `createIfMissing` (default false): when the user has zero maps AND
  * this call is happening because the user actively opened the map
- * dialog to VIEW / INTERACT with a map, create a fresh "Regional Map"
+ * dialog to VIEW / INTERACT with a map, create a fresh "My New Map"
  * so they land on something clickable. Every other caller (the
  * hamburger Export dialog listing maps, the map-export event bridge in
  * MapDialog that fires on the Export dialog's Map choice, thumbnail /
  * snapshot capture paths, anything that just wants to know "does this
  * user have a map yet?") passes false — those flows should observe an
  * empty map list rather than silently creating a phantom one behind
- * the user's back. That silent-create was the source of "Regional Map"
+ * the user's back. That silent-create was the source of stray auto-maps
  * appearing on user load / from an export click before the user had
  * ever pressed the map button.
  */
@@ -343,13 +343,13 @@ export function initMap(options: { createIfMissing?: boolean } = {}): Promise<vo
 			if (!mapState.loaded) {
 				// Pick the map to open: server's active-map preference if it still
 				// exists, otherwise the first entry. Only the map-dialog OPEN
-				// path (createIfMissing: true) creates a brand new "Regional
-				// Map" when nothing exists — every other caller returns with an
-				// empty list so it can render its own "no maps yet" state
+				// path (createIfMissing: true) creates a brand new "My New
+				// Map" when nothing exists — every other caller returns with
+				// an empty list so it can render its own "no maps yet" state
 				// rather than triggering a phantom map behind the user's back.
 				let target = mapListState.maps.find((m) => m.id === activeId) ?? mapListState.maps[0];
 				if (!target && createIfMissing) {
-					const created = await createMap({ name: 'Regional Map' });
+					const created = await createMap({ name: 'My New Map' });
 					target = created;
 				}
 				if (target) await loadMapInto(target.id);
@@ -499,7 +499,7 @@ export async function renameMap(mapId: string, name: string): Promise<void> {
 }
 
 /** Delete a map. If it was the active map, switches to the first
- *  remaining map (or creates a new Regional Map if the list is empty). */
+ *  remaining map (or creates a new "My New Map" if the list is empty). */
 export async function deleteMap(mapId: string): Promise<void> {
 	try {
 		const res = await fetch(`/api/session/maps/${mapId}`, { method: 'DELETE' });
@@ -514,7 +514,7 @@ export async function deleteMap(mapId: string): Promise<void> {
 			if (next) {
 				await switchMap(next.id);
 			} else {
-				await createMap({ name: 'Regional Map' });
+				await createMap({ name: 'My New Map' });
 			}
 		}
 	} catch (err) {

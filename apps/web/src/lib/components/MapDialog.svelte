@@ -195,7 +195,7 @@
 		armViewRestore();
 		// `createIfMissing: true` — this is the only entry point that reflects
 		// a deliberate "open the map" gesture, so a fresh user with zero maps
-		// gets a starter "Regional Map" created here. Every other caller of
+		// gets a starter "My New Map" created here. Every other caller of
 		// initMap() (export bridge, ExportDialog list, etc.) leaves the list
 		// empty so no phantom map appears without the user pressing the map
 		// button first.

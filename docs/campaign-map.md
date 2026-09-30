@@ -95,8 +95,11 @@ user coexist without collisions.
 **Active map.** `user_data.session_state.activeMapId` holds the map the
 user last opened. Server-owned so the same map opens on every device.
 When it's null / missing / points at a deleted map, the client falls
-back to the first map in the list, creating a fresh "Regional Map" if
-the user has none.
+back to the first map in the list, creating a fresh "My New Map" if
+the user has none — but only when the map dialog is actually opened
+(gated on `initMap({ createIfMissing: true })`), so opening the Export
+dialog or hitting the map-export bridge on a fresh account no longer
+silently creates a phantom map behind the user's back.
 
 **Cap.** `MAX_MAPS_PER_USER = 50` — pragmatic guardrail against a
 runaway loop or accidental spam. Well above any real GM's needs.
