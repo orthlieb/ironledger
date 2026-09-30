@@ -264,16 +264,23 @@ async function fetchActiveMapIdFromSession(): Promise<string | null> {
 
 async function persistActiveMapIdToSession(activeMapId: string): Promise<void> {
 	// Fetch current session state so we don't clobber unrelated fields
-	// (charId, foeId, expeditionId, activeTab).
+	// (charId, foeId, expeditionId, activeTab). The API's zod schema
+	// requires charId/foeId/expeditionId as strings — right after an
+	// import, `cur` can exist but be missing any of those, which used
+	// to make the PATCH 400. Merge defaults in explicitly and coerce
+	// non-string values back to '' so an old / partial import still
+	// PATCHes cleanly.
 	try {
 		const body = await fetchSession().catch(() => null);
-		const cur = body?.sessionState as SessionStatePartial | undefined;
-		const s: SessionStatePartial = cur ?? {
-			charId: '',
-			foeId: '',
-			expeditionId: '',
+		const cur = (body?.sessionState ?? {}) as Partial<Record<keyof SessionStatePartial, unknown>>;
+		const str = (v: unknown) => (typeof v === 'string' ? v : '');
+		const s: SessionStatePartial = {
+			charId: str(cur.charId),
+			foeId: str(cur.foeId),
+			expeditionId: str(cur.expeditionId),
+			activeMapId,
 		};
-		s.activeMapId = activeMapId;
+		if (typeof cur.activeTab === 'string') s.activeTab = cur.activeTab;
 		await fetch('/api/session/state', {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },

@@ -1461,9 +1461,13 @@
 		for (const p of conflicts) {
 			if (strategy === 'replace' && p.existingMapId) {
 				await populateMap(p.existingMapId, p.body, p.background);
-			} else {
-				await applyMapImport(p.body, p.background); // skip → standalone
 			}
+			// strategy === 'skip' → do nothing. Previous behaviour called
+			// `applyMapImport(p.body, p.background)` which silently created
+			// a second standalone map of the same name, which is exactly
+			// the "duplicate maps after import" bug the dedupe was there
+			// to prevent. The dialog's own docstring says skip means "leave
+			// existing maps untouched"; honour that literally.
 		}
 	}
 
