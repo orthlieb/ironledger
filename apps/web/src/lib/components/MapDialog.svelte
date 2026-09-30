@@ -864,6 +864,30 @@
 	 *  the next tick. */
 	let dragJustEnded = false;
 
+	/** Click-drag pan state — desktop mouse only. Armed on a pointerdown
+	 *  in empty canvas (no marker hit, not placing, not measuring), then
+	 *  committed after the same DRAG_THRESHOLD_PX the marker drag uses so
+	 *  a static click still deselects. On commit we manipulate the
+	 *  `.mp-canvas` scroll position directly — cheaper and steadier than
+	 *  routing through zoom math since scroll dims don't change during a
+	 *  pan. Touch is untouched: the canvas already declares
+	 *  `touch-action: pan-x pan-y` and the browser handles single-finger
+	 *  pan natively there.
+	 *
+	 *  `startScrollLeft` / `startScrollTop` snapshot the canvas scroll
+	 *  offsets at pointerdown so each move re-derives the target position
+	 *  from client-space delta rather than accumulating float error via
+	 *  scrollBy. `active` flips true once the pointer moves past the
+	 *  threshold; the `mp-canvas--panning` class it drives swaps the
+	 *  cursor from `grab` to `grabbing`. */
+	let panState = $state<{
+		startClientX: number;
+		startClientY: number;
+		startScrollLeft: number;
+		startScrollTop: number;
+		active: boolean;
+	} | null>(null);
+
 	/**
 	 * Pile-up popover — surfaces when a click lands on a snap point with
 	 * more than one marker (common at low zoom where sub-cell placements
@@ -1017,20 +1041,51 @@
 		// threshold, so a static tap still routes as a normal click.
 		const { x, y } = clampToBounds(eventToWorld(e));
 		const hit = markersAt(x, y, hitTolerance)[0];
-		if (!hit) return;
+		if (hit) {
+			try {
+				(e.currentTarget as Element).setPointerCapture(e.pointerId);
+			} catch {
+				// setPointerCapture can throw on stale targets; drag still works
+				// via the pointer-move listener, just without capture.
+			}
+			dragState = {
+				id: hit.id,
+				startClientX: e.clientX,
+				startClientY: e.clientY,
+				liveX: hit.x,
+				liveY: hit.y,
+				moved: false,
+			};
+			return;
+		}
+		// Empty-canvas mouse press with no armed mode + nothing selected
+		// → arm a pan. Same threshold-first pattern as the marker drag
+		// path so a plain click still routes through onGridClick (which
+		// deselects on empty). Skipped when a marker is selected: the
+		// canvas is in "focused-marker" mode there (cursor: default), so
+		// a stray drag on the map shouldn't hijack the selection; clicking
+		// bare terrain to deselect first is the way back to pan mode.
+		// Touch is skipped — the browser's own overflow-scroll pan already
+		// covers single-finger pan there via `touch-action: pan-x pan-y`.
+		if (
+			e.pointerType !== 'mouse' ||
+			e.button !== 0 ||
+			!canvasEl ||
+			placingMarker ||
+			selectedMarkerId
+		)
+			return;
 		try {
 			(e.currentTarget as Element).setPointerCapture(e.pointerId);
 		} catch {
-			// setPointerCapture can throw on stale targets; drag still works
-			// via the pointer-move listener, just without capture.
+			// Same tolerance as above — capture is best-effort.
 		}
-		dragState = {
-			id: hit.id,
+		panState = {
 			startClientX: e.clientX,
 			startClientY: e.clientY,
-			liveX: hit.x,
-			liveY: hit.y,
-			moved: false,
+			startScrollLeft: canvasEl.scrollLeft,
+			startScrollTop: canvasEl.scrollTop,
+			active: false,
 		};
 	}
 
@@ -1040,6 +1095,20 @@
 		// measuring never routes through the marker drag path.
 		if (measuring && measurePoints.length > 0) {
 			measureCursor = clampToBounds(eventToWorld(e));
+		}
+		if (panState && canvasEl) {
+			const dxPx = e.clientX - panState.startClientX;
+			const dyPx = e.clientY - panState.startClientY;
+			if (!panState.active && Math.hypot(dxPx, dyPx) > DRAG_THRESHOLD_PX) {
+				panState.active = true;
+			}
+			if (panState.active) {
+				// Move the map in the direction the pointer travels — pull left,
+				// the map slides left, which is scrollLeft going down. Same on Y.
+				canvasEl.scrollLeft = panState.startScrollLeft - dxPx;
+				canvasEl.scrollTop = panState.startScrollTop - dyPx;
+			}
+			return;
 		}
 		if (!dragState) return;
 		const dxPx = e.clientX - dragState.startClientX;
@@ -1057,6 +1126,25 @@
 
 	function onGridPointerUp(e: PointerEvent) {
 		cancelLongPress();
+		if (panState) {
+			const pan = panState;
+			panState = null;
+			try {
+				(e.currentTarget as Element).releasePointerCapture(e.pointerId);
+			} catch {
+				// Best-effort — capture may already be released.
+			}
+			if (pan.active) {
+				// A committed pan swallows the following click so we don't
+				// deselect the selected marker at the pointer-up spot.
+				dragJustEnded = true;
+				setTimeout(() => {
+					dragJustEnded = false;
+				}, 0);
+				savePanSoon();
+			}
+			return;
+		}
 		if (!dragState) return;
 		const state = dragState;
 		dragState = null;
@@ -1817,6 +1905,8 @@
 					class="mp-canvas"
 					class:mp-canvas--placing={placingMarker}
 					class:mp-canvas--measuring={measuring}
+					class:mp-canvas--panning={panState?.active}
+					class:mp-canvas--focused={selectedMarkerId != null}
 					bind:this={canvasEl}
 					onscroll={onScroll}
 				>
@@ -2744,6 +2834,44 @@
 		   Wheel events are unaffected by touch-action so trackpad
 		   ctrl+wheel + bare-wheel pan both still work. */
 		touch-action: pan-x pan-y;
+		/* Browsing-state affordance: the canvas advertises "click-drag to
+		   pan" whenever no marker is selected and no armed mode owns the
+		   pointer. Hovering a marker icon flips the cursor back to
+		   `default` (see `.mp-marker-icon` below) so the "click to select"
+		   affordance still reads. */
+		cursor: grab;
+	}
+	/* Marker icons are the "click to select" target in the browsing
+	   state — pull the cursor back to the platform default over them so
+	   users can tell that clicking them will act on the marker (not the
+	   map). Scoped to the un-armed canvas (not placing, not measuring)
+	   so those modes' custom cursors (pin, crosshair) still win over
+	   marker hovers — clicking a marker in placing mode still drops a
+	   new marker there per the marker-hit skip in onGridClick. Labels
+	   have `pointer-events: none` so hovering them falls through to the
+	   canvas grab; icons stay a real hit target. */
+	:global(
+		.mp-canvas:not(.mp-canvas--placing):not(.mp-canvas--measuring):not(.mp-canvas--panning)
+			.mp-marker-icon
+	) {
+		cursor: default;
+	}
+	/* Selection / focused mode: a marker is currently selected. The
+	   canvas is no longer offering pan (pointerdown early-outs on
+	   `selectedMarkerId`), so the browsing-hand cursor would be
+	   misleading. Fall back to `default` — click empty terrain to
+	   deselect first, then pan. */
+	:global(.mp-canvas--focused) {
+		cursor: default;
+	}
+	/* Committed pan — cursor is a closed hand while the user is
+	   actively dragging the map. Placed after `.mp-canvas .mp-marker-icon`
+	   so the whole surface (including any marker icons under the pointer)
+	   reads as "grabbing" for the duration of the pan. */
+	:global(.mp-canvas--panning),
+	:global(.mp-canvas--panning svg),
+	:global(.mp-canvas--panning .mp-marker-icon) {
+		cursor: grabbing;
 	}
 	/* Armed placement — the "+ Marker" button was clicked and the next
 	   click on the map drops a marker at that spot. Swap to a crosshair
