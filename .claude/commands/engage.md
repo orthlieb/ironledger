@@ -176,15 +176,34 @@ Call the `Agent` tool with:
      of the three is not yet present, sleep 30 s and retry —
      GitHub can lag scheduling a run after a squash-merge.
   2. Poll `mcp__github__actions_get` every ~60 s for each still-
-     running workflow until ALL THREE reach a terminal `conclusion`
+     running workflow until it reaches a terminal `conclusion`
      (`success`, `failure`, `cancelled`, `timed_out`,
      `action_required`). Use plain Bash `sleep` between polls —
      that's fine inside a background agent. CI usually terminates
      first (~2 min), then Deploy (~3 min), then E2E (~12 min).
-  3. **On all three green**: report back one line ("CI + E2E +
-     Deploy on `<sha>` (PR #<n>) all passed — CI <t>, E2E <t>,
-     Deploy <t>") and exit.
-  4. **On any non-success terminal conclusion (on any of the
+  3. **Report each workflow's result AS IT LANDS**, don't wait for
+     all three. When a run reaches a terminal conclusion, emit one
+     line for it right then ("CI on `<sha>` (PR #<n>) passed in
+     <t>" or "CI on `<sha>` (PR #<n>) FAILED after <t> — <one-line
+     summary of the failing job / step>"), then keep polling
+     whatever's still running. Each of these lines becomes its own
+     task-notification the main session will surface to the user;
+     staggered reports beat a single end-of-run summary because
+     the user can start reacting to a CI red before E2E's 12-min
+     run even finishes.
+  4. **On CI or Deploy failing**, STOP polling E2E and cancel it
+     from your outstanding work. E2E's result on the same head no
+     longer matters — a red CI or Deploy already means main isn't
+     shippable, and any E2E regression will re-surface on the fix
+     PR's own workflow runs. Skipping the ~12-min E2E wait gets
+     the fix landed sooner. (An E2E failure with CI + Deploy both
+     green does NOT trigger the same short-circuit — E2E is the
+     only remaining signal in that case, so keep it and triage
+     it.)
+  5. **On all three green**: after the third success line has
+     been reported, no summary needed — the per-workflow lines are
+     the report.
+  6. **On any non-success terminal conclusion (on any of the
      three)**: triage and fix.
      - Fetch failing job logs with `mcp__github__get_job_logs`
        (pass `failed_only: true` and `return_content: true`) to
