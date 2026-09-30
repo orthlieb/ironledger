@@ -164,10 +164,22 @@ describe('buildMapZipEntries — envelope', () => {
 			case: 'small-caps',
 		});
 		expect(cleanLabelStyle({ case: 'uppercase' })).toEqual({ case: 'uppercase' });
+		// Regression guard: `size` was silently stripped for months — an
+		// export with `size: 'lg'` came back as `undefined` and the label
+		// rendered at the default 'md'. Every known ramp value must survive
+		// the round-trip.
+		expect(cleanLabelStyle({ size: 'sm' })).toEqual({ size: 'sm' });
+		expect(cleanLabelStyle({ size: 'md' })).toEqual({ size: 'md' });
+		expect(cleanLabelStyle({ size: 'lg' })).toEqual({ size: 'lg' });
+		expect(cleanLabelStyle({ size: 'xl' })).toEqual({ size: 'xl' });
+		// A `size` combined with other legal flags still yields the whole shape.
+		expect(cleanLabelStyle({ bold: true, size: 'lg' })).toEqual({ bold: true, size: 'lg' });
 		// Unknown / malformed values fall away silently so a hand-edited or
 		// older manifest still imports (just without the styling).
 		expect(cleanLabelStyle({ case: 'centre' })).toBeUndefined();
 		expect(cleanLabelStyle({ bold: 'yes' })).toBeUndefined();
+		expect(cleanLabelStyle({ size: 'xxl' })).toBeUndefined();
+		expect(cleanLabelStyle({ size: 42 })).toBeUndefined();
 		expect(cleanLabelStyle('nope')).toBeUndefined();
 		expect(cleanLabelStyle(null)).toBeUndefined();
 		expect(cleanLabelStyle({})).toBeUndefined();

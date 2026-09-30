@@ -50,6 +50,12 @@ import {
 // ---------------------------------------------------------------------------
 
 const IMPORT_LABEL_CASES = new Set(['small-caps', 'uppercase']);
+const IMPORT_LABEL_SIZES = new Set<NonNullable<NonNullable<MapMarker['labelStyle']>['size']>>([
+	'sm',
+	'md',
+	'lg',
+	'xl',
+]);
 const IMPORT_LABEL_POSITIONS = new Set<MapMarkerLabelPosition>([
 	'top',
 	'bottom',
@@ -71,6 +77,14 @@ export function cleanLabelStyle(v: unknown): MapMarker['labelStyle'] {
 	if (src.underline === true) out.underline = true;
 	if (typeof src.case === 'string' && IMPORT_LABEL_CASES.has(src.case)) {
 		out.case = src.case as 'small-caps' | 'uppercase';
+	}
+	// `size` was missing from the import allowlist, so a labelStyle exported
+	// with `size: 'lg'` (or 'sm' / 'xl') round-tripped in as `undefined` and
+	// every label came back at the default 'md' size. Copy it through when
+	// it matches the known ramp values.
+	if (typeof src.size === 'string') {
+		const size = src.size as NonNullable<NonNullable<MapMarker['labelStyle']>['size']>;
+		if (IMPORT_LABEL_SIZES.has(size)) out.size = size;
 	}
 	return Object.keys(out).length ? out : undefined;
 }
