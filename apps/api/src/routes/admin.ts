@@ -89,14 +89,18 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   server.addHook('preHandler', requireAdmin);
 
   // ── GET / ── List all users ─────────────────────────────────────────────
-  server.get('/', async (_req, reply) => {
+  // Rate-limit exempt: admin panel poll target; behind admin auth already,
+  // no need to share the per-user write bucket that an import fills.
+  server.get('/', { config: { rateLimit: false } }, async (_req, reply) => {
     const result = await adminService.listUsers().catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
   });
 
   // ── GET /stats ── System health stats ───────────────────────────────────
-  server.get('/stats', async (_req, reply) => {
+  // Rate-limit exempt: admin dashboard polls this + `/stats/timeseries` on
+  // an interval; both are read-only aggregates behind admin auth.
+  server.get('/stats', { config: { rateLimit: false } }, async (_req, reply) => {
     const result = await adminService.getStats().catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);
@@ -228,9 +232,11 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   });
 
   // ── GET /stats/timeseries ── User growth & activity timeseries ──────────
+  // Rate-limit exempt: paired with `/stats` for dashboard polling.
   server.get(
     '/stats/timeseries',
     {
+      config: { rateLimit: false },
       schema: {
         querystring: timeseriesQuery,
       },
@@ -333,7 +339,10 @@ export const adminRoutes: FastifyPluginAsyncZod = async (server) => {
   });
 
   // ── GET /maintenance/status ── Maintenance status (admin) ───────────
-  server.get('/maintenance/status', async (_req, reply) => {
+  // Rate-limit exempt: the admin panel polls this alongside its stats
+  // endpoints; it's a cheap read and shouldn't share the shared per-user
+  // bucket with a running import.
+  server.get('/maintenance/status', { config: { rateLimit: false } }, async (_req, reply) => {
     const result = await maintenanceService.getStatus().catch(handleError(reply));
     if (!result || reply.sent) return;
     return reply.status(200).send(result);

@@ -203,7 +203,13 @@ export async function buildServer(): Promise<FastifyInstance> {
   const { getStatus: getMaintenanceStatus } = await import('./services/maintenanceService.js');
   const { getStatus: getBroadcastStatus } = await import('./services/broadcastService.js');
 
-  server.get('/api/v1/system/status', async (_req, reply) => {
+  // Exempt from the global rate limiter: this endpoint is polled by the
+  // app shell (every viewer, every minute or so) purely to hydrate the
+  // maintenance + broadcast banners. It's cheap, safe, and losing it to a
+  // burst budget spent by an unrelated import made banner updates flake
+  // out for the duration of the burst. Skipping the bucket here doesn't
+  // widen any attack surface — the payload is tiny and cache-friendly.
+  server.get('/api/v1/system/status', { config: { rateLimit: false } }, async (_req, reply) => {
     const [maintenance, broadcast] = await Promise.all([
       getMaintenanceStatus().catch(() => ({
         enabled: false,
@@ -279,14 +285,19 @@ export async function buildServer(): Promise<FastifyInstance> {
   // Backwards-compat alias: the web client used to poll this endpoint alone.
   // Kept for one release so older client builds don't 404 during rolling
   // deploy. Remove in the release after 5.x.
-  server.get('/api/v1/maintenance/status', async (_req, reply) => {
-    try {
-      const status = await getMaintenanceStatus();
-      return reply.status(200).send(status);
-    } catch {
-      return reply.status(200).send({ enabled: false, message: null, shutdownAt: null });
-    }
-  });
+  // Legacy alias, same exemption rationale as `/api/v1/system/status`.
+  server.get(
+    '/api/v1/maintenance/status',
+    { config: { rateLimit: false } },
+    async (_req, reply) => {
+      try {
+        const status = await getMaintenanceStatus();
+        return reply.status(200).send(status);
+      } catch {
+        return reply.status(200).send({ enabled: false, message: null, shutdownAt: null });
+      }
+    },
+  );
 
   return server;
 }
