@@ -1397,26 +1397,35 @@
 		// Which owners already have a map (and its id) — for conflict detection.
 		// Also: standalone maps already present, keyed by normalised name, so a
 		// re-import of the same regional map replaces instead of duplicating.
+		//
+		// If this fetch fails we CANNOT dedupe against what's already in the
+		// DB — every incoming map would go straight to `standalone.push()`
+		// and get created blindly, even when a same-name copy already
+		// exists. That is exactly how "two Regional Maps, one with a
+		// background and one without" happens: the first import blew the
+		// rate limit, this GET came back 429, the dedupe snapshot was
+		// empty, and the retry created a second map alongside the first.
+		// Better to surface the fetch failure to the user (they see an
+		// error, they retry) than to silently duplicate.
 		const ownedMapId = new Map<string, string>();
 		const standaloneMapIdByName = new Map<string, string>();
-		try {
-			const res = await fetch('/api/session/maps');
-			if (res.ok) {
-				const body = (await res.json()) as {
-					maps?: Array<{
-						id: string;
-						name: string;
-						ownerKind: MapOwnerKind | null;
-						ownerId: string | null;
-					}>;
-				};
-				for (const m of body.maps ?? []) {
-					if (m.ownerKind && m.ownerId) ownedMapId.set(`${m.ownerKind}:${m.ownerId}`, m.id);
-					else if (m.name) standaloneMapIdByName.set(normaliseName(m.name), m.id);
-				}
-			}
-		} catch {
-			/* treat as "no owned maps" — everything links or goes standalone */
+		const res = await fetch('/api/session/maps');
+		if (!res.ok) {
+			throw new Error(
+				`Failed to fetch current map list (${res.status}) — refusing to import bundled maps blind. Try again in a moment.`,
+			);
+		}
+		const listBody = (await res.json()) as {
+			maps?: Array<{
+				id: string;
+				name: string;
+				ownerKind: MapOwnerKind | null;
+				ownerId: string | null;
+			}>;
+		};
+		for (const m of listBody.maps ?? []) {
+			if (m.ownerKind && m.ownerId) ownedMapId.set(`${m.ownerKind}:${m.ownerId}`, m.id);
+			else if (m.name) standaloneMapIdByName.set(normaliseName(m.name), m.id);
 		}
 
 		type Plan = {

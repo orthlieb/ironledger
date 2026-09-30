@@ -261,7 +261,7 @@
 						<button class="btn btn-danger" onclick={() => deleteMapDialogRef?.open()}>DELETE</button
 						>
 						<span class="mo-hint">
-							Removes this map entirely. If it was your only map, a fresh Regional Map is created to
+							Removes this map entirely. If it was your only map, a fresh "My New Map" is created to
 							replace it.
 						</span>
 					</div>
