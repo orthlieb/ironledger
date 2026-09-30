@@ -289,15 +289,15 @@ Some Yrt foes carry a Gray-mana defense that builds up on each miss, making prog
 
 ```json
 {
-  "id": "yrt/blighted-guilder",
-  "name": "Blighted Guilder",
+  "id": "yrt/tomb-walker",
+  "name": "Tomb Walker",
   "escalatesDefense": true,
   "escalatingDefense": {
     "startDefense": 0,
     "trigger": "miss",
     "rankCaps": { "1": 11, "2": 7, "3": 3, "4": 1, "5": 0 },
     "minimum": 0,
-    "removal": "When the encounter ends or the foe is defeated, the tracery disperses and defense resets to 0."
+    "removal": "When the encounter ends or the foe is defeated, the lattice collapses and defense resets to 0."
   }
 }
 ```

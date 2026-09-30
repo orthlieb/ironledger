@@ -2,8 +2,6 @@
 # Extension foe images copied here at build from extensions/*/foes/images/.
 # The .webp themselves are build artifacts; their source of truth is the
 # extension folder. Base/Delve foe images are tracked normally.
-amber-schemer.webp
-blighted-guilder.webp
 bloater.webp
 carrier.webp
 carrion-mound.webp

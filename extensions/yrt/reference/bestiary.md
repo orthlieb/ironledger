@@ -41,7 +41,7 @@ The Verdani are the exception.\*\* Through training, lifestyle, and possibly som
 | Mana-saturated bodies         | Coldhusk, Bloater, Verdant Crawler                                     |
 | Pre-Fall artefacts            | The Whispering Stones, Echo, War Pile                                  |
 | Deliberately built constructs | Puppet Bones, Mask Risen, Greatmask, Vow Walker                        |
-| Altered living people         | Carrier, Tomb Walker, Blighted Guilder, Amber Schemer, The Tainted     |
+| Altered living people         | Carrier, Tomb Walker, The Tainted                                      |
 | Contaminated sites            | Rotwell                                                                |
 
 ---
@@ -80,71 +80,9 @@ Some foes carry a Gray-mana defense that builds up on each miss, making progress
 | 4 – Extreme     | 2              | 1           |
 | 5 – Epic        | 1              | 0           |
 
-_Foes: Blighted Guilder, Tomb Walker._
+_Foes: Tomb Walker._
 
-## 1. Amber Schemer
-
-![An amber schemer — a rogue Vizion, unnervingly calm, whose implant glows faintly warm beneath one iris as they read the room.](../foes/images/amber-schemer.webp)
-
-*An amber schemer — a rogue Vizion, unnervingly calm, whose implant glows faintly warm beneath one iris as they read the room.*
-
-**Rank:** 3 — Formidable · **Nature:** Ironlander (rogue Vizion)
-
-**Features:**
-- Unnervingly calm and pleasant demeanor
-- Amber implant visible behind one eye as a faint warm glow under the iris
-- Never raises their voice, never loses their composure
-- Always notices what other people in the room are feeling
-
-**Drives:**
-- Manipulate those around them for personal gain — wealth, power, influence, or simply control
-- Avoid direct confrontation at all costs
-
-**Tactics:**
-- Project false trust and calm through low-level Amber Compulsion
-- When stakes rise, plant a Directive Compulsion to turn an ally against the party
-- When the manipulation is exposed, flee — leaving behind a confused, compelled scapegoat who genuinely believes the schemer's narrative
-
-A Vizion is a Conclave-licensed Amber-trained mage. Vizion are trained for sensory work, for compulsion within sanctioned limits, and for diagnostic and investigative tasks where reading a person's emotional or cognitive state is useful. The Conclave's licensing for Vizion is unusually strict, because the operating envelope of Amber mana — emotional steering, directive compulsion, memory editing — overlaps almost exactly with the operating envelope of a competent abuser.
-
-An amber schemer is a Vizion who has crossed the line. The cause varies: some begin as ordinary Vizion who discover that a small, undetectable compulsion makes their work easier and never stop expanding the technique. Some are lifelong manipulators who pursued Vizion training specifically as a force-multiplier. A few are former Conclave investigators who learned the limits of the licensing system from the inside and now operate just outside it.
-
-The schemer's working method is patient. They build influence over weeks or months — a small nudge in conversation, a moment of unearned trust, a recurring sense that this is a person to whom one tells the truth. By the time the target realises something is wrong, the schemer has already extracted what they wanted and moved on.
-
-## 2. Blighted Guilder
-
-![A blighted guilder — a Conclave seed-crafter veined with grey manite tracery, eyes pulsing faintly crimson, carrying the skills and stockpile that followed them out of the refinery.](../foes/images/blighted-guilder.webp)
-
-*A blighted guilder — a Conclave seed-crafter veined with grey manite tracery, eyes pulsing faintly crimson, carrying the skills and stockpile that followed them out of the refinery.*
-
-**Rank:** 2 — Dangerous · **Nature:** Ironlander (mana-poisoned)
-
-**Features:**
-- Skin veined with grey manite tracery — the unmistakable mark of long blight-zone exposure
-- Eyes that pulse faintly with crimson light
-- Conclave guild seal burned into the palm — sometimes still active, sometimes scarred over
-- Tracery flares bright and skin goes rigid under impact — the Gray mana hardening reflexively
-- An untreated Conclave-issue bandolier of mismatched seeds
-
-**Drives:**
-- Protect the supply lines, the operation, the shipment, the work
-- Silence anyone who knows too much about the blight zones
-
-**Tactics:**
-- Hurl primed seeds — usually Crimson, sometimes worse
-- Use Luminous to blind and disorient
-- Fall back on the hardened Grey lattice when seeds run low or close-combat is forced
-- Call for Conclave enforcement if cornered, regardless of whether it will actually come
-
-> **Escalating Defense** (YRT): a mana shield erodes on each miss.
-
-A blighted guilder is a Conclave seed-crafter whose career has gone wrong. Extended time in refinement complexes and blight zones accumulates manite at a rate the standard Conclave shielding can't fully prevent. The visible signs — grey veining, luminescent eyes — are the point at which the Conclave quietly discharges affected staff rather than treats them, usually with a small payout and no further acknowledgment.
-
-The discharged guilder keeps their training, their seed-crafting skills, and whatever cache they walked out with. Some take work in Freeport's underworld or with the Spero smugglers. A few drift toward zealotry. All of them are, to some degree, unstable.
-
-What most people don't realise until it's too late: the same Gray saturation that marks a blighted guilder protects them. Under pressure the tracery flares and the lattice beneath the skin hardens into improvised armour — involuntary, drawing from the same mana reserve that's slowly killing them. Each blow the guilder survives lets the remaining lattice consolidate and tighten. Hit them hard enough, consistently enough, and the grey eventually goes dark.
-
-## 3. Bloater
+## 1. Bloater
 
 ![A bloater — a corpse soaked for years in Azure-leaking water, kept soft and intact by the mana load and still capable of a crude reflexive grasp.](../foes/images/bloater.webp)
 
@@ -176,7 +114,7 @@ A bloater does not pursue. It does not seek vengeance, does not regret its drown
 
 Bloaters break down eventually. Five to ten years is typical. The longest-lived examples are in deep, still water in pre-Fall ruins where the Azure leak is ongoing.
 
-## 4. Carrier
+## 2. Carrier
 
 ![A carrier — a living person bearing an Amber compulsion-seed surgically implanted at the base of the skull, keyed to a trigger they usually do not know they carry.](../foes/images/carrier.webp)
 
@@ -207,7 +145,7 @@ The implantation is illegal. The procedure is performed by a small number of bla
 
 The seed can be removed. The procedure is delicate, dangerous, and expensive. Conclave hospices in major cities will perform it for a substantial fee and without questions, on the understanding that the patient afterward becomes a Conclave informant for life.
 
-## 5. Carrion Mound
+## 3. Carrion Mound
 
 ![A carrion mound — Black slurry heaped with rotting organic matter, drifting slowly across the landscape and dissolving anything organic it touches into itself.](../foes/images/carrion-mound.webp)
 
@@ -237,7 +175,7 @@ Carrion-mounds form from leftover Black slurry — the same industrial-era dispo
 
 Over a season, a small slurry leak can produce a mound the size of a farm cart. Over a decade, one can become large enough to consume a small paddock and everything in it. The mound has no mind. It does not hunt. It does not retaliate when struck. Destroying a mound is possible but requires specific tools: Luminous warding disrupts the Black binding, or sustained intense heat burns off the organic content.
 
-## 6. Coldhusk
+## 4. Coldhusk
 
 ![A coldhusk stands motionless in the permafrost where it died, waiting to draw heat from anything warmer that wanders within its grip-radius.](../foes/images/coldhusk.webp)
 
@@ -266,7 +204,7 @@ In the far-north Luminous-rich permafrost, a corpse left exposed long enough beg
 
 A coldhusk does not pursue. It does not seek. It stands where it died — usually upright, often in the same posture it had at the moment of death — and waits. When something warm enters its grip-radius, it grasps. When the warm thing stops being warm, it lets go. This is why the same coldhusk can be encountered three times by three different travellers in the same year. It hasn't moved. They walked past it.
 
-## 7. Drowning Eye
+## 5. Drowning Eye
 
 ![A drowning eye — a vortex sustained by ruptured Azure and Luminous seeds from a lost shipment, still burning through its stockpile at the bottom of the sea.](../foes/images/drowning-eye.webp)
 
@@ -297,7 +235,7 @@ A drowning eye is what sailors call one of these vortices. It looks like a local
 
 The voices in the water are real, in the same sense that an echo's apparitions are real. Drowned sailors release a final burst of Amber-pattern activity that imprints on suspended particulates in the water. The vortex concentrates those particulates near its eye. A drowning eye exhausts itself; most last a year or two before the seeds are spent.
 
-## 8. Echo
+## 6. Echo
 
 ![An echo — an Amber imprint of a violent death, recorded into porous matter at the site and replayed whenever another nearby brain disturbs the field.](../foes/images/echo.webp)
 
@@ -327,7 +265,7 @@ An echo always shows the same fragment. The same three steps, the same turn, the
 
 Echoes fade. Most are gone within a generation. The strongest — a battle, a massacre, a single particularly violent death — can persist for centuries before they dissipate.
 
-## 9. Ember Kite
+## 7. Ember Kite
 
 ![An Ember Kite — a Crimson-saturated raptor whose feathers retain heat like a living forge, banking on thermals above a blight zone it has claimed as territory.](../foes/images/ember-kite.webp)
 
@@ -360,7 +298,7 @@ Ember Kites are territorial and predictable in range. A bonded pair will hold a 
 
 Conclave surveyors treat Ember Kite sightings as a reliable early indicator of Crimson contamination. The birds do not cause the blight; they only live where it already exists.
 
-## 10. Greatmask
+## 8. Greatmask
 
 ![A greatmask — the size of an old tree, keyed to a territory rather than a target, walked not by one elder but by a line of keepers passed down through generations.](../foes/images/greatmask.webp)
 
@@ -390,7 +328,7 @@ The mask is enormous, hand-carved by a Verdani elder over the course of months, 
 
 Because the Greatmask is intended to outlive any individual walker, the mask is not held by one elder; it is held by a line — typically a family or a small council — who pass the responsibility down through generations. As long as someone in the line is alive and accepts the role, the Greatmask remains active. A Greatmask is essentially impossible to defeat in combat. The only practical responses are: do not provoke it, leave the territory, or find the line of keepers and persuade them to stand it down.
 
-## 11. Locus
+## 9. Locus
 
 ![A Verdant locus — wood, soil, and root mass walking with the gradient of local mana flux, drawn toward higher concentrations without intent.](../foes/images/locus-azure.webp)
 
@@ -422,7 +360,7 @@ A locus is not sentient, not agentic, not motivated. It is a self-sustaining man
 
 The folk belief that loci are vestigial gods is understandable. The truth is the inverse: nature is what's left over after the loci have shaped the regions around themselves over centuries. Loci are very, very hard to destroy. The standard Conclave method is to disperse them by removing the underlying mana saturation — drain the wetland, quench the firebed, clear the contaminated grove.
 
-## 12. Mask Risen
+## 10. Mask Risen
 
 ![A mask risen shambles forward — leaves, soil, and small bones accreted by Verdant flow around an elven recognition-mask, walked by an elder handler from a distance.](../foes/images/mask-risen.webp)
 
@@ -454,7 +392,7 @@ The Verdant flow does the rest. Local biomass accretes around the mask: leaves, 
 
 The walker is the handler. They do not need to be physically present — the mask carries the recognition pattern and the local Verdant flow carries the energy — but they must be alive, and they must be reasonably close. When the walker dies, the Mask Risen falls inert. A Mask Risen cannot be permanently killed by physical means. The only way to stop one for good is to find and destroy the mask, or to find and stop the walker.
 
-## 13. Mire Form
+## 11. Mire Form
 
 ![A mire form rises from the peat — a plant-construct using a preserved body as a pot, mouth fixed open as the spore vent.](../foes/images/mire-form.webp)
 
@@ -486,7 +424,7 @@ A mire form is what happens when a preserved body sits in saturated Black-and-Ve
 
 It is not the dead person. It is a plant-construct using a dead person as a pot. The pod has a finite lifespan. Roughly every season, the host body fails and the pod releases a cloud of spores that try to find a fresher anchor nearby. A traveller pulled into the mud is not being murdered for revenge; they are being fertilized. The "silent scream" is mechanical: the Verdant lattice keeps the jaw open because that's the spore vent.
 
-## 14. Necrotic Sea Hare
+## 12. Necrotic Sea Hare
 
 ![A Necrotic Sea Hare, palm-sized and soft when fed, locked grey and rigid when it is not, indistinguishable from the shingle it is lying in.](../foes/images/necrotic-sea-hare.webp)
 
@@ -529,7 +467,7 @@ Removal requires getting clear of the water and treating the attachment site dir
 
 It cannot live on clean ground. It needs Black-fouled substrate under it. Dropped onto uncontaminated bottom a population will strip what is there, spoil what it cannot eat, and thin out within a few seasons for want of anything to hold it. Carried in with contaminated stone, it is permanent, because the stone is the habitat. Same creature, two entirely different infestations, and the difference is what is underneath rather than how many arrived.
 
-## 15. Puppet Bones
+## 13. Puppet Bones
 
 ![A puppet bones: a stripped skeleton with Gray-reinforced joints and a Crimson-fed control bead at the skull, remote-piloted by an illegal Amber handler up to two hundred paces away.](../foes/images/puppet-bones.webp)
 
@@ -561,7 +499,7 @@ From up to about two hundred paces away, the handler sees what the puppet sees a
 
 The setup is a death-sentence offence under Conclave law. Two-thirds of known examples are made by the same three or four black-market artificers, who rent them out for grave-robbing, intimidation, or assassination jobs where the handler wants plausible deniability. The Brotherhood does not use puppet bones — they consider them tasteless — but they have been known to hire puppeteers for wet work that needs to be blamed on someone else.
 
-## 16. Rotwell
+## 14. Rotwell
 
 ![A rotwell — a body of Black-saturated water with its tell-tale ring of dead vegetation, iridescent in bruise-purples and sickly greens rather than rainbow.](../foes/images/rotwell.webp)
 
@@ -589,7 +527,7 @@ Whatever the source, the result is the same. Black mana leaches into the water, 
 
 Rotwells can be remediated. The Conclave has a specific protocol involving Azure flush-and-dilute cycles followed by Luminous containment warding. Most rotwells are simply quarantined. A rotwell grows. Not quickly, but inexorably. Over a decade, an untreated rotwell can expand its killing radius by several paces, and the underground plume travels much further.
 
-## 17. The Tainted
+## 15. The Tainted
 
 ![The Tainted — Black corruption veining the skin of a habitual user of Spero-tainted seeds, prematurely aged and trailed by the small dead things that accumulate in their wake.](../foes/images/the-tainted.webp)
 
@@ -619,7 +557,7 @@ A user who casts with tainted seeds once or twice usually gets away with nothing
 
 A tainted person is still themselves, mostly. They remember who they are, they can hold a conversation, they pay their debts. But they have crossed a threshold, and they know it, and they cannot stop. A small number of Azure treatment programs exist at Conclave hospices, but they are expensive, long-duration, and have roughly a one-in-three success rate.
 
-## 18. Tomb Walker
+## 16. Tomb Walker
 
 ![A tomb walker — a living person inside a Gray-and-Azure life-support rig, iron-masked and lens-eyed, honouring an oath at a cost no sane person would pay.](../foes/images/tomb-walker.webp)
 
@@ -653,7 +591,7 @@ The host is alive. They breathe (the rig assists), their heart beats (mechanical
 
 The Gray lattice does more than hold the body together. Under impact stress it automatically redirects from structural support to a compressed outer field — a hardened shell that takes the brunt of each blow before it reaches the host. Each time the tomb walker survives, the remaining lattice compresses and redistributes. When the reserve finally runs dry and the field collapses, the host is fully exposed.
 
-## 19. Verdant Crawler
+## 17. Verdant Crawler
 
 ![A verdant crawler — a forest mammal overgrown with vine and root until the original animal became a chassis for the plant matter that now rides it.](../foes/images/verdant-crawler.webp)
 
@@ -682,7 +620,7 @@ A crawler is still alive in some sense — it eats (sunlight and soil), it moves
 
 Crawlers are drawn to cultivated land. The reason is mechanical: cultivated land is rich in worked soil and growth-ready conditions, which the crawler's Verdant lattice reads as ideal substrate. A crawler on the edge of a farm is not raiding. It is attempting to integrate the farm into its territory.
 
-## 20. Vow Walker
+## 18. Vow Walker
 
 ![A vow walker: a Luminous-shelled reliquary construct with Azure-lit joints and a Crimson vow-heart, bearing the ceramic death-mask of the oath-giver.](../foes/images/vow-walker.webp)
 
@@ -715,7 +653,7 @@ A vow walker is built to honour a final oath. When a senior Ecclesia figure face
 
 The Iron Wardens hold the operating Amber keys. Each vow walker has a designated handler from within the Wardens, and that handler is responsible for the construct's actions for the rest of their life. The Ecclesia's theological line is precise: they do not animate the dead; the construct is a reliquary, not a corpse. A vow walker can be destroyed. The shell is tough but not invulnerable; the Crimson core, once breached, ends the construct cleanly.
 
-## 21. War Pile
+## 19. War Pile
 
 ![A war pile — a pre-Fall AI bound in a Gray lattice, wearing whatever structural matter it has pulled together from an old battlefield.](../foes/images/war-pile.webp)
 
@@ -747,7 +685,7 @@ War-piles were built by the Unmade during the resource wars that followed the bl
 
 A war pile recharges by photosynthesis — the same Verdant–Crimson light-capture that Verdant Keepers use, scaled up across a large surface area. In darkness, a war pile sleeps. Drag a sleeping one into sunlight and it wakes up, takes stock, and tries to contact its command. Its command has been dead for centuries. It does not know this. What it does next depends on its standing orders. The pile builds itself, gathering structural mass the way a hermit crab gathers shells.
 
-## 22. The Whispering Stones
+## 20. The Whispering Stones
 
 ![The Whispering Stones — a broken pre-Fall communication relay whose Amber lattice still leaks fragmentary memory into anyone who lingers inside the perimeter.](../foes/images/the-whispering-stones.webp)
 
@@ -777,7 +715,7 @@ Inside the perimeter, the leakage interferes with the ordinary working of the hu
 
 The "knowledge for memory" exchange in the old folk tales is real, but mechanical. The stones don't think. They trade — your stable, recent memory traces for fragments of someone else's stored experience. Long-term exposure causes permanent personality drift. The Conclave catalogues every known site and posts wardens.
 
-## 23. Wisp Walker
+## 21. Wisp Walker
 
 ![A wisp walker — a self-organising cloud of Amber and Luminous particles, shaped into humanoid form by the observer's own neural pattern.](../foes/images/wisp-walker.webp)
 
@@ -807,7 +745,7 @@ The shape is not deliberate. The particles cohere along the line of strongest Am
 
 The "guidance" is the same effect. The cloud drifts toward warmth and motion. The observer interprets this as the wisp pointing somewhere and leading the way. They follow. The wisp continues drifting toward the next warm thing, which is usually deeper into the blight zone the wisp came from. Eventually the traveller is somewhere they should not be, and the wisp has dispersed because the local Amber concentration has equalised.
 
-## 24. Witherwind
+## 22. Witherwind
 
 ![A witherwind — a Luminous-and-Azure wild mana storm drifting along the thermal gradient toward warmth, its calm centre the point of strongest mana flux rather than shelter.](../foes/images/witherwind.webp)
 
@@ -849,18 +787,18 @@ The voices in the storm are echoes — Amber imprints from those who died in the
 | Mana-saturated bodies         | Coldhusk, Bloater, Verdant Crawler, Ember Kite, Necrotic Sea Hare      |
 | Pre-Fall artefacts            | The Whispering Stones, Echo, War Pile                                  |
 | Deliberately built constructs | Puppet Bones, Mask Risen, Greatmask, Vow Walker                        |
-| Altered living people         | Carrier, Tomb Walker, Blighted Guilder, Amber Schemer, The Tainted     |
+| Altered living people         | Carrier, Tomb Walker, The Tainted                                      |
 | Contaminated sites            | Rotwell                                                                |
 
 ### Faction associations
 
 | Faction                          | Foes they make, host, or hunt                                                                                                                                                                                                                                                                                                                                                             |
 | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Conclave**                     | Ravenna refinement creates Blighted Guilders. Holds the Provost's War Pile in the deep vault. Catalogues Whispering Stones sites and dispatches Keepers against Verdant Crawlers, Rotwells, and Carrion Mounds. Hunts Carriers, Schemers, Tomb Walkers, and illegal Puppet Bones operators. Runs hospice programs for the Tainted. Uses Ember Kite sightings as contamination indicators. |
+| **Conclave**                     | Holds the Provost's War Pile in the deep vault. Catalogues Whispering Stones sites and dispatches Keepers against Verdant Crawlers, Rotwells, and Carrion Mounds. Hunts Carriers, Tomb Walkers, and illegal Puppet Bones operators. Runs hospice programs for the Tainted. Uses Ember Kite sightings as contamination indicators. |
 | **Pura Ecclesia (Iron Wardens)** | Builds and operates Vow Walkers. Funds Tainted recovery programs through intermediaries as quiet penance for Spero's black-mana leaks.                                                                                                                                                                                                                                                    |
 | **Brotherhood**                  | Hires Puppet Bones operators for deniable wet work. Hunted by Vow Walkers. Partnered with the Ecclesia in the Spero refinement operation, which is the ultimate source of the Tainted, the Rotwells, and (indirectly) the Carrion Mounds.                                                                                                                                                 |
 | **Verdani**                      | Build Mask Risen and (rarely) Greatmasks. Do not interact with Verdant Crawlers but are not threatened by them. Harvest Ember Kite territory edges for Crimson-saturated fringe-wood used in mask-carving.                                                                                                                                                                                |
-| **Spero smugglers**              | Move Black-tainted mana into Freeport. Sometimes hire discharged Blighted Guilders. Their tainted seeds, when dumped at sea after a botched run, can produce Drowning Eyes. Their poorly refined product is the root cause of the Tainted, and abandoned caches contribute to Rotwell and Carrion Mound formation.                                                                        |
+| **Spero smugglers**              | Move Black-tainted mana into Freeport. Their tainted seeds, when dumped at sea after a botched run, can produce Drowning Eyes. Their poorly refined product is the root cause of the Tainted, and abandoned caches contribute to Rotwell and Carrion Mound formation.                                                                                                                    |
 
 ### Recurring themes worth pulling on in play
 
@@ -870,16 +808,15 @@ The voices in the storm are echoes — Amber imprints from those who died in the
 
 - **The legacy problem.** Three pre-Fall remnants (Whispering Stones, Echo, War Pile) and one industrial-era contamination zone (Mire Form) imply a deep, shared history of mana misuse — first the blight that ended the Unmade's civilisation, then the resource wars that followed, then the long centuries of decay. Every region has its own version. The Conclave's catalogue of these sites is itself a McGuffin.
 
-- **The cost-of-power problem.** Four altered humans (Carrier, Tomb Walker, Blighted Guilder, Amber Schemer) and the Husk (in the main analysis) show what happens when people exceed safe mana use. They are warnings made flesh.
+- **The cost-of-power problem.** Two altered humans (Carrier, Tomb Walker) and the Husk (in the main analysis) show what happens when people exceed safe mana use. They are warnings made flesh.
 
-- **The Spero subplot.** The Brotherhood–Ecclesia smuggling operation at Spero, plagued by Black-mana taint, shows up at the edges of several entries (Mire Form hook 3, Drowning Eye hook 3, Mask Risen hook 1, Blighted Guilder hook 2) and is the direct cause of several others (The Tainted, Rotwell, Carrion Mound). It can be played as ongoing background colour or escalated into a campaign-spine arc, depending on appetite — the Black-mana foes in particular are a slow-burn consequence that becomes more visible every season the operation continues.
+- **The Spero subplot.** The Brotherhood–Ecclesia smuggling operation at Spero, plagued by Black-mana taint, shows up at the edges of several entries (Mire Form hook 3, Drowning Eye hook 3, Mask Risen hook 1) and is the direct cause of several others (The Tainted, Rotwell, Carrion Mound). It can be played as ongoing background colour or escalated into a campaign-spine arc, depending on appetite — the Black-mana foes in particular are a slow-burn consequence that becomes more visible every season the operation continues.
 
 ### Notes on duplicates and deletions
 
 - **Verdant Crawler vs Blood Thorn:** Both are Verdant-blight creatures that prey on the living. They are differentiable in play — Blood Thorn is sessile and feeds on blood through hollow thorns; Crawler is mobile and overgrows territory — but a GM should not deploy both in the same region without highlighting the difference. They occupy adjacent niches.
-- **Amber Schemer vs Husk (in main analysis):** Both are altered Amber users. Schemer is functional, social, and operating; Husk is a worst-case end-state of the same trajectory, no longer functional, no longer social. They can comfortably coexist as "before" and "after" stages of the same kind of person.
 - **Tomb Walker vs Vow Walker:** Both are armoured constructs / armoured persons that defend a charge. They are mechanically distinct (Tomb Walker is a living person in a rig; Vow Walker is an empty reliquary shell with a remote handler) and visually distinct (Tomb Walker is gaunt and human-shaped under armour; Vow Walker is upright, ceramic-masked, eerily steady). No conflict.
-- **The Tainted vs Husk vs Amber Schemer:** All three are altered living Ironlanders who have misused mana. They form a clear progression: Schemer (functional, operating, Amber-focused), Tainted (physically and cognitively degrading, Black-focused, still mostly themselves), Husk (end-stage, post-humanity). A party that meets all three across a campaign sees a coherent cautionary arc. They do not overlap mechanically in a single encounter.
+- **The Tainted vs Husk:** Both are altered living Ironlanders who have misused mana. They form a progression: Tainted (physically and cognitively degrading, Black-focused, still mostly themselves), then Husk (end-stage, post-humanity). A party that meets both across a campaign sees a coherent cautionary arc. They do not overlap mechanically in a single encounter.
 - **Carrion Mound vs Locus:** Deliberately inverted. A Locus _accretes_ matter and grows by pulling its surroundings in; a Carrion Mound _dissolves_ matter and grows by pulling its surroundings in. Visually and mechanically distinct despite the shared "slow-moving wild mana body" concept. Good paired encounter for GMs who want to teach players that wild mana isn't one thing.
 - **Rotwell vs Whispering Stones:** Both are contaminated sites rather than creatures. They are so different in flavour (a bad water source vs a circle of broadcasting stones) that no overlap risk exists — but they're worth naming together as the bestiary's two site-foes. A GM wanting a third in this niche could easily design one around Crimson or Luminous leakage.
 

@@ -107,7 +107,9 @@ describe('extensions.manifest.json', () => {
     // lodestar to 24. (yrt dropped its Settlement Condition oracle, 13 → 12, then
     // added Character: Religion, 12 → 13.)
     expect(oracleData).toHaveLength(94);
-    expect(foeData.flatMap((f) => f.foes)).toHaveLength(82);
+    // 29 base + 29 delve + 22 yrt + 0 lodestar = 80. Previously 82; yrt dropped
+    // Amber Schemer + Blighted Guilder from the bestiary (24 → 22).
+    expect(foeData.flatMap((f) => f.foes)).toHaveLength(80);
     expect(foeOverrides).toHaveLength(1);
     // Lodestar hides base End the Fight via a move override ("hide + add"):
     // with Lodestar enabled the Ironsworn move is removed, not merely disabled.
