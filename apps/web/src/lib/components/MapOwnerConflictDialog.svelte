@@ -9,8 +9,8 @@
 	 *
 	 *   • 'replace' — overwrite each existing map with the imported one
 	 *                 (markers + background + settings replaced in place).
-	 *   • 'skip'    — leave existing maps untouched; import the incoming
-	 *                 copies as separate standalone maps instead. Safe default.
+	 *   • 'skip'    — leave existing maps untouched and drop the incoming
+	 *                 copies. Safe default (used on Escape / outside click).
 	 *
 	 * Maps whose owner has no map yet — and standalone maps whose name doesn't
 	 * collide — re-link/create silently and never appear here. Promise-based,
@@ -93,10 +93,10 @@
 							<span class="moc-radio-dot"></span>
 						</RadioGroup.Item>
 						<span class="moc-radio-body">
-							<span class="moc-radio-title">Keep existing, import as standalone</span>
+							<span class="moc-radio-title">Keep existing, skip the incoming</span>
 							<span class="moc-radio-help">
-								Leave each current map untouched; bring the incoming maps in as separate, unlinked
-								maps. Safest choice.
+								Leave each current map untouched and drop the incoming copies. Safest choice — no
+								data loss on either side.
 							</span>
 						</span>
 					</label>
