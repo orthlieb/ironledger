@@ -439,10 +439,15 @@
 		// the original element, so it silently stopped firing ~half the time and
 		// dropped the import with no error. The change event bubbles from
 		// whatever the current input is, so a selector match on document is
-		// immune to the recreation.
+		// immune to the recreation. Scoped with a `data-import-root="home"`
+		// attribute so this capture-phase handler ONLY matches the hidden
+		// input on this page, not the ImportDialog's own file input (which
+		// has the same `accept` but handles its own onchange). Without the
+		// data attribute the two handlers raced on every pick and runImport
+		// fired twice — the user saw "76 of 39" on the progress bar.
 		const onImportChange = (e: Event) => {
 			const t = e.target as HTMLElement | null;
-			if (t?.matches?.('input[type="file"][accept=".zip,application/zip"]')) onImportFile(e);
+			if (t?.matches?.('input[type="file"][data-import-root="home"]')) onImportFile(e);
 		};
 		// Attach AFTER the synchronous hydration pass, not during it: a listener
 		// added inside the onMount body was silently dropped ~half the time,
@@ -2517,8 +2522,19 @@
 
 <!-- Hidden file input — accepts only the `.zip` bundles produced by
      `exportZip()`. Legacy bare-JSON imports were dropped when the
-     export format switched to zip. -->
-<input bind:this={importInput} type="file" accept=".zip,application/zip" style="display: none" />
+     export format switched to zip. The `data-import-root="home"`
+     attribute scopes the document-level change listener attached in
+     onMount to THIS input only — the ImportDialog has its own file
+     input with the same `accept`, and without the data-attribute scope
+     both the ImportDialog's own onchange AND the document capture
+     handler fired on each pick, running runImport twice concurrently. -->
+<input
+	bind:this={importInput}
+	type="file"
+	accept=".zip,application/zip"
+	data-import-root="home"
+	style="display: none"
+/>
 
 <!-- Import dialog — file chooser → progress → validation review (apply the
      valid rows?) → done / error. Replaces the old file-picker + error bar;
