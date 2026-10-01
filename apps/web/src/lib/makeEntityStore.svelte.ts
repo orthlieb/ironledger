@@ -37,6 +37,8 @@ export interface EntityStore<T> {
 	persistNow(): Promise<void>;
 	/** Remove one by id + persist. */
 	remove(id: string): Promise<void>;
+	/** Upsert many at once in a single server round-trip. See impl. */
+	addMany(items: T[]): Promise<void>;
 }
 
 /**
@@ -108,6 +110,42 @@ export function makeEntityStore<T extends { id: string }>(
 		async remove(id: string) {
 			_items = _items.filter((x) => x.id !== id);
 			await persist();
+		},
+		/**
+		 * Add OR replace many items in one shot. Items whose id already
+		 * exists in the local list are replaced in place; items with new
+		 * ids are appended. Fires ONE `PUT /kind/batch` request to the
+		 * server for all of them in a single transaction, instead of the
+		 * N serial POST/PATCH round-trips `add()` / `update()` would.
+		 * Used by the import pipeline so a bundle lands under the rate
+		 * limit even when it carries hundreds of entities.
+		 */
+		async addMany(items: T[]) {
+			if (items.length === 0) return;
+			const byId = new Map<string, T>();
+			for (const it of items) {
+				if (it && typeof it.id === 'string') byId.set(it.id, it);
+			}
+			// Replace in-place for any id we already hold, then append the
+			// rest in input order so a progress-bar label pulled from the
+			// last entity still matches the on-screen tail.
+			const replacedIds = new Set<string>();
+			_items = _items.map((cur) => {
+				const next = byId.get(cur.id);
+				if (!next) return cur;
+				replacedIds.add(cur.id);
+				return next;
+			});
+			for (const it of items) {
+				if (!it || typeof it.id !== 'string' || replacedIds.has(it.id)) continue;
+				_items = [..._items, it];
+			}
+			_saving = true;
+			try {
+				await _sync.persistBatch();
+			} finally {
+				_saving = false;
+			}
 		},
 	};
 }

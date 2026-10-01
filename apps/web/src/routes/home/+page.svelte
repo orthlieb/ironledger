@@ -33,17 +33,15 @@
 	import {
 		loadExpeditions,
 		getExpeditions,
-		addExpedition,
-		updateExpedition,
+		addManyExpeditions,
 	} from '$lib/expeditionStore.svelte.js';
 	import {
 		loadCommunities,
 		getCommunities,
-		addCommunity,
-		updateCommunity,
+		addManyCommunities,
 	} from '$lib/communityStore.svelte.js';
-	import { loadNpcs, getNpcs, addNpc, updateNpc } from '$lib/npcStore.svelte.js';
-	import { loadPlaces, getPlaces, addPlace, updatePlace } from '$lib/placeStore.svelte.js';
+	import { loadNpcs, getNpcs, addManyNpcs } from '$lib/npcStore.svelte.js';
+	import { loadPlaces, getPlaces, addManyPlaces } from '$lib/placeStore.svelte.js';
 	import {
 		loadAssets,
 		getAssets,
@@ -990,29 +988,6 @@
 				}
 			}
 
-			/** Apply the chosen collision strategy to one row. Returns true
-			 *  if the caller should still call addXxx(row); false if the
-			 *  collision was handled internally (skip / replace). On replace,
-			 *  the row's id is realigned to the existing row's id so updateXxx
-			 *  targets the right record. */
-			async function applyStrategy<T extends { id: string; name?: string | null }>(
-				row: T,
-				existingByName: Map<string, string>,
-				replace: (updated: T) => Promise<void>,
-			): Promise<boolean> {
-				const existingId = existingByName.get(normaliseName(row.name));
-				if (!existingId) return true; // no collision — caller appends
-				if (strategy === 'skip') return false;
-				if (strategy === 'new') {
-					row.id = crypto.randomUUID();
-					return true; // caller appends with the new id
-				}
-				// 'replace' — realign id, overwrite in place; caller does NOT also append
-				row.id = existingId;
-				await replace(row);
-				return false;
-			}
-
 			/** Character-specific applyStrategy. createCharacter and
 			 *  persistCharacterNow have different shapes than the addXxx /
 			 *  updateXxx pair the generic version targets. Returns true if
@@ -1064,33 +1039,34 @@
 				}
 			}
 
-			/** Import one session-collection row: lift its inline portrait into the
-			 *  blob store, apply the collision strategy, then persist with the
-			 *  resulting portraitEtag. */
-			async function importEntityRow<
+			/** Stage one session-collection row for a batched upsert. Decides
+			 *  the strategy (skip/new/replace), uploads any inline portrait,
+			 *  rewrites `row.id` to the resolved target id, and pushes it
+			 *  onto `batch`. The caller flushes each kind's batch after the
+			 *  row loop with `addManyX(batch)`, collapsing N per-row POST /
+			 *  PATCH round-trips into ONE `PUT /:kind/batch` call. Portrait
+			 *  uploads stay one-per-row (they're blobs; a batch endpoint for
+			 *  images would need an entirely different wire shape). */
+			async function stageImportRow<
 				T extends {
 					id: string;
 					name?: string | null;
 					portraitEtag?: string;
 					imageUrl?: string;
 				},
-			>(
-				row: T,
-				seg: string,
-				existingByName: Map<string, string>,
-				add: (r: T) => Promise<void>,
-				update: (r: T) => Promise<void>,
-			): Promise<void> {
+			>(row: T, seg: string, existingByName: Map<string, string>, batch: T[]): Promise<void> {
 				const inline = takeInlineDataUrl(row as Record<string, unknown>, 'imageUrl');
-				const collided = existingByName.has(normaliseName(row.name));
-				const append = await applyStrategy(row, existingByName, update);
-				if (!append && collided && strategy === 'skip') return; // skipped — leave existing
+				const existingId = existingByName.get(normaliseName(row.name));
+				if (existingId) {
+					if (strategy === 'skip') return;
+					if (strategy === 'new') row.id = crypto.randomUUID();
+					else if (strategy === 'replace') row.id = existingId;
+				}
 				if (inline) {
 					const etag = await uploadPortrait(`/api/session/${seg}/${row.id}/portrait`, inline);
 					if (etag) row.portraitEtag = etag;
 				}
-				if (append) await add(row);
-				else if (inline && row.portraitEtag) await update(row); // replace: persist etag
+				batch.push(row);
 			}
 
 			/** Re-link every imported connection to its container BY NAME + KIND.
@@ -1134,9 +1110,9 @@
 				};
 
 				const passes = [
-					['community', getCommunities(), updateCommunity],
-					['place', getPlaces(), updatePlace],
-					['npc', getNpcs(), updateNpc],
+					['community', getCommunities(), addManyCommunities],
+					['place', getPlaces(), addManyPlaces],
+					['npc', getNpcs(), addManyNpcs],
 				] as const;
 
 				// 1. Resolve the whole proposed forest, then repair it to the rules.
@@ -1151,22 +1127,26 @@
 
 				// 2. Apply — write the sanitized `within` (or clear it) and drop every
 				//    transport field. Skip rows that neither carried a transport field
-				//    nor changed, so we don't churn untouched entities.
-				for (const [kind, list, update] of passes) {
+				//    nor changed, so we don't churn untouched entities. Patches
+				//    collected per-kind and flushed in ONE `addMany` per kind
+				//    (one batched PUT, not N serial PATCHes).
+				for (const [kind, list, addMany] of passes) {
+					const patches: Array<Record<string, unknown> & { id: string }> = [];
 					for (const e of list) {
 						const rec = e as unknown as Record<string, unknown>;
 						const hadTransport = 'withinRef' in rec || 'withinSettlementName' in rec;
 						const next = sanitized.get(refOf(kind, e.id));
 						const current = typeof rec.within === 'string' ? rec.within : undefined;
 						if (!hadTransport && next === current) continue;
-						const patch = { ...(e as object) } as Record<string, unknown>;
+						const patch = { ...(e as object) } as Record<string, unknown> & { id: string };
 						if (next) patch.within = next;
 						else delete patch.within;
 						delete patch.withinRef;
 						delete patch.withinSettlementName;
 						delete patch.withinSettlementId;
-						await update(patch as never);
+						patches.push(patch);
 					}
+					if (patches.length > 0) await addMany(patches as never);
 				}
 			}
 
@@ -1212,27 +1192,30 @@
 					for (const entry of entries)
 						await step(`Log entry “${String(entry.title ?? '')}”`, () => appendSafeLog(entry));
 				} else if (m.type === 'communities') {
+					const commBatch: Community[] = [];
+					const npcBatch: Npc[] = [];
+					const placeBatch: Place[] = [];
 					for (const c of incomingCommunities)
 						await step(`Settlement “${c.name}”`, () =>
-							importEntityRow(
-								c,
-								'communities',
-								existingCommunityByName,
-								addCommunity,
-								updateCommunity,
-							),
+							stageImportRow(c, 'communities', existingCommunityByName, commBatch),
 						);
 					for (const n of incomingNpcs)
 						await step(`NPC “${n.name}”`, () =>
-							importEntityRow(n, 'npcs', existingNpcByName, addNpc, updateNpc),
+							stageImportRow(n, 'npcs', existingNpcByName, npcBatch),
 						);
 					for (const pl of incomingPlaces)
 						await step(`Place “${pl.name}”`, () =>
-							importEntityRow(pl, 'places', existingPlaceByName, addPlace, updatePlace),
+							stageImportRow(pl, 'places', existingPlaceByName, placeBatch),
 						);
+					// Flush each kind in ONE PUT /:kind/batch each (instead of
+					// N serial POST/PATCH per row). addMany is a no-op on empty.
+					await addManyCommunities(commBatch);
+					await addManyNpcs(npcBatch);
+					await addManyPlaces(placeBatch);
 					// All connection kinds are in — now resolve the portable within refs.
 					await relinkContainment();
 				} else if (m.type === 'expeditions') {
+					const expBatch: Expedition[] = [];
 					for (const exp of incomingExpeditions) {
 						const byName =
 							exp.type === 'site'
@@ -1241,35 +1224,37 @@
 									? existingSceneByName
 									: existingJourneyByName;
 						await step(`Expedition “${exp.name}”`, () =>
-							importEntityRow(exp, 'expeditions', byName, addExpedition, updateExpedition),
+							stageImportRow(exp, 'expeditions', byName, expBatch),
 						);
 					}
+					await addManyExpeditions(expBatch);
 				} else if (m.type === 'everything') {
 					for (const entry of incomingCharacters)
 						await step(`Character “${entry.name}”`, () => importChar(entry));
 					const d = parsed.data as { log?: Array<Record<string, unknown>> };
 					for (const entry of d.log ?? [])
 						await step(`Log entry “${String(entry.title ?? '')}”`, () => appendSafeLog(entry));
+					const commBatch: Community[] = [];
+					const npcBatch: Npc[] = [];
+					const placeBatch: Place[] = [];
 					for (const c of incomingCommunities)
 						await step(`Settlement “${c.name}”`, () =>
-							importEntityRow(
-								c,
-								'communities',
-								existingCommunityByName,
-								addCommunity,
-								updateCommunity,
-							),
+							stageImportRow(c, 'communities', existingCommunityByName, commBatch),
 						);
 					for (const n of incomingNpcs)
 						await step(`NPC “${n.name}”`, () =>
-							importEntityRow(n, 'npcs', existingNpcByName, addNpc, updateNpc),
+							stageImportRow(n, 'npcs', existingNpcByName, npcBatch),
 						);
 					for (const pl of incomingPlaces)
 						await step(`Place “${pl.name}”`, () =>
-							importEntityRow(pl, 'places', existingPlaceByName, addPlace, updatePlace),
+							stageImportRow(pl, 'places', existingPlaceByName, placeBatch),
 						);
+					await addManyCommunities(commBatch);
+					await addManyNpcs(npcBatch);
+					await addManyPlaces(placeBatch);
 					// All connection kinds are in — now resolve the portable within refs.
 					await relinkContainment();
+					const expBatch: Expedition[] = [];
 					for (const exp of incomingExpeditions) {
 						const byName =
 							exp.type === 'site'
@@ -1278,9 +1263,10 @@
 									? existingSceneByName
 									: existingJourneyByName;
 						await step(`Expedition “${exp.name}”`, () =>
-							importEntityRow(exp, 'expeditions', byName, addExpedition, updateExpedition),
+							stageImportRow(exp, 'expeditions', byName, expBatch),
 						);
 					}
+					await addManyExpeditions(expBatch);
 					// Restore bundled maps (markers + backgrounds) from the nested
 					// `maps/<id>/…` dirs, re-linking each to its owner entity by name.
 					await step('Maps', () => restoreBundledMaps(unzipSync(bytes)));

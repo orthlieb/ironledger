@@ -19,6 +19,8 @@ export const isExpeditionLoading = store.isLoading;
 export const isExpeditionSaving = store.isSaving;
 /** Append a new expedition and persist. */
 export const addExpedition = store.add;
+/** Batch-upsert — used by the import pipeline. See makeEntityStore.addMany. */
+export const addManyExpeditions = store.addMany;
 /** Replace one expedition by id and persist. */
 export const updateExpedition = store.update;
 /** Replace one expedition by id WITHOUT persisting (pair with persistExpeditionsNow). */
