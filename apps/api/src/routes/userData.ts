@@ -185,8 +185,7 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
       const kind = resolveKind(req.params.kind, reply);
       if (!kind) return;
       const entities = req.body.entities;
-      for (let i = 0; i < entities.length; i++) {
-        const e = entities[i];
+      for (const [i, e] of entities.entries()) {
         if (typeof e.id !== 'string' || !e.id) {
           return badRequest(reply, `Entity #${i + 1}: missing or non-string id`);
         }
