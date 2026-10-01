@@ -55,14 +55,19 @@ const schema = z.object({
   RATE_LIMIT_REGISTER: z.coerce.number().int().positive().default(3),
   // Global per-user (or per-IP, when unauthenticated) requests-per-minute
   // cap enforced by `@fastify/rate-limit`. Sized to absorb the write burst
-  // of a big "Everything" import (yrt-starter fires ~200+ writes: create
-  // + populate every map, entity restores, portrait blobs, session-state
-  // PATCHes) plus the app shell's routine dashboard polling on top. The
-  // lightweight status polls (`/api/system/status`, `/api/maintenance/status`
-  // both public and admin variants) are additionally exempted per-route so
-  // they never share this bucket at all — a write-heavy user should never
-  // see the maintenance banner start returning 429.
-  RATE_LIMIT_GLOBAL: z.coerce.number().int().positive().default(600),
+  // of a big "Everything" import (yrt-starter + a user's own content runs
+  // 500+ writes: create + populate every map, entity restores, portrait
+  // blobs, session-state PATCHes, containment relinks) plus the app shell's
+  // routine dashboard polling on top. Bumped from 600 → 1500 after a user
+  // reported hitting 429s again on a large personal export — 1500/60 = 25
+  // req/sec, generous headroom for any legitimate single-user burst while
+  // still cutting off runaway loops long before they can meaningfully
+  // overwhelm the backend. The lightweight status polls
+  // (`/api/system/status`, `/api/maintenance/status` both public and admin
+  // variants, plus admin listUsers + stats) are additionally exempted
+  // per-route so they never share this bucket at all. Env-override still
+  // works for a hosted deployment that wants to tighten it.
+  RATE_LIMIT_GLOBAL: z.coerce.number().int().positive().default(1500),
 
   // ── Account lockout ───────────────────────────────────────────────────────
   // Number of consecutive failed login attempts before the account is suspended.
