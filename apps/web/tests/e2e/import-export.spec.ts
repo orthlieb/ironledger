@@ -19,7 +19,11 @@ import { resetAll, getTestToken, seedCommunity } from './helpers/reset';
 import { settleHome } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
-const ZIP_INPUT = 'input[type="file"][accept=".zip,application/zip"]';
+// The home page has a hidden file input marked with `data-import-root="home"`
+// that's wired to the document-level capture handler. The ImportDialog also
+// renders its own `.imd-file` input with the same `accept`; we target the
+// hidden one specifically to avoid matching both when the dialog is open.
+const ZIP_INPUT = 'input[type="file"][data-import-root="home"]';
 
 // The ImportDialog surfaces progress + result. A clean import lands on the
 // "done" stage with the ✓ badge; a rejected archive (too large, bad JSON,

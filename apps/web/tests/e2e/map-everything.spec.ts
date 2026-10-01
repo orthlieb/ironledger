@@ -20,7 +20,11 @@ import { test, expect, type Page } from '@playwright/test';
 import { zipSync, strToU8 } from 'fflate';
 import { resetAll, clearAllMaps, fetchMaps } from './helpers/reset';
 
-const ZIP_INPUT = 'input[type="file"][accept=".zip,application/zip"]';
+// Narrow to the home page's hidden input (data-import-root) rather than any
+// `.zip` file input — the ImportDialog has its own `.imd-file` with the same
+// `accept`, and matching both would make the selector ambiguous once the
+// dialog is open mid-test.
+const ZIP_INPUT = 'input[type="file"][data-import-root="home"]';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -198,5 +202,58 @@ test.describe('Everything import — standalone map dedupes by name (regression)
 			patchFailures,
 			`PATCH /api/session/state must return 2xx; got: ${JSON.stringify(patchFailures)}`,
 		).toHaveLength(0);
+	});
+
+	test('picking a file through the ImportDialog runs runImport once (progress total matches done)', async ({
+		page,
+	}) => {
+		// Regression guard. The document-level capture `change` listener used
+		// to match ANY `input[type="file"][accept=".zip,…"]`, including the
+		// ImportDialog's own `.imd-file`. When the user picked a file through
+		// the dialog, BOTH the capture handler AND the dialog's own onchange
+		// fired → runImport ran twice concurrently → the shared progress
+		// state showed something like "76 of 39" (~2× the real count) and
+		// every step ran twice. The hidden input now carries
+		// `data-import-root="home"` and the capture handler is scoped to it;
+		// the dialog's `.imd-file` only drives its own onchange.
+		await resetAll();
+		await clearAllMaps();
+		await page.goto('/home');
+		await waitForHome(page);
+
+		// Open the ImportDialog from the menu so its `.imd-file` input is
+		// mounted and the double-fire path is in play.
+		await page.evaluate(() => {
+			document.dispatchEvent(new CustomEvent('il-menu-action', { detail: { action: 'import' } }));
+		});
+		const dialog = page.locator('.imd-dialog');
+		await expect(dialog).toBeVisible({ timeout: 5_000 });
+
+		// Pick a bundle through the DIALOG's own input, not the hidden one.
+		await dialog.locator('.imd-file').setInputFiles({
+			name: 'everything.zip',
+			mimeType: 'application/zip',
+			buffer: everythingZipWithStandaloneMap('Dialog Pick', 'Dialog Marker'),
+		});
+
+		// If runImport ran twice, two maps named "Dialog Pick" would land
+		// (pre-dedupe-fix behaviour) OR the second pass would hit the "map
+		// name already exists" prompt (post-dedupe-fix). Either way the map
+		// count misbehaves. Correct behaviour: exactly one map created.
+		await expect.poll(async () => (await fetchMaps()).length, { timeout: 15_000 }).toBe(1);
+
+		// Also prove the progress bar settled with done ≤ total. "76 of 39"
+		// shaped tags shouldn't be possible.
+		const progressText = await page
+			.locator('.imd-progress-label')
+			.first()
+			.textContent({ timeout: 5_000 })
+			.catch(() => '');
+		if (progressText && /Importing (\d+) of (\d+)/.test(progressText)) {
+			const [, done, total] = progressText.match(/Importing (\d+) of (\d+)/)!;
+			expect(Number(done), 'progress done must not exceed total').toBeLessThanOrEqual(
+				Number(total),
+			);
+		}
 	});
 });
