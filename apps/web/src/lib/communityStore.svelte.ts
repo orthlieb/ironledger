@@ -19,6 +19,10 @@ export const isCommunityLoading = store.isLoading;
 export const isCommunitySaving = store.isSaving;
 /** Append a new community and persist. */
 export const addCommunity = store.add;
+/** Upsert many communities in one server round-trip — used by the import
+ *  pipeline to replace a long chain of per-entity POSTs/PATCHes with a
+ *  single `PUT /api/session/communities/batch`. See makeEntityStore. */
+export const addManyCommunities = store.addMany;
 /** Replace one community by id and persist. */
 export const updateCommunity = store.update;
 /** Replace one community by id WITHOUT persisting (pair with persistCommunitiesNow). */

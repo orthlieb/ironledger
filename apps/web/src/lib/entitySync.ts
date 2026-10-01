@@ -21,6 +21,12 @@ export interface EntitySync<T> {
 	reset(items: T[]): void;
 	/** Diff the live list and push per-entity writes to the server. */
 	persist(): Promise<void>;
+	/** Push every unsynced row in ONE `PUT /kind/batch` request. Upsert
+	 *  only — won't send deletes. Used by the import pipeline so a bundle
+	 *  with N entities lands in a single server round-trip per kind
+	 *  instead of N serial POST/PATCH calls. Suppresses the TypeScript
+	 *  unused-import warning on `T`. */
+	persistBatch(): Promise<void>;
 }
 
 export function makeEntitySync<T extends { id?: string }>(
@@ -102,5 +108,46 @@ export function makeEntitySync<T extends { id?: string }>(
 		}
 	}
 
-	return { reset, persist };
+	/**
+	 * Push every unsynced row to the server in a single PUT /kind/batch
+	 * request instead of one POST / PATCH per row. Entities with ids
+	 * that already match the `synced` snapshot are skipped (nothing
+	 * changed server-side). After a successful batch the `synced` map
+	 * absorbs every id that was sent, so subsequent `persist()` calls
+	 * see nothing to do.
+	 *
+	 * Deletes are NOT included — the batch endpoint is upsert-only.
+	 * Callers that need to remove rows (unusual during import) should
+	 * fall back to the single-item `persist()` after the batch lands.
+	 */
+	async function persistBatch(): Promise<void> {
+		const base = `/api/session/${kind}`;
+		const batch: T[] = [];
+		for (const it of getItems()) {
+			if (!it || typeof it.id !== 'string') continue;
+			const json = JSON.stringify(it);
+			if (synced.get(it.id) === json) continue;
+			batch.push(it);
+		}
+		if (batch.length === 0) return;
+		try {
+			const res = await fetch(`${base}/batch`, {
+				method: 'PUT',
+				credentials: 'include',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ entities: batch }),
+			});
+			if (res.ok) {
+				for (const it of batch) {
+					if (typeof it.id === 'string') synced.set(it.id, JSON.stringify(it));
+				}
+			} else {
+				console.error(`[${tag}] Batch persist failed:`, res.status);
+			}
+		} catch (err) {
+			console.error(`[${tag}] Batch persist error:`, err);
+		}
+	}
+
+	return { reset, persist, persistBatch };
 }

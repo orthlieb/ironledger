@@ -19,6 +19,8 @@ export const isNpcLoading = store.isLoading;
 export const isNpcSaving = store.isSaving;
 /** Append a new NPC and persist. */
 export const addNpc = store.add;
+/** Batch-upsert — used by the import pipeline. See makeEntityStore.addMany. */
+export const addManyNpcs = store.addMany;
 /** Replace one NPC by id and persist. */
 export const updateNpc = store.update;
 /** Replace one NPC by id WITHOUT persisting (pair with persistNpcsNow). */

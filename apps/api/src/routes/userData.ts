@@ -9,6 +9,7 @@
  *
  * PATCH  /api/v1/session/:kind           → replace the whole collection (reset/seed/import-replace)
  * POST   /api/v1/session/:kind           → create one entity
+ * PUT    /api/v1/session/:kind/batch     → upsert many entities in one transaction (import fast path)
  * PATCH  /api/v1/session/:kind/:id       → update one entity
  * DELETE /api/v1/session/:kind/:id       → delete one entity
  *
@@ -158,6 +159,55 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
         }
         await ud.upsertEntity(req.user!.id, kind, id, entity);
         return reply.status(201).send(entity);
+      } catch (err) {
+        return handleError(reply)(err);
+      }
+    },
+  );
+
+  // ── PUT /session/:kind/batch — upsert many entities in one txn ─────────────
+  // Non-destructive — touches only the ids supplied. Lets a client-side
+  // import collapse N serial POST / PATCH round-trips into one PUT, which
+  // keeps a big "Everything" import comfortably under the per-user rate
+  // limit without needing to raise it further. The per-kind cap check is
+  // conservative: existing + len(entities) must stay below the limit even
+  // when every incoming id is new (the server can't distinguish inserts
+  // from updates without a round-trip, so we assume worst case).
+  server.put(
+    '/:kind/batch',
+    {
+      schema: {
+        params: kindParams,
+        body: z.object({ entities: z.array(z.record(z.unknown())).max(2000) }),
+      },
+    },
+    async (req, reply) => {
+      const kind = resolveKind(req.params.kind, reply);
+      if (!kind) return;
+      const entities = req.body.entities;
+      for (let i = 0; i < entities.length; i++) {
+        const e = entities[i];
+        if (typeof e.id !== 'string' || !e.id) {
+          return badRequest(reply, `Entity #${i + 1}: missing or non-string id`);
+        }
+        if (IMAGE_KINDS.has(kind) && !isValidImageUrl(e.imageUrl)) {
+          return badRequest(
+            reply,
+            `Entity #${i + 1}: imageUrl is not a valid data URL or https URL`,
+          );
+        }
+      }
+      try {
+        const existing = await ud.countEntities(req.user!.id, kind);
+        if (existing + entities.length > LIMIT_BY_KIND[kind]) {
+          return reply.status(422).send({
+            statusCode: 422,
+            error: 'Unprocessable Entity',
+            message: `${kind} limit reached (max ${LIMIT_BY_KIND[kind]}; have ${existing}, batch of ${entities.length} would exceed)`,
+          });
+        }
+        await ud.upsertEntities(req.user!.id, kind, entities);
+        return reply.status(200).send({ count: entities.length });
       } catch (err) {
         return handleError(reply)(err);
       }

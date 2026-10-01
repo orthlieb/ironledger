@@ -20,6 +20,8 @@ export const isPlaceLoading = store.isLoading;
 export const isPlaceSaving = store.isSaving;
 /** Append a new Place and persist. */
 export const addPlace = store.add;
+/** Batch-upsert — used by the import pipeline. See makeEntityStore.addMany. */
+export const addManyPlaces = store.addMany;
 /** Replace one Place by id and persist. */
 export const updatePlace = store.update;
 /** Replace one Place by id WITHOUT persisting (pair with persistPlacesNow). */

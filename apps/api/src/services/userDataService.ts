@@ -126,6 +126,33 @@ export async function upsertEntity(
   });
 }
 
+/**
+ * Batch-upsert N entities of the same kind in ONE transaction. Unlike
+ * `replaceEntities`, this is NON-destructive — it only touches the ids
+ * supplied and leaves everything else alone. Backs the client-side
+ * `addMany` import path that trades N serial POST / PATCH round-trips
+ * for one PUT, keeping big imports comfortably under the per-user rate
+ * limit even without further bumps.
+ */
+export async function upsertEntities(
+  userId: string,
+  kind: EntityKind,
+  entities: Array<Record<string, unknown>>,
+): Promise<void> {
+  if (entities.length === 0) return;
+  await withUserContext(userId, async (tx) => {
+    for (const item of entities) {
+      const entityId = typeof item.id === 'string' && item.id ? item.id : randomUUID();
+      await tx.execute(sql`
+        INSERT INTO user_entities (user_id, kind, entity_id, entity)
+        VALUES (${userId}::uuid, ${kind}, ${entityId}, ${JSON.stringify(item)}::jsonb)
+        ON CONFLICT (user_id, kind, entity_id) DO UPDATE
+          SET entity = EXCLUDED.entity, updated_at = now()
+      `);
+    }
+  });
+}
+
 /** Remove a single entity. */
 export async function deleteEntity(
   userId: string,
