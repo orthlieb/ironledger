@@ -26,16 +26,26 @@ git remote get-url origin                # extract owner/repo
   commit or stash first; do not auto-commit.
 - The branch has zero commits ahead of `origin/main` — nothing to ship.
 
-## 2. Lint + format-check
+## 2. Lint + format-check + typecheck
 
-Run both from the repo root. CI runs the same commands, so a local
-failure is a guaranteed CI failure — better to catch here than after
-a PR is open.
+Run all four from the repo root. CI runs the same commands, so a
+local failure is a guaranteed CI failure — better to catch here
+than after a PR is open.
 
 ```bash
 pnpm lint
 npm run format:check
+# Typecheck gates — CI runs both; `pnpm lint` is just ESLint and
+# won't catch TypeScript errors like noUncheckedIndexedAccess,
+# missing return types, or wrong signatures across workspaces.
+npx tsc --noEmit --project apps/api/tsconfig.json
+npm run check --workspace=apps/web   # svelte-check (templates + .ts)
 ```
+
+The web `check` script depends on `@ironledger/shared` being built;
+if it errors with "Cannot find module '@ironledger/shared'", run
+`npm run build --workspace=packages/shared` first and re-check. CI
+runs that build between the API typecheck and the web check step.
 
 **Prettier version:** `format:check` is prettier version-sensitive.
 CI installs via `npm ci` which pins the exact `package-lock.json`
@@ -67,9 +77,20 @@ committed content with `git show HEAD:<path>` before pushing.
 user whether to fix it (default) or ship anyway. If they say ship
 anyway, that's an explicit override — otherwise do not proceed. For
 formatting failures the fix is `prettier --write <files>` with the
-CI-pinned version; for lint errors it varies. Do NOT auto-run either
-`--fix` or `--write` without permission — the fix might touch files
-the user didn't intend to commit in this PR.
+CI-pinned version; for lint errors it varies; typecheck errors
+usually need a code-level fix. Do NOT auto-run either `--fix` or
+`--write` without permission — the fix might touch files the user
+didn't intend to commit in this PR.
+
+**Why typecheck locally even though CI will do it:** Deploy is
+gated on the same `tsc --noEmit`, so a typecheck failure doesn't
+just block the PR — it leaves `main` un-deployed until the fix
+PR lands. Catching those three TS18048 errors locally is a 10-second
+cost that saves a 15-minute ship-then-recover cycle. The 2026-10-01
+`PUT /:kind/batch` ship (PR #454) is the cautionary tale: ESLint
+and prettier both passed, but `noUncheckedIndexedAccess` on a
+new-handler `entities[i]` tripped tsc and the followup fix PR
+had to carry it green.
 
 **On warnings only:** proceed. CI treats warnings as informational
 unless someone flips `--max-warnings=0` in the lint script.
