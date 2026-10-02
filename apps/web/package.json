@@ -5,6 +5,8 @@
 	"type": "module",
 	"scripts": {
 		"build:map-icons": "node scripts/build-map-icons.mjs",
+		"build:settlement-icons": "node scripts/build-settlement-icons.mjs",
+		"build:settlement-playground": "node scripts/settlement-kit/build-playground.mjs",
 		"gen:liveries": "node ../../scripts/gen-liveries-manifest.mjs",
 		"dev": "vite dev --port 5173",
 		"prebuild": "npm run gen:liveries",
@@ -37,6 +39,7 @@
 		"@sveltejs/adapter-node": "^5.5.4",
 		"@sveltejs/vite-plugin-svelte": "^5.0.0",
 		"@vitest/coverage-v8": "^5.0.0",
+		"clipper-lib": "^6.4.2",
 		"happy-dom": "^20.9.0",
 		"svelte-check": "^4.0.0",
 		"svg-path-bounds": "^1.0.2",

@@ -212,9 +212,9 @@ picker automatically:
   `<g fill={color}>` at render time controls the color. `fill="none"`
   is preserved so outline-only paths stay uncoloured.
 
-### Icon formats — SVG and PNG
+### Icon formats — SVG, PNG and layered SVG
 
-Two source formats are supported, both keyed the same way and rendered
+Three source formats are supported, all keyed the same way and rendered
 through the same `<svg viewBox={ic.viewBox}>…{@html ic.inner}</svg>`
 marker path:
 
@@ -237,6 +237,22 @@ marker path:
   halo (dilated-alpha flood) is laid behind for legibility, matching the
   vector icons' `stroke` halo. At the default marker colour (black) a
   black-ink icon tints black — i.e. looks exactly as drawn.
+
+- **Layered SVG** (the generated settlement kit) — multi-colour art with
+  one `<path data-role="…">` per colour role (`sil`, `wall`,
+  `wall-shade`, `wood`, `earth`, `water`, `roof`, `roof-shade`, `flag`,
+  `ink`) and the culture's palette on the root
+  (`data-palette="wall:#…;roof:#…;…"`). Detected by its `data-role`
+  paths. These run to tens of KB each, so they are **not inlined**: the
+  manifest keeps a tight `viewBox`, the `palette` and a `src` URL, and
+  `mapIconCache.ts` fetches each file the first time it's drawn (a
+  `SvelteMap`, so the template re-renders when it lands; nothing is drawn
+  until then). `mapGlyphInner()` recolours by role via `mapLayered.ts`:
+  everything keeps the icon's palette except the **roofs, which take the
+  marker colour** (the default black marker keeps the icon's own roof
+  colour); the halo goes on the `sil` layer only. Markers draw them at
+  the raster scale (`RASTER_ICON_SCALE`). The files are _generated_ — see
+  "Settlement kit" below; don't hand-edit them.
 
 When both a `<slug>.svg` and a `<slug>.png` exist in the same category,
 the **PNG wins** (a dropped-in raster supersedes the old vector glyph of
@@ -262,6 +278,34 @@ manifest would be byte-for-byte identical, so it's cheap to re-run.
 The generated file is **gitignored** (`src/lib/generated/`); the
 `precheck` / `pretest` npm scripts run `build:map-icons` first so
 svelte-check and tests get a fresh manifest without executing Vite.
+
+### Extension icons
+
+An extension can contribute map icons in `extensions/<id>/map/<folder>/
+<slug>.svg`. They're indexed as category `<id>-<folder>`, labelled
+"<Folder> (<Extension name>)", tagged `source: <id>`, and copied into the
+git-ignored `static/map/_ext/` so they're served. The icon picker only
+offers them while that extension is enabled (`isSourceEnabled`); markers
+already placed with one keep rendering when it's off. YRT ships its
+culture-styled settlements this way (`extensions/yrt/map/settlements/`).
+
+### Settlement kit (generated icons)
+
+`scripts/build-settlement-icons.mjs` (`npm run build:settlement-icons -w
+apps/web`) bakes layered icons from the 3D generator in
+`scripts/settlement-kit/` — the same code as the standalone
+`tools/settlement-playground.html`. It writes:
+
+- **Core icons** in `static/map/settlement/` and `site/`, in the default
+  culture and Parchment palette. Each **replaces the old hand-drawn icon
+  of the same slug** (the old `.png`/`.svg` is deleted), so markers on
+  saved maps pick up the new art with no migration. The slug → recipe
+  table (`CORE_ICONS`) is the list of retired icons.
+- **YRT culture icons** in `extensions/yrt/map/settlements/`: hamlet,
+  village, town, city and ruined village for each culture preset in
+  `settlement-kit/cultures.mjs`.
+
+Output is checked in; re-run the script after changing the kit.
 
 ### Data compatibility
 

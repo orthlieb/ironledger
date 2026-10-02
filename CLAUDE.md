@@ -215,6 +215,16 @@ Add the raw asset to `docs/icons/raw/<slug>.svg` (or paste it into the
 PR body) if you'd like the source preserved for future re-normalization —
 the checked-in file is the cleaned version, not the vendor export.
 
+### Exception — layered map icons (generated)
+
+The settlement-kit map icons (`apps/web/static/map/settlement/`,
+`site/`, and `extensions/yrt/map/`) are **generated multi-colour art**,
+not `currentColor` glyphs: one `<path data-role="…">` per colour role
+plus a `data-palette` on the root. Don't hand-edit or "normalize" them —
+change the generator in `apps/web/scripts/settlement-kit/` and re-run
+`npm run build:settlement-icons -w apps/web`. See
+`docs/campaign-map.md` → "Icon formats" and "Settlement kit".
+
 ## Tooltips — use `use:tooltip`, not the native `title=` attribute
 
 For every visible hover hint on HTML elements, use the `tooltip` action

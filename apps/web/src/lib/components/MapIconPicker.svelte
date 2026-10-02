@@ -22,6 +22,7 @@
 		type MapIcon,
 	} from '$lib/generated/mapIconManifest.js';
 	import { mapGlyphInner, haloPaddedViewBox } from '$lib/mapConstants.js';
+	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import FilterBar from '$lib/components/FilterBar.svelte';
 
 	let {
@@ -64,15 +65,27 @@
 		MAP_ICON_CATEGORIES.map((c, i) => [c, categoryColor(i, MAP_ICON_CATEGORIES.length)]),
 	);
 
-	/** Category filter chips for the FilterBar — one per manifest category,
+	/** Icons on offer: core icons plus those of extensions that are enabled
+	 *  (an extension's icons carry `source`). Markers already placed with a
+	 *  disabled extension's icon keep rendering — this only gates picking. */
+	const offeredIcons = $derived(
+		MAP_ICON_LIST.filter((i) => !i.source || isSourceEnabled(i.source)),
+	);
+	const offeredCategories = $derived(
+		MAP_ICON_CATEGORIES.filter((c) => offeredIcons.some((i) => i.category === c)),
+	);
+
+	/** Category filter chips for the FilterBar — one per offered category,
 	 *  labelled from the manifest (e.g. "beast" → "Beast") and tinted with the
 	 *  section colour. "Label only" is deliberately NOT a category here, so it
 	 *  never gets a chip and can never be filtered out. */
-	const CATEGORY_CHIPS = MAP_ICON_CATEGORIES.map((c) => ({
-		key: c,
-		label: MAP_ICON_LIST.find((i) => i.category === c)?.categoryLabel ?? c,
-		color: CATEGORY_COLORS[c],
-	}));
+	const CATEGORY_CHIPS = $derived(
+		offeredCategories.map((c) => ({
+			key: c,
+			label: MAP_ICON_LIST.find((i) => i.category === c)?.categoryLabel ?? c,
+			color: CATEGORY_COLORS[c],
+		})),
+	);
 	$effect(() => {
 		if (!open) return;
 		stackDepth = pushDialog();
@@ -95,8 +108,8 @@
 	const filteredIcons = $derived.by<Record<string, MapIcon[]>>(() => {
 		const q = iconSearch.trim().toLowerCase();
 		const grouped: Record<string, MapIcon[]> = {};
-		for (const cat of MAP_ICON_CATEGORIES) grouped[cat] = [];
-		for (const i of MAP_ICON_LIST) {
+		for (const cat of offeredCategories) grouped[cat] = [];
+		for (const i of offeredIcons) {
 			if (activeCategories.size > 0 && !activeCategories.has(i.category)) continue;
 			if (
 				q &&

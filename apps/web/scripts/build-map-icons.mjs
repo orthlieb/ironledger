@@ -25,7 +25,16 @@
 // dev. Safe to re-run: writes only when the output differs.
 // =============================================================================
 
-import { readFileSync, readdirSync, statSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
+import {
+	copyFileSync,
+	readFileSync,
+	readdirSync,
+	rmSync,
+	statSync,
+	writeFileSync,
+	existsSync,
+	mkdirSync,
+} from 'node:fs';
 import { dirname, join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { inflateSync } from 'node:zlib';
@@ -35,13 +44,17 @@ import { inflateSync } from 'node:zlib';
 import pathBounds from 'svg-path-bounds';
 
 /**
- * @typedef {{slug: string, label: string, category: string, categoryLabel: string, viewBox: string, inner: string, raster?: boolean}} MapIconRow
+ * @typedef {{slug: string, label: string, category: string, categoryLabel: string, viewBox: string, inner: string, raster?: boolean, layered?: boolean, src?: string, palette?: string, source?: string}} MapIconRow
  */
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const WEB_ROOT = dirname(HERE);
 const ICON_ROOT = join(WEB_ROOT, 'static', 'map');
 const OUT_PATH = join(WEB_ROOT, 'src', 'lib', 'generated', 'mapIconManifest.ts');
+const EXT_ROOT = join(WEB_ROOT, '..', '..', 'extensions');
+/** Extension map icons are copied here so the dev server / build serves
+ *  them (git-ignored; regenerated with the manifest). */
+const EXT_STATIC = '_ext';
 
 /** Walk a directory recursively, yielding absolute .svg / .png paths.
  * Raster PNGs (e.g. the hand-drawn Caeora settlement icons) are wrapped in
@@ -57,8 +70,12 @@ function walkIcons(dir) {
 	for (const entry of readdirSync(dir)) {
 		const p = join(dir, entry);
 		const s = statSync(p);
-		if (s.isDirectory()) out.push(...walkIcons(p));
-		else if (s.isFile() && /\.(svg|png)$/i.test(entry)) out.push(p);
+		// static/map/_ext/ holds generated copies of extension icons — those
+		// are indexed from extensions/ (with their source) instead.
+		if (s.isDirectory()) {
+			if (dir === ICON_ROOT && entry === EXT_STATIC) continue;
+			out.push(...walkIcons(p));
+		} else if (s.isFile() && /\.(svg|png)$/i.test(entry)) out.push(p);
 	}
 	return out;
 }
@@ -337,6 +354,25 @@ function parseSvg(source) {
 }
 
 /**
+ * Layered (multi-colour) SVG — the generated settlement kit. Detected by
+ * `data-role="…"` paths. Not inlined (they run to tens of KB each): the
+ * manifest keeps a tight viewBox, the root's `data-palette`, and the URL
+ * the client lazily fetches (see mapIconCache.ts / mapLayered.ts).
+ * @param {string} source
+ * @returns {{viewBox: string, palette: string} | null} null if not layered
+ */
+function parseLayered(source) {
+	if (!/<path\b[^>]*\bdata-role\s*=/.test(source)) return null;
+	const vbMatch = source.match(/<svg\b[^>]*\sviewBox\s*=\s*"([^"]+)"/i);
+	let viewBox = vbMatch ? vbMatch[1] : '0 0 24 24';
+	const tight = computeTightBounds(source.replace(/^[\s\S]*?<svg\b[^>]*>/i, ''));
+	if (tight && tight.w > 0 && tight.h > 0)
+		viewBox = `${fmtNum(tight.x)} ${fmtNum(tight.y)} ${fmtNum(tight.w)} ${fmtNum(tight.h)}`;
+	const palette = source.match(/<svg\b[^>]*\sdata-palette\s*=\s*"([^"]*)"/i)?.[1] ?? '';
+	return { viewBox, palette };
+}
+
+/**
  * Wrap a raster PNG in an <image> element so it flows through the same
  * `{@html ic.inner}` render path as vector icons. The image is referenced
  * by its served URL (`/map/<category>/<slug>.png`), NOT inlined as base64,
@@ -406,7 +442,23 @@ function buildManifest() {
 				if (!probe) throw new Error('not a valid PNG');
 				({ viewBox, inner } = wrapPng(rel, probe.w, probe.h, probe.bbox));
 			} else {
-				({ viewBox, inner } = parseSvg(readFileSync(abs, 'utf-8')));
+				const text = readFileSync(abs, 'utf-8');
+				const layered = parseLayered(text);
+				if (layered) {
+					manifest[key] = {
+						slug,
+						label: titleCase(slug),
+						category,
+						categoryLabel: titleCase(category),
+						viewBox: layered.viewBox,
+						inner: '',
+						layered: true,
+						src: `/map/${rel}`,
+						palette: layered.palette,
+					};
+					continue;
+				}
+				({ viewBox, inner } = parseSvg(text));
 			}
 			manifest[key] = {
 				slug,
@@ -424,7 +476,80 @@ function buildManifest() {
 			console.warn(`[map-icons] skipping ${rel}: ${msg}`);
 		}
 	}
+	addExtensionIcons(manifest);
 	return manifest;
+}
+
+/**
+ * Index map icons contributed by extensions: `extensions/<id>/map/<folder>/
+ * <slug>.svg` becomes category `<id>-<folder>`, labelled "<Folder> (<Name>)"
+ * and tagged with `source: <id>` so the picker only offers it while that
+ * extension is enabled (placed markers keep rendering regardless). Files
+ * are copied under static/map/_ext/ so they're served for lazy loading.
+ * @param {Record<string, MapIconRow>} manifest
+ */
+function addExtensionIcons(manifest) {
+	const outRoot = join(ICON_ROOT, EXT_STATIC);
+	/** Served copies written this run; anything else under _ext/ is stale. */
+	const wanted = new Set();
+	syncExtensionCopies(manifest, wanted);
+	// Remove stale copies only — never wipe the folder, so a concurrent run
+	// (dev-server watcher + build) can't empty it under the other.
+	for (const abs of walkIcons(outRoot)) if (!wanted.has(abs)) rmSync(abs, { force: true });
+}
+
+/**
+ * @param {Record<string, MapIconRow>} manifest
+ * @param {Set<string>} wanted absolute paths of the served copies
+ */
+function syncExtensionCopies(manifest, wanted) {
+	if (!existsSync(EXT_ROOT)) return;
+	for (const id of readdirSync(EXT_ROOT).sort()) {
+		const mapDir = join(EXT_ROOT, id, 'map');
+		if (!existsSync(mapDir)) continue;
+		let name = id;
+		try {
+			name = JSON.parse(readFileSync(join(EXT_ROOT, id, 'extension.json'), 'utf-8')).name ?? id;
+		} catch {
+			/* no readable extension.json — fall back to the id */
+		}
+		for (const abs of walkIcons(mapDir).sort()) {
+			const rel = relative(mapDir, abs).replace(/\\/g, '/');
+			const segs = rel.split('/');
+			const filename = segs.pop() || '';
+			if (!/\.svg$/i.test(filename) || segs.length === 0) continue;
+			const slug = filename.replace(/\.svg$/i, '');
+			const category = `${id}-${segs[0]}`;
+			const served = `${EXT_STATIC}/${id}/${rel}`;
+			const dest = join(ICON_ROOT, served);
+			const text = readFileSync(abs, 'utf-8');
+			wanted.add(dest);
+			// Copy only when missing or changed, so the static/map watcher in
+			// dev doesn't re-trigger itself.
+			if (!existsSync(dest) || readFileSync(dest, 'utf-8') !== text) {
+				mkdirSync(dirname(dest), { recursive: true });
+				copyFileSync(abs, dest);
+			}
+			const layered = parseLayered(text);
+			const base = {
+				slug,
+				label: titleCase(slug),
+				category,
+				categoryLabel: `${titleCase(segs[0])} (${name})`,
+				source: id,
+			};
+			manifest[`${category}/${slug}`] = layered
+				? {
+						...base,
+						viewBox: layered.viewBox,
+						inner: '',
+						layered: true,
+						src: `/map/${served}`,
+						palette: layered.palette,
+					}
+				: { ...base, ...parseSvg(text) };
+		}
+	}
 }
 
 /** Render the manifest as a stable, formatted TypeScript module.
@@ -437,7 +562,11 @@ function renderTs(manifest) {
 		.map((k) => {
 			const m = manifest[k];
 			const rasterField = m.raster ? `, raster: true` : '';
-			return `\t${JSON.stringify(k)}: { slug: ${JSON.stringify(m.slug)}, label: ${JSON.stringify(m.label)}, category: ${JSON.stringify(m.category)}, categoryLabel: ${JSON.stringify(m.categoryLabel)}, viewBox: ${JSON.stringify(m.viewBox)}, inner: ${JSON.stringify(m.inner)}${rasterField} },`;
+			const layeredField = m.layered
+				? `, layered: true, src: ${JSON.stringify(m.src)}, palette: ${JSON.stringify(m.palette ?? '')}`
+				: '';
+			const sourceField = m.source ? `, source: ${JSON.stringify(m.source)}` : '';
+			return `\t${JSON.stringify(k)}: { slug: ${JSON.stringify(m.slug)}, label: ${JSON.stringify(m.label)}, category: ${JSON.stringify(m.category)}, categoryLabel: ${JSON.stringify(m.categoryLabel)}, viewBox: ${JSON.stringify(m.viewBox)}, inner: ${JSON.stringify(m.inner)}${rasterField}${layeredField}${sourceField} },`;
 		})
 		.join('\n');
 	return `// =============================================================================
@@ -466,6 +595,18 @@ export interface MapIcon {
 \t *  a tint <filter> keyed on the alpha channel instead of <g fill>, so the
 \t *  marker colour still applies — see mapGlyphInner() in mapConstants. */
 \traster?: boolean;
+\t/** True for layered (multi-colour) icons from the settlement kit. Not
+\t *  inlined: \`inner\` is empty and the file at \`src\` is fetched lazily,
+\t *  then drawn in \`palette\` with the marker colour on the roofs — see
+\t *  mapLayered.ts / mapIconCache.ts. */
+\tlayered?: boolean;
+\t/** URL of a layered icon's SVG file. */
+\tsrc?: string;
+\t/** A layered icon's palette, "wall:#…;roof:#…;…" (see parsePalette). */
+\tpalette?: string;
+\t/** Extension id for icons an extension contributes (extensions/<id>/map/).
+\t *  The picker only offers them while that extension is enabled. */
+\tsource?: string;
 }
 
 /** Full manifest, keyed by "<category>/<slug>". */

@@ -1594,9 +1594,9 @@
 		}
 	}
 	const ICON_SIZE = $derived(isMobileViewport ? 0.84375 : 0.421875);
-	/** Raster (PNG) icons are detailed line-art that reads visually smaller
-	 *  than the bold vector glyph silhouettes at the same box size, so they
-	 *  render at this multiple of ICON_SIZE. Vector icons stay at 1×. The
+	/** Raster (PNG) icons and layered settlement-kit icons are detailed art
+	 *  that reads visually smaller than the bold vector glyph silhouettes at
+	 *  the same box size, so they render at this multiple of ICON_SIZE. Vector icons stay at 1×. The
 	 *  marker's `<svg>` element is enlarged and re-centred on the anchor
 	 *  point (not the image inside a fixed box), so nothing clips. */
 	const RASTER_ICON_SCALE = 2;
@@ -2096,7 +2096,8 @@
 								transform="translate({mx} {my}) scale({1 / zoom}) rotate({rot})"
 							>
 								{#if hasIcon && ic}
-									{@const iconExtent = ICON_SIZE * (ic.raster ? RASTER_ICON_SCALE : 1)}
+									{@const iconExtent =
+										ICON_SIZE * (ic.raster || ic.layered ? RASTER_ICON_SCALE : 1)}
 									<svg
 										class="mp-marker-icon"
 										x={-iconExtent / 2}
@@ -2133,7 +2134,8 @@
 								{#if m.label}
 									{@const labelCss = labelStyleCss(m.labelStyle)}
 									{#if hasIcon}
-										{@const iconExtent = ICON_SIZE * (ic?.raster ? RASTER_ICON_SCALE : 1)}
+										{@const iconExtent =
+											ICON_SIZE * (ic?.raster || ic?.layered ? RASTER_ICON_SCALE : 1)}
 										{@const p = labelPlacement(
 											m.labelPosition ?? 'bottom',
 											iconExtent / 2,
