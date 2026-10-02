@@ -1344,13 +1344,17 @@
 		margin-bottom: 1px;
 	}
 
-	/* Dice roll lines use monospace font */
+	/* Dice roll lines share the entry's proportional UI font (app.css gives
+	   them --font-mono globally for DiceRollerDialog; the log overrides that
+	   so every entry reads in one face). Tabular figures keep the dice
+	   values and totals column-aligned the way monospace used to. */
 	.entry-body :global(.roll-line),
 	.entry-body :global(.roll-cancel),
 	.entry-body :global(.roll-outcome-strong),
 	.entry-body :global(.roll-outcome-weak),
 	.entry-body :global(.roll-outcome-miss) {
-		font-family: var(--font-mono, 'Roboto Mono', ui-monospace, monospace);
+		font-family: inherit;
+		font-variant-numeric: tabular-nums;
 	}
 
 	/* Roll outcome colours. Also target <strong> inside each div because
