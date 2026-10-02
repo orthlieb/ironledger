@@ -699,8 +699,8 @@
 				// runs in the overlay behind everything else.
 				void animateDice(dice);
 				// Build the log body: one row per group + Total when > 1 group.
-				// Widths are locked with a monospace-ish alignment via the roll-line
-				// class (same font stack as move rolls, keeps digits column-aligned).
+				// Rows use the roll-line class (same styling as move rolls; the log
+				// renders it with tabular figures so digits stay column-aligned).
 				const rows = rolled
 					.map(({ g, values, sum }) => {
 						const mod =

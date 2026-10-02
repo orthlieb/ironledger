@@ -133,8 +133,8 @@
 		const foeName = row ? (resolve(row.ref)?.name ?? row.ref) : '';
 		const cellPart = row ? (row.label ? `${row.label} (${rangeStr(row)})` : rangeStr(row)) : '';
 		// Match the oracle-roll log shape used elsewhere: dice math in a
-		// `.roll-line` (monospace) followed by the prose Result line
-		// (sans-serif) — so foe rolls read the same as any other d100 roll.
+		// `.roll-line` followed by the prose Result line — so foe rolls
+		// read the same as any other d100 roll.
 		appendLog(
 			logLabel,
 			`<div class="roll-line">Rolled d100: ${rollVal} → ${cellPart}</div>` +
