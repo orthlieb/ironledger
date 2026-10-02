@@ -49,7 +49,7 @@
 		getGlobalCounterIds,
 	} from '$lib/assetStore.svelte.js';
 	import { reconcileGlobalValues } from '$lib/character.js';
-	import { loadFoes, findFoe, FOE_RANKS } from '$lib/foeStore.svelte.js';
+	import { loadFoes, findFoe, resolveFoeName, FOE_RANKS } from '$lib/foeStore.svelte.js';
 	import { loadExtensions } from '$lib/expansionStore.svelte.js';
 	import { viewMode } from '$lib/viewModeStore.svelte.js';
 	import LogPanel from '$lib/components/LogPanel.svelte';
@@ -1948,7 +1948,11 @@
 					if (exp.currentDanger?.trim())
 						lines.push(`- **Current Danger:** ${exp.currentDanger.trim()}`);
 					const activeDenizens = (exp.denizens ?? [])
-						.map((id) => (id ? (findFoe(id)?.name ?? id) : null))
+						.map((id) => {
+							if (!id) return null;
+							const def = findFoe(id);
+							return def ? resolveFoeName(def) : id;
+						})
 						.filter(Boolean) as string[];
 					if (activeDenizens.length > 0) lines.push(`- **Denizens:** ${activeDenizens.join(', ')}`);
 				}
@@ -1973,7 +1977,7 @@
 			const lines: string[] = ['# Foes', ''];
 			for (const enc of selEncounters) {
 				const def = findFoe(enc.foeId);
-				const name = enc.customName?.trim() || def?.name || enc.foeId;
+				const name = enc.customName?.trim() || (def ? resolveFoeName(def) : null) || enc.foeId;
 				lines.push(`## ${name}`);
 				if (enc.vanquished) lines.push(`- **Status:** Vanquished`);
 				if (def?.nature) lines.push(`- **Nature:** ${def.nature}`);

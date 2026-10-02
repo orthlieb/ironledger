@@ -36,7 +36,18 @@
 	import { rollDie, animateDice, type DiceSpec } from '$lib/dice.js';
 	import { getCharacters } from '$lib/characterStore.svelte.js';
 	import { getEncounters } from '$lib/encounterStore.svelte.js';
-	import { findFoe, FOE_NATURE_COLORS } from '$lib/foeStore.svelte.js';
+	import { findFoe, resolveFoeName, FOE_NATURE_COLORS } from '$lib/foeStore.svelte.js';
+
+	/** The display name for a foe encounter: user's custom name, else
+	 *  the foe def's resolved name (an active expansion override may rename
+	 *  it, e.g. YRT turns "Giant" into "Altan"), else the raw foeId as a
+	 *  last-resort fallback. Keeps the four spots that formerly inlined
+	 *  `findFoe(…)?.name` consistent, including the renaming path. */
+	function encounterName(enc: { foeId: string; customName?: string }, fallback = ''): string {
+		if (enc.customName?.trim()) return enc.customName.trim();
+		const def = findFoe(enc.foeId);
+		return def ? resolveFoeName(def) : fallback || enc.foeId || '';
+	}
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { getVisibleMoves, loadMoves } from '$lib/moveStore.svelte.js';
 	import { getVisibleOracles, loadOracles } from '$lib/oracleStore.svelte.js';
@@ -213,13 +224,8 @@
 		return chars;
 	}
 	function buildFoeSuggestions(q: string): Suggestion[] {
-		const foes = prefixPick(
-			getEncounters(),
-			(e) => e.customName || findFoe(e.foeId)?.name || '',
-			q,
-			8,
-		).map((e) => {
-			const n = e.customName || findFoe(e.foeId)?.name || '';
+		const foes = prefixPick(getEncounters(), (e) => encounterName(e), q, 8).map((e) => {
+			const n = encounterName(e);
 			return { label: n, hint: '', apply: `/foe ${n}` };
 		});
 		if (getActiveFoeId()) {
@@ -525,7 +531,7 @@
 					return;
 				}
 				setActiveFoeId(e.id);
-				const nm = e.customName || findFoe(e.foeId)?.name || 'foe';
+				const nm = encounterName(e, 'foe');
 				setStatus(`Active foe → ${nm}.`, 'info');
 				break;
 			}
@@ -824,7 +830,7 @@
 	}
 	function resolveFoe(query: string) {
 		const list = getEncounters();
-		const label = (e: (typeof list)[number]) => e.customName || findFoe(e.foeId)?.name || '';
+		const label = (e: (typeof list)[number]) => encounterName(e);
 		return prefixPick(list, label, query, 1)[0] ?? fuzzyPick(list, label, query, 1)[0] ?? null;
 	}
 	function resolveExpedition(query: string) {

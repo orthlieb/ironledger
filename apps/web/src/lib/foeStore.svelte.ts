@@ -34,6 +34,12 @@ import { getExtensions, isSourceEnabled } from '$lib/expansionStore.svelte.js';
 export interface FoeOverride {
 	present?: boolean;
 	addendum?: string;
+	/** Rename the foe for display — pickers, cards, command-bar toasts,
+	 *  AI prompts. Lookups by id and portrait filename stay keyed on the
+	 *  base entity (so an in-flight FoeEncounter still resolves whether
+	 *  or not the override is active). Only the first active override's
+	 *  `name` wins, same precedence as `addendum`. */
+	name?: string;
 }
 
 export interface FoeOverridesFile {
@@ -196,6 +202,24 @@ export function resolveFoeDescription(foe: FoeDef): string {
 		if (add) parts.push(add);
 	}
 	return parts.join('\n\n');
+}
+
+/**
+ * The foe's display name after any active expansion override. Pickers,
+ * cards, command-bar toasts, and AI prompts should call this instead
+ * of reading `foe.name` directly, so a YRT-renamed "Altan" (base
+ * `ironsworn/giant`) shows up as Altan everywhere a user sees it.
+ * Internal lookups (findFoe, foePortraitUrl by filename, FoeEncounter
+ * persistence by id) continue to key on the base record, so toggling
+ * the override on/off never orphans an existing encounter.
+ */
+export function resolveFoeName(foe: FoeDef): string {
+	for (const file of _overrides) {
+		if (!isSourceEnabled(file.source)) continue;
+		const rename = file.overrides[foe.id]?.name;
+		if (typeof rename === 'string' && rename.trim()) return rename;
+	}
+	return foe.name;
 }
 
 /** Case-insensitive lookup by name. Never filtered. */

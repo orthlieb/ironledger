@@ -51,7 +51,7 @@
 	import { renderNote } from '$lib/markdown.js';
 	import type { LogEntry } from '$lib/log.svelte.js';
 	import { getEncounters } from '$lib/encounterStore.svelte.js';
-	import { findFoe, resolveFoeDescription } from '$lib/foeStore.svelte.js';
+	import { findFoe, resolveFoeDescription, resolveFoeName } from '$lib/foeStore.svelte.js';
 	import { getExpeditions } from '$lib/expeditionStore.svelte.js';
 	import { getCharacters } from '$lib/characterStore.svelte.js';
 	import { findAsset } from '$lib/assetStore.svelte.js';
@@ -190,7 +190,7 @@
 		for (const enc of getEncounters()) {
 			const def = findFoe(enc.foeId);
 			if (!def) continue;
-			const name = enc.customName || def.name;
+			const name = enc.customName || resolveFoeName(def);
 			if (!ids.has(enc.id) && !mentions(text, name)) continue;
 			out.push({
 				name,

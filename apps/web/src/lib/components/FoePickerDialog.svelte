@@ -22,6 +22,7 @@
 		foeSource,
 		effectiveRank as calcEffectiveRank,
 		resolveFoeDescription,
+		resolveFoeName,
 		RANK_COLORS,
 		FOE_RANKS,
 		FOE_QUANTITIES,
@@ -199,7 +200,10 @@
 	function selectFoe(foe: FoeDef) {
 		if (_mode === 'denizen') {
 			dialogOpen = false;
-			onDenizenPick?.(foe.name);
+			// Denizen picks store the string the user actually saw — pass the
+			// resolved name so a YRT-renamed foe lands as "Altan" on the Site
+			// denizen row, not "Giant".
+			onDenizenPick?.(resolveFoeName(foe));
 			return;
 		}
 		confirmFoe = foe;
@@ -353,7 +357,7 @@
 										<img
 											class="fd-tile-img"
 											src={imageUrl(foe)}
-											alt={foe.name}
+											alt={resolveFoeName(foe)}
 											onerror={(e) => {
 												(e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT;
 											}}
@@ -366,7 +370,7 @@
 												aria-hidden="true"
 												style:color={natureBorderColor(foe.nature)}>{@html foeIcon(foe)}</span
 											>
-											<span class="fd-tile-name">{foe.name}</span>
+											<span class="fd-tile-name">{resolveFoeName(foe)}</span>
 										</span>
 										<div class="fd-tile-badges">
 											<span
@@ -395,11 +399,12 @@
 			{:else if view === 'confirm' && confirmFoe}
 				{@const natureColor = natureBorderColor(confirmFoe.nature)}
 				{@const resolvedDesc = resolveFoeDescription(confirmFoe)}
+				{@const resolvedName = resolveFoeName(confirmFoe)}
 
 				<!-- Back bar -->
 				<div class="fd-back-bar" style="--nature-color: {natureColor}" use:draggable>
 					<span class="drag-grip" aria-hidden="true">{@html gripSvg}</span>
-					<span class="fd-title">{headingText(confirmFoe.name)}</span>
+					<span class="fd-title">{headingText(resolvedName)}</span>
 				</div>
 
 				<!-- Scrollable body -->
@@ -410,7 +415,7 @@
 							<FoeImageCarousel
 								name={confirmFoe.name}
 								images={confirmFoe.images}
-								alt={confirmFoe.name}
+								alt={resolvedName}
 								class="fc-portrait"
 							/>
 						</div>
