@@ -30,7 +30,7 @@
 	import { mapListState, initMap } from '$lib/mapStore.svelte.js';
 	import { sessionLog } from '$lib/log.svelte.js';
 	import { getEncounters } from '$lib/encounterStore.svelte.js';
-	import { findFoe } from '$lib/foeStore.svelte.js';
+	import { findFoe, resolveFoeName } from '$lib/foeStore.svelte.js';
 	import type { ExportSelection } from '$lib/exportSelection.js';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import charactersIconSvg from '$icons/Characters.svg?raw';
@@ -205,12 +205,15 @@
 			label: 'Foes',
 			color: '#b04a3a',
 			icon: foesIconSvg,
-			items: foeEncounters.map((enc) => ({
-				key: `foe:${enc.id}`,
-				cat: 'foe',
-				id: enc.id,
-				name: enc.customName?.trim() || findFoe(enc.foeId)?.name || 'Foe',
-			})),
+			items: foeEncounters.map((enc) => {
+				const def = findFoe(enc.foeId);
+				return {
+					key: `foe:${enc.id}`,
+					cat: 'foe',
+					id: enc.id,
+					name: enc.customName?.trim() || (def ? resolveFoeName(def) : null) || 'Foe',
+				};
+			}),
 		},
 		{
 			key: 'log',
