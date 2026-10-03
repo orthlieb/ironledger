@@ -263,12 +263,12 @@ The examples above show only the always-present core. The following
 enabled, absent (or empty) otherwise — and, per the round-trip rule above,
 they export and import exactly like any other field:
 
-| Entity        | Extension        | Optional fields                                                                          |
-| ------------- | ---------------- | ---------------------------------------------------------------------------------------- |
-| **Community** | Lodestar         | `type`, `condition`, `firstLook`, `disposition`, `projects`, `culturalTouchstones` (six) |
-| **Community** | (always)         | `locationDescription`, `situationalNotes`                                                |
-| **NPC**       | Lodestar / Delve | `firstLook`, `activity`, `disposition`, `situationalNotes`                               |
-| **Place**     | (always)         | `locationDescription`, `situationalNotes`, `withinSettlementId` / `withinSettlementName` |
+| Entity        | Extension        | Optional fields                                                                                              |
+| ------------- | ---------------- | ------------------------------------------------------------------------------------------------------------ |
+| **Community** | Lodestar         | `type`, `condition`, `firstLook`, `disposition`, `projects`, `culturalTouchstones` (six)                     |
+| **Community** | (always)         | `locationDescription`, `situationalNotes`, `shortDescription`                                                |
+| **NPC**       | Lodestar / Delve | `firstLook`, `activity`, `disposition`, `situationalNotes`                                                   |
+| **Place**     | (always)         | `locationDescription`, `situationalNotes`, `shortDescription`, `withinSettlementId` / `withinSettlementName` |
 
 `Place` currently shares the `Community` field set (it renders in the same
 card), but is stored as its own entity kind so future place-specific fields
@@ -423,25 +423,26 @@ the concept→oracle resolution in
 
 ### Community (`communities[]`)
 
-| Key                   | Contains                                      | Oracle                                                                                                                                                            |
-| --------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                  | uuid                                          | — (generated)                                                                                                                                                     |
-| `name`                | Settlement name                               | **Settlement: Name** (`settlementName`) or **Settlement: Quick Name Generator** (`settlementNameQuick`), base                                                     |
-| `region`              | Ironlands region (Flooded Lands, Havens…)     | **Location: Region** (`region`), base; YRT replaces with its own **Location: Region** (`yrtRegion`)                                                               |
-| `location`            | The settlement's setting / landmark           | **Location** (`location`) or **Location: Coastal Waters** (`coastalWatersLocation`); Lodestar supersedes with **Overland Landmark** / **Coastal Waters Landmark** |
-| `locationDescription` | Descriptive detail of the location            | **Location: Descriptor** (`locationDescriptor`), base                                                                                                             |
-| `trouble`             | The settlement's current trouble              | **Settlement: Troubles** (`settlementTrouble`), base                                                                                                              |
-| `type`                | Settlement size / kind                        | **Settlement: Type** (`settlementType`), **Lodestar** (YRT `yrtSettlementType`)                                                                                   |
-| `condition`           | Current condition                             | **Settlement: Condition** (`settlementCondition`), **Lodestar**                                                                                                   |
-| `firstLook`           | At-a-glance impression                        | **Settlement: First Look** (`settlementFirstLook`), **Lodestar**                                                                                                  |
-| `disposition`         | Disposition toward the party                  | **Settlement: Disposition** (`settlementDisposition`), **Lodestar**                                                                                               |
-| `projects`            | What the settlement is working on             | **Settlement: Projects** (`settlementProjects`), **Lodestar**                                                                                                     |
-| `culturalTouchstones` | Cultural flavor                               | **Settlement: Cultural Touchstones** (`settlementCulturalTouchstones`), **Lodestar**                                                                              |
-| `notes`               | Long-form description (Description tab)       | —                                                                                                                                                                 |
-| `situationalNotes`    | Short situational notes (Core tab)            | —                                                                                                                                                                 |
-| `portraitEtag`        | Portrait content-hash (blob store)            | —                                                                                                                                                                 |
-| `imageUrl`            | _@deprecated_ inline base64 portrait (import) | —                                                                                                                                                                 |
-| `createdAt`           | creation timestamp                            | —                                                                                                                                                                 |
+| Key                   | Contains                                                                    | Oracle                                                                                                                                                            |
+| --------------------- | --------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | uuid                                                                        | — (generated)                                                                                                                                                     |
+| `name`                | Settlement name                                                             | **Settlement: Name** (`settlementName`) or **Settlement: Quick Name Generator** (`settlementNameQuick`), base                                                     |
+| `region`              | Ironlands region (Flooded Lands, Havens…)                                   | **Location: Region** (`region`), base; YRT replaces with its own **Location: Region** (`yrtRegion`)                                                               |
+| `location`            | The settlement's setting / landmark                                         | **Location** (`location`) or **Location: Coastal Waters** (`coastalWatersLocation`); Lodestar supersedes with **Overland Landmark** / **Coastal Waters Landmark** |
+| `locationDescription` | Descriptive detail of the location                                          | **Location: Descriptor** (`locationDescriptor`), base                                                                                                             |
+| `trouble`             | The settlement's current trouble                                            | **Settlement: Troubles** (`settlementTrouble`), base                                                                                                              |
+| `type`                | Settlement size / kind                                                      | **Settlement: Type** (`settlementType`), **Lodestar** (YRT `yrtSettlementType`)                                                                                   |
+| `condition`           | Current condition                                                           | **Settlement: Condition** (`settlementCondition`), **Lodestar**                                                                                                   |
+| `firstLook`           | At-a-glance impression                                                      | **Settlement: First Look** (`settlementFirstLook`), **Lodestar**                                                                                                  |
+| `disposition`         | Disposition toward the party                                                | **Settlement: Disposition** (`settlementDisposition`), **Lodestar**                                                                                               |
+| `projects`            | What the settlement is working on                                           | **Settlement: Projects** (`settlementProjects`), **Lodestar**                                                                                                     |
+| `culturalTouchstones` | Cultural flavor                                                             | **Settlement: Cultural Touchstones** (`settlementCulturalTouchstones`), **Lodestar**                                                                              |
+| `notes`               | Long-form description (Description tab)                                     | —                                                                                                                                                                 |
+| `situationalNotes`    | Short situational notes (Core tab)                                          | —                                                                                                                                                                 |
+| `shortDescription`    | A line or two of markdown — the map marker card's summary (Description tab) | —                                                                                                                                                                 |
+| `portraitEtag`        | Portrait content-hash (blob store)                                          | —                                                                                                                                                                 |
+| `imageUrl`            | _@deprecated_ inline base64 portrait (import)                               | —                                                                                                                                                                 |
+| `createdAt`           | creation timestamp                                                          | —                                                                                                                                                                 |
 
 The six Lodestar fields (`type` … `culturalTouchstones`) are the "Lodestar
 settlement suite" — each backed by a `Settlement: …` Lodestar oracle.

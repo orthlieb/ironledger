@@ -37,6 +37,7 @@ interface ManifestEntry {
   oracleCategories?: CategoryMeta[];
   suppressesOracles?: string[];
   supersedesOracles?: Record<string, string>;
+  supersedesCultures?: Record<string, string>;
   infoLink?: { label: string; url: string };
   provides?: Record<string, string[]>;
   root?: string;
@@ -117,6 +118,16 @@ describe('toPublicExtension — /catalogue/extensions contract', () => {
     // YRT rewrites the base Ironlands Region + Lodestar Story Region to its own.
     expect(byId.yrt?.supersedesOracles?.region).toBe('yrtRegion');
     expect(byId.yrt?.supersedesOracles?.storyRegion).toBe('yrtStoryRegion');
+  });
+
+  it('forwards supersedesCultures — YRT swaps the base Elves for its Verdani', () => {
+    // The settlement builder offers the replacement culture and markers that
+    // reference the base one draw with it; a dropped map would show Elves AND
+    // Verdani side by side while YRT is on.
+    const byId = Object.fromEntries(publicList.map((e) => [e.id, e]));
+    expect(byId.yrt?.supersedesCultures).toEqual({ elves: 'verdani' });
+    for (const e of manifest.extensions)
+      expect(byId[e.id]?.supersedesCultures ?? null).toEqual(e.supersedesCultures ?? null);
   });
 
   it('stays metadata-only — no file lists leak into the public payload', () => {

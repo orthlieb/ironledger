@@ -1,0 +1,34 @@
+{
+  "key": "merrow",
+  "name": "Merrow",
+  "note": "Semiaquatic and zealous: stilt huts over a salt lagoon behind a jagged reef, shrines to the deep gods under a trident — no markets, no traffic with outsiders.",
+  "design": {
+    "houseForm": "stilt",
+    "ground": "water",
+    "stature": 0.95,
+    "pitch": 1.05,
+    "concave": 0.22,
+    "window": "round",
+    "towerRoof": "cone",
+    "spire": 2.4,
+    "flags": false,
+    "wall": "reef",
+    "wallShape": "round",
+    "church": false,
+    "symbol": "trident",
+    "keep": "none",
+    "market": "none",
+    "industry": 0,
+    "flourish": 0.2
+  },
+  "palette": {
+    "wall": "#DCE3DD",
+    "roof": "#3E6E6A",
+    "wood": "#6B6A55",
+    "earth": "#6E7F78",
+    "water": "#7FA9AC",
+    "ink": "#1F2A2E",
+    "flag": "#5B7F3A",
+    "halo": "#EEF3EF"
+  }
+}

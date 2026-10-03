@@ -1,0 +1,39 @@
+{
+  "key": "giants",
+  "name": "Giants",
+  "source": "base",
+  "note": "The Jokul: herders of oxen, goats and sheep in hard winters — a few huge Norse longhouses with crossed horn-gables, round huts among them, no walls, keeps or markets.",
+  "design": {
+    "houseForm": "timber",
+    "longhouse": 0.75,
+    "huts": 0.35,
+    "scale": 1.6,
+    "stature": 1.3,
+    "pitch": 1,
+    "depth": 1.1,
+    "concave": 0,
+    "gable": 0.1,
+    "storeys": 0,
+    "window": "slit",
+    "towerRoof": "cone",
+    "flags": false,
+    "wall": "none",
+    "church": false,
+    "symbol": "none",
+    "keep": "none",
+    "market": "none",
+    "industry": 0,
+    "flourish": 0,
+    "masonry": false
+  },
+  "palette": {
+    "wall": "#D9CBB0",
+    "roof": "#9A7B58",
+    "wood": "#7D6448",
+    "earth": "#7A5E42",
+    "water": "#8FB0BC",
+    "ink": "#2F2A24",
+    "flag": "#5C4A3A",
+    "halo": "#F2EDE2"
+  }
+}

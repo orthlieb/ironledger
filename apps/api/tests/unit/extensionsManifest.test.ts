@@ -116,6 +116,11 @@ describe('extensions.manifest.json', () => {
     expect(moveOverrides).toHaveLength(1);
     expect(moveOverrides[0].overrides['move/end-the-fight']).toEqual({ present: false });
     expect(delve).toHaveLength(5);
+    // Settlement-builder cultures, one per file: 5 base (Ironlanders, Elves,
+    // Giants, Varou, Trolls) + 2 delve (Merrow, Atanya) + 5 yrt (Buralia,
+    // Mososi, Nysis, Ostrea, Verdani — which supersedes the base Elves) = 12
+    // (sample is dev-only, stripped from `core`).
+    expect(filesFor('cultures')).toHaveLength(12);
   });
 
   it('assigns each content file to exactly one extension (no overlap)', () => {

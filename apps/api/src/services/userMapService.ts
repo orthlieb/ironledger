@@ -44,6 +44,16 @@ export interface MapMarker {
     | 'top-right'
     | 'bottom-left'
     | 'bottom-right';
+  /** A generated settlement icon's recipe (culture reference + knobs). */
+  settlement?: {
+    tier: string;
+    culture: string;
+    seed: number;
+    walls?: string;
+    wallShape?: 'round' | 'square';
+    harbor?: boolean;
+    ruin?: { decay: number; burned?: boolean };
+  };
 }
 
 /** Free-form per-map settings JSONB. Client owns the shape (see

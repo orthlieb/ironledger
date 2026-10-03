@@ -1,0 +1,42 @@
+{
+  "key": "nysis",
+  "name": "Nysis",
+  "note": "Puritan and ornate — the country of the flourish: onion domes, finials, ridge cresting, banners in Nysian gold on every tower.",
+  "design": {
+    "towerBow": -1,
+    "flourish": 1,
+    "concave": 0.18,
+    "pitch": 0.95,
+    "gable": 0.8,
+    "storeys": 0.6,
+    "window": "arched",
+    "manyDoors": true,
+    "towerRoof": "onion",
+    "spire": 2.8,
+    "taper": 0.05,
+    "flags": true,
+    "flagFolds": 4,
+    "flagLen": 15,
+    "wall": "stone",
+    "wallH": 1.1,
+    "merlons": true,
+    "wallTowers": 6,
+    "gate": "twin",
+    "wallShape": "round",
+    "industry": 0.25,
+    "church": true,
+    "symbol": "sun",
+    "keep": "city",
+    "market": "town"
+  },
+  "palette": {
+    "wall": "#F3EBDD",
+    "roof": "#3F6FA8",
+    "wood": "#B08A5A",
+    "earth": "#957650",
+    "water": "#8FB0B8",
+    "ink": "#2B2633",
+    "flag": "#D9A92B",
+    "halo": "#F8F3EA"
+  }
+}

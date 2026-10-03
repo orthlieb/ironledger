@@ -1,0 +1,107 @@
+/**
+ * mapLayered.test.ts
+ *
+ * Layered (multi-colour) settlement-kit map icons: palette parsing, role
+ * colouring (roofs follow the marker colour, everything else keeps the
+ * icon's palette), path parsing with its injection guard, and the
+ * `mapGlyphInner` branch that draws them once the lazy cache has the file.
+ */
+import { describe, it, expect, vi, afterEach } from 'vitest';
+import {
+	DEFAULT_LAYERED_PALETTE,
+	layeredMarkup,
+	mixHex,
+	parseLayeredSvg,
+	parsePalette,
+	roleColours,
+} from '../../src/lib/mapLayered.js';
+import { primeLayered } from '../../src/lib/mapIconCache.js';
+import { mapGlyphInner } from '../../src/lib/mapConstants.js';
+import type { MapIcon } from '../../src/lib/generated/mapIconManifest.js';
+
+const SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" data-palette="wall:#eeeeee;roof:#aa0000">
+  <path data-role="sil" fill="#fff" stroke="#fff" d="M0 0L10 0L10 10Z"/>
+  <path data-role="wall" fill="#eee" d="M1 1L9 1L9 9Z"/>
+  <path data-role="roof" fill="#a00" d="M2 2L8 2L5 5Z"/>
+  <path data-role="ink" fill="#000" d="M3 3L4 3L4 4Z"/>
+</svg>`;
+
+describe('parsePalette', () => {
+	it('reads known keys and keeps defaults for the rest', () => {
+		const p = parsePalette('wall:#111111;roof:#222222');
+		expect(p.wall).toBe('#111111');
+		expect(p.roof).toBe('#222222');
+		expect(p.ink).toBe(DEFAULT_LAYERED_PALETTE.ink);
+	});
+	it('ignores malformed colours and unknown keys (no markup injection)', () => {
+		const p = parsePalette('wall:red;roof:#22"/><script>;bogus:#123456');
+		expect(p.wall).toBe(DEFAULT_LAYERED_PALETTE.wall);
+		expect(p.roof).toBe(DEFAULT_LAYERED_PALETTE.roof);
+		expect(p).not.toHaveProperty('bogus');
+	});
+});
+
+describe('roleColours', () => {
+	it('puts the marker colour on the roofs, shading roof-shade toward ink', () => {
+		const c = roleColours(DEFAULT_LAYERED_PALETTE, '#3b82f6');
+		expect(c.roof).toBe('#3b82f6');
+		expect(c['roof-shade']).toBe(mixHex('#3b82f6', DEFAULT_LAYERED_PALETTE.ink, 0.7));
+		expect(c.wall).toBe(DEFAULT_LAYERED_PALETTE.wall);
+		expect(c.sil).toBe(DEFAULT_LAYERED_PALETTE.halo);
+	});
+	it('keeps the palette roof without a marker colour, and expands #rgb', () => {
+		expect(roleColours(DEFAULT_LAYERED_PALETTE).roof).toBe(DEFAULT_LAYERED_PALETTE.roof);
+		expect(roleColours(DEFAULT_LAYERED_PALETTE, '#f00').roof).toBe('#ff0000');
+	});
+});
+
+describe('parseLayeredSvg / layeredMarkup', () => {
+	it('extracts role paths in paint order', () => {
+		expect(parseLayeredSvg(SVG).map((p) => p.role)).toEqual(['sil', 'wall', 'roof', 'ink']);
+	});
+	it('drops paths whose data is not plain path syntax', () => {
+		const bad = '<path data-role="wall" d="M0 0&quot;/><script>alert(1)</script>"/>';
+		expect(parseLayeredSvg(bad)).toEqual([]);
+	});
+	it('draws the silhouette only with a halo, and recolours every layer', () => {
+		const paths = parseLayeredSvg(SVG);
+		const colours = roleColours(parsePalette('wall:#eeeeee'), '#00ff00');
+		const plain = layeredMarkup(paths, colours, null);
+		expect(plain).not.toContain(colours.sil + '"');
+		expect(plain).toContain('fill="#00ff00"');
+		const haloed = layeredMarkup(paths, colours, ' stroke="#fff"');
+		expect(haloed.startsWith(`<path fill="${colours.sil}" stroke="#fff"`)).toBe(true);
+	});
+});
+
+describe('mapGlyphInner — layered icons', () => {
+	const icon: MapIcon = {
+		slug: 'village',
+		label: 'Village',
+		category: 'settlement',
+		categoryLabel: 'Settlement',
+		viewBox: '0 0 10 10',
+		inner: '',
+		layered: true,
+		src: '/map/settlement/test-village.svg',
+		palette: 'wall:#eeeeee;roof:#aa0000',
+	};
+	afterEach(() => vi.unstubAllGlobals());
+	it('renders nothing until the file is loaded, then the coloured layers', () => {
+		// The cache fetches unknown files; answer with a 404 so nothing loads.
+		const fetchStub = vi.fn(() => Promise.resolve({ ok: false, text: () => Promise.resolve('') }));
+		vi.stubGlobal('fetch', fetchStub);
+		const unloaded = { ...icon, src: '/map/settlement/not-loaded.svg' };
+		expect(mapGlyphInner(unloaded, '#ff0000', 'u1')).toBe('');
+		expect(fetchStub).toHaveBeenCalledWith('/map/settlement/not-loaded.svg');
+		primeLayered(icon.src!, SVG);
+		const out = mapGlyphInner(icon, '#ff0000', 'u2', true);
+		expect(out).toContain('fill="#ff0000"'); // roofs follow the marker
+		expect(out).toContain('fill="#eeeeee"'); // walls keep the palette
+		expect(out).toContain('vector-effect="non-scaling-stroke"'); // halo on the silhouette
+	});
+	it('keeps the icon roof colour for the default (black) marker', () => {
+		primeLayered(icon.src!, SVG);
+		expect(mapGlyphInner(icon, '#000000', 'u3')).toContain('fill="#aa0000"');
+	});
+});

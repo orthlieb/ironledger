@@ -168,6 +168,13 @@
         ],
         "foes": [
           "foes/foes_ironsworn.json"
+        ],
+        "cultures": [
+          "cultures/elves.json",
+          "cultures/giants.json",
+          "cultures/ironlanders.json",
+          "cultures/trolls.json",
+          "cultures/varou.json"
         ]
       }
     },
@@ -254,6 +261,10 @@
           "delve/delve-domain-features.json",
           "delve/delve-theme-dangers.json",
           "delve/delve-theme-features.json"
+        ],
+        "cultures": [
+          "cultures/atanya.json",
+          "cultures/merrow.json"
         ]
       }
     },
@@ -334,6 +345,9 @@
         "settlementType": "yrtSettlementType",
         "storyRegion": "yrtStoryRegion"
       },
+      "supersedesCultures": {
+        "elves": "verdani"
+      },
       "moveCategories": [
         {
           "key": "Yrt",
@@ -374,13 +388,20 @@
         ],
         "foeOverrides": [
           "foes/overrides.json"
+        ],
+        "cultures": [
+          "cultures/buralia.json",
+          "cultures/mososi.json",
+          "cultures/nysis.json",
+          "cultures/ostrea.json",
+          "cultures/verdani.json"
         ]
       }
     },
     {
       "id": "sample",
       "name": "Sample",
-      "description": "A reference extension that exercises every pluggable surface: a move, an oracle, a foe (with a bundled portrait), an override patching a base foe, an asset (with a bundled icon), and a roll-table (resolver oracle). Off by default; enable it in Settings → Expansions to see everything appear.",
+      "description": "A reference extension that exercises every pluggable surface: a move, an oracle, a foe (with a bundled portrait), an override patching a base foe, an asset (with a bundled icon), a roll-table (resolver oracle), and a settlement culture. Off by default; enable it in Settings → Expansions to see everything appear.",
       "defaultEnabled": false,
       "order": 99,
       "dev": true,
@@ -413,6 +434,9 @@
         ],
         "foeOverrides": [
           "foes/overrides.json"
+        ],
+        "cultures": [
+          "cultures/sample.json"
         ]
       }
     }

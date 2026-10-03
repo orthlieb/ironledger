@@ -151,6 +151,9 @@ export interface ExtensionInfo {
    *  `{ "region": "yrtRegion" }` so `resolveOracleKey('region')` returns
    *  `'yrtRegion'` when YRT is on. */
   supersedesOracles?: Record<string, string>;
+  /** Base-culture-key → replacement-key rewrites for the settlement builder
+   *  while this extension is enabled (YRT: elves → verdani). */
+  supersedesCultures?: Record<string, string>;
   /** Move categories this extension introduces (picker order + icon + tint). */
   moveCategories?: CategoryDef[];
   /** Oracle categories this extension introduces (icon + tint; picker order

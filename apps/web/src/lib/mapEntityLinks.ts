@@ -22,6 +22,7 @@
 import { getCommunities } from './communityStore.svelte.js';
 import { getPlaces } from './placeStore.svelte.js';
 import { getExpeditions } from './expeditionStore.svelte.js';
+import type { Community, Journey, Place, Site } from './types.js';
 
 /** Kinds of entities a marker can link to. Order + display comes from
  *  ENTITY_LINK_KINDS below. */
@@ -134,4 +135,33 @@ export function resolveEntity(entityId: string | undefined | null): EntityLink |
 	const parsed = parseEntityId(entityId);
 	if (!parsed) return null;
 	return getLinkableEntities().find((e) => e.kind === parsed.kind && e.id === parsed.id) ?? null;
+}
+
+/** A linked entity's own record, for summaries (the marker card). */
+export type LinkedEntityData =
+	| { kind: 'community'; data: Community }
+	| { kind: 'place'; data: Place }
+	| { kind: 'journey'; data: Journey }
+	| { kind: 'site'; data: Site };
+
+/** Resolve a marker's `entityId` to the entity record itself, or null. */
+export function resolveEntityData(entityId: string | undefined | null): LinkedEntityData | null {
+	const parsed = parseEntityId(entityId);
+	if (!parsed) return null;
+	switch (parsed.kind) {
+		case 'community': {
+			const data = getCommunities().find((c) => c.id === parsed.id);
+			return data ? { kind: 'community', data } : null;
+		}
+		case 'place': {
+			const data = getPlaces().find((p) => p.id === parsed.id);
+			return data ? { kind: 'place', data } : null;
+		}
+		default: {
+			const data = getExpeditions().find((e) => e.id === parsed.id);
+			if (data?.type === 'journey') return { kind: 'journey', data };
+			if (data?.type === 'site') return { kind: 'site', data };
+			return null;
+		}
+	}
 }

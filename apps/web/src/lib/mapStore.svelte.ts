@@ -26,6 +26,7 @@
 // init so they don't confuse anyone digging through devtools.
 // =============================================================================
 
+import type { SettlementRecipe } from './settlementRecipe';
 import { gridDimsForAspect } from '$lib/mapConstants.js';
 import { clampMarkersToBounds } from '$lib/mapGeometry.js';
 import { fetchSession } from '$lib/sessionData.js';
@@ -95,6 +96,11 @@ export interface MapMarker {
 	 *  current default — label under the icon). Ignored when the marker
 	 *  has no icon (label centres on the anchor either way). */
 	labelPosition?: MapMarkerLabelPosition;
+	/** A generated settlement icon: the recipe the builder made it from
+	 *  (culture reference + knobs). When present the marker draws the
+	 *  generated icon; `icon` stays the plain fallback. See
+	 *  settlementRecipe.ts. */
+	settlement?: SettlementRecipe;
 }
 
 /** Compass positions the label may sit in relative to the icon (icon
@@ -631,6 +637,7 @@ export function addMarker(input: {
 	angle?: number;
 	labelStyle?: MapMarker['labelStyle'];
 	labelPosition?: MapMarkerLabelPosition;
+	settlement?: SettlementRecipe;
 }): string {
 	const id = crypto.randomUUID();
 	mapState.markers.push({ id, ...input });

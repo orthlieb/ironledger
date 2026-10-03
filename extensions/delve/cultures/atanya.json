@@ -1,0 +1,41 @@
+{
+  "key": "atanya",
+  "name": "Atanya",
+  "note": "People of the sea from the Barrier Islands, the Ragged Coast and the frozen north: boat-roofed longhouses and hide huts clinging to rugged shores, a driftwood palisade, and boatsheds by the water.",
+  "design": {
+    "houseForm": "timber",
+    "longhouse": 0.6,
+    "huts": 0.25,
+    "pitch": 1,
+    "depth": 1,
+    "concave": 0.16,
+    "gable": 0.2,
+    "storeys": 0,
+    "window": "slit",
+    "towerRoof": "cone",
+    "spire": 1.6,
+    "flags": true,
+    "flagFolds": 2,
+    "flagLen": 14,
+    "wall": "palisade",
+    "wallShape": "round",
+    "gate": "tower",
+    "church": false,
+    "symbol": "spike",
+    "keep": "none",
+    "market": "town",
+    "industry": 0.3,
+    "flourish": 0.25,
+    "masonry": false
+  },
+  "palette": {
+    "wall": "#E6E1D6",
+    "roof": "#4F6B7A",
+    "wood": "#8A7356",
+    "earth": "#806A50",
+    "water": "#6F9AAB",
+    "ink": "#26292C",
+    "flag": "#B04A2E",
+    "halo": "#F2F1EC"
+  }
+}

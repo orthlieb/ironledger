@@ -1878,6 +1878,8 @@
 						if (c.location) lines.push(`**Location:** ${c.location}`);
 						if (c.locationDescription) lines.push(`**Description:** ${c.locationDescription}`);
 						if (c.trouble) lines.push(`**Trouble:** ${c.trouble}`);
+						if (c.shortDescription?.trim())
+							lines.push(``, `**Summary:**`, c.shortDescription.trim());
 						if (c.notes?.trim()) lines.push(``, `**Notes:**`, c.notes.trim());
 					});
 				}
@@ -1898,6 +1900,8 @@
 						if (pRegion) lines.push(`**Region:** ${pRegion}`);
 						if (p.location) lines.push(`**Landmark:** ${p.location}`);
 						if (p.locationDescription) lines.push(`**Description:** ${p.locationDescription}`);
+						if (p.shortDescription?.trim())
+							lines.push(``, `**Summary:**`, p.shortDescription.trim());
 						if (p.notes?.trim()) lines.push(``, `**Notes:**`, p.notes.trim());
 					});
 				}
@@ -1952,6 +1956,8 @@
 						.filter(Boolean) as string[];
 					if (activeDenizens.length > 0) lines.push(`- **Denizens:** ${activeDenizens.join(', ')}`);
 				}
+				if ('shortDescription' in exp && exp.shortDescription?.trim())
+					lines.push(``, `**Summary:**`, exp.shortDescription.trim());
 				if (exp.notes?.trim()) lines.push(``, `**Notes:**`, exp.notes.trim());
 				const slug = expSlugs.get(exp.id) ?? slugify(exp.name || 'expedition');
 				zipFiles[`expeditions/${slug}.md`] = strToU8(lines.join('\n').trimEnd() + '\n');

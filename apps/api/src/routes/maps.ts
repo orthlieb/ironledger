@@ -33,14 +33,17 @@ import { makeHandleError } from '../lib/handleError.js';
 // Schemas
 // ---------------------------------------------------------------------------
 
-const mapMarkerSchema = z.object({
+/** @internal — exported for the unit test that pins the persisted fields. */
+export const mapMarkerSchema = z.object({
   id: z.string(),
   // World-unit fractional coordinates on the square grid. See
   // apps/web/src/lib/mapStore.svelte.ts::MapMarker for the client-side type.
   x: z.number(),
   y: z.number(),
   label: z.string().max(120),
-  icon: z.string().max(32),
+  // Manifest key, e.g. "yrt-settlements/ostrea-ruined-village" — extension
+  // categories make these longer than the core keys.
+  icon: z.string().max(80),
   color: z.string().max(64).optional(),
   entityId: z.string().max(200).optional(),
   // Rotation in degrees, clockwise. Clamped to a wide range so a bug
@@ -73,6 +76,35 @@ const mapMarkerSchema = z.object({
       'bottom-left',
       'bottom-right',
     ])
+    .optional(),
+  // A generated settlement icon's recipe — a culture REFERENCE plus the
+  // builder's knobs, never the culture itself. The client draws it; `icon`
+  // still carries the plain fallback icon.
+  settlement: z
+    .object({
+      tier: z.enum([
+        'stead',
+        'camp',
+        'outpost',
+        'hamlet',
+        'village',
+        'hold',
+        'town',
+        'city',
+        'capital',
+        'freeport',
+      ]),
+      culture: z.string().max(64),
+      seed: z.number().int().min(0).max(1_000_000),
+      walls: z
+        .enum(['auto', 'none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef'])
+        .optional(),
+      wallShape: z.enum(['round', 'square']).optional(),
+      harbor: z.boolean().optional(),
+      ruin: z
+        .object({ decay: z.number().min(0).max(1), burned: z.boolean().optional() })
+        .optional(),
+    })
     .optional(),
 });
 const putMarkersBody = z.object({ markers: z.array(mapMarkerSchema).max(500) });
