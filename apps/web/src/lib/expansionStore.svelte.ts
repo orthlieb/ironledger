@@ -138,3 +138,24 @@ export function resolveOracleKey(key: string): string {
 	}
 	return key;
 }
+
+/** Culture keys hidden from the settlement builder by an enabled
+ *  extension's `supersedesCultures` (YRT hides Elves for Verdani). */
+export function supersededCultureKeys(): Set<string> {
+	const out = new Set<string>();
+	for (const e of _registry) {
+		if (!isSourceEnabled(e.id)) continue;
+		for (const k of Object.keys(e.supersedesCultures ?? {})) out.add(k);
+	}
+	return out;
+}
+
+/** Resolve a possibly-superseded culture key, like resolveOracleKey. */
+export function resolveCultureKey(key: string): string {
+	for (const e of _registry) {
+		if (!isSourceEnabled(e.id)) continue;
+		const rep = e.supersedesCultures?.[key];
+		if (rep) return rep;
+	}
+	return key;
+}

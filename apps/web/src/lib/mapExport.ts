@@ -25,6 +25,7 @@
 // serialisation.
 // =============================================================================
 
+import { cleanSettlementRecipe } from './settlementRecipe';
 import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
 import {
 	createMap,
@@ -335,6 +336,7 @@ export async function populateMap(
 			// runtime marker.
 			labelStyle: cleanLabelStyle((m as { labelStyle?: unknown }).labelStyle),
 			labelPosition: cleanLabelPosition((m as { labelPosition?: unknown }).labelPosition),
+			settlement: cleanSettlementRecipe((m as { settlement?: unknown }).settlement),
 		}));
 	await replaceMarkers(cleanMarkers);
 

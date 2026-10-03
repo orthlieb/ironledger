@@ -30,7 +30,7 @@ export const DEFAULT_LAYERED_PALETTE: LayeredPalette = {
 	wall: '#EFEADF',
 	roof: '#D9776B',
 	wood: '#C9A97C',
-	earth: '#8E9A6A',
+	earth: '#94744F',
 	water: '#8FB0B8',
 	flag: '#4A3B32',
 	ink: '#3B2F28',

@@ -64,6 +64,8 @@
 	import Combobox from '$lib/components/Combobox.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
+	import { resolveMarkerIcon } from '$lib/settlementIcons.svelte.js';
+	import MarkerCard from './MarkerCard.svelte';
 	import {
 		DEFAULT_MAP_ASPECT,
 		DEFAULT_MARKER_COLOR,
@@ -72,7 +74,6 @@
 		haloColor,
 		haloPaddedViewBox,
 		mapGlyphInner,
-		resolveMapIcon,
 		subGridOctaveForZoom,
 	} from '$lib/mapConstants.js';
 	import { gridLineOffsets, isMajorLine } from '$lib/mapGeometry.js';
@@ -825,7 +826,7 @@
 	}
 
 	/** Jump the home page to a marker's linked entity and close the map —
-	 *  invoked from the marker editor's "Go to" action. */
+	 *  invoked from the marker card's Go To button. */
 	function focusMarkerEntity(link: { kind: string; id: string }) {
 		document.dispatchEvent(
 			new CustomEvent('ironledger:focus-entity', { detail: { kind: link.kind, id: link.id } }),
@@ -915,27 +916,17 @@
 	}
 	function choosePileMarker(m: MapMarker) {
 		closePilePicker();
-		// Same routing as a normal marker click: linked → jump; else → select.
-		const link = resolveEntity(m.entityId);
-		if (link) {
-			document.dispatchEvent(
-				new CustomEvent('ironledger:focus-entity', {
-					detail: { kind: link.kind, id: link.id },
-				}),
-			);
-			close();
-			return;
-		}
-		// Pick from a pile: same as a bare single-click on the map. Just
-		// select; a follow-up double-click / shift-click / long-press opens
-		// the editor.
+		// Pick from a pile: same as a bare single-click on the map — select
+		// it, which shows its card (Go To for a linked marker lives there); a
+		// follow-up double-click / shift-click / long-press opens the editor.
 		selectedMarkerId = m.id;
 	}
 
 	/**
 	 * Grid click. Behaviour depends on what's at the click's snap point:
 	 *  • Snap point with >1 markers → open pile-up popover to disambiguate.
-	 *  • Existing marker w/ link + bare click → jump to entity.
+	 *  • Existing marker + bare click → select it and show its card (whose
+	 *    Go To button jumps to a linked entity).
 	 *  • Existing marker w/ shift-click → open editor.
 	 *  • Empty spot → deselect any marker (placement is armed via the
 	 *    toolbar "+ Marker" button can drop a marker on it. Empty clicks
@@ -1226,6 +1217,32 @@
 	 * with the map's configured unit ('miles' | 'km').
 	 */
 	let measuring = $state(false);
+
+	// ─── Marker card ─────────────────────────────────────────────────────
+	// Selecting a marker (a plain click) shows its info card beside it —
+	// unless the editor is open, it's being dragged, or a placement /
+	// measure gesture is armed. ✕ on the card hides it for this selection.
+	let cardHiddenFor = $state<string | null>(null);
+	const cardOpen = $derived(
+		dialogOpen &&
+			!!selectedMarker &&
+			!markerPropsOpen &&
+			!dragState?.moved &&
+			!placingMarker &&
+			!measuring &&
+			cardHiddenFor !== selectedMarkerId,
+	);
+	/** The selected marker's icon box on screen, read live each frame. */
+	const cardAnchor = {
+		getBoundingClientRect: () => {
+			const el = selectedMarkerId
+				? document.querySelector(
+						`[data-marker-id="${CSS.escape(selectedMarkerId)}"] .mp-marker-icon, [data-marker-id="${CSS.escape(selectedMarkerId)}"]`,
+					)
+				: null;
+			return el?.getBoundingClientRect() ?? new DOMRect(0, 0, 0, 0);
+		},
+	};
 	let measurePoints = $state<{ x: number; y: number }[]>([]);
 	let measureCursor = $state<{ x: number; y: number } | null>(null);
 
@@ -2052,7 +2069,7 @@
 						     at the same spot draws on top. -->
 
 						{#each mapState.markers as m (m.id)}
-							{@const ic = resolveMapIcon(m.icon)}
+							{@const ic = resolveMarkerIcon(m)}
 							{@const color = m.color || DEFAULT_MARKER_COLOR}
 							{@const halo = haloColor(color)}
 							{@const isDragging =
@@ -2062,25 +2079,6 @@
 							{@const hasIcon = m.icon !== ''}
 							{@const isSelected = m.id === selectedMarkerId}
 							{@const rot = normalizeAngle(m.angle)}
-							{#if isSelected}
-								<!-- Selection outline — a small square wrapping the icon
-						     itself (markers no longer snap to a cell, so there
-						     is no "sub-cell" to trace). Drawn in world coords so
-						     it sits on top of the grid where the marker lives;
-						     the icon's scale(1/zoom) group is separate so
-						     shrinking the icon doesn't also shrink the
-						     highlight. `non-scaling-stroke` keeps the outline a
-						     fixed screen weight at any zoom. -->
-								{@const cell = ICON_SIZE * 1.15}
-								<rect
-									class="mp-marker-selection"
-									x={mx - cell / 2}
-									y={my - cell / 2}
-									width={cell}
-									height={cell}
-									vector-effect="non-scaling-stroke"
-								/>
-							{/if}
 							<!--
 						`scale(1/zoom)` keeps the whole marker (icon + label +
 						strokes) a constant on-screen size regardless of zoom —
@@ -2091,6 +2089,7 @@
 					-->
 							<g
 								class="mp-marker"
+								data-marker-id={m.id}
 								class:mp-marker-selected={isSelected}
 								class:mp-marker-dragging={isDragging}
 								transform="translate({mx} {my}) scale({1 / zoom}) rotate({rot})"
@@ -2128,6 +2127,27 @@
 										stroke={halo}
 										stroke-width="2"
 										paint-order="stroke"
+										vector-effect="non-scaling-stroke"
+									/>
+								{/if}
+								{#if isSelected}
+									<!-- Selection outline — a square wrapping the icon itself,
+									     drawn inside the marker group so it
+									     shares the icon's zoom compensation and rotation and is
+									     sized from the icon's real extent: layered settlement
+									     and raster icons draw at RASTER_ICON_SCALE, so a fixed
+									     square was hidden under them. `non-scaling-stroke`
+									     keeps the outline a fixed screen weight. Drawn AFTER
+									     the icon, with margin to clear it, so the icon's halo
+									     can't paint over it. -->
+									{@const cell =
+										ICON_SIZE * (ic?.raster || ic?.layered ? RASTER_ICON_SCALE : 1) * 1.3}
+									<rect
+										class="mp-marker-selection"
+										x={-cell / 2}
+										y={-cell / 2}
+										width={cell}
+										height={cell}
 										vector-effect="non-scaling-stroke"
 									/>
 								{/if}
@@ -2293,7 +2313,7 @@
 	>
 		<li class="mp-pile-header">{pilePicker.markers.length} markers here</li>
 		{#each pilePicker.markers as m (m.id)}
-			{@const ic = resolveMapIcon(m.icon)}
+			{@const ic = resolveMarkerIcon(m)}
 			{@const link = resolveEntity(m.entityId)}
 			<li>
 				<button
@@ -2348,7 +2368,18 @@
 		 * grid, is what clears the selection now (see onGridClick + the
 		 * keydown handler in the $effect earlier). */
 	}}
-	onNavigate={focusMarkerEntity}
+/>
+
+<MarkerCard
+	open={cardOpen}
+	marker={selectedMarker}
+	icon={selectedMarker ? resolveMarkerIcon(selectedMarker) : undefined}
+	color={selectedMarker?.color || DEFAULT_MARKER_COLOR}
+	anchor={cardAnchor}
+	baseDepth={stackDepth}
+	onjump={focusMarkerEntity}
+	onedit={() => (markerPropsOpen = true)}
+	ondismiss={() => (cardHiddenFor = selectedMarkerId)}
 />
 
 <style>
@@ -3318,41 +3349,6 @@
 		flex: 1 1 auto;
 		min-width: 0;
 	}
-	/* "Go to" action — an arrow → that jumps to the linked marker's entity
-	   (and closes the map + editor), the explicit navigation now that a plain
-	   click edits. Tooltip/aria carry the "Go To <Kind>" label. */
-	:global(.mp-goto-entity) {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		flex: 0 0 auto;
-		padding: 0 9px;
-		background: none;
-		border: 1px solid var(--border-mid);
-		border-radius: 5px;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		transition:
-			background 0.12s,
-			border-color 0.12s,
-			color 0.12s;
-	}
-	:global(.mp-goto-entity:hover) {
-		background: var(--bg-hover);
-		border-color: var(--text-accent);
-		color: var(--text-accent);
-	}
-	/* The ↗ upper-right arrow glyph — same jump affordance as a nested
-	   landmark's "go to parent settlement" button (.cm-within-jump). */
-	:global(.mp-goto-arrow) {
-		display: block;
-	}
-	:global(.mp-goto-arrow svg) {
-		width: 13px;
-		height: 13px;
-		fill: currentColor;
-		display: block;
-	}
 	:global(.mp-props-label) {
 		font-family: var(--font-ui);
 		font-size: 0.66rem;
@@ -3563,7 +3559,13 @@
 		/* Match the outer MapDialog's mobile-bounds policy: 90 % of
 		   the viewport on phone widths, 720 px capped on desktop. */
 		width: min(720px, calc(100vw - 2rem));
-		max-height: 82vh;
+		/* Fixed height (not max-height) so switching tabs, or a search that
+		   empties the grid, never resizes the panel — it's centred via
+		   translate(-50%, -50%), so any height change would rock it around
+		   the viewport centre. The tab panels flex into the space. */
+		height: 82vh;
+		display: flex;
+		flex-direction: column;
 		overflow: hidden;
 		background: var(--bg-card);
 		color: var(--text);
@@ -3581,13 +3583,19 @@
 		background: var(--bg-inset);
 		border-bottom: 1px solid var(--border);
 	}
+	:global(.mp-icon-tabs-root),
+	:global(.mp-icon-panel) {
+		flex: 1;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+	}
+	:global(.mp-icon-panel[hidden]) {
+		display: none;
+	}
 	:global(.mp-icon-body) {
-		/* Fixed height (not max-height) so the body doesn't shrink as
-		   the user types and the filtered icon list gets shorter — the
-		   dialog is centred via translate(-50%, -50%), and any height
-		   change would rock the whole panel up/down around the viewport
-		   centre. Leftover space just becomes empty scroll runway. */
-		height: calc(82vh - 8rem);
+		flex: 1;
+		min-height: 0;
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		padding: 8px 14px 14px;
@@ -3597,10 +3605,7 @@
 		   matching the outer MapDialog's mobile bounds. */
 		:global(.mp-icon-dialog) {
 			width: 90vw;
-			max-height: 90vh;
-		}
-		:global(.mp-icon-body) {
-			height: calc(90vh - 8rem);
+			height: 90vh;
 		}
 	}
 	:global(.mp-icon-cat-label) {
@@ -3646,6 +3651,62 @@
 	:global(.mp-icon-tile svg) {
 		width: 100%;
 		height: 100%;
+	}
+	/* Icons | Settlement builder tabs — the underlined-tab pattern of the
+	   Settings dialog (.sd-tab). */
+	:global(.mp-icon-tabs) {
+		display: flex;
+		padding: 0 14px;
+		border-bottom: 1px solid var(--border);
+	}
+	:global(.mp-icon-tab) {
+		all: unset;
+		cursor: pointer;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+		border-bottom: 2px solid transparent;
+		padding: 8px 10px 6px;
+		margin-bottom: -1px;
+	}
+	:global(.mp-icon-tab:hover) {
+		color: var(--text-muted);
+	}
+	:global(.mp-icon-tab[data-state='active']) {
+		color: var(--text-accent);
+		border-bottom-color: var(--text-accent);
+	}
+	:global(.mp-icon-tab:focus-visible) {
+		outline: 2px solid var(--text-accent);
+		outline-offset: -2px;
+	}
+	/* Hover lightbox: the hovered tile's icon at a readable size. */
+	:global(.mp-icon-lightbox) {
+		position: fixed;
+		pointer-events: none;
+		z-index: 2;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+		padding: 10px 10px 6px;
+		background: var(--bg-card);
+		border: 1px solid var(--border-mid);
+		border-radius: 8px;
+		box-shadow: 0 8px 24px #00000050;
+	}
+	:global(.mp-icon-lightbox svg) {
+		width: 100%;
+		aspect-ratio: 1 / 1;
+	}
+	:global(.mp-icon-lightbox span) {
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		color: var(--text-muted);
+		text-align: center;
 	}
 	:global(.mp-icon-empty) {
 		font-family: var(--font-ui);

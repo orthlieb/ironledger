@@ -32,7 +32,8 @@ interface Community {
   location: string;
   locationDescription: string;
   trouble: string;
-  notes: string; // markdown — long-form Description of the place
+  notes: string; // markdown — long-form Detailed description
+  shortDescription?: string; // markdown — a line or two, shown on the map's marker card
   situationalNotes?: string; // markdown — conditions, aspects of the trouble
   portraitEtag?: string; // content hash; bytes live in the portrait blob store
   imageUrl?: string; // @deprecated legacy inline base64 — import transport only
@@ -78,6 +79,12 @@ Communities share the same `notes` + `situationalNotes` split but with the
 Description / Trouble framing: `notes` is the long-form description of the
 place, `situationalNotes` is conditions and aspects of the current trouble.
 
+Communities and Landmarks (and Journeys and Sites, in the Expeditions deck)
+also carry a `shortDescription`: a line or two of markdown, edited as **Summary** above the **Detailed description** (`notes`) on the
+Description tab. It's what the campaign map's marker card shows when a
+marker linked to the entity is selected. NPCs keep the single Background
+field.
+
 ### Landmark (`Place` type)
 
 ```typescript
@@ -90,6 +97,7 @@ interface Place {
   locationDescription: string;
   trouble: string; // freeform — no Settlement: Troubles oracle here
   notes: string; // markdown — physical features, atmosphere, notable details
+  shortDescription?: string; // markdown — a line or two, shown on the map's marker card
   situationalNotes?: string; // markdown — events that have happened here, current state
   portraitEtag?: string; // content hash; bytes live in the portrait blob store
   imageUrl?: string; // @deprecated legacy inline base64 — import transport only

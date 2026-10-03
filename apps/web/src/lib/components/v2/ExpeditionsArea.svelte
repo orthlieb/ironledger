@@ -183,6 +183,7 @@
 
 	// Inline-edit state for journeys
 	let editingNotes = $state(false);
+	let editingShortDesc = $state(false);
 
 	const expeditions = $derived(getExpeditions());
 	const loading = $derived(isExpeditionLoading());
@@ -276,6 +277,7 @@
 		activeExpId = id;
 		activeTab = 'core';
 		editingNotes = false;
+		editingShortDesc = false;
 	}
 
 	// Site state
@@ -803,6 +805,23 @@
 									/>
 								</div>
 							{/if}
+							<!-- Summary (stored as shortDescription) — a line or two shown in
+							     the map's marker card; the long-form description follows. -->
+							{#if !editingNotes}
+								<div class="ea-short-desc">
+									<span class="ea-field-label">Summary</span>
+									<MarkdownNotes
+										bind:editing={editingShortDesc}
+										value={activeExp.shortDescription ?? ''}
+										oninput={(v) => updateExp({ shortDescription: v })}
+										placeholder="A line or two — shown when its map marker is selected…"
+										rows={3}
+									/>
+								</div>
+							{/if}
+							<!-- Heading sits above the section so the floated portrait starts
+							     below it instead of covering it. -->
+							<span class="ea-field-label ea-detail-label">Detailed description</span>
 							<div class="ea-desc-section" class:ea-desc-section--editing={editingNotes}>
 								<!-- Portrait floats right and the prose wraps around it; it's
 								     hidden while editing so the textarea fills the whole panel. -->
@@ -1616,6 +1635,17 @@
 	/* ── Description tab ── portrait floats right; notes wrap around it.
 	   flow-root contains the float; MarkdownNotes is forced to block flow so
 	   the prose wraps (it's normally a flex column = its own BFC). */
+	.ea-short-desc {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		margin-bottom: 12px;
+	}
+	.ea-detail-label {
+		display: block;
+		margin-bottom: 4px;
+		white-space: nowrap;
+	}
 	.ea-desc-section {
 		display: flow-root;
 	}

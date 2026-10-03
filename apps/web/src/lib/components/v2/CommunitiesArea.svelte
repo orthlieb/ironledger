@@ -278,6 +278,7 @@
 
 	// Inline-edit state
 	let editingNotes = $state(false);
+	let editingShortDesc = $state(false);
 	let editingCoreNotes = $state(false);
 
 	// Re-entrance guard for dice-button rolls (matches ExpeditionsArea pattern).
@@ -517,6 +518,7 @@
 		activeEntryId = id;
 		activeTab = 'core';
 		editingNotes = false;
+		editingShortDesc = false;
 		editingCoreNotes = false;
 	}
 
@@ -650,6 +652,10 @@
 		if (activeEntry?.kind === 'community') updateCommunity({ notes: value });
 		else if (activeEntry?.kind === 'npc') updateNpc({ notes: value });
 		else if (activeEntry?.kind === 'place') updatePlace({ notes: value });
+	}
+	function setShortDescription(value: string) {
+		if (activeEntry?.kind === 'community') updateCommunity({ shortDescription: value });
+		else if (activeEntry?.kind === 'place') updatePlace({ shortDescription: value });
 	}
 	function setSituationalNotes(value: string) {
 		if (activeEntry?.kind === 'community') updateCommunity({ situationalNotes: value });
@@ -1361,6 +1367,26 @@
 								/>
 							</div>
 						{:else if activeTab === 'notes'}
+							<!-- Summary (stored as shortDescription) — a line or two shown in
+							     the map's marker card; the long-form description follows. NPCs
+							     keep the one Background field. -->
+							{#if activeEntry.kind !== 'npc' && !editingNotes}
+								<div class="cm-short-desc">
+									<span class="cm-field-label">Summary</span>
+									<MarkdownNotes
+										bind:editing={editingShortDesc}
+										value={activeEntry.data.shortDescription ?? ''}
+										oninput={(v) => setShortDescription(v)}
+										placeholder="A line or two — shown when its map marker is selected…"
+										rows={3}
+									/>
+								</div>
+							{/if}
+							{#if activeEntry.kind !== 'npc'}
+								<!-- Heading sits above the section so the floated portrait
+								     starts below it instead of covering it. -->
+								<span class="cm-field-label cm-detail-label">Detailed description</span>
+							{/if}
 							<div class="cm-notes-section" class:cm-notes-section--editing={editingNotes}>
 								<!-- Portrait floats right and the prose wraps around it; it's
 								     hidden while editing so the textarea fills the whole panel. -->
@@ -1954,6 +1980,17 @@
 		border-bottom-color: var(--text-accent);
 	}
 
+	.cm-short-desc {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		margin-bottom: 12px;
+	}
+	.cm-detail-label {
+		display: block;
+		margin-bottom: 4px;
+		white-space: nowrap;
+	}
 	.cm-notes-section {
 		/* flow-root contains the right-floated portrait so the section grows
 		   to hold it even when the prose is short. */

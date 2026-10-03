@@ -1,19 +1,30 @@
 // =============================================================================
 // Settlement kit — browser playground (PROTOTYPE)
 //
-// Bundled into a self-contained page by sample3d.mjs. Every Design knob,
-// the wall/joins/outline drawing options and every colour role get a
-// control; icons regenerate in the page on each change.
+// Bundled into a self-contained page by build-playground.mjs. Every Design
+// knob, the wall/outline drawing options and every colour role get a
+// control; icons regenerate in the page on each change. The culture presets
+// are the culture plugins (cultures/*.json), baked in at build time; Export
+// culture downloads the current knobs + colours as a new plugin file.
 // =============================================================================
 
-import { CULTURES } from './cultures.mjs';
-import { DEFAULT_DESIGN, makeDesign } from './pieces3d.mjs';
-import { TEMPLATES, pieces, settlement } from './layouts3d.mjs';
-import { LAYERS, place, renderLayered } from './render.mjs';
-import { ruinPlaced } from './ruins3d.mjs';
+import { DEFAULT_DESIGN, makeDesign } from '../../src/lib/settlement-kit/pieces3d.js';
+import { TEMPLATES, pieces, settlement } from '../../src/lib/settlement-kit/layouts3d.js';
+import { LAYERS, place, renderLayered } from '../../src/lib/settlement-kit/render.js';
+import { ruinPlaced } from '../../src/lib/settlement-kit/ruins3d.js';
 
-/** @typedef {import('./pieces3d.mjs').Design} Design */
-/** @typedef {import('./pieces3d.mjs').Placed} Placed */
+/** @typedef {import('../../src/lib/settlement-kit/pieces3d.js').Design} Design */
+/** @typedef {import('../../src/lib/settlement-kit/pieces3d.js').Placed} Placed */
+/** @typedef {import('../../src/lib/settlement-kit/generate.js').Culture} Culture */
+
+/** Culture plugins by display name, injected by build-playground.mjs. */
+const CULTURES = /** @type {Record<string, Culture>} */ (
+	Object.fromEntries(
+		/** @type {Culture[]} */ (/** @type {any} */ (globalThis).__SETTLEMENT_CULTURES__ ?? []).map(
+			(c) => [c.source && c.source !== 'base' ? `${c.name} (${c.source})` : c.name, c],
+		),
+	)
+);
 
 const K = 2; // geometry at 2× while line weights stay put → finer hatching
 
@@ -263,6 +274,26 @@ const KNOBS = [
 	},
 	{ group: 'Walls', key: 'merlons', label: 'Merlons', type: 'check', design: true },
 	{
+		group: 'Towers',
+		key: 'towerBow',
+		label: 'Tower bow',
+		type: 'range',
+		min: -1,
+		max: 1,
+		step: 0.05,
+		design: true,
+	},
+	{
+		group: 'Walls',
+		key: 'wallBow',
+		label: 'Wall bow',
+		type: 'range',
+		min: -1,
+		max: 1,
+		step: 0.05,
+		design: true,
+	},
+	{
 		group: 'Walls',
 		key: 'wallTowers',
 		label: 'Ring towers (city)',
@@ -319,6 +350,7 @@ const KNOBS = [
 		label: 'Joins',
 		type: 'select',
 		options: ['sharp', 'round', 'soft'],
+		design: true,
 	},
 	{
 		group: 'Drawing',
@@ -375,7 +407,6 @@ const DRAWING = {
 	tiers: 'main',
 	harbor: 'none',
 	walls: 'auto',
-	join: 'sharp',
 	softRadius: 0.9,
 	outline: 1.4,
 	layout: 1,
@@ -387,7 +418,7 @@ const PALETTES = {
 		wall: '#EFEADF',
 		roof: '#D9776B',
 		wood: '#C9A97C',
-		earth: '#8E9A6A',
+		earth: '#94744F',
 		water: '#8FB0B8',
 		ink: '#3B2F28',
 		flag: '#4A3B32',
@@ -397,7 +428,7 @@ const PALETTES = {
 		wall: '#E6E3DA',
 		roof: '#6F8296',
 		wood: '#A89A7E',
-		earth: '#7D8A6A',
+		earth: '#7D6A50',
 		water: '#8FB0B8',
 		ink: '#2C2A28',
 		flag: '#8C2F2A',
@@ -407,7 +438,7 @@ const PALETTES = {
 		wall: '#F2E6CF',
 		roof: '#C8732E',
 		wood: '#B88A55',
-		earth: '#9A8A55',
+		earth: '#9A7448',
 		water: '#8FB0B8',
 		ink: '#3A2A1C',
 		flag: '#6B2B1C',
@@ -417,7 +448,7 @@ const PALETTES = {
 		wall: '#EDEBE3',
 		roof: '#5E9C8A',
 		wood: '#B7A27F',
-		earth: '#7E9A6A',
+		earth: '#82705A',
 		water: '#8FB0B8',
 		ink: '#26302D',
 		flag: '#B5452F',
@@ -453,6 +484,8 @@ const drawing = { ...DRAWING };
 let seed = null;
 /** Name shown in the status line and used in export filenames. */
 let cultureName = 'Default culture';
+/** Key of the loaded culture (preset or import), reused on export; null → slug of the name. @type {string | null} */
+let cultureKey = null;
 
 /** @param {Placed[]} items */
 function svg(items) {
@@ -465,7 +498,7 @@ function svg(items) {
 		bounds: b,
 	} = renderLayered(parts, {
 		outline: drawing.outline,
-		join: drawing.join,
+		join: design.join,
 		softRadius: drawing.softRadius,
 	});
 	const vb = [b.x - 3, b.y - 3, b.w + 6, b.h + 6].map((n) => n.toFixed(1)).join(' ');
@@ -678,6 +711,42 @@ async function exportIcon(fig, fmt) {
 	c.toBlob((b) => b && download(b, `${base}.png`), 'image/png');
 }
 
+/**
+ * Apply a culture plugin (`{key, name, note, design, palette}`) to the
+ * knobs and colours. Design fields are taken only where the default design
+ * has a field of the same type, colours only as #rrggbb — anything else is
+ * ignored, so a hand-edited file can't wedge the generator.
+ * @param {unknown} raw
+ */
+function importCulture(raw) {
+	if (!raw || typeof raw !== 'object') throw new Error('not a culture object');
+	const c = /** @type {Record<string, any>} */ (raw);
+	if (!c.design || typeof c.design !== 'object') throw new Error('no "design" object');
+	/** @type {Record<string, any>} */
+	const next = { ...DEFAULT_DESIGN };
+	for (const [k, v] of Object.entries(c.design))
+		if (k in DEFAULT_DESIGN && typeof v === typeof (/** @type {any} */ (DEFAULT_DESIGN)[k]))
+			next[k] = v;
+	design = /** @type {Design} */ (next);
+	seed = null;
+	cultureName = typeof c.name === 'string' && c.name ? c.name : 'Imported culture';
+	cultureKey = typeof c.key === 'string' && /^[a-z0-9-]+$/.test(c.key) ? c.key : null;
+	$('note').textContent = typeof c.note === 'string' ? c.note : '';
+	/** @type {Record<string, string>} */
+	const palette = {};
+	for (const [k] of COLOUR_ROLES) {
+		const v = c.palette?.[k];
+		palette[k] =
+			typeof v === 'string' && /^#[0-9a-fA-F]{6}$/.test(v)
+				? v
+				: /** @type {HTMLInputElement} */ ($(`c-${k}`)).value;
+	}
+	setPaletteColours(palette);
+	/** @type {HTMLSelectElement} */ ($('preset')).value = '';
+	syncPanel();
+	schedule();
+}
+
 function init() {
 	document.querySelector('main')?.addEventListener('click', (e) => {
 		const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-fmt]');
@@ -704,10 +773,12 @@ function init() {
 		if (name === 'Default') {
 			design = { ...DEFAULT_DESIGN };
 			cultureName = 'Default culture';
+			cultureKey = null;
 			setPalette('Parchment');
 		} else {
 			design = { ...DEFAULT_DESIGN, ...CULTURES[name].design };
-			cultureName = name;
+			cultureName = CULTURES[name].name;
+			cultureKey = CULTURES[name].key;
 			setPaletteColours(CULTURES[name].palette);
 			$('note').textContent = CULTURES[name].note;
 		}
@@ -727,6 +798,7 @@ function init() {
 			design = makeDesign(seed);
 			cultureName = `Culture #${seed}`;
 		}
+		cultureKey = null;
 		syncPanel();
 		schedule();
 	});
@@ -734,6 +806,48 @@ function init() {
 		Object.assign(drawing, DRAWING);
 		syncPanel();
 		schedule();
+	});
+	$('export').addEventListener('click', () => {
+		const palette = Object.fromEntries(
+			COLOUR_ROLES.map(([k]) => [
+				k,
+				/** @type {HTMLInputElement} */ ($(`c-${k}`)).value.toUpperCase(),
+			]),
+		);
+		const key =
+			cultureKey ??
+			cultureName
+				.toLowerCase()
+				.replace(/[^a-z0-9]+/g, '-')
+				.replace(/^-|-$/g, '');
+		/** @type {Culture} */
+		const culture = {
+			key,
+			name: cultureName,
+			note: $('note').textContent ?? '',
+			design: { ...design },
+			palette: /** @type {Culture['palette']} */ (palette),
+		};
+		download(
+			new Blob([JSON.stringify(culture, null, 2) + '\n'], { type: 'application/json' }),
+			`${key}.json`,
+		);
+		$('status').textContent = `Exported ${key}.json — drop it in an extension's cultures/ folder`;
+	});
+	// Import: load a culture plugin file to tweak and re-export.
+	const importFile = /** @type {HTMLInputElement} */ ($('importFile'));
+	$('import').addEventListener('click', () => importFile.click());
+	importFile.addEventListener('change', async () => {
+		const file = importFile.files?.[0];
+		importFile.value = ''; // so picking the same file again re-imports
+		if (!file) return;
+		try {
+			importCulture(JSON.parse(await file.text()));
+			$('status').textContent = `Imported ${file.name}`;
+		} catch (err) {
+			$('status').textContent =
+				`Couldn't import ${file.name}: ${err instanceof Error ? err.message : err}`;
+		}
 	});
 	$('copy').addEventListener('click', async () => {
 		const text = JSON.stringify({ seed, design, drawing }, null, 2);

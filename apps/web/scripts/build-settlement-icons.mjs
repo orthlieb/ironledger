@@ -2,18 +2,14 @@
 // Iron Ledger — bake the settlement-kit map icons
 //
 // Renders layered (multi-colour) SVGs from the 3D settlement kit in
-// scripts/settlement-kit/ (the same generator as tools/settlement-playground.
-// html) and writes two sets:
+// src/lib/settlement-kit/ (the same generator the app's Settlement builder
+// and tools/settlement-playground.html use) and writes the core icons to
+// apps/web/static/map/settlement/: buildings, settlements and ruins in the
+// default culture and Parchment palette. Each replaces any old hand-drawn
+// icon of the same slug; RETIRED lists the old icons the kit drops outright.
 //
-//   * apps/web/static/map/settlement/ (+ site/) — the core icons the kit now
-//     covers, in the default culture and Parchment palette. Each REPLACES
-//     the old hand-drawn icon of the SAME slug (deleting any old .png/.svg
-//     with that name), so markers already placed on saved maps pick up the
-//     new art with no data migration.
-//   * extensions/yrt/map/settlements/ — the YRT cultures' hamlet, village,
-//     town, city and ruined village in each culture's own style and palette.
-//     build-map-icons.mjs indexes them as an extension category, offered in
-//     the picker only while YRT is enabled.
+// Culture-styled settlements aren't baked — every culture plugin is one pick
+// away in the Settlement builder, which generates them on the fly.
 //
 // Layered SVG shape: one <path data-role="…"> per colour role (sil, wall,
 // wall-shade, wood, …, ink) carrying a real fill so the file also views on
@@ -25,108 +21,27 @@
 //   npm run build:settlement-icons -w apps/web
 // =============================================================================
 
-import { existsSync, mkdirSync, readdirSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { CULTURES } from './settlement-kit/cultures.mjs';
-import { pieces, settlement } from './settlement-kit/layouts3d.mjs';
-import { DEFAULT_DESIGN, keep, roundHut } from './settlement-kit/pieces3d.mjs';
-import { LAYERS, place, renderLayered } from './settlement-kit/render.mjs';
-import { ruinPlaced } from './settlement-kit/ruins3d.mjs';
+import { PARCHMENT, toLayeredSvg } from '../src/lib/settlement-kit/generate.js';
+import { pieces, settlement } from '../src/lib/settlement-kit/layouts3d.js';
+import { DEFAULT_DESIGN, keep, roundHut, tent } from '../src/lib/settlement-kit/pieces3d.js';
+import { ruinPlaced } from '../src/lib/settlement-kit/ruins3d.js';
+import { loadCultures } from './settlement-kit/loadCultures.mjs';
 
-/** @typedef {import('./settlement-kit/pieces3d.mjs').Design} Design */
-/** @typedef {import('./settlement-kit/pieces3d.mjs').Placed} Placed */
-/** @typedef {import('./settlement-kit/cultures.mjs').Palette} Palette */
+/** @typedef {import('../src/lib/settlement-kit/pieces3d.js').Design} Design */
+/** @typedef {import('../src/lib/settlement-kit/pieces3d.js').Placed} Placed */
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const WEB = dirname(HERE);
 const CORE = join(WEB, 'static', 'map');
-const YRT = join(WEB, '..', '..', 'extensions', 'yrt', 'map', 'settlements');
-
-const K = 2; // geometry at 2× while line weights stay put → finer hatching
-const OUTLINE = 1.4;
-
-/** Parchment — the default culture's palette. @type {Palette} */
-const PARCHMENT = {
-	wall: '#EFEADF',
-	roof: '#D9776B',
-	wood: '#C9A97C',
-	earth: '#8E9A6A',
-	water: '#8FB0B8',
-	flag: '#4A3B32',
-	ink: '#3B2F28',
-	halo: '#F4EFE4',
-};
-
-/** @param {string} a @param {string} b @param {number} t */
-function mix(a, b, t) {
-	const ch = (/** @type {string} */ h, /** @type {number} */ i) =>
-		parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
-	return (
-		'#' +
-		[0, 1, 2]
-			.map((i) =>
-				Math.round(ch(a, i) * t + ch(b, i) * (1 - t))
-					.toString(16)
-					.padStart(2, '0'),
-			)
-			.join('')
-	);
-}
-
-/** Fill per role (mirrors src/lib/mapLayered.ts roleColours). @param {Palette} p */
-function fills(p) {
-	/** @type {Record<string, string>} */
-	const f = {
-		wall: p.wall,
-		roof: p.roof,
-		wood: p.wood,
-		earth: p.earth,
-		water: p.water,
-		flag: p.flag,
-		ink: p.ink,
-	};
-	f['wall-shade'] = mix(p.wall, p.ink, 0.8);
-	f['wood-shade'] = mix(p.wood, p.ink, 0.75);
-	f['earth-shade'] = mix(p.earth, p.ink, 0.75);
-	f['water-shade'] = mix(p.water, p.ink, 0.8);
-	f['roof-shade'] = mix(p.roof, p.ink, 0.7);
-	return f;
-}
-
-/**
- * Render placed pieces to a layered SVG document.
- * @param {string} title
- * @param {Placed[]} items
- * @param {Palette} palette
- */
-function toSvg(title, items, palette) {
-	const parts = items.flatMap((it) =>
-		place(it.piece, { ...it, x: (it.x ?? 0) * K, y: (it.y ?? 0) * K, s: (it.s ?? 1) * K }),
-	);
-	const { layers, silhouette, bounds: b } = renderLayered(parts, { outline: OUTLINE });
-	const f = fills(palette);
-	const pad = 2;
-	const vb = [b.x - pad, b.y - pad, b.w + 2 * pad, b.h + 2 * pad]
-		.map((n) => Number(n.toFixed(2)))
-		.join(' ');
-	const pal = Object.entries(palette)
-		.map(([k, v]) => `${k}:${v}`)
-		.join(';');
-	const paths = [
-		`  <path data-role="sil" fill="${palette.halo}" stroke="${palette.halo}" stroke-width="3" stroke-linejoin="round" d="${silhouette}"/>`,
-		...LAYERS.filter((l) => layers[l]).map(
-			(l) => `  <path data-role="${l}" fill="${f[l]}" d="${layers[l]}"/>`,
-		),
-	];
-	return (
-		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" data-palette="${pal}"><!--"${title}" — Iron Ledger settlement kit, generated by apps/web/scripts/build-settlement-icons.mjs-->\n` +
-		paths.join('\n') +
-		'\n</svg>\n'
-	);
-}
 
 const D = DEFAULT_DESIGN;
+const elves = loadCultures().find((c) => c.key === 'elves');
+if (!elves) throw new Error('no elves culture');
+/** @type {Design} */
+const ELVES = { ...D, ...elves.design };
 /** @param {Design} d @param {string} name */
 const piece = (d, name) => {
 	const hit = pieces(d).find(([t]) => t === name);
@@ -180,6 +95,22 @@ const CORE_ICONS = {
 	'gold-mine': ['settlement', () => piece(D, 'Mine')],
 	lighthouse: ['settlement', () => piece(D, 'Lighthouse')],
 	well: ['settlement', () => piece(D, 'Well')],
+	cathedral: ['settlement', () => piece(D, 'Cathedral')],
+	clocktower: ['settlement', () => piece(D, 'Clock tower')],
+	'witches-hut': ['settlement', () => piece(D, 'Witch hut')],
+	'camping-tent': ['settlement', () => piece(D, 'Tent')],
+	// Scaled like the standalone pieces so its lines match (see MIN_PIECE_SIZE).
+	'barracks-tent': ['settlement', () => [{ piece: tent(D, { w: 22 }), s: 1.15 }]],
+	'medieval-pavilion': ['settlement', () => piece(D, 'Pavilion')],
+	'medieval-gate': ['settlement', () => piece(D, 'Gatehouse')],
+	'wooden-gate': ['settlement', () => piece(D, 'Wooden gate')],
+	'stone-wall': ['settlement', () => piece(D, 'Wall')],
+	'defensive-wall': ['settlement', () => piece(D, 'Wall tower')],
+	palisade: ['settlement', () => piece(D, 'Palisade')],
+	'harbor-dock': ['settlement', () => piece(D, 'Dock')],
+	'wooden-pier': ['settlement', () => piece(D, 'Pier')],
+	// The Elves' castle, in the default palette: concave towers and walls.
+	'elven-castle': ['settlement', () => settlement('hold', ELVES, { walls: 'stone' })],
 	camp: ['settlement', () => settlement('camp', D)],
 	'forest-camp': ['settlement', () => settlement('camp', { ...D, houseForm: 'round' })],
 	'desert-camp': ['settlement', () => settlement('camp', { ...D, houseForm: 'round', pitch: 0.6 })],
@@ -221,7 +152,7 @@ const CORE_ICONS = {
 	],
 	// Ruins.
 	'castle-ruin': ['settlement', () => ruined(settlement('hold', D, { walls: 'stone' }))],
-	'cathedral-ruin': ['settlement', () => ruined(piece(D, 'Church'))],
+	'cathedral-ruin': ['settlement', () => ruined(piece(D, 'Cathedral'))],
 	'fortified-tower-ruin': [
 		'settlement',
 		() => ruined(piece({ ...D, towerRoof: 'crenel' }, 'Round tower')),
@@ -234,15 +165,13 @@ const CORE_ICONS = {
 		'settlement',
 		() => ruined(settlement('village', D, { walls: 'stone' })),
 	],
-	'castle-ruins': [
-		'site',
+	'fortress-ruin': [
+		'settlement',
 		() => ruined(settlement('hold', { ...D, wallShape: 'square' }, { walls: 'stone' })),
 	],
-	'damaged-house': ['site', () => ruinPlaced(piece(D, 'Gable house'), { ...RUIN, decay: 0.2 })],
+	'house-ruin': ['settlement', () => ruinPlaced(piece(D, 'Gable house'), { ...RUIN, decay: 0.2 })],
+	'broken-wall': ['settlement', () => ruined(piece(D, 'Wall'))],
 };
-
-/** YRT culture set: per culture, these tiers. */
-const YRT_TIERS = /** @type {const} */ (['hamlet', 'village', 'town', 'city']);
 
 /** Delete any existing icon (svg or png) for a slug in a category folder. */
 function retire(/** @type {string} */ dir, /** @type {string} */ slug) {
@@ -252,39 +181,43 @@ function retire(/** @type {string} */ dir, /** @type {string} */ slug) {
 	}
 }
 
+/**
+ * Old hand-drawn building icons the kit retires without a same-slug
+ * replacement (cultures and the pieces above cover them), plus the two
+ * site icons that moved into Settlement. Deleted on every bake.
+ */
+const RETIRED = [
+	'settlement/dark-tower',
+	'settlement/evil-tower',
+	'settlement/strange-castle',
+	'settlement/monster-town',
+	'settlement/monster-village',
+	'settlement/dwarven-building',
+	'settlement/dwarven-building-ruin',
+	'settlement/indian-palace',
+	'settlement/viking-church',
+	'settlement/goblin-camp',
+	'settlement/orc-camp',
+	'settlement/drawbridge',
+	'settlement/small-stone-wall',
+	'settlement/large-stone-wall',
+	'settlement/wooden-wall',
+	'site/castle-ruins',
+	'site/damaged-house',
+];
+
 const t0 = Date.now();
+for (const key of RETIRED) {
+	const [cat, slug] = key.split('/');
+	retire(join(CORE, cat), slug);
+}
 let n = 0;
 for (const [slug, [cat, recipe]] of Object.entries(CORE_ICONS)) {
 	const dir = join(CORE, cat);
 	retire(dir, slug);
-	writeFileSync(join(dir, `${slug}.svg`), toSvg(slug, recipe(), PARCHMENT));
+	writeFileSync(join(dir, `${slug}.svg`), toLayeredSvg(slug, recipe(), PARCHMENT));
 	n++;
 }
-console.log(`settlement kit: ${n} core icons → static/map/{settlement,site}`);
-
-mkdirSync(YRT, { recursive: true });
-for (const f of readdirSync(YRT)) if (f.endsWith('.svg')) rmSync(join(YRT, f));
-let m = 0;
-for (const [name, c] of Object.entries(CULTURES)) {
-	const d = { ...DEFAULT_DESIGN, ...c.design };
-	const slug = name.toLowerCase();
-	for (const tier of YRT_TIERS) {
-		writeFileSync(
-			join(YRT, `${slug}-${tier}.svg`),
-			toSvg(`${name} ${tier}`, settlement(tier, d), c.palette),
-		);
-		m++;
-	}
-	writeFileSync(
-		join(YRT, `${slug}-ruined-village.svg`),
-		toSvg(
-			`${name} ruined village`,
-			ruinPlaced(settlement('village', d), { ...RUIN, seed: 7 }),
-			c.palette,
-		),
-	);
-	m++;
-}
 console.log(
-	`settlement kit: ${m} YRT culture icons → extensions/yrt/map/settlements (${((Date.now() - t0) / 1000).toFixed(0)}s)`,
+	`settlement kit: ${n} core icons → static/map/settlement (${((Date.now() - t0) / 1000).toFixed(0)}s)`,
 );

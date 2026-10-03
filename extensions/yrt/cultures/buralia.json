@@ -1,0 +1,35 @@
+{
+  "key": "buralia",
+  "name": "Buralia",
+  "note": "Grass and high plateau: round thatched huts inside earth banks, streamers in the red of Buralia, the twelve-spoked Wildens wheel.",
+  "design": {
+    "houseForm": "round",
+    "pitch": 1.2,
+    "concave": 0.05,
+    "window": "square",
+    "towerRoof": "cone",
+    "spire": 2,
+    "flags": true,
+    "flagFolds": 4,
+    "flagLen": 13,
+    "wall": "earth",
+    "wallShape": "round",
+    "gate": "tower",
+    "church": true,
+    "symbol": "wheel",
+    "keep": "none",
+    "market": "town",
+    "industry": 0.15,
+    "flourish": 0.3
+  },
+  "palette": {
+    "wall": "#EFE3C6",
+    "roof": "#C9A55C",
+    "wood": "#9C7A4C",
+    "earth": "#9A6E44",
+    "water": "#8FB0B8",
+    "ink": "#3A2D1E",
+    "flag": "#B3312A",
+    "halo": "#F6EEDC"
+  }
+}

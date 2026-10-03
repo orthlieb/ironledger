@@ -22,8 +22,8 @@ ask what to do. Silence is not an option.
 `apps/api/tests/unit/extensionsManifest.test.ts` is the **single** place
 with hard-coded counts of catalogue content. They are deliberate drift
 guards. Any time you **add or remove** a content item under
-`apps/api/data/{assets,moves,oracles,foes}/` or
-`extensions/*/{assets,moves,oracles,foes}/`, update the matching
+`apps/api/data/{assets,moves,oracles,foes,cultures}/` or
+`extensions/*/{assets,moves,oracles,foes,cultures}/`, update the matching
 assertion(s) **in the same branch** — the "CI / Test & Build" job goes
 red otherwise (as it did when the "Touched, Varanine" asset took the
 count 90 → 91 unbumped, staying red across four merges).
@@ -48,6 +48,7 @@ item → assertion(s) to bump:
 | a **foe-override** file                           | `foeOverrides` total                                                                                                                                                                                                                                          |
 | a **move-override** file                          | `moveOverrides` total (and, if it hides a base move, the visible-oracle table is unaffected but re-check the move total)                                                                                                                                      |
 | a **delve table** file                            | `delve` (delveTables) total                                                                                                                                                                                                                                   |
+| a settlement **culture** (`cultures/*.json`)      | merged `cultures` total (`reproduces the expected merged catalogue counts`)                                                                                                                                                                                   |
 | a `suppressesOracles` / `supersedesOracles` entry | the visible-oracle `it.each` table (net hides change) and, when a specific key flips, `suppression hides/supplants the expected keys`                                                                                                                         |
 
 Notes:
@@ -217,12 +218,13 @@ the checked-in file is the cleaned version, not the vendor export.
 
 ### Exception — layered map icons (generated)
 
-The settlement-kit map icons (`apps/web/static/map/settlement/`,
-`site/`, and `extensions/yrt/map/`) are **generated multi-colour art**,
-not `currentColor` glyphs: one `<path data-role="…">` per colour role
-plus a `data-palette` on the root. Don't hand-edit or "normalize" them —
-change the generator in `apps/web/scripts/settlement-kit/` and re-run
-`npm run build:settlement-icons -w apps/web`. See
+The settlement-kit map icons (`apps/web/static/map/settlement/`) are
+**generated multi-colour art**, not `currentColor` glyphs: one
+`<path data-role="…">` per colour role plus a `data-palette` on the root.
+Don't hand-edit or "normalize" them — change the generator in
+`apps/web/src/lib/settlement-kit/` and re-run
+`npm run build:settlement-icons -w apps/web`. (Culture-styled settlements
+aren't baked; the map's Settlement builder generates them on the fly.) See
 `docs/campaign-map.md` → "Icon formats" and "Settlement kit".
 
 ## Tooltips — use `use:tooltip`, not the native `title=` attribute

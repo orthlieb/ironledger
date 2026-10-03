@@ -85,6 +85,11 @@ export interface ExtensionInfo {
 	 *  is enabled. Auto-hides the base key from the picker. Lower manifest
 	 *  `order` wins when multiple extensions supersede the same key. */
 	supersedesOracles?: Record<string, string>;
+	/** Base-culture-key → replacement-key rewrites for the settlement builder
+	 *  while this extension is enabled (YRT: elves → verdani). The base
+	 *  culture is hidden from the builder, and recipes naming it draw with
+	 *  the replacement. */
+	supersedesCultures?: Record<string, string>;
 	/** Move categories introduced (picker order + icon + tint). */
 	moveCategories?: CategoryDef[];
 	/** Oracle categories introduced (icon + tint; picker order is alphabetical). */
@@ -168,6 +173,9 @@ export interface Journey {
 	difficulty: ExpeditionDifficulty;
 	ticks: number; // 0–40 (10 boxes × 4 ticks)
 	notes: string;
+	/** Summary (markdown) — a line or two, shown in the map's
+	 *  marker card when a marker linked to this entity is selected. */
+	shortDescription?: string;
 	complete: boolean;
 	/** Content hash of the portrait stored in the blob endpoint; '' / absent = none. */
 	portraitEtag?: string;
@@ -235,6 +243,9 @@ export interface Site {
 	name: string;
 	objective: string;
 	notes: string; // freeform markdown notes
+	/** Summary (markdown) — a line or two, shown in the map's
+	 *  marker card when a marker linked to this entity is selected. */
+	shortDescription?: string;
 	theme: DelveTheme | '';
 	domain: DelveDomain | '';
 	difficulty: ExpeditionDifficulty;
@@ -267,6 +278,9 @@ export interface Scene {
 	ticks: number; // 0–40 (10 boxes × 4 ticks) — progress track, marks by rank
 	countdownFilled: number; // 0–4 filled countdown segments
 	notes: string;
+	/** Unused by scenes (no Description tab, not map-linkable); present so the
+	 *  Expedition union shares the field. */
+	shortDescription?: string;
 	complete: boolean;
 	/** Content hash of the portrait stored in the blob endpoint; '' / absent = none. */
 	portraitEtag?: string;
@@ -541,6 +555,9 @@ export interface Community {
 	projects?: string;
 	culturalTouchstones?: string;
 	notes: string; // long-form description (Description tab)
+	/** Summary (markdown) — a line or two, shown in the map's
+	 *  marker card when a marker linked to this entity is selected. */
+	shortDescription?: string;
 	situationalNotes?: string; // short situational notes — conditions, trouble (Core tab)
 	/** Content hash of the portrait stored in the blob endpoint; '' / absent = none. */
 	portraitEtag?: string;
@@ -621,6 +638,9 @@ export interface Place {
 	 *  longer rolls for a Place. Kept for back-compat; shown only if populated. */
 	trouble: string;
 	notes: string; // long-form description (Description tab)
+	/** Summary (markdown) — a line or two, shown in the map's
+	 *  marker card when a marker linked to this entity is selected. */
+	shortDescription?: string;
 	situationalNotes?: string; // short situational notes (Core tab)
 	/** Content hash of the portrait stored in the blob endpoint; '' / absent = none. */
 	portraitEtag?: string;

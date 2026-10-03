@@ -1,0 +1,32 @@
+{
+  "key": "trolls",
+  "name": "Trolls",
+  "source": "base",
+  "note": "Solitary, shy hoarders with camouflaging skin: a few turf mounds far apart, each one a hiding place for the hoard — no walls, shrines or market.",
+  "design": {
+    "houseForm": "mound",
+    "scale": 1.2,
+    "stature": 0.85,
+    "pitch": 0.6,
+    "window": "round",
+    "towerRoof": "crenel",
+    "flags": false,
+    "wall": "none",
+    "church": false,
+    "symbol": "none",
+    "keep": "none",
+    "market": "none",
+    "industry": 0,
+    "flourish": 0
+  },
+  "palette": {
+    "wall": "#CFC6B0",
+    "roof": "#6F7A55",
+    "wood": "#7A6A50",
+    "earth": "#6F5B40",
+    "water": "#8FB0B8",
+    "ink": "#2B2A24",
+    "flag": "#4B4A3A",
+    "halo": "#EEEADF"
+  }
+}

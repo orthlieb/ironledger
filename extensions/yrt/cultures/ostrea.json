@@ -1,0 +1,35 @@
+{
+  "key": "ostrea",
+  "name": "Ostrea",
+  "note": "A Nysis whaling city: onion domes like the rest of Nysis, but a fence of whale ribs, a jawbone gate, whaling warehouses and a busy market.",
+  "design": {
+    "flourish": 0.6,
+    "concave": 0.12,
+    "pitch": 0.9,
+    "gable": 0.6,
+    "storeys": 0.5,
+    "window": "arched",
+    "towerRoof": "onion",
+    "spire": 2.4,
+    "flags": true,
+    "flagFolds": 3,
+    "wall": "bone",
+    "gate": "jawbone",
+    "wallShape": "round",
+    "industry": 0.5,
+    "church": true,
+    "symbol": "horns",
+    "keep": "none",
+    "market": "all"
+  },
+  "palette": {
+    "wall": "#EFE9DE",
+    "roof": "#4F7F8A",
+    "wood": "#8F7A62",
+    "earth": "#85705A",
+    "water": "#8FB0B8",
+    "ink": "#26302F",
+    "flag": "#D9A92B",
+    "halo": "#F5F2EA"
+  }
+}

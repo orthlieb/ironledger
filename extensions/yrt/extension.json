@@ -4,6 +4,9 @@
   "description": "Yrt homebrew setting — mana, Touched, ritual cantrips, and the Yrt bestiary.",
   "defaultEnabled": false,
   "order": 30,
+  "supersedesCultures": {
+    "elves": "verdani"
+  },
   "supersedesOracles": {
     "region": "yrtRegion",
     "storyRegion": "yrtStoryRegion",

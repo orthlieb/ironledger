@@ -8,12 +8,16 @@
 // esbuild into one HTML file — no network, no external assets — written to
 // tools/settlement-playground.html by default. The generator runs in the
 // page, so every knob re-renders live, and each icon exports as SVG / PNG.
+// The culture plugins (cultures/*.json in the base game and every
+// extension) are baked in as presets; Import culture loads a plugin file to
+// tweak, and Export culture writes the current knobs + colours as one.
 // =============================================================================
 
 import { build } from 'esbuild';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { loadCultures } from './loadCultures.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 const out =
@@ -26,6 +30,10 @@ const { outputFiles } = await build({
 	format: 'iife',
 	platform: 'browser',
 	write: false,
+	// The culture plugins (dev-only sample included) become the presets.
+	banner: {
+		js: `globalThis.__SETTLEMENT_CULTURES__=${JSON.stringify(loadCultures({ includeDev: true }))};`,
+	},
 });
 const js = outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
 
@@ -82,6 +90,9 @@ figcaption{font-size:13px;display:flex;justify-content:center;align-items:center
 <button class="primary" id="culture" title="Shift-click for the default culture">Culture ⟳</button>
 <button id="reset">Reset drawing</button>
 <button id="copy">Copy settings</button>
+<button id="import" title="Load a cultures/*.json plugin to tweak">Import culture</button>
+<input type="file" id="importFile" accept=".json,application/json" hidden>
+<button id="export" title="Download the current culture as a cultures/*.json plugin">Export culture</button>
 <span id="status">Loading…</span><span id="note"></span></header>
 <div class="layout"><aside id="knobs"></aside>
 <main><div class="grid" id="towns"></div><div id="map"></div><div class="grid" id="pieces"></div></main></div>
