@@ -132,7 +132,8 @@
       "addendum": "In YRT: a blight-adapted grazer bred by the Verdani. Gray gives the scaled hide for protection; faint Luminous explains the pale-eye glow. An unusual species, not supernatural."
     },
     "ironsworn/giant": {
-      "addendum": "In YRT: an unusually tall humanoid species, or a mountain-adapted subculture of humans. If you want biological flavour, regional Azure exposure produces larger humans over generations — same explanation as elder beasts."
+      "name": "Altan",
+      "addendum": "In YRT: the Altans are an unusually tall, strong, rarely-ill humanoid lineage that developed in the Malperm Mountains, where a persistent Blue mana vent saturates the valleys. Their size and vigour are mana-dependent, not merely genetic — their geometry only holds together under constant Blue exposure. An Altan who leaves the Malperms slowly declines: strength and health decay over weeks to months as the ambient Blue drops, and most die within a season of being away. For that reason you rarely see them outside the Malperms except in extreme need (an envoy, a desperate recruit, a prisoner being moved). NOT a race a player character should choose unless they have a reliable, portable Blue mana source — otherwise the campaign becomes a slow-decline countdown rather than a hero's arc."
     },
     "ironsworn/harrow-spider": {
       "addendum": "In YRT: a giant spider — Azure-tinted gigantism, otherwise a normal arachnid. Iridescent black eyes come from trace Amber/Gray in the lens tissue, not functionally magical."
@@ -179,7 +180,8 @@
       "addendum": "In YRT: a large humanoid with camouflaging skin — the same chromatophore trick as a shroud crab, just bigger. Gray-trace dermal layer; otherwise mundane biology. Solitary, shy, hoards objects."
     },
     "ironsworn/varou": {
-      "addendum": "In YRT: a wolf-featured humanoid species. The 'bloodcall' reads as Crimson susceptibility — their nervous system reacts to local Crimson mana and blood scent with a rage state. They avoid blight zones for this reason."
+      "name": "Lupan",
+      "addendum": "In YRT: the Lupans are feral or part-feral humanoids with strong wolf traits — tall, muscular, elongated jaw, dense body hair, canine gait at speed. They live coincident with wolf packs rather than apart from them: whelping, hunting, denning together as one social unit. Pups born to a Lupan parent are almost always wolves rather than Lupans, and the few that aren't are pushed out of the pack and have to find their own way (those make up most of the Lupans seen abroad). The 'blood scent' — the ability to track a wounded creature for days at range — is a peculiar trait with no satisfying origin story; mana surveys of their tissue turn up nothing conclusive. Rare variants coincident with coyote or fox packs exist in the dry south and the hedgerow country, but the overwhelming majority of Lupans are wolf-coincident. A player-character Lupan reads as someone pushed out of their pack and finding meaning among Ironlanders — the loneliness and the blood-scent gift both intact."
     },
     "ironsworn/warrior": {
       "addendum": "In YRT: a human with training."

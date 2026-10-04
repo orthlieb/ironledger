@@ -30,6 +30,7 @@
 		FOE_QUANTITIES,
 		FOE_NATURE_COLORS,
 		resolveFoeDescription,
+		resolveFoeName,
 	} from '$lib/foeStore.svelte.js';
 	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
 	import { foeExtraFlag } from '$lib/foeExtras.js';
@@ -75,7 +76,7 @@
 	// Switcher combobox helpers — per-item label / nature glyph / nature colour.
 	function foeItemLabel(enc: (typeof encounters)[number]): string {
 		const def = findFoe(enc.foeId);
-		return enc.customName?.trim() || def?.name || enc.foeId;
+		return enc.customName?.trim() || (def ? resolveFoeName(def) : null) || enc.foeId;
 	}
 	function foeItemColor(enc: (typeof encounters)[number]): string {
 		const def = findFoe(enc.foeId);
@@ -149,7 +150,10 @@
 
 	// ── Derived combat values (mirror FoeCard) ────────────────────────────
 	const displayName = $derived(
-		activeEnc?.customName?.trim() || activeDef?.name || activeEnc?.foeId || '',
+		activeEnc?.customName?.trim() ||
+			(activeDef ? resolveFoeName(activeDef) : null) ||
+			activeEnc?.foeId ||
+			'',
 	);
 	const rankInfo = $derived(activeEnc ? FOE_RANKS[activeEnc.effectiveRank] : undefined);
 	const qtyDef = $derived(
@@ -230,7 +234,7 @@
 	function foeTitleFor(enc: FoeEncounter | undefined, suffix: string): string {
 		if (!enc) return suffix;
 		const def = findFoe(enc.foeId);
-		const name = enc.customName?.trim() || def?.name || enc.foeId;
+		const name = enc.customName?.trim() || (def ? resolveFoeName(def) : null) || enc.foeId;
 		return `${name} — ${suffix}`;
 	}
 	const foeTitle = (suffix: string) => foeTitleFor(activeEnc, suffix);
@@ -364,7 +368,7 @@
 										<img
 											class="fa-portrait"
 											src={imageUrl(activeDef)}
-											alt={activeDef.name}
+											alt={resolveFoeName(activeDef)}
 											onclick={() => (lightboxOpen = true)}
 											onerror={(e) => {
 												(e.currentTarget as HTMLImageElement).src = UNKNOWN_FOE_PORTRAIT;
@@ -556,7 +560,11 @@
 </div>
 
 {#if lightboxOpen && activeDef}
-	<Lightbox src={imageUrl(activeDef)} alt={activeDef.name} onclose={() => (lightboxOpen = false)} />
+	<Lightbox
+		src={imageUrl(activeDef)}
+		alt={resolveFoeName(activeDef)}
+		onclose={() => (lightboxOpen = false)}
+	/>
 {/if}
 
 <FoePickerDialog bind:this={foePickerRef} onSelect={handleFoeSelected} />
