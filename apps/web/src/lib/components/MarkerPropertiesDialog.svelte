@@ -228,65 +228,6 @@
 		}
 	}
 
-	// ─── RGB read-out (copyable + pastable) ────────────────────────────────
-	// Lives in the dialog body, not the picker popover: an <input> there is
-	// inside bits-ui's focus trap (so it's clickable / typable / pastable)
-	// and picks up our own theme + dark mode. Pickr's portalled popover can
-	// do neither.
-	/** `#rrggbb` → `r, g, b` for the read-out (the "RGB" label supplies the
-	 *  context, so the `rgb( )` wrapper is dropped to keep it compact); '' if
-	 *  not a hex colour. */
-	function hexToRgbString(hex: string): string {
-		const h = normalizeHex(hex).replace('#', '');
-		if (!/^[0-9a-f]{6}$/.test(h)) return '';
-		const r = parseInt(h.slice(0, 2), 16);
-		const g = parseInt(h.slice(2, 4), 16);
-		const b = parseInt(h.slice(4, 6), 16);
-		return `${r}, ${g}, ${b}`;
-	}
-
-	/** Parse a pasted/typed colour — `rgb(r,g,b)`, `r,g,b`, `#rgb`, `#rrggbb`
-	 *  (with or without the `#`) — to a normalised `#rrggbb`, or null. */
-	function parseColorInput(input: string): string | null {
-		const s = input.trim();
-		const rgb = s.match(/^(?:rgb\s*\(\s*)?(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)?$/i);
-		if (rgb) {
-			const parts = [rgb[1], rgb[2], rgb[3]].map(Number);
-			if (parts.every((n) => n >= 0 && n <= 255)) {
-				return '#' + parts.map((n) => n.toString(16).padStart(2, '0')).join('');
-			}
-			return null;
-		}
-		const hx = s.replace(/^#/, '');
-		if (/^[0-9a-f]{3}$/i.test(hx)) {
-			return normalizeHex('#' + hx.replace(/./g, (c) => c + c));
-		}
-		if (/^[0-9a-f]{6}$/i.test(hx)) return normalizeHex('#' + hx);
-		return null;
-	}
-
-	/** Commit a value from the RGB field: apply to the draft + live marker +
-	 *  Pickr, and record it. Returns false when the text isn't a colour so
-	 *  the caller can snap the field back to the current value. */
-	function applyRgbInput(raw: string): boolean {
-		const hex = parseColorInput(raw);
-		if (!hex || !draft) return false;
-		draft.color = hex;
-		applyDraftLive();
-		try {
-			pickr?.setColor(hex, true);
-		} catch {
-			/* Pickr may be mid-teardown — draft already holds the value */
-		}
-		recordRecent(hex);
-		return true;
-	}
-
-	function onRgbChange(e: Event) {
-		const el = e.target as HTMLInputElement;
-		if (!applyRgbInput(el.value)) el.value = hexToRgbString(draftColor); // reject → restore
-	}
-
 	/** Normalise a rotation to `[0, 360)` for display + storage. `undefined`
 	 *  → 0 (default rotation for legacy markers). Non-finite → 0 so a stray
 	 *  NaN doesn't invalidate the SVG transform. */
@@ -337,16 +278,15 @@
 				preview: true,
 				opacity: false,
 				hue: true,
-				// No text field / Save row inside the popover: a text input
-				// there can't receive keyboard focus (bits-ui traps focus in
-				// the dialog, and Pickr portals the popover to <body>, outside
-				// that scope) and would carry Pickr's own light theme. The
-				// editable, themeable, pastable RGB field lives in the dialog
-				// body instead (see the RGB row). Pick from a swatch or drag
-				// the wheel + hue; we auto-close on release.
+				// Hex input lives INSIDE the popover now, with the dialog's
+				// `interactOutsideBehavior="ignore"` keeping a click or paste
+				// into Pickr's portalled popover from closing the dialog, and
+				// the overrides below theming `.pcr-result` to match the
+				// dialog's dark controls. Pickr still parses hex / rgb() /
+				// hsl() on paste, so the standalone RGB read-out row is gone.
 				interaction: {
 					hex: false,
-					input: false,
+					input: true,
 					clear: false,
 					save: false,
 				},
@@ -901,24 +841,6 @@
 									</g>
 								</svg>
 							</button>
-						</label>
-
-						<!-- No visible label — the input's value ("rgb(r, g, b)") is
-						     self-descriptive and dropping the label keeps the row's
-						     controls at the same 32 px height. aria-label retained for
-						     screen readers. Stays grouped with the Colour button so
-						     the two colour-adjacent controls read as one unit. -->
-						<label class="mp-props-field mp-props-field--rgb">
-							<input
-								class="mp-rgb-input"
-								type="text"
-								spellcheck="false"
-								autocomplete="off"
-								disabled={!canSave}
-								value={hexToRgbString(draftColor)}
-								onchange={onRgbChange}
-								aria-label="Icon colour as RGB — select to copy, or paste to set"
-							/>
 						</label>
 
 						<label class="mp-props-field mp-props-field--icon">

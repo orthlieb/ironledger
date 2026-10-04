@@ -3383,27 +3383,6 @@
 		outline: none;
 		border-color: var(--text-accent);
 	}
-	/* RGB read-out — a monospace `rgb(r, g, b)` field, copyable (select the
-	   text) and pastable (type/paste a colour → Enter). Kept in the dialog
-	   body (not the Pickr popover) so it's inside the focus trap and carries
-	   our theme + dark mode. Fills the tail of the icon/angle/colour row on
-	   desktop; wraps to its own line when the row can't give it `min-width`. */
-	:global(.mp-rgb-input) {
-		width: 100%;
-		box-sizing: border-box;
-		height: 32px;
-		padding: 0 8px;
-		font-family: var(--font-mono);
-		font-size: 0.82rem;
-		color: var(--text);
-		background: var(--bg-control);
-		border: 1px solid var(--border-mid);
-		border-radius: 4px;
-	}
-	:global(.mp-rgb-input:focus) {
-		outline: none;
-		border-color: var(--text-accent);
-	}
 	:global(.mp-props-row) {
 		display: flex;
 		gap: 12px;
@@ -3424,13 +3403,34 @@
 	:global(.mp-props-field--color) {
 		width: 2.5rem;
 	}
-	/* RGB field grows to fill the rest of the row; `min-width` is its wrap
-	   threshold — when the row can't spare ~7rem it drops to the next line
-	   (so on a phone the icon/angle/colour tiles sit on one line and RGB
-	   wraps below, instead of squishing the `r, g, b` text). */
-	:global(.mp-props-field--rgb) {
-		flex: 1 1 7rem;
-		min-width: 7rem;
+
+	/* Pickr popover — nano theme skinned to match the dialog's dark
+	   controls, now that the hex input lives inside it (interaction.input).
+	   Pickr's own CSS variables feed into `.pcr-app`, so overriding them at
+	   that scope reskins the result row without touching Pickr's internals.
+	   Keep the colour-wheel + hue-slider in their default greyscale — only
+	   the result row (text input + eyedropper) needs to look like it
+	   belongs. */
+	:global(.pcr-app) {
+		--pcr-text-color: var(--text);
+	}
+	:global(.pcr-app .pcr-interaction) {
+		gap: 4px;
+	}
+	:global(.pcr-app .pcr-interaction .pcr-result) {
+		height: 28px;
+		padding: 0 8px;
+		font-family: var(--font-mono);
+		font-size: 0.82rem;
+		color: var(--text);
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		box-shadow: none;
+	}
+	:global(.pcr-app .pcr-interaction .pcr-result:focus) {
+		outline: none;
+		border-color: var(--text-accent);
 	}
 
 	/* Label field: the text input grows to fill the row; Position rides
