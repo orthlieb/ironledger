@@ -107,7 +107,6 @@
 
 	// bits-ui Dialog open flag + Content ref. The ref is needed for:
 	//   - the sizing $effect (ResizeObserver + inline style.width/height)
-	//   - Pickr's `container` option (colour-picker popover anchor)
 	//   - the keyboard handler's "is the dialog actually open?" guard
 	// bits-ui exposes `bind:ref` on `Dialog.Content` for exactly this.
 	let dialogOpen = $state(false);
@@ -2635,9 +2634,9 @@
 		flex-shrink: 0;
 	}
 	/* Colour picker trigger — a real `<button>` styled to match the
-	   neighbouring `.mp-sel-icon-btn`. Pickr runs in `useAsButton`
-	   mode so this element IS its trigger; Pickr just floats the
-	   `.pcr-app` popover next to it on click. The palette SVG inside
+	   neighbouring `.mp-sel-icon-btn`. Click opens the ColorPicker's
+	   bits-ui Popover which hosts the vanilla-colorful picker and the
+	   MRU swatch strip (see ColorPicker.svelte). The palette SVG inside
 	   picks up the selected colour via `currentColor` and the same
 	   2-device-pixel white halo the map markers use, so light hues
 	   read on dark backgrounds and dark hues read on light. */
@@ -2664,18 +2663,6 @@
 	:global(.mp-sel-color-btn svg) {
 		width: 22px;
 		height: 22px;
-	}
-	/* Popover portals to `document.body` (Pickr `container: document.body`)
-	   so its layering is controlled purely by z-index. Bits-ui gates all
-	   background pointer events while a modal is open by setting
-	   `pointer-events: none` on <body>, so also force `pointer-events:
-	   auto` on the popover — otherwise clicks on the wheel / swatches
-	   pass THROUGH the picker and land on whatever's underneath (the
-	   Link combobox trigger). Sits comfortably above the props dialog's
-	   `.mp-cmd-popover` (z-index 90) so both dropdowns can coexist. */
-	:global(.pcr-app) {
-		z-index: 200;
-		pointer-events: auto;
 	}
 	/* Angle spinner — inline `−  ∠ nnn°  +` cluster. iOS Safari drops
 	   the native <input type="number"> step arrows, so explicit step

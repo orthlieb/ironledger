@@ -1,21 +1,33 @@
 <script lang="ts">
 	/**
-	 * ColorPicker — a small reusable Pickr colour swatch.
+	 * ColorPicker — a bits-ui Popover wrapped around vanilla-colorful's
+	 * `<hex-color-picker>` web component. Replaces the old Pickr-based
+	 * version so the picker lives inside the dialog's focus trap (no
+	 * cross-portal focus bouncing), themes via plain CSS variables, and
+	 * drops a ~15 KB CSS + JS dependency.
 	 *
-	 * Renders a single swatch button that opens the Pickr popover (nano
-	 * theme, portalled to <body>) on click. Picking from a swatch or
-	 * releasing the wheel commits the colour and auto-closes, mirroring
-	 * the marker editor's picker. Two-way via `bind:value`; `onchange`
-	 * fires after each commit for persistence side-effects.
+	 * Public API is unchanged:
+	 *   • `value`      — bindable `#rrggbb` string.
+	 *   • `onchange`   — fires on every commit (swatch tap or picker drag end).
+	 *   • `disabled`   — inert button, no popover.
+	 *   • `ariaLabel`  — button a11y name.
+	 *   • `swatches`   — optional swatch strip; defaults to eight tabletop hues.
 	 *
-	 * Self-contained: it carries its own `:global(.pcr-app)` z-index rule
-	 * (200, above every dialog) so it works anywhere, not only where
-	 * MapDialog happens to be mounted. When `disabled`, no Pickr is
-	 * created and the button is inert.
+	 * Rendering: a trigger button that opens a bits-ui Popover.Content on
+	 * click. The content hosts the `<hex-color-picker>` custom element (live
+	 * value sync via its `color-changed` event) and a strip of swatch
+	 * buttons. The popover closes on Escape, outside click, or picking a
+	 * swatch — same ergonomics as the old Pickr.
 	 */
-	import { untrack } from 'svelte';
-	import Pickr from '@simonwep/pickr';
-	import '@simonwep/pickr/dist/themes/nano.min.css';
+	import { onMount } from 'svelte';
+	import { Popover } from 'bits-ui';
+
+	// vanilla-colorful ships as a side-effecting custom-element registration.
+	// Import it in the browser only so SSR doesn't try to touch `window`.
+	// SvelteKit tree-shakes browser-only effects, so onMount is the safe hook.
+	onMount(() => {
+		void import('vanilla-colorful/hex-color-picker.js');
+	});
 
 	/** Eight tabletop-friendly hues — same set the marker editor offers. */
 	const DEFAULT_SWATCHES = [
@@ -29,107 +41,103 @@
 		'#f1faee',
 	];
 
+	import type { Snippet } from 'svelte';
+
 	let {
 		value = $bindable(),
 		onchange,
+		onswatch,
 		disabled = false,
 		ariaLabel = 'Colour',
 		swatches = DEFAULT_SWATCHES,
+		trigger,
 	}: {
 		value: string;
 		onchange?: (v: string) => void;
+		/** Fires when the user picks a swatch (NOT on every picker drag).
+		 *  Useful for MRU tracking so only committed colours are recorded. */
+		onswatch?: (v: string) => void;
 		disabled?: boolean;
 		ariaLabel?: string;
 		swatches?: string[];
+		/** Optional custom trigger. When omitted, the default `.cp-swatch`
+		 *  button is rendered. The snippet is wrapped in a Popover.Trigger
+		 *  via bits-ui's child-render pattern so the caller controls the
+		 *  button's markup entirely. */
+		trigger?: Snippet<[{ props: Record<string, unknown> }]>;
 	} = $props();
 
-	let anchor = $state<HTMLButtonElement | null>(null);
-	let pickr: Pickr | null = null;
+	let open = $state(false);
 
-	/** Seven-char `#rrggbb` (no alpha) — trim Pickr's HEXA `…ff` tail. */
-	function normalizeHex(color: string): string {
-		return color.startsWith('#') ? color.slice(0, 7).toLowerCase() : color;
+	/** Normalise to seven-char `#rrggbb`. vanilla-colorful emits lower-case
+	 *  hex already, but a hand-set `value` may be upper-case or shorthand. */
+	function normalizeHex(c: string): string {
+		if (!c) return c;
+		let hx = c.toLowerCase().replace(/^#/, '');
+		if (/^[0-9a-f]{3}$/.test(hx)) hx = hx.replace(/./g, (ch) => ch + ch);
+		return '#' + hx;
 	}
 
-	// Create/tear down Pickr with the anchor's presence + the disabled
-	// flag. `untrack` the colour read so edits don't recreate the widget.
-	$effect(() => {
-		if (disabled || !anchor) return;
-		const el = anchor;
-		const initial = untrack(() => value);
-		const instance = Pickr.create({
-			el,
-			container: document.body,
-			useAsButton: true,
-			theme: 'nano',
-			default: initial,
-			swatches,
-			components: {
-				preview: true,
-				opacity: false,
-				hue: true,
-				interaction: { hex: false, input: false, clear: false, save: false },
-			},
-		});
-		instance.on('change', (c: ReturnType<Pickr['getColor']>) => {
-			value = normalizeHex(c.toHEXA().toString());
-			onchange?.(value);
-			// No Save button (save:false), so nudge applyColor ourselves to
-			// refresh the trigger chip. Guarded — applyColor emits 'save',
-			// which some Pickr versions choke on when save UI is disabled.
-			try {
-				instance.applyColor(true);
-			} catch {
-				/* known: applyColor's save-emit path when save:false */
-			}
-		});
-		// Swatch tap or wheel release = commit → auto-close.
-		instance.on('swatchselect', () => {
-			try {
-				instance.hide();
-			} catch {
-				/* Pickr teardown race — safe to ignore */
-			}
-		});
-		instance.on('changestop', () => {
-			try {
-				instance.hide();
-			} catch {
-				/* Pickr teardown race — safe to ignore */
-			}
-		});
-		pickr = instance;
-		return () => {
-			try {
-				instance.destroyAndRemove();
-			} catch {
-				/* known Pickr teardown race */
-			}
-			if (pickr === instance) pickr = null;
-		};
-	});
+	function onColorChanged(e: Event) {
+		const next = (e as CustomEvent<{ value: string }>).detail?.value;
+		if (!next) return;
+		const hex = normalizeHex(next);
+		if (hex === value) return;
+		value = hex;
+		onchange?.(hex);
+	}
 
-	// External `value` change → sync the widget silently (no 'change' echo).
-	$effect(() => {
-		const c = value;
-		const p = pickr;
-		if (!p || !c) return;
-		const cur = normalizeHex(p.getColor()?.toHEXA().toString() ?? '');
-		if (cur !== c.toLowerCase()) p.setColor(c, true);
-	});
+	function pickSwatch(hex: string) {
+		value = hex;
+		onchange?.(hex);
+		onswatch?.(hex);
+		open = false;
+	}
 </script>
 
-<button
-	type="button"
-	class="cp-swatch"
-	style="--cp-color: {value}"
-	bind:this={anchor}
-	{disabled}
-	aria-label={ariaLabel}
-></button>
+<Popover.Root bind:open>
+	{#if trigger}
+		<Popover.Trigger {disabled}>
+			{#snippet child({ props })}
+				{@render trigger({ props })}
+			{/snippet}
+		</Popover.Trigger>
+	{:else}
+		<Popover.Trigger
+			class="cp-swatch"
+			style="--cp-color: {value}"
+			{disabled}
+			aria-label={ariaLabel}
+		/>
+	{/if}
+	<Popover.Portal>
+		<Popover.Content
+			class="cp-popover"
+			side="bottom"
+			align="start"
+			sideOffset={6}
+			collisionPadding={8}
+		>
+			<!-- svelte-ignore element_invalid_self_closing_tag -->
+			<hex-color-picker color={value} oncolor-changed={onColorChanged} class="cp-picker"
+			></hex-color-picker>
+			<div class="cp-swatches" role="group" aria-label="Preset colours">
+				{#each swatches as hex (hex)}
+					<button
+						type="button"
+						class="cp-swatches-btn"
+						style="--cp-swatch: {hex}"
+						onclick={() => pickSwatch(hex)}
+						aria-label="Pick {hex}"
+					></button>
+				{/each}
+			</div>
+		</Popover.Content>
+	</Popover.Portal>
+</Popover.Root>
 
 <style>
-	.cp-swatch {
+	:global(.cp-swatch) {
 		width: 44px;
 		height: 28px;
 		padding: 0;
@@ -143,21 +151,55 @@
 			border-color 0.12s,
 			opacity 0.12s;
 	}
-	.cp-swatch:hover:not(:disabled),
-	.cp-swatch:focus-visible {
+	:global(.cp-swatch:hover:not(:disabled)),
+	:global(.cp-swatch:focus-visible) {
 		border-color: var(--text-accent);
 		outline: none;
 	}
-	.cp-swatch:disabled {
+	:global(.cp-swatch:disabled) {
 		opacity: 0.4;
 		cursor: default;
 	}
 
-	/* Pickr portals its popover to <body>; lift it above every dialog
-	   (settings content 81, popovers 90). Matches MapDialog's rule so
-	   the two never disagree. */
-	:global(.pcr-app) {
+	/* Popover content — a card hovering above the dialog. z-index 200
+	   mirrors the old Pickr rule so coexisting dialogs stack cleanly. */
+	:global(.cp-popover) {
+		display: flex;
+		flex-direction: column;
+		gap: 10px;
+		padding: 10px;
+		background: var(--bg-card);
+		border: 1px solid var(--border-mid);
+		border-radius: 8px;
+		box-shadow: 0 12px 32px #00000050;
 		z-index: 200;
-		pointer-events: auto;
+		outline: none;
+	}
+
+	/* The custom element itself: give it a square frame vanilla-colorful
+	   can size against; its own shadow DOM owns the slider widgets. */
+	:global(.cp-picker) {
+		width: 200px;
+		height: 180px;
+	}
+
+	:global(.cp-swatches) {
+		display: grid;
+		grid-template-columns: repeat(8, 1fr);
+		gap: 4px;
+	}
+	:global(.cp-swatches-btn) {
+		height: 20px;
+		padding: 0;
+		border-radius: 3px;
+		border: 1px solid var(--border);
+		background: var(--cp-swatch, #888);
+		cursor: pointer;
+		box-shadow: inset 0 0 0 1px #ffffff40;
+	}
+	:global(.cp-swatches-btn:hover),
+	:global(.cp-swatches-btn:focus-visible) {
+		border-color: var(--text-accent);
+		outline: none;
 	}
 </style>

@@ -22,9 +22,8 @@
 	import { untrack } from 'svelte';
 	import { Dialog } from 'bits-ui';
 	import Combobox from '$lib/components/Combobox.svelte';
+	import ColorPicker from '$lib/components/ColorPicker.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import Pickr from '@simonwep/pickr';
-	import '@simonwep/pickr/dist/themes/nano.min.css';
 	import DialogHeader from './DialogHeader.svelte';
 	import MapIconPicker from './MapIconPicker.svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
@@ -150,21 +149,18 @@
 		iconDialogOpen = false;
 	}
 
-	// ─── Pickr (marker colour) ─────────────────────────────────────────────
-	// Pickr is instantiated once per dialog mount. Two $effects: one to
-	// create/tear down when the anchor element comes and goes, one to
-	// sync the widget's colour when a different marker is selected
-	// (silent: true so it doesn't fire our own change handler and cause
-	// a feedback loop).
-	let pickrAnchor = $state<HTMLButtonElement | null>(null);
-	let pickr: Pickr | null = null;
+	// ─── Marker colour helpers ──────────────────────────────────────────────
+	// The actual picker UI is `<ColorPicker>` (vanilla-colorful inside a
+	// bits-ui Popover, see ColorPicker.svelte); this section just owns the
+	// MRU swatch persistence + the hex input beside the picker's trigger.
 
-	/** Seven-char `#rrggbb` (no alpha) — Pickr's HEXA output ends `ff`
-	 *  for the fully-opaque colours we always store; trim so the round
-	 *  trip against `<input type="color">` compatible fields stays
-	 *  clean. */
+	/** Seven-char `#rrggbb` (no alpha) normaliser — safe for strings coming
+	 *  from a hand-edited row (upper-case, shorthand, missing `#`). */
 	function normalizeHex(color: string): string {
-		return color.startsWith('#') ? color.slice(0, 7).toLowerCase() : color;
+		if (!color) return color;
+		let hx = color.toLowerCase().replace(/^#/, '');
+		if (/^[0-9a-f]{3}$/.test(hx)) hx = hx.replace(/./g, (c) => c + c);
+		return '#' + hx.slice(0, 6);
 	}
 
 	// ─── Recently-picked colours (MRU swatch row) ──────────────────────────
@@ -201,8 +197,7 @@
 
 	let recents = $state<string[]>(loadRecents());
 
-	/** Move `hex` to the front of the MRU list, dedupe, cap, persist, and
-	 *  reflect it into the live Pickr swatch row. */
+	/** Move `hex` to the front of the MRU list, dedupe, cap, persist. */
 	function recordRecent(hex: string) {
 		const c = normalizeHex(hex);
 		if (!/^#[0-9a-f]{6}$/.test(c)) return;
@@ -212,26 +207,9 @@
 		} catch {
 			/* persistence is best-effort */
 		}
-		syncPickrSwatches(recents);
 	}
 
-	/** Rebuild Pickr's swatch row from `list` using only its public API. */
-	function syncPickrSwatches(list: string[]) {
-		const p = pickr;
-		if (!p) return;
-		try {
-			// removeSwatch(0) returns false once empty; cap the loop as a guard.
-			for (let i = 0; i < RECENTS_MAX + 4 && p.removeSwatch(0); i++);
-			for (const c of list) p.addSwatch(c);
-		} catch {
-			/* Pickr swatch API race — non-fatal, the row just lags one open */
-		}
-	}
-
-	// ─── Hex field (editable, inside the focus trap) ───────────────────────
-	// Lives in the dialog body, not the Pickr popover, because Pickr portals
-	// its popover to <body> and bits-ui's focus trap yanks focus back to the
-	// trigger whenever an input in the portalled popover is clicked.
+	// ─── Hex field (editable, lives beside the picker trigger) ─────────────
 	/** Parse a typed / pasted colour. Accepts `#rrggbb`, `#rgb`, `rrggbb`,
 	 *  `rgb`, and `rgb(r,g,b)` / `r,g,b`. Returns a normalised `#rrggbb`,
 	 *  or `null` when the input isn't a valid colour. */
@@ -249,19 +227,14 @@
 		if (/^[0-9a-f]{6}$/i.test(hx)) return normalizeHex('#' + hx);
 		return null;
 	}
-	/** Commit a value from the hex field: push to draft + live marker + Pickr
-	 *  and record it. Returns false when the text isn't a colour so the
-	 *  caller can snap the field back to the current value. */
+	/** Commit a value from the hex field: push to draft + live marker + MRU.
+	 *  Returns false when the text isn't a colour so the caller can snap the
+	 *  field back to the current value. */
 	function applyHexInput(raw: string): boolean {
 		const hex = parseColorInput(raw);
 		if (!hex || !draft) return false;
 		draft.color = hex;
 		applyDraftLive();
-		try {
-			pickr?.setColor(hex, true);
-		} catch {
-			/* Pickr may be mid-teardown — draft already holds the value */
-		}
 		recordRecent(hex);
 		return true;
 	}
@@ -279,123 +252,21 @@
 		return n < 0 ? n + 360 : n;
 	}
 
-	$effect(() => {
-		if (!pickrAnchor) return;
-		const anchor = pickrAnchor;
-		// Portal Pickr into `document.body` — the clipping-free path. The
-		// hex input inside the popover is still reachable because
-		// Dialog.Content below pairs this with an `onFocusOutside` guard
-		// that treats `.pcr-app` as part of the dialog's focus trap.
-		const container = document.body;
-		// `untrack` the initial color read so this effect ONLY re-runs
-		// when the anchor element (or the parent container) actually
-		// changes. Without it, every colour edit fed `selectedColor`
-		// back into the effect, which destroyed + recreated the
-		// picker mid-use — the "picker went poof after I picked a
-		// colour" bug. External colour syncs go through the second
-		// `$effect` below via `pickr.setColor(c, true)`.
-		const initialColor = untrack(() => selectedColor);
-		// Snapshot the MRU list at creation — `untrack` so reading it here
-		// doesn't make `recents` a dependency of this effect (which would
-		// destroy + recreate the picker every time a colour is recorded).
-		const initialSwatches = untrack(() => [...recents]);
-		const instance = Pickr.create({
-			el: anchor,
-			container,
-			// Use our own `<button>` (with the palette icon coloured by
-			// selectedColor) as the trigger instead of Pickr's default
-			// round swatch chip. Pickr skips its own button chrome and
-			// treats the anchor element as the button, so it opens the
-			// popover on click and keeps `--pcr-color` off our element.
-			useAsButton: true,
-			theme: 'nano',
-			default: initialColor,
-			// Swatch row = the most-recently-used colours (see recordRecent).
-			// Seeded with the eight tabletop hues; each commit reorders it.
-			swatches: initialSwatches,
-			components: {
-				preview: true,
-				opacity: false,
-				hue: true,
-				// No text field inside the popover: Pickr portals to <body>
-				// and bits-ui's dialog focus trap yanks focus back to the
-				// trigger button whenever an input in the portalled popover
-				// is clicked, so a hex field there would be unusable by
-				// keyboard. The editable, themeable hex field lives in the
-				// dialog body instead (see the `.mp-hex-input` row) where
-				// the focus trap can't fight it; swatch + wheel still commit
-				// through the Pickr `change` listener as before.
-				interaction: {
-					hex: false,
-					input: false,
-					clear: false,
-					save: false,
-				},
-			},
-		});
-		instance.on('change', (c: ReturnType<Pickr['getColor']>) => {
-			// Live-edit form: write the draft AND push straight through to
-			// the marker so the swatch/wheel colours the icon on the map
-			// as the user drags. Cancel restores the pre-open snapshot.
-			if (!draft) return;
-			draft.color = normalizeHex(c.toHEXA().toString());
-			applyDraftLive();
-			// Pickr only refreshes the trigger chip's `--pcr-color` inside
-			// applyColor(), which normally fires on Save. We removed the Save
-			// button (save: false), so nudge applyColor() ourselves on every
-			// live change. Guarded with try/catch because applyColor emits
-			// 'save', which some Pickr versions choke on when save UI is off.
-			try {
-				instance.applyColor(true);
-			} catch {
-				/* known: applyColor's save-emit path when save:false */
-			}
-		});
-		// Auto-dismiss once the user commits: a swatch tap is a single-tap
-		// commit; wheel/hue dragging commits on pointer release (changestop).
-		instance.on('swatchselect', () => {
-			if (draft) recordRecent(draft.color);
-			try {
-				instance.hide();
-			} catch {
-				/* Pickr teardown race — safe to ignore */
-			}
-		});
-		instance.on('changestop', () => {
-			if (draft) recordRecent(draft.color);
-			try {
-				instance.hide();
-			} catch {
-				/* Pickr teardown race — safe to ignore */
-			}
-		});
-		pickr = instance;
-		return () => {
-			// Pickr's teardown races with pending tap/pointer events on
-			// its internal wheel: `_tapstop` / `_tapmove` fire from
-			// document-level listeners after `destroyAndRemove()` has
-			// nulled the instance's internal color/emitter, throwing
-			// "Cannot read properties of null". Swallow — the picker is
-			// gone either way. The user just closed the dialog.
-			try {
-				instance.destroyAndRemove();
-			} catch {
-				/* known Pickr teardown race */
-			}
-			if (pickr === instance) pickr = null;
-		};
-	});
-
-	// Sync widget → draft-colour when the picked marker changes or a
-	// fresh snapshot lands (new marker selected). silent:true so
-	// setColor doesn't re-fire our 'change' handler and stomp itself.
-	$effect(() => {
-		const c = draft?.color;
-		const p = pickr;
-		if (!p || !c) return;
-		const cur = normalizeHex(p.getColor()?.toHEXA().toString() ?? '');
-		if (cur !== c.toLowerCase()) p.setColor(c, true);
-	});
+	/** ColorPicker `onchange` — fires on every drag of the picker. Push the
+	 *  live colour through the draft (which colours the marker on the map
+	 *  as the user drags). Swatch commits route through `onColorSwatch`
+	 *  for MRU recording. */
+	function onColorChange(hex: string) {
+		if (!draft) return;
+		draft.color = normalizeHex(hex);
+		applyDraftLive();
+	}
+	function onColorSwatch(hex: string) {
+		if (!draft) return;
+		draft.color = normalizeHex(hex);
+		applyDraftLive();
+		recordRecent(hex);
+	}
 
 	// Derive the selected marker's icon record + color so the icon
 	// button always shows the current preview.
@@ -861,35 +732,43 @@
 
 						<label class="mp-props-field mp-props-field--color">
 							<span class="mp-props-label">Colour</span>
-							<button
-								type="button"
-								class="mp-sel-color-btn"
-								style="color: {draftColor}"
-								bind:this={pickrAnchor}
+							<ColorPicker
+								value={draftColor}
+								onchange={onColorChange}
+								onswatch={onColorSwatch}
 								disabled={!canSave}
-								aria-label="Icon colour"
+								swatches={recents}
+								ariaLabel="Icon colour"
 							>
-								<svg viewBox="0 0 640 640" aria-hidden="true">
-									<g
-										fill="currentColor"
-										stroke="#fff"
-										stroke-width="2"
-										stroke-linejoin="round"
-										paint-order="stroke"
-										vector-effect="non-scaling-stroke"
+								{#snippet trigger({ props })}
+									<button
+										type="button"
+										class="mp-sel-color-btn"
+										style="color: {draftColor}"
+										disabled={!canSave}
+										aria-label="Icon colour"
+										{...props}
 									>
-										{@html paletteInner}
-									</g>
-								</svg>
-							</button>
+										<svg viewBox="0 0 640 640" aria-hidden="true">
+											<g
+												fill="currentColor"
+												stroke="#fff"
+												stroke-width="2"
+												stroke-linejoin="round"
+												paint-order="stroke"
+												vector-effect="non-scaling-stroke"
+											>
+												{@html paletteInner}
+											</g>
+										</svg>
+									</button>
+								{/snippet}
+							</ColorPicker>
 						</label>
 
-						<!-- Hex field — lives in the dialog body (not the Pickr popover)
-						     because Pickr portals its popover to <body> and bits-ui's
-						     focus trap yanks focus back to the trigger whenever an
-						     input in the portalled popover is clicked. Shows the
-						     current colour as `#rrggbb` and accepts hex / rgb() /
-						     `r,g,b` on change. -->
+						<!-- Hex field — editable mirror of `draft.color`, inside the dialog's
+						     focus trap. Shows the current colour as `#rrggbb` and accepts
+						     hex / rgb() / `r,g,b` on change. -->
 						<label class="mp-props-field mp-props-field--hex">
 							<span class="mp-props-label">Hex</span>
 							<input
