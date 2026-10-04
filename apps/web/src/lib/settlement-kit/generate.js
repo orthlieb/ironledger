@@ -16,7 +16,7 @@
 // =============================================================================
 
 import { settlement, TEMPLATES } from './layouts3d.js';
-import { DEFAULT_DESIGN } from './pieces3d.js';
+import { DEFAULT_DESIGN, setDepthProfile } from './pieces3d.js';
 import { LAYERS, place, renderLayered } from './render.js';
 
 export { fallbackIcon } from './fallback.js';
@@ -37,8 +37,10 @@ export { fallbackIcon } from './fallback.js';
  */
 /**
  * What a marker stores: a REFERENCE to a culture, never the culture itself.
+ * `view` picks the projection: absent / 'standard' = tightened cab-oblique
+ * (every culture's default); 'iso' = steeper, closer to true 2:1 isometric.
  * @typedef {{tier: Tier, culture: string, seed: number, walls?: Walls,
- *   wallShape?: 'round' | 'square', harbor?: boolean,
+ *   wallShape?: 'round' | 'square', harbor?: boolean, view?: 'standard' | 'iso',
  *   ruin?: {decay: number, burned?: boolean}}} SettlementRecipe
  */
 
@@ -161,25 +163,37 @@ export function recipeDesign(recipe, culture) {
 export function generateSettlementSvg(recipe, culture) {
 	const tier = recipe.tier in TEMPLATES ? recipe.tier : 'village';
 	const design = recipeDesign(recipe, culture);
-	const items = settlement(tier, design, {
-		walls: recipe.walls ?? 'auto',
-		seed: recipe.seed,
-		harbor: recipe.harbor ? 'side' : 'none',
-		ruin: recipe.ruin
-			? {
-					decay: recipe.ruin.decay,
-					overgrowth: 0.4,
-					burned: !!recipe.ruin.burned,
-					seed: recipe.seed,
-				}
-			: null,
-	});
-	return toLayeredSvg(
-		`${culture?.name ?? 'Default'} ${tier}`,
-		items,
-		culture?.palette ?? PARCHMENT,
-		{
-			join: design.join,
-		},
-	);
+	// `view` is a recipe-level knob (not a culture knob — see Design's JSDoc):
+	// the user picks it per marker, and 'standard' is the baked / absent-field
+	// default so pre-view settlements keep their current look. Set the module-
+	// level depth profile for the duration of this synchronous render, then
+	// restore it so a concurrent generation (preview + map) can't inherit the
+	// iso axis.
+	const view = recipe.view === 'iso' ? 'iso' : 'standard';
+	setDepthProfile(view);
+	try {
+		const items = settlement(tier, design, {
+			walls: recipe.walls ?? 'auto',
+			seed: recipe.seed,
+			harbor: recipe.harbor ? 'side' : 'none',
+			ruin: recipe.ruin
+				? {
+						decay: recipe.ruin.decay,
+						overgrowth: 0.4,
+						burned: !!recipe.ruin.burned,
+						seed: recipe.seed,
+					}
+				: null,
+		});
+		return toLayeredSvg(
+			`${culture?.name ?? 'Default'} ${tier}`,
+			items,
+			culture?.palette ?? PARCHMENT,
+			{
+				join: design.join,
+			},
+		);
+	} finally {
+		setDepthProfile('standard');
+	}
 }

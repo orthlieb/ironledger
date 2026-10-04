@@ -94,6 +94,7 @@
 	let walls = $state<SettlementWalls>(start?.walls ?? 'auto');
 	let shape = $state<Shape>(start?.wallShape ?? 'culture');
 	let harbor = $state(!!start?.harbor);
+	let iso = $state(start?.view === 'iso');
 	let ruined = $state(!!start?.ruin);
 	let decay = $state(start?.ruin?.decay ?? 0.5);
 	let burned = $state(!!start?.ruin?.burned);
@@ -107,6 +108,7 @@
 		...(walls !== 'auto' ? { walls } : {}),
 		...(shape !== 'culture' ? { wallShape: shape } : {}),
 		...(harbor ? { harbor: true } : {}),
+		...(iso ? { view: 'iso' as const } : {}),
 		...(ruined
 			? {
 					ruin: {
@@ -207,6 +209,9 @@
 				<Select bind:value={shape} options={SHAPES} ariaLabel="Wall shape" />
 			</label>
 			<Checkbox bind:checked={harbor}><span class="sb-check">Harbour</span></Checkbox>
+			<Checkbox bind:checked={iso}
+				><span class="sb-check">Isometric <small class="sb-hint">(more 3D)</small></span></Checkbox
+			>
 			<Checkbox bind:checked={ruined}><span class="sb-check">Ruined</span></Checkbox>
 			{#if ruined}
 				<label class="sb-field sb-field--range">
@@ -338,6 +343,11 @@
 	}
 	.sb-check {
 		font-size: 0.85rem;
+	}
+	.sb-hint {
+		font-size: 0.72rem;
+		color: var(--text-muted);
+		font-style: italic;
 	}
 	.sb-note {
 		margin: 0;

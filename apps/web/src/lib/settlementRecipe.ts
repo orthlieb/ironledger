@@ -50,6 +50,10 @@ export interface SettlementRecipe {
 	harbor?: boolean;
 	/** A ruin: how far gone (0–1), and whether it burned (scorch, soot). */
 	ruin?: { decay: number; burned?: boolean };
+	/** Projection used by the generator — absent / 'standard' is the
+	 *  tightened cab-oblique default; 'iso' pushes the depth axis closer
+	 *  to true 2:1 isometric for an unambiguously 3D icon. */
+	view?: 'standard' | 'iso';
 }
 
 /** Stable cache key for a recipe (field order fixed). */
@@ -62,6 +66,7 @@ export function recipeKey(r: SettlementRecipe): string {
 		r.wallShape ?? '',
 		r.harbor ? 'h' : '',
 		r.ruin ? r.ruin.decay.toFixed(2) + (r.ruin.burned ? 'b' : '') : '',
+		r.view === 'iso' ? 'i' : '',
 	].join('|');
 }
 
@@ -89,6 +94,9 @@ export function cleanSettlementRecipe(v: unknown): SettlementRecipe | undefined 
 	if (SETTLEMENT_WALLS.includes(o.walls as SettlementWalls)) out.walls = o.walls as SettlementWalls;
 	if (o.wallShape === 'round' || o.wallShape === 'square') out.wallShape = o.wallShape;
 	if (o.harbor === true) out.harbor = true;
+	if (o.view === 'iso') out.view = 'iso';
+	// 'standard' round-trips as absent — it IS the default — so a recipe
+	// edited in place to toggle view off doesn't leave a hollow field behind.
 	const ruin = o.ruin as { decay?: unknown; burned?: unknown } | undefined;
 	if (ruin && typeof ruin.decay === 'number' && ruin.decay >= 0 && ruin.decay <= 1)
 		out.ruin = ruin.burned === true ? { decay: ruin.decay, burned: true } : { decay: ruin.decay };
