@@ -842,22 +842,6 @@
 					</div>
 
 					<div class="mp-props-row">
-						<label class="mp-props-field mp-props-field--icon">
-							<span class="mp-props-label">Icon</span>
-							<button class="mp-sel-icon-btn" onclick={openIconPicker} aria-label="Change icon">
-								{#if draftIcon}
-									<svg viewBox={haloPaddedViewBox(draftIcon)} aria-hidden="true">
-										<!-- 'proportional' halo so the preview glow matches the
-										     map's weight at this larger button size, not a faint
-										     hairline. -->
-										{@html mapGlyphInner(draftIcon, draftColor, 'props-preview', 'proportional')}
-									</svg>
-								{:else}
-									<span class="mp-sel-icon-none" aria-hidden="true">Aa</span>
-								{/if}
-							</button>
-						</label>
-
 						<label class="mp-props-field mp-props-field--angle">
 							<span class="mp-props-label">Angle</span>
 							<div class="mp-sel-angle" role="group" aria-label="Marker rotation">
@@ -921,10 +905,9 @@
 
 						<!-- No visible label — the input's value ("rgb(r, g, b)") is
 						     self-descriptive and dropping the label keeps the row's
-						     four controls at the same 32 px height. aria-label
-						     retained for screen readers. `align-items: flex-end` on
-						     the row still pins the input to the row's bottom edge, so
-						     it lines up with the icon / angle / colour buttons. -->
+						     controls at the same 32 px height. aria-label retained for
+						     screen readers. Stays grouped with the Colour button so
+						     the two colour-adjacent controls read as one unit. -->
 						<label class="mp-props-field mp-props-field--rgb">
 							<input
 								class="mp-rgb-input"
@@ -937,24 +920,40 @@
 								aria-label="Icon colour as RGB — select to copy, or paste to set"
 							/>
 						</label>
-					</div>
 
-					<label class="mp-props-field mp-props-field--scale">
-						<span class="mp-props-label"
-							>Size <span class="mp-sel-scale-readout">{draft.scale.toFixed(2)}×</span></span
-						>
-						<input
-							class="mp-sel-scale-range"
-							type="range"
-							min={MIN_MARKER_SCALE}
-							max={MAX_MARKER_SCALE}
-							step="0.1"
-							disabled={!canSave}
-							value={draft.scale}
-							oninput={onDraftScaleInput}
-							aria-label="Icon size multiplier"
-						/>
-					</label>
+						<label class="mp-props-field mp-props-field--icon">
+							<span class="mp-props-label">Icon</span>
+							<button class="mp-sel-icon-btn" onclick={openIconPicker} aria-label="Change icon">
+								{#if draftIcon}
+									<svg viewBox={haloPaddedViewBox(draftIcon)} aria-hidden="true">
+										<!-- 'proportional' halo so the preview glow matches the
+										     map's weight at this larger button size, not a faint
+										     hairline. -->
+										{@html mapGlyphInner(draftIcon, draftColor, 'props-preview', 'proportional')}
+									</svg>
+								{:else}
+									<span class="mp-sel-icon-none" aria-hidden="true">Aa</span>
+								{/if}
+							</button>
+						</label>
+
+						<label class="mp-props-field mp-props-field--scale">
+							<span class="mp-props-label"
+								>Scale <span class="mp-sel-scale-readout">{draft.scale.toFixed(2)}×</span></span
+							>
+							<input
+								class="mp-sel-scale-range"
+								type="range"
+								min={MIN_MARKER_SCALE}
+								max={MAX_MARKER_SCALE}
+								step="0.1"
+								disabled={!canSave}
+								value={draft.scale}
+								oninput={onDraftScaleInput}
+								aria-label="Icon size multiplier"
+							/>
+						</label>
+					</div>
 
 					<!-- Not a <label>: a <label> forwards clicks to its first
 					     labelable descendant, which would hijack the "Go to" button. -->

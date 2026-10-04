@@ -2158,10 +2158,17 @@
 								{#if m.label}
 									{@const labelCss = labelStyleCss(m.labelStyle)}
 									{#if hasIcon}
+										<!-- Label placement intentionally ignores `markerScale(m)`:
+										     only the icon scales, the label stays anchored where
+										     the default-sized icon's edge would be. A marker set
+										     to 3× has its glyph drawn 3× bigger but the label
+										     still hangs at the 1× offset, so a group of mixed-
+										     size markers lines their labels up to the same
+										     visual baseline (and label text size, driven by
+										     `labelStyle.size`, remains the only control that
+										     changes label size). -->
 										{@const iconExtent =
-											ICON_SIZE *
-											(ic?.raster || ic?.layered ? RASTER_ICON_SCALE : 1) *
-											markerScale(m)}
+											ICON_SIZE * (ic?.raster || ic?.layered ? RASTER_ICON_SCALE : 1)}
 										{@const p = labelPlacement(
 											m.labelPosition ?? 'bottom',
 											iconExtent / 2,
@@ -3451,10 +3458,15 @@
 	:global(.mp-props-field--size .bui-select-trigger) {
 		min-width: 4.5rem;
 	}
-	/* Size (per-marker icon scale) — a native range input, span full width.
-	   The readout chip rides on the label, right-aligned, so the user can
-	   watch the multiplier change as they drag. */
+	/* Scale (per-marker icon scale) — a native range input that grows to
+	   fill the row's trailing slot the same way RGB does. Both are stretch
+	   fields with a 7rem wrap threshold, so on a phone they can drop below
+	   their row-mates rather than squishing them. The readout chip rides
+	   on the label, right-aligned, so the multiplier is visible as the
+	   user drags. */
 	:global(.mp-props-field--scale) {
+		flex: 1 1 7rem;
+		min-width: 7rem;
 		gap: 2px;
 	}
 	:global(.mp-props-field--scale .mp-props-label) {
@@ -3473,6 +3485,13 @@
 	}
 	:global(.mp-sel-scale-range) {
 		width: 100%;
+		/* Line the thumb up with the 32 px tile row so the slider track sits
+		   at the vertical mid-point of its row-mates instead of floating
+		   below. The native height is implementation-defined (Chrome 32 px,
+		   Safari 20 px), so pinning it here keeps the row's baseline
+		   consistent across browsers. */
+		height: 32px;
+		margin: 0;
 	}
 
 	/* Label text-style toggles (Bold / Italic / Small caps / Underline) —
