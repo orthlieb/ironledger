@@ -228,6 +228,48 @@
 		}
 	}
 
+	// ─── Hex field (editable, inside the focus trap) ───────────────────────
+	// Lives in the dialog body, not the Pickr popover, because Pickr portals
+	// its popover to <body> and bits-ui's focus trap yanks focus back to the
+	// trigger whenever an input in the portalled popover is clicked.
+	/** Parse a typed / pasted colour. Accepts `#rrggbb`, `#rgb`, `rrggbb`,
+	 *  `rgb`, and `rgb(r,g,b)` / `r,g,b`. Returns a normalised `#rrggbb`,
+	 *  or `null` when the input isn't a valid colour. */
+	function parseColorInput(input: string): string | null {
+		const s = input.trim();
+		const rgb = s.match(/^(?:rgb\s*\(\s*)?(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)?$/i);
+		if (rgb) {
+			const parts = [rgb[1], rgb[2], rgb[3]].map(Number);
+			if (parts.every((n) => n >= 0 && n <= 255))
+				return '#' + parts.map((n) => n.toString(16).padStart(2, '0')).join('');
+			return null;
+		}
+		const hx = s.replace(/^#/, '');
+		if (/^[0-9a-f]{3}$/i.test(hx)) return normalizeHex('#' + hx.replace(/./g, (c) => c + c));
+		if (/^[0-9a-f]{6}$/i.test(hx)) return normalizeHex('#' + hx);
+		return null;
+	}
+	/** Commit a value from the hex field: push to draft + live marker + Pickr
+	 *  and record it. Returns false when the text isn't a colour so the
+	 *  caller can snap the field back to the current value. */
+	function applyHexInput(raw: string): boolean {
+		const hex = parseColorInput(raw);
+		if (!hex || !draft) return false;
+		draft.color = hex;
+		applyDraftLive();
+		try {
+			pickr?.setColor(hex, true);
+		} catch {
+			/* Pickr may be mid-teardown — draft already holds the value */
+		}
+		recordRecent(hex);
+		return true;
+	}
+	function onHexChange(e: Event) {
+		const el = e.target as HTMLInputElement;
+		if (!applyHexInput(el.value)) el.value = normalizeHex(draftColor); // reject → restore
+	}
+
 	/** Normalise a rotation to `[0, 360)` for display + storage. `undefined`
 	 *  → 0 (default rotation for legacy markers). Non-finite → 0 so a stray
 	 *  NaN doesn't invalidate the SVG transform. */
@@ -240,13 +282,10 @@
 	$effect(() => {
 		if (!pickrAnchor) return;
 		const anchor = pickrAnchor;
-		// Portal Pickr into `document.body` and let the `.pcr-app`
-		// z-index (bumped above the props dialog's 83) do the layering.
-		// Anchoring it inside the props dialog itself makes it a child
-		// of an `overflow: hidden` element, which clips the popover
-		// against the dialog's rounded rectangle — the "colour wheel
-		// is cut off" bug. Body is safe: bits-ui portals its own
-		// dialogs the same way.
+		// Portal Pickr into `document.body` — the clipping-free path. The
+		// hex input inside the popover is still reachable because
+		// Dialog.Content below pairs this with an `onFocusOutside` guard
+		// that treats `.pcr-app` as part of the dialog's focus trap.
 		const container = document.body;
 		// `untrack` the initial color read so this effect ONLY re-runs
 		// when the anchor element (or the parent container) actually
@@ -278,15 +317,17 @@
 				preview: true,
 				opacity: false,
 				hue: true,
-				// Hex input lives INSIDE the popover now, with the dialog's
-				// `interactOutsideBehavior="ignore"` keeping a click or paste
-				// into Pickr's portalled popover from closing the dialog, and
-				// the overrides below theming `.pcr-result` to match the
-				// dialog's dark controls. Pickr still parses hex / rgb() /
-				// hsl() on paste, so the standalone RGB read-out row is gone.
+				// No text field inside the popover: Pickr portals to <body>
+				// and bits-ui's dialog focus trap yanks focus back to the
+				// trigger button whenever an input in the portalled popover
+				// is clicked, so a hex field there would be unusable by
+				// keyboard. The editable, themeable hex field lives in the
+				// dialog body instead (see the `.mp-hex-input` row) where
+				// the focus trap can't fight it; swatch + wheel still commit
+				// through the Pickr `change` listener as before.
 				interaction: {
 					hex: false,
-					input: true,
+					input: false,
 					clear: false,
 					save: false,
 				},
@@ -841,6 +882,26 @@
 									</g>
 								</svg>
 							</button>
+						</label>
+
+						<!-- Hex field — lives in the dialog body (not the Pickr popover)
+						     because Pickr portals its popover to <body> and bits-ui's
+						     focus trap yanks focus back to the trigger whenever an
+						     input in the portalled popover is clicked. Shows the
+						     current colour as `#rrggbb` and accepts hex / rgb() /
+						     `r,g,b` on change. -->
+						<label class="mp-props-field mp-props-field--hex">
+							<span class="mp-props-label">Hex</span>
+							<input
+								class="mp-hex-input"
+								type="text"
+								spellcheck="false"
+								autocomplete="off"
+								disabled={!canSave}
+								value={normalizeHex(draftColor)}
+								onchange={onHexChange}
+								aria-label="Icon colour as hex — type #rrggbb to set"
+							/>
 						</label>
 
 						<label class="mp-props-field mp-props-field--icon">

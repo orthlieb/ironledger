@@ -209,17 +209,22 @@ export const THIN = 0.6;
  * their back faces; swapping the vector changes how 3D the whole
  * settlement reads at marker scale without touching ~25 call sites.
  *
- * - `standard` — tightened oblique (34° above horizontal, length ≈ 0.90).
+ * - `standard` — tightened cab-oblique (~34° above horizontal, length ≈ 0.90).
  *   Replaces the older `[0.62, 0.42]` (length ≈ 0.75) that read flat at
  *   marker scale; the 20 % deeper vector exposes more of each shaded
  *   right-flank so the oblique projection actually reads 3D.
- * - `iso` — closer to true 2:1 isometric: 30° above horizontal and a
- *   full unit length. Deepest view; use when the user wants the icon
- *   to be unambiguously 3D at the cost of a taller footprint.
+ * - `iso` — intentionally pushed well past true 2:1 isometric so the toggle
+ *   reads AS a toggle, not a hair-shift: ~34° above horizontal (same angle
+ *   as standard, so the gable orientation doesn't flip around) but length ≈
+ *   1.68 — nearly double standard. Every back face protrudes almost twice
+ *   as far, the shaded right-flank doubles in area, and the whole settlement
+ *   stretches up-and-right in a way that clearly differs from the flatter
+ *   default at a glance. Users who want more subtlety can stick with
+ *   standard; iso is "lean into it" mode.
  */
 const DEPTH_PROFILES = {
 	standard: [0.75, 0.5],
-	iso: [0.87, 0.58],
+	iso: [1.4, 0.95],
 };
 /** Active depth coefficients. Picked by setDepthProfile() at the start
  *  of a `generate()` and reset to 'standard' when the render completes
