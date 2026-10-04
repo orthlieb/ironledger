@@ -101,6 +101,29 @@ export interface MapMarker {
 	 *  generated icon; `icon` stays the plain fallback. See
 	 *  settlementRecipe.ts. */
 	settlement?: SettlementRecipe;
+	/** Per-marker icon size multiplier. 1 (absent) = the map's default
+	 *  icon extent; 0.5 shrinks it to half, 3 blows it up to triple. The
+	 *  hit-test tolerance scales the same way so a big marker is as easy
+	 *  to grab as a small one. Clamped to [MIN_MARKER_SCALE, MAX_MARKER_SCALE]
+	 *  at every entry point (schema, importer, dialog). */
+	scale?: number;
+}
+
+/** Allowed per-marker icon scale range. Mirrors the zod bounds in
+ *  `apps/api/src/routes/maps.ts` so the server never rejects a value the
+ *  UI could produce. */
+export const MIN_MARKER_SCALE = 0.5;
+export const MAX_MARKER_SCALE = 3;
+
+/** True-safe scale accessor: anything out-of-range or missing falls back
+ *  to 1 so a hand-edited row can't shrink a marker to zero or wedge NaN
+ *  into the hit-test math. */
+export function markerScale(m: Pick<MapMarker, 'scale'>): number {
+	const s = m.scale;
+	if (typeof s !== 'number' || !Number.isFinite(s)) return 1;
+	if (s < MIN_MARKER_SCALE) return MIN_MARKER_SCALE;
+	if (s > MAX_MARKER_SCALE) return MAX_MARKER_SCALE;
+	return s;
 }
 
 /** Compass positions the label may sit in relative to the icon (icon
@@ -588,11 +611,11 @@ export async function unlinkEntityFromMaps(entityId: string): Promise<void> {
  *  the effective icon half-size (world units) so mobile's 2× glyphs and
  *  desktop's 1× glyphs both get a hit target sized to what's on screen. */
 export function markersAt(x: number, y: number, tolerance: number): MapMarker[] {
-	const tolSq = tolerance * tolerance;
 	return mapState.markers.filter((m) => {
 		const dx = m.x - x;
 		const dy = m.y - y;
-		return dx * dx + dy * dy <= tolSq;
+		const r = tolerance * markerScale(m);
+		return dx * dx + dy * dy <= r * r;
 	});
 }
 

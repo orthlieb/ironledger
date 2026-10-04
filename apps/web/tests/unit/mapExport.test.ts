@@ -33,6 +33,7 @@ import {
 	buildMapZipEntries,
 	cleanLabelStyle,
 	cleanLabelPosition,
+	cleanMarkerScale,
 } from '../../src/lib/mapExport.js';
 import type { MapMarker, MapServerSettings } from '../../src/lib/mapStore.svelte.js';
 
@@ -199,6 +200,20 @@ describe('buildMapZipEntries — envelope', () => {
 		expect(cleanLabelPosition('centre')).toBeUndefined();
 		expect(cleanLabelPosition(0)).toBeUndefined();
 		expect(cleanLabelPosition(null)).toBeUndefined();
+
+		// Scale import — in-range values round-trip, non-finite /
+		// out-of-range / wrong-type values fall through to undefined so
+		// a hand-edited manifest can't inject NaN or a 100× scale.
+		expect(cleanMarkerScale(1)).toBe(1);
+		expect(cleanMarkerScale(0.5)).toBe(0.5);
+		expect(cleanMarkerScale(3)).toBe(3);
+		expect(cleanMarkerScale(1.75)).toBe(1.75);
+		expect(cleanMarkerScale(0.4)).toBeUndefined();
+		expect(cleanMarkerScale(3.1)).toBeUndefined();
+		expect(cleanMarkerScale(Number.NaN)).toBeUndefined();
+		expect(cleanMarkerScale(Infinity)).toBeUndefined();
+		expect(cleanMarkerScale('1.5')).toBeUndefined();
+		expect(cleanMarkerScale(null)).toBeUndefined();
 	});
 
 	it('map.json preserves labelStyle + labelPosition (typographic fields)', async () => {

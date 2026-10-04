@@ -35,6 +35,9 @@
 	import {
 		updateMarker,
 		removeMarker,
+		markerScale,
+		MIN_MARKER_SCALE,
+		MAX_MARKER_SCALE,
 		type MapMarker,
 		type MapMarkerLabelPosition,
 	} from '$lib/mapStore.svelte.js';
@@ -434,6 +437,11 @@
 		settlement: SettlementRecipe | undefined;
 		color: string;
 		angle: number;
+		/** Per-marker icon scale multiplier (1 = default). Draft keeps the
+		 *  normalised value — writes back to `MapMarker.scale` as absent
+		 *  when it rounds to 1 so default-scale markers stay byte-identical
+		 *  with pre-scaling data. */
+		scale: number;
 		entityId: string;
 		/** Text emphasis on the label — mirrors the boolean flags on
 		 *  `MapMarker.labelStyle`. Kept as four discrete booleans in the
@@ -475,6 +483,7 @@
 			settlement: m.settlement && { ...m.settlement },
 			color: m.color ?? DEFAULT_MARKER_COLOR,
 			angle: normalizeAngle(m.angle),
+			scale: markerScale(m),
 			entityId: m.entityId ?? '',
 			bold: !!m.labelStyle?.bold,
 			italic: !!m.labelStyle?.italic,
@@ -518,6 +527,10 @@
 			settlement: draft.settlement,
 			color: draft.color,
 			angle: draft.angle,
+			// Store absent when it round-trips to 1 so default-scale
+			// markers stay byte-identical with pre-scaling rows and never
+			// generate a persistence delta.
+			scale: Math.abs(draft.scale - 1) < 0.005 ? undefined : draft.scale,
 			entityId: draft.entityId || undefined,
 			labelStyle,
 			labelPosition: draft.labelPosition === 'bottom' ? undefined : draft.labelPosition,
@@ -588,6 +601,14 @@
 		draft.angle = normalizeAngle(draft.angle + delta);
 		applyDraftLive();
 	}
+	function onDraftScaleInput(e: Event) {
+		if (!draft) return;
+		const raw = (e.target as HTMLInputElement).value;
+		const n = parseFloat(raw);
+		if (!Number.isFinite(n)) return;
+		draft.scale = Math.min(MAX_MARKER_SCALE, Math.max(MIN_MARKER_SCALE, n));
+		applyDraftLive();
+	}
 	function pickDraftEntity(value: string) {
 		if (!draft) return;
 		draft.entityId = value;
@@ -651,6 +672,7 @@
 				settlement: originalMarker.settlement,
 				color: originalMarker.color,
 				angle: originalMarker.angle,
+				scale: Math.abs(originalMarker.scale - 1) < 0.005 ? undefined : originalMarker.scale,
 				entityId: originalMarker.entityId || undefined,
 				labelStyle: anyStyle
 					? {
@@ -916,6 +938,23 @@
 							/>
 						</label>
 					</div>
+
+					<label class="mp-props-field mp-props-field--scale">
+						<span class="mp-props-label"
+							>Size <span class="mp-sel-scale-readout">{draft.scale.toFixed(2)}×</span></span
+						>
+						<input
+							class="mp-sel-scale-range"
+							type="range"
+							min={MIN_MARKER_SCALE}
+							max={MAX_MARKER_SCALE}
+							step="0.1"
+							disabled={!canSave}
+							value={draft.scale}
+							oninput={onDraftScaleInput}
+							aria-label="Icon size multiplier"
+						/>
+					</label>
 
 					<!-- Not a <label>: a <label> forwards clicks to its first
 					     labelable descendant, which would hijack the "Go to" button. -->
