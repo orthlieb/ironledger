@@ -235,7 +235,7 @@ older exports (which pre-date the Place entity) still load — a missing
         "region": "Ragged Coast",
         "location": "Tavern",
         "locationDescription": "waterfront, second door on the left",
-        "withinSettlementName": "Whitehaven",
+        "withinRef": { "kind": "community", "name": "Whitehaven" },
         "notes": "",
         "...": "…"
       }
@@ -263,26 +263,48 @@ The examples above show only the always-present core. The following
 enabled, absent (or empty) otherwise — and, per the round-trip rule above,
 they export and import exactly like any other field:
 
-| Entity        | Extension        | Optional fields                                                                          |
-| ------------- | ---------------- | ---------------------------------------------------------------------------------------- |
-| **Community** | Lodestar         | `type`, `condition`, `firstLook`, `disposition`, `projects`, `culturalTouchstones` (six) |
-| **Community** | (always)         | `locationDescription`, `situationalNotes`                                                |
-| **NPC**       | Lodestar / Delve | `firstLook`, `activity`, `disposition`, `situationalNotes`                               |
-| **Place**     | (always)         | `locationDescription`, `situationalNotes`, `withinSettlementId` / `withinSettlementName` |
+| Entity        | Extension        | Optional fields                                                                                                                                |
+| ------------- | ---------------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Community** | Lodestar         | `type`, `condition`, `firstLook`, `disposition`, `projects`, `culturalTouchstones` (six)                                                       |
+| **Community** | (always)         | `locationDescription`, `situationalNotes`, `within` / `withinRef`                                                                              |
+| **NPC**       | Lodestar / Delve | `firstLook`, `activity`, `disposition`, `situationalNotes`, `within` / `withinRef`                                                             |
+| **Place**     | (always)         | `locationDescription`, `situationalNotes`, `within` / `withinRef` (modern), `withinSettlementId` / `withinSettlementName` (legacy, place-only) |
 
 `Place` currently shares the `Community` field set (it renders in the same
 card), but is stored as its own entity kind so future place-specific fields
 don't need a schema shuffle. `Place.trouble` is deprecated (kept for
 back-compat, shown only if populated).
 
-> **A Place's parent settlement is carried by name.** A live `Place` links
-> to its parent `Community` by `withinSettlementId`, but ids are minted
-> per-user, so a raw id never re-links on another ledger. On export the id is
-> dropped and the parent's current name is written as **`withinSettlementName`**;
-> on import that name is resolved back to the local settlement's id (matched
-> case/space-insensitively, after the communities land). Unresolved or
-> standalone places import with no parent link. This mirrors how bundled maps
-> re-link their owner entity by name.
+> **Containment — nested entities round-trip by name + kind.** Live, every
+> Community, NPC, and Place carries an optional `within` ref of shape
+> `"kind:id"` (e.g. `"community:9b2c-…"`, `"place:7af3-…"`) naming its single
+> parent in the containment tree. Ids are minted per-user, so the raw ref
+> isn't portable. On export the ref is rewritten to a portable
+> **`withinRef: { kind, name }`** pair and the live `within` is dropped;
+> `region` on a nested entity is flattened to the tree root's region so a
+> standalone reader sees the inherited value.
+>
+> On import, every row is persisted with `withinRef` still on it (parents
+> may not have landed yet), then a second **relink pass** (`relinkContainment()`)
+> runs once all three kinds are present. It resolves each `withinRef` by
+> looking up the current entity of that kind by normalised name, rebuilds
+> `within = "kind:fresh-id"`, and strips the transport field. Rows whose
+> parent name can't be resolved (not in the archive, typo, cycle) land
+> top-level — never silently glued to the wrong parent. A `sanitizeContainment`
+> step then enforces the model's rules so a hand-edited archive can't inject
+> an illegal shape:
+>
+> - a settlement inside a settlement → broken
+> - two settlements on one chain → one drops
+> - cycles → broken
+> - NPC as a container → child drops to top-level
+>
+> **Legacy place-only transport.** For back-compat, a Place may still carry
+> **`withinSettlementName`** (the raw-id side was `withinSettlementId`) in
+> place of `withinRef`. The relink pass accepts either; new exports always
+> write `withinRef` so NPCs and nested Communities can round-trip too. Both
+> transport fields are stripped once resolved and are never persisted on a
+> live entity.
 
 Two fields are worth calling out:
 
@@ -423,25 +445,27 @@ the concept→oracle resolution in
 
 ### Community (`communities[]`)
 
-| Key                   | Contains                                      | Oracle                                                                                                                                                            |
-| --------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                  | uuid                                          | — (generated)                                                                                                                                                     |
-| `name`                | Settlement name                               | **Settlement: Name** (`settlementName`) or **Settlement: Quick Name Generator** (`settlementNameQuick`), base                                                     |
-| `region`              | Ironlands region (Flooded Lands, Havens…)     | **Location: Region** (`region`), base; YRT replaces with its own **Location: Region** (`yrtRegion`)                                                               |
-| `location`            | The settlement's setting / landmark           | **Location** (`location`) or **Location: Coastal Waters** (`coastalWatersLocation`); Lodestar supersedes with **Overland Landmark** / **Coastal Waters Landmark** |
-| `locationDescription` | Descriptive detail of the location            | **Location: Descriptor** (`locationDescriptor`), base                                                                                                             |
-| `trouble`             | The settlement's current trouble              | **Settlement: Troubles** (`settlementTrouble`), base                                                                                                              |
-| `type`                | Settlement size / kind                        | **Settlement: Type** (`settlementType`), **Lodestar** (YRT `yrtSettlementType`)                                                                                   |
-| `condition`           | Current condition                             | **Settlement: Condition** (`settlementCondition`), **Lodestar**                                                                                                   |
-| `firstLook`           | At-a-glance impression                        | **Settlement: First Look** (`settlementFirstLook`), **Lodestar**                                                                                                  |
-| `disposition`         | Disposition toward the party                  | **Settlement: Disposition** (`settlementDisposition`), **Lodestar**                                                                                               |
-| `projects`            | What the settlement is working on             | **Settlement: Projects** (`settlementProjects`), **Lodestar**                                                                                                     |
-| `culturalTouchstones` | Cultural flavor                               | **Settlement: Cultural Touchstones** (`settlementCulturalTouchstones`), **Lodestar**                                                                              |
-| `notes`               | Long-form description (Description tab)       | —                                                                                                                                                                 |
-| `situationalNotes`    | Short situational notes (Core tab)            | —                                                                                                                                                                 |
-| `portraitEtag`        | Portrait content-hash (blob store)            | —                                                                                                                                                                 |
-| `imageUrl`            | _@deprecated_ inline base64 portrait (import) | —                                                                                                                                                                 |
-| `createdAt`           | creation timestamp                            | —                                                                                                                                                                 |
+| Key                   | Contains                                       | Oracle                                                                                                                                                            |
+| --------------------- | ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                  | uuid                                           | — (generated)                                                                                                                                                     |
+| `name`                | Settlement name                                | **Settlement: Name** (`settlementName`) or **Settlement: Quick Name Generator** (`settlementNameQuick`), base                                                     |
+| `region`              | Ironlands region (Flooded Lands, Havens…)      | **Location: Region** (`region`), base; YRT replaces with its own **Location: Region** (`yrtRegion`)                                                               |
+| `location`            | The settlement's setting / landmark            | **Location** (`location`) or **Location: Coastal Waters** (`coastalWatersLocation`); Lodestar supersedes with **Overland Landmark** / **Coastal Waters Landmark** |
+| `locationDescription` | Descriptive detail of the location             | **Location: Descriptor** (`locationDescriptor`), base                                                                                                             |
+| `trouble`             | The settlement's current trouble               | **Settlement: Troubles** (`settlementTrouble`), base                                                                                                              |
+| `type`                | Settlement size / kind                         | **Settlement: Type** (`settlementType`), **Lodestar** (YRT `yrtSettlementType`)                                                                                   |
+| `condition`           | Current condition                              | **Settlement: Condition** (`settlementCondition`), **Lodestar**                                                                                                   |
+| `firstLook`           | At-a-glance impression                         | **Settlement: First Look** (`settlementFirstLook`), **Lodestar**                                                                                                  |
+| `disposition`         | Disposition toward the party                   | **Settlement: Disposition** (`settlementDisposition`), **Lodestar**                                                                                               |
+| `projects`            | What the settlement is working on              | **Settlement: Projects** (`settlementProjects`), **Lodestar**                                                                                                     |
+| `culturalTouchstones` | Cultural flavor                                | **Settlement: Cultural Touchstones** (`settlementCulturalTouchstones`), **Lodestar**                                                                              |
+| `notes`               | Long-form description (Description tab)        | —                                                                                                                                                                 |
+| `situationalNotes`    | Short situational notes (Core tab)             | —                                                                                                                                                                 |
+| `within`              | Parent ref `"kind:id"` (live only)             | — (link)                                                                                                                                                          |
+| `withinRef`           | Parent `{ kind, name }` — export / import only | — (relink bridge)                                                                                                                                                 |
+| `portraitEtag`        | Portrait content-hash (blob store)             | —                                                                                                                                                                 |
+| `imageUrl`            | _@deprecated_ inline base64 portrait (import)  | —                                                                                                                                                                 |
+| `createdAt`           | creation timestamp                             | —                                                                                                                                                                 |
 
 The six Lodestar fields (`type` … `culturalTouchstones`) are the "Lodestar
 settlement suite" — each backed by a `Settlement: …` Lodestar oracle.
@@ -463,6 +487,8 @@ settlement suite" — each backed by a `Settlement: …` Lodestar oracle.
 | `notes`                     | Long-form description; YRT **Touched** (`yrtTouched`) writes a breakdown here | (YRT, when rolled)                                                                                                      |
 | `situationalNotes`          | Short situational notes                                                       | —                                                                                                                       |
 | `deceased`                  | alive (absent / false) vs deceased                                            | —                                                                                                                       |
+| `within`                    | Parent ref `"kind:id"` (live only; community or place)                        | — (link)                                                                                                                |
+| `withinRef`                 | Parent `{ kind, name }` — export / import only                                | — (relink bridge)                                                                                                       |
 | `portraitEtag` / `imageUrl` | portrait (blob / _@deprecated_ inline)                                        | —                                                                                                                       |
 | `createdAt`                 | timestamp                                                                     | —                                                                                                                       |
 
@@ -477,8 +503,10 @@ _UI name is "Landmark"; the stored kind + body key stay `place` / `places`._
 | `region`                     | Region                                                   | **Location: Region** (`region`); **inherited from parent settlement** when nested                                                                                                                                                                               |
 | `location`                   | The landmark — _what it is_                              | Freestanding: **Location** (`location`) / **Location: Coastal Waters** (`coastalWatersLocation`), Lodestar → **Overland Landmark** / **Coastal Waters Landmark**. Nested: YRT **Location: Settlement Landmark** (`yrtCityTownLocation`), else base **Location** |
 | `locationDescription`        | Landmark detail                                          | **Location: Descriptor** (`locationDescriptor`), base                                                                                                                                                                                                           |
-| `withinSettlementId`         | Parent Community id (live only)                          | — (link)                                                                                                                                                                                                                                                        |
-| `withinSettlementName`       | Parent name — export / import only                       | — (relink bridge)                                                                                                                                                                                                                                               |
+| `within`                     | Parent ref `"kind:id"` (live only; community or place)   | — (link)                                                                                                                                                                                                                                                        |
+| `withinRef`                  | Parent `{ kind, name }` — export / import only           | — (relink bridge; modern transport, covers any kind)                                                                                                                                                                                                            |
+| `withinSettlementId`         | _@deprecated_ Parent Community id (live, back-compat)    | — (link)                                                                                                                                                                                                                                                        |
+| `withinSettlementName`       | _@deprecated_ Parent settlement name — export / import   | — (legacy relink bridge, place-only)                                                                                                                                                                                                                            |
 | `trouble`                    | _@deprecated_ — Places no longer roll Settlement Trouble | —                                                                                                                                                                                                                                                               |
 | `notes` / `situationalNotes` | descriptions                                             | —                                                                                                                                                                                                                                                               |
 | `portraitEtag` / `imageUrl`  | portrait                                                 | —                                                                                                                                                                                                                                                               |
@@ -576,13 +604,14 @@ Entity ids are minted **per account**, so a raw id inside one export is
 meaningless on another ledger (and even on the same ledger after a merge
 regenerates ids). Every cross-entity link is therefore exported **by name**
 and re-resolved to the current id on import — matching lower-cased + trimmed,
-the same way collisions match. Three links use this scheme:
+the same way collisions match. Four links use this scheme:
 
-| Link                          | Field on the live entity          | Exported as                   | Re-resolved on import                                                                                                    |
-| ----------------------------- | --------------------------------- | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
-| **Place → parent settlement** | `Place.withinSettlementId`        | `withinSettlementName`        | `relinkPlaces()` → the community's current id (after communities land)                                                   |
-| **Map → owner entity**        | map `ownerKind` + `ownerId`       | `ownerKind` + `ownerName`     | matched to the owner's current id; unmatched → the map imports standalone                                                |
-| **Marker → entity**           | `marker.entityId` (`"kind:uuid"`) | `entityId` **+** `entityName` | `(kind, entityName)` → the entity's current id; unresolved → the link is dropped and the pin stays as a plain annotation |
+| Link                                     | Field on the live entity          | Exported as                   | Re-resolved on import                                                                                                                                    |
+| ---------------------------------------- | --------------------------------- | ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Community / NPC / Place → parent**     | `.within = "kind:id"`             | `withinRef: { kind, name }`   | `relinkContainment()` — after all three kinds land, resolves `{kind, name}` → the parent's current id, then runs `sanitizeContainment` on the whole tree |
+| **Place → parent settlement** _(legacy)_ | `Place.withinSettlementId`        | `withinSettlementName`        | Same relink pass accepts this for back-compat; place-only                                                                                                |
+| **Map → owner entity**                   | map `ownerKind` + `ownerId`       | `ownerKind` + `ownerName`     | matched to the owner's current id; unmatched → the map imports standalone                                                                                |
+| **Marker → entity**                      | `marker.entityId` (`"kind:uuid"`) | `entityId` **+** `entityName` | `(kind, entityName)` → the entity's current id; unresolved → the link is dropped and the pin stays as a plain annotation                                 |
 
 Notes:
 
@@ -590,7 +619,7 @@ Notes:
   the link to reconnect — which is why the Everything bundle re-links after all
   entities are applied. A partial import that brings a map/marker without its
   target leaves the pin unlinked (never dangling at a foreign id).
-- `withinSettlementName`, `ownerName`, and the marker `entityName` are
+- `withinRef`, `withinSettlementName`, `ownerName`, and the marker `entityName` are
   **export/import-only** — they are stripped once resolved and never persisted
   server-side.
 - A **legacy export** (no `entityName` on a marker) keeps the raw `entityId`
