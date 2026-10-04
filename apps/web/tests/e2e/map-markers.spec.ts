@@ -22,8 +22,8 @@
  *   • Delete — the editor's DELETE button removes the pin outright.
  *
  * The map is opened via the top-nav "Map" button (the per-entity Map
- * buttons were removed); if no background has been uploaded yet, the
- * dialog's own "Add background image" CTA does the initial upload.
+ * buttons were removed); each test uploads a 1×1 background through the
+ * dialog's own file input (the "Add background image" CTA's input).
  *
  * Idempotency: markers persist server-side, so `clearMapMarkers()` runs before
  * each test (the map + its background stay; only markers are wiped). A fresh
@@ -67,14 +67,20 @@ async function waitForHome(page: Page): Promise<void> {
 async function openMap(page: Page): Promise<void> {
 	await page.locator('[aria-label="Open the campaign map"]').first().click();
 	await expect(page.locator('.mp-dialog')).toBeVisible({ timeout: 15_000 });
-	const cta = page.locator('.mp-empty-cta-btn');
-	if (await cta.count()) {
-		await page.locator('#mp-file-input').setInputFiles({
-			name: 'campaign-map.png',
-			mimeType: 'image/png',
-			buffer: PNG_1X1,
-		});
-	}
+	// The active map loads asynchronously, so the CTA can render a beat after
+	// the dialog does — a "no CTA yet, skip the upload" check races, and the
+	// CTA later swallows the placement click. Wait until the map has loaded
+	// (it shows either the CTA or a background), then always (re)upload —
+	// uploading is idempotent — and wait for the CTA to clear.
+	await page.locator('.mp-empty-cta').or(page.locator('.mp-bg-image')).first().waitFor({
+		timeout: 10_000,
+	});
+	await page.locator('#mp-file-input').setInputFiles({
+		name: 'campaign-map.png',
+		mimeType: 'image/png',
+		buffer: PNG_1X1,
+	});
+	await expect(page.locator('.mp-empty-cta')).toHaveCount(0, { timeout: 8_000 });
 	await expect(page.locator('.mp-grid-capture')).toBeVisible({ timeout: 8_000 });
 }
 

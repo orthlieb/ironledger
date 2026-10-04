@@ -1,0 +1,17 @@
+{
+  "key": "ironlanders",
+  "name": "Ironlanders",
+  "source": "base",
+  "note": "Ironsworn's own people — farmers, crafters and traders: timber houses with thatched roofs, a parish church, and stone walls around the bigger towns. The default culture.",
+  "design": {},
+  "palette": {
+    "wall": "#EFEADF",
+    "roof": "#D9776B",
+    "wood": "#C9A97C",
+    "earth": "#94744F",
+    "water": "#8FB0B8",
+    "ink": "#3B2F28",
+    "flag": "#4A3B32",
+    "halo": "#F4EFE4"
+  }
+}

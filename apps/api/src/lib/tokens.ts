@@ -103,9 +103,9 @@ export function generateFamilyId(): string {
  * Calculates the expiry date for a new refresh token.
  */
 export function refreshTokenExpiresAt(): Date {
-  const d = new Date();
-  d.setDate(d.getDate() + config.REFRESH_TOKEN_TTL_DAYS);
-  return d;
+  // A fixed duration, not "same wall-clock time N days on": setDate() in
+  // local time stretched or shrank the TTL by an hour across a DST change.
+  return new Date(Date.now() + config.REFRESH_TOKEN_TTL_DAYS * 24 * 60 * 60 * 1000);
 }
 
 // ---------------------------------------------------------------------------

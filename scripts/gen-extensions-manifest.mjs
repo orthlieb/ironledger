@@ -7,7 +7,7 @@
  * paths relative to that root.
  *
  * Two content layouts are supported during the migration:
- *   • Self-contained (Phase 3+): extensions/<id>/{moves,oracles,foes,assets}/…
+ *   • Self-contained (Phase 3+): extensions/<id>/{moves,oracles,foes,assets,cultures}/…
  *     — everything the extension owns lives in its folder (root = extensions/<id>).
  *   • Legacy (base only): core content still in apps/api/data/, type-organised
  *     and tagged by filename / category / source (root = apps/api/data). Delve,
@@ -42,7 +42,7 @@ const STATIC_FOES = path.join(REPO, 'apps/web/static/foes');
 
 /** Filename source token → extension id (assets_ironsworn → base). */
 const ALIAS = { ironsworn: 'base', delve: 'delve', yrt: 'yrt' };
-const CONTENT_DIRS = ['moves', 'oracles', 'foes', 'assets', 'delve'];
+const CONTENT_DIRS = ['moves', 'oracles', 'foes', 'assets', 'delve', 'cultures'];
 
 const readJson = async (p) => JSON.parse(await readFile(p, 'utf-8'));
 const listJson = async (dir) =>
@@ -56,6 +56,9 @@ const emptyProvides = () => ({
   foes: [],
   foeOverrides: [],
   delveTables: [],
+  // Settlement-builder cultures (one JSON per culture) — see
+  // apps/web/src/lib/settlement-kit/ and docs/campaign-map.md.
+  cultures: [],
 });
 
 /** Provides for a self-contained extension dir (extensions/<id>/…). */
@@ -73,6 +76,7 @@ async function selfContainedProvides(root) {
     else p.foes.push(`foes/${f}`);
   }
   for (const f of await listJson(path.join(root, 'delve'))) p.delveTables.push(`delve/${f}`);
+  for (const f of await listJson(path.join(root, 'cultures'))) p.cultures.push(`cultures/${f}`);
   return p;
 }
 
@@ -105,6 +109,10 @@ async function legacyProvides(ids) {
       if (id) put(id, 'foes', `foes/${f}`);
       else orphans.push(`foes/${f}`);
     }
+  }
+  for (const f of await listJson(path.join(DATA, 'cultures'))) {
+    const src = (await readJson(path.join(DATA, 'cultures', f))).source ?? 'base';
+    put(src, 'cultures', `cultures/${f}`);
   }
   return { byId, orphans };
 }
@@ -175,6 +183,17 @@ async function build() {
         ? {
             supersedesOracles: Object.fromEntries(
               Object.entries(meta[id].supersedesOracles).sort(([a], [b]) => (a < b ? -1 : 1)),
+            ),
+          }
+        : {}),
+      // Culture-key → replacement-key rewrites applied while this extension
+      // is enabled (e.g. YRT's `elves` → `verdani`). The settlement builder
+      // offers the replacement instead, and markers that reference the base
+      // culture draw with it.
+      ...(meta[id].supersedesCultures && Object.keys(meta[id].supersedesCultures).length
+        ? {
+            supersedesCultures: Object.fromEntries(
+              Object.entries(meta[id].supersedesCultures).sort(([a], [b]) => (a < b ? -1 : 1)),
             ),
           }
         : {}),

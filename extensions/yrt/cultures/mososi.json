@@ -1,0 +1,41 @@
+{
+  "key": "mososi",
+  "name": "Mososi",
+  "note": "Optime and plain — a plain sentence in answer to a flourish: straight roofs, square windows, masonry, and only the plain green flag of Mososi.",
+  "design": {
+    "join": "sharp",
+    "flourish": 0,
+    "concave": 0,
+    "pitch": 0.7,
+    "gable": 0.4,
+    "storeys": 0.4,
+    "window": "square",
+    "manyDoors": false,
+    "towerRoof": "cone",
+    "spire": 1.8,
+    "flags": true,
+    "flagFolds": 1,
+    "flagLen": 11,
+    "wall": "stone",
+    "merlons": false,
+    "wallShape": "square",
+    "gate": "tower",
+    "wallTowers": 4,
+    "church": true,
+    "symbol": "orb",
+    "keep": "city",
+    "market": "town",
+    "industry": 0.35,
+    "masonry": true
+  },
+  "palette": {
+    "wall": "#ECE7DD",
+    "roof": "#A0523D",
+    "wood": "#9A7B57",
+    "earth": "#8C7050",
+    "water": "#8FB0B8",
+    "ink": "#33302C",
+    "flag": "#3E7A44",
+    "halo": "#F6F2EA"
+  }
+}

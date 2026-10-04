@@ -1,0 +1,40 @@
+{
+  "key": "varou",
+  "name": "Varou",
+  "source": "base",
+  "note": "Wolf-folk of the deep woods who value territory above all: steep longhouses behind a stake palisade, beaded ornament, long war-banners, clan marks clawed into the posts.",
+  "design": {
+    "pitch": 1.1,
+    "depth": 1.1,
+    "concave": 0.05,
+    "gable": 0.1,
+    "longhouse": 0.6,
+    "storeys": 0,
+    "window": "slit",
+    "towerRoof": "cone",
+    "spire": 1.6,
+    "flags": true,
+    "flagFolds": 1,
+    "flagLen": 15,
+    "wall": "palisade",
+    "wallShape": "round",
+    "gate": "tower",
+    "church": false,
+    "symbol": "claw",
+    "keep": "none",
+    "market": "town",
+    "industry": 0.1,
+    "flourish": 0.4,
+    "scale": 1.1
+  },
+  "palette": {
+    "wall": "#E3D6BF",
+    "roof": "#7A5A3C",
+    "wood": "#8B6A44",
+    "earth": "#7A5A3C",
+    "water": "#8FA8B0",
+    "ink": "#2A221B",
+    "flag": "#8E2A22",
+    "halo": "#F2EBDD"
+  }
+}

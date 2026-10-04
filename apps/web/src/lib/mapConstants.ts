@@ -22,9 +22,16 @@
 // plugin in vite.config.ts). Marker.icon stores the composite manifest
 // key "<category>/<slug>". Old bare-slug values still resolve via the
 // fallback in resolveMapIcon().
+//
+// Layered icons (the generated settlement kit — see mapLayered.ts) are not
+// inlined in the manifest: they carry a `src` URL and are fetched lazily by
+// mapIconCache.ts, then drawn in their own palette with the marker colour on
+// the roofs.
 // =============================================================================
 
 import { MAP_ICONS, MAP_ICON_LIST, type MapIcon } from './generated/mapIconManifest.js';
+import { layeredPaths } from './mapIconCache.js';
+import { layeredMarkup, parsePalette, roleColours } from './mapLayered.js';
 
 /** Default aspect ratio (width / height) for a newly-created map with no
  *  background image yet — 16:9. Once a background is uploaded, the map's
@@ -207,6 +214,11 @@ const VECTOR_HALO_STROKE_RATIO = 0.16;
  * a thin separating edge. Radii scale with the icon's own pixel box so the
  * effect is uniform once fit to a common marker slot.
  *
+ * - **Layered** icons (the generated settlement kit): drawn in their own
+ *   palette, one path per colour role; only the roofs take `color` (the
+ *   default black marker keeps the icon's own roof colour). The halo goes on
+ *   the silhouette layer alone. Returns '' until the file has loaded.
+ *
  * `uid` MUST be unique per rendered instance (marker id, manifest key, …)
  * so the generated `<filter>` ids don't collide across the document.
  */
@@ -217,6 +229,21 @@ export function mapGlyphInner(
 	halo: boolean | 'proportional' = false,
 ): string {
 	const c = safeMarkerColor(color);
+	if (ic.layered && ic.src) {
+		const paths = layeredPaths(ic.src);
+		if (!paths) return '';
+		const palette = parsePalette(ic.palette);
+		const colours = roleColours(palette, c === DEFAULT_MARKER_COLOR ? undefined : c);
+		let haloAttrs: string | null = null;
+		if (halo === 'proportional') {
+			const [, , vbW, vbH] = ic.viewBox.split(/\s+/).map(Number);
+			const sw = Math.max(1, Math.max(vbW || 0, vbH || 0) * VECTOR_HALO_STROKE_RATIO * 0.5);
+			haloAttrs = ` stroke="${colours.sil}" stroke-width="${sw}" stroke-linejoin="round"`;
+		} else if (halo) {
+			haloAttrs = ` stroke="${colours.sil}" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"`;
+		}
+		return layeredMarkup(paths, colours, haloAttrs);
+	}
 	const halo_ = halo ? haloColor(c) : '';
 	if (!ic.raster) {
 		// `true` → a fixed 2 device-px stroke (`non-scaling-stroke`): map markers

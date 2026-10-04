@@ -212,9 +212,9 @@ picker automatically:
   `<g fill={color}>` at render time controls the color. `fill="none"`
   is preserved so outline-only paths stay uncoloured.
 
-### Icon formats — SVG and PNG
+### Icon formats — SVG, PNG and layered SVG
 
-Two source formats are supported, both keyed the same way and rendered
+Three source formats are supported, all keyed the same way and rendered
 through the same `<svg viewBox={ic.viewBox}>…{@html ic.inner}</svg>`
 marker path:
 
@@ -237,6 +237,22 @@ marker path:
   halo (dilated-alpha flood) is laid behind for legibility, matching the
   vector icons' `stroke` halo. At the default marker colour (black) a
   black-ink icon tints black — i.e. looks exactly as drawn.
+
+- **Layered SVG** (the generated settlement kit) — multi-colour art with
+  one `<path data-role="…">` per colour role (`sil`, `wall`,
+  `wall-shade`, `wood`, `earth`, `water`, `roof`, `roof-shade`, `flag`,
+  `ink`) and the culture's palette on the root
+  (`data-palette="wall:#…;roof:#…;…"`). Detected by its `data-role`
+  paths. These run to tens of KB each, so they are **not inlined**: the
+  manifest keeps a tight `viewBox`, the `palette` and a `src` URL, and
+  `mapIconCache.ts` fetches each file the first time it's drawn (a
+  `SvelteMap`, so the template re-renders when it lands; nothing is drawn
+  until then). `mapGlyphInner()` recolours by role via `mapLayered.ts`:
+  everything keeps the icon's palette except the **roofs, which take the
+  marker colour** (the default black marker keeps the icon's own roof
+  colour); the halo goes on the `sil` layer only. Markers draw them at
+  the raster scale (`RASTER_ICON_SCALE`). The files are _generated_ — see
+  "Settlement kit" below; don't hand-edit them.
 
 When both a `<slug>.svg` and a `<slug>.png` exist in the same category,
 the **PNG wins** (a dropped-in raster supersedes the old vector glyph of
@@ -262,6 +278,101 @@ manifest would be byte-for-byte identical, so it's cheap to re-run.
 The generated file is **gitignored** (`src/lib/generated/`); the
 `precheck` / `pretest` npm scripts run `build:map-icons` first so
 svelte-check and tests get a fresh manifest without executing Vite.
+
+### Extension icons
+
+An extension can contribute map icons in `extensions/<id>/map/<folder>/
+<slug>.svg`. They're indexed as category `<id>-<folder>`, labelled
+"<Folder> (<Extension name>)", tagged `source: <id>`, and copied into the
+git-ignored `static/map/_ext/` so they're served. The icon picker only
+offers them while that extension is enabled (`isSourceEnabled`); markers
+already placed with one keep rendering when it's off.
+
+### Settlement kit (generated icons)
+
+The generator lives in `src/lib/settlement-kit/` (`geom`, `render`,
+`pieces3d`, `layouts3d`, `ruins3d`; `generate.js` is the one entry point:
+recipe + culture → layered SVG). It's used three ways:
+
+- **Baked icons** — `scripts/build-settlement-icons.mjs`
+  (`npm run build:settlement-icons -w apps/web`) writes, in the layered
+  format above:
+  - **Core icons** in `static/map/settlement/`, in the default culture and
+    Parchment palette: single buildings (houses, towers, cathedral, clock
+    tower, mill, mine, lighthouse, tents, pavilion, gatehouses, walls,
+    docks…), settlements by size and wall, and ruins. Each replaces any old
+    icon of the same slug; `RETIRED` lists the old hand-drawn buildings
+    the kit drops outright. The non-building props (anvil, wheat, coins,
+    crowns, bridges…) stay hand-drawn.
+    Culture-styled settlements aren't baked: every culture is one pick away
+    in the builder. Output is checked in; re-run the script after changing
+    the kit.
+
+- **The Settlement builder** — the Choose Icon dialog's second tab
+  (`SettlementBuilder.svelte`). Just the essentials: size (tier),
+  culture, walls and wall shape, harbour, ruined +
+  decay (optionally burned: scorch marks and sooty walls), and a reroll
+  for the layout seed, with a large preview and a marker-size preview in
+  the marker's colour. "Use this" stores a **recipe** on the marker (see
+  below). A Recent strip keeps the last 8 recipes per browser
+  (`localStorage` `il:recentSettlements`, like the colour picker's
+  swatches); clicking one reuses it at once. Opening Change Icon on a
+  marker that already has a recipe lands on the builder, pre-filled.
+- **The playground** — `tools/settlement-playground.html`, a standalone
+  page with every knob (`npm run build:settlement-playground -w
+apps/web`). Its presets are the culture plugins, baked in at build
+  time. **Import culture** loads a `cultures/<key>.json` file to tweak
+  (unknown or mistyped fields are ignored), and **Export culture**
+  downloads the current knobs + colours as one, keeping the imported
+  culture's key.
+
+#### Cultures
+
+A culture is extension content: `cultures/<key>.json` in an extension
+(or `apps/api/data/cultures/` for the base game) holding `{key, name,
+note, design, palette}` — `design` is any subset of the kit's `Design`
+knobs (`pieces3d.js`), `palette` the eight colour roles. They're served
+merged at `/catalogue/cultures` (tagged with `source`) and loaded by
+`cultureStore.svelte.ts`. The builder offers the cultures of enabled
+sources, minus any an enabled extension supersedes via
+`supersedesCultures` in its `extension.json` (YRT: `{"elves":
+"verdani"}`). Two knobs set the overall line: `join` (sharp / round /
+soft joins — soft by default; Mososi alone keeps sharp), `towerBow`
+(straight / concave / convex tower walls — concave flares at the foot and
+narrows as it rises) and `wallBow` (wall tops that dip or crest between
+towers), both sliders from −1 (convex) to +1 (concave) set in the
+playground. Elves and Verdani swoop both inward.
+
+| Source | Cultures                                                 |
+| ------ | -------------------------------------------------------- |
+| base   | Ironlanders (default), Elves, Giants, Varou, Trolls      |
+| delve  | Merrow, Atanya                                           |
+| yrt    | Buralia, Mososi, Nysis, Ostrea, Verdani (replaces Elves) |
+| sample | Sample Culture (dev-only reference)                      |
+
+#### Recipe markers
+
+A marker with a generated icon carries `settlement: {tier, culture, seed,
+walls?, wallShape?, harbor?, ruin?: {decay,
+burned?}}` (`settlementRecipe.ts`) —
+a culture **key**, never the culture definition. `icon` still holds the
+plain fallback (`fallbackIcon(recipe)`, e.g. `settlement/town`) for older
+clients and the moment before the custom icon is drawn. At render time
+`resolveMarkerIcon(m)` (`settlementIcons.svelte.ts`) looks the culture up
+(following supersession; a culture that's gone draws with the default),
+generates the SVG in a Web Worker (`settlementWorker.ts`), primes
+`mapIconCache` under a `gen:` src and returns a synthetic layered
+`MapIcon`, so it draws through exactly the path a baked layered icon
+does. Generation is deterministic, so the same recipe always draws the
+same icon. Picking a plain icon clears the recipe. The API schema
+(`mapMarkerSchema`) and the zip importer (`cleanSettlementRecipe`) both
+validate the recipe.
+
+#### Picker lightbox
+
+Hovering a tile on the Icons tab shows the icon enlarged beside it
+(tiles are ~48 px, too small to judge a detailed settlement). Mouse and
+pen only; touch keeps tap-to-pick.
 
 ### Data compatibility
 
@@ -397,7 +508,8 @@ depending on whether a marker is selected.
 - **Pile-up popover** — when a click resolves to a snap point with more
   than one marker (common at low zoom, where sub-cell placements
   collapse), a small floating menu lists each marker (icon + label + a
-  glyph if it's linked to an entity). Click one to select or jump.
+  glyph if it's linked to an entity). Click one to select it (and show its
+  card).
   Outside click or Escape closes.
 - **Cut / Copy / Paste** — Cmd/Ctrl+X, C, V (plus toolbar buttons).
   Clipboard is a single in-memory slot, so paste works across maps —
@@ -405,6 +517,19 @@ depending on whether a marker is selected.
   mouse-hover position on the map, falling back to the visual center.
   Cut = copy + delete; the marker's label / icon / color / entity link
   ride along.
+
+### Marker card
+
+The card shows only what's been written — nothing is generated
+(`markerSummary.ts`): the linked entity's name, its kind, and its **Summary** (`shortDescription`, rendered as markdown). An unlinked marker
+shows its label and its icon's name.
+
+The card is a bits-ui Popover anchored to the marker's on-screen icon
+(`customAnchor`, re-positioned every frame so it follows panning, zooming
+and nudges). It takes no focus and ignores outside clicks and Escape: the
+map owns selection, and the card shows whenever a marker is selected and
+the editor isn't open, it isn't being dragged, and no placement or
+measuring is armed.
 
 ## Entity ↔ map integration (Phase 2)
 
@@ -597,13 +722,14 @@ it's a hostile town.
 
 ### Click semantics
 
-- **Bare click** on a linked marker → close the map + focus the linked
-  entity in its natural area. On mobile the tab switches to
-  Expeditions or Connections as appropriate; on desktop both areas
-  are visible in the deck so only the entity focus fires.
-- **Shift+click** on a linked marker → open the editor. Always
-  available so linked markers can still be edited.
-- **Click** on an unlinked marker → open the editor (matches Tier 1a).
+- **Click** a marker → select it (outlined; arrow keys nudge it) and show
+  its **marker card** beside it (`MarkerCard.svelte`): a large view of the
+  icon, its title and kind, and the linked entity's Summary. A linked marker's card has **Go To <Kind>**, which closes the
+  map and focuses the entity in its natural area (on mobile the tab
+  switches to Expeditions or Connections). Every card has **Edit**, and ✕
+  hides it for that selection.
+- **Double-click / Shift+click / long-press** → open the editor (which no
+  longer has its own Go To button — the jump lives on the card).
 - **Click** on empty grid outside placing mode → nothing. The `+ Add`
   button arms placing mode explicitly so a stray tap can't leave a
   marker behind.

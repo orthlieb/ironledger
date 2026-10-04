@@ -28,12 +28,10 @@
 	import DialogHeader from './DialogHeader.svelte';
 	import MapIconPicker from './MapIconPicker.svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
-	import {
-		DEFAULT_MARKER_COLOR,
-		haloPaddedViewBox,
-		mapGlyphInner,
-		resolveMapIcon,
-	} from '$lib/mapConstants.js';
+	import { DEFAULT_MARKER_COLOR, haloPaddedViewBox, mapGlyphInner } from '$lib/mapConstants.js';
+	import { resolveMarkerIcon } from '$lib/settlementIcons.svelte.js';
+	import { fallbackIcon } from '$lib/settlement-kit/fallback.js';
+	import type { SettlementRecipe } from '$lib/settlementRecipe.js';
 	import {
 		updateMarker,
 		removeMarker,
@@ -47,13 +45,11 @@
 	import Select from '$lib/components/Select.svelte';
 	import plusSvg from '$icons/plus-solid.svg?raw';
 	import minusSvg from '$icons/minus-solid.svg?raw';
-	import gotoSvg from '$icons/arrow-up-right-from-square-solid.svg?raw';
 
 	let {
 		selectedMarker,
 		open = $bindable(false),
 		onClose,
-		onNavigate,
 	}: {
 		selectedMarker: MapMarker | null;
 		/** Bindable open flag — the parent controls when the properties
@@ -63,8 +59,6 @@
 		 *  selected on the canvas to enable, e.g., arrow-key nudging. */
 		open?: boolean;
 		onClose: () => void;
-		/** Jump to the marker's linked entity (closes the map). */
-		onNavigate?: (link: { kind: string; id: string; name: string }) => void;
 	} = $props();
 
 	/** Strip the outer `<svg>` wrapper + FontAwesome licence comment so
@@ -421,7 +415,7 @@
 
 	// Derive the selected marker's icon record + color so the icon
 	// button always shows the current preview.
-	const selectedIcon = $derived(selectedMarker ? resolveMapIcon(selectedMarker.icon) : undefined);
+	const selectedIcon = $derived(selectedMarker ? resolveMarkerIcon(selectedMarker) : undefined);
 	const selectedColor = $derived(selectedMarker?.color || DEFAULT_MARKER_COLOR);
 	/** Angle currently displayed in the spinner — always in `[0, 360)`.
 	 *  Kept as a plain derived because the draft-aware `draftAngle`
@@ -435,6 +429,9 @@
 	type MarkerDraft = {
 		label: string;
 		icon: string | null;
+		/** Generated settlement recipe; set together with `icon` (its
+		 *  fallback) by the builder tab, cleared by picking a plain icon. */
+		settlement: SettlementRecipe | undefined;
 		color: string;
 		angle: number;
 		entityId: string;
@@ -475,6 +472,7 @@
 		const snap: MarkerDraft = {
 			label: m.label ?? '',
 			icon: m.icon ?? null,
+			settlement: m.settlement && { ...m.settlement },
 			color: m.color ?? DEFAULT_MARKER_COLOR,
 			angle: normalizeAngle(m.angle),
 			entityId: m.entityId ?? '',
@@ -517,6 +515,7 @@
 		updateMarker(selectedMarker.id, {
 			label: draft.label,
 			icon: draft.icon ?? undefined,
+			settlement: draft.settlement,
 			color: draft.color,
 			angle: draft.angle,
 			entityId: draft.entityId || undefined,
@@ -528,7 +527,11 @@
 	/** Draft-aware previews for the marker-editor UI. Fall back to the
 	 *  live selectedMarker readings pre-snapshot so the first paint
 	 *  after selection isn't blank. */
-	const draftIcon = $derived(draft ? resolveMapIcon(draft.icon ?? undefined) : selectedIcon);
+	const draftIcon = $derived(
+		draft
+			? resolveMarkerIcon({ icon: draft.icon ?? '', settlement: draft.settlement })
+			: selectedIcon,
+	);
 	const draftColor = $derived(draft?.color ?? selectedColor);
 	const draftAngle = $derived(draft ? normalizeAngle(draft.angle) : selectedAngle);
 	const draftLinkedEntity = $derived(draft ? resolveEntity(draft.entityId) : null);
@@ -603,6 +606,18 @@
 			return;
 		}
 		draft.icon = key;
+		draft.settlement = undefined;
+		applyDraftLive();
+		closeIconPicker();
+	}
+	/** Builder tab's "Use this": the recipe plus its plain fallback icon. */
+	function pickDraftSettlement(recipe: SettlementRecipe) {
+		if (!draft) {
+			closeIconPicker();
+			return;
+		}
+		draft.settlement = recipe;
+		draft.icon = fallbackIcon(recipe);
 		applyDraftLive();
 		closeIconPicker();
 	}
@@ -633,6 +648,7 @@
 			updateMarker(selectedMarker.id, {
 				label: originalMarker.label,
 				icon: originalMarker.icon ?? undefined,
+				settlement: originalMarker.settlement,
 				color: originalMarker.color,
 				angle: originalMarker.angle,
 				entityId: originalMarker.entityId || undefined,
@@ -929,25 +945,6 @@
 								class="mp-sel-entity-btn"
 								clearItem={{ label: '— No link —', onselect: () => pickDraftEntity('') }}
 							/>
-							{#if draft.entityId && draftLinkedEntity}
-								{@const linked = draftLinkedEntity}
-								<button
-									type="button"
-									class="mp-goto-entity"
-									use:tooltip={`Go To ${ENTITY_KIND_META[linked.kind].label}`}
-									aria-label={`Go To ${ENTITY_KIND_META[linked.kind].label}`}
-									onclick={() => {
-										// Close this editor first, then navigate to the entity (which
-										// also closes the map). onClose is a no-op that preserves
-										// selection — setting open = false is what actually dismisses.
-										open = false;
-										onNavigate?.(linked);
-										onClose?.();
-									}}
-								>
-									<span class="mp-goto-arrow" aria-hidden="true">{@html gotoSvg}</span>
-								</button>
-							{/if}
 						</div>
 					</div>
 				</div>
@@ -978,6 +975,8 @@
 	bind:open={iconDialogOpen}
 	{selectedColor}
 	currentIcon={draft?.icon}
+	currentSettlement={draft?.settlement}
 	onpick={pickDraftIcon}
+	onpicksettlement={pickDraftSettlement}
 	onclose={closeIconPicker}
 />

@@ -57,3 +57,6 @@ create-admin.ts
 .obsidian/
 /.claude/worktrees
 apps/web/src/lib/generated/mapIconManifest.ts
+
+# Extension map icons copied into static/ by apps/web/scripts/build-map-icons.mjs
+apps/web/static/map/_ext/

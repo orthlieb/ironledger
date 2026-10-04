@@ -1,0 +1,40 @@
+{
+  "key": "verdani",
+  "name": "Verdani",
+  "note": "The elves of YRT: grown round houses on the green-mana preserves, swept roofs, living hedges, amber banners, the Wildens wheel.",
+  "design": {
+    "towerBow": 1,
+    "wallBow": 1,
+    "houseForm": "round",
+    "stature": 1.1,
+    "pitch": 1.05,
+    "concave": 0.28,
+    "gable": 0.8,
+    "storeys": 0.2,
+    "window": "round",
+    "towerRoof": "cone",
+    "spire": 3.2,
+    "taper": 0.15,
+    "flags": true,
+    "flagFolds": 4,
+    "flagLen": 15,
+    "wall": "hedge",
+    "wallShape": "round",
+    "church": true,
+    "symbol": "wheel",
+    "keep": "none",
+    "market": "none",
+    "industry": 0,
+    "flourish": 0.5
+  },
+  "palette": {
+    "wall": "#EDE6CF",
+    "roof": "#6E8B4E",
+    "wood": "#5F7F45",
+    "earth": "#7E6A48",
+    "water": "#8FB0B8",
+    "ink": "#2E2A20",
+    "flag": "#C08A2E",
+    "halo": "#F3F0E2"
+  }
+}

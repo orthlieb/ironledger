@@ -28,6 +28,7 @@ extensions/sample/
     images/test-golem.webp# the foe's portrait
   assets/assets.json      # an asset ("Sample Widget")
   icons/sample-widget.svg # an icon the asset references by slug
+  cultures/sample.json    # a settlement culture ("Sample Culture")
 ```
 
 Enable **Sample** in Settings → Expansions to see all of it appear; disable it
@@ -51,6 +52,12 @@ and everything filters out — nothing else changes.
   // Optional — base-key → replacement-key rewrites this extension applies while
   // enabled. Auto-hides the base key from the picker. See "Oracle supersession".
   "supersedesOracles": { "region": "sampleRegion" },
+
+  // Optional — base-culture → replacement-culture rewrites for the map's
+  // settlement builder while enabled (YRT: { "elves": "verdani" }). The base
+  // culture is hidden from the builder; markers that name it draw with the
+  // replacement.
+  "supersedesCultures": { "elves": "sample" },
 
   // Optional — move / oracle categories introduced by this extension (picker
   // order + icon + tint). Merged client-side across enabled extensions. See
@@ -81,6 +88,7 @@ and everything filters out — nothing else changes.
 | `foes/overrides.json`  | `{source, overrides:{…}}`          | patches base foes         | [data-schema.md § Foe overrides](data-schema.md#foe-overrides)    |
 | `moves/overrides.json` | `{source, overrides:{…}}`          | hides/replaces base moves | mirror of foe overrides (`{ "<move id>": { "present": false } }`) |
 | `assets/assets.json`   | `{assets:[…], rarities?:[…]}`      | `/catalogue/assets`       | [data-schema.md § Assets](data-schema.md#assets)                  |
+| `cultures/`            | `<key>.json` (one culture each)    | `/catalogue/cultures`     | [campaign-map.md § Cultures](campaign-map.md#cultures)            |
 
 Every content item carries a `"source"` tag equal to the extension id (the
 build stamps it if absent). The web filters by that tag through the extension
@@ -203,6 +211,19 @@ referenced from assets/foes by **slug** (the filename without `.svg`, e.g.
 `sample-widget`). `iconRegistry` merges a second build-time glob over
 `extensions/*/icons/`, so bundled icons resolve exactly like the app's own.
 Missing slugs degrade gracefully (empty render + category fallback).
+
+### Settlement cultures
+
+A culture styles the map's generated settlement icons:
+`cultures/<key>.json` = `{key, name, note, design, palette}`, where `design`
+is any subset of the settlement kit's knobs and `palette` its eight colour
+roles. The easiest way to author one is the playground
+(`tools/settlement-playground.html`): Import an existing culture (or start
+from a preset), set the knobs and colours, then **Export culture** and drop
+the file in. Markers store only the culture's
+`key`, so a culture that disappears draws with the default. Cultures aren't baked into icons — the map's Settlement builder
+generates them on the fly. See
+[campaign-map.md § Settlement kit](campaign-map.md#settlement-kit-generated-icons).
 
 ### Foe images
 

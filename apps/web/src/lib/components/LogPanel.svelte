@@ -1193,6 +1193,10 @@
 
 	/* ---- Log entry ---- */
 	.log-entry {
+		/* One text size for everything inside an entry — title, body, roll
+		   lines, outcomes, notes and the note editor all read at this size.
+		   Hierarchy comes from weight / colour / case, not size. */
+		--log-entry-font-size: 0.82rem;
 		padding: 6px 9px;
 		position: relative;
 		border-bottom: 1px solid var(--border);
@@ -1214,7 +1218,7 @@
 
 	.entry-title {
 		font-family: var(--font-ui);
-		font-size: 0.68rem;
+		font-size: var(--log-entry-font-size);
 		font-weight: 600;
 		letter-spacing: 0.05em;
 		text-transform: uppercase;
@@ -1317,9 +1321,18 @@
 	/* ---- Entry body ---- */
 	.entry-body {
 		font-family: var(--font-ui);
-		font-size: 0.82rem;
+		font-size: var(--log-entry-font-size);
 		color: var(--text-muted);
 		line-height: 1.4;
+	}
+
+	/* Entry HTML carries global classes (app.css gives .roll-line,
+	   .roll-cancel, .roll-outcome-*, .roll-match-note etc. their own sizes
+	   for DiceRollerDialog); inside the log everything inherits the entry
+	   size instead. */
+	.entry-body :global(*),
+	.entry-note :global(*) {
+		font-size: inherit;
 	}
 
 	.entry-body :global(.dialog-only) {
@@ -1344,13 +1357,17 @@
 		margin-bottom: 1px;
 	}
 
-	/* Dice roll lines use monospace font */
+	/* Dice roll lines share the entry's proportional UI font (app.css gives
+	   them --font-mono globally for DiceRollerDialog; the log overrides that
+	   so every entry reads in one face). Tabular figures keep the dice
+	   values and totals column-aligned the way monospace used to. */
 	.entry-body :global(.roll-line),
 	.entry-body :global(.roll-cancel),
 	.entry-body :global(.roll-outcome-strong),
 	.entry-body :global(.roll-outcome-weak),
 	.entry-body :global(.roll-outcome-miss) {
-		font-family: var(--font-mono, 'Roboto Mono', ui-monospace, monospace);
+		font-family: inherit;
+		font-variant-numeric: tabular-nums;
 	}
 
 	/* Roll outcome colours. Also target <strong> inside each div because
@@ -1376,11 +1393,9 @@
 	}
 	.entry-body :global(.roll-cancel) {
 		color: var(--color-danger, #ef4444);
-		font-size: 0.75rem;
 	}
 	.entry-body :global(.roll-burn) {
 		color: var(--color-momentum, #60a5fa);
-		font-size: 0.75rem;
 		font-weight: 600;
 	}
 
@@ -1391,7 +1406,6 @@
 		border-left: 2px solid var(--border-mid);
 		background: color-mix(in srgb, var(--bg-inset) 60%, transparent);
 		border-radius: 0 3px 3px 0;
-		font-size: 0.78rem;
 		line-height: 1.5;
 		color: var(--text-muted);
 	}
@@ -1431,7 +1445,6 @@
 		color: var(--color-danger, #ef4444);
 		text-decoration: underline;
 		cursor: pointer;
-		font-size: 0.78rem;
 		font-weight: 600;
 		touch-action: manipulation;
 	}
@@ -1510,7 +1523,7 @@
 	.note-input {
 		width: 100%;
 		font-family: var(--font-ui);
-		font-size: 0.78rem;
+		font-size: var(--log-entry-font-size);
 		resize: vertical;
 		padding: 4px 7px;
 		min-height: 48px;
@@ -1537,7 +1550,7 @@
 		padding: 4px 7px;
 		border-left: 2px solid var(--border-mid);
 		font-family: var(--font-ui);
-		font-size: 0.78rem;
+		font-size: var(--log-entry-font-size);
 		color: var(--text-muted);
 		line-height: 1.5;
 	}
@@ -1551,7 +1564,6 @@
 	.entry-note :global(h4),
 	.entry-note :global(h5) {
 		font-family: var(--font-ui);
-		font-size: 0.72rem;
 		font-weight: 700;
 		letter-spacing: 0.06em;
 		text-transform: uppercase;
