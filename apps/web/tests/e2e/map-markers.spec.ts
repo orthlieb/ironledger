@@ -15,8 +15,9 @@
  *   • Edit icon — "Change icon" opens the icon picker (`.mp-icon-dialog`);
  *     picking "No icon" drops the glyph (label-only, centred), picking a real
  *     tile restores it (`.mp-marker-icon`).
- *   • Edit colour — "Icon colour" opens Pickr (portalled `.pcr-app`); a swatch
- *     click recolours the marker (`<g fill>` on the icon).
+ *   • Edit colour — "Icon colour" opens the ColorPicker (bits-ui Popover +
+ *     vanilla-colorful, class `.cp-popover`); a swatch click recolours the
+ *     marker (`<g fill>` on the icon).
  *   • Persist — every edit PUTs to `/api/session/maps/:id/markers`, so a marker
  *     survives a full reload.
  *   • Delete — the editor's DELETE button removes the pin outright.
@@ -38,7 +39,7 @@ const PNG_1X1 = Buffer.from(
 	'base64',
 );
 
-// New markers start black (DEFAULT_MARKER_COLOR); Pickr offers these 8 swatches.
+// New markers start black (DEFAULT_MARKER_COLOR); ColorPicker offers these 8 swatches.
 const DEFAULT_MARKER_COLOR = '#000000';
 const SWATCHES = [
 	'#e63946',
@@ -155,13 +156,14 @@ test.describe('Map markers — lifecycle', () => {
 		await expect(page.locator('.mp-icon-dialog')).not.toBeVisible();
 		await expect(m.locator('.mp-marker-icon')).toHaveCount(1);
 
-		// ── Colour: default black → a Pickr swatch ─────────────────────────────
-		// Pickr (useAsButton) rewrites the trigger's aria-label to "toggle color
-		// picker dialog", so reach it by its stable class instead.
+		// ── Colour: default black → a ColorPicker swatch ───────────────────────
+		// The trigger button opens the bits-ui-based ColorPicker (vanilla-
+		// colorful inside), replacing the old Pickr. Reach the swatches via
+		// the stable `.cp-swatches-btn` class.
 		await expect(markerIconFill(page)).toHaveAttribute('fill', DEFAULT_MARKER_COLOR);
 		await page.locator('.mp-sel-color-btn').click();
-		await expect(page.locator('.pcr-app')).toBeVisible();
-		await page.locator('.pcr-app .pcr-swatches button').nth(3).click();
+		await expect(page.locator('.cp-popover')).toBeVisible();
+		await page.locator('.cp-popover .cp-swatches-btn').nth(3).click();
 
 		await expect(markerIconFill(page)).not.toHaveAttribute('fill', DEFAULT_MARKER_COLOR);
 		const fill = (await markerIconFill(page).getAttribute('fill'))?.toLowerCase();

@@ -357,8 +357,8 @@
 
 						<!-- Sound + appearance depend on 3D. The wrapper dims + blocks
 						     the whole group when 3D is off (per-control `disabled` also
-						     stops the Pickr widgets being created); the wrapper is the
-						     reliable gate since bits-ui controls don't reflect their
+						     stops ColorPicker from mounting its popover); the wrapper is
+						     the reliable gate since bits-ui controls don't reflect their
 						     `disabled` prop to the DOM. -->
 						<div class="sd-dice-gated" class:sd-dice-gated--off={!dice3d}>
 							{#if isDiceSoundSupported()}

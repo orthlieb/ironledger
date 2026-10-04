@@ -24,7 +24,6 @@
 	},
 	"dependencies": {
 		"@ironledger/shared": "*",
-		"@simonwep/pickr": "^1.10.0",
 		"@sveltejs/kit": "^2.55.0",
 		"bits-ui": "^2.18.1",
 		"embla-carousel": "^8.6.0",
@@ -32,7 +31,8 @@
 		"embla-carousel-svelte": "^8.6.0",
 		"fflate": "^0.8.3",
 		"isomorphic-dompurify": "^2.36.0",
-		"svelte": "^5.0.0"
+		"svelte": "^5.0.0",
+		"vanilla-colorful": "^0.7.2"
 	},
 	"devDependencies": {
 		"@playwright/test": "1.56.1",
