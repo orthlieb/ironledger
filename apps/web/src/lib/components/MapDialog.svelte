@@ -2516,12 +2516,6 @@
 		:global(.mp-tools-actions) {
 			flex: 1 1 100%;
 		}
-		/* Selection toolbar: name on its own row, icon/color/angle/delete
-		   on row 2, entity link on row 3. Prevents the link picker from
-		   truncating the name field or vice-versa. */
-		:global(.mp-sel-name) {
-			flex: 1 1 100%;
-		}
 	}
 	:global(.mp-btn) {
 		font-family: var(--font-ui);
@@ -2591,25 +2585,6 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 2px;
-	}
-	:global(.mp-sel-name) {
-		/* Was `flex: 1 1 140px; min-width: 100px` — greedy. The name
-		   is often short (single word or two) so it doesn't need the
-		   lion's share of the row; the entity link chip below gets
-		   the slack instead. */
-		flex: 0 1 120px;
-		min-width: 80px;
-		padding: 5px 8px;
-		font-family: var(--font-ui);
-		font-size: 0.82rem;
-		color: var(--text);
-		background: var(--bg-control);
-		border: 1px solid var(--border-mid);
-		border-radius: 4px;
-	}
-	:global(.mp-sel-name:focus) {
-		outline: none;
-		border-color: var(--text-accent);
 	}
 	:global(.mp-sel-icon-btn) {
 		display: inline-flex;
@@ -2718,17 +2693,6 @@
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		color: var(--text-muted);
-	}
-	:global(.mp-sel-angle-glyph) {
-		display: inline-flex;
-		align-items: center;
-		color: var(--text-dimmer);
-		line-height: 1;
-	}
-	:global(.mp-sel-angle-glyph svg) {
-		width: 12px;
-		height: 12px;
-		fill: currentColor;
 	}
 	:global(.mp-sel-angle-input) {
 		width: 2.2em;
