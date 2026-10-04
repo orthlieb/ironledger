@@ -105,10 +105,6 @@ export const mapMarkerSchema = z.object({
         .optional(),
       wallShape: z.enum(['round', 'square']).optional(),
       harbor: z.boolean().optional(),
-      // Projection used by the generator — 'standard' (the default
-      // tightened cab-oblique) or 'iso' (steeper, closer to true 2:1).
-      // Absent → 'standard' so pre-view recipes keep rendering as before.
-      view: z.enum(['standard', 'iso']).optional(),
       ruin: z
         .object({ decay: z.number().min(0).max(1), burned: z.boolean().optional() })
         .optional(),
