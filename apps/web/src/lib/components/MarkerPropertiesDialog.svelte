@@ -209,75 +209,6 @@
 		}
 	}
 
-	// ─── Colour field (editable, lives beside the picker trigger) ──────────
-	// Toggles between hex (`#rrggbb`) and RGB (`r, g, b`) display. The field
-	// always accepts BOTH formats on type/paste via `parseColorInput`; the
-	// toggle only controls what's displayed (and therefore what gets selected
-	// + copied). Format preference persists in localStorage so the user's
-	// pick sticks across sessions.
-	type ColorFormat = 'hex' | 'rgb';
-	const COLOR_FORMAT_KEY = 'il:markerColorFormat';
-	function loadColorFormat(): ColorFormat {
-		try {
-			const raw = localStorage.getItem(COLOR_FORMAT_KEY);
-			if (raw === 'rgb' || raw === 'hex') return raw;
-		} catch {
-			/* private mode / SSR — fall through to the default */
-		}
-		return 'hex';
-	}
-	let colorFormat = $state<ColorFormat>(loadColorFormat());
-	function toggleColorFormat() {
-		colorFormat = colorFormat === 'hex' ? 'rgb' : 'hex';
-		try {
-			localStorage.setItem(COLOR_FORMAT_KEY, colorFormat);
-		} catch {
-			/* persistence is best-effort */
-		}
-	}
-	/** `#rrggbb` → `r, g, b`. Returns the hex unchanged on malformed input so
-	 *  a legacy value never leaves the field blank. */
-	function hexToRgbString(hex: string): string {
-		const h = normalizeHex(hex).replace('#', '');
-		if (!/^[0-9a-f]{6}$/.test(h)) return hex;
-		const r = parseInt(h.slice(0, 2), 16);
-		const g = parseInt(h.slice(2, 4), 16);
-		const b = parseInt(h.slice(4, 6), 16);
-		return `${r}, ${g}, ${b}`;
-	}
-	/** Parse a typed / pasted colour. Accepts `#rrggbb`, `#rgb`, `rrggbb`,
-	 *  `rgb`, and `rgb(r,g,b)` / `r,g,b`. Returns a normalised `#rrggbb`,
-	 *  or `null` when the input isn't a valid colour. */
-	function parseColorInput(input: string): string | null {
-		const s = input.trim();
-		const rgb = s.match(/^(?:rgb\s*\(\s*)?(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})\s*\)?$/i);
-		if (rgb) {
-			const parts = [rgb[1], rgb[2], rgb[3]].map(Number);
-			if (parts.every((n) => n >= 0 && n <= 255))
-				return '#' + parts.map((n) => n.toString(16).padStart(2, '0')).join('');
-			return null;
-		}
-		const hx = s.replace(/^#/, '');
-		if (/^[0-9a-f]{3}$/i.test(hx)) return normalizeHex('#' + hx.replace(/./g, (c) => c + c));
-		if (/^[0-9a-f]{6}$/i.test(hx)) return normalizeHex('#' + hx);
-		return null;
-	}
-	/** Commit a value from the colour field: push to draft + live marker + MRU.
-	 *  Returns false when the text isn't a colour so the caller can snap the
-	 *  field back to the current value. */
-	function applyColorFieldInput(raw: string): boolean {
-		const hex = parseColorInput(raw);
-		if (!hex || !draft) return false;
-		draft.color = hex;
-		applyDraftLive();
-		recordRecent(hex);
-		return true;
-	}
-	function onColorFieldChange(e: Event) {
-		const el = e.target as HTMLInputElement;
-		if (!applyColorFieldInput(el.value)) el.value = colorFieldValue; // reject → restore
-	}
-
 	/** Normalise a rotation to `[0, 360)` for display + storage. `undefined`
 	 *  → 0 (default rotation for legacy markers). Non-finite → 0 so a stray
 	 *  NaN doesn't invalidate the SVG transform. */
@@ -433,12 +364,6 @@
 			: selectedIcon,
 	);
 	const draftColor = $derived(draft?.color ?? selectedColor);
-	/** Field display string, formatted per `colorFormat`. Declared after
-	 *  `draftColor` because it depends on it; the `onColorFieldChange`
-	 *  handler above closes over the name and reads this at call time. */
-	const colorFieldValue = $derived(
-		colorFormat === 'rgb' ? hexToRgbString(draftColor) : normalizeHex(draftColor),
-	);
 	const draftAngle = $derived(draft ? normalizeAngle(draft.angle) : selectedAngle);
 	const draftLinkedEntity = $derived(draft ? resolveEntity(draft.entityId) : null);
 
@@ -805,35 +730,6 @@
 									</button>
 								{/snippet}
 							</ColorPicker>
-						</label>
-
-						<!-- Colour field — editable mirror of `draft.color`, inside the
-						     dialog's focus trap. The label is a clickable Hex ⇄ RGB
-						     toggle: tapping it flips the DISPLAYED format (and therefore
-						     what gets selected + copied) between `#rrggbb` and `r, g, b`.
-						     Both formats are accepted on type/paste regardless. -->
-						<label class="mp-props-field mp-props-field--color-input">
-							<button
-								type="button"
-								class="mp-props-label mp-color-fmt-toggle"
-								onclick={toggleColorFormat}
-								aria-pressed={colorFormat === 'rgb'}
-								use:tooltip={`Showing ${colorFormat.toUpperCase()} — click to switch to ${colorFormat === 'hex' ? 'RGB' : 'HEX'}`}
-							>
-								{colorFormat === 'rgb' ? 'RGB' : 'Hex'}
-							</button>
-							<input
-								class="mp-color-field-input"
-								type="text"
-								spellcheck="false"
-								autocomplete="off"
-								disabled={!canSave}
-								value={colorFieldValue}
-								onchange={onColorFieldChange}
-								aria-label={colorFormat === 'rgb'
-									? 'Icon colour as RGB — type r, g, b or any hex/rgb() value to set'
-									: 'Icon colour as hex — type #rrggbb or any rgb() value to set'}
-							/>
 						</label>
 
 						<label class="mp-props-field mp-props-field--icon">

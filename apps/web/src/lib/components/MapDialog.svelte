@@ -3360,45 +3360,6 @@
 		align-self: flex-start;
 	}
 
-	/* Colour field — monospace input mirroring the current colour as hex or
-	   RGB, flipped by the clickable label above it. Fills the stretch slot
-	   of the Angle/Colour/… row, wraps to its own line on phone widths. */
-	:global(.mp-color-field-input) {
-		width: 100%;
-		box-sizing: border-box;
-		height: 32px;
-		padding: 0 8px;
-		font-family: var(--font-mono);
-		font-size: 0.82rem;
-		color: var(--text);
-		background: var(--bg-control);
-		border: 1px solid var(--border-mid);
-		border-radius: 4px;
-	}
-	:global(.mp-color-field-input:focus) {
-		outline: none;
-		border-color: var(--text-accent);
-	}
-	:global(.mp-props-field--color-input) {
-		flex: 1 1 7rem;
-		min-width: 7rem;
-	}
-	/* Hex ⇄ RGB label-toggle — the field's own label clickable to flip
-	   format. Styled to read as a label by default; `aria-pressed` + the
-	   underline on hover tell the user it's actionable. */
-	:global(.mp-color-fmt-toggle) {
-		all: unset;
-		cursor: pointer;
-		display: inline-block;
-	}
-	:global(.mp-color-fmt-toggle:hover),
-	:global(.mp-color-fmt-toggle:focus-visible) {
-		color: var(--text-accent);
-		text-decoration: underline;
-		text-underline-offset: 2px;
-		outline: none;
-	}
-
 	/* Label field: the text input grows to fill the row; Position rides
 	   at the tail as a narrow Select whose trigger only shows the arrow
 	   glyph (~1 em). Position wraps under Label on phone widths when the
