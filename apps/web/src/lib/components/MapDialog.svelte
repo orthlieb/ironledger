@@ -3394,31 +3394,28 @@
 	:global(.mp-props-field--angle) {
 		flex: 0 0 auto;
 	}
-	/* Icon (row 1) and Colour (row 2) are the same fixed width so the two
-	   swatch buttons match and line up in a column — the width is pinned on
-	   the field (not the label) so the longer "COLOUR" label can't widen it.
-	   Sized to fit the 22 px inline SVG plus the 8 px padding the buttons
-	   carry, matching the 32 px-tall angle field for a compact row. */
+	/* Icon and Colour hold a 22 × 22 button + 8 px padding (≈ 2.5rem), but
+	   the label text ("COLOUR", "ICON") is wider than that, and when they
+	   sit next to a stretch field like Hex the labels of adjacent narrow
+	   fields can visually touch across the row's 12 px gap (the "COLOURHEX"
+	   bug). Widen to 3.5rem so each label fits inside its own column and
+	   the buttons stay vertically centred within the extra breathing room. */
 	:global(.mp-props-field--icon),
 	:global(.mp-props-field--color) {
-		width: 2.5rem;
+		width: 3.5rem;
+	}
+	:global(.mp-props-field--icon .mp-sel-icon-btn),
+	:global(.mp-props-field--color .mp-sel-color-btn) {
+		align-self: flex-start;
 	}
 
-	/* Pickr popover — nano theme skinned to match the dialog's dark
-	   controls, now that the hex input lives inside it (interaction.input).
-	   Pickr's own CSS variables feed into `.pcr-app`, so overriding them at
-	   that scope reskins the result row without touching Pickr's internals.
-	   Keep the colour-wheel + hue-slider in their default greyscale — only
-	   the result row (text input + eyedropper) needs to look like it
-	   belongs. */
-	:global(.pcr-app) {
-		--pcr-text-color: var(--text);
-	}
-	:global(.pcr-app .pcr-interaction) {
-		gap: 4px;
-	}
-	:global(.pcr-app .pcr-interaction .pcr-result) {
-		height: 28px;
+	/* Hex field — mirrors the old RGB read-out styling. Monospace, fills the
+	   stretch slot of the icon/angle/colour row, wraps to its own line on
+	   phone widths. */
+	:global(.mp-hex-input) {
+		width: 100%;
+		box-sizing: border-box;
+		height: 32px;
 		padding: 0 8px;
 		font-family: var(--font-mono);
 		font-size: 0.82rem;
@@ -3426,11 +3423,14 @@
 		background: var(--bg-control);
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
-		box-shadow: none;
 	}
-	:global(.pcr-app .pcr-interaction .pcr-result:focus) {
+	:global(.mp-hex-input:focus) {
 		outline: none;
 		border-color: var(--text-accent);
+	}
+	:global(.mp-props-field--hex) {
+		flex: 1 1 7rem;
+		min-width: 7rem;
 	}
 
 	/* Label field: the text input grows to fill the row; Position rides
