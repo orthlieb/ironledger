@@ -73,10 +73,6 @@ import { place } from './render.js';
  *   the foot and narrowing as they rise (elven); convex (< 0) bulges outward
  * @property {Bow} wallBow walls, -1 … 1: concave (> 0) dips the tops between towers and
  *   flares the foot (elven); convex (< 0) crests the tops
- * @property {'standard' | 'iso'} [view] viewing projection: 'standard' is the default
- *   tightened cab-oblique view every culture ships with; 'iso' pushes the depth axis
- *   closer to true 2:1 isometric for an unambiguously 3D icon at marker scale. Set
- *   per-recipe (not per-culture) — see `SettlementRecipe.view`.
  */
 
 /** Default culture (Shift-click equivalent). @type {Design} */
@@ -117,7 +113,6 @@ export const DEFAULT_DESIGN = {
 	join: 'soft',
 	towerBow: 0,
 	wallBow: 0,
-	view: 'standard',
 };
 
 /** Roll a culture. @param {number} seed @returns {Design} */
@@ -203,42 +198,16 @@ export function makeDesign(seed) {
 /** Hatch/detail stroke weight (world units). */
 export const THIN = 0.6;
 
-/**
- * Preset screen-space vectors `(right, up)` for a unit depth, keyed by
- * recipe `view`. All settlement pieces call `depthVec(d)` to lay out
- * their back faces; swapping the vector changes how 3D the whole
- * settlement reads at marker scale without touching ~25 call sites.
- *
- * - `standard` — tightened cab-oblique (~34° above horizontal, length ≈ 0.90).
- *   Replaces the older `[0.62, 0.42]` (length ≈ 0.75) that read flat at
- *   marker scale; the 20 % deeper vector exposes more of each shaded
- *   right-flank so the oblique projection actually reads 3D.
- * - `iso` — intentionally pushed well past true 2:1 isometric so the toggle
- *   reads AS a toggle, not a hair-shift: ~34° above horizontal (same angle
- *   as standard, so the gable orientation doesn't flip around) but length ≈
- *   1.68 — nearly double standard. Every back face protrudes almost twice
- *   as far, the shaded right-flank doubles in area, and the whole settlement
- *   stretches up-and-right in a way that clearly differs from the flatter
- *   default at a glance. Users who want more subtlety can stick with
- *   standard; iso is "lean into it" mode.
- */
-const DEPTH_PROFILES = {
-	standard: [0.75, 0.5],
-	iso: [1.4, 0.95],
-};
-/** Active depth coefficients. Picked by setDepthProfile() at the start
- *  of a `generate()` and reset to 'standard' when the render completes
- *  — generate.js is synchronous end-to-end, so the mutation never
- *  interleaves across settlements. */
-let _depth = DEPTH_PROFILES.standard;
-
-/** Pick the depth profile for the next generation. @param {'standard' | 'iso'} v */
-export function setDepthProfile(v) {
-	_depth = DEPTH_PROFILES[v] ?? DEPTH_PROFILES.standard;
-}
-
-/** Depth axis in screen space. @param {number} d @returns {Pt} */
-const depthVec = (d) => [d * _depth[0], d * _depth[1]];
+/** Depth axis in screen space — tightened cab-oblique (~34° above
+ *  horizontal, length ≈ 0.90). Previously `[0.62, 0.42]` (length ≈ 0.75)
+ *  which read flat at marker scale; the 20 % deeper vector exposes more of
+ *  each shaded right-flank so the oblique projection actually reads 3D.
+ *  A short-lived `view: 'iso'` toggle lived here (coefficients 1.4 / 0.95)
+ *  but was reverted — the extra depth didn't read as a meaningfully different
+ *  rendering at marker scale; the per-marker `scale` slider does the heavy
+ *  lifting for "I want this icon bigger / more legible".
+ *  @param {number} d @returns {Pt} */
+const depthVec = (d) => [d * 0.75, d * 0.5];
 
 /** @param {Pt} a @param {Pt} b @returns {Pt} */
 const add = (a, b) => [a[0] + b[0], a[1] + b[1]];

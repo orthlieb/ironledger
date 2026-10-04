@@ -81,34 +81,6 @@ describe('cleanSettlementRecipe', () => {
 		expect(sameRecipe(a, b)).toBe(true);
 		expect(sameRecipe(a, { ...a, seed: 4 })).toBe(false);
 	});
-
-	it('keeps the iso view flag through round-trip', () => {
-		const r = cleanSettlementRecipe({
-			tier: 'town',
-			culture: 'elves',
-			seed: 1,
-			view: 'iso',
-		});
-		expect(r?.view).toBe('iso');
-	});
-
-	it('drops any non-iso view value (standard is the absent default)', () => {
-		expect(
-			cleanSettlementRecipe({ tier: 'town', culture: 'elves', seed: 1, view: 'standard' })?.view,
-		).toBeUndefined();
-		expect(
-			cleanSettlementRecipe({ tier: 'town', culture: 'elves', seed: 1, view: 'perspective' })?.view,
-		).toBeUndefined();
-		expect(
-			cleanSettlementRecipe({ tier: 'town', culture: 'elves', seed: 1, view: 42 })?.view,
-		).toBeUndefined();
-	});
-
-	it('iso and standard recipes draw as DIFFERENT icons', () => {
-		const base: SettlementRecipe = { tier: 'town', culture: 'elves', seed: 9 };
-		expect(sameRecipe(base, { ...base, view: 'iso' })).toBe(false);
-		expect(recipeKey(base)).not.toBe(recipeKey({ ...base, view: 'iso' }));
-	});
 });
 
 describe('fallbackIcon', () => {
@@ -150,24 +122,5 @@ describe('generateSettlementSvg', () => {
 		expect(generateSettlementSvg({ ...recipe, seed: 12 }, ELVES)).not.toBe(
 			generateSettlementSvg(recipe, ELVES),
 		);
-	});
-
-	it("the iso view renders different bytes than 'standard' for the same seed", () => {
-		// Each piece's back-face uses the depth vector, so swapping the view
-		// shifts every back-face corner. The SVG bytes have to differ, else the
-		// view switch is a no-op in generate.js.
-		const std = generateSettlementSvg(recipe, ELVES);
-		const iso = generateSettlementSvg({ ...recipe, view: 'iso' }, ELVES);
-		expect(iso).not.toBe(std);
-	});
-
-	it('standard view resets after an iso render — no state bleed between recipes', () => {
-		// Regression guard for the setDepthProfile() module-level mutation in
-		// generate.js: an iso render then a plain render must produce the SAME
-		// bytes as two plain renders in a row.
-		const a1 = generateSettlementSvg(recipe, ELVES);
-		generateSettlementSvg({ ...recipe, view: 'iso' }, ELVES);
-		const a2 = generateSettlementSvg(recipe, ELVES);
-		expect(a2).toBe(a1);
 	});
 });
