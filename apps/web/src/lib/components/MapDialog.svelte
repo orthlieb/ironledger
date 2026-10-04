@@ -3360,10 +3360,10 @@
 		align-self: flex-start;
 	}
 
-	/* Hex field — mirrors the old RGB read-out styling. Monospace, fills the
-	   stretch slot of the icon/angle/colour row, wraps to its own line on
-	   phone widths. */
-	:global(.mp-hex-input) {
+	/* Colour field — monospace input mirroring the current colour as hex or
+	   RGB, flipped by the clickable label above it. Fills the stretch slot
+	   of the Angle/Colour/… row, wraps to its own line on phone widths. */
+	:global(.mp-color-field-input) {
 		width: 100%;
 		box-sizing: border-box;
 		height: 32px;
@@ -3375,13 +3375,28 @@
 		border: 1px solid var(--border-mid);
 		border-radius: 4px;
 	}
-	:global(.mp-hex-input:focus) {
+	:global(.mp-color-field-input:focus) {
 		outline: none;
 		border-color: var(--text-accent);
 	}
-	:global(.mp-props-field--hex) {
+	:global(.mp-props-field--color-input) {
 		flex: 1 1 7rem;
 		min-width: 7rem;
+	}
+	/* Hex ⇄ RGB label-toggle — the field's own label clickable to flip
+	   format. Styled to read as a label by default; `aria-pressed` + the
+	   underline on hover tell the user it's actionable. */
+	:global(.mp-color-fmt-toggle) {
+		all: unset;
+		cursor: pointer;
+		display: inline-block;
+	}
+	:global(.mp-color-fmt-toggle:hover),
+	:global(.mp-color-fmt-toggle:focus-visible) {
+		color: var(--text-accent);
+		text-decoration: underline;
+		text-underline-offset: 2px;
+		outline: none;
 	}
 
 	/* Label field: the text input grows to fill the row; Position rides
