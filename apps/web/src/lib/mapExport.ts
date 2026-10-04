@@ -97,6 +97,18 @@ export function cleanLabelPosition(v: unknown): MapMarker['labelPosition'] {
 		: undefined;
 }
 
+/** @internal — mirrors the server's [0.5, 3] clamp on MapMarker.scale.
+ *  An out-of-range / non-finite / non-numeric value drops to `undefined`
+ *  (= absent-field default of 1) so a hand-edited manifest can't inject
+ *  a zero or Infinity into the render math. */
+const MIN_IMPORT_SCALE = 0.5;
+const MAX_IMPORT_SCALE = 3;
+export function cleanMarkerScale(v: unknown): number | undefined {
+	if (typeof v !== 'number' || !Number.isFinite(v)) return undefined;
+	if (v < MIN_IMPORT_SCALE || v > MAX_IMPORT_SCALE) return undefined;
+	return v;
+}
+
 /** Suggested filename stamp: 'YYYY-MM-DD_HHmm'. */
 function stamp(): string {
 	const d = new Date();
@@ -336,6 +348,7 @@ export async function populateMap(
 			// runtime marker.
 			labelStyle: cleanLabelStyle((m as { labelStyle?: unknown }).labelStyle),
 			labelPosition: cleanLabelPosition((m as { labelPosition?: unknown }).labelPosition),
+			scale: cleanMarkerScale((m as { scale?: unknown }).scale),
 			settlement: cleanSettlementRecipe((m as { settlement?: unknown }).settlement),
 		}));
 	await replaceMarkers(cleanMarkers);

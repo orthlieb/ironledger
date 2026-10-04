@@ -81,6 +81,7 @@
 		mapState,
 		mapListState,
 		markersAt,
+		markerScale,
 		addMarker,
 		updateMarker,
 		removeMarker,
@@ -2096,7 +2097,7 @@
 							>
 								{#if hasIcon && ic}
 									{@const iconExtent =
-										ICON_SIZE * (ic.raster || ic.layered ? RASTER_ICON_SCALE : 1)}
+										ICON_SIZE * (ic.raster || ic.layered ? RASTER_ICON_SCALE : 1) * markerScale(m)}
 									<svg
 										class="mp-marker-icon"
 										x={-iconExtent / 2}
@@ -2122,7 +2123,7 @@
 							     the marker doesn't vanish. Non-scaling stroke +
 							     stroke-width 2 for the same halo weight everywhere. -->
 									<circle
-										r={ICON_SIZE / 2 - 0.04}
+										r={(ICON_SIZE * markerScale(m)) / 2 - 0.04}
 										fill={color}
 										stroke={halo}
 										stroke-width="2"
@@ -2141,7 +2142,10 @@
 									     the icon, with margin to clear it, so the icon's halo
 									     can't paint over it. -->
 									{@const cell =
-										ICON_SIZE * (ic?.raster || ic?.layered ? RASTER_ICON_SCALE : 1) * 1.3}
+										ICON_SIZE *
+										(ic?.raster || ic?.layered ? RASTER_ICON_SCALE : 1) *
+										1.3 *
+										markerScale(m)}
 									<rect
 										class="mp-marker-selection"
 										x={-cell / 2}
@@ -2155,7 +2159,9 @@
 									{@const labelCss = labelStyleCss(m.labelStyle)}
 									{#if hasIcon}
 										{@const iconExtent =
-											ICON_SIZE * (ic?.raster || ic?.layered ? RASTER_ICON_SCALE : 1)}
+											ICON_SIZE *
+											(ic?.raster || ic?.layered ? RASTER_ICON_SCALE : 1) *
+											markerScale(m)}
 										{@const p = labelPlacement(
 											m.labelPosition ?? 'bottom',
 											iconExtent / 2,
@@ -3444,6 +3450,29 @@
 	:global(.mp-props-field--position .bui-select-trigger),
 	:global(.mp-props-field--size .bui-select-trigger) {
 		min-width: 4.5rem;
+	}
+	/* Size (per-marker icon scale) — a native range input, span full width.
+	   The readout chip rides on the label, right-aligned, so the user can
+	   watch the multiplier change as they drag. */
+	:global(.mp-props-field--scale) {
+		gap: 2px;
+	}
+	:global(.mp-props-field--scale .mp-props-label) {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 8px;
+	}
+	:global(.mp-sel-scale-readout) {
+		font-family: var(--font-mono);
+		font-weight: 500;
+		font-size: 0.72rem;
+		letter-spacing: 0;
+		text-transform: none;
+		color: var(--text);
+	}
+	:global(.mp-sel-scale-range) {
+		width: 100%;
 	}
 
 	/* Label text-style toggles (Bold / Italic / Small caps / Underline) —

@@ -73,6 +73,10 @@ import { place } from './render.js';
  *   the foot and narrowing as they rise (elven); convex (< 0) bulges outward
  * @property {Bow} wallBow walls, -1 … 1: concave (> 0) dips the tops between towers and
  *   flares the foot (elven); convex (< 0) crests the tops
+ * @property {'standard' | 'iso'} [view] viewing projection: 'standard' is the default
+ *   tightened cab-oblique view every culture ships with; 'iso' pushes the depth axis
+ *   closer to true 2:1 isometric for an unambiguously 3D icon at marker scale. Set
+ *   per-recipe (not per-culture) — see `SettlementRecipe.view`.
  */
 
 /** Default culture (Shift-click equivalent). @type {Design} */
@@ -113,6 +117,7 @@ export const DEFAULT_DESIGN = {
 	join: 'soft',
 	towerBow: 0,
 	wallBow: 0,
+	view: 'standard',
 };
 
 /** Roll a culture. @param {number} seed @returns {Design} */
@@ -198,8 +203,37 @@ export function makeDesign(seed) {
 /** Hatch/detail stroke weight (world units). */
 export const THIN = 0.6;
 
+/**
+ * Preset screen-space vectors `(right, up)` for a unit depth, keyed by
+ * recipe `view`. All settlement pieces call `depthVec(d)` to lay out
+ * their back faces; swapping the vector changes how 3D the whole
+ * settlement reads at marker scale without touching ~25 call sites.
+ *
+ * - `standard` — tightened oblique (34° above horizontal, length ≈ 0.90).
+ *   Replaces the older `[0.62, 0.42]` (length ≈ 0.75) that read flat at
+ *   marker scale; the 20 % deeper vector exposes more of each shaded
+ *   right-flank so the oblique projection actually reads 3D.
+ * - `iso` — closer to true 2:1 isometric: 30° above horizontal and a
+ *   full unit length. Deepest view; use when the user wants the icon
+ *   to be unambiguously 3D at the cost of a taller footprint.
+ */
+const DEPTH_PROFILES = {
+	standard: [0.75, 0.5],
+	iso: [0.87, 0.58],
+};
+/** Active depth coefficients. Picked by setDepthProfile() at the start
+ *  of a `generate()` and reset to 'standard' when the render completes
+ *  — generate.js is synchronous end-to-end, so the mutation never
+ *  interleaves across settlements. */
+let _depth = DEPTH_PROFILES.standard;
+
+/** Pick the depth profile for the next generation. @param {'standard' | 'iso'} v */
+export function setDepthProfile(v) {
+	_depth = DEPTH_PROFILES[v] ?? DEPTH_PROFILES.standard;
+}
+
 /** Depth axis in screen space. @param {number} d @returns {Pt} */
-const depthVec = (d) => [d * 0.62, d * 0.42];
+const depthVec = (d) => [d * _depth[0], d * _depth[1]];
 
 /** @param {Pt} a @param {Pt} b @returns {Pt} */
 const add = (a, b) => [a[0] + b[0], a[1] + b[1]];

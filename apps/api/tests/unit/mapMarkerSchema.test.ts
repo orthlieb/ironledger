@@ -32,9 +32,32 @@ describe('mapMarkerSchema', () => {
     ).toBe(false);
   });
 
+  it('keeps the settlement view flag', () => {
+    const settlement = { tier: 'town', culture: 'elves', seed: 1, view: 'iso' };
+    expect(mapMarkerSchema.parse({ ...base, settlement }).settlement?.view).toBe('iso');
+    expect(
+      mapMarkerSchema.safeParse({
+        ...base,
+        settlement: { tier: 'town', culture: 'elves', seed: 1, view: 'perspective' },
+      }).success,
+    ).toBe(false);
+  });
+
   it('accepts the long icon keys extension categories produce', () => {
     const icon = 'yrt-settlements/ostrea-ruined-village';
     expect(icon.length).toBeGreaterThan(32);
     expect(mapMarkerSchema.parse({ ...base, icon }).icon).toBe(icon);
+  });
+
+  it('keeps a per-marker scale when it is in range', () => {
+    expect(mapMarkerSchema.parse({ ...base, scale: 1.75 }).scale).toBe(1.75);
+    expect(mapMarkerSchema.parse({ ...base, scale: 0.5 }).scale).toBe(0.5);
+    expect(mapMarkerSchema.parse({ ...base, scale: 3 }).scale).toBe(3);
+  });
+
+  it('rejects out-of-range and non-finite scales', () => {
+    for (const scale of [0.4, 3.1, Infinity, -Infinity, NaN]) {
+      expect(mapMarkerSchema.safeParse({ ...base, scale }).success).toBe(false);
+    }
   });
 });

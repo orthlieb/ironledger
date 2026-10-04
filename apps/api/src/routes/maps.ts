@@ -77,6 +77,10 @@ export const mapMarkerSchema = z.object({
       'bottom-right',
     ])
     .optional(),
+  // Per-marker icon size multiplier (1 = default). Clamped to the same
+  // [0.5, 3] range the UI slider offers so a hand-edited row can't shrink
+  // a marker to zero or balloon it off-canvas.
+  scale: z.number().finite().min(0.5).max(3).optional(),
   // A generated settlement icon's recipe — a culture REFERENCE plus the
   // builder's knobs, never the culture itself. The client draws it; `icon`
   // still carries the plain fallback icon.
@@ -101,6 +105,10 @@ export const mapMarkerSchema = z.object({
         .optional(),
       wallShape: z.enum(['round', 'square']).optional(),
       harbor: z.boolean().optional(),
+      // Projection used by the generator — 'standard' (the default
+      // tightened cab-oblique) or 'iso' (steeper, closer to true 2:1).
+      // Absent → 'standard' so pre-view recipes keep rendering as before.
+      view: z.enum(['standard', 'iso']).optional(),
       ruin: z
         .object({ decay: z.number().min(0).max(1), burned: z.boolean().optional() })
         .optional(),
