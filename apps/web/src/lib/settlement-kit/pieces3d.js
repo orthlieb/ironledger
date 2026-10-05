@@ -33,7 +33,9 @@ import { place } from './render.js';
  * @property {number} storeys chance a house has a second storey (0..1)
  * @property {'square' | 'arched' | 'slit' | 'round'} window
  * @property {boolean} manyDoors
- * @property {'cone' | 'onion' | 'crenel'} towerRoof
+ * @property {'cone' | 'onion' | 'crenel' | 'dome'} towerRoof hemispherical dome
+ *   culture replaces every pitched roof — gable houses and tower caps alike —
+ *   with a stone half-sphere
  * @property {number} spire spire / cone height ÷ tower width
  * @property {number} taper tower walls lean in by this share of the radius
  * @property {boolean} flags
@@ -129,7 +131,7 @@ export function makeDesign(seed) {
 		storeys: avg() * 0.8,
 		window: pick(['square', 'arched', 'slit', 'round']),
 		manyDoors: r() < 0.3,
-		towerRoof: r() < 0.5 ? 'cone' : r() < 0.45 ? 'onion' : 'crenel',
+		towerRoof: pick(['cone', 'cone', 'cone', 'onion', 'onion', 'crenel', 'crenel', 'dome', 'dome']),
 		spire: 1.3 + avg() * 1.7,
 		taper: avg() * 0.14,
 		flags: r() < 0.75,
@@ -566,6 +568,29 @@ function onionDome(D, cx, y, r) {
 }
 
 /**
+ * Hemispherical stone dome cap sitting on a flat platform at height y, with
+ * its base rim visible in oblique projection (the near half of an ellipse)
+ * and the half-sphere arcing up to y + r. The right flank is shaded.
+ * @param {number} cx
+ * @param {number} y base plane of the dome
+ * @param {number} r dome base radius (also its height)
+ * @returns {{part: Part, tip: Pt}}
+ */
+function hemiDome(cx, y, r) {
+	const ry = r * 0.34;
+	/** @type {Poly} */
+	const outline = [...ell(cx, y, r, ry, 180, 360), ...ell(cx, y, r, r, 0, 180, 28).slice(1, -1)];
+	return {
+		part: {
+			solid: [outline],
+			role: 'roof',
+			shadeArea: rect(cx + r * 0.3, y - ry - 2, r * 2, r + ry + 4),
+		},
+		tip: [cx, y + r],
+	};
+}
+
+/**
  * House with its gable facing the viewer.
  * @param {Design} D
  * @param {{w?: number, h?: number, seed?: number}} [o]
@@ -579,18 +604,41 @@ export function gableHouse(D, o = {}) {
 		rh = w * D.pitch,
 		ov = 1.5;
 	const v = depthVec(w * D.depth);
-	/** @type {Pt} */ const L = [-w / 2 - ov, h];
-	/** @type {Pt} */ const R = [w / 2 + ov, h];
-	/** @type {Pt} */ const A = [0, h + rh];
-	const mid = /** @type {Pt} */ ([0, h + rh * 0.35]);
-	const la = sag(L, A, mid, D.concave);
-	const ar = sag(A, R, mid, D.concave);
 	const side = /** @type {Poly} */ ([
 		[w / 2, 0],
 		add([w / 2, 0], v),
 		add([w / 2, h], v),
 		[w / 2, h],
 	]);
+	// Dome-culture houses: a stone half-sphere cap sits on the box top in
+	// place of a gable. The flat top of the box is drawn first so the
+	// dome's near-rim ellipse reads as a seam, not a floating arc.
+	if (D.towerRoof === 'dome') {
+		const facadeFills = facade(D, -w / 2, w / 2, h, two, r);
+		const topCap = /** @type {Poly} */ ([
+			[-w / 2, h],
+			[w / 2, h],
+			add([w / 2, h], v),
+			add([-w / 2, h], v),
+		]);
+		const { part } = hemiDome(v[0] / 2, h + v[1] / 2, w * 0.5);
+		return [
+			{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
+			{ solid: [topCap] },
+			part,
+			{
+				solid: [rect(-w / 2, 0, w, h)],
+				fills: facadeFills,
+				lines: D.masonry ? stoneCourses(-w / 2, w / 2, 0, h) : [],
+			},
+		];
+	}
+	/** @type {Pt} */ const L = [-w / 2 - ov, h];
+	/** @type {Pt} */ const R = [w / 2 + ov, h];
+	/** @type {Pt} */ const A = [0, h + rh];
+	const mid = /** @type {Pt} */ ([0, h + rh * 0.35]);
+	const la = sag(L, A, mid, D.concave);
+	const ar = sag(A, R, mid, D.concave);
 	const left = /** @type {Poly} */ ([...la, ...shift(la, v).reverse()]);
 	const right = /** @type {Poly} */ ([...ar, ...shift(ar, v).reverse()]);
 	const fills = facade(D, -w / 2, w / 2, h, two, r);
@@ -1184,6 +1232,12 @@ export function roundTower(D, o = {}) {
 		parts.push(...dome.parts);
 		return parts;
 	}
+	if (roof === 'dome') {
+		const dome = hemiDome(0, h, top + 0.4);
+		if (D.flags && o.flags !== false) parts.unshift(...flag(D, dome.tip[0], dome.tip[1] - 2));
+		parts.push(dome.part);
+		return parts;
+	}
 	const R = top + 1.8;
 	const rh = top * 2 * D.spire * 0.75;
 	/** @type {Pt} */ const apex = [0, h + rh];
@@ -1267,6 +1321,16 @@ export function squareTower(D, o = {}) {
 		});
 		const dome = onionDome(D, v[0] / 2, h + v[1] / 2 - 0.6, w * 0.5);
 		parts.push(...dome.parts);
+		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
+		return parts;
+	}
+	if (D.towerRoof === 'dome') {
+		// Stone half-sphere on the square tower's flat top.
+		parts.push({
+			solid: [[[-w / 2, h], [w / 2, h], add([w / 2, h], v), add([-w / 2, h], v)]],
+		});
+		const dome = hemiDome(v[0] / 2, h + v[1] / 2, w * 0.52);
+		parts.push(dome.part);
 		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
 		return parts;
 	}

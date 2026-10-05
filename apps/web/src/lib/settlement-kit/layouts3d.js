@@ -63,6 +63,9 @@ function house(D, r, w, trade) {
 		if (r() < D.huts) return roundHut(D, { r: w * 0.32 });
 		if (r() < D.longhouse) return sideHouse(D, { w: w * 1.55, seed, kind: 'longhouse' });
 	} else return sideHouse(D, { w: w + 8, seed, kind: r() < 0.5 ? 'warehouse' : 'workshop' });
+	// Dome culture: every dwelling is a dome house (sideHouse keeps its gable,
+	// so always route through gableHouse where the dome branch lives).
+	if (D.towerRoof === 'dome') return gableHouse(D, { w: w * 0.75, seed });
 	return r() < D.gable ? gableHouse(D, { w: w * 0.75, seed }) : sideHouse(D, { w, seed });
 }
 
