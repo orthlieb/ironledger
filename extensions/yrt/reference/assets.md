@@ -94,6 +94,32 @@ You have been touched by YRT and exhibit animal traits. Roll on the YRT – Touc
 
 Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.
 
+## Touched, Lupine
+*Touched*
+
+Lupine-touched: a tracker's nose for blood, a pack-hunter's instinct in company, and a crippling bite for the straggler.
+
+You have been touched by YRT and exhibit animal traits. Roll on the YRT – Touched oracle to determine the extent and conditions of your nature.
+
+- ◯ **Bloodcall.** You draw a scent from the air and follow it. When you Gather Information to track or close on a wounded or fleeing quarry — person or beast — add +1 and you may roll +wits (even if another stat would normally apply). On a strong hit, you learn not just where they're bound but how recent the trail, how badly they bleed, and whether they travel alone.
+- ◯ **Pack Mind.** You read the shape of a fight the way a wolf reads its pack. When you Aid Your Ally, add +1. On a strong hit, your ally also takes +1 momentum as your opening lets them move with it.
+- ◯ **Hamstring.** You strike the straggler, not the strongest. When you Strike or Clash against a foe who is fleeing, isolated from allies, or already wounded, add +1 and inflict +1 harm. On a strong hit, they are also hobbled — treat their next in-fight move as if they'd scored one lower until they take a moment to recover.
+
+Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.
+
+## Touched, Marine
+*Touched*
+
+Marine-touched: lungs that drink the deep, a voice the sea answers to, and a tongue the whales understand.
+
+You have been touched by YRT and exhibit animal traits. Roll on the YRT – Touched oracle to determine the extent and conditions of your nature.
+
+- ◯ **Breathless.** Your lungs are made for the dark water. You cannot drown while conscious, and when you Face Danger or Secure an Advantage by holding your breath, diving deep, or moving unseen beneath the surface, add +1. On a strong hit, also take +1 momentum as the depth hides and carries you.
+- ◯ **Mother-Tongue.** You speak the slow speech of the sea's old citizens — whale, seal, great fish — and they listen. When you Gather Information by asking a sea creature, or someone who swims with them, add +1. On a strong hit, you also learn something they weren't asked: a hazard in these waters, a weather turn, or who else has passed this way.
+- ◯ **Lure.** Your voice carries a weight the sea has lent you. When you Secure an Advantage by singing, calling, or speaking across the water to draw a target toward you, add +1. On a strong hit, they come — alone, unarmed, or with their guard dropped (envision which, and take +1 momentum).
+
+Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.
+
 ## Cantrip
 *Ritual*
 
