@@ -1361,20 +1361,14 @@ function gateTower(D, y0, h, wood) {
 		[w / 2, y0 + h],
 	]);
 	/** @type {Poly} */
-	let front;
-	if (wood) {
-		front = [
-			[-w / 2, y0],
-			[w / 2, y0],
-		];
-		const n = 5;
-		for (let i = n; i > 0; i--) {
-			const x1 = -w / 2 + (w * i) / n,
-				x0 = x1 - w / n;
-			front.push([x1, y0 + h - 1.6], [(x0 + x1) / 2, y0 + h]);
-		}
-		front.push([-w / 2, y0 + h - 1.6]);
-	} else front = crenellated(-w / 2, w / 2, y0, y0 + h, { merlon: 2.2, notch: 2 });
+	const front = wood
+		? [
+				[-w / 2, y0],
+				[w / 2, y0],
+				[w / 2, y0 + h],
+				[-w / 2, y0 + h],
+			]
+		: crenellated(-w / 2, w / 2, y0, y0 + h, { merlon: 2.2, notch: 2 });
 	/** @type {Line[]} */
 	const planks = [];
 	if (wood)
@@ -1389,7 +1383,8 @@ function gateTower(D, y0, h, wood) {
 			});
 		}
 	const role = wood ? /** @type {const} */ ('wood') : undefined;
-	return [
+	/** @type {Part[]} */
+	const parts = [
 		// The settlement's banner flies over its gate.
 		...(D.flags ? flag(D, 0.6, y0 + h - 0.5) : []),
 		{ solid: [side], role, shaded: true, lines: hatch(side, 65, D.hatch) },
@@ -1400,6 +1395,35 @@ function gateTower(D, y0, h, wood) {
 			fills: [archOpening(0, y0, 5.6, Math.min(8.5, h * 0.7))],
 		},
 	];
+	// A wooden gate's cap: dome in dome culture, otherwise a modest pyramid
+	// roof. Replaces the former sharpened-palisade crown so the gate reads
+	// as a sheltered gatehouse rather than a bare stockade.
+	if (wood) {
+		const yTop = y0 + h;
+		parts.push({
+			solid: [[[-w / 2, yTop], [w / 2, yTop], add([w / 2, yTop], v), add([-w / 2, yTop], v)]],
+		});
+		if (D.towerRoof === 'dome') {
+			parts.push(hemiDome(v[0] / 2, yTop + v[1] / 2, w * 0.52).part);
+		} else {
+			const ov = 1.2,
+				rh = w * 0.55;
+			/** @type {Pt} */ const fL = [-w / 2 - ov, yTop];
+			/** @type {Pt} */ const fR = [w / 2 + ov, yTop];
+			const bR = add(fR, v);
+			const apex = add(
+				/** @type {Pt} */ ([0, yTop + rh]),
+				/** @type {Pt} */ ([v[0] / 2, v[1] / 2]),
+			);
+			const frontRoof = /** @type {Poly} */ ([fL, fR, apex]);
+			const sideRoof = /** @type {Poly} */ ([fR, bR, apex]);
+			parts.push(
+				{ solid: [sideRoof], role: 'wood', shaded: true, lines: hatch(sideRoof, -40, D.hatch) },
+				{ solid: [frontRoof], role: 'wood' },
+			);
+		}
+	}
+	return parts;
 }
 
 /**
@@ -2309,16 +2333,18 @@ export function well(/** @type {Design} */ D) {
 				},
 			],
 		},
-		{
-			solid: [
-				[
-					[-r - 1, ch + 4.2],
-					[r + 1, ch + 4.2],
-					[0, ch + 4.2 + r * D.pitch * 1.6],
-				],
-			],
-			role: /** @type {const} */ ('roof'),
-		},
+		D.towerRoof === 'dome'
+			? hemiDome(0, ch + 4.2, r + 1).part
+			: {
+					solid: [
+						[
+							[-r - 1, ch + 4.2],
+							[r + 1, ch + 4.2],
+							[0, ch + 4.2 + r * D.pitch * 1.6],
+						],
+					],
+					role: /** @type {const} */ ('roof'),
+				},
 	];
 }
 
@@ -2456,10 +2482,19 @@ export function roundHut(D, o = {}) {
 	const r = o.r ?? 7,
 		h = 6 * D.stature,
 		ry = r * 0.34;
+	const body = /** @type {Poly} */ ([...ell(0, 0, r, ry, 180, 360), [r, h], [-r, h]]);
+	const bodyPart = {
+		solid: [body],
+		shadeArea: rect(r * 0.3, -ry - 2, r * 2, h + ry + 4),
+		lines: [...cylinderShade(r, -ry - 1, h + 1), ...(D.masonry ? stoneCourses(-r, r, -ry, h) : [])],
+		fills: [archOpening(-r * 0.25, -ry * 0.95, 3.4, 5.4)],
+	};
+	// Dome culture: stone half-sphere on the cylinder's flat top instead
+	// of a thatched cone.
+	if (D.towerRoof === 'dome') return [bodyPart, hemiDome(0, h, r + 0.4).part];
 	const R = r + 1.6,
 		rh = R * 2 * D.pitch * 0.9;
 	/** @type {Pt} */ const apex = [0, h + rh];
-	const body = /** @type {Poly} */ ([...ell(0, 0, r, ry, 180, 360), [r, h], [-r, h]]);
 	const sweep = D.concave * 0.8;
 	/** @type {Poly} */
 	const roof = [
@@ -2474,15 +2509,7 @@ export function roundHut(D, o = {}) {
 		thatch.push({ pts: [apex, [R * 1.3 * Math.sin(a), h - ry * Math.cos(a)]], w: THIN });
 	}
 	return [
-		{
-			solid: [body],
-			shadeArea: rect(r * 0.3, -ry - 2, r * 2, h + ry + 4),
-			lines: [
-				...cylinderShade(r, -ry - 1, h + 1),
-				...(D.masonry ? stoneCourses(-r, r, -ry, h) : []),
-			],
-			fills: [archOpening(-r * 0.25, -ry * 0.95, 3.4, 5.4)],
-		},
+		bodyPart,
 		{
 			solid: [roof],
 			role: 'roof',
