@@ -621,7 +621,7 @@ export function gableHouse(D, o = {}) {
 			add([w / 2, h], v),
 			add([-w / 2, h], v),
 		]);
-		const { part } = hemiDome(v[0] / 2, h + v[1] / 2, w * 0.5);
+		const { part } = hemiDome(v[0] / 2, h + v[1] / 2, w * 0.42);
 		return [
 			{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
 			{ solid: [topCap] },
