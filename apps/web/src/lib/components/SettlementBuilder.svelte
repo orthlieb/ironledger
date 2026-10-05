@@ -82,6 +82,12 @@
 		{ value: 'round', label: 'Round' },
 		{ value: 'square', label: 'Square' },
 	];
+	type Ground = 'culture' | 'land' | 'water';
+	const GROUNDS: { value: Ground; label: string }[] = [
+		{ value: 'culture', label: "Culture's own" },
+		{ value: 'land', label: 'Land' },
+		{ value: 'water', label: 'Water' },
+	];
 
 	const newSeed = () => Math.floor(Math.random() * 999_999) + 1;
 
@@ -93,6 +99,8 @@
 	let seed = $state(start?.seed ?? newSeed());
 	let walls = $state<SettlementWalls>(start?.walls ?? 'auto');
 	let shape = $state<Shape>(start?.wallShape ?? 'culture');
+	let ground = $state<Ground>(start?.ground ?? 'culture');
+	let stilts = $state(!!start?.stilts);
 	let harbor = $state(!!start?.harbor);
 	let ruined = $state(!!start?.ruin);
 	let decay = $state(start?.ruin?.decay ?? 0.5);
@@ -106,6 +114,8 @@
 		seed,
 		...(walls !== 'auto' ? { walls } : {}),
 		...(shape !== 'culture' ? { wallShape: shape } : {}),
+		...(ground !== 'culture' ? { ground } : {}),
+		...(stilts ? { stilts: true } : {}),
 		...(harbor ? { harbor: true } : {}),
 		...(ruined
 			? {
@@ -206,6 +216,11 @@
 				<span class="sb-label">Wall shape</span>
 				<Select bind:value={shape} options={SHAPES} ariaLabel="Wall shape" />
 			</label>
+			<label class="sb-field">
+				<span class="sb-label">Ground</span>
+				<Select bind:value={ground} options={GROUNDS} ariaLabel="Ground" />
+			</label>
+			<Checkbox bind:checked={stilts}><span class="sb-check">On stilts</span></Checkbox>
 			<Checkbox bind:checked={harbor}><span class="sb-check">Harbour</span></Checkbox>
 			<Checkbox bind:checked={ruined}><span class="sb-check">Ruined</span></Checkbox>
 			{#if ruined}

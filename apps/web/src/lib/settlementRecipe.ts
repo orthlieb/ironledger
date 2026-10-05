@@ -47,6 +47,10 @@ export interface SettlementRecipe {
 	seed: number;
 	walls?: SettlementWalls;
 	wallShape?: 'round' | 'square';
+	/** Override the culture's own `ground`: a lagoon under the whole icon. */
+	ground?: 'land' | 'water';
+	/** Lift every building onto a timber-post deck (over water or sand). */
+	stilts?: boolean;
 	harbor?: boolean;
 	/** A ruin: how far gone (0–1), and whether it burned (scorch, soot). */
 	ruin?: { decay: number; burned?: boolean };
@@ -60,6 +64,8 @@ export function recipeKey(r: SettlementRecipe): string {
 		r.seed,
 		r.walls ?? '',
 		r.wallShape ?? '',
+		r.ground ?? '',
+		r.stilts ? 's' : '',
 		r.harbor ? 'h' : '',
 		r.ruin ? r.ruin.decay.toFixed(2) + (r.ruin.burned ? 'b' : '') : '',
 	].join('|');
@@ -88,6 +94,8 @@ export function cleanSettlementRecipe(v: unknown): SettlementRecipe | undefined 
 	};
 	if (SETTLEMENT_WALLS.includes(o.walls as SettlementWalls)) out.walls = o.walls as SettlementWalls;
 	if (o.wallShape === 'round' || o.wallShape === 'square') out.wallShape = o.wallShape;
+	if (o.ground === 'land' || o.ground === 'water') out.ground = o.ground;
+	if (o.stilts === true) out.stilts = true;
 	if (o.harbor === true) out.harbor = true;
 	const ruin = o.ruin as { decay?: unknown; burned?: unknown } | undefined;
 	if (ruin && typeof ruin.decay === 'number' && ruin.decay >= 0 && ruin.decay <= 1)

@@ -2595,6 +2595,52 @@ export function stiltHut(D, o = {}) {
 }
 
 /**
+ * Lift any piece onto a timber deck on four stilts, sized to the piece's own
+ * x extent. Used by stilt-settlement layouts to perch every building (gable
+ * house, tower, warehouse) on the same deck recipe stiltHut uses for a round
+ * hut — one coherent "built on pilings" settlement whatever its culture.
+ * @param {Part[]} parts the piece in its own local frame (ground at y=0)
+ * @param {Design} D
+ * @returns {Part[]}
+ */
+export function onStilts(parts, D) {
+	let x0 = Infinity,
+		x1 = -Infinity;
+	for (const p of parts)
+		for (const poly of p.solid)
+			for (const [x] of poly) {
+				if (x < x0) x0 = x;
+				if (x > x1) x1 = x;
+			}
+	if (!Number.isFinite(x0)) return parts;
+	const cx = (x0 + x1) / 2;
+	const R = Math.max(5, (x1 - x0) / 2 + 1.6);
+	const lift = 4.5 * D.stature;
+	const ry = R * 0.32;
+	/** @type {Poly} */
+	const deck = [...ell(cx, lift - 1.2, R, ry, 180, 360), ...ell(cx, lift, R, ry, 0, 180)];
+	/** @type {Line[]} */
+	const posts = [];
+	for (const a of [200, 250, 290, 340]) {
+		const t = (a * Math.PI) / 180;
+		const x = cx + R * 0.78 * Math.cos(t),
+			y = R * 0.78 * ry * Math.sin(t) * (1 / R);
+		posts.push({
+			pts: [
+				[x, y - 1.6],
+				[x, y + lift - 1],
+			],
+			w: 0.9,
+		});
+	}
+	return [
+		{ solid: [], free: posts },
+		{ solid: [deck], role: 'wood', shadeArea: rect(cx + R * 0.3, lift - R, R * 2, R * 2) },
+		...place(parts, { y: lift - 0.4 }),
+	];
+}
+
+/**
  * Lagoon the settlement stands in: a water plane with wave ticks, drawn
  * under everything else.
  * @param {number} rx
