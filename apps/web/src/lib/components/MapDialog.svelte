@@ -3340,6 +3340,16 @@
 		flex-wrap: wrap;
 		align-items: flex-end;
 	}
+	/* Visual separator between the dialog's control groups (above Label,
+	   Icon, and Link to). Sits in the body's vertical flex so the group's
+	   own gap gives it breathing room; a hair-line border keeps it quiet
+	   on both light and dark themes. */
+	:global(.mp-props-divider) {
+		border: none;
+		border-top: 1px solid var(--border);
+		margin: 0;
+		width: 100%;
+	}
 	:global(.mp-props-field--icon),
 	:global(.mp-props-field--color),
 	:global(.mp-props-field--angle),
