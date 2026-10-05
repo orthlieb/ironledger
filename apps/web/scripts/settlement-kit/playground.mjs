@@ -177,7 +177,7 @@ const KNOBS = [
 		key: 'towerRoof',
 		label: 'Tower top',
 		type: 'select',
-		options: ['cone', 'onion', 'crenel'],
+		options: ['cone', 'onion', 'crenel', 'dome'],
 		design: true,
 	},
 	{
@@ -344,6 +344,7 @@ const KNOBS = [
 		type: 'select',
 		options: ['auto', 'none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef'],
 	},
+	{ group: 'Drawing', key: 'stilts', label: 'On stilts', type: 'check' },
 	{
 		group: 'Drawing',
 		key: 'join',
@@ -407,6 +408,7 @@ const DRAWING = {
 	tiers: 'main',
 	harbor: 'none',
 	walls: 'auto',
+	stilts: false,
 	softRadius: 0.9,
 	outline: 1.4,
 	layout: 1,
@@ -521,7 +523,13 @@ function render() {
 				seed: drawing.layout,
 			}
 		: null;
-	const opts = { walls: drawing.walls, seed: drawing.layout, harbor: drawing.harbor, ruin };
+	const opts = {
+		walls: drawing.walls,
+		seed: drawing.layout,
+		harbor: drawing.harbor,
+		stilts: !!drawing.stilts,
+		ruin,
+	};
 	/** @type {[string, string][]} */
 	const towns = TIER_SETS[drawing.tiers].map(
 		(tier) =>

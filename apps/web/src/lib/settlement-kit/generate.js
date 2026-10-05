@@ -38,7 +38,8 @@ export { fallbackIcon } from './fallback.js';
 /**
  * What a marker stores: a REFERENCE to a culture, never the culture itself.
  * @typedef {{tier: Tier, culture: string, seed: number, walls?: Walls,
- *   wallShape?: 'round' | 'square', harbor?: boolean,
+ *   wallShape?: 'round' | 'square', ground?: 'land' | 'water',
+ *   stilts?: boolean, harbor?: boolean,
  *   ruin?: {decay: number, burned?: boolean}}} SettlementRecipe
  */
 
@@ -148,6 +149,7 @@ export function recipeDesign(recipe, culture) {
 		...DEFAULT_DESIGN,
 		...(culture?.design ?? {}),
 		...(recipe.wallShape ? { wallShape: recipe.wallShape } : {}),
+		...(recipe.ground ? { ground: recipe.ground } : {}),
 	};
 }
 
@@ -165,6 +167,7 @@ export function generateSettlementSvg(recipe, culture) {
 		walls: recipe.walls ?? 'auto',
 		seed: recipe.seed,
 		harbor: recipe.harbor ? 'side' : 'none',
+		stilts: !!recipe.stilts,
 		ruin: recipe.ruin
 			? {
 					decay: recipe.ruin.decay,

@@ -33,7 +33,9 @@ import { place } from './render.js';
  * @property {number} storeys chance a house has a second storey (0..1)
  * @property {'square' | 'arched' | 'slit' | 'round'} window
  * @property {boolean} manyDoors
- * @property {'cone' | 'onion' | 'crenel'} towerRoof
+ * @property {'cone' | 'onion' | 'crenel' | 'dome'} towerRoof hemispherical dome
+ *   culture replaces every pitched roof — gable houses and tower caps alike —
+ *   with a stone half-sphere
  * @property {number} spire spire / cone height ÷ tower width
  * @property {number} taper tower walls lean in by this share of the radius
  * @property {boolean} flags
@@ -129,7 +131,7 @@ export function makeDesign(seed) {
 		storeys: avg() * 0.8,
 		window: pick(['square', 'arched', 'slit', 'round']),
 		manyDoors: r() < 0.3,
-		towerRoof: r() < 0.5 ? 'cone' : r() < 0.45 ? 'onion' : 'crenel',
+		towerRoof: pick(['cone', 'cone', 'cone', 'onion', 'onion', 'crenel', 'crenel', 'dome', 'dome']),
 		spire: 1.3 + avg() * 1.7,
 		taper: avg() * 0.14,
 		flags: r() < 0.75,
@@ -566,6 +568,29 @@ function onionDome(D, cx, y, r) {
 }
 
 /**
+ * Hemispherical stone dome cap sitting on a flat platform at height y, with
+ * its base rim visible in oblique projection (the near half of an ellipse)
+ * and the half-sphere arcing up to y + r. The right flank is shaded.
+ * @param {number} cx
+ * @param {number} y base plane of the dome
+ * @param {number} r dome base radius (also its height)
+ * @returns {{part: Part, tip: Pt}}
+ */
+function hemiDome(cx, y, r) {
+	const ry = r * 0.34;
+	/** @type {Poly} */
+	const outline = [...ell(cx, y, r, ry, 180, 360), ...ell(cx, y, r, r, 0, 180, 28).slice(1, -1)];
+	return {
+		part: {
+			solid: [outline],
+			role: 'roof',
+			shadeArea: rect(cx + r * 0.3, y - ry - 2, r * 2, r + ry + 4),
+		},
+		tip: [cx, y + r],
+	};
+}
+
+/**
  * House with its gable facing the viewer.
  * @param {Design} D
  * @param {{w?: number, h?: number, seed?: number}} [o]
@@ -579,18 +604,41 @@ export function gableHouse(D, o = {}) {
 		rh = w * D.pitch,
 		ov = 1.5;
 	const v = depthVec(w * D.depth);
-	/** @type {Pt} */ const L = [-w / 2 - ov, h];
-	/** @type {Pt} */ const R = [w / 2 + ov, h];
-	/** @type {Pt} */ const A = [0, h + rh];
-	const mid = /** @type {Pt} */ ([0, h + rh * 0.35]);
-	const la = sag(L, A, mid, D.concave);
-	const ar = sag(A, R, mid, D.concave);
 	const side = /** @type {Poly} */ ([
 		[w / 2, 0],
 		add([w / 2, 0], v),
 		add([w / 2, h], v),
 		[w / 2, h],
 	]);
+	// Dome-culture houses: a stone half-sphere cap sits on the box top in
+	// place of a gable. The flat top of the box is drawn first so the
+	// dome's near-rim ellipse reads as a seam, not a floating arc.
+	if (D.towerRoof === 'dome') {
+		const facadeFills = facade(D, -w / 2, w / 2, h, two, r);
+		const topCap = /** @type {Poly} */ ([
+			[-w / 2, h],
+			[w / 2, h],
+			add([w / 2, h], v),
+			add([-w / 2, h], v),
+		]);
+		const { part } = hemiDome(v[0] / 2, h + v[1] / 2, w * 0.42);
+		return [
+			{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
+			{ solid: [topCap] },
+			part,
+			{
+				solid: [rect(-w / 2, 0, w, h)],
+				fills: facadeFills,
+				lines: D.masonry ? stoneCourses(-w / 2, w / 2, 0, h) : [],
+			},
+		];
+	}
+	/** @type {Pt} */ const L = [-w / 2 - ov, h];
+	/** @type {Pt} */ const R = [w / 2 + ov, h];
+	/** @type {Pt} */ const A = [0, h + rh];
+	const mid = /** @type {Pt} */ ([0, h + rh * 0.35]);
+	const la = sag(L, A, mid, D.concave);
+	const ar = sag(A, R, mid, D.concave);
 	const left = /** @type {Poly} */ ([...la, ...shift(la, v).reverse()]);
 	const right = /** @type {Poly} */ ([...ar, ...shift(ar, v).reverse()]);
 	const fills = facade(D, -w / 2, w / 2, h, two, r);
@@ -1184,6 +1232,12 @@ export function roundTower(D, o = {}) {
 		parts.push(...dome.parts);
 		return parts;
 	}
+	if (roof === 'dome') {
+		const dome = hemiDome(0, h, top + 0.4);
+		if (D.flags && o.flags !== false) parts.unshift(...flag(D, dome.tip[0], dome.tip[1] - 2));
+		parts.push(dome.part);
+		return parts;
+	}
 	const R = top + 1.8;
 	const rh = top * 2 * D.spire * 0.75;
 	/** @type {Pt} */ const apex = [0, h + rh];
@@ -1270,6 +1324,16 @@ export function squareTower(D, o = {}) {
 		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
 		return parts;
 	}
+	if (D.towerRoof === 'dome') {
+		// Stone half-sphere on the square tower's flat top.
+		parts.push({
+			solid: [[[-w / 2, h], [w / 2, h], add([w / 2, h], v), add([-w / 2, h], v)]],
+		});
+		const dome = hemiDome(v[0] / 2, h + v[1] / 2, w * 0.52);
+		parts.push(dome.part);
+		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
+		return parts;
+	}
 	parts.push(
 		{ solid: [sideFace], role: 'roof', shaded: true, lines: hatch(sideFace, -40, D.hatch) },
 		{ solid: [frontFace], role: 'roof' },
@@ -1297,20 +1361,14 @@ function gateTower(D, y0, h, wood) {
 		[w / 2, y0 + h],
 	]);
 	/** @type {Poly} */
-	let front;
-	if (wood) {
-		front = [
-			[-w / 2, y0],
-			[w / 2, y0],
-		];
-		const n = 5;
-		for (let i = n; i > 0; i--) {
-			const x1 = -w / 2 + (w * i) / n,
-				x0 = x1 - w / n;
-			front.push([x1, y0 + h - 1.6], [(x0 + x1) / 2, y0 + h]);
-		}
-		front.push([-w / 2, y0 + h - 1.6]);
-	} else front = crenellated(-w / 2, w / 2, y0, y0 + h, { merlon: 2.2, notch: 2 });
+	const front = wood
+		? [
+				[-w / 2, y0],
+				[w / 2, y0],
+				[w / 2, y0 + h],
+				[-w / 2, y0 + h],
+			]
+		: crenellated(-w / 2, w / 2, y0, y0 + h, { merlon: 2.2, notch: 2 });
 	/** @type {Line[]} */
 	const planks = [];
 	if (wood)
@@ -1325,9 +1383,11 @@ function gateTower(D, y0, h, wood) {
 			});
 		}
 	const role = wood ? /** @type {const} */ ('wood') : undefined;
-	return [
-		// The settlement's banner flies over its gate.
-		...(D.flags ? flag(D, 0.6, y0 + h - 0.5) : []),
+	// Banner is planted on whatever caps the gate — the dome tip, the pyramid
+	// apex, or (stone gate) just the crenellated parapet.
+	let flagAt = /** @type {Pt} */ ([0.6, y0 + h - 0.5]);
+	/** @type {Part[]} */
+	const parts = [
 		{ solid: [side], role, shaded: true, lines: hatch(side, 65, D.hatch) },
 		{
 			solid: [front],
@@ -1336,6 +1396,40 @@ function gateTower(D, y0, h, wood) {
 			fills: [archOpening(0, y0, 5.6, Math.min(8.5, h * 0.7))],
 		},
 	];
+	// A wooden gate's cap: dome in dome culture, otherwise a modest pyramid
+	// roof. Replaces the former sharpened-palisade crown so the gate reads
+	// as a sheltered gatehouse rather than a bare stockade.
+	if (wood) {
+		const yTop = y0 + h;
+		parts.push({
+			solid: [[[-w / 2, yTop], [w / 2, yTop], add([w / 2, yTop], v), add([-w / 2, yTop], v)]],
+		});
+		if (D.towerRoof === 'dome') {
+			const dome = hemiDome(v[0] / 2, yTop + v[1] / 2, w * 0.42);
+			parts.push(dome.part);
+			flagAt = [dome.tip[0], dome.tip[1] - 1.5];
+		} else {
+			const ov = 1.2,
+				rh = w * 0.55;
+			/** @type {Pt} */ const fL = [-w / 2 - ov, yTop];
+			/** @type {Pt} */ const fR = [w / 2 + ov, yTop];
+			const bR = add(fR, v);
+			const apex = add(
+				/** @type {Pt} */ ([0, yTop + rh]),
+				/** @type {Pt} */ ([v[0] / 2, v[1] / 2]),
+			);
+			const frontRoof = /** @type {Poly} */ ([fL, fR, apex]);
+			const sideRoof = /** @type {Poly} */ ([fR, bR, apex]);
+			parts.push(
+				{ solid: [sideRoof], role: 'wood', shaded: true, lines: hatch(sideRoof, -40, D.hatch) },
+				{ solid: [frontRoof], role: 'wood' },
+			);
+			flagAt = [apex[0], apex[1] - 1];
+		}
+	}
+	// Banner flies in front of everything so it reads clearly against the cap.
+	if (D.flags) parts.push(...flag(D, flagAt[0], flagAt[1]));
+	return parts;
 }
 
 /**
@@ -2245,16 +2339,18 @@ export function well(/** @type {Design} */ D) {
 				},
 			],
 		},
-		{
-			solid: [
-				[
-					[-r - 1, ch + 4.2],
-					[r + 1, ch + 4.2],
-					[0, ch + 4.2 + r * D.pitch * 1.6],
-				],
-			],
-			role: /** @type {const} */ ('roof'),
-		},
+		D.towerRoof === 'dome'
+			? hemiDome(0, ch + 4.2, r + 1).part
+			: {
+					solid: [
+						[
+							[-r - 1, ch + 4.2],
+							[r + 1, ch + 4.2],
+							[0, ch + 4.2 + r * D.pitch * 1.6],
+						],
+					],
+					role: /** @type {const} */ ('roof'),
+				},
 	];
 }
 
@@ -2392,10 +2488,19 @@ export function roundHut(D, o = {}) {
 	const r = o.r ?? 7,
 		h = 6 * D.stature,
 		ry = r * 0.34;
+	const body = /** @type {Poly} */ ([...ell(0, 0, r, ry, 180, 360), [r, h], [-r, h]]);
+	const bodyPart = {
+		solid: [body],
+		shadeArea: rect(r * 0.3, -ry - 2, r * 2, h + ry + 4),
+		lines: [...cylinderShade(r, -ry - 1, h + 1), ...(D.masonry ? stoneCourses(-r, r, -ry, h) : [])],
+		fills: [archOpening(-r * 0.25, -ry * 0.95, 3.4, 5.4)],
+	};
+	// Dome culture: stone half-sphere on the cylinder's flat top instead
+	// of a thatched cone.
+	if (D.towerRoof === 'dome') return [bodyPart, hemiDome(0, h, r + 0.4).part];
 	const R = r + 1.6,
 		rh = R * 2 * D.pitch * 0.9;
 	/** @type {Pt} */ const apex = [0, h + rh];
-	const body = /** @type {Poly} */ ([...ell(0, 0, r, ry, 180, 360), [r, h], [-r, h]]);
 	const sweep = D.concave * 0.8;
 	/** @type {Poly} */
 	const roof = [
@@ -2410,15 +2515,7 @@ export function roundHut(D, o = {}) {
 		thatch.push({ pts: [apex, [R * 1.3 * Math.sin(a), h - ry * Math.cos(a)]], w: THIN });
 	}
 	return [
-		{
-			solid: [body],
-			shadeArea: rect(r * 0.3, -ry - 2, r * 2, h + ry + 4),
-			lines: [
-				...cylinderShade(r, -ry - 1, h + 1),
-				...(D.masonry ? stoneCourses(-r, r, -ry, h) : []),
-			],
-			fills: [archOpening(-r * 0.25, -ry * 0.95, 3.4, 5.4)],
-		},
+		bodyPart,
 		{
 			solid: [roof],
 			role: 'roof',
@@ -2498,6 +2595,52 @@ export function stiltHut(D, o = {}) {
 }
 
 /**
+ * Lift any piece onto a timber deck on four stilts, sized to the piece's own
+ * x extent. Used by stilt-settlement layouts to perch every building (gable
+ * house, tower, warehouse) on the same deck recipe stiltHut uses for a round
+ * hut — one coherent "built on pilings" settlement whatever its culture.
+ * @param {Part[]} parts the piece in its own local frame (ground at y=0)
+ * @param {Design} D
+ * @returns {Part[]}
+ */
+export function onStilts(parts, D) {
+	let x0 = Infinity,
+		x1 = -Infinity;
+	for (const p of parts)
+		for (const poly of p.solid)
+			for (const [x] of poly) {
+				if (x < x0) x0 = x;
+				if (x > x1) x1 = x;
+			}
+	if (!Number.isFinite(x0)) return parts;
+	const cx = (x0 + x1) / 2;
+	const R = Math.max(5, (x1 - x0) / 2 + 1.6);
+	const lift = 4.5 * D.stature;
+	const ry = R * 0.32;
+	/** @type {Poly} */
+	const deck = [...ell(cx, lift - 1.2, R, ry, 180, 360), ...ell(cx, lift, R, ry, 0, 180)];
+	/** @type {Line[]} */
+	const posts = [];
+	for (const a of [200, 250, 290, 340]) {
+		const t = (a * Math.PI) / 180;
+		const x = cx + R * 0.78 * Math.cos(t),
+			y = R * 0.78 * ry * Math.sin(t) * (1 / R);
+		posts.push({
+			pts: [
+				[x, y - 1.6],
+				[x, y + lift - 1],
+			],
+			w: 0.9,
+		});
+	}
+	return [
+		{ solid: [], free: posts },
+		{ solid: [deck], role: 'wood', shadeArea: rect(cx + R * 0.3, lift - R, R * 2, R * 2) },
+		...place(parts, { y: lift - 0.4 }),
+	];
+}
+
+/**
  * Lagoon the settlement stands in: a water plane with wave ticks, drawn
  * under everything else.
  * @param {number} rx
@@ -2554,6 +2697,7 @@ export function windmill(D) {
 		},
 	];
 	if (D.towerRoof === 'onion') parts.push(...onionDome(D, 0, h - 0.4, r1 * 0.95).parts);
+	else if (D.towerRoof === 'dome') parts.push(hemiDome(0, h - 0.4, r1 * 1.1).part);
 	else {
 		const R = r1 + 1.2,
 			rh = R * 1.6 * Math.max(0.6, D.pitch);
@@ -3110,6 +3254,7 @@ export function lighthouse(D) {
 	);
 	// Cap in the culture's roof style.
 	if (D.towerRoof === 'onion') parts.push(...onionDome(D, 0, h + lh - 0.3, lr * 1.05).parts);
+	else if (D.towerRoof === 'dome') parts.push(hemiDome(0, h + lh - 0.3, lr * 1.15).part);
 	else {
 		const R = lr + 1,
 			rh = R * 1.5 * Math.max(0.6, D.pitch);
@@ -3616,36 +3761,23 @@ export function witchHut(D) {
 		lift = 6 * D.stature,
 		R = r + 1.4;
 	const deck = /** @type {Poly} */ ([
-		...ell(0.6, lift - 1.4, R, R * 0.34, 180, 360),
-		...ell(-0.4, lift, R, R * 0.34, 0, 180),
+		...ell(0, lift - 1.4, R, R * 0.34, 180, 360),
+		...ell(0, lift, R, R * 0.34, 0, 180),
 	]);
 	/** @type {Line[]} */
 	const posts = [];
-	[
-		[200, -1.4],
-		[245, 0.8],
-		[300, -0.6],
-		[340, 1.6],
-	].forEach(([a, lean]) => {
+	for (const a of [200, 245, 300, 340]) {
 		const t = (a * Math.PI) / 180;
 		const x = R * 0.78 * Math.cos(t),
 			y = R * 0.78 * 0.34 * Math.sin(t);
 		posts.push({
 			pts: [
-				[x + lean, y - 2],
+				[x, y - 2],
 				[x, y + lift - 1.2],
 			],
 			w: 1,
 		});
-	});
-	// A cross-brace and a rickety ladder.
-	posts.push({
-		pts: [
-			[-R * 0.7, -1],
-			[R * 0.2, lift - 2],
-		],
-		w: 0.7,
-	});
+	}
 	/** @type {Line[]} */
 	const ladder = [
 		{
@@ -3674,6 +3806,15 @@ export function witchHut(D) {
 		});
 	}
 	const hut = roundHut(d, { r });
+	// Dome culture: the hut stands bare on its deck (there is no thatch for
+	// a chimney pot to vent through).
+	if (D.towerRoof === 'dome') {
+		return [
+			{ solid: [], free: [...posts, ...ladder] },
+			{ solid: [deck], role: 'wood', shadeArea: rect(R * 0.3, lift - R, R * 2, R * 2) },
+			...place(hut, { y: lift - 0.4 }),
+		];
+	}
 	const rh = (r + 1.6) * 2 * d.pitch * 0.9,
 		hh = 6 * D.stature;
 	// A tapered chimney pot poking out of the thatch's lit flank.
@@ -3688,29 +3829,8 @@ export function witchHut(D) {
 	return [
 		{ solid: [], free: [...posts, ...ladder] },
 		{ solid: [deck], role: 'wood', shadeArea: rect(R * 0.3, lift - R, R * 2, R * 2) },
-		// The hut slumps to one side: the higher, the further it leans.
-		...place(skew([...hut, { solid: [pot] }], -0.1, 0), { y: lift - 0.4 }),
+		...place([...hut, { solid: [pot] }], { y: lift - 0.4 }),
 	];
-}
-
-/**
- * Shear parts sideways in proportion to height above `y0` — a crooked lean.
- * @param {Part[]} parts @param {number} k x shift per unit of height @param {number} y0
- * @returns {Part[]}
- */
-function skew(parts, k, y0) {
-	const tp = (/** @type {Poly} */ poly) =>
-		poly.map(([x, y]) => /** @type {Pt} */ ([x + k * Math.max(0, y - y0), y]));
-	const tl = (/** @type {Line} */ l) => ({ ...l, pts: tp(l.pts) });
-	return parts.map((p) => ({
-		...p,
-		solid: p.solid.map(tp),
-		lines: p.lines?.map(tl),
-		fills: p.fills?.map(tp),
-		cuts: p.cuts?.map(tl),
-		free: p.free?.map(tl),
-		shadeArea: p.shadeArea && tp(p.shadeArea),
-	}));
 }
 
 /**

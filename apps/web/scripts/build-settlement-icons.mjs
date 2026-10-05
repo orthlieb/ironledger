@@ -73,6 +73,11 @@ const CORE_ICONS = {
 	keep: ['settlement', () => piece(D, 'Keep')],
 	'block-house': ['settlement', () => [{ piece: keep({ ...D, flags: false }, { w: 16, h: 20 }) }]],
 	'fortified-tower': ['settlement', () => piece({ ...D, towerRoof: 'crenel' }, 'Round tower')],
+	'domed-tower': ['settlement', () => piece({ ...D, towerRoof: 'dome' }, 'Round tower')],
+	'domed-house': [
+		'settlement',
+		() => piece({ ...D, towerRoof: 'dome', storeys: 1 }, 'Gable house'),
+	],
 	watchtower: [
 		'settlement',
 		() => piece({ ...D, towerRoof: 'crenel', stature: 1.2 }, 'Round tower'),

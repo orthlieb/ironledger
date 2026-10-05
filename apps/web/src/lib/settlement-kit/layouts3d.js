@@ -23,6 +23,7 @@ import {
 	market,
 	mine,
 	moundHut,
+	onStilts,
 	pavilion,
 	pier,
 	ringWall,
@@ -63,6 +64,9 @@ function house(D, r, w, trade) {
 		if (r() < D.huts) return roundHut(D, { r: w * 0.32 });
 		if (r() < D.longhouse) return sideHouse(D, { w: w * 1.55, seed, kind: 'longhouse' });
 	} else return sideHouse(D, { w: w + 8, seed, kind: r() < 0.5 ? 'warehouse' : 'workshop' });
+	// Dome culture: every dwelling is a dome house (sideHouse keeps its gable,
+	// so always route through gableHouse where the dome branch lives).
+	if (D.towerRoof === 'dome') return gableHouse(D, { w: w * 0.75, seed });
 	return r() < D.gable ? gableHouse(D, { w: w * 0.75, seed }) : sideHouse(D, { w, seed });
 }
 
@@ -299,7 +303,10 @@ function wallFor(T, walls, D) {
  * `harbor: 'side'` puts the sea along the right of the settlement with a
  * pier and a caravel at dock (Freeport always has one).
  * `ruin` turns it into a ruin (see ruins3d.js).
- * @param {{walls?: Walls, seed?: number, harbor?: 'none' | 'side', ruin?: import('./ruins3d.js').RuinOptions | null}} [o]
+ * `stilts` lifts every inside-the-walls piece onto a timber-post deck —
+ * think a lagoon settlement over water or dune boardwalks over sand. The
+ * ring wall and the ground stay on the ground.
+ * @param {{walls?: Walls, seed?: number, harbor?: 'none' | 'side', ruin?: import('./ruins3d.js').RuinOptions | null, stilts?: boolean}} [o]
  * @returns {Placed[]}
  */
 export function settlement(tier, D, o = {}) {
@@ -438,6 +445,10 @@ export function settlement(tier, D, o = {}) {
 			x += width(it) + gap;
 		}
 	});
+	// Stilt-settlement: wrap every inside piece on its own deck + posts.
+	if (o.stilts)
+		for (let i = 0; i < inside.length; i++)
+			inside[i] = { ...inside[i], piece: onStilts(inside[i].piece, D) };
 	inside.sort((a, b) => (b.y ?? 0) - (a.y ?? 0));
 	// Now the town is laid out, fit the wall to it: grow the enclosure
 	// (keeping its proportions and centre) until every footprint point is
