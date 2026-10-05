@@ -3715,36 +3715,23 @@ export function witchHut(D) {
 		lift = 6 * D.stature,
 		R = r + 1.4;
 	const deck = /** @type {Poly} */ ([
-		...ell(0.6, lift - 1.4, R, R * 0.34, 180, 360),
-		...ell(-0.4, lift, R, R * 0.34, 0, 180),
+		...ell(0, lift - 1.4, R, R * 0.34, 180, 360),
+		...ell(0, lift, R, R * 0.34, 0, 180),
 	]);
 	/** @type {Line[]} */
 	const posts = [];
-	[
-		[200, -1.4],
-		[245, 0.8],
-		[300, -0.6],
-		[340, 1.6],
-	].forEach(([a, lean]) => {
+	for (const a of [200, 245, 300, 340]) {
 		const t = (a * Math.PI) / 180;
 		const x = R * 0.78 * Math.cos(t),
 			y = R * 0.78 * 0.34 * Math.sin(t);
 		posts.push({
 			pts: [
-				[x + lean, y - 2],
+				[x, y - 2],
 				[x, y + lift - 1.2],
 			],
 			w: 1,
 		});
-	});
-	// A cross-brace and a rickety ladder.
-	posts.push({
-		pts: [
-			[-R * 0.7, -1],
-			[R * 0.2, lift - 2],
-		],
-		w: 0.7,
-	});
+	}
 	/** @type {Line[]} */
 	const ladder = [
 		{
@@ -3773,8 +3760,8 @@ export function witchHut(D) {
 		});
 	}
 	const hut = roundHut(d, { r });
-	// Dome culture: the hut stands upright on its stilts and loses the
-	// thatch's slumped chimney pot (there's no thatch to vent through).
+	// Dome culture: the hut stands bare on its deck (there is no thatch for
+	// a chimney pot to vent through).
 	if (D.towerRoof === 'dome') {
 		return [
 			{ solid: [], free: [...posts, ...ladder] },
@@ -3796,29 +3783,8 @@ export function witchHut(D) {
 	return [
 		{ solid: [], free: [...posts, ...ladder] },
 		{ solid: [deck], role: 'wood', shadeArea: rect(R * 0.3, lift - R, R * 2, R * 2) },
-		// The hut slumps to one side: the higher, the further it leans.
-		...place(skew([...hut, { solid: [pot] }], -0.1, 0), { y: lift - 0.4 }),
+		...place([...hut, { solid: [pot] }], { y: lift - 0.4 }),
 	];
-}
-
-/**
- * Shear parts sideways in proportion to height above `y0` — a crooked lean.
- * @param {Part[]} parts @param {number} k x shift per unit of height @param {number} y0
- * @returns {Part[]}
- */
-function skew(parts, k, y0) {
-	const tp = (/** @type {Poly} */ poly) =>
-		poly.map(([x, y]) => /** @type {Pt} */ ([x + k * Math.max(0, y - y0), y]));
-	const tl = (/** @type {Line} */ l) => ({ ...l, pts: tp(l.pts) });
-	return parts.map((p) => ({
-		...p,
-		solid: p.solid.map(tp),
-		lines: p.lines?.map(tl),
-		fills: p.fills?.map(tp),
-		cuts: p.cuts?.map(tl),
-		free: p.free?.map(tl),
-		shadeArea: p.shadeArea && tp(p.shadeArea),
-	}));
 }
 
 /**
