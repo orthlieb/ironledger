@@ -59,6 +59,35 @@ Notes:
 - Keep the explanatory `//` comment above each count in sync (it records
   the per-source breakdown) so the next person's bump is auditable.
 
+## Standing order — regenerate the YRT reference page when YRT content changes
+
+`extensions/yrt/reference/assets.md` (and its sibling move / foe / oracle
+reference pages) is a **committed, generated** Markdown dump of the YRT
+extension's content. CI runs `npm run gen:yrt-ref:check` and goes red
+whenever the committed page drifts from what the generator would write.
+Any time you **add, remove, or edit** a content item under
+`extensions/yrt/{assets,moves,oracles,foes}/`, regenerate **in the same
+branch** — the catalogue-count bump above alone is not enough: it kept
+PR #474 (Touched, Lupine + Marine) counts correct but still turned
+`CI / Test & Build` red because the generator spotted an unregenerated
+`assets.md`, and the fix shipped a day later as PR #475.
+
+After any YRT content edit, run:
+
+```
+npm run gen:yrt-ref
+```
+
+and commit whatever `extensions/yrt/reference/*.md` changed. Verify with:
+
+```
+npm run gen:yrt-ref:check
+```
+
+which exits non-zero if any reference page is stale. The generator lives
+at `scripts/gen-yrt-reference.mjs`; it's deterministic (no timestamps),
+so a re-run on an up-to-date tree is a no-op.
+
 ## App-level scroll architecture
 
 The viewport itself (`html` and `body`) **never** scrolls. `app.css` sets
