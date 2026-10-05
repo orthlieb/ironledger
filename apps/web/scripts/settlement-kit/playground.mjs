@@ -177,7 +177,7 @@ const KNOBS = [
 		key: 'towerRoof',
 		label: 'Tower top',
 		type: 'select',
-		options: ['cone', 'onion', 'crenel'],
+		options: ['cone', 'onion', 'crenel', 'dome'],
 		design: true,
 	},
 	{
