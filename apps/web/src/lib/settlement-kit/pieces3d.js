@@ -2618,6 +2618,7 @@ export function windmill(D) {
 		},
 	];
 	if (D.towerRoof === 'onion') parts.push(...onionDome(D, 0, h - 0.4, r1 * 0.95).parts);
+	else if (D.towerRoof === 'dome') parts.push(hemiDome(0, h - 0.4, r1 * 1.1).part);
 	else {
 		const R = r1 + 1.2,
 			rh = R * 1.6 * Math.max(0.6, D.pitch);
@@ -3174,6 +3175,7 @@ export function lighthouse(D) {
 	);
 	// Cap in the culture's roof style.
 	if (D.towerRoof === 'onion') parts.push(...onionDome(D, 0, h + lh - 0.3, lr * 1.05).parts);
+	else if (D.towerRoof === 'dome') parts.push(hemiDome(0, h + lh - 0.3, lr * 1.15).part);
 	else {
 		const R = lr + 1,
 			rh = R * 1.5 * Math.max(0.6, D.pitch);
