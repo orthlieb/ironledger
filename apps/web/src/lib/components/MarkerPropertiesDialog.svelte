@@ -550,12 +550,12 @@
 					     a whole and stay live in every mode. -->
 					<div class="mp-props-row">
 						<div class="mp-props-field mp-props-field--mode">
-							<span class="mp-props-label">Editing</span>
+							<span class="mp-props-label">Type</span>
 							<RadioGroup.Root
 								value={editMode}
 								onValueChange={(v) => (editMode = v as 'both' | 'label' | 'icon')}
 								class="mp-mode-radios"
-								aria-label="Which marker halves to edit"
+								aria-label="Marker type"
 							>
 								{#each ['both', 'label', 'icon'] as const as mode (mode)}
 									<label class="mp-mode-option">

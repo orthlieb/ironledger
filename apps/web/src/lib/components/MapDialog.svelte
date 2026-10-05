@@ -2660,7 +2660,7 @@
 		display: inline-flex;
 		align-items: center;
 		justify-content: center;
-		width: 13px;
+		width: 11px;
 		padding: 0;
 		border: none;
 		background: transparent;
@@ -2672,8 +2672,8 @@
 		cursor: pointer;
 	}
 	:global(.mp-sel-angle-step svg) {
-		width: 9px;
-		height: 9px;
+		width: 8px;
+		height: 8px;
 		fill: currentColor;
 		display: block;
 	}
@@ -2687,15 +2687,15 @@
 	:global(.mp-sel-angle-field) {
 		display: inline-flex;
 		align-items: center;
-		gap: 3px;
-		padding: 2px 4px 2px 6px;
+		gap: 2px;
+		padding: 2px 2px 2px 4px;
 		border-inline: 1px solid var(--border);
 		font-family: var(--font-ui);
 		font-size: 0.72rem;
 		color: var(--text-muted);
 	}
 	:global(.mp-sel-angle-input) {
-		width: 2.2em;
+		width: 1.9em;
 		padding: 3px 0 3px 2px;
 		border: none;
 		background: transparent;
@@ -3443,15 +3443,19 @@
 		flex: 0 0 auto;
 	}
 	/* Position + Size are both narrow Select triggers (arrow glyph or one
-	   or two letters). ~4.5rem gives the trigger + caret + padding room
-	   without letting them fight their row-mates for space. */
+	   or two letters). Position keeps the ~4.5rem trigger (the arrow glyph
+	   is visually airy); Size tightens to 3.25rem — just the letter + caret
+	   + a hair of padding — so it drops off the Style row's trailing edge
+	   without wrapping. */
 	:global(.mp-props-field--position),
 	:global(.mp-props-field--size) {
 		flex: 0 0 auto;
 	}
-	:global(.mp-props-field--position .bui-select-trigger),
-	:global(.mp-props-field--size .bui-select-trigger) {
+	:global(.mp-props-field--position .bui-select-trigger) {
 		min-width: 4.5rem;
+	}
+	:global(.mp-props-field--size .bui-select-trigger) {
+		min-width: 3.25rem;
 	}
 	/* Scale (per-marker icon scale) — a native range input that grows to
 	   fill the row's trailing slot the same way RGB does. Both are stretch
