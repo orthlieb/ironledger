@@ -20,7 +20,7 @@
 	 * own `.cb-*` styles).
 	 */
 	import { untrack } from 'svelte';
-	import { Dialog } from 'bits-ui';
+	import { Dialog, RadioGroup } from 'bits-ui';
 	import Combobox from '$lib/components/Combobox.svelte';
 	import ColorPicker from '$lib/components/ColorPicker.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
@@ -312,6 +312,10 @@
 		};
 		originalMarker = snap;
 		draft = { ...snap };
+		// Each fresh selection re-opens the editor with both halves live;
+		// the mode is dialog-local, so a previous Label/Icon pick never
+		// carries into editing a different marker.
+		editMode = 'both';
 	});
 
 	/** Push the draft's current values straight through to the live
@@ -377,6 +381,15 @@
 	const hasIcon = $derived(!!draft?.icon);
 	const hasLabel = $derived(!!draft?.label.trim());
 	const canSave = $derived(hasIcon || hasLabel);
+
+	/** Which column of the editor is active. Both = default = everything live;
+	 *  Label = only label text / position / style / size editable; Icon =
+	 *  only icon picker / scale editable. Colour and Angle are always live
+	 *  (they belong to the marker as a whole, not to one half). Dialog-local —
+	 *  not persisted on the marker. */
+	let editMode = $state<'both' | 'label' | 'icon'>('both');
+	const labelActive = $derived(editMode !== 'icon');
+	const iconActive = $derived(editMode !== 'label');
 
 	function onDraftLabelInput(e: Event) {
 		if (!draft) return;
@@ -530,171 +543,32 @@
 					radius="8px 8px 0 0"
 				/>
 				<div class="mp-props-body">
-					<!-- Label input + label position share the first row. Position
-					     rides at the tail so the arrow glyph doesn't crowd the
-					     name input; disabled when either half of the pair is
-					     missing (no icon → label centres regardless, no label
-					     → nothing to position). -->
+					<!-- Top row — Edit mode (Both / Label / Icon) + the two
+					     always-live knobs (Colour and Angle). The mode gates
+					     which of the Label- vs Icon-specific rows below are
+					     interactive; Colour and Angle belong to the marker as
+					     a whole and stay live in every mode. -->
 					<div class="mp-props-row">
-						<label class="mp-props-field mp-props-field--label">
-							<span class="mp-props-label">Label</span>
-							<input
-								id="mp-props-name"
-								name="mp-props-name"
-								class="mp-props-input"
-								type="text"
-								placeholder="Marker label…"
-								value={draft.label}
-								oninput={onDraftLabelInput}
-							/>
-						</label>
-						<label class="mp-props-field mp-props-field--position">
-							<span class="mp-props-label">Position</span>
-							<Select
-								value={draft.labelPosition}
-								options={LABEL_POSITION_OPTIONS}
-								ariaLabel="Label position"
-								disabled={!hasIcon || !hasLabel}
-								onchange={pickLabelPosition}
-							/>
-						</label>
-					</div>
-
-					<!-- Text emphasis toggles — each one flips a single boolean on
-					     `draft.labelStyle` via toggleLabelStyle(). aria-pressed +
-					     data-active track the pressed state; the ↦ live preview is
-					     applied straight on the button label so a glance tells the
-					     user what the map will look like. -->
-					<div class="mp-props-row">
-						<div class="mp-props-field mp-props-field--style">
-							<span class="mp-props-label">Style</span>
-							<div class="mp-style-row" role="group" aria-label="Label text style">
-								<!-- Bold / Italic / Underline — independent boolean toggles.
-								     Disabled when there's no label to style. -->
-								<button
-									type="button"
-									class="mp-style-btn"
-									data-active={draft.bold}
-									aria-pressed={draft.bold}
-									aria-label="Bold"
-									disabled={!hasLabel}
-									onclick={() => toggleLabelStyle('bold')}
-									style="font-weight:800">B</button
-								>
-								<button
-									type="button"
-									class="mp-style-btn"
-									data-active={draft.italic}
-									aria-pressed={draft.italic}
-									aria-label="Italic"
-									disabled={!hasLabel}
-									onclick={() => toggleLabelStyle('italic')}
-									style="font-style:italic">I</button
-								>
-								<button
-									type="button"
-									class="mp-style-btn"
-									data-active={draft.underline}
-									aria-pressed={draft.underline}
-									aria-label="Underline"
-									disabled={!hasLabel}
-									onclick={() => toggleLabelStyle('underline')}
-									style="text-decoration:underline">U</button
-								>
-								<!-- Case — mutually exclusive radio group: Regular /
-							     Small caps / Uppercase. The active one is highlighted
-							     the same way pressed toggles are; role=radio +
-							     aria-checked carry the semantics for AT. -->
-								<span class="mp-style-sep" aria-hidden="true"></span>
-								<div class="mp-style-radios" role="radiogroup" aria-label="Case">
-									<button
-										type="button"
-										class="mp-style-btn"
-										role="radio"
-										aria-checked={draft.case === 'regular'}
-										data-active={draft.case === 'regular'}
-										aria-label="Regular case"
-										disabled={!hasLabel}
-										onclick={() => pickCase('regular')}>Aa</button
-									>
-									<button
-										type="button"
-										class="mp-style-btn mp-style-btn--sc"
-										role="radio"
-										aria-checked={draft.case === 'small-caps'}
-										data-active={draft.case === 'small-caps'}
-										aria-label="Small caps"
-										disabled={!hasLabel}
-										onclick={() => pickCase('small-caps')}
-										>A<span class="mp-style-btn-xheight">A</span></button
-									>
-									<button
-										type="button"
-										class="mp-style-btn"
-										role="radio"
-										aria-checked={draft.case === 'uppercase'}
-										data-active={draft.case === 'uppercase'}
-										aria-label="Uppercase"
-										disabled={!hasLabel}
-										onclick={() => pickCase('uppercase')}
-										style="text-transform:uppercase">AA</button
-									>
-								</div>
-							</div>
+						<div class="mp-props-field mp-props-field--mode">
+							<span class="mp-props-label">Editing</span>
+							<RadioGroup.Root
+								value={editMode}
+								onValueChange={(v) => (editMode = v as 'both' | 'label' | 'icon')}
+								class="mp-mode-radios"
+								aria-label="Which marker halves to edit"
+							>
+								{#each ['both', 'label', 'icon'] as const as mode (mode)}
+									<label class="mp-mode-option">
+										<RadioGroup.Item value={mode} class="mp-mode-btn">
+											<span class="mp-mode-dot"></span>
+										</RadioGroup.Item>
+										<span class="mp-mode-text">
+											{mode === 'both' ? 'Both' : mode === 'label' ? 'Label' : 'Icon'}
+										</span>
+									</label>
+								{/each}
+							</RadioGroup.Root>
 						</div>
-
-						<!-- Label size — H4 → H1 typographic tiers. Sits on the
-						     Style row so all label-typography controls (emphasis,
-						     case, size) group in one place. Disabled when there's
-						     no label to size. -->
-						<label class="mp-props-field mp-props-field--size">
-							<span class="mp-props-label">Size</span>
-							<Select
-								value={draft.size}
-								options={LABEL_SIZE_OPTIONS}
-								ariaLabel="Label size"
-								disabled={!hasLabel}
-								onchange={pickLabelSize}
-							/>
-						</label>
-					</div>
-
-					<div class="mp-props-row">
-						<label class="mp-props-field mp-props-field--angle">
-							<span class="mp-props-label">Angle</span>
-							<div class="mp-sel-angle" role="group" aria-label="Marker rotation">
-								<button
-									type="button"
-									class="mp-sel-angle-step"
-									disabled={!canSave}
-									onclick={() => stepDraftAngle(-15)}
-									aria-label="Rotate counter-clockwise">{@html minusSvg}</button
-								>
-								<span class="mp-sel-angle-field">
-									<input
-										id="mp-props-angle"
-										name="mp-props-angle"
-										class="mp-sel-angle-input"
-										type="number"
-										min="0"
-										max="359"
-										step="15"
-										disabled={!canSave}
-										value={draftAngle}
-										oninput={onDraftAngleInput}
-										aria-label="Marker rotation in degrees"
-									/>
-									<span class="mp-sel-angle-unit" aria-hidden="true">°</span>
-								</span>
-								<button
-									type="button"
-									class="mp-sel-angle-step"
-									disabled={!canSave}
-									onclick={() => stepDraftAngle(15)}
-									aria-label="Rotate clockwise">{@html plusSvg}</button
-								>
-							</div>
-						</label>
 
 						<label class="mp-props-field mp-props-field--color">
 							<span class="mp-props-label">Colour</span>
@@ -732,9 +606,175 @@
 							</ColorPicker>
 						</label>
 
+						<label class="mp-props-field mp-props-field--angle">
+							<span class="mp-props-label">Angle</span>
+							<div class="mp-sel-angle" role="group" aria-label="Marker rotation">
+								<button
+									type="button"
+									class="mp-sel-angle-step"
+									disabled={!canSave}
+									onclick={() => stepDraftAngle(-15)}
+									aria-label="Rotate counter-clockwise">{@html minusSvg}</button
+								>
+								<span class="mp-sel-angle-field">
+									<input
+										id="mp-props-angle"
+										name="mp-props-angle"
+										class="mp-sel-angle-input"
+										type="number"
+										min="0"
+										max="359"
+										step="15"
+										disabled={!canSave}
+										value={draftAngle}
+										oninput={onDraftAngleInput}
+										aria-label="Marker rotation in degrees"
+									/>
+									<span class="mp-sel-angle-unit" aria-hidden="true">°</span>
+								</span>
+								<button
+									type="button"
+									class="mp-sel-angle-step"
+									disabled={!canSave}
+									onclick={() => stepDraftAngle(15)}
+									aria-label="Rotate clockwise">{@html plusSvg}</button
+								>
+							</div>
+						</label>
+					</div>
+
+					<!-- Label input + label position share the first row. Position
+					     rides at the tail so the arrow glyph doesn't crowd the
+					     name input; disabled when either half of the pair is
+					     missing (no icon → label centres regardless, no label
+					     → nothing to position). The whole row dims when the user
+					     has picked "Icon" in the mode group. -->
+					<div class="mp-props-row">
+						<label class="mp-props-field mp-props-field--label">
+							<span class="mp-props-label">Label</span>
+							<input
+								id="mp-props-name"
+								name="mp-props-name"
+								class="mp-props-input"
+								type="text"
+								placeholder="Marker label…"
+								value={draft.label}
+								oninput={onDraftLabelInput}
+								disabled={!labelActive}
+							/>
+						</label>
+						<label class="mp-props-field mp-props-field--position">
+							<span class="mp-props-label">Position</span>
+							<Select
+								value={draft.labelPosition}
+								options={LABEL_POSITION_OPTIONS}
+								ariaLabel="Label position"
+								disabled={!labelActive || !hasIcon || !hasLabel}
+								onchange={pickLabelPosition}
+							/>
+						</label>
+					</div>
+
+					<!-- Text emphasis toggles — each one flips a single boolean on
+					     `draft.labelStyle` via toggleLabelStyle(). aria-pressed +
+					     data-active track the pressed state; the ↦ live preview is
+					     applied straight on the button label so a glance tells the
+					     user what the map will look like. -->
+					<div class="mp-props-row">
+						<div class="mp-props-field mp-props-field--style">
+							<span class="mp-props-label">Style</span>
+							<div class="mp-style-row" role="group" aria-label="Label text style">
+								<button
+									type="button"
+									class="mp-style-btn"
+									data-active={draft.bold}
+									aria-pressed={draft.bold}
+									aria-label="Bold"
+									disabled={!labelActive || !hasLabel}
+									onclick={() => toggleLabelStyle('bold')}
+									style="font-weight:800">B</button
+								>
+								<button
+									type="button"
+									class="mp-style-btn"
+									data-active={draft.italic}
+									aria-pressed={draft.italic}
+									aria-label="Italic"
+									disabled={!labelActive || !hasLabel}
+									onclick={() => toggleLabelStyle('italic')}
+									style="font-style:italic">I</button
+								>
+								<button
+									type="button"
+									class="mp-style-btn"
+									data-active={draft.underline}
+									aria-pressed={draft.underline}
+									aria-label="Underline"
+									disabled={!labelActive || !hasLabel}
+									onclick={() => toggleLabelStyle('underline')}
+									style="text-decoration:underline">U</button
+								>
+								<span class="mp-style-sep" aria-hidden="true"></span>
+								<div class="mp-style-radios" role="radiogroup" aria-label="Case">
+									<button
+										type="button"
+										class="mp-style-btn"
+										role="radio"
+										aria-checked={draft.case === 'regular'}
+										data-active={draft.case === 'regular'}
+										aria-label="Regular case"
+										disabled={!labelActive || !hasLabel}
+										onclick={() => pickCase('regular')}>Aa</button
+									>
+									<button
+										type="button"
+										class="mp-style-btn mp-style-btn--sc"
+										role="radio"
+										aria-checked={draft.case === 'small-caps'}
+										data-active={draft.case === 'small-caps'}
+										aria-label="Small caps"
+										disabled={!labelActive || !hasLabel}
+										onclick={() => pickCase('small-caps')}
+										>A<span class="mp-style-btn-xheight">A</span></button
+									>
+									<button
+										type="button"
+										class="mp-style-btn"
+										role="radio"
+										aria-checked={draft.case === 'uppercase'}
+										data-active={draft.case === 'uppercase'}
+										aria-label="Uppercase"
+										disabled={!labelActive || !hasLabel}
+										onclick={() => pickCase('uppercase')}
+										style="text-transform:uppercase">AA</button
+									>
+								</div>
+							</div>
+						</div>
+
+						<label class="mp-props-field mp-props-field--size">
+							<span class="mp-props-label">Size</span>
+							<Select
+								value={draft.size}
+								options={LABEL_SIZE_OPTIONS}
+								ariaLabel="Label size"
+								disabled={!labelActive || !hasLabel}
+								onchange={pickLabelSize}
+							/>
+						</label>
+					</div>
+
+					<!-- Icon picker + per-marker scale slider — dimmed when the
+					     user picks "Label" in the mode group. -->
+					<div class="mp-props-row">
 						<label class="mp-props-field mp-props-field--icon">
 							<span class="mp-props-label">Icon</span>
-							<button class="mp-sel-icon-btn" onclick={openIconPicker} aria-label="Change icon">
+							<button
+								class="mp-sel-icon-btn"
+								onclick={openIconPicker}
+								aria-label="Change icon"
+								disabled={!iconActive}
+							>
 								{#if draftIcon}
 									<svg viewBox={haloPaddedViewBox(draftIcon)} aria-hidden="true">
 										<!-- 'proportional' halo so the preview glow matches the
@@ -758,7 +798,7 @@
 								min={MIN_MARKER_SCALE}
 								max={MAX_MARKER_SCALE}
 								step="0.1"
-								disabled={!canSave}
+								disabled={!iconActive || !canSave}
 								value={draft.scale}
 								oninput={onDraftScaleInput}
 								aria-label="Icon size multiplier"
