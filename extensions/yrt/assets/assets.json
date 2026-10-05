@@ -491,6 +491,146 @@
       "icon": "asset-touched-varanine"
     },
     {
+      "id": "path/yrt-touched-lupine",
+      "name": "Touched, Lupine",
+      "category": "Touched",
+      "summary": "Lupine-touched: a tracker's nose for blood, a pack-hunter's instinct in company, and a crippling bite for the straggler.",
+      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
+      "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
+      "preconditions": [],
+      "exclusiveGroup": "touched",
+      "abilityMaxByField": {
+        "touchedLevel": {
+          "prime": 1,
+          "second": 2,
+          "third": 3,
+          "feral": 3
+        }
+      },
+      "abilities": [
+        {
+          "enabled": false,
+          "text": "**Bloodcall.** You draw a scent from the air and follow it. When you [Gather Information](move:gather-information) to track or close on a wounded or fleeing quarry — person or beast — add +1 and you may roll +wits (even if another stat would normally apply). On a strong hit, you learn not just where they're bound but how recent the trail, how badly they bleed, and whether they travel alone.",
+          "moves": ["move/gather-information"]
+        },
+        {
+          "enabled": false,
+          "text": "**Pack Mind.** You read the shape of a fight the way a wolf reads its pack. When you [Aid Your Ally](move:aid-your-ally), add +1. On a strong hit, your ally also takes +1 momentum as your opening lets them move with it.",
+          "moves": ["move/aid-your-ally"]
+        },
+        {
+          "enabled": false,
+          "text": "**Hamstring.** You strike the straggler, not the strongest. When you [Strike](move:strike) or [Clash](move:clash) against a foe who is fleeing, isolated from allies, or already wounded, add +1 and inflict +1 harm. On a strong hit, they are also hobbled — treat their next in-fight move as if they'd scored one lower until they take a moment to recover.",
+          "moves": ["move/strike", "move/clash"]
+        }
+      ],
+      "customFields": [
+        {
+          "id": "touchedLevel",
+          "type": "dropdown",
+          "label": "Level",
+          "shortLabel": "Touched",
+          "default": "prime",
+          "options": [
+            {
+              "id": "prime",
+              "label": "Prime"
+            },
+            {
+              "id": "second",
+              "label": "Second"
+            },
+            {
+              "id": "third",
+              "label": "Third"
+            },
+            {
+              "id": "feral",
+              "label": "Feral"
+            }
+          ]
+        },
+        {
+          "id": "animalName",
+          "type": "string",
+          "label": "Animal",
+          "placeholder": "Animal…"
+        }
+      ],
+      "source": "yrt",
+      "icon": "asset-touched-lupine"
+    },
+    {
+      "id": "path/yrt-touched-marine",
+      "name": "Touched, Marine",
+      "category": "Touched",
+      "summary": "Marine-touched: lungs that drink the deep, a voice the sea answers to, and a tongue the whales understand.",
+      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
+      "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
+      "preconditions": [],
+      "exclusiveGroup": "touched",
+      "abilityMaxByField": {
+        "touchedLevel": {
+          "prime": 1,
+          "second": 2,
+          "third": 3,
+          "feral": 3
+        }
+      },
+      "abilities": [
+        {
+          "enabled": false,
+          "text": "**Breathless.** Your lungs are made for the dark water. You cannot drown while conscious, and when you [Face Danger](move:face-danger) or [Secure an Advantage](move:secure-an-advantage) by holding your breath, diving deep, or moving unseen beneath the surface, add +1. On a strong hit, also take +1 momentum as the depth hides and carries you.",
+          "moves": ["move/face-danger", "move/secure-an-advantage"]
+        },
+        {
+          "enabled": false,
+          "text": "**Mother-Tongue.** You speak the slow speech of the sea's old citizens — whale, seal, great fish — and they listen. When you [Gather Information](move:gather-information) by asking a sea creature, or someone who swims with them, add +1. On a strong hit, you also learn something they weren't asked: a hazard in these waters, a weather turn, or who else has passed this way.",
+          "moves": ["move/gather-information"]
+        },
+        {
+          "enabled": false,
+          "text": "**Lure.** Your voice carries a weight the sea has lent you. When you [Secure an Advantage](move:secure-an-advantage) by singing, calling, or speaking across the water to draw a target toward you, add +1. On a strong hit, they come — alone, unarmed, or with their guard dropped (envision which, and take +1 momentum).",
+          "moves": ["move/secure-an-advantage"]
+        }
+      ],
+      "customFields": [
+        {
+          "id": "touchedLevel",
+          "type": "dropdown",
+          "label": "Level",
+          "shortLabel": "Touched",
+          "default": "prime",
+          "options": [
+            {
+              "id": "prime",
+              "label": "Prime"
+            },
+            {
+              "id": "second",
+              "label": "Second"
+            },
+            {
+              "id": "third",
+              "label": "Third"
+            },
+            {
+              "id": "feral",
+              "label": "Feral"
+            }
+          ]
+        },
+        {
+          "id": "animalName",
+          "type": "string",
+          "label": "Animal",
+          "placeholder": "Animal…"
+        }
+      ],
+      "source": "yrt",
+      "icon": "asset-touched-marine"
+    },
+    {
       "id": "ritual/yrt-cantrip",
       "name": "Cantrip",
       "category": "Ritual",
