@@ -3342,8 +3342,66 @@
 	}
 	:global(.mp-props-field--icon),
 	:global(.mp-props-field--color),
-	:global(.mp-props-field--angle) {
+	:global(.mp-props-field--angle),
+	:global(.mp-props-field--mode) {
 		flex: 0 0 auto;
+	}
+
+	/* Edit-mode radio group — three chips in a row (Both | Label | Icon)
+	   that gate which half of the dialog is active. Grows as needed to
+	   fit its three options on the top row; wraps to its own line on
+	   phone widths when Colour + Angle want their space. The chip itself
+	   mirrors AssetCard's `.radio-option-btn` — same ring + fill-on-check
+	   so the two radio widgets in the app read the same. */
+	:global(.mp-props-field--mode) {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+	:global(.mp-mode-radios) {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		height: 32px;
+	}
+	:global(.mp-mode-option) {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		cursor: pointer;
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+		color: var(--text);
+		user-select: none;
+	}
+	:global(.mp-mode-btn) {
+		flex-shrink: 0;
+		width: 14px;
+		height: 14px;
+		padding: 0;
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 999px;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+	:global(.mp-mode-btn:focus-visible) {
+		outline: 2px solid var(--text-accent);
+		outline-offset: 1px;
+	}
+	:global(.mp-mode-btn[data-state='checked']) {
+		border-color: var(--text-accent);
+	}
+	:global(.mp-mode-dot) {
+		width: 7px;
+		height: 7px;
+		border-radius: 999px;
+		background: var(--text-accent);
+		opacity: 0;
+	}
+	:global(.mp-mode-btn[data-state='checked'] .mp-mode-dot) {
+		opacity: 1;
 	}
 	/* Icon and Colour hold a 22 × 22 button + 8 px padding (≈ 2.5rem), but
 	   the label text ("COLOUR", "ICON") is wider than that, and when they
