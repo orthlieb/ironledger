@@ -643,6 +643,8 @@
 						</label>
 					</div>
 
+					<hr class="mp-props-divider" />
+
 					<!-- Label input + label position share the first row. Position
 					     rides at the tail so the arrow glyph doesn't crowd the
 					     name input; disabled when either half of the pair is
@@ -764,6 +766,8 @@
 						</label>
 					</div>
 
+					<hr class="mp-props-divider" />
+
 					<!-- Icon picker + per-marker scale slider — dimmed when the
 					     user picks "Label" in the mode group. -->
 					<div class="mp-props-row">
@@ -805,6 +809,8 @@
 							/>
 						</label>
 					</div>
+
+					<hr class="mp-props-divider" />
 
 					<!-- Not a <label>: a <label> forwards clicks to its first
 					     labelable descendant, which would hijack the "Go to" button. -->
