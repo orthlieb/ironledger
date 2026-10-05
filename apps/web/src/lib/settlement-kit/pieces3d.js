@@ -1383,10 +1383,11 @@ function gateTower(D, y0, h, wood) {
 			});
 		}
 	const role = wood ? /** @type {const} */ ('wood') : undefined;
+	// Banner is planted on whatever caps the gate — the dome tip, the pyramid
+	// apex, or (stone gate) just the crenellated parapet.
+	let flagAt = /** @type {Pt} */ ([0.6, y0 + h - 0.5]);
 	/** @type {Part[]} */
 	const parts = [
-		// The settlement's banner flies over its gate.
-		...(D.flags ? flag(D, 0.6, y0 + h - 0.5) : []),
 		{ solid: [side], role, shaded: true, lines: hatch(side, 65, D.hatch) },
 		{
 			solid: [front],
@@ -1404,7 +1405,9 @@ function gateTower(D, y0, h, wood) {
 			solid: [[[-w / 2, yTop], [w / 2, yTop], add([w / 2, yTop], v), add([-w / 2, yTop], v)]],
 		});
 		if (D.towerRoof === 'dome') {
-			parts.push(hemiDome(v[0] / 2, yTop + v[1] / 2, w * 0.52).part);
+			const dome = hemiDome(v[0] / 2, yTop + v[1] / 2, w * 0.42);
+			parts.push(dome.part);
+			flagAt = [dome.tip[0], dome.tip[1] - 1.5];
 		} else {
 			const ov = 1.2,
 				rh = w * 0.55;
@@ -1421,8 +1424,11 @@ function gateTower(D, y0, h, wood) {
 				{ solid: [sideRoof], role: 'wood', shaded: true, lines: hatch(sideRoof, -40, D.hatch) },
 				{ solid: [frontRoof], role: 'wood' },
 			);
+			flagAt = [apex[0], apex[1] - 1];
 		}
 	}
+	// Banner flies in front of everything so it reads clearly against the cap.
+	if (D.flags) parts.push(...flag(D, flagAt[0], flagAt[1]));
 	return parts;
 }
 
@@ -3767,6 +3773,15 @@ export function witchHut(D) {
 		});
 	}
 	const hut = roundHut(d, { r });
+	// Dome culture: the hut stands upright on its stilts and loses the
+	// thatch's slumped chimney pot (there's no thatch to vent through).
+	if (D.towerRoof === 'dome') {
+		return [
+			{ solid: [], free: [...posts, ...ladder] },
+			{ solid: [deck], role: 'wood', shadeArea: rect(R * 0.3, lift - R, R * 2, R * 2) },
+			...place(hut, { y: lift - 0.4 }),
+		];
+	}
 	const rh = (r + 1.6) * 2 * d.pitch * 0.9,
 		hh = 6 * D.stature;
 	// A tapered chimney pot poking out of the thatch's lit flank.
