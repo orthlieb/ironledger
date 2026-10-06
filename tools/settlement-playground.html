@@ -55,6 +55,7 @@ figcaption{font-size:13px;display:flex;justify-content:center;align-items:center
 <input type="file" id="importFile" accept=".json,application/json" hidden>
 <button id="export" title="Download the current culture as a cultures/*.json plugin">Export culture</button>
 <span id="status">Loading…</span><span id="note"></span></header>
+<noscript><div style="padding:14px 16px;background:#fff3cd;border:1px solid #e0c87a;margin:12px 16px;border-radius:8px"><strong>JavaScript is disabled.</strong> The playground needs scripts to render — enable them, or open this file in a browser (Safari, Chrome) rather than through an app's preview pane.</div></noscript>
 <script>
 window.addEventListener('error',e=>{var s=document.getElementById('status');if(s)s.textContent='⚠ '+(e.message||'script error')+(e.lineno?' @ '+e.lineno:'');},true);
 window.addEventListener('unhandledrejection',e=>{var s=document.getElementById('status');if(s)s.textContent='⚠ rejected: '+(e.reason&&e.reason.message||e.reason||'unknown');});
