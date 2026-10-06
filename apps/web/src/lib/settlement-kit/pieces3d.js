@@ -41,6 +41,9 @@ import { place } from './render.js';
  * @property {boolean} flags
  * @property {number} flagLen
  * @property {number} flagFolds
+ * @property {'banner' | 'pennant' | 'swallowtail'} [flagShape] rectangular
+ *   banner (default), a tapered pennant that comes to a single point, or a
+ *   split pennant with a swallowtail notch at the trailing end
  * @property {number} hatch hatch spacing (smaller = darker shade)
  * @property {'none' | 'stone' | 'palisade' | 'hedge' | 'bone' | 'earth' | 'reef'} wall the
  *   culture's usual town wall
@@ -92,6 +95,7 @@ export const DEFAULT_DESIGN = {
 	flags: true,
 	flagLen: 11,
 	flagFolds: 3,
+	flagShape: 'banner',
 	hatch: 1.4,
 	wall: 'stone',
 	wallH: 1,
@@ -1172,7 +1176,8 @@ function chimneys(
 function flag(/** @type {Design} */ D, /** @type {number} */ x, /** @type {number} */ y) {
 	const L = D.flagLen,
 		hgt = 4.2,
-		n = D.flagFolds * 4;
+		n = D.flagFolds * 4,
+		shape = D.flagShape ?? 'banner';
 	/** @type {Poly} */
 	const top = [];
 	/** @type {Poly} */
@@ -1180,12 +1185,24 @@ function flag(/** @type {Design} */ D, /** @type {number} */ x, /** @type {numbe
 	for (let i = 0; i <= n; i++) {
 		const t = i / n;
 		const wave = Math.sin(t * Math.PI * D.flagFolds) * 0.9;
+		const taper = shape === 'pennant' ? 1 - t : 1 - t * 0.45;
 		top.push([x + 0.4 + L * t, y + 10 + wave - t * 0.8]);
-		bot.push([x + 0.4 + L * t, y + 10 - hgt * (1 - t * 0.45) + wave - t * 0.8]);
+		bot.push([x + 0.4 + L * t, y + 10 - hgt * taper + wave - t * 0.8]);
 	}
-	/** @type {Part[]} */
-	const parts = [
-		{ solid: [[...top, ...bot.reverse()]], role: 'flag' },
+	/** @type {Poly} */
+	let cloth;
+	if (shape === 'swallowtail') {
+		// Two tips (top and bottom) meet at a shallow V-notch inward.
+		const topTip = top[top.length - 1],
+			botTip = bot[bot.length - 1];
+		const notchDepth = L * 0.3;
+		const notch = /** @type {Pt} */ ([topTip[0] - notchDepth, (topTip[1] + botTip[1]) / 2]);
+		cloth = [...top, notch, ...bot.slice(0, -1).reverse()];
+	} else {
+		cloth = [...top, ...bot.slice(0, -1).reverse()];
+	}
+	return [
+		{ solid: [cloth], role: 'flag' },
 		{
 			solid: [],
 			free: [
@@ -1199,7 +1216,6 @@ function flag(/** @type {Design} */ D, /** @type {number} */ x, /** @type {numbe
 			],
 		},
 	];
-	return parts;
 }
 
 /**
