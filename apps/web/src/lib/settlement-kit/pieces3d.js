@@ -2228,7 +2228,7 @@ export function keep(D, o = {}) {
 	const sideMerlons = [];
 	for (let i = 0; i < 4; i++) {
 		const t = (i + 0.5) / 4;
-		sideMerlons.push(rect(w / 2 + v[0] * t - 1.1, h + v[1] * t - 0.4, 2.2, 2.6));
+		sideMerlons.push(sideFace(rect(-1.1, 0, 2.2, 2.6), [w / 2 + v[0] * t, h + v[1] * t - 0.4]));
 	}
 	/** @type {Poly[]} */
 	const slits = [];
@@ -2247,7 +2247,7 @@ export function keep(D, o = {}) {
 			solid: [side],
 			shaded: true,
 			lines: hatch(side, 65, D.hatch),
-			fills: [rect(w / 2 + v[0] * 0.5 - 0.6, h * 0.5 + v[1] * 0.5, 1.2, 4.5)],
+			fills: [sideFace(rect(-0.6, 0, 1.2, 4.5), [w / 2 + v[0] * 0.5, h * 0.5 + v[1] * 0.5])],
 		},
 		{ solid: sideMerlons, shaded: true },
 		{
@@ -3761,7 +3761,9 @@ export function cathedral(D) {
 	const sideWindows = [];
 	for (let i = 1; i < 5; i++) {
 		const t = i / 5;
-		sideWindows.push(lancet(w / 2 + v[0] * t, h * 0.25 + v[1] * t, 2.2, h * 0.45));
+		sideWindows.push(
+			sideFace(lancet(0, 0, 2.2, h * 0.45), [w / 2 + v[0] * t, h * 0.25 + v[1] * t]),
+		);
 	}
 	const tw = 9,
 		th = 40 * D.stature;
