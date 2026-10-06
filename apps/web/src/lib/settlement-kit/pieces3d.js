@@ -1185,21 +1185,28 @@ function flag(/** @type {Design} */ D, /** @type {number} */ x, /** @type {numbe
 	for (let i = 0; i <= n; i++) {
 		const t = i / n;
 		const wave = Math.sin(t * Math.PI * D.flagFolds) * 0.9;
-		const taper = shape === 'pennant' ? 1 - t : 1 - t * 0.45;
+		// taper governs the cloth's trailing height:
+		//   banner      → slight natural taper (1 - 0.45·t at the tip)
+		//   pennant     → full taper to a single point (1 - t)
+		//   swallowtail → no taper, full-height trailing edge (= 1) with a
+		//                 deep V-notch cut between its two tips.
+		const taper = shape === 'pennant' ? 1 - t : shape === 'swallowtail' ? 1 : 1 - t * 0.45;
 		top.push([x + 0.4 + L * t, y + 10 + wave - t * 0.8]);
 		bot.push([x + 0.4 + L * t, y + 10 - hgt * taper + wave - t * 0.8]);
 	}
 	/** @type {Poly} */
 	let cloth;
 	if (shape === 'swallowtail') {
-		// Two tips (top and bottom) meet at a shallow V-notch inward.
 		const topTip = top[top.length - 1],
 			botTip = bot[bot.length - 1];
-		const notchDepth = L * 0.3;
+		const notchDepth = L * 0.4;
 		const notch = /** @type {Pt} */ ([topTip[0] - notchDepth, (topTip[1] + botTip[1]) / 2]);
-		cloth = [...top, notch, ...bot.slice(0, -1).reverse()];
-	} else {
+		cloth = [...top, notch, ...bot.reverse()];
+	} else if (shape === 'pennant') {
+		// Both edges meet at the same trailing point; drop the duplicate tip.
 		cloth = [...top, ...bot.slice(0, -1).reverse()];
+	} else {
+		cloth = [...top, ...bot.reverse()];
 	}
 	return [
 		{ solid: [cloth], role: 'flag' },
