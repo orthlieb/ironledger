@@ -435,6 +435,23 @@ function opening(
 }
 
 /**
+ * Project an upright opening polygon onto an oblique side face: its
+ * horizontal axis becomes the depth-vec direction (so bottom and top edges
+ * follow the face's own slope), its vertical axis stays vertical. Anchor
+ * is where the opening's bottom-centre sits on the face in drawing coords.
+ * Use this for any fill — window, door, rose — placed on a depth-receding
+ * face so it reads as painted on the wall rather than floating over it.
+ * @param {Poly} poly bottom-centred at (0, 0) in upright coords
+ * @param {Pt} anchor bottom-centre on the face in drawing coords
+ * @returns {Poly}
+ */
+function sideFace(poly, anchor) {
+	return poly.map(
+		(p) => /** @type {Pt} */ ([anchor[0] + 0.75 * p[0], anchor[1] + 0.5 * p[0] + p[1]]),
+	);
+}
+
+/**
  * Lay out a front wall's openings in evenly spaced slots so doors and
  * windows can never overlap: one door (or every other slot for
  * `manyDoors` cultures) on the ground floor, windows elsewhere, and a
@@ -897,10 +914,10 @@ export function sideHouse(D, o = {}) {
 				kind === 'warehouse'
 					? []
 					: barn
-						? [rect(w / 2 + v[0] * 0.5 - 1.6, h + v[1] * 0.5 + 0.8, 3.2, 3.2)]
+						? [sideFace(rect(-1.6, 0, 3.2, 3.2), [w / 2 + v[0] * 0.5, h + v[1] * 0.5 + 0.8])]
 						: kind === 'church'
 							? [circle(rose[0], rose[1], 2.6)]
-							: [opening(D, w / 2 + v[0] * 0.45, h + 1.5, 2.2)],
+							: [sideFace(opening(D, 0, 0, 2.2), [w / 2 + v[0] * 0.45, v[1] * 0.45 + h + 1.5])],
 			cuts: kind === 'church' ? roseCuts(rose) : [],
 		},
 		{
@@ -1396,36 +1413,35 @@ function gateTower(D, y0, h, wood) {
 			fills: [archOpening(0, y0, 5.6, Math.min(8.5, h * 0.7))],
 		},
 	];
-	// A wooden gate's cap: dome in dome culture, otherwise a modest pyramid
-	// roof. Replaces the former sharpened-palisade crown so the gate reads
-	// as a sheltered gatehouse rather than a bare stockade.
-	if (wood) {
-		const yTop = y0 + h;
-		parts.push({
-			solid: [[[-w / 2, yTop], [w / 2, yTop], add([w / 2, yTop], v), add([-w / 2, yTop], v)]],
-		});
-		if (D.towerRoof === 'dome') {
-			const dome = hemiDome(v[0] / 2, yTop + v[1] / 2, w * 0.42);
-			parts.push(dome.part);
-			flagAt = [dome.tip[0], dome.tip[1] - 1.5];
-		} else {
-			const ov = 1.2,
-				rh = w * 0.55;
-			/** @type {Pt} */ const fL = [-w / 2 - ov, yTop];
-			/** @type {Pt} */ const fR = [w / 2 + ov, yTop];
-			const bR = add(fR, v);
-			const apex = add(
-				/** @type {Pt} */ ([0, yTop + rh]),
-				/** @type {Pt} */ ([v[0] / 2, v[1] / 2]),
-			);
-			const frontRoof = /** @type {Poly} */ ([fL, fR, apex]);
-			const sideRoof = /** @type {Poly} */ ([fR, bR, apex]);
-			parts.push(
-				{ solid: [sideRoof], role: 'wood', shaded: true, lines: hatch(sideRoof, -40, D.hatch) },
-				{ solid: [frontRoof], role: 'wood' },
-			);
-			flagAt = [apex[0], apex[1] - 1];
-		}
+	// Every gate gets a sheltered cap: dome in dome culture, otherwise a
+	// modest pyramid roof. Stone gates keep their crenellated parapet below
+	// the roof as a decorative band; wooden gates already had their
+	// sharpened-palisade crown replaced with a flat top. The roof's own
+	// role is 'wood' on wooden gates, 'roof' on stone gates (so the stone
+	// gatehouse's cap takes the marker colour, matching every other roof).
+	const yTop = y0 + h;
+	parts.push({
+		solid: [[[-w / 2, yTop], [w / 2, yTop], add([w / 2, yTop], v), add([-w / 2, yTop], v)]],
+	});
+	if (D.towerRoof === 'dome') {
+		const dome = hemiDome(v[0] / 2, yTop + v[1] / 2, w * 0.42);
+		parts.push(dome.part);
+		flagAt = [dome.tip[0], dome.tip[1] - 1.5];
+	} else {
+		const ov = 1.2,
+			rh = w * 0.55;
+		const roofRole = /** @type {const} */ (wood ? 'wood' : 'roof');
+		/** @type {Pt} */ const fL = [-w / 2 - ov, yTop];
+		/** @type {Pt} */ const fR = [w / 2 + ov, yTop];
+		const bR = add(fR, v);
+		const apex = add(/** @type {Pt} */ ([0, yTop + rh]), /** @type {Pt} */ ([v[0] / 2, v[1] / 2]));
+		const frontRoof = /** @type {Poly} */ ([fL, fR, apex]);
+		const sideRoof = /** @type {Poly} */ ([fR, bR, apex]);
+		parts.push(
+			{ solid: [sideRoof], role: roofRole, shaded: true, lines: hatch(sideRoof, -40, D.hatch) },
+			{ solid: [frontRoof], role: roofRole },
+		);
+		flagAt = [apex[0], apex[1] - 1];
 	}
 	// Banner flies in front of everything so it reads clearly against the cap.
 	if (D.flags) parts.push(...flag(D, flagAt[0], flagAt[1]));
@@ -2661,7 +2677,11 @@ export function stiltHut(D, o = {}) {
 				[x, y - 1.6],
 				[x, y + lift - 1],
 			],
-			w: 0.9,
+			w: 1.6,
+			// Rounded cap so the piling reads as disappearing into the water;
+			// the top end is occluded by the deck above so only the bottom
+			// cap is visible.
+			round: true,
 		});
 	}
 	return [
@@ -2718,7 +2738,10 @@ export function onStilts(parts, D) {
 				[x, y - 1.6],
 				[x, y + lift - 1],
 			],
-			w: 0.9,
+			w: 1.6,
+			// Rounded cap so the piling disappears softly into the water; the
+			// top is occluded by the deck above so only the bottom cap shows.
+			round: true,
 		});
 	}
 	// Centre the piece's base y range on the deck's top-face centre so its
