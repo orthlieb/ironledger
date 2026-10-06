@@ -464,17 +464,20 @@ export function settlement(tier, D, o = {}) {
 			wry *= 1.04;
 			({ W, dv } = squareFootprint(wrx, wry));
 		}
-	// Water-dwellers (merrow) build in a lagoon.
-	if (D.ground === 'water')
-		ground.unshift({
-			piece: lagoon(wrx * 1.15, wry * 1.25),
-			x: square ? dv[0] * 0.5 : 0,
-			y: square ? dv[1] * 0.5 : 0,
-		});
 	const port =
 		T.harbor || (o.harbor === 'side' && rank >= 0)
 			? harbor(D, wrx, wry, square ? W / 2 + dv[0] * 0.4 : wrx, square ? dv[1] * 0.4 : 0)
 			: { water: [], piers: [] };
+	// Water-dwellers (merrow) build in a lagoon. The lagoon is the base
+	// plane for everything else, so it goes with port.water at the back of
+	// the stacking order — if it were in `ground` (drawn after `ring.back`)
+	// the back half of the ring wall would be painted over by it.
+	if (D.ground === 'water')
+		port.water.push({
+			piece: lagoon(wrx * 1.15, wry * 1.25),
+			x: square ? dv[0] * 0.5 : 0,
+			y: square ? dv[1] * 0.5 : 0,
+		});
 	/** @param {import('./ruins3d.js').RuinPlaced[]} list */
 	const finish = (list) => (o.ruin ? ruinPlaced(list, { ...o.ruin, seed: o.seed ?? 1 }) : list);
 	if (wall === 'none') return finish([...port.water, ...ground, ...inside, ...port.piers]);
