@@ -2691,8 +2691,19 @@ export function onStilts(parts, D) {
 			}
 	if (!Number.isFinite(x0)) return parts;
 	const cx = (x0 + x1) / 2;
-	const R = Math.max(5, (x1 - x0) / 2 + 1.6);
+	const xHalf = (x1 - x0) / 2;
+	// Estimate the piece's drawing-depth (y range of its base) from its x
+	// extent. In 3/4 oblique a building with 3D depth d contributes 0.75·d
+	// to x and 0.5·d to y, so for the usual D.depth range the base's y
+	// extent runs ≈ 0.4 × (total x extent). A deep gable house whose back
+	// base reaches past the deck's back-rim at the house's x edges reads
+	// as lifted off the platform — the deck visibly rises around it.
+	const depthDraw = xHalf * 0.4;
 	const lift = 4.5 * D.stature;
+	// Deck big enough that both the piece's x extent AND its base's full
+	// drawing-depth fit inside its top ellipse (ry = 0.32·R, with a bit of
+	// margin so the piece's edges don't abut the deck's silhouette).
+	const R = Math.max(5, xHalf + 1.6, depthDraw / 0.6 + 1.6);
 	const ry = R * 0.32;
 	/** @type {Poly} */
 	const deck = [...ell(cx, lift - 1.2, R, ry, 180, 360), ...ell(cx, lift, R, ry, 0, 180)];
@@ -2710,10 +2721,13 @@ export function onStilts(parts, D) {
 			w: 0.9,
 		});
 	}
+	// Centre the piece's base y range on the deck's top-face centre so its
+	// front base sits above the deck's front top edge and its back base
+	// below the back-top-rim peak — the piece reads as resting on the deck.
 	return [
 		{ solid: [], free: posts },
 		{ solid: [deck], role: 'wood', shadeArea: rect(cx + R * 0.3, lift - R, R * 2, R * 2) },
-		...place(parts, { y: lift - 0.4 }),
+		...place(parts, { y: lift - depthDraw / 2 }),
 	];
 }
 
