@@ -2234,19 +2234,20 @@ export function keep(D, o = {}) {
 	const slits = [];
 	for (const x of [-w * 0.3, w * 0.3])
 		for (const y of [h * 0.35, h * 0.65]) slits.push(rect(x - 0.7, y, 1.4, 4.5));
-	const turret = (/** @type {number} */ x, /** @type {number} */ y) =>
-		place(roundTower(D, { r: 3.4, h: 10, flags: false }), { x, y: y + h - 2 });
+	const turret = (
+		/** @type {number} */ x,
+		/** @type {number} */ y,
+		/** @type {boolean} */ flags = false,
+	) => place(roundTower(D, { r: 3.4, h: 10, flags }), { x, y: y + h - 2 });
 	/** @type {Part[]} */
 	const parts = [
 		// Four corner turrets: the two back ones first, behind the parapet.
+		// The banner flies from the back-right turret — tall, in profile,
+		// clear of the keep's own silhouette.
 		...turret(-w / 2 + v[0], v[1]),
-		...turret(w / 2 + v[0], v[1]),
+		...turret(w / 2 + v[0], v[1], D.flags),
 		{ solid: [parapet], shaded: true, lines: hatch(parapet, 65, D.hatch) },
 		{ solid: [platform] },
-		// Flag planted on the platform at depth v[0]/2 — rises in front of
-		// the back turrets and the parapet, behind the front turrets and
-		// walls so they still occlude anything they visually would.
-		...(D.flags ? flag(D, v[0] / 2, h + v[1] / 2) : []),
 		{
 			solid: [side],
 			shaded: true,
