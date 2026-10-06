@@ -247,6 +247,14 @@ const KNOBS = [
 		design: true,
 	},
 	{
+		group: 'Flags',
+		key: 'flagShape',
+		label: 'Flag shape',
+		type: 'select',
+		options: ['banner', 'pennant', 'swallowtail'],
+		design: true,
+	},
+	{
 		group: 'Walls',
 		key: 'wall',
 		label: 'Culture wall',

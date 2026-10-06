@@ -41,6 +41,9 @@ import { place } from './render.js';
  * @property {boolean} flags
  * @property {number} flagLen
  * @property {number} flagFolds
+ * @property {'banner' | 'pennant' | 'swallowtail'} [flagShape] rectangular
+ *   banner (default), a tapered pennant that comes to a single point, or a
+ *   split pennant with a swallowtail notch at the trailing end
  * @property {number} hatch hatch spacing (smaller = darker shade)
  * @property {'none' | 'stone' | 'palisade' | 'hedge' | 'bone' | 'earth' | 'reef'} wall the
  *   culture's usual town wall
@@ -92,6 +95,7 @@ export const DEFAULT_DESIGN = {
 	flags: true,
 	flagLen: 11,
 	flagFolds: 3,
+	flagShape: 'banner',
 	hatch: 1.4,
 	wall: 'stone',
 	wallH: 1,
@@ -432,6 +436,23 @@ function opening(
 		default:
 			return rect(cx - s / 2, y, s, s);
 	}
+}
+
+/**
+ * Project an upright opening polygon onto an oblique side face: its
+ * horizontal axis becomes the depth-vec direction (so bottom and top edges
+ * follow the face's own slope), its vertical axis stays vertical. Anchor
+ * is where the opening's bottom-centre sits on the face in drawing coords.
+ * Use this for any fill — window, door, rose — placed on a depth-receding
+ * face so it reads as painted on the wall rather than floating over it.
+ * @param {Poly} poly bottom-centred at (0, 0) in upright coords
+ * @param {Pt} anchor bottom-centre on the face in drawing coords
+ * @returns {Poly}
+ */
+function sideFace(poly, anchor) {
+	return poly.map(
+		(p) => /** @type {Pt} */ ([anchor[0] + 0.75 * p[0], anchor[1] + 0.5 * p[0] + p[1]]),
+	);
 }
 
 /**
@@ -897,10 +918,10 @@ export function sideHouse(D, o = {}) {
 				kind === 'warehouse'
 					? []
 					: barn
-						? [rect(w / 2 + v[0] * 0.5 - 1.6, h + v[1] * 0.5 + 0.8, 3.2, 3.2)]
+						? [sideFace(rect(-1.6, 0, 3.2, 3.2), [w / 2 + v[0] * 0.5, h + v[1] * 0.5 + 0.8])]
 						: kind === 'church'
 							? [circle(rose[0], rose[1], 2.6)]
-							: [opening(D, w / 2 + v[0] * 0.45, h + 1.5, 2.2)],
+							: [sideFace(opening(D, 0, 0, 2.2), [w / 2 + v[0] * 0.45, v[1] * 0.45 + h + 1.5])],
 			cuts: kind === 'church' ? roseCuts(rose) : [],
 		},
 		{
@@ -1155,7 +1176,8 @@ function chimneys(
 function flag(/** @type {Design} */ D, /** @type {number} */ x, /** @type {number} */ y) {
 	const L = D.flagLen,
 		hgt = 4.2,
-		n = D.flagFolds * 4;
+		n = D.flagFolds * 4,
+		shape = D.flagShape ?? 'banner';
 	/** @type {Poly} */
 	const top = [];
 	/** @type {Poly} */
@@ -1163,12 +1185,32 @@ function flag(/** @type {Design} */ D, /** @type {number} */ x, /** @type {numbe
 	for (let i = 0; i <= n; i++) {
 		const t = i / n;
 		const wave = Math.sin(t * Math.PI * D.flagFolds) * 0.9;
+		// taper governs the cloth's trailing height:
+		//   banner      → slight natural taper (1 - 0.45·t at the tip)
+		//   pennant     → full taper to a single point (1 - t)
+		//   swallowtail → no taper, full-height trailing edge (= 1) with a
+		//                 deep V-notch cut between its two tips.
+		const taper = shape === 'pennant' ? 1 - t : shape === 'swallowtail' ? 1 : 1 - t * 0.45;
 		top.push([x + 0.4 + L * t, y + 10 + wave - t * 0.8]);
-		bot.push([x + 0.4 + L * t, y + 10 - hgt * (1 - t * 0.45) + wave - t * 0.8]);
+		bot.push([x + 0.4 + L * t, y + 10 - hgt * taper + wave - t * 0.8]);
+	}
+	/** @type {Poly} */
+	let cloth;
+	if (shape === 'swallowtail') {
+		const topTip = top[top.length - 1],
+			botTip = bot[bot.length - 1];
+		const notchDepth = L * 0.4;
+		const notch = /** @type {Pt} */ ([topTip[0] - notchDepth, (topTip[1] + botTip[1]) / 2]);
+		cloth = [...top, notch, ...bot.reverse()];
+	} else if (shape === 'pennant') {
+		// Both edges meet at the same trailing point; drop the duplicate tip.
+		cloth = [...top, ...bot.slice(0, -1).reverse()];
+	} else {
+		cloth = [...top, ...bot.reverse()];
 	}
 	/** @type {Part[]} */
 	const parts = [
-		{ solid: [[...top, ...bot.reverse()]], role: 'flag' },
+		{ solid: [cloth], role: 'flag' },
 		{
 			solid: [],
 			free: [
@@ -1396,36 +1438,35 @@ function gateTower(D, y0, h, wood) {
 			fills: [archOpening(0, y0, 5.6, Math.min(8.5, h * 0.7))],
 		},
 	];
-	// A wooden gate's cap: dome in dome culture, otherwise a modest pyramid
-	// roof. Replaces the former sharpened-palisade crown so the gate reads
-	// as a sheltered gatehouse rather than a bare stockade.
-	if (wood) {
-		const yTop = y0 + h;
-		parts.push({
-			solid: [[[-w / 2, yTop], [w / 2, yTop], add([w / 2, yTop], v), add([-w / 2, yTop], v)]],
-		});
-		if (D.towerRoof === 'dome') {
-			const dome = hemiDome(v[0] / 2, yTop + v[1] / 2, w * 0.42);
-			parts.push(dome.part);
-			flagAt = [dome.tip[0], dome.tip[1] - 1.5];
-		} else {
-			const ov = 1.2,
-				rh = w * 0.55;
-			/** @type {Pt} */ const fL = [-w / 2 - ov, yTop];
-			/** @type {Pt} */ const fR = [w / 2 + ov, yTop];
-			const bR = add(fR, v);
-			const apex = add(
-				/** @type {Pt} */ ([0, yTop + rh]),
-				/** @type {Pt} */ ([v[0] / 2, v[1] / 2]),
-			);
-			const frontRoof = /** @type {Poly} */ ([fL, fR, apex]);
-			const sideRoof = /** @type {Poly} */ ([fR, bR, apex]);
-			parts.push(
-				{ solid: [sideRoof], role: 'wood', shaded: true, lines: hatch(sideRoof, -40, D.hatch) },
-				{ solid: [frontRoof], role: 'wood' },
-			);
-			flagAt = [apex[0], apex[1] - 1];
-		}
+	// Every gate gets a sheltered cap: dome in dome culture, otherwise a
+	// modest pyramid roof. Stone gates keep their crenellated parapet below
+	// the roof as a decorative band; wooden gates already had their
+	// sharpened-palisade crown replaced with a flat top. The roof's own
+	// role is 'wood' on wooden gates, 'roof' on stone gates (so the stone
+	// gatehouse's cap takes the marker colour, matching every other roof).
+	const yTop = y0 + h;
+	parts.push({
+		solid: [[[-w / 2, yTop], [w / 2, yTop], add([w / 2, yTop], v), add([-w / 2, yTop], v)]],
+	});
+	if (D.towerRoof === 'dome') {
+		const dome = hemiDome(v[0] / 2, yTop + v[1] / 2, w * 0.42);
+		parts.push(dome.part);
+		flagAt = [dome.tip[0], dome.tip[1] - 1.5];
+	} else {
+		const ov = 1.2,
+			rh = w * 0.55;
+		const roofRole = wood ? /** @type {const} */ ('wood') : /** @type {const} */ ('roof');
+		/** @type {Pt} */ const fL = [-w / 2 - ov, yTop];
+		/** @type {Pt} */ const fR = [w / 2 + ov, yTop];
+		const bR = add(fR, v);
+		const apex = add(/** @type {Pt} */ ([0, yTop + rh]), /** @type {Pt} */ ([v[0] / 2, v[1] / 2]));
+		const frontRoof = /** @type {Poly} */ ([fL, fR, apex]);
+		const sideRoof = /** @type {Poly} */ ([fR, bR, apex]);
+		parts.push(
+			{ solid: [sideRoof], role: roofRole, shaded: true, lines: hatch(sideRoof, -40, D.hatch) },
+			{ solid: [frontRoof], role: roofRole },
+		);
+		flagAt = [apex[0], apex[1] - 1];
 	}
 	// Banner flies in front of everything so it reads clearly against the cap.
 	if (D.flags) parts.push(...flag(D, flagAt[0], flagAt[1]));
@@ -2212,26 +2253,31 @@ export function keep(D, o = {}) {
 	const sideMerlons = [];
 	for (let i = 0; i < 4; i++) {
 		const t = (i + 0.5) / 4;
-		sideMerlons.push(rect(w / 2 + v[0] * t - 1.1, h + v[1] * t - 0.4, 2.2, 2.6));
+		sideMerlons.push(sideFace(rect(-1.1, 0, 2.2, 2.6), [w / 2 + v[0] * t, h + v[1] * t - 0.4]));
 	}
 	/** @type {Poly[]} */
 	const slits = [];
 	for (const x of [-w * 0.3, w * 0.3])
 		for (const y of [h * 0.35, h * 0.65]) slits.push(rect(x - 0.7, y, 1.4, 4.5));
-	const turret = (/** @type {number} */ x, /** @type {number} */ y) =>
-		place(roundTower(D, { r: 3.4, h: 10, flags: false }), { x, y: y + h - 2 });
+	const turret = (
+		/** @type {number} */ x,
+		/** @type {number} */ y,
+		/** @type {boolean} */ flags = false,
+	) => place(roundTower(D, { r: 3.4, h: 10, flags }), { x, y: y + h - 2 });
 	/** @type {Part[]} */
 	const parts = [
 		// Four corner turrets: the two back ones first, behind the parapet.
+		// The banner flies from the back-right turret — tall, in profile,
+		// clear of the keep's own silhouette.
 		...turret(-w / 2 + v[0], v[1]),
-		...turret(w / 2 + v[0], v[1]),
+		...turret(w / 2 + v[0], v[1], D.flags),
 		{ solid: [parapet], shaded: true, lines: hatch(parapet, 65, D.hatch) },
 		{ solid: [platform] },
 		{
 			solid: [side],
 			shaded: true,
 			lines: hatch(side, 65, D.hatch),
-			fills: [rect(w / 2 + v[0] * 0.5 - 0.6, h * 0.5 + v[1] * 0.5, 1.2, 4.5)],
+			fills: [sideFace(rect(-0.6, 0, 1.2, 4.5), [w / 2 + v[0] * 0.5, h * 0.5 + v[1] * 0.5])],
 		},
 		{ solid: sideMerlons, shaded: true },
 		{
@@ -2243,7 +2289,6 @@ export function keep(D, o = {}) {
 		...turret(-w / 2, 0),
 		...turret(w / 2, 0),
 	];
-	if (D.flags) parts.unshift(...flag(D, v[0] / 2, h + v[1] / 2));
 	return parts;
 }
 
@@ -2642,33 +2687,7 @@ export function moundHut(D, o = {}) {
  * @returns {Part[]}
  */
 export function stiltHut(D, o = {}) {
-	const r = o.r ?? 6,
-		lift = 4.5 * D.stature,
-		ry = r * 0.34;
-	const R = r + 1.4;
-	const deck = /** @type {Poly} */ ([
-		...ell(0, lift - 1.2, R, R * 0.34, 180, 360),
-		...ell(0, lift, R, R * 0.34, 0, 180),
-	]);
-	/** @type {Line[]} */
-	const posts = [];
-	for (const a of [200, 250, 290, 340]) {
-		const t = (a * Math.PI) / 180;
-		const x = R * 0.8 * Math.cos(t),
-			y = R * 0.8 * 0.34 * Math.sin(t);
-		posts.push({
-			pts: [
-				[x, y - 1.6],
-				[x, y + lift - 1],
-			],
-			w: 0.9,
-		});
-	}
-	return [
-		{ solid: [], free: posts },
-		{ solid: [deck], role: 'wood', shadeArea: rect(R * 0.3, lift - R, R * 2, R * 2) },
-		...place(roundHut(D, { r }), { y: lift - ry * 0.2 }),
-	];
+	return onStilts(roundHut(D, { r: o.r ?? 6 }), D);
 }
 
 /**
@@ -2691,8 +2710,19 @@ export function onStilts(parts, D) {
 			}
 	if (!Number.isFinite(x0)) return parts;
 	const cx = (x0 + x1) / 2;
-	const R = Math.max(5, (x1 - x0) / 2 + 1.6);
+	const xHalf = (x1 - x0) / 2;
+	// Estimate the piece's drawing-depth (y range of its base) from its x
+	// extent. In 3/4 oblique a building with 3D depth d contributes 0.75·d
+	// to x and 0.5·d to y, so for the usual D.depth range the base's y
+	// extent runs ≈ 0.4 × (total x extent). A deep gable house whose back
+	// base reaches past the deck's back-rim at the house's x edges reads
+	// as lifted off the platform — the deck visibly rises around it.
+	const depthDraw = xHalf * 0.4;
 	const lift = 4.5 * D.stature;
+	// Deck big enough that both the piece's x extent AND its base's full
+	// drawing-depth fit inside its top ellipse (ry = 0.32·R, with a bit of
+	// margin so the piece's edges don't abut the deck's silhouette).
+	const R = Math.max(5, xHalf + 1.6, depthDraw / 0.6 + 1.6);
 	const ry = R * 0.32;
 	/** @type {Poly} */
 	const deck = [...ell(cx, lift - 1.2, R, ry, 180, 360), ...ell(cx, lift, R, ry, 0, 180)];
@@ -2707,13 +2737,19 @@ export function onStilts(parts, D) {
 				[x, y - 1.6],
 				[x, y + lift - 1],
 			],
-			w: 0.9,
+			w: 1.6,
+			// Rounded cap so the piling disappears softly into the water; the
+			// top is occluded by the deck above so only the bottom cap shows.
+			round: true,
 		});
 	}
+	// Centre the piece's base y range on the deck's top-face centre so its
+	// front base sits above the deck's front top edge and its back base
+	// below the back-top-rim peak — the piece reads as resting on the deck.
 	return [
 		{ solid: [], free: posts },
 		{ solid: [deck], role: 'wood', shadeArea: rect(cx + R * 0.3, lift - R, R * 2, R * 2) },
-		...place(parts, { y: lift - 0.4 }),
+		...place(parts, { y: lift - depthDraw / 2 }),
 	];
 }
 
@@ -3724,7 +3760,9 @@ export function cathedral(D) {
 	const sideWindows = [];
 	for (let i = 1; i < 5; i++) {
 		const t = i / 5;
-		sideWindows.push(lancet(w / 2 + v[0] * t, h * 0.25 + v[1] * t, 2.2, h * 0.45));
+		sideWindows.push(
+			sideFace(lancet(0, 0, 2.2, h * 0.45), [w / 2 + v[0] * t, h * 0.25 + v[1] * t]),
+		);
 	}
 	const tw = 9,
 		th = 40 * D.stature;

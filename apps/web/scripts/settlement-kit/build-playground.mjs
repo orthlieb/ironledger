@@ -29,6 +29,9 @@ const { outputFiles } = await build({
 	minify: true,
 	format: 'iife',
 	platform: 'browser',
+	// Downcompile to a baseline the oldest in-support iOS Safari can run; the
+	// playground otherwise lands blank on iPhones running iOS 15.3 or older.
+	target: ['safari14', 'chrome90', 'firefox90'],
 	write: false,
 	// The culture plugins (dev-only sample included) become the presets.
 	banner: {
@@ -94,6 +97,11 @@ figcaption{font-size:13px;display:flex;justify-content:center;align-items:center
 <input type="file" id="importFile" accept=".json,application/json" hidden>
 <button id="export" title="Download the current culture as a cultures/*.json plugin">Export culture</button>
 <span id="status">Loading…</span><span id="note"></span></header>
+<script>
+// Surface any script error in the status bar so a blank page doesn't hide it.
+window.addEventListener('error',e=>{var s=document.getElementById('status');if(s)s.textContent='⚠ '+(e.message||'script error')+(e.lineno?' @ '+e.lineno:'');},true);
+window.addEventListener('unhandledrejection',e=>{var s=document.getElementById('status');if(s)s.textContent='⚠ rejected: '+(e.reason&&e.reason.message||e.reason||'unknown');});
+</script>
 <div class="layout"><aside id="knobs"></aside>
 <main><div class="grid" id="towns"></div><div id="map"></div><div class="grid" id="pieces"></div></main></div>
 <script>${js}</script></body></html>`;
