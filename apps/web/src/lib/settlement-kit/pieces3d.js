@@ -1208,7 +1208,8 @@ function flag(/** @type {Design} */ D, /** @type {number} */ x, /** @type {numbe
 	} else {
 		cloth = [...top, ...bot.reverse()];
 	}
-	return [
+	/** @type {Part[]} */
+	const parts = [
 		{ solid: [cloth], role: 'flag' },
 		{
 			solid: [],
@@ -1223,6 +1224,7 @@ function flag(/** @type {Design} */ D, /** @type {number} */ x, /** @type {numbe
 			],
 		},
 	];
+	return parts;
 }
 
 /**
@@ -1453,7 +1455,7 @@ function gateTower(D, y0, h, wood) {
 	} else {
 		const ov = 1.2,
 			rh = w * 0.55;
-		const roofRole = /** @type {const} */ (wood ? 'wood' : 'roof');
+		const roofRole = wood ? /** @type {const} */ ('wood') : /** @type {const} */ ('roof');
 		/** @type {Pt} */ const fL = [-w / 2 - ov, yTop];
 		/** @type {Pt} */ const fR = [w / 2 + ov, yTop];
 		const bR = add(fR, v);
@@ -2685,37 +2687,7 @@ export function moundHut(D, o = {}) {
  * @returns {Part[]}
  */
 export function stiltHut(D, o = {}) {
-	const r = o.r ?? 6,
-		lift = 4.5 * D.stature,
-		ry = r * 0.34;
-	const R = r + 1.4;
-	const deck = /** @type {Poly} */ ([
-		...ell(0, lift - 1.2, R, R * 0.34, 180, 360),
-		...ell(0, lift, R, R * 0.34, 0, 180),
-	]);
-	/** @type {Line[]} */
-	const posts = [];
-	for (const a of [200, 250, 290, 340]) {
-		const t = (a * Math.PI) / 180;
-		const x = R * 0.8 * Math.cos(t),
-			y = R * 0.8 * 0.34 * Math.sin(t);
-		posts.push({
-			pts: [
-				[x, y - 1.6],
-				[x, y + lift - 1],
-			],
-			w: 1.6,
-			// Rounded cap so the piling reads as disappearing into the water;
-			// the top end is occluded by the deck above so only the bottom
-			// cap is visible.
-			round: true,
-		});
-	}
-	return [
-		{ solid: [], free: posts },
-		{ solid: [deck], role: 'wood', shadeArea: rect(R * 0.3, lift - R, R * 2, R * 2) },
-		...place(roundHut(D, { r }), { y: lift - ry * 0.2 }),
-	];
+	return onStilts(roundHut(D, { r: o.r ?? 6 }), D);
 }
 
 /**

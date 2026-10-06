@@ -88,6 +88,32 @@ which exits non-zero if any reference page is stale. The generator lives
 at `scripts/gen-yrt-reference.mjs`; it's deterministic (no timestamps),
 so a re-run on an up-to-date tree is a no-op.
 
+## Standing order — settlement-recipe override fields live in four places
+
+A `SettlementRecipe` field that overrides a `Design` or a layout option
+(e.g. `walls`, `wallShape`, `ground`, `stilts`) has to be plumbed through
+**four** sites in lockstep, or the knob exists but silently has no effect:
+
+1. **`apps/web/src/lib/settlementRecipe.ts`** — add the field to the
+   `SettlementRecipe` interface, to `recipeKey()` (so cached icons don't
+   collide across values), and to `cleanSettlementRecipe()` (so a hand-
+   edited or imported recipe is validated — unknown values dropped).
+2. **`apps/web/src/lib/settlement-kit/generate.js`** — update the
+   `SettlementRecipe` JSDoc typedef; merge the field into the resolved
+   `Design` via `recipeDesign()` (for Design-level overrides) or pass
+   it to `settlement(...)` as an option in `generateSettlementSvg()`
+   (for layout-level options like `stilts`).
+3. **`apps/web/src/lib/components/SettlementBuilder.svelte`** — add a
+   control (Select, Checkbox, etc.), carry its state via `$state(...)`,
+   seed it from `initial?.<field>`, and spread it into the `$derived`
+   `recipe` block.
+4. **`apps/web/scripts/settlement-kit/playground.mjs`** — mirror the knob
+   in the Drawing or Build group so the playground tool reaches it too.
+
+`stilts` and `ground` were added following this pattern; the
+`settlementKit.test.ts` smoke suite exercises both. Skip any of the four
+sites and the field looks wired but doesn't actually travel.
+
 ## App-level scroll architecture
 
 The viewport itself (`html` and `body`) **never** scrolls. `app.css` sets
