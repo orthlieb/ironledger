@@ -2243,6 +2243,10 @@ export function keep(D, o = {}) {
 		...turret(w / 2 + v[0], v[1]),
 		{ solid: [parapet], shaded: true, lines: hatch(parapet, 65, D.hatch) },
 		{ solid: [platform] },
+		// Flag planted on the platform at depth v[0]/2 — rises in front of
+		// the back turrets and the parapet, behind the front turrets and
+		// walls so they still occlude anything they visually would.
+		...(D.flags ? flag(D, v[0] / 2, h + v[1] / 2) : []),
 		{
 			solid: [side],
 			shaded: true,
@@ -2259,7 +2263,6 @@ export function keep(D, o = {}) {
 		...turret(-w / 2, 0),
 		...turret(w / 2, 0),
 	];
-	if (D.flags) parts.unshift(...flag(D, v[0] / 2, h + v[1] / 2));
 	return parts;
 }
 
