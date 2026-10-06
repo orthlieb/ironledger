@@ -15,6 +15,7 @@ one layered SVG per piece or per settlement.
 | `layouts3d.js` | Templates (stead → freeport) that lay pieces out into a settlement, including the ring wall.      |
 | `ruins3d.js`   | Decay / overgrowth / scorch transformation applied over any `Placed[]` list.                      |
 | `render.js`    | Clipper-based renderer that collapses the final back-to-front list into one path per colour role. |
+| `patterns.js`  | SVG `<pattern>` tiles for material-wall roles (stone brick, hedge foliage, reef coral).           |
 | `generate.js`  | `recipeDesign()` + `generateSettlementSvg()` — the only entry points app code should call.        |
 | `fallback.js`  | Marker-chip fallback (plain core icon) for recipes a client can't yet render.                     |
 
@@ -50,6 +51,42 @@ drawing coords and must include the depth-induced y shift
 
 See `sideHouse`, `keep`, `cathedral` for working examples; the
 `settlementKit.test.ts` suite smoke-tests the rendered output.
+
+## Material-wall patterns
+
+Three wall materials (`stone`, `hedge`, `reef`) take an SVG `<pattern>`
+tile fill instead of a flat colour. The pattern definitions live in
+`patterns.js`; the generator and the main app's `mapLayered.ts` both
+inline `<pattern>` elements into their output's `<defs>` and reference
+them from the wall path with `fill="url(#pat-<role>-<scope>)"`.
+
+Why patterns:
+
+- **Perf.** Stone's running-bond courses used to be ~50 Clipper lines
+  per wall segment that had to be unioned with the shade area; moving
+  the pattern to a repeating SVG tile cut the icon baker from 128 s to
+  ~50 s and skips Clipper for the texture entirely.
+- **Legibility.** Hedge used to render as a flat silhouette with a
+  scalloped top; a leafy stipple pattern now reads as a hedge. Reef
+  likewise picked up a coral stipple instead of a flat earth-coloured
+  shape.
+
+Pattern bodies use CSS `var(--wall, #hex)` + `var(--ink, #hex)` with
+hex fallbacks: a baked SVG opened standalone keeps its hex colours;
+the playground (which sets `--wall` / `--ink` on `:root`) picks up live
+colour-picker changes without re-rendering.
+
+To add a new material pattern:
+
+1. Define a `PatternDef` (tile size + body function) in `patterns.js`.
+2. Add the role (e.g. `wall-coral`) to `PATTERNS` and to the `LAYERS`
+   list in `render.js` (both base and `-shade` variants).
+3. Return the new role from `material()` in `pieces3d.js` for the
+   matching wall type.
+4. Mirror the role in the main app's `mapLayered.ts`
+   (`PATTERN_WALL_ROLES`, `roleColours`, `patternSvg` body).
+5. Add a smoke-test row to `settlementKit.test.ts` so a future
+   regression that drops the pattern def is caught.
 
 ## Design knobs (one Culture = one Design)
 

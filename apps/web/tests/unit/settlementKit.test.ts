@@ -107,6 +107,26 @@ describe('recipe overrides', () => {
 	});
 });
 
+describe('wall patterns', () => {
+	// Each pattern-filled wall type should emit a <pattern> def and a
+	// pattern-filled wall path. Guards against a regression where the kit
+	// quietly reverts to flat fills (which would read as "lost its texture").
+	it.each([
+		['stone', 'wall-stone'],
+		['hedge', 'wall-hedge'],
+		['reef', 'wall-reef'],
+	] as const)('%s wall emits a <pattern> and uses url(#…) for its fill', (wall, role) => {
+		const svg = generateSettlementSvg(
+			{ tier: 'village', culture: 'default', seed: 3, walls: wall },
+			null,
+		);
+		expect(svg, `${wall} should contain its pattern def`).toContain(`id="pat-${role}-`);
+		expect(svg, `${wall} should use url(#…) for its wall fill`).toMatch(
+			new RegExp(`data-role="${role}"[^/]*fill="url\\(#pat-${role}-`),
+		);
+	});
+});
+
 describe('design-knob variants render', () => {
 	const towerRoofs: Design['towerRoof'][] = ['cone', 'onion', 'crenel', 'dome'];
 	for (const roof of towerRoofs) {
