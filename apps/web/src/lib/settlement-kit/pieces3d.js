@@ -1516,6 +1516,41 @@ export function ringWall(D, o = {}) {
 		}
 		return out;
 	};
+	/** Running-bond brick pattern on a stone-walled segment of the ring:
+	 *  horizontal course arcs that follow the ring curve, and short vertical
+	 *  joint ticks staggered course-to-course. Soft walls (hedge, earth, reef,
+	 *  bone, palisade) opt out — they get their own crests and hachures. */
+	const bricks = (/** @type {number} */ a0, /** @type {number} */ a1) => {
+		/** @type {Line[]} */
+		const out = [];
+		if (mat.soft) return out;
+		const dy = 2.4;
+		const angStep = 2.2;
+		let row = 0;
+		for (let y = dy; y < h; y += dy, row++) {
+			/** @type {Poly} */
+			const course = [];
+			for (let t = a0; t <= a1 + 0.001; t += 1) {
+				const a = (t * Math.PI) / 180;
+				course.push([rx * Math.cos(a), y + ry * Math.sin(a)]);
+			}
+			out.push({ pts: course, w: 0.45 });
+			const offset = row % 2 ? angStep / 2 : 0;
+			for (let t = a0 + offset; t <= a1; t += angStep) {
+				const a = (t * Math.PI) / 180;
+				const x = rx * Math.cos(a);
+				const yShift = ry * Math.sin(a);
+				out.push({
+					pts: [
+						[x, y - dy + yShift],
+						[x, y + yShift],
+					],
+					w: 0.45,
+				});
+			}
+		}
+		return out;
+	};
 	// The ring is cut into segments at its towers so towers and wall can be
 	// depth-sorted together: a tower then sits behind the stretch of wall
 	// that curves nearer the viewer than it, and in front of the stretch
@@ -1644,7 +1679,7 @@ export function ringWall(D, o = {}) {
 									solid: [facePoly(a0, a1)],
 									role,
 									shaded: true,
-									lines: [...backHatch, ...seams(a0, a1)],
+									lines: [...backHatch, ...seams(a0, a1), ...bricks(a0, a1)],
 								},
 							],
 				wall: true,
@@ -1666,7 +1701,7 @@ export function ringWall(D, o = {}) {
 							solid: F ? [facePoly(a0, a1), flareSeg(a0, a1)] : [facePoly(a0, a1)],
 							role,
 							shadeArea: flank,
-							lines: [...shade, ...seams(a0, a1)],
+							lines: [...shade, ...seams(a0, a1), ...bricks(a0, a1)],
 						},
 					];
 		if (archGate && a0 < 270 && a1 > 270)
@@ -1982,6 +2017,42 @@ function squareWall(D, o) {
 		}
 		return out;
 	};
+	/** Running-bond brick pattern on a stone-walled face. Soft walls opt out
+	 *  (they get crest heaps / hachures instead). */
+	const bricks = (/** @type {Pt} */ p, /** @type {Pt} */ q) => {
+		/** @type {Line[]} */
+		const out = [];
+		if (mat.soft) return out;
+		const dx = q[0] - p[0],
+			dy = q[1] - p[1];
+		const len = Math.hypot(dx, dy);
+		const dyC = 2.4;
+		let row = 0;
+		for (let y = dyC; y < h; y += dyC, row++) {
+			out.push({
+				pts: [
+					[p[0], p[1] + y],
+					[q[0], q[1] + y],
+				],
+				w: 0.45,
+			});
+			const n = Math.max(1, Math.round(len / 2.2));
+			for (let i = 0; i < n; i++) {
+				const t = (i + (row % 2 ? 0.5 : 0)) / n;
+				if (t <= 0 || t >= 1) continue;
+				const x = p[0] + dx * t,
+					yAt = p[1] + dy * t;
+				out.push({
+					pts: [
+						[x, yAt + y - dyC],
+						[x, yAt + y],
+					],
+					w: 0.45,
+				});
+			}
+		}
+		return out;
+	};
 	/** Merlons along a stone wall's top edge. */
 	const merlons = (/** @type {Pt} */ p, /** @type {Pt} */ q) => {
 		/** @type {Poly[]} */
@@ -2030,7 +2101,7 @@ function squareWall(D, o) {
 				solid: F && outward ? [poly, flareSkirt(p, q, outward, h * 0.45)] : [poly],
 				role,
 				shaded,
-				lines: [...(shaded ? hatch(poly, 65, D.hatch) : []), ...seams(p, q)],
+				lines: [...(shaded ? hatch(poly, 65, D.hatch) : []), ...seams(p, q), ...bricks(p, q)],
 			},
 		];
 		if (m.length) parts.push({ solid: m, shaded });
@@ -3869,7 +3940,9 @@ function wallRun(D, x0, x1, wh, wood) {
 		{
 			solid: [front],
 			role,
-			lines: [...planks, ...(D.masonry ? stoneCourses(x0, x1, 0, wh) : [])],
+			// A stone wall IS masonry — always show its running-bond courses.
+			// A wooden palisade shows plank seams instead.
+			lines: wood ? planks : stoneCourses(x0, x1, 0, wh),
 		},
 	];
 	return parts;
