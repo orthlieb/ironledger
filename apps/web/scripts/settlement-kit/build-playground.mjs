@@ -38,7 +38,13 @@ const { outputFiles } = await build({
 		js: `globalThis.__SETTLEMENT_CULTURES__=${JSON.stringify(loadCultures({ includeDev: true }))};`,
 	},
 });
-const js = outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
+// Thin probes bracketing the IIFE: if the main script never parses or
+// executes at all, the status bar still updates to "Script started" / stays
+// on "Loading…" and we can tell which end failed.
+const js =
+	`try{document.getElementById('status').textContent='Script started';}catch(e){}\n` +
+	outputFiles[0].text.replace(/<\/script/gi, '<\\/script') +
+	`\ntry{if(document.getElementById('status').textContent==='Script started')document.getElementById('status').textContent='Script loaded, init pending';}catch(e){}`;
 
 const html = `<!doctype html><html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -97,7 +103,10 @@ figcaption{font-size:13px;display:flex;justify-content:center;align-items:center
 <input type="file" id="importFile" accept=".json,application/json" hidden>
 <button id="export" title="Download the current culture as a cultures/*.json plugin">Export culture</button>
 <span id="status">Loading…</span><span id="note"></span></header>
-<script>window.addEventListener('error',e=>{var s=document.getElementById('status');if(s)s.textContent='⚠ '+(e.message||'script error');},true);</script>
+<script>
+window.addEventListener('error',e=>{var s=document.getElementById('status');if(s)s.textContent='⚠ '+(e.message||'script error')+(e.lineno?' @ '+e.lineno:'');},true);
+window.addEventListener('unhandledrejection',e=>{var s=document.getElementById('status');if(s)s.textContent='⚠ rejected: '+(e.reason&&e.reason.message||e.reason||'unknown');});
+</script>
 <div class="layout"><aside id="knobs"></aside>
 <main><div class="grid" id="towns"></div><div id="map"></div><div class="grid" id="pieces"></div></main></div>
 <script>${js}</script></body></html>`;
