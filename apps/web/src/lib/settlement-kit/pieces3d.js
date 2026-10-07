@@ -1257,28 +1257,37 @@ export function roundTower(D, o = {}) {
 		top = r * (1 - (b > 0 ? Math.max(D.taper, 0.42 * Math.min(1, D.towerBow)) : D.taper));
 	const roof = o.roof ?? D.towerRoof;
 	/** @type {Pt} */ const mid = [0, h / 2];
-	const body = /** @type {Poly} */ ([
-		...ell(0, 0, r, ry, 180, 360),
-		...sag([r, 0], [top, h], mid, b).slice(1),
-		...sag([-top, h], [-r, 0], mid, b).slice(0, -1),
-	]);
+	// Flared body: the top ~25% widens via a 45° slope, then stays flared
+	// all the way to the parapet. The lower taper is unchanged.
+	const flare = roof === 'flared';
+	const flareBelt = h * 0.75;
+	const flareOv = flare ? Math.max(1.6, r * 0.26) : 0; // outward projection
+	const topFlared = top + flareOv;
+	const body = flare
+		? /** @type {Poly} */ ([
+				...ell(0, 0, r, ry, 180, 360),
+				...sag([r, 0], [top, flareBelt], [0, flareBelt / 2], b).slice(1),
+				[topFlared, flareBelt + flareOv], // 45° slope out
+				[topFlared, h], // vertical to top
+				[-topFlared, h],
+				[-topFlared, flareBelt + flareOv],
+				[-top, flareBelt],
+				...sag([-top, flareBelt], [-r, 0], [0, flareBelt / 2], b).slice(1, -1),
+			])
+		: /** @type {Poly} */ ([
+				...ell(0, 0, r, ry, 180, 360),
+				...sag([r, 0], [top, h], mid, b).slice(1),
+				...sag([-top, h], [-r, 0], mid, b).slice(0, -1),
+			]);
 	/** @type {Poly[]} */
 	const bodySolids = [body];
-	// Flared body: a thin corbel belt around the tower at ~75% up, projecting
-	// slightly past the natural taper. Unioned with the body for a seamless
-	// Watabou-style widening before the spire.
-	if (roof === 'flared') {
-		const flareY = h * 0.75;
-		const flareH = Math.max(1.8, h * 0.055);
-		const flareRx = top + 1.6;
-		const flareRy = ry * 0.9;
-		/** @type {Poly} */
-		const belt = [
-			...ell(0, flareY - flareH / 2, flareRx, flareRy, 180, 360),
-			[flareRx, flareY + flareH / 2],
-			...ell(0, flareY + flareH / 2, flareRx, flareRy, 0, 180).slice(1),
-		];
-		bodySolids.push(belt);
+	// A top ellipse closes the flared deck so the parapet reads as a disc
+	// (otherwise the cone sits on a flat line without the oblique rim).
+	if (flare) {
+		bodySolids.push([
+			...ell(0, h, topFlared, ry * 1.1, 180, 360),
+			...ell(0, h, topFlared, ry * 1.1, 0, 180).slice(1),
+		]);
 	}
 	/** @type {Part[]} */
 	const parts = [
@@ -1312,7 +1321,9 @@ export function roundTower(D, o = {}) {
 		parts.push(dome.part);
 		return parts;
 	}
-	const R = top + 1.8;
+	// Cone base sits on whatever the body's actual top radius is: `topFlared`
+	// absorbs the 45° flare when roof === 'flared'.
+	const R = topFlared + 1.8;
 	const rh = top * 2 * D.spire * 0.75;
 	/** @type {Pt} */ const apex = [0, h + rh];
 	const sweep = D.concave * 0.8;
@@ -1409,27 +1420,57 @@ export function squareTower(D, o = {}) {
 		return parts;
 	}
 	if (D.towerRoof === 'flared') {
-		// Flared square tower: a corbel band around all four walls at ~72%
-		// up, projecting ~w*0.11 past the wall faces. Unioned into the body
-		// silhouette so the walls widen briefly before the pyramid takes
-		// over. The pyramid itself stays plain.
-		const beltY = h * 0.72;
-		const beltH = Math.max(1.8, h * 0.06);
-		const beltOv = w * 0.11;
-		/** @type {Pt} */ const bfl = [-w / 2 - beltOv, beltY];
-		/** @type {Pt} */ const bfr = [w / 2 + beltOv, beltY];
-		/** @type {Pt} */ const bflt = [-w / 2 - beltOv, beltY + beltH];
-		/** @type {Pt} */ const bfrt = [w / 2 + beltOv, beltY + beltH];
-		// Front belt — unioned with the front wall rect in parts[1].solid.
-		parts[1].solid.push([bfl, bfr, bfrt, bflt]);
-		// Side belt — unioned with the oblique side face in parts[0].solid.
-		parts[0].solid.push([bfr, add(bfr, v), add(bfrt, v), bfrt]);
-		// Normal pyramid on top (same as cone/default case).
-		parts.push(
-			{ solid: [sideFace], role: 'roof', shaded: true, lines: hatch(sideFace, -40, D.hatch) },
-			{ solid: [frontFace], role: 'roof' },
+		// Flared square tower: the top ~25% is wider than the lower walls,
+		// joined by a 45° slope. The pyramid above stays plain.
+		const beltY = h * 0.75;
+		const beltOv = Math.max(1.4, w * 0.14);
+		// Front flare — a hexagonal cap unioned with the front wall.
+		parts[1].solid.push([
+			[-w / 2, beltY],
+			[-w / 2 - beltOv, beltY + beltOv],
+			[-w / 2 - beltOv, h],
+			[w / 2 + beltOv, h],
+			[w / 2 + beltOv, beltY + beltOv],
+			[w / 2, beltY],
+		]);
+		// Side flare — same hexagon shape pushed back along the depth vector.
+		parts[0].solid.push([
+			[w / 2, beltY],
+			add([w / 2, beltY], v),
+			add([w / 2 + beltOv, beltY + beltOv], v),
+			add([w / 2 + beltOv, h], v),
+			[w / 2 + beltOv, h],
+			[w / 2 + beltOv, beltY + beltOv],
+		]);
+		// Pyramid now rises from the WIDER top. Recompute faces with the
+		// flared corners.
+		/** @type {Pt} */ const fflFl = [-w / 2 - beltOv, h];
+		/** @type {Pt} */ const fflFr = [w / 2 + beltOv, h];
+		const fflBr = add(fflFr, v);
+		/** @type {Pt} */ const fflApex = add(
+			[0, h + (w + 2 * beltOv) * D.spire],
+			[v[0] / 2, v[1] / 2],
 		);
-		if (o.finial) parts.push(...symbolAt(D.symbol, apex));
+		const fflC = /** @type {Pt} */ ([v[0] / 2, h]);
+		/** @type {Poly} */
+		const fflFront = [
+			fflFl,
+			fflFr,
+			...sag(fflFr, fflApex, fflC, D.concave).slice(1),
+			...sag(fflApex, fflFl, fflC, D.concave).slice(1, -1),
+		];
+		/** @type {Poly} */
+		const fflSide = [
+			fflFr,
+			fflBr,
+			...sag(fflBr, fflApex, fflC, D.concave).slice(1),
+			...sag(fflApex, fflFr, fflC, D.concave).slice(1, -1),
+		];
+		parts.push(
+			{ solid: [fflSide], role: 'roof', shaded: true, lines: hatch(fflSide, -40, D.hatch) },
+			{ solid: [fflFront], role: 'roof' },
+		);
+		if (o.finial) parts.push(...symbolAt(D.symbol, fflApex));
 		return parts;
 	}
 	parts.push(
