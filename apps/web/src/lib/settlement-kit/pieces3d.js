@@ -1295,9 +1295,11 @@ export function roundTower(D, o = {}) {
 		return parts;
 	}
 	if (roof === 'flared') {
-		// Watabou-style flare: a thin horizontal eave plate at the junction
-		// of the tower and its cone, projecting past the tower walls. Reads
-		// as a corbel / roof-plate that the spire sits on.
+		// Flared cone: a thin horizontal eave plate at the junction of the
+		// tower and its cone, projecting past the tower walls. Reads as a
+		// corbel / roof-plate that the spire sits on — the eave is drawn
+		// as a bottom-half ellipse (crescent) with a flat top at y=h, so
+		// nothing pokes through the cone's silhouette above.
 		const R = top + 1.4;
 		const rh = top * 2 * D.spire * 0.9;
 		/** @type {Pt} */ const apex = [0, h + rh];
@@ -1308,13 +1310,12 @@ export function roundTower(D, o = {}) {
 			...sag([R, h], apex, [0, h], sweep).slice(1),
 			...sag(apex, [-R, h], [0, h], sweep).slice(1, -1),
 		];
-		// Full ellipse at y=h, wider than the cone's foot by ~2 units and
-		// thin vertically. The cone (drawn on top) covers the back arc, so
-		// what reads is a front-facing crescent — the Watabou "roof plate".
 		const eaveR = R + 2.2;
-		const eaveRy = ry * 0.75;
+		const eaveRy = ry * 1.1;
+		// Bottom-half ellipse — the polygon's implicit closing edge gives
+		// the plate a flat top along y=h.
 		/** @type {Poly} */
-		const eave = [...ell(0, h, eaveR, eaveRy, 180, 360), ...ell(0, h, eaveR, eaveRy, 0, 180)];
+		const eave = ell(0, h, eaveR, eaveRy, 180, 360);
 		/** @type {Line[]} */
 		const ribs = [];
 		for (let t = 25; t < 90; t += 7) {
@@ -1322,12 +1323,11 @@ export function roundTower(D, o = {}) {
 			ribs.push({ pts: [apex, [R * 1.3 * Math.sin(a), h - ry * Math.cos(a)]], w: THIN });
 		}
 		if (D.flags && o.flags !== false) parts.unshift(...flag(D, 0, h + rh - 1));
-		// Eave first (behind), cone on top so its silhouette dominates and
-		// the eave only reads as a crescent at the cone's foot.
+		// Eave first (behind), cone on top so its silhouette dominates.
 		parts.push({
 			solid: [eave],
 			role: 'roof',
-			shadeArea: rect(eaveR * 0.25, h - eaveRy - 1, eaveR * 2, eaveRy * 2 + 2),
+			shadeArea: rect(eaveR * 0.25, h - eaveRy - 1, eaveR * 2, eaveRy + 2),
 		});
 		parts.push({
 			solid: [cone],
