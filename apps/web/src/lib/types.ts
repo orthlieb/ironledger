@@ -497,7 +497,7 @@ export const DEFAULT_CHARACTER: CharacterData = {
 	momentum: 2,
 	health: 5,
 	spirit: 5,
-	supply: 3,
+	supply: 5,
 	globalValues: {},
 	xp: 0,
 	bonds: 0,
