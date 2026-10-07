@@ -90,10 +90,11 @@ describe('extensions.manifest.json', () => {
     }>;
     const delve = filesFor('delveTables');
 
-    // 78 base + 0 delve (delve ships only rarities) + 15 yrt = 93 (sample is
+    // 78 base + 0 delve (delve ships only rarities) + 16 yrt = 94 (sample is
     // dev-only, stripped from `core`). yrt went 13 → 15 with "Touched, Lupine"
-    // and "Touched, Marine".
-    expect(assetData.flatMap((f) => f.assets)).toHaveLength(93);
+    // and "Touched, Marine", then 15 → 16 with "Touched, Vulpine" so the
+    // ninth Touched aspect in the oracle (fox-aspect Lupans) is playable.
+    expect(assetData.flatMap((f) => f.assets)).toHaveLength(94);
     expect(assetData.flatMap((f) => f.rarities ?? [])).toHaveLength(63);
     // 49 base/delve/yrt moves + 6 lodestar (Follow a Path, alternate End the Fight,
     // and four Scene moves: Begin the Scene, Face Danger, Secure an Advantage,

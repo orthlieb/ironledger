@@ -120,6 +120,19 @@ You have been touched by YRT and exhibit animal traits. Roll on the YRT – Touc
 
 Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.
 
+## Touched, Vulpine
+*Touched*
+
+Vulpine-touched: a liar's ease, a trail that doubles back, and an eye for what other people walk past.
+
+You have been touched by YRT and exhibit animal traits. Roll on the YRT – Touched oracle to determine the extent and conditions of your nature.
+
+- ◯ **Fox's Tongue.** You lie the way other people breathe. When you Compel through deceit, flattery, or a half-truth someone would like to believe, add +1. On a strong hit, also take +1 momentum: they repeat it to somebody else as their own idea.
+- ◯ **Double Back.** You do not outrun a pursuit, you end it. When you Face Danger to break pursuit, slip a cordon, or lose yourself in broken ground, add +1 and you may roll +wits (even if another stat would normally apply). On a strong hit, they do not merely lose you — they lose the trail, and commit to a direction you are not going.
+- ◯ **Cache.** What others walk past you pick up, and you remember where you put it. When you Resupply, add +1. On a strong hit, you also turn up one small specific thing you were not looking for: name it, and it proves useful before the day is out.
+
+Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.
+
 ## Cantrip
 *Ritual*
 
