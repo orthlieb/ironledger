@@ -33,9 +33,10 @@ import { place } from './render.js';
  * @property {number} storeys chance a house has a second storey (0..1)
  * @property {'square' | 'arched' | 'slit' | 'round'} window
  * @property {boolean} manyDoors
- * @property {'cone' | 'onion' | 'crenel' | 'dome'} towerRoof hemispherical dome
+ * @property {'cone' | 'onion' | 'crenel' | 'dome' | 'flared'} towerRoof hemispherical dome
  *   culture replaces every pitched roof — gable houses and tower caps alike —
- *   with a stone half-sphere
+ *   with a stone half-sphere; `flared` is a cone with a horizontal eave
+ *   partway up (Watabou-style step-flare)
  * @property {number} spire spire / cone height ÷ tower width
  * @property {number} taper tower walls lean in by this share of the radius
  * @property {boolean} flags
@@ -95,7 +96,7 @@ export const DEFAULT_DESIGN = {
 	flags: true,
 	flagLen: 11,
 	flagFolds: 3,
-	flagShape: 'banner',
+	flagShape: 'pennant',
 	hatch: 1.4,
 	wall: 'stone',
 	wallH: 1,
@@ -135,12 +136,25 @@ export function makeDesign(seed) {
 		storeys: avg() * 0.8,
 		window: pick(['square', 'arched', 'slit', 'round']),
 		manyDoors: r() < 0.3,
-		towerRoof: pick(['cone', 'cone', 'cone', 'onion', 'onion', 'crenel', 'crenel', 'dome', 'dome']),
+		towerRoof: pick([
+			'cone',
+			'cone',
+			'cone',
+			'onion',
+			'onion',
+			'crenel',
+			'crenel',
+			'dome',
+			'dome',
+			'flared',
+			'flared',
+		]),
 		spire: 1.3 + avg() * 1.7,
 		taper: avg() * 0.14,
 		flags: r() < 0.75,
 		flagLen: 8 + avg() * 9,
 		flagFolds: 2 + Math.floor(r() * 3),
+		flagShape: pick(['pennant', 'pennant', 'pennant', 'banner', 'banner', 'swallowtail']),
 		hatch: 1.25 + avg() * 0.45,
 		wall: pick([
 			'stone',
@@ -189,7 +203,7 @@ export function makeDesign(seed) {
 	};
 	// Linked rules, so a culture hangs together:
 	// low-pitched builders fortify their towers rather than roofing them,
-	if (D.pitch < 0.6 && D.towerRoof === 'cone') D.towerRoof = 'crenel';
+	if (D.pitch < 0.6 && (D.towerRoof === 'cone' || D.towerRoof === 'flared')) D.towerRoof = 'crenel';
 	// onion domes come with concave (swept) roofs on the houses too,
 	if (D.towerRoof === 'onion' && D.concave === 0) D.concave = 0.12;
 	// and tall steep roofs go with tall spires.
@@ -1280,6 +1294,49 @@ export function roundTower(D, o = {}) {
 		parts.push(dome.part);
 		return parts;
 	}
+	if (roof === 'flared') {
+		// Watabou-style flare: a thin horizontal eave plate at the junction
+		// of the tower and its cone, projecting past the tower walls. Reads
+		// as a corbel / roof-plate that the spire sits on.
+		const R = top + 1.4;
+		const rh = top * 2 * D.spire * 0.9;
+		/** @type {Pt} */ const apex = [0, h + rh];
+		const sweep = D.concave * 0.8;
+		/** @type {Poly} */
+		const cone = [
+			...ell(0, h, R, ry, 180, 360),
+			...sag([R, h], apex, [0, h], sweep).slice(1),
+			...sag(apex, [-R, h], [0, h], sweep).slice(1, -1),
+		];
+		// Full ellipse at y=h, wider than the cone's foot by ~2 units and
+		// thin vertically. The cone (drawn on top) covers the back arc, so
+		// what reads is a front-facing crescent — the Watabou "roof plate".
+		const eaveR = R + 2.2;
+		const eaveRy = ry * 0.75;
+		/** @type {Poly} */
+		const eave = [...ell(0, h, eaveR, eaveRy, 180, 360), ...ell(0, h, eaveR, eaveRy, 0, 180)];
+		/** @type {Line[]} */
+		const ribs = [];
+		for (let t = 25; t < 90; t += 7) {
+			const a = (t * Math.PI) / 180;
+			ribs.push({ pts: [apex, [R * 1.3 * Math.sin(a), h - ry * Math.cos(a)]], w: THIN });
+		}
+		if (D.flags && o.flags !== false) parts.unshift(...flag(D, 0, h + rh - 1));
+		// Eave first (behind), cone on top so its silhouette dominates and
+		// the eave only reads as a crescent at the cone's foot.
+		parts.push({
+			solid: [eave],
+			role: 'roof',
+			shadeArea: rect(eaveR * 0.25, h - eaveRy - 1, eaveR * 2, eaveRy * 2 + 2),
+		});
+		parts.push({
+			solid: [cone],
+			role: 'roof',
+			shadeArea: rect(R * 0.25, h - ry - 2, R * 2, rh + ry + 4),
+			lines: ribs,
+		});
+		return parts;
+	}
 	const R = top + 1.8;
 	const rh = top * 2 * D.spire * 0.75;
 	/** @type {Pt} */ const apex = [0, h + rh];
@@ -1374,6 +1431,34 @@ export function squareTower(D, o = {}) {
 		const dome = hemiDome(v[0] / 2, h + v[1] / 2, w * 0.52);
 		parts.push(dome.part);
 		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
+		return parts;
+	}
+	if (D.towerRoof === 'flared') {
+		// Square-tower flare: a thin horizontal eave board at y=h, projecting
+		// ~w*0.18 past the four walls on every side. The pyramid above is the
+		// normal one — the eave reads as a Watabou-style roof-plate.
+		const ov2 = w * 0.18;
+		const flareH = w * 0.1;
+		/** @type {Pt} */ const efl = [-w / 2 - ov2, h];
+		/** @type {Pt} */ const efr = [w / 2 + ov2, h];
+		/** @type {Pt} */ const eflBot = [-w / 2 - ov2, h - flareH];
+		/** @type {Pt} */ const efrBot = [w / 2 + ov2, h - flareH];
+		const efrSide = add(efr, v);
+		const efrBotSide = add(efrBot, v);
+		// Front strip of the eave (visible overhang) and side strip (shaded).
+		parts.push({ solid: [[efl, efr, efrBot, eflBot]], role: 'roof' });
+		parts.push({
+			solid: [[efr, efrSide, efrBotSide, efrBot]],
+			role: 'roof',
+			shaded: true,
+			lines: [],
+		});
+		// Normal pyramid on top (same as cone/default case).
+		parts.push(
+			{ solid: [sideFace], role: 'roof', shaded: true, lines: hatch(sideFace, -40, D.hatch) },
+			{ solid: [frontFace], role: 'roof' },
+		);
+		if (o.finial) parts.push(...symbolAt(D.symbol, apex));
 		return parts;
 	}
 	parts.push(

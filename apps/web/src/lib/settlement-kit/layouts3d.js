@@ -421,6 +421,12 @@ export function settlement(tier, D, o = {}) {
 	/** Ground points every placed building stands on (front corners and the
 	 *  foot of its receding side) — the wall is fitted around these. @type {[number, number][]} */
 	const footprint = [];
+	// Perspective: back-row pieces shrink toward the horizon, front row stays
+	// full size. One-row layouts (steads, outposts) skip this since there's
+	// no depth to convey.
+	const PERSP_SHRINK = 0.18;
+	const rowScaleFor = (/** @type {number} */ ri) =>
+		n > 1 ? 1 - PERSP_SHRINK * (1 - ri / (n - 1)) : 1;
 	rows.forEach((row, ri) => {
 		const list = assigned[ri];
 		// Shuffle within the row so heights don't step monotonically.
@@ -430,19 +436,31 @@ export function settlement(tier, D, o = {}) {
 		}
 		if (marketItem && ri === midRow) list.splice(Math.floor(list.length / 2), 0, marketItem);
 		if (!list.length) return;
-		const sum = list.reduce((t, it) => t + width(it), 0);
+		const rs = rowScaleFor(ri);
+		const wScaled = (/** @type {Item} */ it) => (it.x1 - it.x0) * rs + SPACE;
+		const sum = list.reduce((t, it) => t + wScaled(it), 0);
 		// Even gaps; if the row is over-full, the overlap is shared evenly too.
 		const gap = (row.half * 2 - sum) / (list.length + 1);
 		let x = row.cx - row.half + gap;
 		for (const it of list) {
 			const jx = (r() - 0.5) * Math.min(Math.max(gap, 0) * 0.5, 2),
 				jy = (r() - 0.5) * 1.2;
-			const ox = x + SPACE / 2 - it.x0 + jx,
+			const ox = x + SPACE / 2 - it.x0 * rs + jx,
 				oy = row.y + jy;
-			for (const p of it.pieces) inside.push({ ...p, x: (p.x ?? 0) + ox, y: (p.y ?? 0) + oy });
-			if (it.ground) ground.push({ ...it.ground, x: ox, y: oy });
-			footprint.push([ox + it.x0, oy], [ox + it.x1, oy], [ox + it.x1, oy + (it.x1 - it.x0) * 0.25]);
-			x += width(it) + gap;
+			for (const p of it.pieces)
+				inside.push({
+					...p,
+					x: (p.x ?? 0) * rs + ox,
+					y: (p.y ?? 0) * rs + oy,
+					s: (p.s ?? 1) * rs,
+				});
+			if (it.ground) ground.push({ ...it.ground, x: ox, y: oy, s: (it.ground.s ?? 1) * rs });
+			footprint.push(
+				[ox + it.x0 * rs, oy],
+				[ox + it.x1 * rs, oy],
+				[ox + it.x1 * rs, oy + (it.x1 - it.x0) * rs * 0.25],
+			);
+			x += wScaled(it) + gap;
 		}
 	});
 	// Stilt-settlement: wrap every inside piece on its own deck + posts.

@@ -128,7 +128,7 @@ describe('wall patterns', () => {
 });
 
 describe('design-knob variants render', () => {
-	const towerRoofs: Design['towerRoof'][] = ['cone', 'onion', 'crenel', 'dome'];
+	const towerRoofs: Design['towerRoof'][] = ['cone', 'onion', 'crenel', 'dome', 'flared'];
 	for (const roof of towerRoofs) {
 		it(`towerRoof=${roof} renders a round tower`, () => {
 			expect(renders(roundTower({ ...DEFAULT_DESIGN, towerRoof: roof }))).toBe(true);
