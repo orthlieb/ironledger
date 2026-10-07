@@ -49,7 +49,7 @@ export async function loadCharacters(): Promise<void> {
 		// Initialise party supply to the max across all loaded characters.
 		if (list.length > 0) {
 			_partySupply = Math.max(
-				...list.map((c) => ((c.data as Record<string, unknown>).supply as number) ?? 3),
+				...list.map((c) => ((c.data as Record<string, unknown>).supply as number) ?? 5),
 			);
 		}
 
@@ -95,7 +95,7 @@ export async function createCharacter(
 	//   • Button press (no supply in initialData): inherit party supply
 	//   • Import with lower supply: raise to party supply
 	//   • Import with higher supply: keep as-is (setPartySupply will sync others)
-	const importedSupply = (initialData.supply as number | undefined) ?? 3;
+	const importedSupply = (initialData.supply as number | undefined) ?? 5;
 	let dataForApi = initialData;
 	if (_partySupply !== null && importedSupply < _partySupply) {
 		dataForApi = { ...initialData, supply: _partySupply };
@@ -112,7 +112,7 @@ export async function createCharacter(
 	//     party gets a supply boost).
 	//   - New char with lower or equal supply: already handled above by bumping
 	//     the char's initial supply, so no further sync needed.
-	const newCharSupply = ((newChar.data as Record<string, unknown>).supply as number) ?? 3;
+	const newCharSupply = ((newChar.data as Record<string, unknown>).supply as number) ?? 5;
 	if (_partySupply === null) {
 		_partySupply = newCharSupply;
 	} else if (newCharSupply > _partySupply) {

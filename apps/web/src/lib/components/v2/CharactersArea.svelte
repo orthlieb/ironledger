@@ -991,7 +991,12 @@
 			// as `initialData` — createCharacter merges these into a fresh
 			// character before the API create call, so DEFAULT_CHARACTER's 1s
 			// never override what the user chose.
+			// Also stash the typed name in `data.name`: charDisplayName() prefers
+			// data.name over the row's stored `name`, so without this the dialog
+			// name shows up as "New Character" (DEFAULT_CHARACTER's fallback) in
+			// the spine until the user renames via the gear dialog.
 			const initial: Record<string, unknown> = {
+				name: nameToUse,
 				edge: newCharStats.edge,
 				heart: newCharStats.heart,
 				iron: newCharStats.iron,
