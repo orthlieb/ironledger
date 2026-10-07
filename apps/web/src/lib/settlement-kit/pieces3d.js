@@ -1262,10 +1262,28 @@ export function roundTower(D, o = {}) {
 		...sag([r, 0], [top, h], mid, b).slice(1),
 		...sag([-top, h], [-r, 0], mid, b).slice(0, -1),
 	]);
+	/** @type {Poly[]} */
+	const bodySolids = [body];
+	// Flared body: a thin corbel belt around the tower at ~75% up, projecting
+	// slightly past the natural taper. Unioned with the body for a seamless
+	// Watabou-style widening before the spire.
+	if (roof === 'flared') {
+		const flareY = h * 0.75;
+		const flareH = Math.max(1.8, h * 0.055);
+		const flareRx = top + 1.6;
+		const flareRy = ry * 0.9;
+		/** @type {Poly} */
+		const belt = [
+			...ell(0, flareY - flareH / 2, flareRx, flareRy, 180, 360),
+			[flareRx, flareY + flareH / 2],
+			...ell(0, flareY + flareH / 2, flareRx, flareRy, 0, 180).slice(1),
+		];
+		bodySolids.push(belt);
+	}
 	/** @type {Part[]} */
 	const parts = [
 		{
-			solid: [body],
+			solid: bodySolids,
 			shadeArea: rect(r * 0.3, -ry - 2, r * 2, h + ry + 4),
 			lines: cylinderShade(r, -ry - 1, h + 1),
 			fills: [opening({ ...D, window: 'slit' }, -r * 0.35, h * 0.55, 4)],
@@ -1292,49 +1310,6 @@ export function roundTower(D, o = {}) {
 		const dome = hemiDome(0, h, top + 0.4);
 		if (D.flags && o.flags !== false) parts.unshift(...flag(D, dome.tip[0], dome.tip[1] - 2));
 		parts.push(dome.part);
-		return parts;
-	}
-	if (roof === 'flared') {
-		// Flared cone: a thin horizontal eave plate at the junction of the
-		// tower and its cone, projecting past the tower walls. Reads as a
-		// corbel / roof-plate that the spire sits on — the eave is drawn
-		// as a bottom-half ellipse (crescent) with a flat top at y=h, so
-		// nothing pokes through the cone's silhouette above.
-		const R = top + 1.4;
-		const rh = top * 2 * D.spire * 0.9;
-		/** @type {Pt} */ const apex = [0, h + rh];
-		const sweep = D.concave * 0.8;
-		/** @type {Poly} */
-		const cone = [
-			...ell(0, h, R, ry, 180, 360),
-			...sag([R, h], apex, [0, h], sweep).slice(1),
-			...sag(apex, [-R, h], [0, h], sweep).slice(1, -1),
-		];
-		const eaveR = R + 2.2;
-		const eaveRy = ry * 1.1;
-		// Bottom-half ellipse — the polygon's implicit closing edge gives
-		// the plate a flat top along y=h.
-		/** @type {Poly} */
-		const eave = ell(0, h, eaveR, eaveRy, 180, 360);
-		/** @type {Line[]} */
-		const ribs = [];
-		for (let t = 25; t < 90; t += 7) {
-			const a = (t * Math.PI) / 180;
-			ribs.push({ pts: [apex, [R * 1.3 * Math.sin(a), h - ry * Math.cos(a)]], w: THIN });
-		}
-		if (D.flags && o.flags !== false) parts.unshift(...flag(D, 0, h + rh - 1));
-		// Eave first (behind), cone on top so its silhouette dominates.
-		parts.push({
-			solid: [eave],
-			role: 'roof',
-			shadeArea: rect(eaveR * 0.25, h - eaveRy - 1, eaveR * 2, eaveRy + 2),
-		});
-		parts.push({
-			solid: [cone],
-			role: 'roof',
-			shadeArea: rect(R * 0.25, h - ry - 2, R * 2, rh + ry + 4),
-			lines: ribs,
-		});
 		return parts;
 	}
 	const R = top + 1.8;
@@ -1434,25 +1409,21 @@ export function squareTower(D, o = {}) {
 		return parts;
 	}
 	if (D.towerRoof === 'flared') {
-		// Square-tower flare: a thin horizontal eave board at y=h, projecting
-		// ~w*0.18 past the four walls on every side. The pyramid above is the
-		// normal one — the eave reads as a Watabou-style roof-plate.
-		const ov2 = w * 0.18;
-		const flareH = w * 0.1;
-		/** @type {Pt} */ const efl = [-w / 2 - ov2, h];
-		/** @type {Pt} */ const efr = [w / 2 + ov2, h];
-		/** @type {Pt} */ const eflBot = [-w / 2 - ov2, h - flareH];
-		/** @type {Pt} */ const efrBot = [w / 2 + ov2, h - flareH];
-		const efrSide = add(efr, v);
-		const efrBotSide = add(efrBot, v);
-		// Front strip of the eave (visible overhang) and side strip (shaded).
-		parts.push({ solid: [[efl, efr, efrBot, eflBot]], role: 'roof' });
-		parts.push({
-			solid: [[efr, efrSide, efrBotSide, efrBot]],
-			role: 'roof',
-			shaded: true,
-			lines: [],
-		});
+		// Flared square tower: a corbel band around all four walls at ~72%
+		// up, projecting ~w*0.11 past the wall faces. Unioned into the body
+		// silhouette so the walls widen briefly before the pyramid takes
+		// over. The pyramid itself stays plain.
+		const beltY = h * 0.72;
+		const beltH = Math.max(1.8, h * 0.06);
+		const beltOv = w * 0.11;
+		/** @type {Pt} */ const bfl = [-w / 2 - beltOv, beltY];
+		/** @type {Pt} */ const bfr = [w / 2 + beltOv, beltY];
+		/** @type {Pt} */ const bflt = [-w / 2 - beltOv, beltY + beltH];
+		/** @type {Pt} */ const bfrt = [w / 2 + beltOv, beltY + beltH];
+		// Front belt — unioned with the front wall rect in parts[1].solid.
+		parts[1].solid.push([bfl, bfr, bfrt, bflt]);
+		// Side belt — unioned with the oblique side face in parts[0].solid.
+		parts[0].solid.push([bfr, add(bfr, v), add(bfrt, v), bfrt]);
 		// Normal pyramid on top (same as cone/default case).
 		parts.push(
 			{ solid: [sideFace], role: 'roof', shaded: true, lines: hatch(sideFace, -40, D.hatch) },
