@@ -154,7 +154,7 @@ Sense and interpret mana in a person, object, or area.
 ## Illusion
 *Ritual*
 
-Create visual, auditory, and physical illusions to deceive.
+Create visual and auditory illusions to deceive.
 
 - **◉** **Illusion.** You can cast illusion spells to deceive others. Choose what you want to create, record the total difficulty by summing the difficulty factors, and Cast Conclave Ritual.
 - ◯ **Adept Illusion.** As above, but the spell difficulty is reduced by 2 (minimum 0) given mastery of the illusionist skill.
