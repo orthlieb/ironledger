@@ -358,7 +358,7 @@ Yrt-specific assets live in `assets/assets.json`, using the same base format as 
 | Touched, Hircine      | Touched  | Surefooted on lethal heights; a gut that shrugs off poison and rot.        |
 | Cantrip               | Ritual   | Minor magical tricks — clean, light, warm, lock, and more.                 |
 | Arcane Inspection     | Ritual   | Sense and interpret mana in a person, object, or area.                     |
-| Illusion              | Ritual   | Visual, auditory, and physical illusions to deceive.                       |
+| Illusion              | Ritual   | Visual and auditory illusions to deceive — mental only, nothing to touch.  |
 | Compulsion            | Ritual   | Influence thoughts, emotions, and perceptions in a target's mind.          |
 | Bittercraft           | Path     | Detect poisons; brew contact/ingestion toxins from plant extracts.         |
 | Quillwise             | Path     | Forge documents — mimic handwriting, replicate seals, detect fakes.        |

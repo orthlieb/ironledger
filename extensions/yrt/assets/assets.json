@@ -927,17 +927,17 @@
       "id": "ritual/yrt-vizion-illusion",
       "name": "Illusion",
       "category": "Ritual",
-      "summary": "Create visual, auditory, and physical illusions to deceive.",
+      "summary": "Create visual and auditory illusions to deceive.",
       "preamble": null,
-      "description": "You can cast illusion spells to deceive others. In combat, it is usually a ranged defensive style designed to confuse or distract the enemy. Illusions can also be cast outside of combat to create and hide traps and other items. Illusions can have visual, auditory, and physical components. Examples of illusions might be a small glamor, a veil of invisibility and silence around you while moving, phantom sounds, mirror image, hallucinations, altering or hiding terrain, or a ghostly touch.",
+      "description": "You can cast illusion spells to deceive others. In combat, it is usually a ranged defensive style designed to confuse or distract the enemy. Illusions can also be cast outside of combat to hide traps and other items from sight. A Vizion's illusion is mental: it reaches the target's eyes and ears, but never their touch — a hand passed through the image meets nothing. Examples of illusions might be a small glamor, a veil of apparent invisibility and silence around you while moving, phantom sounds, mirror image, hallucinations, or altering or hiding terrain.",
       "inspectionFactors": [
         {
           "key": "components",
           "name": "Components",
           "levels": [
-            "One component: visual, auditory, or physical (touchable).",
-            "Two components.",
-            "All three components: visual, auditory, and physical."
+            "Single sense — visual OR auditory alone.",
+            "Both senses, loosely coordinated — ambient sound alongside the image.",
+            "Both senses, perfectly synchronised — audio and visual match frame for frame."
           ]
         },
         {
@@ -987,7 +987,7 @@
         "factors": {
           "components": {
             "score": 1,
-            "reason": "Visual + auditory."
+            "reason": "Both senses, loosely coordinated — ribbit alongside the hop."
           },
           "viewing": {
             "score": 1,
