@@ -95,9 +95,18 @@ export async function createCharacter(
 	//   • Button press (no supply in initialData): inherit party supply
 	//   • Import with lower supply: raise to party supply
 	//   • Import with higher supply: keep as-is (setPartySupply will sync others)
-	const importedSupply = (initialData.supply as number | undefined) ?? 5;
+	//
+	// Distinguish `undefined` (button press — want to inherit) from a provided
+	// value (import — may be below party and need raising). Collapsing both
+	// through `?? DEFAULT_CHARACTER.supply` breaks inheritance whenever the
+	// party sits below that default (e.g. supply 4 against a default of 5).
+	const providedSupply = initialData.supply as number | undefined;
 	let dataForApi = initialData;
-	if (_partySupply !== null && importedSupply < _partySupply) {
+	if (providedSupply === undefined) {
+		if (_partySupply !== null) {
+			dataForApi = { ...initialData, supply: _partySupply };
+		}
+	} else if (_partySupply !== null && providedSupply < _partySupply) {
 		dataForApi = { ...initialData, supply: _partySupply };
 	}
 
