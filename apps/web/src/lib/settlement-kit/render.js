@@ -32,7 +32,7 @@ import ClipperLib from 'clipper-lib';
 /** @typedef {import('./geom.js').Pt} Pt */
 /** @typedef {import('./geom.js').Poly} Poly */
 /** @typedef {{pts: Poly, w?: number, round?: boolean}} Line */
-/** @typedef {'wall' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
+/** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
 /** @typedef {{solid: Poly[], lines?: Line[], fills?: Poly[], cuts?: Line[], free?: Line[], mask?: Poly, role?: Role, shaded?: boolean, shadeArea?: Poly, terrain?: boolean}} Part */
 /** @typedef {{X: number, Y: number}[][]} CPaths */
 
@@ -171,12 +171,21 @@ export function place(parts, at) {
 	}));
 }
 
-/** Colour layers emitted by renderLayered(), in paint order. */
+/** Colour layers emitted by renderLayered(), in paint order. The
+ *  `wall-*` material roles (stone / hedge / reef) take an SVG `<pattern>`
+ *  fill in place of a flat colour — see settlement-kit/patterns.js. Each
+ *  pattern role shares its shade bucket with the generic `wall` role. */
 export const LAYERS = /** @type {const} */ ([
 	'water',
 	'water-shade',
 	'wall',
 	'wall-shade',
+	'wall-stone',
+	'wall-stone-shade',
+	'wall-hedge',
+	'wall-hedge-shade',
+	'wall-reef',
+	'wall-reef-shade',
 	'wood',
 	'wood-shade',
 	'earth',
