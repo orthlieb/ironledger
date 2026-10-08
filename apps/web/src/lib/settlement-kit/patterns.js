@@ -372,7 +372,7 @@ const CORAL_MAZE = brainCoralTile();
 const reef = {
 	w: CORAL,
 	h: CORAL,
-	scale: 5,
+	scale: 2.5,
 	body: ({ tone }) => {
 		const m = MATERIALS.coral;
 		const line = 'fill:none;stroke-linecap:round;stroke-linejoin:round';
