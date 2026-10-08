@@ -46,6 +46,42 @@ import {
 /** @typedef {'auto' | 'none' | 'stone' | 'palisade' | 'earth' | 'hedge' | 'bone' | 'reef'} Walls */
 
 /**
+ * Per-building Design jitter: each house re-rolls a few visual knobs
+ * (pitch, concave, flourish, and 15% of the time window / door style)
+ * within a small range of the culture's base. The culture's enum choices
+ * (houseForm, towerRoof, etc.) still dominate. Keeps a row of houses from
+ * looking like 10 identical copies.
+ * @param {Design} D
+ * @param {() => number} r
+ * @returns {Design}
+ */
+function jitterDesign(D, r) {
+	const clamp = (/** @type {number} */ x, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));
+	const WINDOWS = /** @type {Design['window'][]} */ ([
+		'square',
+		'arched',
+		'slit',
+		'round',
+		'lancet',
+	]);
+	const DOORS = /** @type {Design['door'][]} */ ([
+		'arched',
+		'arched',
+		'arched',
+		'square',
+		'lancet',
+	]);
+	return {
+		...D,
+		pitch: clamp(D.pitch + (r() - 0.5) * 0.3, 0.4, 1.2),
+		concave: clamp(D.concave + (r() - 0.5) * 0.08, 0, 0.3),
+		flourish: clamp(D.flourish + (r() - 0.5) * 0.2),
+		window: r() < 0.15 ? WINDOWS[Math.floor(r() * WINDOWS.length)] : D.window,
+		door: r() < 0.15 ? DOORS[Math.floor(r() * DOORS.length)] : D.door,
+	};
+}
+
+/**
  * A dwelling in the culture's house form (timber, round hut, turf mound
  * or stilt hut), or — in towns and cities, at the culture's `industry` rate — a
  * warehouse or workshop.
@@ -55,6 +91,7 @@ import {
  * @param {boolean} trade
  */
 function house(D, r, w, trade) {
+	D = jitterDesign(D, r);
 	const seed = Math.floor(r() * 1e6);
 	if (!trade || r() >= D.industry) {
 		if (D.houseForm === 'round') return roundHut(D, { r: w * 0.32 });
