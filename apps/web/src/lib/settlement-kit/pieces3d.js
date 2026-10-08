@@ -1290,12 +1290,15 @@ export function roundTower(D, o = {}) {
 			...ell(0, h, topFlared, ry * 1.1, 0, 180).slice(1),
 		]);
 	}
+	// Shade reaches to the wider radius when flared, so the 45° outer slope
+	// and the flared parapet both carry the cylindrical shading.
+	const shadeR = flare ? topFlared : r;
 	/** @type {Part[]} */
 	const parts = [
 		{
 			solid: bodySolids,
-			shadeArea: rect(r * 0.3, -ry - 2, r * 2, h + ry + 4),
-			lines: cylinderShade(r, -ry - 1, h + 1),
+			shadeArea: rect(shadeR * 0.3, -ry - 2, shadeR * 2, h + ry + 4),
+			lines: cylinderShade(shadeR, -ry - 1, h + 1),
 			fills: [opening({ ...D, window: 'slit' }, -r * 0.35, h * 0.55, 4)],
 		},
 	];
