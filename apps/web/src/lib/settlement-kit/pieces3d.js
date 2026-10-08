@@ -38,11 +38,11 @@ import { place } from './render.js';
  *   with a stone half-sphere
  * @property {number} spire spire / cone height ÷ tower width
  * @property {number} taper tower walls lean in by this share of the radius
- * @property {number} towerFlare 0..1: y-position of the flare's bottom edge
- *   as a fraction of the tower's height. 1 = flare starts at the top
- *   (invisible, no flare), 0.75 = upper quarter flares (Watabou corbel),
- *   0 = flare starts at the ground (whole tower is the 45° slope).
- *   Orthogonal to towerRoof: any cap can sit on a flared body.
+ * @property {number} towerFlare 0..1: share of the tower's height occupied
+ *   by the flare, measured down from the parapet. 0 = no flare (default,
+ *   straight walls), 0.25 = upper quarter flares (Watabou corbel), 1 = the
+ *   whole tower is the 45° slope. Orthogonal to towerRoof: any cap can sit
+ *   on a flared body.
  * @property {boolean} flags
  * @property {number} flagLen
  * @property {number} flagFolds
@@ -97,7 +97,7 @@ export const DEFAULT_DESIGN = {
 	towerRoof: 'cone',
 	spire: 2.2,
 	taper: 0.04,
-	towerFlare: 1,
+	towerFlare: 0,
 	flags: true,
 	flagLen: 11,
 	flagFolds: 3,
@@ -144,9 +144,9 @@ export function makeDesign(seed) {
 		towerRoof: pick(['cone', 'cone', 'cone', 'onion', 'onion', 'crenel', 'crenel', 'dome', 'dome']),
 		spire: 1.3 + avg() * 1.7,
 		taper: avg() * 0.14,
-		// Most cultures (~70%) build straight walls (towerFlare = 1). The
-		// rest get a flare whose BELT sits in the upper 10-35% of the tower.
-		towerFlare: r() < 0.7 ? 1 : 0.65 + avg() * 0.25,
+		// Most cultures (~70%) build straight walls (towerFlare = 0). The
+		// rest get a flare occupying 10-35% of the tower's upper height.
+		towerFlare: r() < 0.7 ? 0 : 0.1 + avg() * 0.25,
 		flags: r() < 0.75,
 		flagLen: 8 + avg() * 9,
 		flagFolds: 2 + Math.floor(r() * 3),
@@ -1254,13 +1254,13 @@ export function roundTower(D, o = {}) {
 	const roof = o.roof ?? D.towerRoof;
 	/** @type {Pt} */ const mid = [0, h / 2];
 	// Flared body: from the belt up to the parapet, the walls widen via a
-	// 45° slope and then stay flared. `D.towerFlare` is the belt's y-position
-	// as a fraction of h — 1 means the belt sits at the top (no visible
-	// flare), 0 means it sits at the ground (the whole tower is the flare).
-	// Orthogonal to roof style: any cap can sit on a flared or straight body.
-	const flarePos = Math.max(0, Math.min(1, o.flare ?? D.towerFlare ?? 1));
+	// 45° slope and then stay flared. `D.towerFlare` is the share of the
+	// tower's height occupied by the flare, measured down from the top —
+	// 0 means no flare, 1 means the whole tower is the slope. Orthogonal to
+	// roof style: any cap can sit on a flared or straight body.
+	const flareAmount = Math.max(0, Math.min(1, o.flare ?? D.towerFlare ?? 0));
 	const flareOvMax = Math.max(1.6, r * 0.26);
-	const flareBelt = flarePos * h;
+	const flareBelt = (1 - flareAmount) * h;
 	// Project outward by the fixed max, clamped to the room available above
 	// the belt — can't rise past the parapet.
 	const flareOv = Math.min(flareOvMax, Math.max(0, h - flareBelt));
@@ -1368,13 +1368,13 @@ export function squareTower(D, o = {}) {
 		h = (o.h ?? 28) * D.stature;
 	const v = depthVec(w * 0.8);
 	// Flared body: from the belt up, the walls widen by beltOv on every side
-	// via a 45° slope. `D.towerFlare` is the belt's y-position as a fraction
-	// of h — 1 means the belt sits at the top (no flare), 0 means it sits at
-	// the ground (whole tower flares). Pyramid / onion / dome above rises
-	// from the wider top.
-	const flarePos = Math.max(0, Math.min(1, o.flare ?? D.towerFlare ?? 1));
+	// via a 45° slope. `D.towerFlare` is the share of the tower's height
+	// occupied by the flare (measured down from the top) — 0 means no flare,
+	// 1 means the whole tower is the slope. Pyramid / onion / dome above
+	// rises from the wider top.
+	const flareAmount = Math.max(0, Math.min(1, o.flare ?? D.towerFlare ?? 0));
 	const beltOvMax = Math.max(1.4, w * 0.14);
-	const beltY = flarePos * h;
+	const beltY = (1 - flareAmount) * h;
 	const beltOv = Math.min(beltOvMax, Math.max(0, h - beltY));
 	const flare = beltOv > 0.01;
 	const w2 = w / 2 + beltOv; // effective half-width at the top
