@@ -43,8 +43,10 @@ import { place } from './render.js';
  *   dome flush with the tower top
  * @property {number} spire spire / cone height ÷ tower width
  * @property {number} taper tower walls lean in by this share of the radius
- * @property {number} [perspective] PROTOTYPE, gable houses only: how strongly
- *   receding faces converge (0 = parallel oblique, ~0.5 subtle, 1 strong)
+ * @property {number} perspective how strongly the receding faces of box-like
+ *   buildings (houses, square towers, keep, cathedral, gates, stalls, tents)
+ *   converge: 0 = parallel oblique, 0.5 default, 1 strong. Round pieces,
+ *   walls and the pier stay parallel.
  * @property {number} towerCorbel 0..1: share of the tower's height occupied
  *   by the corbelled parapet, measured down from the top. 0 = no corbel
  *   (default, straight walls), 0.25 = upper quarter corbels out (Watabou
@@ -106,6 +108,7 @@ export const DEFAULT_DESIGN = {
 	spire: 2.2,
 	taper: 0.04,
 	towerCorbel: 0,
+	perspective: 0.5,
 	flags: true,
 	flagLen: 11,
 	flagFolds: 3,
@@ -169,6 +172,7 @@ export function makeDesign(seed) {
 		// Most cultures (~70%) build straight walls (towerCorbel = 0). The
 		// rest get a corbel occupying 10-35% of the tower's upper height.
 		towerCorbel: r() < 0.7 ? 0 : 0.1 + avg() * 0.25,
+		perspective: 0.5,
 		flags: r() < 0.75,
 		flagLen: 8 + avg() * 9,
 		flagFolds: 2 + Math.floor(r() * 3),
@@ -249,8 +253,6 @@ const depthVec = (d) => [d * 0.75, d * 0.5];
 
 /** @param {Pt} a @param {Pt} b @returns {Pt} */
 const add = (a, b) => [a[0] + b[0], a[1] + b[1]];
-/** @param {Poly} p @param {Pt} v @returns {Poly} */
-const shift = (p, v) => p.map((q) => add(q, v));
 
 /**
  * Edge from a to b that sags toward `toward` by `amt` (quadratic curve).
@@ -522,23 +524,6 @@ function doorway(
 }
 
 /**
- * Project an upright opening polygon onto an oblique side face: its
- * horizontal axis becomes the depth-vec direction (so bottom and top edges
- * follow the face's own slope), its vertical axis stays vertical. Anchor
- * is where the opening's bottom-centre sits on the face in drawing coords.
- * Use this for any fill — window, door, rose — placed on a depth-receding
- * face so it reads as painted on the wall rather than floating over it.
- * @param {Poly} poly bottom-centred at (0, 0) in upright coords
- * @param {Pt} anchor bottom-centre on the face in drawing coords
- * @returns {Poly}
- */
-function sideFace(poly, anchor) {
-	return poly.map(
-		(p) => /** @type {Pt} */ ([anchor[0] + 0.75 * p[0], anchor[1] + 0.5 * p[0] + p[1]]),
-	);
-}
-
-/**
  * Lay out a front wall's openings in evenly spaced slots so doors and
  * windows can never overlap: one door (or every other slot for
  * `manyDoors` cultures) on the ground floor, windows elsewhere, and a
@@ -755,18 +740,55 @@ function pyramid(front, side, ridge, role, hatchSpacing) {
 }
 
 /**
- * Where a box's back face lands. In parallel oblique (k = 0) it is the
- * front face shifted by depthVec(d). With perspective strength k it is also
- * scaled toward the front's ground line, so receding faces converge: the
- * back edge comes out shorter and the eave climbs less than the ground.
+ * Projection for a box-like piece of depth d. In parallel oblique (k = 0) a
+ * front-plane point p at depth fraction t lands at p + depthVec(t·d). With
+ * perspective strength k it is also scaled toward the front's ground line
+ * by s(t) = 1 / (1 + k·t·d / 20), so receding faces converge: back edges
+ * come out shorter and eaves climb less than the ground. Every point of a
+ * piece at the same depth must go through the same projector, or faces
+ * that share an edge won't meet.
+ *
+ * Shrinking toward the ground drops a tall piece's back edges, and past a
+ * point a flat top tips over and reads as seen from below. So the strength
+ * is capped for tall pieces: a top face at height h still climbs at least
+ * half as steeply as in parallel (h·(1 − s(1)) ≤ d/4), and a ridge running
+ * back at height `ridge` at least a quarter as steeply (≤ 3d/8).
  * @param {number} d depth
  * @param {number} k perspective strength (0 = parallel)
- * @returns {(p: Pt) => Pt}
+ * @param {number} [h] height of the piece's flat top (0 = none)
+ * @param {number} [ridge] height of a ridge that runs back (0 = none)
  */
-function backProjector(d, k) {
-	const v = depthVec(d);
-	const s = 1 / (1 + (k * d) / 20);
-	return (p) => [p[0] * s + v[0], p[1] * s + v[1]];
+function boxProjector(d, k, h = 0, ridge = 0) {
+	let u = (k * d) / 20;
+	/** Largest u that keeps an edge at height y within c of rising like parallel. */
+	const cap = (/** @type {number} */ y, /** @type {number} */ c) => {
+		if (y > c) u = Math.min(u, c / (y - c));
+	};
+	cap(h, d / 4);
+	cap(ridge, (3 * d) / 8);
+	const scale = (/** @type {number} */ t) => 1 / (1 + u * t);
+	/** @param {Pt} p @param {number} t @returns {Pt} */
+	const at = (p, t) => {
+		const s = scale(t),
+			v = depthVec(d * t);
+		return [p[0] * s + v[0], p[1] * s + v[1]];
+	};
+	return {
+		at,
+		scale,
+		/** @param {Pt} p @returns {Pt} */
+		back: (p) => at(p, 1),
+		/**
+		 * An upright opening (bottom-centred at 0,0; x runs along the face in
+		 * depth units) painted on the receding face at x = fx, its bottom at
+		 * height y and depth fraction t. Its bottom and top edges follow the
+		 * face's own slope, so it reads as painted on the wall rather than
+		 * floating over it. Use it for any fill on a receding face.
+		 * @param {Poly} poly @param {number} fx @param {number} y @param {number} t
+		 * @returns {Poly}
+		 */
+		face: (poly, fx, y, t) => poly.map(([px, py]) => at([fx, y + py], t + px / d)),
+	};
 }
 
 /**
@@ -782,15 +804,23 @@ export function gableHouse(D, o = {}) {
 		h = (o.h ?? 10) * (two ? 1.65 : 1) * D.stature,
 		rh = w * D.pitch,
 		ov = 1.5;
-	const v = depthVec(w * D.depth);
-	// Prototype: converging receding faces. Dome houses keep the parallel
-	// projection (their deck and dome are placed by the plain depth vector).
-	const back = backProjector(w * D.depth, D.towerRoof === 'dome' ? 0 : (D.perspective ?? 0));
-	const side = /** @type {Poly} */ ([[w / 2, 0], back([w / 2, 0]), back([w / 2, h]), [w / 2, h]]);
+	const dome = D.towerRoof === 'dome';
+	const P = boxProjector(
+		w * D.depth,
+		D.perspective ?? DEFAULT_DESIGN.perspective,
+		h,
+		dome ? 0 : h + rh,
+	);
+	const side = /** @type {Poly} */ ([
+		[w / 2, 0],
+		P.back([w / 2, 0]),
+		P.back([w / 2, h]),
+		[w / 2, h],
+	]);
 	// Dome-culture houses: a stone half-sphere cap sits on the box top in
 	// place of a gable. The flat top of the box is drawn first so the
 	// dome's near-rim ellipse reads as a seam, not a floating arc.
-	if (D.towerRoof === 'dome') {
+	if (dome) {
 		const facadeFills = facade(D, -w / 2, w / 2, h, two, r);
 		// topCap overlaps the front wall rect by a hair at y=h so softening
 		// can't pull their shared top corners apart (both are 'wall' role,
@@ -799,10 +829,11 @@ export function gableHouse(D, o = {}) {
 		const topCap = /** @type {Poly} */ ([
 			[-w / 2, h - 0.4],
 			[w / 2, h - 0.4],
-			add([w / 2, h], v),
-			add([-w / 2, h], v),
+			P.back([w / 2, h]),
+			P.back([-w / 2, h]),
 		]);
-		const { part } = hemiDome(v[0] / 2, h + v[1] / 2, w * 0.42, D.hatch);
+		const [dcx, dcy] = P.at([0, h], 0.5);
+		const { part } = hemiDome(dcx, dcy, w * 0.42 * P.scale(0.5), D.hatch);
 		return [
 			{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
 			{ solid: [topCap] },
@@ -820,8 +851,8 @@ export function gableHouse(D, o = {}) {
 	const mid = /** @type {Pt} */ ([0, h + rh * 0.35]);
 	const la = sag(L, A, mid, D.concave);
 	const ar = sag(A, R, mid, D.concave);
-	const left = /** @type {Poly} */ ([...la, ...la.map(back).reverse()]);
-	const right = /** @type {Poly} */ ([...ar, ...ar.map(back).reverse()]);
+	const left = /** @type {Poly} */ ([...la, ...la.map(P.back).reverse()]);
+	const right = /** @type {Poly} */ ([...ar, ...ar.map(P.back).reverse()]);
 	const fills = facade(D, -w / 2, w / 2, h, two, r);
 	fills.push(opening(D, 0, h + rh * 0.22, 2.4));
 	// The left slope faces away from the viewer whenever pitch > 1/3, so the
@@ -878,19 +909,21 @@ export function sideHouse(D, o = {}) {
 		rh = d * D.pitch * (kind === 'warehouse' ? 1.1 : long ? 1.9 : 1.5),
 		ov = 1.4;
 	const v = depthVec(d);
-	const half = /** @type {Pt} */ ([v[0] / 2, v[1] / 2]);
-	/** @type {Pt} */ const gTop = add(add([w / 2, h], half), [0, rh]);
+	const P = boxProjector(d, D.perspective ?? DEFAULT_DESIGN.perspective, h);
+	// The ridge runs at mid-depth, so under perspective it comes out
+	// narrower than the front eave and the roof plane reads as a trapezoid.
+	/** @type {Pt} */ const gTop = P.at([w / 2, h + rh], 0.5);
 	const gableEnd = /** @type {Poly} */ ([
 		[w / 2, 0],
-		add([w / 2, 0], v),
-		add([w / 2, h], v),
+		P.back([w / 2, 0]),
+		P.back([w / 2, h]),
 		gTop,
 		[w / 2, h],
 	]);
 	/** @type {Pt} */ const eL = [-w / 2 - ov, h - 0.4];
 	/** @type {Pt} */ const eR = [w / 2 + ov, h - 0.4];
 	/** @type {Pt} */ const rR = add(gTop, [ov * 0.6, 0]);
-	/** @type {Pt} */ const rL = add(add(add([-w / 2, h], half), [0, rh]), [-ov * 0.6, 0]);
+	/** @type {Pt} */ const rL = add(P.at([-w / 2, h + rh], 0.5), [-ov * 0.6, 0]);
 	const below = /** @type {Pt} */ ([0, h - rh]);
 	const slope = /** @type {Poly} */ ([
 		eL,
@@ -903,7 +936,7 @@ export function sideHouse(D, o = {}) {
 	/** @type {Line[]} */
 	const courses = [];
 	for (let f = 0.25; f < 1; f += 0.25) {
-		const y = h + (rh + half[1]) * f;
+		const y = h + (gTop[1] - h) * f;
 		courses.push({
 			pts: [
 				[-w, y],
@@ -938,13 +971,13 @@ export function sideHouse(D, o = {}) {
 			});
 		return out;
 	};
-	const rose = /** @type {Pt} */ ([w / 2 + v[0] * 0.5, h + v[1] * 0.5 + rh * 0.3]);
+	const rose = P.at([w / 2, h + rh * 0.3], 0.5);
 	/** @type {Part[]} */
 	const back =
 		kind === 'workshop'
-			? chimneys(D, w, h, rh, half)
+			? chimneys(D, w, h, rh, P)
 			: kind === 'tavern'
-				? chimneys(D, 20, h, rh, half)
+				? chimneys(D, 20, h, rh, P)
 				: [];
 	/** @type {Part[]} */
 	const extras = [];
@@ -993,8 +1026,10 @@ export function sideHouse(D, o = {}) {
 		// and paddle boards spanning the two rims.
 		const R = h * 0.74;
 		const C = /** @type {Pt} */ ([-w / 2 - R * 0.15, R - 1.2]);
-		const t = depthVec(3.4);
-		const Cb = add(C, t);
+		// Back rim at depth 3.4, through the house's projector so it shrinks
+		// with the rest of the building.
+		const Cb = P.at(C, 3.4 / d),
+			rs = P.scale(3.4 / d);
 		const ringAt = (/** @type {Pt} */ c, /** @type {number} */ r0, /** @type {number} */ r1) => {
 			/** @type {Poly} */
 			const outer = [];
@@ -1013,7 +1048,12 @@ export function sideHouse(D, o = {}) {
 		const paddles = [];
 		for (let i = 0; i < 10; i++) {
 			const a = (i / 10) * Math.PI * 2 + 0.12;
-			paddles.push([pt(C, a, R * 0.9), pt(C, a, R * 1.1), pt(Cb, a, R * 1.1), pt(Cb, a, R * 0.9)]);
+			paddles.push([
+				pt(C, a, R * 0.9),
+				pt(C, a, R * 1.1),
+				pt(Cb, a, R * 1.1 * rs),
+				pt(Cb, a, R * 0.9 * rs),
+			]);
 		}
 		/** @type {Line[]} */
 		const spokes = [];
@@ -1024,23 +1064,20 @@ export function sideHouse(D, o = {}) {
 		const x0 = C[0] - R * 1.5,
 			x1 = C[0] + R * 1.5,
 			y0 = -2.4,
-			rd = depthVec(6);
+			raceT = 6 / d;
 		race.push({
-			solid: [[[x0, y0], [x1, y0], add([x1, y0], rd), add([x0, y0], rd)]],
+			solid: [[[x0, y0], [x1, y0], P.at([x1, y0], raceT), P.at([x0, y0], raceT)]],
 			role: 'water',
 			terrain: true,
 			lines: [0.3, 0.6].map((f) => ({
-				pts: /** @type {Poly} */ ([
-					add([x0, y0], [rd[0] * f, rd[1] * f]),
-					add([x1, y0], [rd[0] * f, rd[1] * f]),
-				]),
+				pts: /** @type {Poly} */ ([P.at([x0, y0], raceT * f), P.at([x1, y0], raceT * f)]),
 				w: 0.4,
 			})),
 		});
 		extras.push(
-			{ solid: ringAt(Cb, R * 0.82, R), role: 'wood', shaded: true },
+			{ solid: ringAt(Cb, R * 0.82 * rs, R * rs), role: 'wood', shaded: true },
 			{ solid: paddles, role: 'wood', shadeArea: rect(C[0], C[1] - R * 2, R * 3, R * 4) },
-			{ solid: [], free: [{ pts: [C, add(C, depthVec(8))], w: 1.2 }] },
+			{ solid: [], free: [{ pts: [C, P.at(C, 8 / d)], w: 1.2 }] },
 			{ solid: ringAt(C, R * 0.82, R), role: 'wood', free: spokes },
 			{ solid: [circle(C[0], C[1], 1.3)], role: 'wood' },
 		);
@@ -1058,7 +1095,7 @@ export function sideHouse(D, o = {}) {
 			);
 	if (kind === 'warehouse') {
 		// Hoist beam out of the gable peak, a rope, and a crate on it.
-		const top = add(add([w / 2, h], half), [0, rh * 0.62]);
+		const top = P.at([w / 2, h + rh * 0.62], 0.5);
 		hoist.push(
 			{ pts: [top, add(top, [6, 0])], w: 1.4 },
 			{ pts: [add(top, [5.2, 0]), add(top, [5.2, -7])], w: THIN },
@@ -1081,10 +1118,10 @@ export function sideHouse(D, o = {}) {
 				kind === 'warehouse'
 					? []
 					: barn
-						? [sideFace(rect(-1.6, 0, 3.2, 3.2), [w / 2 + v[0] * 0.5, h + v[1] * 0.5 + 0.8])]
+						? [P.face(rect(-1.6, 0, 3.2, 3.2), w / 2, h + 0.8, 0.5)]
 						: kind === 'church'
 							? [circle(rose[0], rose[1], 2.6)]
-							: [sideFace(opening(D, 0, 0, 2.2), [w / 2 + v[0] * 0.45, v[1] * 0.45 + h + 1.5])],
+							: [P.face(opening(D, 0, 0, 2.2), w / 2, h + 1.5, 0.45)],
 			cuts: kind === 'church' ? roseCuts(rose) : [],
 		},
 		{
@@ -1300,14 +1337,15 @@ function chimneys(
 	/** @type {number} */ w,
 	/** @type {number} */ h,
 	/** @type {number} */ rh,
-	/** @type {Pt} */ half,
+	/** @type {ReturnType<typeof boxProjector>} */ P,
 ) {
 	/** @type {Part[]} */
 	const out = [];
 	for (const x of w > 26 ? [-w * 0.22, w * 0.18] : [w * 0.1]) {
-		const cx = x + half[0] * 0.6,
+		// Stacks stand 30% of the way back; their tops clear the ridge.
+		const cx = P.at([x, h], 0.3)[0],
 			sw = 3.6,
-			top = h + rh + half[1] + 9;
+			top = P.at([0, h + rh], 0.5)[1] + 9;
 		const v = depthVec(2.5);
 		const side = /** @type {Poly} */ ([
 			[cx + sw / 2, h],
@@ -1531,7 +1569,7 @@ export function roundTower(D, o = {}) {
 export function squareTower(D, o = {}) {
 	const w = o.w ?? 10,
 		h = (o.h ?? 28) * D.stature;
-	const v = depthVec(w * 0.8);
+	const P = boxProjector(w * 0.8, D.perspective ?? DEFAULT_DESIGN.perspective, h);
 	// Corbelled body: from the belt up, the walls widen by beltOv on every
 	// side via a 45° slope. `D.towerCorbel` is the share of the tower's
 	// height occupied by the corbel (measured down from the top) — 0 means
@@ -1561,24 +1599,30 @@ export function squareTower(D, o = {}) {
 	const side = corbel
 		? /** @type {Poly} */ ([
 				[w / 2, 0],
-				add([w / 2, 0], v),
-				add([w / 2, beltY], v),
-				add([w2, beltY + beltOv], v),
-				add([w2, h], v),
+				P.back([w / 2, 0]),
+				P.back([w / 2, beltY]),
+				P.back([w2, beltY + beltOv]),
+				P.back([w2, h]),
 				[w2, h],
 				[w2, beltY + beltOv],
 				[w / 2, beltY],
 			])
-		: /** @type {Poly} */ ([[w / 2, 0], add([w / 2, 0], v), add([w / 2, h], v), [w / 2, h]]);
+		: /** @type {Poly} */ ([[w / 2, 0], P.back([w / 2, 0]), P.back([w / 2, h]), [w / 2, h]]);
 	// Pyramid corners now use `w2` (which equals w/2 when straight, w/2+beltOv
 	// when corbelled), so the pyramid base always matches the tower top.
 	const ov = corbel ? 0 : 1;
 	/** @type {Pt} */ const fl = [-w2 - ov, h];
 	/** @type {Pt} */ const fr = [w2 + ov, h];
-	const br = add(fr, v);
-	const bl = add(fl, v);
-	const apex = add([0, h + w * D.spire], [v[0] / 2, v[1] / 2]);
-	const c = /** @type {Pt} */ ([v[0] / 2, h]);
+	const br = P.back(fr);
+	const bl = P.back(fl);
+	const apex = P.at([0, h + w * D.spire], 0.5);
+	// Centre of the tower top (where the caps sit) and the scale there; the
+	// spire faces sag toward a point level with the front eave below it.
+	const top = P.at([0, h], 0.5),
+		cs = P.scale(0.5);
+	const c = /** @type {Pt} */ ([top[0], h]);
+	/** @type {Poly} */
+	const flatTop = [[-w / 2, h], [w / 2, h], P.back([w / 2, h]), P.back([-w / 2, h])];
 	/** @type {Poly} */
 	const sideFace = [
 		fr,
@@ -1617,28 +1661,22 @@ export function squareTower(D, o = {}) {
 	// sliver of background showing through. Only needed when corbelled.
 	if (corbel) parts.push({ solid: [[fl, fr, br, bl]], role: 'roof' });
 	if (D.towerRoof === 'onion') {
-		if (!corbel) {
-			parts.push({ solid: [[[-w / 2, h], [w / 2, h], add([w / 2, h], v), add([-w / 2, h], v)]] });
-		}
-		const dome = onionDome(D, v[0] / 2, h + v[1] / 2 - 0.6, w2);
+		if (!corbel) parts.push({ solid: [flatTop] });
+		const dome = onionDome(D, top[0], top[1] - 0.6, w2 * cs);
 		parts.push(...dome.parts);
 		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
 		return parts;
 	}
 	if (D.towerRoof === 'dome') {
-		if (!corbel) {
-			parts.push({ solid: [[[-w / 2, h], [w / 2, h], add([w / 2, h], v), add([-w / 2, h], v)]] });
-		}
-		const dome = hemiDome(v[0] / 2, h + v[1] / 2, w2 * 1.04, D.hatch);
+		if (!corbel) parts.push({ solid: [flatTop] });
+		const dome = hemiDome(top[0], top[1], w2 * 1.04 * cs, D.hatch);
 		parts.push(dome.part);
 		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
 		return parts;
 	}
 	if (D.towerRoof === 'lancet') {
-		if (!corbel) {
-			parts.push({ solid: [[[-w / 2, h], [w / 2, h], add([w / 2, h], v), add([-w / 2, h], v)]] });
-		}
-		const cap = lancetCap(D, v[0] / 2, h + v[1] / 2, w2 * 1.04);
+		if (!corbel) parts.push({ solid: [flatTop] });
+		const cap = lancetCap(D, top[0], top[1], w2 * 1.04 * cs);
 		parts.push(cap.part);
 		if (o.finial) parts.push(...symbolAt(D.symbol, cap.tip, 3));
 		return parts;
@@ -1663,11 +1701,11 @@ export function squareTower(D, o = {}) {
  */
 function gateTower(D, y0, h, wood) {
 	const w = 11;
-	const v = depthVec(5);
+	const P = boxProjector(5, D.perspective ?? DEFAULT_DESIGN.perspective, y0 + h);
 	const side = /** @type {Poly} */ ([
 		[w / 2, y0],
-		add([w / 2, y0], v),
-		add([w / 2, y0 + h], v),
+		P.back([w / 2, y0]),
+		P.back([w / 2, y0 + h]),
 		[w / 2, y0 + h],
 	]);
 	/** @type {Poly} */
@@ -1714,10 +1752,11 @@ function gateTower(D, y0, h, wood) {
 	// gatehouse's cap takes the marker colour, matching every other roof).
 	const yTop = y0 + h;
 	parts.push({
-		solid: [[[-w / 2, yTop], [w / 2, yTop], add([w / 2, yTop], v), add([-w / 2, yTop], v)]],
+		solid: [[[-w / 2, yTop], [w / 2, yTop], P.back([w / 2, yTop]), P.back([-w / 2, yTop])]],
 	});
 	if (D.towerRoof === 'dome') {
-		const dome = hemiDome(v[0] / 2, yTop + v[1] / 2, w * 0.42, D.hatch);
+		const [dx, dy] = P.at([0, yTop], 0.5);
+		const dome = hemiDome(dx, dy, w * 0.42 * P.scale(0.5), D.hatch);
 		parts.push(dome.part);
 		flagAt = [dome.tip[0], dome.tip[1] - 1.5];
 	} else {
@@ -1726,8 +1765,8 @@ function gateTower(D, y0, h, wood) {
 		const roofRole = wood ? /** @type {const} */ ('wood') : /** @type {const} */ ('roof');
 		/** @type {Pt} */ const fL = [-w / 2 - ov, yTop];
 		/** @type {Pt} */ const fR = [w / 2 + ov, yTop];
-		const bR = add(fR, v);
-		const apex = add(/** @type {Pt} */ ([0, yTop + rh]), /** @type {Pt} */ ([v[0] / 2, v[1] / 2]));
+		const bR = P.back(fR);
+		const apex = P.at([0, yTop + rh], 0.5);
 		const frontRoof = /** @type {Poly} */ ([fL, fR, apex]);
 		const sideRoof = /** @type {Poly} */ ([fR, bR, apex]);
 		parts.push(pyramid(frontRoof, sideRoof, [fR, apex], roofRole, D.hatch));
@@ -2446,49 +2485,43 @@ export function church(D, o = {}) {
 export function keep(D, o = {}) {
 	const w = o.w ?? 22,
 		h = (o.h ?? 30) * D.stature;
-	const v = depthVec(17);
+	const P = boxProjector(17, D.perspective ?? DEFAULT_DESIGN.perspective, h);
+	const sb = P.scale(1);
 	/** @type {Pt} */ const FR = [w / 2, 0];
-	const side = /** @type {Poly} */ ([FR, add(FR, v), add([w / 2, h], v), [w / 2, h]]);
-	const platform = /** @type {Poly} */ ([
-		[-w / 2, h],
-		[w / 2, h],
-		add([w / 2, h], v),
-		add([-w / 2, h], v),
-	]);
-	const parapet = crenellated(-w / 2 + v[0], w / 2 + v[0], h + v[1], h + v[1] + 4.5, {
-		merlon: 2.4,
-		notch: 2,
+	const side = /** @type {Poly} */ ([FR, P.back(FR), P.back([w / 2, h]), [w / 2, h]]);
+	const BL = P.back([-w / 2, h]),
+		BR = P.back([w / 2, h]);
+	const platform = /** @type {Poly} */ ([[-w / 2, h], [w / 2, h], BR, BL]);
+	const parapet = crenellated(BL[0], BR[0], BL[1], BL[1] + 4.5 * sb, {
+		merlon: 2.4 * sb,
+		notch: 2 * sb,
 	});
 	/** Merlons along the slanted top of the right face. */
 	/** @type {Poly[]} */
 	const sideMerlons = [];
-	for (let i = 0; i < 4; i++) {
-		const t = (i + 0.5) / 4;
-		sideMerlons.push(sideFace(rect(-1.1, 0, 2.2, 2.6), [w / 2 + v[0] * t, h + v[1] * t - 0.4]));
-	}
+	for (let i = 0; i < 4; i++)
+		sideMerlons.push(P.face(rect(-1.1, 0, 2.2, 2.6), w / 2, h - 0.4, (i + 0.5) / 4));
 	/** @type {Poly[]} */
 	const slits = [];
 	for (const x of [-w * 0.3, w * 0.3])
 		for (const y of [h * 0.35, h * 0.65]) slits.push(rect(x - 0.7, y, 1.4, 4.5));
-	const turret = (
-		/** @type {number} */ x,
-		/** @type {number} */ y,
-		/** @type {boolean} */ flags = false,
-	) => place(roundTower(D, { r: 3.4, h: 10, flags }), { x, y: y + h - 2 });
+	// Turret at a top corner (front or back), sized for its depth.
+	const turret = (/** @type {Pt} */ at, /** @type {number} */ s, flags = false) =>
+		place(roundTower(D, { r: 3.4, h: 10, flags }), { x: at[0], y: at[1] - 2 * s, s });
 	/** @type {Part[]} */
 	const parts = [
 		// Four corner turrets: the two back ones first, behind the parapet.
 		// The banner flies from the back-right turret — tall, in profile,
 		// clear of the keep's own silhouette.
-		...turret(-w / 2 + v[0], v[1]),
-		...turret(w / 2 + v[0], v[1], D.flags),
+		...turret(BL, sb),
+		...turret(BR, sb, D.flags),
 		{ solid: [parapet], shaded: true, lines: hatch(parapet, 65, D.hatch) },
 		{ solid: [platform] },
 		{
 			solid: [side],
 			shaded: true,
 			lines: hatch(side, 65, D.hatch),
-			fills: [sideFace(rect(-0.6, 0, 1.2, 4.5), [w / 2 + v[0] * 0.5, h * 0.5 + v[1] * 0.5])],
+			fills: [P.face(rect(-0.6, 0, 1.2, 4.5), w / 2, h * 0.5, 0.5)],
 		},
 		{ solid: sideMerlons, shaded: true },
 		{
@@ -2497,8 +2530,8 @@ export function keep(D, o = {}) {
 		},
 		// Steps up to the raised door.
 		{ solid: [rect(-3.6, 0, 7.2, 1.5), rect(-3, 1.5, 6, 1.5), rect(-2.4, 3, 4.8, 1.2)] },
-		...turret(-w / 2, 0),
-		...turret(w / 2, 0),
+		...turret([-w / 2, h], 1),
+		...turret([w / 2, h], 1),
 	];
 	return parts;
 }
@@ -2537,18 +2570,22 @@ function stall(D, i) {
 	const w = 5.8,
 		ch = 2,
 		ph = 4.8;
-	const v = depthVec(3.2);
 	const peaked = i % 2 === 0;
 	const rise = peaked ? 0 : 1.8; // a lean-to's back is higher than its front
+	const P = boxProjector(
+		3.2,
+		D.perspective ?? DEFAULT_DESIGN.perspective,
+		ph + rise,
+		peaked ? ph + 2.8 : 0,
+	);
 	const hl = -w / 2,
 		hr = w / 2;
 	/** @param {Pt} p @param {number} [dy] @returns {Pt} */
-	const back = (p, dy = 0) => [p[0] + v[0], p[1] + v[1] + dy];
+	const back = (p, dy = 0) => P.back([p[0], p[1] + dy]);
 	const wood = /** @type {const} */ ('wood');
-	// Counter: a box with a front face and a top running back into the stall.
-	const cd = depthVec(1.6);
+	// Counter: a box with a front face and a top running halfway back.
 	/** @param {Pt} p @returns {Pt} */
-	const deep = (p) => [p[0] + cd[0], p[1] + cd[1]];
+	const deep = (p) => P.at(p, 0.5);
 	/** @param {number} x @param {number} h @returns {Poly} back corner post, up to the roof */
 	const backPost = (x, h) => [
 		back([x, 0]),
@@ -3095,10 +3132,10 @@ export function townhouse(D, o = {}) {
 		w = 12,
 		fh = 8.5 * D.stature,
 		jet = 1.2;
-	const v = depthVec(w * D.depth);
 	const Wt = w + 2 * jet * (floors - 1),
 		H = fh * floors,
 		rh = Wt * D.pitch;
+	const P = boxProjector(w * D.depth, D.perspective ?? DEFAULT_DESIGN.perspective, H, H + rh);
 	/** @type {Part[]} */
 	const sides = [];
 	/** @type {Part[]} */
@@ -3108,8 +3145,8 @@ export function townhouse(D, o = {}) {
 			y0 = fh * i;
 		const side = /** @type {Poly} */ ([
 			[half, y0],
-			add([half, y0], v),
-			add([half, y0 + fh], v),
+			P.back([half, y0]),
+			P.back([half, y0 + fh]),
 			[half, y0 + fh],
 		]);
 		sides.push({ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) });
@@ -3159,8 +3196,8 @@ export function townhouse(D, o = {}) {
 	const mid = /** @type {Pt} */ ([0, H + rh * 0.35]);
 	const la = sag(Lp, A, mid, D.concave),
 		ar = sag(A, Rp, mid, D.concave);
-	const left = /** @type {Poly} */ ([...la, ...shift(la, v).reverse()]);
-	const right = /** @type {Poly} */ ([...ar, ...shift(ar, v).reverse()]);
+	const left = /** @type {Poly} */ ([...la, ...la.map(P.back).reverse()]);
+	const right = /** @type {Poly} */ ([...ar, ...ar.map(P.back).reverse()]);
 	return [
 		...sides,
 		{ solid: [left], role: 'roof' },
@@ -3197,13 +3234,14 @@ export function camp(D) {
  */
 function ridgeTent(/** @type {Design} */ D, /** @type {number} */ w, deep = 1.1) {
 	const h = w * 0.62 * D.stature;
-	const v = depthVec(w * deep);
+	const P = boxProjector(w * deep, D.perspective ?? DEFAULT_DESIGN.perspective, 0, h);
 	/** @type {Pt} */ const L = [-w / 2, 0];
 	/** @type {Pt} */ const R = [w / 2, 0];
 	/** @type {Pt} */ const A = [0, h];
-	const right = /** @type {Poly} */ ([A, R, add(R, v), add(A, v)]);
+	const bA = P.back(A);
+	const right = /** @type {Poly} */ ([A, R, P.back(R), bA]);
 	return [
-		{ solid: [[L, A, add(A, v), add(L, v)]] },
+		{ solid: [[L, A, bA, P.back(L)]] },
 		{ solid: [right], shaded: true, lines: hatch(right, -30, D.hatch) },
 		{
 			solid: [[L, R, A]],
@@ -3219,7 +3257,7 @@ function ridgeTent(/** @type {Design} */ D, /** @type {number} */ w, deep = 1.1)
 			solid: [],
 			free: [
 				{ pts: [A, [0, h + 1.6]], w: 0.8 },
-				{ pts: [add(A, v), add(add(A, v), [0, 1.6])], w: 0.8 },
+				{ pts: [bA, add(bA, [0, 1.6 * P.scale(1)])], w: 0.8 },
 			],
 		},
 	];
@@ -3970,7 +4008,7 @@ export function cathedral(D) {
 		h = 20 * D.stature,
 		rh = w * 0.55 * Math.max(D.pitch, 0.7),
 		ov = 1;
-	const v = depthVec(34);
+	const P = boxProjector(34, D.perspective ?? DEFAULT_DESIGN.perspective, h, h + rh);
 	/** @type {Pt} */ const L = [-w / 2 - ov, h];
 	/** @type {Pt} */ const R = [w / 2 + ov, h];
 	/** @type {Pt} */ const A = [0, h + rh];
@@ -3979,20 +4017,16 @@ export function cathedral(D) {
 	const ar = sag(A, R, mid, D.concave);
 	const side = /** @type {Poly} */ ([
 		[w / 2, 0],
-		add([w / 2, 0], v),
-		add([w / 2, h], v),
+		P.back([w / 2, 0]),
+		P.back([w / 2, h]),
 		[w / 2, h],
 	]);
-	const right = /** @type {Poly} */ ([...ar, ...shift(ar, v).reverse()]);
+	const right = /** @type {Poly} */ ([...ar, ...ar.map(P.back).reverse()]);
 	/** @type {Pt} */ const rose = [0, h * 0.68];
 	/** @type {Poly[]} */
 	const sideWindows = [];
-	for (let i = 1; i < 5; i++) {
-		const t = i / 5;
-		sideWindows.push(
-			sideFace(lancet(0, 0, 2.2, h * 0.45), [w / 2 + v[0] * t, h * 0.25 + v[1] * t]),
-		);
-	}
+	for (let i = 1; i < 5; i++)
+		sideWindows.push(P.face(lancet(0, 0, 2.2, h * 0.45), w / 2, h * 0.25, i / 5));
 	const tw = 9,
 		th = 40 * D.stature;
 	const towerAt = (/** @type {number} */ x) =>
@@ -4049,18 +4083,18 @@ export function gatehouse(D, o = {}) {
 		place(roundTower(D, { r: 4.6, h: wh + 13, flags }), { x, y: -0.3 });
 	const gw = 12,
 		gh = wh + 7;
-	const gv = depthVec(7);
+	const P = boxProjector(7, D.perspective ?? DEFAULT_DESIGN.perspective, gh);
 	const gside = /** @type {Poly} */ ([
 		[gw / 2, 0],
-		add([gw / 2, 0], gv),
-		add([gw / 2, gh], gv),
+		P.back([gw / 2, 0]),
+		P.back([gw / 2, gh]),
 		[gw / 2, gh],
 	]);
 	const roof = /** @type {Poly} */ ([
 		[-gw / 2, gh],
 		[gw / 2, gh],
-		add([gw / 2, gh], gv),
-		add([-gw / 2, gh], gv),
+		P.back([gw / 2, gh]),
+		P.back([-gw / 2, gh]),
 	]);
 	return [
 		...wallRun(D, -span - 4, -7, wh, false),

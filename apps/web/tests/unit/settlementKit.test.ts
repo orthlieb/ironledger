@@ -185,6 +185,24 @@ describe('render robustness', () => {
 	});
 });
 
+describe('perspective', () => {
+	// squareTower's first part is its receding right face:
+	// [front-bottom, back-bottom, back-top, front-top, …].
+	const sideOf = (D: Design, h?: number) => squareTower(D, { h }).at(0)?.solid[0] ?? [];
+	it('is parallel at 0: the back edge matches the front edge', () => {
+		const [fb, bb, bt, ft] = sideOf({ ...DEFAULT_DESIGN, perspective: 0 });
+		expect(bt[1] - bb[1]).toBeCloseTo(ft[1] - fb[1]);
+	});
+	it('converges by default: the back edge comes out shorter', () => {
+		const [fb, bb, bt, ft] = sideOf(DEFAULT_DESIGN);
+		expect(bt[1] - bb[1]).toBeLessThan(ft[1] - fb[1]);
+	});
+	it.each([28, 60])('keeps a %s-tall tower top climbing (no seen-from-below tip)', (h) => {
+		const [, , bt, ft] = sideOf({ ...DEFAULT_DESIGN, perspective: 1 }, h);
+		expect(bt[1]).toBeGreaterThan(ft[1]);
+	});
+});
+
 describe('onStilts', () => {
 	it('leaves parts alone when there is nothing solid to measure', () => {
 		const empty = [{ solid: [], role: 'wall' as const }];
