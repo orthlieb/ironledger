@@ -392,8 +392,14 @@ export function settlement(tier, D, o = {}) {
 		else add(squareTower(D, { finial: true, w: rank > 0 ? 9 : 8, h: towerH }), 0.9);
 	}
 	if (hasKeep) add(keep(D), rank >= 3 ? 1.05 : rank === 2 ? 0.9 : 0.75);
-	// A lone city watchtower only where the culture fortifies at all.
-	else if (rank >= 2 && D.wall !== 'none') add(roundTower(D, { r: 6, h: 40 }), 0.9);
+	// Free-standing towers inside the walls — towns (and holds) roll 1d2,
+	// cities and up 1d3 — only where the culture fortifies at all. Heights
+	// vary so a skyline of towers doesn't read as copies.
+	if (rank >= 1 && D.wall !== 'none') {
+		const towers = 1 + Math.floor(r() * (rank >= 2 ? 3 : 2));
+		for (let i = 0; i < towers; i++)
+			add(roundTower(D, { r: 5 + r() * 1.5, h: 32 + r() * 14 }), 0.9);
+	}
 	/** The market square is held back and set in the middle of town. @type {Item | null} */
 	let marketItem = null;
 	if (hasMarket) {

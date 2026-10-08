@@ -172,6 +172,16 @@ const KNOBS = [
 	{ group: 'Houses', key: 'manyDoors', label: 'Many doors', type: 'check', design: true },
 	{
 		group: 'Houses',
+		key: 'perspective',
+		label: 'Perspective (gable houses, prototype)',
+		type: 'range',
+		min: 0,
+		max: 1,
+		step: 0.05,
+		design: true,
+	},
+	{
+		group: 'Houses',
 		key: 'industry',
 		label: 'Trade buildings',
 		type: 'range',
@@ -185,7 +195,7 @@ const KNOBS = [
 		key: 'towerRoof',
 		label: 'Tower top',
 		type: 'select',
-		options: ['cone', 'onion', 'crenel', 'dome'],
+		options: ['cone', 'onion', 'crenel', 'dome', 'lancet'],
 		design: true,
 	},
 	{

@@ -37,11 +37,14 @@ import { place } from './render.js';
  *   lintel), lancet (pointed Gothic arch). Specialty structures (keep,
  *   cathedral, pavilion) keep their own thematic door style.
  * @property {boolean} manyDoors
- * @property {'cone' | 'onion' | 'crenel' | 'dome'} towerRoof hemispherical dome
+ * @property {'cone' | 'onion' | 'crenel' | 'dome' | 'lancet'} towerRoof hemispherical dome
  *   culture replaces every pitched roof — gable houses and tower caps alike —
- *   with a stone half-sphere
+ *   with a stone half-sphere; `lancet` caps towers with a pointed (ogival)
+ *   dome flush with the tower top
  * @property {number} spire spire / cone height ÷ tower width
  * @property {number} taper tower walls lean in by this share of the radius
+ * @property {number} [perspective] PROTOTYPE, gable houses only: how strongly
+ *   receding faces converge (0 = parallel oblique, ~0.5 subtle, 1 strong)
  * @property {number} towerCorbel 0..1: share of the tower's height occupied
  *   by the corbelled parapet, measured down from the top. 0 = no corbel
  *   (default, straight walls), 0.25 = upper quarter corbels out (Watabou
@@ -148,7 +151,19 @@ export function makeDesign(seed) {
 		// Arched is the medieval baseline; square and lancet are the oddities.
 		door: pick(['arched', 'arched', 'arched', 'square', 'lancet']),
 		manyDoors: r() < 0.3,
-		towerRoof: pick(['cone', 'cone', 'cone', 'onion', 'onion', 'crenel', 'crenel', 'dome', 'dome']),
+		towerRoof: pick([
+			'cone',
+			'cone',
+			'cone',
+			'onion',
+			'onion',
+			'crenel',
+			'crenel',
+			'dome',
+			'dome',
+			'lancet',
+			'lancet',
+		]),
 		spire: 1.3 + avg() * 1.7,
 		taper: avg() * 0.14,
 		// Most cultures (~70%) build straight walls (towerCorbel = 0). The
@@ -414,26 +429,34 @@ function hatch(poly, angle, spacing, w = THIN) {
 	return out;
 }
 
-/** Vertical lines at r·sinθ — bunch up toward the right edge like a lit cylinder. */
-function cylinderShade(
-	/** @type {number} */ r,
-	/** @type {number} */ y0,
-	/** @type {number} */ y1,
-	from = 30,
-) {
-	/** @type {Line[]} */
-	const out = [];
-	for (let t = from; t < 90; t += 6) {
-		const x = r * Math.sin((t * Math.PI) / 180);
-		out.push({
-			pts: [
-				[x, y0],
-				[x, y1],
-			],
-			w: THIN,
-		});
-	}
-	return out;
+/** Weight of the shading hatch on round bodies, cones and domes — about half
+ *  the outline, so it still reads once an icon is fitted to a marker. */
+const SHADE_W = 1.1;
+
+/**
+ * Diagonal hatching for a round body's shaded flank (tower, well, mill).
+ * Pass it as the part's `shadeLines` so its `shadeArea` clips it to the flank.
+ * @param {number} r body radius
+ * @param {number} y0
+ * @param {number} y1
+ * @param {number} spacing
+ * @returns {Line[]}
+ */
+function cylinderHatch(r, y0, y1, spacing) {
+	return hatch(rect(-r, y0, 2 * r, y1 - y0), 55, spacing, SHADE_W);
+}
+
+/**
+ * Horizontal hatching for the shaded flank of a cone or dome (as `shadeLines`).
+ * @param {number} cx
+ * @param {number} r
+ * @param {number} y0
+ * @param {number} y1
+ * @param {number} spacing
+ * @returns {Line[]}
+ */
+function capHatch(cx, r, y0, y1, spacing) {
+	return hatch(rect(cx - r, y0, 2 * r, y1 - y0), 0, spacing * 0.8, SHADE_W);
 }
 
 /**
@@ -579,8 +602,8 @@ function onionRadius(t) {
 }
 
 /**
- * Onion dome on a neck, with curved meridian ribs that bunch toward the
- * shaded right side, and a ball-and-spike finial.
+ * Onion dome on a neck, hatched horizontally on its shaded right flank,
+ * with a ball-and-spike finial.
  * @param {Design} D
  * @param {number} cx
  * @param {number} y base of the neck
@@ -607,20 +630,6 @@ function onionDome(D, cx, y, r) {
 			.reverse()
 			.map(([x, yy]) => /** @type {Pt} */ ([2 * cx - x, yy])),
 	];
-	/** @type {Line[]} */
-	const ribs = [];
-	for (let a = 20; a < 90; a += 10) {
-		const sa = Math.sin((a * Math.PI) / 180),
-			ca = Math.cos((a * Math.PI) / 180);
-		/** @type {Poly} */
-		const pts = [];
-		for (let i = 0; i <= N; i++) {
-			const t = i / N,
-				rad = r * onionRadius(t);
-			pts.push([cx + rad * sa, y + rh * t - rad * ry * ca]);
-		}
-		ribs.push({ pts, w: THIN });
-	}
 	const top = y + rh;
 	return {
 		parts: [
@@ -628,7 +637,7 @@ function onionDome(D, cx, y, r) {
 				solid: [outline],
 				role: 'roof',
 				shadeArea: rect(cx + r * 0.3, y - r, r * 2, rh + r * 2),
-				lines: ribs,
+				shadeLines: capHatch(cx, r * 1.4, y - r, top + 1, D.hatch),
 			},
 			{ solid: [circle(cx, top + 1.4, 0.9)], role: 'roof' },
 			{
@@ -651,13 +660,15 @@ function onionDome(D, cx, y, r) {
 /**
  * Hemispherical stone dome cap sitting on a flat platform at height y, with
  * its base rim visible in oblique projection (the near half of an ellipse)
- * and the half-sphere arcing up to y + r. The right flank is shaded.
+ * and the half-sphere arcing up to y + r. The right flank is shaded and
+ * hatched horizontally.
  * @param {number} cx
  * @param {number} y base plane of the dome
  * @param {number} r dome base radius (also its height)
+ * @param {number} spacing hatch spacing (the culture's D.hatch)
  * @returns {{part: Part, tip: Pt}}
  */
-function hemiDome(cx, y, r) {
+function hemiDome(cx, y, r, spacing) {
 	const ry = r * 0.34;
 	/** @type {Poly} */
 	const outline = [...ell(cx, y, r, ry, 180, 360), ...ell(cx, y, r, r, 0, 180, 28).slice(1, -1)];
@@ -666,8 +677,56 @@ function hemiDome(cx, y, r) {
 			solid: [outline],
 			role: 'roof',
 			shadeArea: rect(cx + r * 0.3, y - ry - 2, r * 2, r + ry + 4),
+			shadeLines: capHatch(cx, r, y - ry - 2, y + r + 2, spacing),
 		},
 		tip: [cx, y + r],
+	};
+}
+
+/**
+ * Lancet cap: a pointed (ogival) dome — a lancet arch spun about the
+ * tower's axis. It sits flush on the tower top; each side is an arc centred
+ * on the springing line, so it rises vertically before curving to a point.
+ * Height follows the culture's spire knob. The right flank is shaded and
+ * hatched horizontally.
+ * @param {Design} D
+ * @param {number} cx
+ * @param {number} y base plane of the cap
+ * @param {number} R base radius
+ * @returns {{part: Part, tip: Pt}}
+ */
+function lancetCap(D, cx, y, R) {
+	const ry = R * 0.34,
+		H = R * (1.4 + 0.4 * D.spire);
+	// Right-side arc centre (c, y): equidistant from the springing (R, y)
+	// and the apex (0, y + H).
+	const c = (R * R - H * H) / (2 * R),
+		rr = R - c,
+		end = Math.atan2(H, -c),
+		N = 14;
+	/** @type {Poly} */
+	const right = [];
+	for (let i = 0; i <= N; i++) {
+		const t = (end * i) / N;
+		right.push([cx + c + rr * Math.cos(t), y + rr * Math.sin(t)]);
+	}
+	/** @type {Poly} */
+	const outline = [
+		...ell(cx, y, R, ry, 180, 360),
+		...right.slice(1),
+		...right
+			.slice(1, -1)
+			.reverse()
+			.map(([x, yy]) => /** @type {Pt} */ ([2 * cx - x, yy])),
+	];
+	return {
+		part: {
+			solid: [outline],
+			role: 'roof',
+			shadeArea: rect(cx + R * 0.3, y - ry - 2, R * 2, H + ry + 4),
+			shadeLines: capHatch(cx, R, y - ry - 2, y + H + 2, D.hatch),
+		},
+		tip: [cx, y + H],
 	};
 }
 
@@ -696,6 +755,21 @@ function pyramid(front, side, ridge, role, hatchSpacing) {
 }
 
 /**
+ * Where a box's back face lands. In parallel oblique (k = 0) it is the
+ * front face shifted by depthVec(d). With perspective strength k it is also
+ * scaled toward the front's ground line, so receding faces converge: the
+ * back edge comes out shorter and the eave climbs less than the ground.
+ * @param {number} d depth
+ * @param {number} k perspective strength (0 = parallel)
+ * @returns {(p: Pt) => Pt}
+ */
+function backProjector(d, k) {
+	const v = depthVec(d);
+	const s = 1 / (1 + (k * d) / 20);
+	return (p) => [p[0] * s + v[0], p[1] * s + v[1]];
+}
+
+/**
  * House with its gable facing the viewer.
  * @param {Design} D
  * @param {{w?: number, h?: number, seed?: number}} [o]
@@ -709,12 +783,10 @@ export function gableHouse(D, o = {}) {
 		rh = w * D.pitch,
 		ov = 1.5;
 	const v = depthVec(w * D.depth);
-	const side = /** @type {Poly} */ ([
-		[w / 2, 0],
-		add([w / 2, 0], v),
-		add([w / 2, h], v),
-		[w / 2, h],
-	]);
+	// Prototype: converging receding faces. Dome houses keep the parallel
+	// projection (their deck and dome are placed by the plain depth vector).
+	const back = backProjector(w * D.depth, D.towerRoof === 'dome' ? 0 : (D.perspective ?? 0));
+	const side = /** @type {Poly} */ ([[w / 2, 0], back([w / 2, 0]), back([w / 2, h]), [w / 2, h]]);
 	// Dome-culture houses: a stone half-sphere cap sits on the box top in
 	// place of a gable. The flat top of the box is drawn first so the
 	// dome's near-rim ellipse reads as a seam, not a floating arc.
@@ -730,7 +802,7 @@ export function gableHouse(D, o = {}) {
 			add([w / 2, h], v),
 			add([-w / 2, h], v),
 		]);
-		const { part } = hemiDome(v[0] / 2, h + v[1] / 2, w * 0.42);
+		const { part } = hemiDome(v[0] / 2, h + v[1] / 2, w * 0.42, D.hatch);
 		return [
 			{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
 			{ solid: [topCap] },
@@ -748,8 +820,8 @@ export function gableHouse(D, o = {}) {
 	const mid = /** @type {Pt} */ ([0, h + rh * 0.35]);
 	const la = sag(L, A, mid, D.concave);
 	const ar = sag(A, R, mid, D.concave);
-	const left = /** @type {Poly} */ ([...la, ...shift(la, v).reverse()]);
-	const right = /** @type {Poly} */ ([...ar, ...shift(ar, v).reverse()]);
+	const left = /** @type {Poly} */ ([...la, ...la.map(back).reverse()]);
+	const right = /** @type {Poly} */ ([...ar, ...ar.map(back).reverse()]);
 	const fills = facade(D, -w / 2, w / 2, h, two, r);
 	fills.push(opening(D, 0, h + rh * 0.22, 2.4));
 	// The left slope faces away from the viewer whenever pitch > 1/3, so the
@@ -1393,7 +1465,7 @@ export function roundTower(D, o = {}) {
 		{
 			solid: bodySolids,
 			shadeArea: rect(shadeR * 0.3, -ry - 2, shadeR * 2, h + ry + 4),
-			lines: cylinderShade(shadeR, -ry - 1, h + 1),
+			shadeLines: cylinderHatch(shadeR, -ry - 1, h + 1, D.hatch),
 			fills: [opening(D, -r * 0.35, winY, winS)],
 		},
 	];
@@ -1404,7 +1476,7 @@ export function roundTower(D, o = {}) {
 		parts.push({
 			solid: [crenellated(-R, R, h - ry, h + 5, { merlon: 2.4, notch: 2 })],
 			shadeArea: rect(R * 0.3, h - ry - 2, R * 2, 10),
-			lines: cylinderShade(R, h - ry - 1, h + 6),
+			shadeLines: cylinderHatch(R, h - ry - 1, h + 6, D.hatch),
 		});
 		return parts;
 	}
@@ -1415,9 +1487,15 @@ export function roundTower(D, o = {}) {
 		return parts;
 	}
 	if (roof === 'dome') {
-		const dome = hemiDome(0, h, topCorbel + 0.4);
+		const dome = hemiDome(0, h, topCorbel + 0.4, D.hatch);
 		if (D.flags && o.flags !== false) parts.unshift(...flag(D, dome.tip[0], dome.tip[1] - 2));
 		parts.push(dome.part);
+		return parts;
+	}
+	if (roof === 'lancet') {
+		const cap = lancetCap(D, 0, h, topCorbel + 0.2);
+		if (D.flags && o.flags !== false) parts.unshift(...flag(D, cap.tip[0], cap.tip[1] - 2));
+		parts.push(cap.part);
 		return parts;
 	}
 	// Cone base sits on whatever the body's actual top radius is: `topCorbel`
@@ -1432,18 +1510,12 @@ export function roundTower(D, o = {}) {
 		...sag([R, h], apex, [0, h], sweep).slice(1),
 		...sag(apex, [-R, h], [0, h], sweep).slice(1, -1),
 	];
-	/** @type {Line[]} */
-	const ribs = [];
-	for (let t = 25; t < 90; t += 7) {
-		const a = (t * Math.PI) / 180;
-		ribs.push({ pts: [apex, [R * 1.3 * Math.sin(a), h - ry * Math.cos(a)]], w: THIN });
-	}
 	if (D.flags && o.flags !== false) parts.unshift(...flag(D, 0, h + rh - 1));
 	parts.push({
 		solid: [outline],
 		role: 'roof',
 		shadeArea: rect(R * 0.25, h - ry - 2, R * 2, rh + ry + 4),
-		lines: ribs,
+		shadeLines: capHatch(0, R, h - ry - 2, h + rh + 2, D.hatch),
 	});
 	return parts;
 }
@@ -1557,9 +1629,18 @@ export function squareTower(D, o = {}) {
 		if (!corbel) {
 			parts.push({ solid: [[[-w / 2, h], [w / 2, h], add([w / 2, h], v), add([-w / 2, h], v)]] });
 		}
-		const dome = hemiDome(v[0] / 2, h + v[1] / 2, w2 * 1.04);
+		const dome = hemiDome(v[0] / 2, h + v[1] / 2, w2 * 1.04, D.hatch);
 		parts.push(dome.part);
 		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
+		return parts;
+	}
+	if (D.towerRoof === 'lancet') {
+		if (!corbel) {
+			parts.push({ solid: [[[-w / 2, h], [w / 2, h], add([w / 2, h], v), add([-w / 2, h], v)]] });
+		}
+		const cap = lancetCap(D, v[0] / 2, h + v[1] / 2, w2 * 1.04);
+		parts.push(cap.part);
+		if (o.finial) parts.push(...symbolAt(D.symbol, cap.tip, 3));
 		return parts;
 	}
 	// Pyramid (cone/crenel fall through here), one part so the apex closes.
@@ -1636,7 +1717,7 @@ function gateTower(D, y0, h, wood) {
 		solid: [[[-w / 2, yTop], [w / 2, yTop], add([w / 2, yTop], v), add([-w / 2, yTop], v)]],
 	});
 	if (D.towerRoof === 'dome') {
-		const dome = hemiDome(v[0] / 2, yTop + v[1] / 2, w * 0.42);
+		const dome = hemiDome(v[0] / 2, yTop + v[1] / 2, w * 0.42, D.hatch);
 		parts.push(dome.part);
 		flagAt = [dome.tip[0], dome.tip[1] - 1.5];
 	} else {
@@ -2565,7 +2646,7 @@ export function well(/** @type {Design} */ D) {
 		{
 			solid: [curb],
 			shadeArea: rect(r * 0.3, -2, r * 2, 6),
-			lines: cylinderShade(r, -ry - 1, ch + 1),
+			shadeLines: cylinderHatch(r, -ry - 1, ch + 1, D.hatch),
 		},
 		// Stone rim seen from above, with the dark shaft inside it.
 		{
@@ -2592,7 +2673,7 @@ export function well(/** @type {Design} */ D) {
 			],
 		},
 		D.towerRoof === 'dome'
-			? hemiDome(0, ch + 4.2, r + 1).part
+			? hemiDome(0, ch + 4.2, r + 1, D.hatch).part
 			: {
 					solid: [
 						[
@@ -2762,12 +2843,13 @@ export function roundHut(D, o = {}) {
 	const bodyPart = {
 		solid: [body],
 		shadeArea: rect(r * 0.3, -ry - 2, r * 2, h + ry + 4),
-		lines: [...cylinderShade(r, -ry - 1, h + 1), ...(D.masonry ? stoneCourses(-r, r, -ry, h) : [])],
+		lines: D.masonry ? stoneCourses(-r, r, -ry, h) : [],
+		shadeLines: cylinderHatch(r, -ry - 1, h + 1, D.hatch),
 		fills: [archOpening(-r * 0.25, -ry * 0.95, 3.4, 5.4)],
 	};
 	// Dome culture: stone half-sphere on the cylinder's flat top instead
 	// of a thatched cone.
-	if (D.towerRoof === 'dome') return [bodyPart, hemiDome(0, h, r + 0.4).part];
+	if (D.towerRoof === 'dome') return [bodyPart, hemiDome(0, h, r + 0.4, D.hatch).part];
 	const R = r + 1.6,
 		rh = R * 2 * D.pitch * 0.9;
 	/** @type {Pt} */ const apex = [0, h + rh];
@@ -2817,7 +2899,8 @@ export function moundHut(D, o = {}) {
 			solid: [dome],
 			role: 'roof',
 			shadeArea: rect(rx * 0.3, -ry - 2, rx * 2, ht + ry + 4),
-			lines: [...turf, ...cylinderShade(rx, -ry - 1, ht + 1)],
+			lines: turf,
+			shadeLines: capHatch(0, rx, -ry - 1, ht + 1, D.hatch),
 		},
 		{
 			solid: [archOpening(-rx * 0.2, -ry * 0.9, 5.4, 6.4)],
@@ -2950,15 +3033,13 @@ export function windmill(D) {
 		{
 			solid: [body],
 			shadeArea: rect(r0 * 0.3, -ry - 2, r0 * 2, h + ry + 4),
-			lines: [
-				...cylinderShade(r0, -ry - 1, h + 1),
-				...(D.masonry ? stoneCourses(-r0, r0, -ry, h) : []),
-			],
+			lines: D.masonry ? stoneCourses(-r0, r0, -ry, h) : [],
+			shadeLines: cylinderHatch(r0, -ry - 1, h + 1, D.hatch),
 			fills: [archOpening(-1.2, -ry * 0.92, 2.8, 5), rect(-0.6, h * 0.55, 1.2, 3.2)],
 		},
 	];
 	if (D.towerRoof === 'onion') parts.push(...onionDome(D, 0, h - 0.4, r1 * 0.95).parts);
-	else if (D.towerRoof === 'dome') parts.push(hemiDome(0, h - 0.4, r1 * 1.1).part);
+	else if (D.towerRoof === 'dome') parts.push(hemiDome(0, h - 0.4, r1 * 1.1, D.hatch).part);
 	else {
 		const R = r1 + 1.2,
 			rh = R * 1.6 * Math.max(0.6, D.pitch);
@@ -2973,6 +3054,7 @@ export function windmill(D) {
 			],
 			role: 'roof',
 			shadeArea: rect(R * 0.25, h - R, R * 2, rh + R * 2),
+			shadeLines: capHatch(0, R, h - R, h + rh + 1, D.hatch),
 		});
 	}
 	// Sails: a spar plus a lattice panel on its trailing side.
@@ -3156,7 +3238,7 @@ function coneTent(/** @type {Design} */ D, /** @type {number} */ w) {
 		{
 			solid: [[...ell(0, 0, R, ry, 180, 360), apex]],
 			shadeArea: rect(R * 0.25, -R, R * 2, h + R * 2),
-			lines: cylinderShade(R, -ry - 1, h),
+			shadeLines: capHatch(0, R, -ry - 1, h, D.hatch),
 			fills: [
 				[
 					[-2, -ry * 0.95],
@@ -3441,10 +3523,8 @@ export function lighthouse(D) {
 		{
 			solid: [[...ell(0, 0, r0, r0 * k, 180, 360), [r1, h], [-r1, h]]],
 			shadeArea: flank,
-			lines: [
-				...cylinderShade(r0, -r0 * k - 1, h + 1),
-				...(D.masonry ? stoneCourses(-r0, r0, -2, h) : []),
-			],
+			lines: D.masonry ? stoneCourses(-r0, r0, -2, h) : [],
+			shadeLines: cylinderHatch(r0, -r0 * k - 1, h + 1, D.hatch),
 			fills: [archOpening(-0.6, -r0 * k * 0.92, 2.8, 4.8), ...slits],
 		},
 	];
@@ -3458,7 +3538,7 @@ export function lighthouse(D) {
 			solid: [band(a, b)],
 			role: 'roof',
 			shadeArea: flank,
-			lines: cylinderShade(r0, a - 2, b + 2),
+			shadeLines: cylinderHatch(r0, a - 2, b + 2, D.hatch),
 		});
 	parts.push({ solid: [rocks[2]], terrain: true });
 	// Gallery: a platform ring with a railing.
@@ -3515,7 +3595,7 @@ export function lighthouse(D) {
 	);
 	// Cap in the culture's roof style.
 	if (D.towerRoof === 'onion') parts.push(...onionDome(D, 0, h + lh - 0.3, lr * 1.05).parts);
-	else if (D.towerRoof === 'dome') parts.push(hemiDome(0, h + lh - 0.3, lr * 1.15).part);
+	else if (D.towerRoof === 'dome') parts.push(hemiDome(0, h + lh - 0.3, lr * 1.15, D.hatch).part);
 	else {
 		const R = lr + 1,
 			rh = R * 1.5 * Math.max(0.6, D.pitch);
@@ -3531,6 +3611,7 @@ export function lighthouse(D) {
 				],
 				role: 'roof',
 				shadeArea: rect(R * 0.25, h, R * 2, rh + lh + 4),
+				shadeLines: capHatch(0, R, h + lh - R, h + lh + rh + 1, D.hatch),
 			},
 			...finial(apex),
 		);
@@ -3856,7 +3937,7 @@ export function pavilion(D, o = {}) {
 		{
 			solid: [body],
 			shadeArea: rect(r * 0.3, -ry - 2, r * 2, h + ry + 4),
-			lines: cylinderShade(r, -ry - 1, h + 1),
+			shadeLines: cylinderHatch(r, -ry - 1, h + 1, D.hatch),
 			fills: [
 				[
 					[-2.6, -ry * 0.98],
