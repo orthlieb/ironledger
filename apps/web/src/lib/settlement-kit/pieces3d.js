@@ -1245,7 +1245,7 @@ function flag(/** @type {Design} */ D, /** @type {number} */ x, /** @type {numbe
  * Round tower: shaded cylinder topped per the culture — cone, onion dome
  * or a crenellated parapet.
  * @param {Design} D
- * @param {{r?: number, h?: number, roof?: Design['towerRoof'], flags?: boolean}} [o]
+ * @param {{r?: number, h?: number, roof?: Design['towerRoof'], flags?: boolean, flare?: boolean}} [o]
  * @returns {Part[]}
  */
 export function roundTower(D, o = {}) {
@@ -1258,8 +1258,9 @@ export function roundTower(D, o = {}) {
 	const roof = o.roof ?? D.towerRoof;
 	/** @type {Pt} */ const mid = [0, h / 2];
 	// Flared body: the top ~25% widens via a 45° slope, then stays flared
-	// all the way to the parapet. The lower taper is unchanged.
-	const flare = roof === 'flared';
+	// all the way to the parapet. Orthogonal to the roof style — any
+	// cap (cone, onion, crenel, dome) can sit on a flared or straight body.
+	const flare = o.flare ?? roof === 'flared';
 	const flareBelt = h * 0.75;
 	const flareOv = flare ? Math.max(1.6, r * 0.26) : 0; // outward projection
 	const topFlared = top + flareOv;
@@ -1299,7 +1300,7 @@ export function roundTower(D, o = {}) {
 		},
 	];
 	if (roof === 'crenel') {
-		const R = top + 1.4;
+		const R = topFlared + 1.4;
 		// A banner on the platform, drawn first so the parapet hides its foot.
 		if (D.flags && o.flags !== false) parts.unshift(...flag(D, 0, h + 3));
 		parts.push({
@@ -1310,19 +1311,19 @@ export function roundTower(D, o = {}) {
 		return parts;
 	}
 	if (roof === 'onion') {
-		const dome = onionDome(D, 0, h, top * 0.95);
+		const dome = onionDome(D, 0, h, topFlared * 0.95);
 		if (D.flags && o.flags !== false) parts.unshift(...flag(D, dome.tip[0], dome.tip[1] - 2));
 		parts.push(...dome.parts);
 		return parts;
 	}
 	if (roof === 'dome') {
-		const dome = hemiDome(0, h, top + 0.4);
+		const dome = hemiDome(0, h, topFlared + 0.4);
 		if (D.flags && o.flags !== false) parts.unshift(...flag(D, dome.tip[0], dome.tip[1] - 2));
 		parts.push(dome.part);
 		return parts;
 	}
 	// Cone base sits on whatever the body's actual top radius is: `topFlared`
-	// absorbs the 45° flare when roof === 'flared'.
+	// absorbs the 45° flare when the flared body is enabled.
 	const R = topFlared + 1.8;
 	const rh = top * 2 * D.spire * 0.75;
 	/** @type {Pt} */ const apex = [0, h + rh];
