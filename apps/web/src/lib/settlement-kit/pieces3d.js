@@ -31,13 +31,22 @@ import { place } from './render.js';
  * @property {number} gable share of houses with the gable to the front (0..1)
  * @property {number} concave how far roof edges sag inward (0 = straight)
  * @property {number} storeys chance a house has a second storey (0..1)
- * @property {'square' | 'arched' | 'slit' | 'round'} window
+ * @property {'square' | 'arched' | 'slit' | 'round' | 'lancet'} window
+ * @property {'arched' | 'square' | 'lancet'} door house / vernacular door
+ *   shape — arched (default, round-headed Romanesque), square (plain
+ *   lintel), lancet (pointed Gothic arch). Specialty structures (keep,
+ *   cathedral, pavilion) keep their own thematic door style.
  * @property {boolean} manyDoors
  * @property {'cone' | 'onion' | 'crenel' | 'dome'} towerRoof hemispherical dome
  *   culture replaces every pitched roof — gable houses and tower caps alike —
  *   with a stone half-sphere
  * @property {number} spire spire / cone height ÷ tower width
  * @property {number} taper tower walls lean in by this share of the radius
+ * @property {number} towerCorbel 0..1: share of the tower's height occupied
+ *   by the corbelled parapet, measured down from the top. 0 = no corbel
+ *   (default, straight walls), 0.25 = upper quarter corbels out (Watabou
+ *   look), 1 = the whole tower is the 45° slope. Orthogonal to towerRoof:
+ *   any cap can sit on a corbelled body.
  * @property {boolean} flags
  * @property {number} flagLen
  * @property {number} flagFolds
@@ -88,14 +97,16 @@ export const DEFAULT_DESIGN = {
 	concave: 0,
 	storeys: 0.3,
 	window: 'square',
+	door: 'arched',
 	manyDoors: false,
 	towerRoof: 'cone',
 	spire: 2.2,
 	taper: 0.04,
+	towerCorbel: 0,
 	flags: true,
 	flagLen: 11,
 	flagFolds: 3,
-	flagShape: 'banner',
+	flagShape: 'pennant',
 	hatch: 1.4,
 	wall: 'stone',
 	wallH: 1,
@@ -133,14 +144,20 @@ export function makeDesign(seed) {
 		gable: r(),
 		concave: r() < 0.45 ? 0 : 0.06 + avg() * 0.16,
 		storeys: avg() * 0.8,
-		window: pick(['square', 'arched', 'slit', 'round']),
+		window: pick(['square', 'arched', 'slit', 'round', 'lancet']),
+		// Arched is the medieval baseline; square and lancet are the oddities.
+		door: pick(['arched', 'arched', 'arched', 'square', 'lancet']),
 		manyDoors: r() < 0.3,
 		towerRoof: pick(['cone', 'cone', 'cone', 'onion', 'onion', 'crenel', 'crenel', 'dome', 'dome']),
 		spire: 1.3 + avg() * 1.7,
 		taper: avg() * 0.14,
+		// Most cultures (~70%) build straight walls (towerCorbel = 0). The
+		// rest get a corbel occupying 10-35% of the tower's upper height.
+		towerCorbel: r() < 0.7 ? 0 : 0.1 + avg() * 0.25,
 		flags: r() < 0.75,
 		flagLen: 8 + avg() * 9,
 		flagFolds: 2 + Math.floor(r() * 3),
+		flagShape: pick(['pennant', 'pennant', 'pennant', 'banner', 'banner', 'swallowtail']),
 		hatch: 1.25 + avg() * 0.45,
 		wall: pick([
 			'stone',
@@ -419,6 +436,27 @@ function cylinderShade(
 	return out;
 }
 
+/**
+ * Shift a window's base y so it sits WHOLLY below (preferred) or wholly
+ * above a tower's corbel bend, never straddling the 45° slope. Returns
+ * `wantY` unchanged when the tower has no corbel or when the natural
+ * placement already clears the slope.
+ * @param {number} wantY ideal bottom-y of the window
+ * @param {number} winH window's full height in world units
+ * @param {number} belt y of the slope's bottom (corbelBelt)
+ * @param {number} ov slope's height = outward projection (corbelOv)
+ */
+function clearCorbel(wantY, winH, belt, ov, margin = 1) {
+	if (ov <= 0.01) return wantY;
+	if (wantY + winH + margin <= belt) return wantY; // already wholly below
+	if (wantY >= belt + ov + margin) return wantY; // already wholly above
+	// Prefer the lower wall if there's room between the window and the ground.
+	const yBelow = belt - winH - margin;
+	if (yBelow >= 2) return yBelow;
+	// Otherwise push onto the corbelled upper section.
+	return belt + ov + margin;
+}
+
 /** Window opening in the culture's style. */
 function opening(
 	/** @type {Design} */ D,
@@ -429,12 +467,34 @@ function opening(
 	switch (D.window) {
 		case 'arched':
 			return archOpening(cx, y, s * 0.85, s * 1.5);
+		case 'lancet':
+			return lancet(cx, y, s * 0.85, s * 1.6);
 		case 'slit':
 			return rect(cx - s * 0.2, y, s * 0.4, s * 1.4);
 		case 'round':
 			return circle(cx, y + s / 2, s * 0.45);
 		default:
 			return rect(cx - s / 2, y, s, s);
+	}
+}
+
+/** Door opening in the culture's style — same signature as archOpening so
+ * it drops into facade / vernacular callers. 'lancet' is a pointed Gothic
+ * arch; 'square' is a plain lintel. */
+function doorway(
+	/** @type {Design} */ D,
+	/** @type {number} */ cx,
+	/** @type {number} */ y,
+	/** @type {number} */ w,
+	/** @type {number} */ h,
+) {
+	switch (D.door) {
+		case 'square':
+			return rect(cx - w / 2, y, w, h);
+		case 'lancet':
+			return lancet(cx, y, w, h);
+		default:
+			return archOpening(cx, y, w, h);
 	}
 }
 
@@ -481,7 +541,7 @@ function facade(D, x0, x1, h, two, r) {
 		: new Set([Math.floor(r() * n)]);
 	/** @type {Poly[]} */
 	const out = xs.map((x, i) =>
-		doors.has(i) ? archOpening(x, 0, doorW, doorH) : opening(D, x, fh * 0.36, win),
+		doors.has(i) ? doorway(D, x, 0, doorW, doorH) : opening(D, x, fh * 0.36, win),
 	);
 	if (two) for (const x of xs) out.push(opening(D, x, fh + (h - fh) * 0.28, win));
 	return out;
@@ -612,6 +672,30 @@ function hemiDome(cx, y, r) {
 }
 
 /**
+ * A two-faced spire — lit front plus shaded receding side — as ONE part.
+ * Drawn as two triangles, softening rounds each tip on its own and the
+ * apex comes out as two offset bumps that never close; one solid rounds
+ * once. The side is carved out by `shadeArea` (with its hatching on
+ * `shadeLines`), and the shared ridge is stroked at outline weight so it
+ * still reads as an edge.
+ * @param {Poly} front
+ * @param {Poly} side
+ * @param {Poly} ridge the edge the faces share, eave → apex
+ * @param {Part['role']} role
+ * @param {number} hatchSpacing
+ * @returns {Part}
+ */
+function pyramid(front, side, ridge, role, hatchSpacing) {
+	return {
+		solid: [front, side],
+		role,
+		shadeArea: side,
+		shadeLines: hatch(side, -40, hatchSpacing),
+		lines: [{ pts: ridge, outline: true }],
+	};
+}
+
+/**
  * House with its gable facing the viewer.
  * @param {Design} D
  * @param {{w?: number, h?: number, seed?: number}} [o]
@@ -636,9 +720,13 @@ export function gableHouse(D, o = {}) {
 	// dome's near-rim ellipse reads as a seam, not a floating arc.
 	if (D.towerRoof === 'dome') {
 		const facadeFills = facade(D, -w / 2, w / 2, h, two, r);
+		// topCap overlaps the front wall rect by a hair at y=h so softening
+		// can't pull their shared top corners apart (both are 'wall' role,
+		// so the overlap is invisible). The dome stays on its own part and
+		// draws on top of topCap, as before.
 		const topCap = /** @type {Poly} */ ([
-			[-w / 2, h],
-			[w / 2, h],
+			[-w / 2, h - 0.4],
+			[w / 2, h - 0.4],
 			add([w / 2, h], v),
 			add([-w / 2, h], v),
 		]);
@@ -664,6 +752,9 @@ export function gableHouse(D, o = {}) {
 	const right = /** @type {Poly} */ ([...ar, ...shift(ar, v).reverse()]);
 	const fills = facade(D, -w / 2, w / 2, h, two, r);
 	fills.push(opening(D, 0, h + rh * 0.22, 2.4));
+	// The left slope faces away from the viewer whenever pitch > 1/3, so the
+	// shaded right slope must draw over it — on steep roofs it's correctly
+	// hidden entirely.
 	return [
 		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
 		{ solid: [left], role: 'roof' },
@@ -1231,7 +1322,7 @@ function flag(/** @type {Design} */ D, /** @type {number} */ x, /** @type {numbe
  * Round tower: shaded cylinder topped per the culture — cone, onion dome
  * or a crenellated parapet.
  * @param {Design} D
- * @param {{r?: number, h?: number, roof?: Design['towerRoof'], flags?: boolean}} [o]
+ * @param {{r?: number, h?: number, roof?: Design['towerRoof'], flags?: boolean, corbel?: number}} [o]
  * @returns {Part[]}
  */
 export function roundTower(D, o = {}) {
@@ -1243,22 +1334,71 @@ export function roundTower(D, o = {}) {
 		top = r * (1 - (b > 0 ? Math.max(D.taper, 0.42 * Math.min(1, D.towerBow)) : D.taper));
 	const roof = o.roof ?? D.towerRoof;
 	/** @type {Pt} */ const mid = [0, h / 2];
-	const body = /** @type {Poly} */ ([
-		...ell(0, 0, r, ry, 180, 360),
-		...sag([r, 0], [top, h], mid, b).slice(1),
-		...sag([-top, h], [-r, 0], mid, b).slice(0, -1),
-	]);
+	// Corbelled body: from the belt up to the parapet, the walls widen via
+	// a 45° slope and then stay flared. `D.towerCorbel` is the share of the
+	// tower's height occupied by the corbel, measured down from the top —
+	// 0 means no corbel, 1 means the whole tower is the slope. Orthogonal
+	// to roof style: any cap can sit on a corbelled or straight body.
+	const corbelAmount = Math.max(0, Math.min(1, o.corbel ?? D.towerCorbel ?? 0));
+	const corbelOvMax = Math.max(1.6, r * 0.26);
+	const corbelBelt = (1 - corbelAmount) * h;
+	// Project outward by the fixed max, clamped to the room available above
+	// the belt — can't rise past the parapet.
+	const corbelOv = Math.min(corbelOvMax, Math.max(0, h - corbelBelt));
+	const corbel = corbelOv > 0.01;
+	const topCorbel = top + corbelOv;
+	const body = corbel
+		? /** @type {Poly} */ ([
+				...ell(0, 0, r, ry, 180, 360),
+				...sag([r, 0], [top, corbelBelt], [0, corbelBelt / 2], b).slice(1),
+				[topCorbel, corbelBelt + corbelOv], // 45° slope out
+				[topCorbel, h], // vertical to top
+				[-topCorbel, h],
+				[-topCorbel, corbelBelt + corbelOv],
+				[-top, corbelBelt],
+				...sag([-top, corbelBelt], [-r, 0], [0, corbelBelt / 2], b).slice(1, -1),
+			])
+		: /** @type {Poly} */ ([
+				...ell(0, 0, r, ry, 180, 360),
+				...sag([r, 0], [top, h], mid, b).slice(1),
+				...sag([-top, h], [-r, 0], mid, b).slice(0, -1),
+			]);
+	/** @type {Poly[]} */
+	const bodySolids = [body];
+	// A top ellipse closes the corbelled deck so the parapet reads as a disc
+	// (otherwise the cone sits on a flat line without the oblique rim).
+	if (corbel) {
+		bodySolids.push([
+			...ell(0, h, topCorbel, ry * 1.1, 180, 360),
+			...ell(0, h, topCorbel, ry * 1.1, 0, 180).slice(1),
+		]);
+	}
+	// Shade reaches to the wider radius when corbelled, so the 45° outer
+	// slope and the parapet both carry the cylindrical shading.
+	const shadeR = corbel ? topCorbel : r;
+	// Window follows the culture's style. Height varies — compute conservatively
+	// for the straddle check so no shape crosses the corbel bend.
+	const winS = D.window === 'arched' || D.window === 'lancet' ? 4.4 : 4;
+	const winH =
+		D.window === 'arched'
+			? winS * 1.5
+			: D.window === 'lancet'
+				? winS * 1.6
+				: D.window === 'slit'
+					? winS * 1.4
+					: winS;
+	const winY = clearCorbel(h * 0.55, winH, corbelBelt, corbelOv);
 	/** @type {Part[]} */
 	const parts = [
 		{
-			solid: [body],
-			shadeArea: rect(r * 0.3, -ry - 2, r * 2, h + ry + 4),
-			lines: cylinderShade(r, -ry - 1, h + 1),
-			fills: [opening({ ...D, window: 'slit' }, -r * 0.35, h * 0.55, 4)],
+			solid: bodySolids,
+			shadeArea: rect(shadeR * 0.3, -ry - 2, shadeR * 2, h + ry + 4),
+			lines: cylinderShade(shadeR, -ry - 1, h + 1),
+			fills: [opening(D, -r * 0.35, winY, winS)],
 		},
 	];
 	if (roof === 'crenel') {
-		const R = top + 1.4;
+		const R = topCorbel + 1.4;
 		// A banner on the platform, drawn first so the parapet hides its foot.
 		if (D.flags && o.flags !== false) parts.unshift(...flag(D, 0, h + 3));
 		parts.push({
@@ -1269,18 +1409,20 @@ export function roundTower(D, o = {}) {
 		return parts;
 	}
 	if (roof === 'onion') {
-		const dome = onionDome(D, 0, h, top * 0.95);
+		const dome = onionDome(D, 0, h, topCorbel * 0.95);
 		if (D.flags && o.flags !== false) parts.unshift(...flag(D, dome.tip[0], dome.tip[1] - 2));
 		parts.push(...dome.parts);
 		return parts;
 	}
 	if (roof === 'dome') {
-		const dome = hemiDome(0, h, top + 0.4);
+		const dome = hemiDome(0, h, topCorbel + 0.4);
 		if (D.flags && o.flags !== false) parts.unshift(...flag(D, dome.tip[0], dome.tip[1] - 2));
 		parts.push(dome.part);
 		return parts;
 	}
-	const R = top + 1.8;
+	// Cone base sits on whatever the body's actual top radius is: `topCorbel`
+	// absorbs the 45° slope when the corbelled body is enabled.
+	const R = topCorbel + 1.8;
 	const rh = top * 2 * D.spire * 0.75;
 	/** @type {Pt} */ const apex = [0, h + rh];
 	const sweep = D.concave * 0.8;
@@ -1309,33 +1451,62 @@ export function roundTower(D, o = {}) {
 /**
  * Square tower with a pyramid spire (church tower / donjon).
  * @param {Design} D
- * @param {{w?: number, h?: number, finial?: boolean, clock?: boolean}} [o]  `finial`: top it with
- *   the culture's symbol; `clock`: a clock face instead of the belfry
+ * @param {{w?: number, h?: number, finial?: boolean, clock?: boolean, corbel?: number}} [o]
+ *   `finial`: top it with the culture's symbol; `clock`: a clock face instead
+ *   of the belfry; `corbel`: override `D.towerCorbel` (0..1).
  * @returns {Part[]}
  */
 export function squareTower(D, o = {}) {
 	const w = o.w ?? 10,
 		h = (o.h ?? 28) * D.stature;
 	const v = depthVec(w * 0.8);
-	const side = /** @type {Poly} */ ([
-		[w / 2, 0],
-		add([w / 2, 0], v),
-		add([w / 2, h], v),
-		[w / 2, h],
-	]);
-	const ov = 1;
-	/** @type {Pt} */ const fl = [-w / 2 - ov, h];
-	/** @type {Pt} */ const fr = [w / 2 + ov, h];
+	// Corbelled body: from the belt up, the walls widen by beltOv on every
+	// side via a 45° slope. `D.towerCorbel` is the share of the tower's
+	// height occupied by the corbel (measured down from the top) — 0 means
+	// no corbel, 1 means the whole tower is the slope. Pyramid / onion /
+	// dome above rises from the wider top.
+	const corbelAmount = Math.max(0, Math.min(1, o.corbel ?? D.towerCorbel ?? 0));
+	const beltOvMax = Math.max(1.4, w * 0.14);
+	const beltY = (1 - corbelAmount) * h;
+	const beltOv = Math.min(beltOvMax, Math.max(0, h - beltY));
+	const corbel = beltOv > 0.01;
+	const w2 = w / 2 + beltOv; // effective half-width at the top
+	// Front wall: plain rect when straight; T-shape when corbelled.
+	const frontSolid = corbel
+		? /** @type {Poly} */ ([
+				[-w / 2, 0],
+				[w / 2, 0],
+				[w / 2, beltY],
+				[w2, beltY + beltOv],
+				[w2, h],
+				[-w2, h],
+				[-w2, beltY + beltOv],
+				[-w / 2, beltY],
+			])
+		: rect(-w / 2, 0, w, h);
+	// Side (right-oblique) face: plain parallelogram when straight; T-shape
+	// pushed back along the depth vector when corbelled.
+	const side = corbel
+		? /** @type {Poly} */ ([
+				[w / 2, 0],
+				add([w / 2, 0], v),
+				add([w / 2, beltY], v),
+				add([w2, beltY + beltOv], v),
+				add([w2, h], v),
+				[w2, h],
+				[w2, beltY + beltOv],
+				[w / 2, beltY],
+			])
+		: /** @type {Poly} */ ([[w / 2, 0], add([w / 2, 0], v), add([w / 2, h], v), [w / 2, h]]);
+	// Pyramid corners now use `w2` (which equals w/2 when straight, w/2+beltOv
+	// when corbelled), so the pyramid base always matches the tower top.
+	const ov = corbel ? 0 : 1;
+	/** @type {Pt} */ const fl = [-w2 - ov, h];
+	/** @type {Pt} */ const fr = [w2 + ov, h];
 	const br = add(fr, v);
+	const bl = add(fl, v);
 	const apex = add([0, h + w * D.spire], [v[0] / 2, v[1] / 2]);
 	const c = /** @type {Pt} */ ([v[0] / 2, h]);
-	/** @type {Poly} */
-	const frontFace = [
-		fl,
-		fr,
-		...sag(fr, apex, c, D.concave).slice(1),
-		...sag(apex, fl, c, D.concave).slice(1, -1),
-	];
 	/** @type {Poly} */
 	const sideFace = [
 		fr,
@@ -1343,44 +1514,60 @@ export function squareTower(D, o = {}) {
 		...sag(br, apex, c, D.concave).slice(1),
 		...sag(apex, fr, c, D.concave).slice(1, -1),
 	];
+	// Keep every opening wholly below or above the corbel bend; straddling
+	// kills the 3D read on the 45° slope.
+	const belfryY = clearCorbel(h - 9.5, 7.5, beltY, beltOv);
+	const clockWinS = D.window === 'arched' || D.window === 'lancet' ? 4.4 : 4;
+	const clockWinH =
+		D.window === 'arched'
+			? clockWinS * 1.5
+			: D.window === 'lancet'
+				? clockWinS * 1.6
+				: D.window === 'slit'
+					? clockWinS * 1.4
+					: clockWinS;
+	const clockWinY = clearCorbel(h * 0.45, clockWinH, beltY, beltOv);
 	/** @type {Part[]} */
 	const parts = [
 		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
 		{
-			solid: [rect(-w / 2, 0, w, h)],
+			solid: [frontSolid],
 			fills: o.clock
-				? [archOpening(0, 0, 4, 7), opening({ ...D, window: 'slit' }, 0, h * 0.45, 4)]
-				: [archOpening(0, 0, 4, 7), archOpening(0, h - 9.5, 4.4, 7.5)],
-			cuts: o.clock ? [] : bellCuts(0, h - 7.6),
+				? [archOpening(0, 0, 4, 7), opening(D, 0, clockWinY, clockWinS)]
+				: [archOpening(0, 0, 4, 7), archOpening(0, belfryY, 4.4, 7.5)],
+			cuts: o.clock ? [] : bellCuts(0, belfryY + 1.9),
 			lines: D.masonry ? stoneCourses(-w / 2, w / 2, 0, h) : [],
 		},
 		...(o.clock ? clockFace(0, h - w * 0.42, w * 0.3) : []),
 	];
+	// Deck polygon at y=h — fills the oblique top of the frustum so the
+	// softened corners where front T, side T, and roof meet don't leave a
+	// sliver of background showing through. Only needed when corbelled.
+	if (corbel) parts.push({ solid: [[fl, fr, br, bl]], role: 'roof' });
 	if (D.towerRoof === 'onion') {
-		// A dome on the tower's flat top instead of the spire.
-		parts.push({
-			solid: [[[-w / 2, h], [w / 2, h], add([w / 2, h], v), add([-w / 2, h], v)]],
-		});
-		const dome = onionDome(D, v[0] / 2, h + v[1] / 2 - 0.6, w * 0.5);
+		if (!corbel) {
+			parts.push({ solid: [[[-w / 2, h], [w / 2, h], add([w / 2, h], v), add([-w / 2, h], v)]] });
+		}
+		const dome = onionDome(D, v[0] / 2, h + v[1] / 2 - 0.6, w2);
 		parts.push(...dome.parts);
 		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
 		return parts;
 	}
 	if (D.towerRoof === 'dome') {
-		// Stone half-sphere on the square tower's flat top.
-		parts.push({
-			solid: [[[-w / 2, h], [w / 2, h], add([w / 2, h], v), add([-w / 2, h], v)]],
-		});
-		const dome = hemiDome(v[0] / 2, h + v[1] / 2, w * 0.52);
+		if (!corbel) {
+			parts.push({ solid: [[[-w / 2, h], [w / 2, h], add([w / 2, h], v), add([-w / 2, h], v)]] });
+		}
+		const dome = hemiDome(v[0] / 2, h + v[1] / 2, w2 * 1.04);
 		parts.push(dome.part);
 		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
 		return parts;
 	}
-	parts.push(
-		{ solid: [sideFace], role: 'roof', shaded: true, lines: hatch(sideFace, -40, D.hatch) },
-		{ solid: [frontFace], role: 'roof' },
-	);
-	if (o.finial) parts.push(...symbolAt(D.symbol, apex));
+	// Pyramid (cone/crenel fall through here), one part so the apex closes.
+	const ridge = sag(fr, apex, c, D.concave);
+	/** @type {Poly} */
+	const frontFace = [fl, ...ridge, ...sag(apex, fl, c, D.concave).slice(1, -1)];
+	parts.push(pyramid(frontFace, sideFace, ridge, 'roof', D.hatch));
+	if (o.finial) parts.push(...symbolAt(D.symbol, apex, 3));
 	return parts;
 }
 
@@ -1462,10 +1649,7 @@ function gateTower(D, y0, h, wood) {
 		const apex = add(/** @type {Pt} */ ([0, yTop + rh]), /** @type {Pt} */ ([v[0] / 2, v[1] / 2]));
 		const frontRoof = /** @type {Poly} */ ([fL, fR, apex]);
 		const sideRoof = /** @type {Poly} */ ([fR, bR, apex]);
-		parts.push(
-			{ solid: [sideRoof], role: roofRole, shaded: true, lines: hatch(sideRoof, -40, D.hatch) },
-			{ solid: [frontRoof], role: roofRole },
-		);
+		parts.push(pyramid(frontRoof, sideRoof, [fR, apex], roofRole, D.hatch));
 		flagAt = [apex[0], apex[1] - 1];
 	}
 	// Banner flies in front of everything so it reads clearly against the cap.
@@ -1760,11 +1944,28 @@ export function ringWall(D, o = {}) {
 /**
  * The culture's holy symbol standing on a point (a spire apex or dome tip).
  * Deliberately not always a cross — Ironsworn's faiths are the table's own.
+ * `socket` carries the post that far down into the point: softening rounds
+ * (and so lowers) a sharp spire apex, which would otherwise leave the symbol
+ * floating above it. The socket sits inside the tip's outline ink.
+ * @param {Design['symbol']} kind
+ * @param {Pt} p
+ * @param {number} [socket]
+ * @returns {Part[]}
+ */
+function symbolAt(kind, p, socket = 0) {
+	const parts = symbolShape(kind, p);
+	if (!parts.length || !socket) return parts;
+	/** @type {Line} */
+	const post = { pts: [[p[0], p[1] - socket], p], w: 1.1 };
+	return [{ ...parts[0], free: [...(parts[0].free ?? []), post] }, ...parts.slice(1)];
+}
+
+/**
  * @param {Design['symbol']} kind
  * @param {Pt} p
  * @returns {Part[]}
  */
-function symbolAt(kind, p) {
+function symbolShape(kind, p) {
 	const [x, y] = p;
 	/** @param {Poly} pts @param {number} [w] @returns {Line} */
 	const ln = (pts, w = 1.2) => ({ pts, w });

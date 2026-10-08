@@ -47,10 +47,15 @@ describe('YRT starter zip', () => {
 	// Smoke check for the most recent content bump — if this ever regresses
 	// (someone rebuilds the starter without Providence Mine) the failure
 	// message is a lot clearer than a bare count assertion.
+	// Containment moved from `region` to `withinRef` in the 2026-10-04 refresh;
+	// `region` is now the country (Nysis), so check the place it sits within.
 	it('includes Providence Mine among the Pinna Mtns places', () => {
 		const providence = body().places.find((p) => p.name === 'Providence Mine');
 		expect(providence, 'Providence Mine missing from the starter zip').toBeDefined();
-		expect((providence as unknown as { region?: string }).region).toBe('Pinna Mtns');
+		expect((providence as unknown as { withinRef?: unknown }).withinRef).toEqual({
+			kind: 'place',
+			name: 'Pinna Mtns',
+		});
 	});
 
 	it('reassembles every bundled figure into an inline imageUrl', () => {

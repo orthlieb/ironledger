@@ -46,6 +46,42 @@ import {
 /** @typedef {'auto' | 'none' | 'stone' | 'palisade' | 'earth' | 'hedge' | 'bone' | 'reef'} Walls */
 
 /**
+ * Per-building Design jitter: each house re-rolls a few visual knobs
+ * (pitch, concave, flourish, and 15% of the time window / door style)
+ * within a small range of the culture's base. The culture's enum choices
+ * (houseForm, towerRoof, etc.) still dominate. Keeps a row of houses from
+ * looking like 10 identical copies.
+ * @param {Design} D
+ * @param {() => number} r
+ * @returns {Design}
+ */
+function jitterDesign(D, r) {
+	const clamp = (/** @type {number} */ x, lo = 0, hi = 1) => Math.max(lo, Math.min(hi, x));
+	const WINDOWS = /** @type {Design['window'][]} */ ([
+		'square',
+		'arched',
+		'slit',
+		'round',
+		'lancet',
+	]);
+	const DOORS = /** @type {Design['door'][]} */ ([
+		'arched',
+		'arched',
+		'arched',
+		'square',
+		'lancet',
+	]);
+	return {
+		...D,
+		pitch: clamp(D.pitch + (r() - 0.5) * 0.3, 0.4, 1.2),
+		concave: clamp(D.concave + (r() - 0.5) * 0.08, 0, 0.3),
+		flourish: clamp(D.flourish + (r() - 0.5) * 0.2),
+		window: r() < 0.15 ? WINDOWS[Math.floor(r() * WINDOWS.length)] : D.window,
+		door: r() < 0.15 ? DOORS[Math.floor(r() * DOORS.length)] : D.door,
+	};
+}
+
+/**
  * A dwelling in the culture's house form (timber, round hut, turf mound
  * or stilt hut), or — in towns and cities, at the culture's `industry` rate — a
  * warehouse or workshop.
@@ -55,6 +91,7 @@ import {
  * @param {boolean} trade
  */
 function house(D, r, w, trade) {
+	D = jitterDesign(D, r);
 	const seed = Math.floor(r() * 1e6);
 	if (!trade || r() >= D.industry) {
 		if (D.houseForm === 'round') return roundHut(D, { r: w * 0.32 });
@@ -421,6 +458,13 @@ export function settlement(tier, D, o = {}) {
 	/** Ground points every placed building stands on (front corners and the
 	 *  foot of its receding side) — the wall is fitted around these. @type {[number, number][]} */
 	const footprint = [];
+	// Perspective: back rows stay full size, front rows grow toward 1 +
+	// PERSP_SPREAD. Shrinking the back instead would trim the icon's top
+	// (the tallest buildings sit in back rows), and since line widths don't
+	// scale with pieces the fitted icon would read heavier. One-row layouts
+	// (steads, outposts) have no depth to convey.
+	const PERSP_SPREAD = 0.18;
+	const rowScaleFor = (/** @type {number} */ ri) => (n > 1 ? 1 + PERSP_SPREAD * (ri / (n - 1)) : 1);
 	rows.forEach((row, ri) => {
 		const list = assigned[ri];
 		// Shuffle within the row so heights don't step monotonically.
@@ -430,19 +474,31 @@ export function settlement(tier, D, o = {}) {
 		}
 		if (marketItem && ri === midRow) list.splice(Math.floor(list.length / 2), 0, marketItem);
 		if (!list.length) return;
-		const sum = list.reduce((t, it) => t + width(it), 0);
+		const rs = rowScaleFor(ri);
+		const wScaled = (/** @type {Item} */ it) => (it.x1 - it.x0) * rs + SPACE;
+		const sum = list.reduce((t, it) => t + wScaled(it), 0);
 		// Even gaps; if the row is over-full, the overlap is shared evenly too.
 		const gap = (row.half * 2 - sum) / (list.length + 1);
 		let x = row.cx - row.half + gap;
 		for (const it of list) {
 			const jx = (r() - 0.5) * Math.min(Math.max(gap, 0) * 0.5, 2),
 				jy = (r() - 0.5) * 1.2;
-			const ox = x + SPACE / 2 - it.x0 + jx,
+			const ox = x + SPACE / 2 - it.x0 * rs + jx,
 				oy = row.y + jy;
-			for (const p of it.pieces) inside.push({ ...p, x: (p.x ?? 0) + ox, y: (p.y ?? 0) + oy });
-			if (it.ground) ground.push({ ...it.ground, x: ox, y: oy });
-			footprint.push([ox + it.x0, oy], [ox + it.x1, oy], [ox + it.x1, oy + (it.x1 - it.x0) * 0.25]);
-			x += width(it) + gap;
+			for (const p of it.pieces)
+				inside.push({
+					...p,
+					x: (p.x ?? 0) * rs + ox,
+					y: (p.y ?? 0) * rs + oy,
+					s: (p.s ?? 1) * rs,
+				});
+			if (it.ground) ground.push({ ...it.ground, x: ox, y: oy, s: (it.ground.s ?? 1) * rs });
+			footprint.push(
+				[ox + it.x0 * rs, oy],
+				[ox + it.x1 * rs, oy],
+				[ox + it.x1 * rs, oy + (it.x1 - it.x0) * rs * 0.25],
+			);
+			x += wScaled(it) + gap;
 		}
 	});
 	// Stilt-settlement: wrap every inside piece on its own deck + posts.

@@ -30,9 +30,11 @@ import { TEMPLATES, pieces, settlement } from '../../src/lib/settlement-kit/layo
 import {
 	DEFAULT_DESIGN,
 	gableHouse,
+	makeDesign,
 	onStilts,
 	roundHut,
 	roundTower,
+	squareTower,
 	stiltHut,
 } from '../../src/lib/settlement-kit/pieces3d.js';
 import { renderLayered, place } from '../../src/lib/settlement-kit/render.js';
@@ -133,6 +135,12 @@ describe('design-knob variants render', () => {
 		it(`towerRoof=${roof} renders a round tower`, () => {
 			expect(renders(roundTower({ ...DEFAULT_DESIGN, towerRoof: roof }))).toBe(true);
 		});
+		it(`towerRoof=${roof} + towerCorbel renders a round tower`, () => {
+			// towerCorbel = 0.25 → upper quarter corbels out (visible Watabou look)
+			expect(renders(roundTower({ ...DEFAULT_DESIGN, towerRoof: roof, towerCorbel: 0.25 }))).toBe(
+				true,
+			);
+		});
 	}
 	const flagShapes = ['banner', 'pennant', 'swallowtail'] as const;
 	for (const shape of flagShapes) {
@@ -142,6 +150,39 @@ describe('design-knob variants render', () => {
 			).not.toThrow();
 		});
 	}
+});
+
+/** Net filled area of SVG path data (signed ring areas summed, so holes cancel). */
+function netArea(d: string): number {
+	let total = 0;
+	for (const ring of d.split('Z').filter((s) => s.trim())) {
+		const pts = ring
+			.replace('M', '')
+			.split('L')
+			.map((p) => p.trim().split(/\s+/).map(Number));
+		for (let i = 0; i < pts.length; i++) {
+			const [x1, y1] = pts[i];
+			const [x2, y2] = pts[(i + 1) % pts.length];
+			total += (x1 * y2 - x2 * y1) / 2;
+		}
+	}
+	return Math.abs(total);
+}
+
+describe('render robustness', () => {
+	it('ink stays an outline under the soft join (seed-42 house went solid black)', () => {
+		// Clipper can return a mis-oriented outer ring after the soft-rounding
+		// pass; under a non-zero fill the next union then filled its holes and
+		// the ink covered the whole front and roof (ratio ≈ 0.88).
+		const placed = place(gableHouse(makeDesign(42), { w: 18 }), { s: 3 });
+		const { layers, silhouette } = renderLayered(placed, { outline: 0.4, join: 'soft' });
+		expect(netArea(layers.ink) / netArea(silhouette)).toBeLessThan(0.5);
+	});
+	it('a square spire roof is one part, so its apex rounds once and closes', () => {
+		const roofs = squareTower(DEFAULT_DESIGN, {}).filter((p) => p.role === 'roof');
+		expect(roofs).toHaveLength(1);
+		expect(roofs[0].shadeLines?.length).toBeGreaterThan(0);
+	});
 });
 
 describe('onStilts', () => {

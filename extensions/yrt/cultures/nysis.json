@@ -14,6 +14,7 @@
     "towerRoof": "onion",
     "spire": 2.8,
     "taper": 0.05,
+    "towerCorbel": 0.25,
     "flags": true,
     "flagFolds": 4,
     "flagLen": 15,
