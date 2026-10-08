@@ -166,7 +166,7 @@ const KNOBS = [
 		key: 'door',
 		label: 'Doors',
 		type: 'select',
-		options: ['arched', 'square', 'round'],
+		options: ['arched', 'square', 'gothic'],
 		design: true,
 	},
 	{ group: 'Houses', key: 'manyDoors', label: 'Many doors', type: 'check', design: true },

@@ -32,10 +32,10 @@ import { place } from './render.js';
  * @property {number} concave how far roof edges sag inward (0 = straight)
  * @property {number} storeys chance a house has a second storey (0..1)
  * @property {'square' | 'arched' | 'slit' | 'round'} window
- * @property {'arched' | 'square' | 'round'} door house / vernacular door
- *   shape — arched (default, medieval), square (plain lintel), round (burrow
- *   mouth). Specialty structures (keep, cathedral, pavilion) keep their own
- *   thematic door style.
+ * @property {'arched' | 'square' | 'gothic'} door house / vernacular door
+ *   shape — arched (default, round-headed Romanesque), square (plain
+ *   lintel), gothic (pointed lancet). Specialty structures (keep, cathedral,
+ *   pavilion) keep their own thematic door style.
  * @property {boolean} manyDoors
  * @property {'cone' | 'onion' | 'crenel' | 'dome'} towerRoof hemispherical dome
  *   culture replaces every pitched roof — gable houses and tower caps alike —
@@ -145,8 +145,8 @@ export function makeDesign(seed) {
 		concave: r() < 0.45 ? 0 : 0.06 + avg() * 0.16,
 		storeys: avg() * 0.8,
 		window: pick(['square', 'arched', 'slit', 'round']),
-		// Arched is the medieval baseline; square and round are the oddities.
-		door: pick(['arched', 'arched', 'arched', 'square', 'round']),
+		// Arched is the medieval baseline; square and gothic are the oddities.
+		door: pick(['arched', 'arched', 'arched', 'square', 'gothic']),
 		manyDoors: r() < 0.3,
 		towerRoof: pick(['cone', 'cone', 'cone', 'onion', 'onion', 'crenel', 'crenel', 'dome', 'dome']),
 		spire: 1.3 + avg() * 1.7,
@@ -477,8 +477,8 @@ function opening(
 }
 
 /** Door opening in the culture's style — same signature as archOpening so
- * it drops into facade / vernacular callers. 'round' is a burrow mouth
- * (circle inscribed in the door bay); 'square' is a plain lintel. */
+ * it drops into facade / vernacular callers. 'gothic' is a pointed lancet;
+ * 'square' is a plain lintel. */
 function doorway(
 	/** @type {Design} */ D,
 	/** @type {number} */ cx,
@@ -489,8 +489,8 @@ function doorway(
 	switch (D.door) {
 		case 'square':
 			return rect(cx - w / 2, y, w, h);
-		case 'round':
-			return circle(cx, y + w / 2, w / 2);
+		case 'gothic':
+			return lancet(cx, y, w, h);
 		default:
 			return archOpening(cx, y, w, h);
 	}
