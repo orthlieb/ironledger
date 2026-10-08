@@ -672,6 +672,30 @@ function hemiDome(cx, y, r) {
 }
 
 /**
+ * A two-faced spire — lit front plus shaded receding side — as ONE part.
+ * Drawn as two triangles, softening rounds each tip on its own and the
+ * apex comes out as two offset bumps that never close; one solid rounds
+ * once. The side is carved out by `shadeArea` (with its hatching on
+ * `shadeLines`), and the shared ridge is stroked at outline weight so it
+ * still reads as an edge.
+ * @param {Poly} front
+ * @param {Poly} side
+ * @param {Poly} ridge the edge the faces share, eave → apex
+ * @param {Part['role']} role
+ * @param {number} hatchSpacing
+ * @returns {Part}
+ */
+function pyramid(front, side, ridge, role, hatchSpacing) {
+	return {
+		solid: [front, side],
+		role,
+		shadeArea: side,
+		shadeLines: hatch(side, -40, hatchSpacing),
+		lines: [{ pts: ridge, outline: true }],
+	};
+}
+
+/**
  * House with its gable facing the viewer.
  * @param {Design} D
  * @param {{w?: number, h?: number, seed?: number}} [o]
@@ -1538,30 +1562,12 @@ export function squareTower(D, o = {}) {
 		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
 		return parts;
 	}
-	// Pyramid (cone/crenel fall through here). For corbelled bodies, use the
-	// silhouette-plus-shaded-overlay pattern so the apex can't open a notch.
-	if (corbel) {
-		parts.push({ solid: [[fl, fr, br, apex]], role: 'roof' });
-		parts.push({
-			solid: [sideFace],
-			role: 'roof',
-			shaded: true,
-			lines: hatch(sideFace, -40, D.hatch),
-		});
-	} else {
-		/** @type {Poly} */
-		const frontFace = [
-			fl,
-			fr,
-			...sag(fr, apex, c, D.concave).slice(1),
-			...sag(apex, fl, c, D.concave).slice(1, -1),
-		];
-		parts.push(
-			{ solid: [sideFace], role: 'roof', shaded: true, lines: hatch(sideFace, -40, D.hatch) },
-			{ solid: [frontFace], role: 'roof' },
-		);
-	}
-	if (o.finial) parts.push(...symbolAt(D.symbol, apex));
+	// Pyramid (cone/crenel fall through here), one part so the apex closes.
+	const ridge = sag(fr, apex, c, D.concave);
+	/** @type {Poly} */
+	const frontFace = [fl, ...ridge, ...sag(apex, fl, c, D.concave).slice(1, -1)];
+	parts.push(pyramid(frontFace, sideFace, ridge, 'roof', D.hatch));
+	if (o.finial) parts.push(...symbolAt(D.symbol, apex, 3));
 	return parts;
 }
 
@@ -1643,10 +1649,7 @@ function gateTower(D, y0, h, wood) {
 		const apex = add(/** @type {Pt} */ ([0, yTop + rh]), /** @type {Pt} */ ([v[0] / 2, v[1] / 2]));
 		const frontRoof = /** @type {Poly} */ ([fL, fR, apex]);
 		const sideRoof = /** @type {Poly} */ ([fR, bR, apex]);
-		parts.push(
-			{ solid: [sideRoof], role: roofRole, shaded: true, lines: hatch(sideRoof, -40, D.hatch) },
-			{ solid: [frontRoof], role: roofRole },
-		);
+		parts.push(pyramid(frontRoof, sideRoof, [fR, apex], roofRole, D.hatch));
 		flagAt = [apex[0], apex[1] - 1];
 	}
 	// Banner flies in front of everything so it reads clearly against the cap.
@@ -1941,11 +1944,28 @@ export function ringWall(D, o = {}) {
 /**
  * The culture's holy symbol standing on a point (a spire apex or dome tip).
  * Deliberately not always a cross — Ironsworn's faiths are the table's own.
+ * `socket` carries the post that far down into the point: softening rounds
+ * (and so lowers) a sharp spire apex, which would otherwise leave the symbol
+ * floating above it. The socket sits inside the tip's outline ink.
+ * @param {Design['symbol']} kind
+ * @param {Pt} p
+ * @param {number} [socket]
+ * @returns {Part[]}
+ */
+function symbolAt(kind, p, socket = 0) {
+	const parts = symbolShape(kind, p);
+	if (!parts.length || !socket) return parts;
+	/** @type {Line} */
+	const post = { pts: [[p[0], p[1] - socket], p], w: 1.1 };
+	return [{ ...parts[0], free: [...(parts[0].free ?? []), post] }, ...parts.slice(1)];
+}
+
+/**
  * @param {Design['symbol']} kind
  * @param {Pt} p
  * @returns {Part[]}
  */
-function symbolAt(kind, p) {
+function symbolShape(kind, p) {
 	const [x, y] = p;
 	/** @param {Poly} pts @param {number} [w] @returns {Line} */
 	const ln = (pts, w = 1.2) => ({ pts, w });

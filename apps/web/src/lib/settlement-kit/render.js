@@ -9,6 +9,8 @@
 //                     its role colour, and it hides every part behind it
 //     lines?: Line[]  detail strokes (timbers, thatch, stone courses) —
 //                     clipped to the inside of the part's own silhouette
+//     shadeLines?: Line[]  as `lines`, but clipped to the shaded portion
+//                     only (hatching on one flank of a merged face)
 //     fills?: Poly[]  solid ink (doors, windows, arrow slits)
 //     cuts?:  Line[]  strokes knocked OUT of the fills (window mullions,
 //                     portcullis grid)
@@ -21,7 +23,9 @@
 //                        (the right flank of a cylinder or cone)
 //     terrain?: boolean  ground, sea, rock or mountain — never ruined
 //   }
-//   Line = { pts: Poly, w?: number, round?: boolean }
+//   Line = { pts: Poly, w?: number, round?: boolean, outline?: boolean }
+//     `outline` strokes at the render's outline weight instead of `w` — for
+//     an internal edge that should read like a silhouette edge (a ridge)
 //
 // Line widths are in world units and do NOT scale with a placed piece, so
 // every icon shares one stroke weight no matter how big its pieces are.
@@ -31,9 +35,9 @@ import ClipperLib from 'clipper-lib';
 
 /** @typedef {import('./geom.js').Pt} Pt */
 /** @typedef {import('./geom.js').Poly} Poly */
-/** @typedef {{pts: Poly, w?: number, round?: boolean}} Line */
+/** @typedef {{pts: Poly, w?: number, round?: boolean, outline?: boolean}} Line */
 /** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
-/** @typedef {{solid: Poly[], lines?: Line[], fills?: Poly[], cuts?: Line[], free?: Line[], mask?: Poly, role?: Role, shaded?: boolean, shadeArea?: Poly, terrain?: boolean}} Part */
+/** @typedef {{solid: Poly[], lines?: Line[], shadeLines?: Line[], fills?: Poly[], cuts?: Line[], free?: Line[], mask?: Poly, role?: Role, shaded?: boolean, shadeArea?: Poly, terrain?: boolean}} Part */
 /** @typedef {{X: number, Y: number}[][]} CPaths */
 
 /** Default outline stroke weight (world units). */
@@ -124,9 +128,10 @@ function offset(paths, d, round = false) {
  * Stroke open polylines into closed ink.
  * @param {Line[]} lines
  * @param {boolean} [round] round joins and caps for every line
+ * @param {number} [outlineW] weight for lines flagged `outline`
  * @returns {CPaths}
  */
-function stroke(lines, round = false) {
+function stroke(lines, round = false, outlineW = OUTLINE) {
 	/** @type {CPaths} */
 	let out = [];
 	for (const l of lines) {
@@ -138,7 +143,7 @@ function stroke(lines, round = false) {
 		);
 		/** @type {CPaths} */
 		const sol = [];
-		co.Execute(sol, ((l.w ?? DETAIL) / 2) * S);
+		co.Execute(sol, ((l.outline ? outlineW : (l.w ?? DETAIL)) / 2) * S);
 		out = union(out, sol);
 	}
 	return out;
@@ -190,6 +195,7 @@ export function place(parts, at) {
 	return parts.map((p) => ({
 		solid: p.solid.map(tp),
 		lines: p.lines?.map(tl),
+		shadeLines: p.shadeLines?.map(tl),
 		fills: p.fills?.map(tp),
 		cuts: p.cuts?.map(tl),
 		free: p.free?.map(tl),
@@ -262,7 +268,16 @@ export function renderLayered(parts, opts = {}) {
 		let ink = minus(outer, inner);
 		const fillInk = p.fills?.length ? intersect(rawUnion(p.fills), outer) : [];
 		if (p.lines?.length)
-			ink = union(ink, minus(intersect(stroke(p.lines), inner), offset(fillInk, 0.6)));
+			ink = union(
+				ink,
+				minus(intersect(stroke(p.lines, false, half * 2), inner), offset(fillInk, 0.6)),
+			);
+		const shadeClip = p.shaded ? inner : p.shadeArea ? intersect(inner, [toC(p.shadeArea)]) : [];
+		if (p.shadeLines?.length && shadeClip.length)
+			ink = union(
+				ink,
+				minus(intersect(stroke(p.shadeLines, false, half * 2), shadeClip), offset(fillInk, 0.6)),
+			);
 		if (fillInk.length) ink = union(ink, p.cuts?.length ? minus(fillInk, stroke(p.cuts)) : fillInk);
 		let free = p.free?.length ? stroke(p.free) : [];
 		if (mask) free = intersect(free, mask);
