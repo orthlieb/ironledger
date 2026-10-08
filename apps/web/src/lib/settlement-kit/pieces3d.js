@@ -1316,17 +1316,18 @@ export function roundTower(D, o = {}) {
 	// Shade reaches to the wider radius when corbelled, so the 45° outer
 	// slope and the parapet both carry the cylindrical shading.
 	const shadeR = corbel ? topCorbel : r;
-	// Slit should never straddle the corbel bend — clamp its base y so it
-	// sits wholly on the lower drum or on the corbelled parapet.
-	const slitH = 4 * 1.4;
-	const slitY = clearCorbel(h * 0.55, slitH, corbelBelt, corbelOv);
+	// Window follows the culture's style. Height varies — compute conservatively
+	// for the straddle check so arched / square never cross the corbel bend.
+	const winS = D.window === 'arched' ? 4.4 : 4;
+	const winH = D.window === 'arched' ? winS * 1.5 : D.window === 'slit' ? winS * 1.4 : winS;
+	const winY = clearCorbel(h * 0.55, winH, corbelBelt, corbelOv);
 	/** @type {Part[]} */
 	const parts = [
 		{
 			solid: bodySolids,
 			shadeArea: rect(shadeR * 0.3, -ry - 2, shadeR * 2, h + ry + 4),
 			lines: cylinderShade(shadeR, -ry - 1, h + 1),
-			fills: [opening({ ...D, window: 'slit' }, -r * 0.35, slitY, 4)],
+			fills: [opening(D, -r * 0.35, winY, winS)],
 		},
 	];
 	if (roof === 'crenel') {
@@ -1449,14 +1450,17 @@ export function squareTower(D, o = {}) {
 	// Keep every opening wholly below or above the corbel bend; straddling
 	// kills the 3D read on the 45° slope.
 	const belfryY = clearCorbel(h - 9.5, 7.5, beltY, beltOv);
-	const slitY = clearCorbel(h * 0.45, 5.6, beltY, beltOv);
+	const clockWinS = D.window === 'arched' ? 4.4 : 4;
+	const clockWinH =
+		D.window === 'arched' ? clockWinS * 1.5 : D.window === 'slit' ? clockWinS * 1.4 : clockWinS;
+	const clockWinY = clearCorbel(h * 0.45, clockWinH, beltY, beltOv);
 	/** @type {Part[]} */
 	const parts = [
 		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
 		{
 			solid: [frontSolid],
 			fills: o.clock
-				? [archOpening(0, 0, 4, 7), opening({ ...D, window: 'slit' }, 0, slitY, 4)]
+				? [archOpening(0, 0, 4, 7), opening(D, 0, clockWinY, clockWinS)]
 				: [archOpening(0, 0, 4, 7), archOpening(0, belfryY, 4.4, 7.5)],
 			cuts: o.clock ? [] : bellCuts(0, belfryY + 1.9),
 			lines: D.masonry ? stoneCourses(-w / 2, w / 2, 0, h) : [],
