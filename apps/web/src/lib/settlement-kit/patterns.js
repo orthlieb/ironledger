@@ -58,6 +58,7 @@ export const MATERIALS = {
 const stone = {
 	w: 4.4,
 	h: 4.8,
+	scale: 2,
 	body: ({ tone }) =>
 		`<rect width="4.4" height="4.8" style="fill:${tone(MATERIALS.stone.body)}"/>` +
 		`<path style="stroke:${tone(MATERIALS.stone.joint)};stroke-width:0.3;fill:none" d="` +
@@ -371,7 +372,7 @@ const CORAL_MAZE = brainCoralTile();
 const reef = {
 	w: CORAL,
 	h: CORAL,
-	scale: 2.5,
+	scale: 5,
 	body: ({ tone }) => {
 		const m = MATERIALS.coral;
 		const line = 'fill:none;stroke-linecap:round;stroke-linejoin:round';

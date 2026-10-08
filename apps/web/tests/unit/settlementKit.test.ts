@@ -135,8 +135,9 @@ describe('wall patterns', () => {
 		);
 	});
 	it.each([
+		['wall-stone', 2],
 		['wall-hedge', 2],
-		['wall-reef', 2.5],
+		['wall-reef', 5],
 	] as const)('%s tile is drawn %s× larger via patternTransform', (role, scale) => {
 		const { defs } = patternDefs([role], (r) => paletteTone(r, '#000000', (a) => a), 't');
 		expect(defs).toContain(`patternTransform="scale(${scale})"`);
