@@ -128,10 +128,13 @@ describe('wall patterns', () => {
 });
 
 describe('design-knob variants render', () => {
-	const towerRoofs: Design['towerRoof'][] = ['cone', 'onion', 'crenel', 'dome', 'flared'];
+	const towerRoofs: Design['towerRoof'][] = ['cone', 'onion', 'crenel', 'dome'];
 	for (const roof of towerRoofs) {
 		it(`towerRoof=${roof} renders a round tower`, () => {
 			expect(renders(roundTower({ ...DEFAULT_DESIGN, towerRoof: roof }))).toBe(true);
+		});
+		it(`towerRoof=${roof} + towerFlare renders a round tower`, () => {
+			expect(renders(roundTower({ ...DEFAULT_DESIGN, towerRoof: roof, towerFlare: 1 }))).toBe(true);
 		});
 	}
 	const flagShapes = ['banner', 'pennant', 'swallowtail'] as const;

@@ -33,12 +33,15 @@ import { place } from './render.js';
  * @property {number} storeys chance a house has a second storey (0..1)
  * @property {'square' | 'arched' | 'slit' | 'round'} window
  * @property {boolean} manyDoors
- * @property {'cone' | 'onion' | 'crenel' | 'dome' | 'flared'} towerRoof hemispherical dome
+ * @property {'cone' | 'onion' | 'crenel' | 'dome'} towerRoof hemispherical dome
  *   culture replaces every pitched roof — gable houses and tower caps alike —
- *   with a stone half-sphere; `flared` is a cone with a horizontal eave
- *   partway up (Watabou-style step-flare)
+ *   with a stone half-sphere
  * @property {number} spire spire / cone height ÷ tower width
  * @property {number} taper tower walls lean in by this share of the radius
+ * @property {number} towerFlare 0..1: upper quarter of every tower widens via
+ *   a 45° slope by this share of the standard overhang. 0 = straight walls,
+ *   1 = full Watabou-style corbel. Orthogonal to towerRoof: any cap can sit
+ *   on a flared body.
  * @property {boolean} flags
  * @property {number} flagLen
  * @property {number} flagFolds
@@ -93,6 +96,7 @@ export const DEFAULT_DESIGN = {
 	towerRoof: 'cone',
 	spire: 2.2,
 	taper: 0.04,
+	towerFlare: 0,
 	flags: true,
 	flagLen: 11,
 	flagFolds: 3,
@@ -136,21 +140,12 @@ export function makeDesign(seed) {
 		storeys: avg() * 0.8,
 		window: pick(['square', 'arched', 'slit', 'round']),
 		manyDoors: r() < 0.3,
-		towerRoof: pick([
-			'cone',
-			'cone',
-			'cone',
-			'onion',
-			'onion',
-			'crenel',
-			'crenel',
-			'dome',
-			'dome',
-			'flared',
-			'flared',
-		]),
+		towerRoof: pick(['cone', 'cone', 'cone', 'onion', 'onion', 'crenel', 'crenel', 'dome', 'dome']),
 		spire: 1.3 + avg() * 1.7,
 		taper: avg() * 0.14,
+		// Most cultures build straight walls; a third flare out, biased toward
+		// subtle. 1.0 is the full Watabou corbel.
+		towerFlare: r() < 0.7 ? 0 : 0.4 + avg() * 0.6,
 		flags: r() < 0.75,
 		flagLen: 8 + avg() * 9,
 		flagFolds: 2 + Math.floor(r() * 3),
@@ -203,7 +198,7 @@ export function makeDesign(seed) {
 	};
 	// Linked rules, so a culture hangs together:
 	// low-pitched builders fortify their towers rather than roofing them,
-	if (D.pitch < 0.6 && (D.towerRoof === 'cone' || D.towerRoof === 'flared')) D.towerRoof = 'crenel';
+	if (D.pitch < 0.6 && D.towerRoof === 'cone') D.towerRoof = 'crenel';
 	// onion domes come with concave (swept) roofs on the houses too,
 	if (D.towerRoof === 'onion' && D.concave === 0) D.concave = 0.12;
 	// and tall steep roofs go with tall spires.
@@ -1245,7 +1240,7 @@ function flag(/** @type {Design} */ D, /** @type {number} */ x, /** @type {numbe
  * Round tower: shaded cylinder topped per the culture — cone, onion dome
  * or a crenellated parapet.
  * @param {Design} D
- * @param {{r?: number, h?: number, roof?: Design['towerRoof'], flags?: boolean, flare?: boolean}} [o]
+ * @param {{r?: number, h?: number, roof?: Design['towerRoof'], flags?: boolean, flare?: number}} [o]
  * @returns {Part[]}
  */
 export function roundTower(D, o = {}) {
@@ -1260,9 +1255,11 @@ export function roundTower(D, o = {}) {
 	// Flared body: the top ~25% widens via a 45° slope, then stays flared
 	// all the way to the parapet. Orthogonal to the roof style — any
 	// cap (cone, onion, crenel, dome) can sit on a flared or straight body.
-	const flare = o.flare ?? roof === 'flared';
+	// `D.towerFlare` is a 0..1 scalar; 1.0 is the full Watabou corbel.
+	const flareScalar = Math.max(0, Math.min(1, o.flare ?? D.towerFlare ?? 0));
+	const flare = flareScalar > 0.01;
 	const flareBelt = h * 0.75;
-	const flareOv = flare ? Math.max(1.6, r * 0.26) : 0; // outward projection
+	const flareOv = flareScalar * Math.max(1.6, r * 0.26); // outward projection
 	const topFlared = top + flareOv;
 	const body = flare
 		? /** @type {Poly} */ ([
@@ -1356,33 +1353,58 @@ export function roundTower(D, o = {}) {
 /**
  * Square tower with a pyramid spire (church tower / donjon).
  * @param {Design} D
- * @param {{w?: number, h?: number, finial?: boolean, clock?: boolean}} [o]  `finial`: top it with
- *   the culture's symbol; `clock`: a clock face instead of the belfry
+ * @param {{w?: number, h?: number, finial?: boolean, clock?: boolean, flare?: number}} [o]
+ *   `finial`: top it with the culture's symbol; `clock`: a clock face instead
+ *   of the belfry; `flare`: override `D.towerFlare` (0..1).
  * @returns {Part[]}
  */
 export function squareTower(D, o = {}) {
 	const w = o.w ?? 10,
 		h = (o.h ?? 28) * D.stature;
 	const v = depthVec(w * 0.8);
-	const side = /** @type {Poly} */ ([
-		[w / 2, 0],
-		add([w / 2, 0], v),
-		add([w / 2, h], v),
-		[w / 2, h],
-	]);
-	const ov = 1;
-	/** @type {Pt} */ const fl = [-w / 2 - ov, h];
-	/** @type {Pt} */ const fr = [w / 2 + ov, h];
+	// Flared body: upper ~25% widens by beltOv on every side via a 45°
+	// slope. The pyramid / onion / dome above rises from the wider top.
+	const flareScalar = Math.max(0, Math.min(1, o.flare ?? D.towerFlare ?? 0));
+	const flare = flareScalar > 0.01;
+	const beltY = h * 0.75;
+	const beltOv = flareScalar * Math.max(1.4, w * 0.14);
+	const w2 = w / 2 + beltOv; // effective half-width at the top
+	// Front wall: plain rect when straight; T-shape when flared.
+	const frontSolid = flare
+		? /** @type {Poly} */ ([
+				[-w / 2, 0],
+				[w / 2, 0],
+				[w / 2, beltY],
+				[w2, beltY + beltOv],
+				[w2, h],
+				[-w2, h],
+				[-w2, beltY + beltOv],
+				[-w / 2, beltY],
+			])
+		: rect(-w / 2, 0, w, h);
+	// Side (right-oblique) face: plain parallelogram when straight; T-shape
+	// pushed back along the depth vector when flared.
+	const side = flare
+		? /** @type {Poly} */ ([
+				[w / 2, 0],
+				add([w / 2, 0], v),
+				add([w / 2, beltY], v),
+				add([w2, beltY + beltOv], v),
+				add([w2, h], v),
+				[w2, h],
+				[w2, beltY + beltOv],
+				[w / 2, beltY],
+			])
+		: /** @type {Poly} */ ([[w / 2, 0], add([w / 2, 0], v), add([w / 2, h], v), [w / 2, h]]);
+	// Pyramid corners now use `w2` (which equals w/2 when unflared, w/2+beltOv
+	// when flared), so the pyramid base always matches the tower top.
+	const ov = flare ? 0 : 1;
+	/** @type {Pt} */ const fl = [-w2 - ov, h];
+	/** @type {Pt} */ const fr = [w2 + ov, h];
 	const br = add(fr, v);
+	const bl = add(fl, v);
 	const apex = add([0, h + w * D.spire], [v[0] / 2, v[1] / 2]);
 	const c = /** @type {Pt} */ ([v[0] / 2, h]);
-	/** @type {Poly} */
-	const frontFace = [
-		fl,
-		fr,
-		...sag(fr, apex, c, D.concave).slice(1),
-		...sag(apex, fl, c, D.concave).slice(1, -1),
-	];
 	/** @type {Poly} */
 	const sideFace = [
 		fr,
@@ -1394,7 +1416,7 @@ export function squareTower(D, o = {}) {
 	const parts = [
 		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
 		{
-			solid: [rect(-w / 2, 0, w, h)],
+			solid: [frontSolid],
 			fills: o.clock
 				? [archOpening(0, 0, 4, 7), opening({ ...D, window: 'slit' }, 0, h * 0.45, 4)]
 				: [archOpening(0, 0, 4, 7), archOpening(0, h - 9.5, 4.4, 7.5)],
@@ -1403,93 +1425,51 @@ export function squareTower(D, o = {}) {
 		},
 		...(o.clock ? clockFace(0, h - w * 0.42, w * 0.3) : []),
 	];
+	// Deck polygon at y=h — fills the oblique top of the frustum so the
+	// softened corners where front T, side T, and roof meet don't leave a
+	// sliver of background showing through. Only needed when flared.
+	if (flare) parts.push({ solid: [[fl, fr, br, bl]], role: 'roof' });
 	if (D.towerRoof === 'onion') {
-		// A dome on the tower's flat top instead of the spire.
-		parts.push({
-			solid: [[[-w / 2, h], [w / 2, h], add([w / 2, h], v), add([-w / 2, h], v)]],
-		});
-		const dome = onionDome(D, v[0] / 2, h + v[1] / 2 - 0.6, w * 0.5);
+		if (!flare) {
+			parts.push({ solid: [[[-w / 2, h], [w / 2, h], add([w / 2, h], v), add([-w / 2, h], v)]] });
+		}
+		const dome = onionDome(D, v[0] / 2, h + v[1] / 2 - 0.6, w2);
 		parts.push(...dome.parts);
 		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
 		return parts;
 	}
 	if (D.towerRoof === 'dome') {
-		// Stone half-sphere on the square tower's flat top.
-		parts.push({
-			solid: [[[-w / 2, h], [w / 2, h], add([w / 2, h], v), add([-w / 2, h], v)]],
-		});
-		const dome = hemiDome(v[0] / 2, h + v[1] / 2, w * 0.52);
+		if (!flare) {
+			parts.push({ solid: [[[-w / 2, h], [w / 2, h], add([w / 2, h], v), add([-w / 2, h], v)]] });
+		}
+		const dome = hemiDome(v[0] / 2, h + v[1] / 2, w2 * 1.04);
 		parts.push(dome.part);
 		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
 		return parts;
 	}
-	if (D.towerRoof === 'flared') {
-		// Flared square tower: upper ~25% is wider than the lower walls,
-		// joined by a 45° slope. Replace each face polygon with a single
-		// T-shape (no union) — Clipper won't merge polygons that only touch
-		// at a point, which was leaving the belt disconnected before.
-		const beltY = h * 0.75;
-		const beltOv = Math.max(1.4, w * 0.14);
-		parts[1].solid = [
-			[
-				[-w / 2, 0],
-				[w / 2, 0],
-				[w / 2, beltY],
-				[w / 2 + beltOv, beltY + beltOv],
-				[w / 2 + beltOv, h],
-				[-w / 2 - beltOv, h],
-				[-w / 2 - beltOv, beltY + beltOv],
-				[-w / 2, beltY],
-			],
-		];
-		parts[0].solid = [
-			[
-				[w / 2, 0],
-				add([w / 2, 0], v),
-				add([w / 2, beltY], v),
-				add([w / 2 + beltOv, beltY + beltOv], v),
-				add([w / 2 + beltOv, h], v),
-				[w / 2 + beltOv, h],
-				[w / 2 + beltOv, beltY + beltOv],
-				[w / 2, beltY],
-			],
-		];
-		// Pyramid rises from the WIDER top corners; height unchanged.
-		/** @type {Pt} */ const fflFl = [-w / 2 - beltOv, h];
-		/** @type {Pt} */ const fflFr = [w / 2 + beltOv, h];
-		const fflBr = add(fflFr, v);
-		const fflBl = add(fflFl, v);
-		/** @type {Pt} */ const fflApex = add([0, h + w * D.spire], [v[0] / 2, v[1] / 2]);
-		const fflC = /** @type {Pt} */ ([v[0] / 2, h]);
-		/** @type {Poly} */
-		const fflSide = [
-			fflFr,
-			fflBr,
-			...sag(fflBr, fflApex, fflC, D.concave).slice(1),
-			...sag(fflApex, fflFr, fflC, D.concave).slice(1, -1),
-		];
-		// Deck polygon at y=h — fills the oblique top of the frustum so the
-		// softened corners where front T, side T, and pyramid faces all meet
-		// don't leave a sliver of background showing through.
-		parts.push({ solid: [[fflFl, fflFr, fflBr, fflBl]], role: 'roof' });
-		// Pyramid as one silhouette polygon (no apex gap) with the shaded
-		// side triangle overlaid for the two-tone look. Splitting the
-		// pyramid into two triangles that share only the apex vertex left a
-		// visible notch there once soft-radius rounded both tips.
-		parts.push({ solid: [[fflFl, fflFr, fflBr, fflApex]], role: 'roof' });
+	// Pyramid (cone/crenel fall through here). For flared bodies, use the
+	// silhouette-plus-shaded-overlay pattern so the apex can't open a notch.
+	if (flare) {
+		parts.push({ solid: [[fl, fr, br, apex]], role: 'roof' });
 		parts.push({
-			solid: [fflSide],
+			solid: [sideFace],
 			role: 'roof',
 			shaded: true,
-			lines: hatch(fflSide, -40, D.hatch),
+			lines: hatch(sideFace, -40, D.hatch),
 		});
-		if (o.finial) parts.push(...symbolAt(D.symbol, fflApex));
-		return parts;
+	} else {
+		/** @type {Poly} */
+		const frontFace = [
+			fl,
+			fr,
+			...sag(fr, apex, c, D.concave).slice(1),
+			...sag(apex, fl, c, D.concave).slice(1, -1),
+		];
+		parts.push(
+			{ solid: [sideFace], role: 'roof', shaded: true, lines: hatch(sideFace, -40, D.hatch) },
+			{ solid: [frontFace], role: 'roof' },
+		);
 	}
-	parts.push(
-		{ solid: [sideFace], role: 'roof', shaded: true, lines: hatch(sideFace, -40, D.hatch) },
-		{ solid: [frontFace], role: 'roof' },
-	);
 	if (o.finial) parts.push(...symbolAt(D.symbol, apex));
 	return parts;
 }
