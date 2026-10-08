@@ -38,11 +38,11 @@ import { place } from './render.js';
  *   with a stone half-sphere
  * @property {number} spire spire / cone height ÷ tower width
  * @property {number} taper tower walls lean in by this share of the radius
- * @property {number} towerFlare 0..1: share of the tower's height occupied
- *   by the flare, measured down from the parapet. 0 = no flare (default,
- *   straight walls), 0.25 = upper quarter flares (Watabou corbel), 1 = the
- *   whole tower is the 45° slope. Orthogonal to towerRoof: any cap can sit
- *   on a flared body.
+ * @property {number} towerCorbel 0..1: share of the tower's height occupied
+ *   by the corbelled parapet, measured down from the top. 0 = no corbel
+ *   (default, straight walls), 0.25 = upper quarter corbels out (Watabou
+ *   look), 1 = the whole tower is the 45° slope. Orthogonal to towerRoof:
+ *   any cap can sit on a corbelled body.
  * @property {boolean} flags
  * @property {number} flagLen
  * @property {number} flagFolds
@@ -97,7 +97,7 @@ export const DEFAULT_DESIGN = {
 	towerRoof: 'cone',
 	spire: 2.2,
 	taper: 0.04,
-	towerFlare: 0,
+	towerCorbel: 0,
 	flags: true,
 	flagLen: 11,
 	flagFolds: 3,
@@ -144,9 +144,9 @@ export function makeDesign(seed) {
 		towerRoof: pick(['cone', 'cone', 'cone', 'onion', 'onion', 'crenel', 'crenel', 'dome', 'dome']),
 		spire: 1.3 + avg() * 1.7,
 		taper: avg() * 0.14,
-		// Most cultures (~70%) build straight walls (towerFlare = 0). The
-		// rest get a flare occupying 10-35% of the tower's upper height.
-		towerFlare: r() < 0.7 ? 0 : 0.1 + avg() * 0.25,
+		// Most cultures (~70%) build straight walls (towerCorbel = 0). The
+		// rest get a corbel occupying 10-35% of the tower's upper height.
+		towerCorbel: r() < 0.7 ? 0 : 0.1 + avg() * 0.25,
 		flags: r() < 0.75,
 		flagLen: 8 + avg() * 9,
 		flagFolds: 2 + Math.floor(r() * 3),
@@ -1241,7 +1241,7 @@ function flag(/** @type {Design} */ D, /** @type {number} */ x, /** @type {numbe
  * Round tower: shaded cylinder topped per the culture — cone, onion dome
  * or a crenellated parapet.
  * @param {Design} D
- * @param {{r?: number, h?: number, roof?: Design['towerRoof'], flags?: boolean, flare?: number}} [o]
+ * @param {{r?: number, h?: number, roof?: Design['towerRoof'], flags?: boolean, corbel?: number}} [o]
  * @returns {Part[]}
  */
 export function roundTower(D, o = {}) {
@@ -1253,29 +1253,29 @@ export function roundTower(D, o = {}) {
 		top = r * (1 - (b > 0 ? Math.max(D.taper, 0.42 * Math.min(1, D.towerBow)) : D.taper));
 	const roof = o.roof ?? D.towerRoof;
 	/** @type {Pt} */ const mid = [0, h / 2];
-	// Flared body: from the belt up to the parapet, the walls widen via a
-	// 45° slope and then stay flared. `D.towerFlare` is the share of the
-	// tower's height occupied by the flare, measured down from the top —
-	// 0 means no flare, 1 means the whole tower is the slope. Orthogonal to
-	// roof style: any cap can sit on a flared or straight body.
-	const flareAmount = Math.max(0, Math.min(1, o.flare ?? D.towerFlare ?? 0));
-	const flareOvMax = Math.max(1.6, r * 0.26);
-	const flareBelt = (1 - flareAmount) * h;
+	// Corbelled body: from the belt up to the parapet, the walls widen via
+	// a 45° slope and then stay flared. `D.towerCorbel` is the share of the
+	// tower's height occupied by the corbel, measured down from the top —
+	// 0 means no corbel, 1 means the whole tower is the slope. Orthogonal
+	// to roof style: any cap can sit on a corbelled or straight body.
+	const corbelAmount = Math.max(0, Math.min(1, o.corbel ?? D.towerCorbel ?? 0));
+	const corbelOvMax = Math.max(1.6, r * 0.26);
+	const corbelBelt = (1 - corbelAmount) * h;
 	// Project outward by the fixed max, clamped to the room available above
 	// the belt — can't rise past the parapet.
-	const flareOv = Math.min(flareOvMax, Math.max(0, h - flareBelt));
-	const flare = flareOv > 0.01;
-	const topFlared = top + flareOv;
-	const body = flare
+	const corbelOv = Math.min(corbelOvMax, Math.max(0, h - corbelBelt));
+	const corbel = corbelOv > 0.01;
+	const topCorbel = top + corbelOv;
+	const body = corbel
 		? /** @type {Poly} */ ([
 				...ell(0, 0, r, ry, 180, 360),
-				...sag([r, 0], [top, flareBelt], [0, flareBelt / 2], b).slice(1),
-				[topFlared, flareBelt + flareOv], // 45° slope out
-				[topFlared, h], // vertical to top
-				[-topFlared, h],
-				[-topFlared, flareBelt + flareOv],
-				[-top, flareBelt],
-				...sag([-top, flareBelt], [-r, 0], [0, flareBelt / 2], b).slice(1, -1),
+				...sag([r, 0], [top, corbelBelt], [0, corbelBelt / 2], b).slice(1),
+				[topCorbel, corbelBelt + corbelOv], // 45° slope out
+				[topCorbel, h], // vertical to top
+				[-topCorbel, h],
+				[-topCorbel, corbelBelt + corbelOv],
+				[-top, corbelBelt],
+				...sag([-top, corbelBelt], [-r, 0], [0, corbelBelt / 2], b).slice(1, -1),
 			])
 		: /** @type {Poly} */ ([
 				...ell(0, 0, r, ry, 180, 360),
@@ -1284,17 +1284,17 @@ export function roundTower(D, o = {}) {
 			]);
 	/** @type {Poly[]} */
 	const bodySolids = [body];
-	// A top ellipse closes the flared deck so the parapet reads as a disc
+	// A top ellipse closes the corbelled deck so the parapet reads as a disc
 	// (otherwise the cone sits on a flat line without the oblique rim).
-	if (flare) {
+	if (corbel) {
 		bodySolids.push([
-			...ell(0, h, topFlared, ry * 1.1, 180, 360),
-			...ell(0, h, topFlared, ry * 1.1, 0, 180).slice(1),
+			...ell(0, h, topCorbel, ry * 1.1, 180, 360),
+			...ell(0, h, topCorbel, ry * 1.1, 0, 180).slice(1),
 		]);
 	}
-	// Shade reaches to the wider radius when flared, so the 45° outer slope
-	// and the flared parapet both carry the cylindrical shading.
-	const shadeR = flare ? topFlared : r;
+	// Shade reaches to the wider radius when corbelled, so the 45° outer
+	// slope and the parapet both carry the cylindrical shading.
+	const shadeR = corbel ? topCorbel : r;
 	/** @type {Part[]} */
 	const parts = [
 		{
@@ -1305,7 +1305,7 @@ export function roundTower(D, o = {}) {
 		},
 	];
 	if (roof === 'crenel') {
-		const R = topFlared + 1.4;
+		const R = topCorbel + 1.4;
 		// A banner on the platform, drawn first so the parapet hides its foot.
 		if (D.flags && o.flags !== false) parts.unshift(...flag(D, 0, h + 3));
 		parts.push({
@@ -1316,20 +1316,20 @@ export function roundTower(D, o = {}) {
 		return parts;
 	}
 	if (roof === 'onion') {
-		const dome = onionDome(D, 0, h, topFlared * 0.95);
+		const dome = onionDome(D, 0, h, topCorbel * 0.95);
 		if (D.flags && o.flags !== false) parts.unshift(...flag(D, dome.tip[0], dome.tip[1] - 2));
 		parts.push(...dome.parts);
 		return parts;
 	}
 	if (roof === 'dome') {
-		const dome = hemiDome(0, h, topFlared + 0.4);
+		const dome = hemiDome(0, h, topCorbel + 0.4);
 		if (D.flags && o.flags !== false) parts.unshift(...flag(D, dome.tip[0], dome.tip[1] - 2));
 		parts.push(dome.part);
 		return parts;
 	}
-	// Cone base sits on whatever the body's actual top radius is: `topFlared`
-	// absorbs the 45° flare when the flared body is enabled.
-	const R = topFlared + 1.8;
+	// Cone base sits on whatever the body's actual top radius is: `topCorbel`
+	// absorbs the 45° slope when the corbelled body is enabled.
+	const R = topCorbel + 1.8;
 	const rh = top * 2 * D.spire * 0.75;
 	/** @type {Pt} */ const apex = [0, h + rh];
 	const sweep = D.concave * 0.8;
@@ -1358,28 +1358,28 @@ export function roundTower(D, o = {}) {
 /**
  * Square tower with a pyramid spire (church tower / donjon).
  * @param {Design} D
- * @param {{w?: number, h?: number, finial?: boolean, clock?: boolean, flare?: number}} [o]
+ * @param {{w?: number, h?: number, finial?: boolean, clock?: boolean, corbel?: number}} [o]
  *   `finial`: top it with the culture's symbol; `clock`: a clock face instead
- *   of the belfry; `flare`: override `D.towerFlare` (0..1).
+ *   of the belfry; `corbel`: override `D.towerCorbel` (0..1).
  * @returns {Part[]}
  */
 export function squareTower(D, o = {}) {
 	const w = o.w ?? 10,
 		h = (o.h ?? 28) * D.stature;
 	const v = depthVec(w * 0.8);
-	// Flared body: from the belt up, the walls widen by beltOv on every side
-	// via a 45° slope. `D.towerFlare` is the share of the tower's height
-	// occupied by the flare (measured down from the top) — 0 means no flare,
-	// 1 means the whole tower is the slope. Pyramid / onion / dome above
-	// rises from the wider top.
-	const flareAmount = Math.max(0, Math.min(1, o.flare ?? D.towerFlare ?? 0));
+	// Corbelled body: from the belt up, the walls widen by beltOv on every
+	// side via a 45° slope. `D.towerCorbel` is the share of the tower's
+	// height occupied by the corbel (measured down from the top) — 0 means
+	// no corbel, 1 means the whole tower is the slope. Pyramid / onion /
+	// dome above rises from the wider top.
+	const corbelAmount = Math.max(0, Math.min(1, o.corbel ?? D.towerCorbel ?? 0));
 	const beltOvMax = Math.max(1.4, w * 0.14);
-	const beltY = (1 - flareAmount) * h;
+	const beltY = (1 - corbelAmount) * h;
 	const beltOv = Math.min(beltOvMax, Math.max(0, h - beltY));
-	const flare = beltOv > 0.01;
+	const corbel = beltOv > 0.01;
 	const w2 = w / 2 + beltOv; // effective half-width at the top
-	// Front wall: plain rect when straight; T-shape when flared.
-	const frontSolid = flare
+	// Front wall: plain rect when straight; T-shape when corbelled.
+	const frontSolid = corbel
 		? /** @type {Poly} */ ([
 				[-w / 2, 0],
 				[w / 2, 0],
@@ -1392,8 +1392,8 @@ export function squareTower(D, o = {}) {
 			])
 		: rect(-w / 2, 0, w, h);
 	// Side (right-oblique) face: plain parallelogram when straight; T-shape
-	// pushed back along the depth vector when flared.
-	const side = flare
+	// pushed back along the depth vector when corbelled.
+	const side = corbel
 		? /** @type {Poly} */ ([
 				[w / 2, 0],
 				add([w / 2, 0], v),
@@ -1405,9 +1405,9 @@ export function squareTower(D, o = {}) {
 				[w / 2, beltY],
 			])
 		: /** @type {Poly} */ ([[w / 2, 0], add([w / 2, 0], v), add([w / 2, h], v), [w / 2, h]]);
-	// Pyramid corners now use `w2` (which equals w/2 when unflared, w/2+beltOv
-	// when flared), so the pyramid base always matches the tower top.
-	const ov = flare ? 0 : 1;
+	// Pyramid corners now use `w2` (which equals w/2 when straight, w/2+beltOv
+	// when corbelled), so the pyramid base always matches the tower top.
+	const ov = corbel ? 0 : 1;
 	/** @type {Pt} */ const fl = [-w2 - ov, h];
 	/** @type {Pt} */ const fr = [w2 + ov, h];
 	const br = add(fr, v);
@@ -1436,10 +1436,10 @@ export function squareTower(D, o = {}) {
 	];
 	// Deck polygon at y=h — fills the oblique top of the frustum so the
 	// softened corners where front T, side T, and roof meet don't leave a
-	// sliver of background showing through. Only needed when flared.
-	if (flare) parts.push({ solid: [[fl, fr, br, bl]], role: 'roof' });
+	// sliver of background showing through. Only needed when corbelled.
+	if (corbel) parts.push({ solid: [[fl, fr, br, bl]], role: 'roof' });
 	if (D.towerRoof === 'onion') {
-		if (!flare) {
+		if (!corbel) {
 			parts.push({ solid: [[[-w / 2, h], [w / 2, h], add([w / 2, h], v), add([-w / 2, h], v)]] });
 		}
 		const dome = onionDome(D, v[0] / 2, h + v[1] / 2 - 0.6, w2);
@@ -1448,7 +1448,7 @@ export function squareTower(D, o = {}) {
 		return parts;
 	}
 	if (D.towerRoof === 'dome') {
-		if (!flare) {
+		if (!corbel) {
 			parts.push({ solid: [[[-w / 2, h], [w / 2, h], add([w / 2, h], v), add([-w / 2, h], v)]] });
 		}
 		const dome = hemiDome(v[0] / 2, h + v[1] / 2, w2 * 1.04);
@@ -1456,9 +1456,9 @@ export function squareTower(D, o = {}) {
 		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
 		return parts;
 	}
-	// Pyramid (cone/crenel fall through here). For flared bodies, use the
+	// Pyramid (cone/crenel fall through here). For corbelled bodies, use the
 	// silhouette-plus-shaded-overlay pattern so the apex can't open a notch.
-	if (flare) {
+	if (corbel) {
 		parts.push({ solid: [[fl, fr, br, apex]], role: 'roof' });
 		parts.push({
 			solid: [sideFace],

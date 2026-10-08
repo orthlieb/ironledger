@@ -182,8 +182,8 @@ const KNOBS = [
 	},
 	{
 		group: 'Towers',
-		key: 'towerFlare',
-		label: 'Flare',
+		key: 'towerCorbel',
+		label: 'Corbel',
 		type: 'range',
 		min: 0,
 		max: 1,

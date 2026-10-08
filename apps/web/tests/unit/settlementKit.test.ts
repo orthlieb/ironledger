@@ -133,9 +133,9 @@ describe('design-knob variants render', () => {
 		it(`towerRoof=${roof} renders a round tower`, () => {
 			expect(renders(roundTower({ ...DEFAULT_DESIGN, towerRoof: roof }))).toBe(true);
 		});
-		it(`towerRoof=${roof} + towerFlare renders a round tower`, () => {
-			// towerFlare = 0.25 → upper quarter flares (visible Watabou corbel)
-			expect(renders(roundTower({ ...DEFAULT_DESIGN, towerRoof: roof, towerFlare: 0.25 }))).toBe(
+		it(`towerRoof=${roof} + towerCorbel renders a round tower`, () => {
+			// towerCorbel = 0.25 → upper quarter corbels out (visible Watabou look)
+			expect(renders(roundTower({ ...DEFAULT_DESIGN, towerRoof: roof, towerCorbel: 0.25 }))).toBe(
 				true,
 			);
 		});
