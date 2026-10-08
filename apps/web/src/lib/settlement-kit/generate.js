@@ -143,14 +143,10 @@ export function toLayeredSvg(title, items, palette, o = {}) {
 		scope,
 	);
 	const paths = [
-		`  <path data-role="sil" fill="${palette.halo}" fill-rule="evenodd" stroke="${palette.halo}" stroke-width="3" stroke-linejoin="round" d="${silhouette}"/>`,
-		// fill-rule="evenodd" — Clipper outputs holes as separate CW subpaths
-		// of an outer CCW polygon; the Y-flip in toPathData reverses winding
-		// per subpath, which breaks nonzero's hole handling and lets the ink
-		// band's outer boundary paint over the fills underneath.
+		`  <path data-role="sil" fill="${palette.halo}" stroke="${palette.halo}" stroke-width="3" stroke-linejoin="round" d="${silhouette}"/>`,
 		...used.map(
 			(l) =>
-				`  <path data-role="${l}" fill="${PATTERN_ROLES.has(l) ? url(l) : f[l]}" fill-rule="evenodd" d="${layers[l]}"/>`,
+				`  <path data-role="${l}" fill="${PATTERN_ROLES.has(l) ? url(l) : f[l]}" d="${layers[l]}"/>`,
 		),
 	];
 	const safeTitle = title.replace(/[<>&"-]/g, ' ');

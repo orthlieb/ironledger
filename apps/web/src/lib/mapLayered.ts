@@ -174,23 +174,17 @@ export function layeredMarkup(
 		defs += '</defs>';
 	}
 	let s = defs;
-	// fill-rule="evenodd" — Clipper outputs holes as separate CW subpaths of
-	// an outer CCW polygon; the Y-flip in render.js:toPathData reverses
-	// winding per subpath, which breaks nonzero's hole handling and lets
-	// the ink band paint over the fills underneath (seen on cultures with
-	// concave gable roofs — the whole house went black).
 	for (const { role, d } of paths) {
 		if (role === 'sil') {
-			if (haloAttrs !== null)
-				s += `<path fill="${colours.sil}" fill-rule="evenodd"${haloAttrs} d="${d}"/>`;
+			if (haloAttrs !== null) s += `<path fill="${colours.sil}"${haloAttrs} d="${d}"/>`;
 			continue;
 		}
 		if (PATTERN_WALL_ROLES.has(role)) {
-			s += `<path fill="url(#pat-${role}-${scope})" fill-rule="evenodd" d="${d}"/>`;
+			s += `<path fill="url(#pat-${role}-${scope})" d="${d}"/>`;
 			continue;
 		}
 		const fill = colours[role];
-		if (fill) s += `<path fill="${fill}" fill-rule="evenodd" d="${d}"/>`;
+		if (fill) s += `<path fill="${fill}" d="${d}"/>`;
 	}
 	return s;
 }

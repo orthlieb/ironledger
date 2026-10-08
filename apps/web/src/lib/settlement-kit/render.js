@@ -47,6 +47,12 @@ const S = 1000; // Clipper works in integers
 const toC = (p) => p.map(([x, y]) => ({ X: Math.round(x * S), Y: Math.round(y * S) }));
 
 /**
+ * Boolean op on ring sets that are themselves Clipper outputs. Even-odd
+ * fill, because Clipper occasionally emits an outer ring with reversed
+ * orientation after rounding (near-collinear vertices); under non-zero the
+ * next op then sees that outer and its holes winding the same way and
+ * fills the holes in — the whole face goes ink-black. Even-odd only counts
+ * nesting, so a mis-oriented ring can't swallow its holes.
  * @param {number} ct ClipType
  * @param {CPaths} a
  * @param {CPaths} b
@@ -58,7 +64,7 @@ function bool(ct, a, b) {
 	c.AddPaths(b, ClipperLib.PolyType.ptClip, true);
 	/** @type {CPaths} */
 	const out = [];
-	c.Execute(ct, out, ClipperLib.PolyFillType.pftNonZero, ClipperLib.PolyFillType.pftNonZero);
+	c.Execute(ct, out, ClipperLib.PolyFillType.pftEvenOdd, ClipperLib.PolyFillType.pftEvenOdd);
 	return out;
 }
 /** @param {CPaths} a @param {CPaths} b */
@@ -67,6 +73,31 @@ const union = (a, b) => bool(ClipperLib.ClipType.ctUnion, a, b);
 const minus = (a, b) => bool(ClipperLib.ClipType.ctDifference, a, b);
 /** @param {CPaths} a @param {CPaths} b */
 const intersect = (a, b) => bool(ClipperLib.ClipType.ctIntersection, a, b);
+
+/**
+ * Merge raw piece polygons (which may overlap and may be wound either way)
+ * into one clean ring set: orient every input counter-clockwise, then
+ * union under non-zero so overlaps add rather than cancel.
+ * @param {Poly[]} polys
+ * @returns {CPaths}
+ */
+function rawUnion(polys) {
+	const paths = polys.map((p) => {
+		const c = toC(p);
+		return ClipperLib.Clipper.Orientation(c) ? c : c.reverse();
+	});
+	const c = new ClipperLib.Clipper();
+	c.AddPaths(paths, ClipperLib.PolyType.ptSubject, true);
+	/** @type {CPaths} */
+	const out = [];
+	c.Execute(
+		ClipperLib.ClipType.ctUnion,
+		out,
+		ClipperLib.PolyFillType.pftNonZero,
+		ClipperLib.PolyFillType.pftNonZero,
+	);
+	return out;
+}
 
 /**
  * Grow (d > 0) or shrink (d < 0) closed shapes. Mitred by default so
@@ -220,7 +251,7 @@ export function renderLayered(parts, opts = {}) {
 	let occ = [];
 	for (let i = parts.length - 1; i >= 0; i--) {
 		const p = parts[i];
-		let solid = union(p.solid.map(toC), []);
+		let solid = rawUnion(p.solid);
 		const mask = p.mask ? [toC(p.mask)] : null;
 		if (mask) solid = intersect(solid, mask);
 		// Morphological opening: shrink then regrow with round joins,
@@ -229,7 +260,7 @@ export function renderLayered(parts, opts = {}) {
 		const outer = offset(solid, half, round);
 		const inner = offset(solid, -half, round);
 		let ink = minus(outer, inner);
-		const fillInk = p.fills?.length ? intersect(union(p.fills.map(toC), []), outer) : [];
+		const fillInk = p.fills?.length ? intersect(rawUnion(p.fills), outer) : [];
 		if (p.lines?.length)
 			ink = union(ink, minus(intersect(stroke(p.lines), inner), offset(fillInk, 0.6)));
 		if (fillInk.length) ink = union(ink, p.cuts?.length ? minus(fillInk, stroke(p.cuts)) : fillInk);
