@@ -74,6 +74,27 @@ describe('parseLayeredSvg / layeredMarkup', () => {
 	});
 });
 
+describe('layeredMarkup — patterned walls', () => {
+	const paths = [
+		{ role: 'wall-stone', d: 'M0 0L4 0L4 4Z' },
+		{ role: 'wall-hedge-shade', d: 'M5 0L9 0L9 4Z' },
+	];
+	it("draws material walls through the kit's <pattern> defs", () => {
+		const out = layeredMarkup(paths, roleColours(DEFAULT_LAYERED_PALETTE), null);
+		expect(out).toMatch(/<pattern id="pat-wall-stone-\w+"/);
+		expect(out).toMatch(/fill="url\(#pat-wall-hedge-shade-\w+\)"/);
+		expect(out).toContain('patternTransform="scale(2)"'); // the bramble tile
+	});
+	it('keeps fixed material colours whatever the palette, but stone follows it', () => {
+		const a = layeredMarkup(paths, roleColours(parsePalette('wall:#112233')), null);
+		const b = layeredMarkup(paths, roleColours(parsePalette('wall:#445566')), null);
+		expect(a).toContain('#112233'); // stone body = culture wall colour
+		expect(b).toContain('#445566');
+		const hedgeOf = (s: string) => s.slice(s.indexOf('pat-wall-hedge'));
+		expect(hedgeOf(a)).toBe(hedgeOf(b).replaceAll('445566', '112233'));
+	});
+});
+
 describe('mapGlyphInner — layered icons', () => {
 	const icon: MapIcon = {
 		slug: 'village',

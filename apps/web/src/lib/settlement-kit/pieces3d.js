@@ -273,6 +273,10 @@ function towerTop(D, o) {
 	};
 }
 
+/** Palisade stake width (world units) — the wall-wood plank pattern's tile
+ *  is this at the generator's 2× scale, so stakes and planks line up. */
+const STAKE = 1.6;
+
 /** Hatch/detail stroke weight (world units). */
 export const THIN = 0.6;
 
@@ -1790,20 +1794,8 @@ function gateTower(D, y0, h, wood) {
 				[-w / 2, y0 + h],
 			]
 		: crenellated(-w / 2, w / 2, y0, y0 + h, { merlon: 2.2, notch: 2 });
-	/** @type {Line[]} */
-	const planks = [];
-	if (wood)
-		for (let i = 1; i < 5; i++) {
-			const x = -w / 2 + (w * i) / 5;
-			planks.push({
-				pts: [
-					[x, y0],
-					[x, y0 + h],
-				],
-				w: THIN,
-			});
-		}
-	const role = wood ? /** @type {const} */ ('wood') : undefined;
+	// A wooden gate takes the palisade's plank pattern.
+	const role = wood ? /** @type {const} */ ('wall-wood') : undefined;
 	// Banner is planted on whatever caps the gate — the dome tip, the pyramid
 	// apex, or (stone gate) just the crenellated parapet.
 	let flagAt = /** @type {Pt} */ ([0.6, y0 + h - 0.5]);
@@ -1813,7 +1805,6 @@ function gateTower(D, y0, h, wood) {
 		{
 			solid: [front],
 			role,
-			lines: planks,
 			fills: [archOpening(0, y0, 5.6, Math.min(8.5, h * 0.7))],
 		},
 	];
@@ -1821,7 +1812,7 @@ function gateTower(D, y0, h, wood) {
 	// modest pyramid roof. Stone gates keep their crenellated parapet below
 	// the roof as a decorative band; wooden gates already had their
 	// sharpened-palisade crown replaced with a flat top. The roof's own
-	// role is 'wood' on wooden gates, 'roof' on stone gates (so the stone
+	// role is the palisade's plank pattern on wooden gates, 'roof' on stone gates (so the stone
 	// gatehouse's cap takes the marker colour, matching every other roof).
 	const yTop = y0 + h;
 	parts.push({
@@ -1835,7 +1826,7 @@ function gateTower(D, y0, h, wood) {
 	} else {
 		const ov = 1.2,
 			rh = w * 0.55;
-		const roofRole = wood ? /** @type {const} */ ('wood') : /** @type {const} */ ('roof');
+		const roofRole = wood ? /** @type {const} */ ('wall-wood') : /** @type {const} */ ('roof');
 		/** @type {Pt} */ const fL = [-w / 2 - ov, yTop];
 		/** @type {Pt} */ const fR = [w / 2 + ov, yTop];
 		const bR = P.back(fR);
@@ -1894,7 +1885,16 @@ export function ringWall(D, o = {}) {
 	};
 	/** Top edge from angle a0 to a1 — sharpened stakes for a palisade. */
 	const topEdge = (/** @type {number} */ a0, /** @type {number} */ a1) => {
-		const n = Math.max(1, Math.round(Math.abs(a1 - a0) / 4.5));
+		// One sharpened stake per STAKE units of arc (matching the plank pattern),
+		// other crests every 4.5°.
+		const n = Math.max(
+			1,
+			Math.round(
+				mat.crest === 'stake'
+					? (Math.abs(a1 - a0) * Math.PI * rx) / 180 / STAKE
+					: Math.abs(a1 - a0) / 4.5,
+			),
+		);
 		const at = (/** @type {number} */ i) => {
 			const deg = a0 + ((a1 - a0) * i) / n;
 			const a = (deg * Math.PI) / 180;
@@ -2377,7 +2377,8 @@ function squareWall(D, o) {
 	const edge = (/** @type {Pt} */ a, /** @type {Pt} */ b) => {
 		const bowed = !!bow(D);
 		if (!wood && !bowed) return [a, b];
-		const n = Math.max(bowed ? 12 : 2, Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) / 3.4));
+		const stride = mat.crest === 'stake' ? STAKE : 3.4;
+		const n = Math.max(bowed ? 12 : 2, Math.round(Math.hypot(b[0] - a[0], b[1] - a[1]) / stride));
 		/** @type {Poly} */
 		const pts = [];
 		const at = (/** @type {number} */ i) =>
@@ -2811,7 +2812,16 @@ export function well(/** @type {Design} */ D) {
 function material(type) {
 	switch (type) {
 		case 'palisade':
-			return { soft: true, role: 'wood', h: 0.85, seams: true, towers: false, crest: 'stake' };
+			// Plank-striped pattern body (wall-wood): the stakes come from the
+			// fill, so no per-stake seam strokes; the top edge carries the tips.
+			return {
+				soft: true,
+				role: 'wall-wood',
+				h: 0.85,
+				seams: false,
+				towers: false,
+				crest: 'stake',
+			};
 		case 'hedge':
 			// Foliage pattern body (via wall-hedge role) + scalloped crown.
 			return {
@@ -2823,11 +2833,11 @@ function material(type) {
 				crest: 'scallop',
 			};
 		case 'bone':
-			return { soft: true, role: undefined, h: 1, seams: true, towers: false, crest: 'rib' };
+			return { soft: true, role: 'wall-bone', h: 1, seams: true, towers: false, crest: 'rib' };
 		case 'earth':
 			return {
 				soft: true,
-				role: 'earth',
+				role: 'wall-earth',
 				h: 0.8,
 				seams: false,
 				towers: false,
@@ -2863,7 +2873,7 @@ function crest(mat, p, q) {
 		/** @type {Pt} */ ([p[0] + (q[0] - p[0]) * t + dx, p[1] + (q[1] - p[1]) * t + dy]);
 	switch (mat.crest) {
 		case 'stake':
-			return [lerp(0.5, 2)];
+			return [lerp(0.5, 2.8)];
 		case 'scallop':
 			return [lerp(0.2, 1), lerp(0.5, 1.7), lerp(0.8, 1)];
 		case 'rib':
@@ -4121,7 +4131,7 @@ export function cathedral(D) {
 
 /** Sharpened-stake top edge from x1 back to x0 at height y. */
 function stakes(/** @type {number} */ x0, /** @type {number} */ x1, /** @type {number} */ y) {
-	const n = Math.max(2, Math.round((x1 - x0) / 2.6));
+	const n = Math.max(2, Math.round((x1 - x0) / STAKE));
 	/** @type {Poly} */
 	const out = [];
 	for (let i = n; i > 0; i--) {
@@ -4301,26 +4311,14 @@ function wallRun(D, x0, x1, wh, wood) {
 			? [[x0, 0], [x1, 0], ...stakes(x0, x1, wh)]
 			: crenellated(x0, x1, 0, wh, { merlon: 2.2, notch: 2 })
 	);
-	const role = wood ? /** @type {const} */ ('wood') : /** @type {const} */ ('wall-stone');
+	const role = wood ? /** @type {const} */ ('wall-wood') : /** @type {const} */ ('wall-stone');
 	const sideFace = /** @type {Poly} */ ([[x1, 0], add([x1, 0], v), add([x1, wh], v), [x1, wh]]);
-	/** @type {Line[]} */
-	const planks = [];
-	if (wood)
-		for (let x = x0 + 2.6; x < x1; x += 2.6)
-			planks.push({
-				pts: [
-					[x, 0],
-					[x, wh],
-				],
-				w: THIN,
-			});
 	/** @type {Part[]} */
 	const parts = [
 		{ solid: [sideFace], role, shaded: true, lines: hatch(sideFace, 65, D.hatch) },
-		// Stone body gets its running-bond courses from the wall-stone
-		// pattern fill (no more Clipper-unioned brick lines); a wooden
-		// palisade still shows plank seams.
-		{ solid: [front], role, lines: wood ? planks : [] },
+		// Both bodies take their texture from the pattern fill: running-bond
+		// courses for stone, plank stripes for a palisade.
+		{ solid: [front], role },
 	];
 	return parts;
 }

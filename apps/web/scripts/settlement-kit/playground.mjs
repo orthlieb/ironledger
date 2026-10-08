@@ -14,7 +14,11 @@ import {
 	upgradeDesign,
 } from '../../src/lib/settlement-kit/pieces3d.js';
 import { TEMPLATES, pieces, settlement } from '../../src/lib/settlement-kit/layouts3d.js';
-import { PATTERN_ROLES, patternDefs } from '../../src/lib/settlement-kit/patterns.js';
+import {
+	PATTERN_ROLES,
+	PATTERN_SHADE,
+	patternDefs,
+} from '../../src/lib/settlement-kit/patterns.js';
 import { LAYERS, place, renderLayered } from '../../src/lib/settlement-kit/render.js';
 import { ruinPlaced } from '../../src/lib/settlement-kit/ruins3d.js';
 
@@ -541,33 +545,23 @@ let cultureKey = null;
 let iconSeq = 0;
 
 /**
- * `<pattern>` defs for the stone / hedge / reef wall roles. The pattern
- * bodies take their colours from the page's --wall / --ink, so they follow
- * the colour pickers live; the -shade tiles sit under a --wall-pat override
- * that darkens the body the way wall-shade does. (The hex fallbacks only
- * show outside the page, and bakedSvg() resolves them for downloads.)
+ * `<pattern>` defs for the patterned wall roles. Stone reads the page's
+ * --wall / --ink, so it follows the colour pickers live; the other materials
+ * have fixed colours, and every -shade tile mixes toward --ink the way
+ * wall-shade does. bakedSvg() resolves the CSS for downloads.
  * @param {string[]} roles
  */
 function wallPatterns(roles) {
-	const scope = `pg${++iconSeq}`;
-	const grey = () => ({ fill: '#cccccc', ink: '#333333' });
-	const base = patternDefs(
-		roles.filter((r) => PATTERN_ROLES.has(r) && !r.endsWith('-shade')),
-		grey,
-		scope,
+	return patternDefs(
+		roles,
+		(role) => ({
+			wall: 'var(--wall)',
+			ink: 'var(--ink)',
+			tone: (c) =>
+				role.endsWith('-shade') ? `color-mix(in srgb,${c} ${PATTERN_SHADE * 100}%,var(--ink))` : c,
+		}),
+		`pg${++iconSeq}`,
 	);
-	const shade = patternDefs(
-		roles.filter((r) => PATTERN_ROLES.has(r) && r.endsWith('-shade')),
-		grey,
-		scope,
-	);
-	return {
-		defs:
-			base.defs +
-			(shade.defs &&
-				`<g style="--wall-pat:color-mix(in srgb,var(--wall) 80%,var(--ink))">${shade.defs}</g>`),
-		url: (/** @type {string} */ r) => (r.endsWith('-shade') ? shade.url(r) : base.url(r)),
-	};
 }
 
 /** @param {Placed[]} items */

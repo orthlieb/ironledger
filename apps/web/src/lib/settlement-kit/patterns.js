@@ -4,23 +4,32 @@
 // Material-specific repeating fills for wall-roled pieces. Baked into every
 // generated SVG as <pattern> elements in <defs>; the wall polygon then uses
 // fill="url(#pat-wall-stone)" (etc.) in place of a flat colour. This saves
-// Clipper the work of unioning dozens of brick-course lines per piece
-// (stone wall icon baker: 60 s → 290 s → down to ~130 s again when the
-// brick lines move here), and lets us give hedge and reef a readable body
-// texture they lacked entirely.
+// Clipper the work of unioning dozens of brick-course lines per piece, and
+// gives every material a readable body texture.
 //
-// A pattern definition is purely a string producer: given a fill colour
-// (the wall body) and an ink colour (seams/joints/leaves), it returns the
-// contents of a <pattern> element — not the <pattern> wrapper itself,
-// which `defsFor()` adds along with its id, size, and patternUnits.
+// Stone takes its body colour from the culture's wall colour; every other
+// material has fixed colours of its own (MATERIALS) — a hedge is always green
+// and brown, coral and bone white and grey, a palisade and an earth bank
+// brown. A pattern definition is purely a string producer: given a Paint
+// (palette wall + ink, and the tile's light-or-shade `tone`) it returns the
+// contents of a <pattern> element; patternDefs() adds the wrapper.
 //
-// IMPORTANT: colours are baked into the pattern string at output time.
-// Each render of an icon that uses a different palette needs its own
-// pattern defs. Pattern ids are suffixed per render (via `scope`) so two
-// icons on the same page don't collide.
+// Colours are baked into the pattern string at output time, so each render
+// needs its own defs; pattern ids are suffixed per render (via `scope`) so
+// two icons on the same page don't collide. The main app's map draws icons
+// through the same defs (mapLayered.ts), so the kit, the app and the
+// playground can never drift apart.
 // =============================================================================
 
 import { rng } from './geom.js';
+
+/**
+ * Colours a pattern is drawn in: the culture palette's `wall` and `ink`, and
+ * `tone`, which maps a colour to this tile's lighting — as-is on a lit face,
+ * mixed toward ink on a shaded one. Values may be any CSS colour expression:
+ * hex in generated files and the app, var() / color-mix() in the playground.
+ * @typedef {{wall: string, ink: string, tone: (colour: string) => string}} Paint
+ */
 
 /**
  * @typedef {object} PatternDef
@@ -28,35 +37,29 @@ import { rng } from './geom.js';
  * @property {number} h tile height in world units
  * @property {number} [scale] drawn this many times larger on the wall (a
  *   patternTransform, so strokes scale too); `w` / `h` are pre-scale
- * @property {(fill: string, ink: string) => string} body inner XML for the
- *   `<pattern>` element (`<rect>`, `<path>`, `<circle>` …), with colours
- *   baked in
+ * @property {(paint: Paint) => string} body inner XML for the `<pattern>`
+ *   element (`<rect>`, `<path>`, `<circle>` …), with colours baked in
  */
 
-// Pattern bodies use CSS vars with hex fallbacks via style= — the var()
-// kicks in when the pattern is rendered inside a document that sets
-// `--wall` / `--ink` (the playground), while the hex fallback keeps every
-// standalone-view path working (a baked SVG opened in a browser, an <img>
-// src attribute, a markdown preview). Vars don't resolve from the role
-// name, so this encodes the right var for each pattern type.
-
-/** @param {string} fill wall-body hex (fallback)
- *  @returns {string} */
-const wallVar = (fill) => `var(--wall-pat, var(--wall, ${fill}))`;
-/** @param {string} ink ink hex (fallback)
- *  @returns {string} */
-const inkVar = (ink) => `var(--ink, ${ink})`;
+/** Fixed material colours, whatever the culture's palette. */
+export const MATERIALS = {
+	hedge: { body: '#7F9B5B', mass: '#5F7D43', leaf: '#4D6A33', rib: '#A9C283', cane: '#6E4B2C' },
+	coral: { body: '#F0EEE8', wall: '#9E9B94', groove: '#C4C1BA' },
+	bone: { body: '#EFEBE1', grain: '#B8B3A8' },
+	wood: { body: '#A57549', seam: '#6A4426', grain: '#8A5E37' },
+	earth: { body: '#8E6B46', dark: '#5E4429', light: '#B38E63' },
+};
 
 /** Running-bond brick: offset courses, one horizontal line per course and
- *  staggered vertical joints. The stroke is 0.3 world units to match the
- *  rest of the kit's hairline details at marker size. */
+ *  staggered vertical joints, on the culture's wall colour. The stroke is
+ *  0.3 world units to match the kit's hairline details at marker size. */
 /** @type {PatternDef} */
 const stone = {
 	w: 4.4,
 	h: 4.8,
-	body: (fill, ink) =>
-		`<rect width="4.4" height="4.8" style="fill:${wallVar(fill)}"/>` +
-		`<path style="stroke:${inkVar(ink)};stroke-width:0.3;fill:none" d="` +
+	body: ({ wall, ink, tone }) =>
+		`<rect width="4.4" height="4.8" style="fill:${tone(wall)}"/>` +
+		`<path style="stroke:${ink};stroke-width:0.3;fill:none" d="` +
 		// Horizontal courses at y=0 and y=2.4
 		'M0 0h4.4M0 2.4h4.4' +
 		// Vertical joints: course 0 at x=0, 4.4; course 1 at x=2.2
@@ -256,20 +259,24 @@ function brambleTile() {
 }
 const BRAMBLE = brambleTile();
 
-/** Bramble hedge: faint leafy mass, compound leaves with pale midribs, and
- *  thorny canes arching through it all — see brambleTile(). */
+/** Bramble hedge, green and brown: a leafy mass, compound leaves with pale
+ *  midribs, and brown thorny canes arching through — see brambleTile(). */
 /** @type {PatternDef} */
 const hedge = {
 	w: HEDGE,
 	h: HEDGE,
 	scale: 2,
-	body: (fill, ink) =>
-		`<rect width="${HEDGE}" height="${HEDGE}" style="fill:${wallVar(fill)}"/>` +
-		`<path style="fill:${inkVar(ink)};fill-opacity:0.2" d="${BRAMBLE.mass}"/>` +
-		`<path style="fill:${inkVar(ink)};fill-opacity:0.55" d="${BRAMBLE.leaves}"/>` +
-		`<path style="stroke:${wallVar(fill)};stroke-width:0.1;fill:none;stroke-opacity:0.7" d="${BRAMBLE.ribs}"/>` +
-		`<path style="stroke:${inkVar(ink)};stroke-width:0.26;fill:none;stroke-linecap:round;stroke-opacity:0.85" d="${BRAMBLE.cane}"/>` +
-		`<path style="fill:${inkVar(ink)};fill-opacity:0.85" d="${BRAMBLE.thorns}"/>`,
+	body: ({ tone }) => {
+		const m = MATERIALS.hedge;
+		return (
+			`<rect width="${HEDGE}" height="${HEDGE}" style="fill:${tone(m.body)}"/>` +
+			`<path style="fill:${tone(m.mass)};fill-opacity:0.6" d="${BRAMBLE.mass}"/>` +
+			`<path style="fill:${tone(m.leaf)}" d="${BRAMBLE.leaves}"/>` +
+			`<path style="stroke:${tone(m.rib)};stroke-width:0.1;fill:none;stroke-opacity:0.8" d="${BRAMBLE.ribs}"/>` +
+			`<path style="stroke:${tone(m.cane)};stroke-width:0.26;fill:none;stroke-linecap:round" d="${BRAMBLE.cane}"/>` +
+			`<path style="fill:${tone(m.cane)}" d="${BRAMBLE.thorns}"/>`
+		);
+	},
 };
 
 // ─── Reef: brain coral ───────────────────────────────────────────────────────
@@ -357,19 +364,96 @@ function brainCoralTile() {
 }
 const CORAL_MAZE = brainCoralTile();
 
-/** Brain coral: winding double-walled corridors — see brainCoralTile(). */
+/** Brain coral, white and grey: winding double-walled corridors — see
+ *  brainCoralTile(). */
 /** @type {PatternDef} */
 const reef = {
 	w: CORAL,
 	h: CORAL,
 	scale: 2.5,
-	body: (fill, ink) => {
+	body: ({ tone }) => {
+		const m = MATERIALS.coral;
 		const line = 'fill:none;stroke-linecap:round;stroke-linejoin:round';
 		return (
-			`<rect width="${CORAL}" height="${CORAL}" style="fill:${wallVar(fill)}"/>` +
-			`<path style="stroke:${inkVar(ink)};stroke-opacity:0.75;stroke-width:${r1(CORAL_BAND)};${line}" d="${CORAL_MAZE}"/>` +
-			`<path style="stroke:${wallVar(fill)};stroke-width:${r1(CORAL_BAND - 0.3)};${line}" d="${CORAL_MAZE}"/>` +
-			`<path style="stroke:${inkVar(ink)};stroke-opacity:0.35;stroke-width:0.14;${line}" d="${CORAL_MAZE}"/>`
+			`<rect width="${CORAL}" height="${CORAL}" style="fill:${tone(m.body)}"/>` +
+			`<path style="stroke:${tone(m.wall)};stroke-width:${r1(CORAL_BAND)};${line}" d="${CORAL_MAZE}"/>` +
+			`<path style="stroke:${tone(m.body)};stroke-width:${r1(CORAL_BAND - 0.3)};${line}" d="${CORAL_MAZE}"/>` +
+			`<path style="stroke:${tone(m.groove)};stroke-width:0.14;${line}" d="${CORAL_MAZE}"/>`
+		);
+	},
+};
+
+// ─── Palisade, earth bank, bone ──────────────────────────────────────────────
+
+/** Palisade, brown: one stake per tile — a dark seam either side and a few
+ *  grain strokes — so the pickets come from the fill, not from a Clipper
+ *  stroke per stake. The wall's top edge carries the matching sharpened tips. */
+/** @type {PatternDef} */
+const wood = {
+	w: 3.2,
+	h: 6,
+	body: ({ tone }) => {
+		const m = MATERIALS.wood;
+		return (
+			`<rect width="3.2" height="6" style="fill:${tone(m.body)}"/>` +
+			`<path style="stroke:${tone(m.grain)};stroke-width:0.18;fill:none;stroke-linecap:round" d="M1.2 0.4v2M2 3.1v2.4M0.9 4v1.3"/>` +
+			`<path style="stroke:${tone(m.seam)};stroke-width:0.45;fill:none" d="M0 0v6M3.2 0v6"/>`
+		);
+	},
+};
+
+/**
+ * Seamless speckles: `n` dots in two tones on a square tile, repeated across
+ * any edge they overlap.
+ * @param {number} size
+ * @param {number} n
+ * @param {number} seed
+ */
+function speckles(size, n, seed) {
+	const rand = rng(seed);
+	/** @type {string[]} */
+	const dark = [];
+	/** @type {string[]} */
+	const light = [];
+	for (let i = 0; i < n; i++) {
+		const x = rand() * size,
+			y = rand() * size,
+			r = 0.18 + rand() * 0.3;
+		const out = rand() < 0.65 ? dark : light;
+		for (const dx of [0, ...(x - r < 0 ? [size] : []), ...(x + r > size ? [-size] : [])])
+			for (const dy of [0, ...(y - r < 0 ? [size] : []), ...(y + r > size ? [-size] : [])])
+				out.push(`<circle cx="${r1(x + dx)}" cy="${r1(y + dy)}" r="${r1(r)}"/>`);
+	}
+	return { dark: dark.join(''), light: light.join('') };
+}
+const DIRT = speckles(6, 18, 11);
+
+/** Earth bank, brown: speckled dirt — dark grit and paler pebbles. */
+/** @type {PatternDef} */
+const earth = {
+	w: 6,
+	h: 6,
+	body: ({ tone }) => {
+		const m = MATERIALS.earth;
+		return (
+			`<rect width="6" height="6" style="fill:${tone(m.body)}"/>` +
+			`<g style="fill:${tone(m.dark)}">${DIRT.dark}</g>` +
+			`<g style="fill:${tone(m.light)}">${DIRT.light}</g>`
+		);
+	},
+};
+
+/** Bone, white and grey: faint grain strokes and a few pores. */
+/** @type {PatternDef} */
+const bone = {
+	w: 7,
+	h: 7,
+	body: ({ tone }) => {
+		const m = MATERIALS.bone;
+		return (
+			`<rect width="7" height="7" style="fill:${tone(m.body)}"/>` +
+			`<path style="stroke:${tone(m.grain)};stroke-width:0.18;fill:none;stroke-linecap:round" d="M0.6 1.4Q2 1 3.4 1.5M4.2 3.6Q5.4 3.2 6.5 3.8M1.2 5.4Q2.4 5 3.6 5.6"/>` +
+			`<g style="fill:${tone(m.grain)}"><circle cx="5.3" cy="1.2" r="0.22"/><circle cx="2.2" cy="3.3" r="0.18"/><circle cx="5.6" cy="5.9" r="0.2"/></g>`
 		);
 	},
 };
@@ -382,7 +466,31 @@ export const PATTERNS = {
 	'wall-hedge-shade': hedge,
 	'wall-reef': reef,
 	'wall-reef-shade': reef,
+	'wall-wood': wood,
+	'wall-wood-shade': wood,
+	'wall-earth': earth,
+	'wall-earth-shade': earth,
+	'wall-bone': bone,
+	'wall-bone-shade': bone,
 };
+
+/** How much of each colour a -shade tile keeps (the rest is ink) — the
+ *  same as the generic wall-shade. */
+export const PATTERN_SHADE = 0.8;
+
+/**
+ * The Paint for a pattern role from a palette's wall and ink colours (hex):
+ * a -shade tile mixes every colour PATTERN_SHADE of the way back from ink.
+ * @param {string} role
+ * @param {string} wall
+ * @param {string} ink
+ * @param {(a: string, b: string, t: number) => string} mix `t` of a, the rest b
+ * @returns {Paint}
+ */
+export function paletteTone(role, wall, ink, mix) {
+	const shade = role.endsWith('-shade');
+	return { wall, ink, tone: (c) => (shade ? mix(c, ink, PATTERN_SHADE) : c) };
+}
 
 /** Role names of walls that use a pattern fill (both base and -shade). */
 export const PATTERN_ROLES = new Set(Object.keys(PATTERNS));
@@ -392,24 +500,23 @@ export const PATTERN_ROLES = new Set(Object.keys(PATTERNS));
  * suffixed on each pattern id so two icons in the same document don't
  * collide; pass a stable per-icon string (slug, cache key).
  * @param {Iterable<string>} usedRoles roles actually referenced in the icon
- * @param {(role: string) => {fill: string, ink: string}} coloursFor map a
- *   pattern role to its wall-colour fill + ink colour
+ * @param {(role: string) => Paint} paintFor the Paint for a pattern role
+ *   (its `tone` shading the -shade roles)
  * @param {string} scope unique-ish per icon
  * @returns {{defs: string, url: (role: string) => string}}
  */
-export function patternDefs(usedRoles, coloursFor, scope) {
+export function patternDefs(usedRoles, paintFor, scope) {
 	const roles = [...new Set(usedRoles)].filter((r) => PATTERN_ROLES.has(r));
 	if (!roles.length) return { defs: '', url: () => '' };
 	const id = (/** @type {string} */ role) => `pat-${role}-${scope}`;
 	const defs = roles
 		.map((role) => {
 			const p = PATTERNS[role];
-			const { fill, ink } = coloursFor(role);
 			return (
 				`<pattern id="${id(role)}" width="${p.w}" height="${p.h}" ` +
 				`patternUnits="userSpaceOnUse"` +
 				(p.scale ? ` patternTransform="scale(${p.scale})"` : '') +
-				`>${p.body(fill, ink)}</pattern>`
+				`>${p.body(paintFor(role))}</pattern>`
 			);
 		})
 		.join('');

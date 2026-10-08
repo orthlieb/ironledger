@@ -38,7 +38,7 @@ import {
 	stiltHut,
 	upgradeDesign,
 } from '../../src/lib/settlement-kit/pieces3d.js';
-import { patternDefs } from '../../src/lib/settlement-kit/patterns.js';
+import { paletteTone, patternDefs } from '../../src/lib/settlement-kit/patterns.js';
 import { renderLayered, place } from '../../src/lib/settlement-kit/render.js';
 
 type Design = typeof DEFAULT_DESIGN;
@@ -119,6 +119,9 @@ describe('wall patterns', () => {
 		['stone', 'wall-stone'],
 		['hedge', 'wall-hedge'],
 		['reef', 'wall-reef'],
+		['palisade', 'wall-wood'],
+		['earth', 'wall-earth'],
+		['bone', 'wall-bone'],
 	] as const)('%s wall emits a <pattern> and uses url(#…) for its fill', (wall, role) => {
 		const svg = generateSettlementSvg(
 			{ tier: 'village', culture: 'default', seed: 3, walls: wall },
@@ -133,7 +136,11 @@ describe('wall patterns', () => {
 		['wall-hedge', 2],
 		['wall-reef', 2.5],
 	] as const)('%s tile is drawn %s× larger via patternTransform', (role, scale) => {
-		const { defs } = patternDefs([role], () => ({ fill: '#ffffff', ink: '#000000' }), 't');
+		const { defs } = patternDefs(
+			[role],
+			(r) => paletteTone(r, '#ffffff', '#000000', (a) => a),
+			't',
+		);
 		expect(defs).toContain(`patternTransform="scale(${scale})"`);
 		expect(defs.length, 'procedural tile should stay compact').toBeLessThan(12_000);
 	});
