@@ -153,14 +153,14 @@ export function layeredMarkup(
 	haloAttrs: string | null,
 	scope?: string,
 ): string {
-	// Pattern defs for any wall-roled path the icon uses. Ids are scoped by
-	// the colours the tiles bake in (stone takes the wall colour, every
-	// shade tile the ink), so icons in different palettes on one map never
-	// pick up each other's tiles, while same-palette icons share them.
-	scope ??= `${colours.wall}${colours.ink}`.replace(/#/g, '');
+	// Pattern defs for any wall-roled path the icon uses. Material colours
+	// are fixed, but shade tiles mix toward the palette ink, so ids are
+	// scoped by it: icons in different palettes on one map never pick up
+	// each other's tiles, while same-ink icons share them.
+	scope ??= colours.ink.replace('#', '');
 	const { defs } = patternDefs(
 		paths.map((p) => p.role),
-		(role) => paletteTone(role, colours.wall, colours.ink, mixHex),
+		(role) => paletteTone(role, colours.ink, mixHex),
 		scope,
 	);
 	let s = defs;

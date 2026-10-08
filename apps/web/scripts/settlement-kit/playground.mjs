@@ -553,17 +553,16 @@ let cultureKey = null;
 let iconSeq = 0;
 
 /**
- * `<pattern>` defs for the patterned wall roles. Stone reads the page's
- * --wall / --ink, so it follows the colour pickers live; the other materials
- * have fixed colours, and every -shade tile mixes toward --ink the way
- * wall-shade does. bakedSvg() resolves the CSS for downloads.
+ * `<pattern>` defs for the patterned wall roles. The materials have fixed
+ * colours; every -shade tile mixes toward the page's --ink the way
+ * wall-shade does, so it follows the ink picker live. bakedSvg() resolves
+ * the CSS for downloads.
  * @param {string[]} roles
  */
 function wallPatterns(roles) {
 	return patternDefs(
 		roles,
 		(role) => ({
-			wall: 'var(--wall)',
 			ink: 'var(--ink)',
 			tone: (c) =>
 				role.endsWith('-shade') ? `color-mix(in srgb,${c} ${PATTERN_SHADE * 100}%,var(--ink))` : c,

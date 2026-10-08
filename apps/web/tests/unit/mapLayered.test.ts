@@ -16,6 +16,7 @@ import {
 	roleColours,
 } from '../../src/lib/mapLayered.js';
 import { primeLayered } from '../../src/lib/mapIconCache.js';
+import { MATERIALS } from '../../src/lib/settlement-kit/patterns.js';
 import { mapGlyphInner } from '../../src/lib/mapConstants.js';
 import type { MapIcon } from '../../src/lib/generated/mapIconManifest.js';
 
@@ -85,13 +86,12 @@ describe('layeredMarkup — patterned walls', () => {
 		expect(out).toMatch(/fill="url\(#pat-wall-hedge-shade-\w+\)"/);
 		expect(out).toContain('patternTransform="scale(2)"'); // the bramble tile
 	});
-	it('keeps fixed material colours whatever the palette, but stone follows it', () => {
+	it('keeps every material its own colours whatever the wall colour — stone is grey', () => {
 		const a = layeredMarkup(paths, roleColours(parsePalette('wall:#112233')), null);
 		const b = layeredMarkup(paths, roleColours(parsePalette('wall:#445566')), null);
-		expect(a).toContain('#112233'); // stone body = culture wall colour
-		expect(b).toContain('#445566');
-		const hedgeOf = (s: string) => s.slice(s.indexOf('pat-wall-hedge'));
-		expect(hedgeOf(a)).toBe(hedgeOf(b).replaceAll('445566', '112233'));
+		expect(a).toBe(b);
+		expect(a).not.toContain('#112233');
+		expect(a).toContain(MATERIALS.stone.body);
 	});
 });
 

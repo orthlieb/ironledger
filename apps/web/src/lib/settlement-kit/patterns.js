@@ -7,12 +7,12 @@
 // Clipper the work of unioning dozens of brick-course lines per piece, and
 // gives every material a readable body texture.
 //
-// Stone takes its body colour from the culture's wall colour; every other
-// material has fixed colours of its own (MATERIALS) — a hedge is always green
-// and brown, coral and bone white and grey, a palisade and an earth bank
-// brown. A pattern definition is purely a string producer: given a Paint
-// (palette wall + ink, and the tile's light-or-shade `tone`) it returns the
-// contents of a <pattern> element; patternDefs() adds the wrapper.
+// Every material has fixed colours of its own (MATERIALS), whatever the
+// culture's palette — stone is always grey, a hedge green and brown, coral
+// and bone white and grey, a palisade and an earth bank brown. A pattern
+// definition is purely a string producer: given a Paint (the palette ink and
+// the tile's light-or-shade `tone`) it returns the contents of a <pattern>
+// element; patternDefs() adds the wrapper.
 //
 // Colours are baked into the pattern string at output time, so each render
 // needs its own defs; pattern ids are suffixed per render (via `scope`) so
@@ -24,11 +24,11 @@
 import { rng } from './geom.js';
 
 /**
- * Colours a pattern is drawn in: the culture palette's `wall` and `ink`, and
- * `tone`, which maps a colour to this tile's lighting — as-is on a lit face,
- * mixed toward ink on a shaded one. Values may be any CSS colour expression:
- * hex in generated files and the app, var() / color-mix() in the playground.
- * @typedef {{wall: string, ink: string, tone: (colour: string) => string}} Paint
+ * How a pattern is shaded: the culture palette's `ink`, and `tone`, which
+ * maps a material colour to this tile's lighting — as-is on a lit face, mixed
+ * toward ink on a shaded one. Values may be any CSS colour expression: hex in
+ * generated files and the app, var() / color-mix() in the playground.
+ * @typedef {{ink: string, tone: (colour: string) => string}} Paint
  */
 
 /**
@@ -43,6 +43,7 @@ import { rng } from './geom.js';
 
 /** Fixed material colours, whatever the culture's palette. */
 export const MATERIALS = {
+	stone: { body: '#C9C7C2', joint: '#86837D' },
 	hedge: { body: '#7F9B5B', mass: '#5F7D43', leaf: '#4D6A33', rib: '#A9C283', cane: '#6E4B2C' },
 	coral: { body: '#F0EEE8', wall: '#9E9B94', groove: '#C4C1BA' },
 	bone: { body: '#EFEBE1', grain: '#B8B3A8' },
@@ -50,16 +51,16 @@ export const MATERIALS = {
 	earth: { body: '#8E6B46', dark: '#5E4429', light: '#B38E63' },
 };
 
-/** Running-bond brick: offset courses, one horizontal line per course and
- *  staggered vertical joints, on the culture's wall colour. The stroke is
- *  0.3 world units to match the kit's hairline details at marker size. */
+/** Grey running-bond masonry: offset courses, one horizontal line per course
+ *  and staggered vertical joints. The stroke is 0.3 world units to match the
+ *  kit's hairline details at marker size. */
 /** @type {PatternDef} */
 const stone = {
 	w: 4.4,
 	h: 4.8,
-	body: ({ wall, ink, tone }) =>
-		`<rect width="4.4" height="4.8" style="fill:${tone(wall)}"/>` +
-		`<path style="stroke:${ink};stroke-width:0.3;fill:none" d="` +
+	body: ({ tone }) =>
+		`<rect width="4.4" height="4.8" style="fill:${tone(MATERIALS.stone.body)}"/>` +
+		`<path style="stroke:${tone(MATERIALS.stone.joint)};stroke-width:0.3;fill:none" d="` +
 		// Horizontal courses at y=0 and y=2.4
 		'M0 0h4.4M0 2.4h4.4' +
 		// Vertical joints: course 0 at x=0, 4.4; course 1 at x=2.2
@@ -479,17 +480,16 @@ export const PATTERNS = {
 export const PATTERN_SHADE = 0.8;
 
 /**
- * The Paint for a pattern role from a palette's wall and ink colours (hex):
- * a -shade tile mixes every colour PATTERN_SHADE of the way back from ink.
+ * The Paint for a pattern role from a palette's ink colour (hex): a -shade
+ * tile mixes every colour PATTERN_SHADE of the way back from ink.
  * @param {string} role
- * @param {string} wall
  * @param {string} ink
  * @param {(a: string, b: string, t: number) => string} mix `t` of a, the rest b
  * @returns {Paint}
  */
-export function paletteTone(role, wall, ink, mix) {
+export function paletteTone(role, ink, mix) {
 	const shade = role.endsWith('-shade');
-	return { wall, ink, tone: (c) => (shade ? mix(c, ink, PATTERN_SHADE) : c) };
+	return { ink, tone: (c) => (shade ? mix(c, ink, PATTERN_SHADE) : c) };
 }
 
 /** Role names of walls that use a pattern fill (both base and -shade). */

@@ -2248,7 +2248,7 @@ export function ringWall(D, o = {}) {
 					merlons.push(
 						rect(rx * Math.cos(rad(t)) - 1.1, hAt(t) + ry * Math.sin(rad(t)) - 0.4, 2.2, 2.6),
 					);
-			if (merlons.length) seg.push({ solid: merlons, shadeArea: flank });
+			if (merlons.length) seg.push({ solid: merlons, role, shadeArea: flank });
 		}
 		frontList.push({
 			k: ry * Math.sin(rad(mid)),
@@ -2622,7 +2622,7 @@ function squareWall(D, o) {
 				lines: [...(shaded ? hatch(poly, 65, D.hatch) : []), ...seams(p, q)],
 			},
 		];
-		if (m.length) parts.push({ solid: m, shaded });
+		if (m.length) parts.push({ solid: m, role, shaded });
 		return parts;
 	};
 	const gk = gateKind(type, D);

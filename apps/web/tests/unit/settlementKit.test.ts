@@ -138,11 +138,7 @@ describe('wall patterns', () => {
 		['wall-hedge', 2],
 		['wall-reef', 2.5],
 	] as const)('%s tile is drawn %s× larger via patternTransform', (role, scale) => {
-		const { defs } = patternDefs(
-			[role],
-			(r) => paletteTone(r, '#ffffff', '#000000', (a) => a),
-			't',
-		);
+		const { defs } = patternDefs([role], (r) => paletteTone(r, '#000000', (a) => a), 't');
 		expect(defs).toContain(`patternTransform="scale(${scale})"`);
 		expect(defs.length, 'procedural tile should stay compact').toBeLessThan(12_000);
 	});

@@ -133,7 +133,7 @@ export function toLayeredSvg(title, items, palette, o = {}) {
 	const used = LAYERS.filter((l) => layers[l]);
 	const { defs, url } = patternDefs(
 		used.filter((l) => PATTERN_ROLES.has(l)),
-		(role) => paletteTone(role, palette.wall, palette.ink, mix),
+		(role) => paletteTone(role, palette.ink, mix),
 		scope,
 	);
 	const paths = [
