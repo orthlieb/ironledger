@@ -1454,6 +1454,7 @@ export function squareTower(D, o = {}) {
 		/** @type {Pt} */ const fflFl = [-w / 2 - beltOv, h];
 		/** @type {Pt} */ const fflFr = [w / 2 + beltOv, h];
 		const fflBr = add(fflFr, v);
+		const fflBl = add(fflFl, v);
 		/** @type {Pt} */ const fflApex = add([0, h + w * D.spire], [v[0] / 2, v[1] / 2]);
 		const fflC = /** @type {Pt} */ ([v[0] / 2, h]);
 		/** @type {Poly} */
@@ -1470,6 +1471,10 @@ export function squareTower(D, o = {}) {
 			...sag(fflBr, fflApex, fflC, D.concave).slice(1),
 			...sag(fflApex, fflFr, fflC, D.concave).slice(1, -1),
 		];
+		// Deck polygon at y=h — fills the oblique top of the frustum so the
+		// softened corners where front T, side T, and pyramid faces all meet
+		// don't leave a sliver of background showing through.
+		parts.push({ solid: [[fflFl, fflFr, fflBr, fflBl]], role: 'roof' });
 		parts.push(
 			{ solid: [fflSide], role: 'roof', shaded: true, lines: hatch(fflSide, -40, D.hatch) },
 			{ solid: [fflFront], role: 'roof' },
