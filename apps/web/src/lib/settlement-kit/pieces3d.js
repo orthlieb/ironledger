@@ -429,6 +429,27 @@ function cylinderShade(
 	return out;
 }
 
+/**
+ * Shift a window's base y so it sits WHOLLY below (preferred) or wholly
+ * above a tower's corbel bend, never straddling the 45° slope. Returns
+ * `wantY` unchanged when the tower has no corbel or when the natural
+ * placement already clears the slope.
+ * @param {number} wantY ideal bottom-y of the window
+ * @param {number} winH window's full height in world units
+ * @param {number} belt y of the slope's bottom (corbelBelt)
+ * @param {number} ov slope's height = outward projection (corbelOv)
+ */
+function clearCorbel(wantY, winH, belt, ov, margin = 1) {
+	if (ov <= 0.01) return wantY;
+	if (wantY + winH + margin <= belt) return wantY; // already wholly below
+	if (wantY >= belt + ov + margin) return wantY; // already wholly above
+	// Prefer the lower wall if there's room between the window and the ground.
+	const yBelow = belt - winH - margin;
+	if (yBelow >= 2) return yBelow;
+	// Otherwise push onto the corbelled upper section.
+	return belt + ov + margin;
+}
+
 /** Window opening in the culture's style. */
 function opening(
 	/** @type {Design} */ D,
@@ -1295,13 +1316,17 @@ export function roundTower(D, o = {}) {
 	// Shade reaches to the wider radius when corbelled, so the 45° outer
 	// slope and the parapet both carry the cylindrical shading.
 	const shadeR = corbel ? topCorbel : r;
+	// Slit should never straddle the corbel bend — clamp its base y so it
+	// sits wholly on the lower drum or on the corbelled parapet.
+	const slitH = 4 * 1.4;
+	const slitY = clearCorbel(h * 0.55, slitH, corbelBelt, corbelOv);
 	/** @type {Part[]} */
 	const parts = [
 		{
 			solid: bodySolids,
 			shadeArea: rect(shadeR * 0.3, -ry - 2, shadeR * 2, h + ry + 4),
 			lines: cylinderShade(shadeR, -ry - 1, h + 1),
-			fills: [opening({ ...D, window: 'slit' }, -r * 0.35, h * 0.55, 4)],
+			fills: [opening({ ...D, window: 'slit' }, -r * 0.35, slitY, 4)],
 		},
 	];
 	if (roof === 'crenel') {
@@ -1421,15 +1446,19 @@ export function squareTower(D, o = {}) {
 		...sag(br, apex, c, D.concave).slice(1),
 		...sag(apex, fr, c, D.concave).slice(1, -1),
 	];
+	// Keep every opening wholly below or above the corbel bend; straddling
+	// kills the 3D read on the 45° slope.
+	const belfryY = clearCorbel(h - 9.5, 7.5, beltY, beltOv);
+	const slitY = clearCorbel(h * 0.45, 5.6, beltY, beltOv);
 	/** @type {Part[]} */
 	const parts = [
 		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
 		{
 			solid: [frontSolid],
 			fills: o.clock
-				? [archOpening(0, 0, 4, 7), opening({ ...D, window: 'slit' }, 0, h * 0.45, 4)]
-				: [archOpening(0, 0, 4, 7), archOpening(0, h - 9.5, 4.4, 7.5)],
-			cuts: o.clock ? [] : bellCuts(0, h - 7.6),
+				? [archOpening(0, 0, 4, 7), opening({ ...D, window: 'slit' }, 0, slitY, 4)]
+				: [archOpening(0, 0, 4, 7), archOpening(0, belfryY, 4.4, 7.5)],
+			cuts: o.clock ? [] : bellCuts(0, belfryY + 1.9),
 			lines: D.masonry ? stoneCourses(-w / 2, w / 2, 0, h) : [],
 		},
 		...(o.clock ? clockFace(0, h - w * 0.42, w * 0.3) : []),
