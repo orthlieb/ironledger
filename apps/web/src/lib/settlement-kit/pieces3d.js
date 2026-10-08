@@ -38,10 +38,11 @@ import { place } from './render.js';
  *   with a stone half-sphere
  * @property {number} spire spire / cone height ÷ tower width
  * @property {number} taper tower walls lean in by this share of the radius
- * @property {number} towerFlare 0..1: upper quarter of every tower widens via
- *   a 45° slope by this share of the standard overhang. 0 = straight walls,
- *   1 = full Watabou-style corbel. Orthogonal to towerRoof: any cap can sit
- *   on a flared body.
+ * @property {number} towerFlare 0..1: y-position of the flare's bottom edge
+ *   as a fraction of the tower's height. 1 = flare starts at the top
+ *   (invisible, no flare), 0.75 = upper quarter flares (Watabou corbel),
+ *   0 = flare starts at the ground (whole tower is the 45° slope).
+ *   Orthogonal to towerRoof: any cap can sit on a flared body.
  * @property {boolean} flags
  * @property {number} flagLen
  * @property {number} flagFolds
@@ -96,7 +97,7 @@ export const DEFAULT_DESIGN = {
 	towerRoof: 'cone',
 	spire: 2.2,
 	taper: 0.04,
-	towerFlare: 0,
+	towerFlare: 1,
 	flags: true,
 	flagLen: 11,
 	flagFolds: 3,
@@ -143,9 +144,9 @@ export function makeDesign(seed) {
 		towerRoof: pick(['cone', 'cone', 'cone', 'onion', 'onion', 'crenel', 'crenel', 'dome', 'dome']),
 		spire: 1.3 + avg() * 1.7,
 		taper: avg() * 0.14,
-		// Most cultures build straight walls; a third flare out, biased toward
-		// subtle. 1.0 is the full Watabou corbel.
-		towerFlare: r() < 0.7 ? 0 : 0.4 + avg() * 0.6,
+		// Most cultures (~70%) build straight walls (towerFlare = 1). The
+		// rest get a flare whose BELT sits in the upper 10-35% of the tower.
+		towerFlare: r() < 0.7 ? 1 : 0.65 + avg() * 0.25,
 		flags: r() < 0.75,
 		flagLen: 8 + avg() * 9,
 		flagFolds: 2 + Math.floor(r() * 3),
@@ -1252,14 +1253,18 @@ export function roundTower(D, o = {}) {
 		top = r * (1 - (b > 0 ? Math.max(D.taper, 0.42 * Math.min(1, D.towerBow)) : D.taper));
 	const roof = o.roof ?? D.towerRoof;
 	/** @type {Pt} */ const mid = [0, h / 2];
-	// Flared body: the top ~25% widens via a 45° slope, then stays flared
-	// all the way to the parapet. Orthogonal to the roof style — any
-	// cap (cone, onion, crenel, dome) can sit on a flared or straight body.
-	// `D.towerFlare` is a 0..1 scalar; 1.0 is the full Watabou corbel.
-	const flareScalar = Math.max(0, Math.min(1, o.flare ?? D.towerFlare ?? 0));
-	const flare = flareScalar > 0.01;
-	const flareBelt = h * 0.75;
-	const flareOv = flareScalar * Math.max(1.6, r * 0.26); // outward projection
+	// Flared body: from the belt up to the parapet, the walls widen via a
+	// 45° slope and then stay flared. `D.towerFlare` is the belt's y-position
+	// as a fraction of h — 1 means the belt sits at the top (no visible
+	// flare), 0 means it sits at the ground (the whole tower is the flare).
+	// Orthogonal to roof style: any cap can sit on a flared or straight body.
+	const flarePos = Math.max(0, Math.min(1, o.flare ?? D.towerFlare ?? 1));
+	const flareOvMax = Math.max(1.6, r * 0.26);
+	const flareBelt = flarePos * h;
+	// Project outward by the fixed max, clamped to the room available above
+	// the belt — can't rise past the parapet.
+	const flareOv = Math.min(flareOvMax, Math.max(0, h - flareBelt));
+	const flare = flareOv > 0.01;
 	const topFlared = top + flareOv;
 	const body = flare
 		? /** @type {Poly} */ ([
@@ -1362,12 +1367,16 @@ export function squareTower(D, o = {}) {
 	const w = o.w ?? 10,
 		h = (o.h ?? 28) * D.stature;
 	const v = depthVec(w * 0.8);
-	// Flared body: upper ~25% widens by beltOv on every side via a 45°
-	// slope. The pyramid / onion / dome above rises from the wider top.
-	const flareScalar = Math.max(0, Math.min(1, o.flare ?? D.towerFlare ?? 0));
-	const flare = flareScalar > 0.01;
-	const beltY = h * 0.75;
-	const beltOv = flareScalar * Math.max(1.4, w * 0.14);
+	// Flared body: from the belt up, the walls widen by beltOv on every side
+	// via a 45° slope. `D.towerFlare` is the belt's y-position as a fraction
+	// of h — 1 means the belt sits at the top (no flare), 0 means it sits at
+	// the ground (whole tower flares). Pyramid / onion / dome above rises
+	// from the wider top.
+	const flarePos = Math.max(0, Math.min(1, o.flare ?? D.towerFlare ?? 1));
+	const beltOvMax = Math.max(1.4, w * 0.14);
+	const beltY = flarePos * h;
+	const beltOv = Math.min(beltOvMax, Math.max(0, h - beltY));
+	const flare = beltOv > 0.01;
 	const w2 = w / 2 + beltOv; // effective half-width at the top
 	// Front wall: plain rect when straight; T-shape when flared.
 	const frontSolid = flare

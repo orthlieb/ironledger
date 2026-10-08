@@ -134,7 +134,10 @@ describe('design-knob variants render', () => {
 			expect(renders(roundTower({ ...DEFAULT_DESIGN, towerRoof: roof }))).toBe(true);
 		});
 		it(`towerRoof=${roof} + towerFlare renders a round tower`, () => {
-			expect(renders(roundTower({ ...DEFAULT_DESIGN, towerRoof: roof, towerFlare: 1 }))).toBe(true);
+			// towerFlare = 0.75 → upper quarter flares (visible Watabou corbel)
+			expect(renders(roundTower({ ...DEFAULT_DESIGN, towerRoof: roof, towerFlare: 0.75 }))).toBe(
+				true,
+			);
 		});
 	}
 	const flagShapes = ['banner', 'pennant', 'swallowtail'] as const;
