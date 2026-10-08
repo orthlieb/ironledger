@@ -703,12 +703,15 @@ export function gableHouse(D, o = {}) {
 			add([-w / 2, h], v),
 		]);
 		const { part } = hemiDome(v[0] / 2, h + v[1] / 2, w * 0.42);
+		// Union topCap into the front-wall solid so the softening doesn't
+		// pull the top-left / top-right corners away from the rect wall and
+		// leave a visible gap at the parapet. Both share the 'wall' role so
+		// the merge is a no-op visually.
 		return [
 			{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
-			{ solid: [topCap] },
 			part,
 			{
-				solid: [rect(-w / 2, 0, w, h)],
+				solid: [rect(-w / 2, 0, w, h), topCap],
 				fills: facadeFills,
 				lines: D.masonry ? stoneCourses(-w / 2, w / 2, 0, h) : [],
 			},
@@ -724,14 +727,21 @@ export function gableHouse(D, o = {}) {
 	const right = /** @type {Poly} */ ([...ar, ...shift(ar, v).reverse()]);
 	const fills = facade(D, -w / 2, w / 2, h, two, r);
 	fills.push(opening(D, 0, h + rh * 0.22, 2.4));
-	// Draw order: side wall (back) → right roof (shaded, further) → left roof
-	// (lit, closer to viewer) → front wall. When D.concave > 0 both roof
-	// `sag` curves bulge toward the centre and overlap; the lit left face
-	// should sit on top of the shaded right face, matching the oblique view.
+	// Roof as a single part: left + right slopes unioned into one silhouette,
+	// with `shadeArea` carving out the shaded right half. One polygon, so
+	// softening doesn't open an apex notch between two separate tips, and no
+	// occlusion ordering can make either side disappear. Hatch lines stay on
+	// the shaded portion via Clipper's fill-ink intersect.
+	/** @type {Poly} */
+	const rightSlope = [...ar, ...shift(ar, v).reverse()];
 	return [
 		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
-		{ solid: [right], role: 'roof', shaded: true, lines: hatch(right, -28, D.hatch) },
-		{ solid: [left], role: 'roof' },
+		{
+			solid: [left, right],
+			role: 'roof',
+			shadeArea: rightSlope,
+			lines: hatch(right, -28, D.hatch),
+		},
 		{
 			solid: [rect(-w / 2, 0, w, h), [...la, ...ar.slice(1)]],
 			fills,
