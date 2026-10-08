@@ -1420,37 +1420,41 @@ export function squareTower(D, o = {}) {
 		return parts;
 	}
 	if (D.towerRoof === 'flared') {
-		// Flared square tower: the top ~25% is wider than the lower walls,
-		// joined by a 45° slope. The pyramid above stays plain.
+		// Flared square tower: upper ~25% is wider than the lower walls,
+		// joined by a 45° slope. Replace each face polygon with a single
+		// T-shape (no union) — Clipper won't merge polygons that only touch
+		// at a point, which was leaving the belt disconnected before.
 		const beltY = h * 0.75;
 		const beltOv = Math.max(1.4, w * 0.14);
-		// Front flare — a hexagonal cap unioned with the front wall.
-		parts[1].solid.push([
-			[-w / 2, beltY],
-			[-w / 2 - beltOv, beltY + beltOv],
-			[-w / 2 - beltOv, h],
-			[w / 2 + beltOv, h],
-			[w / 2 + beltOv, beltY + beltOv],
-			[w / 2, beltY],
-		]);
-		// Side flare — same hexagon shape pushed back along the depth vector.
-		parts[0].solid.push([
-			[w / 2, beltY],
-			add([w / 2, beltY], v),
-			add([w / 2 + beltOv, beltY + beltOv], v),
-			add([w / 2 + beltOv, h], v),
-			[w / 2 + beltOv, h],
-			[w / 2 + beltOv, beltY + beltOv],
-		]);
-		// Pyramid now rises from the WIDER top. Recompute faces with the
-		// flared corners.
+		parts[1].solid = [
+			[
+				[-w / 2, 0],
+				[w / 2, 0],
+				[w / 2, beltY],
+				[w / 2 + beltOv, beltY + beltOv],
+				[w / 2 + beltOv, h],
+				[-w / 2 - beltOv, h],
+				[-w / 2 - beltOv, beltY + beltOv],
+				[-w / 2, beltY],
+			],
+		];
+		parts[0].solid = [
+			[
+				[w / 2, 0],
+				add([w / 2, 0], v),
+				add([w / 2, beltY], v),
+				add([w / 2 + beltOv, beltY + beltOv], v),
+				add([w / 2 + beltOv, h], v),
+				[w / 2 + beltOv, h],
+				[w / 2 + beltOv, beltY + beltOv],
+				[w / 2, beltY],
+			],
+		];
+		// Pyramid rises from the WIDER top corners; height unchanged.
 		/** @type {Pt} */ const fflFl = [-w / 2 - beltOv, h];
 		/** @type {Pt} */ const fflFr = [w / 2 + beltOv, h];
 		const fflBr = add(fflFr, v);
-		/** @type {Pt} */ const fflApex = add(
-			[0, h + (w + 2 * beltOv) * D.spire],
-			[v[0] / 2, v[1] / 2],
-		);
+		/** @type {Pt} */ const fflApex = add([0, h + w * D.spire], [v[0] / 2, v[1] / 2]);
 		const fflC = /** @type {Pt} */ ([v[0] / 2, h]);
 		/** @type {Poly} */
 		const fflFront = [
