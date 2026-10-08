@@ -458,10 +458,11 @@ export function settlement(tier, D, o = {}) {
 	/** Ground points every placed building stands on (front corners and the
 	 *  foot of its receding side) — the wall is fitted around these. @type {[number, number][]} */
 	const footprint = [];
-	// Perspective: back rows smaller, front rows larger, centred on 1 so the
-	// settlement keeps its overall size — line widths don't scale with
-	// pieces, so a shrunken settlement would read heavier once fitted to the
-	// marker. One-row layouts (steads, outposts) have no depth to convey.
+	// Perspective: back rows stay full size, front rows grow toward 1 +
+	// PERSP_SPREAD. Shrinking the back instead would trim the icon's top
+	// (the tallest buildings sit in back rows), and since line widths don't
+	// scale with pieces the fitted icon would read heavier. One-row layouts
+	// (steads, outposts) have no depth to convey.
 	const PERSP_SPREAD = 0.18;
 	const rowScaleFor = (/** @type {number} */ ri) => (n > 1 ? 1 + PERSP_SPREAD * (ri / (n - 1)) : 1);
 	rows.forEach((row, ri) => {
