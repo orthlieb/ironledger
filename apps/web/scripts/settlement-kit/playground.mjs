@@ -10,6 +10,7 @@
 
 import { DEFAULT_DESIGN, makeDesign } from '../../src/lib/settlement-kit/pieces3d.js';
 import { TEMPLATES, pieces, settlement } from '../../src/lib/settlement-kit/layouts3d.js';
+import { PATTERN_ROLES, patternDefs } from '../../src/lib/settlement-kit/patterns.js';
 import { LAYERS, place, renderLayered } from '../../src/lib/settlement-kit/render.js';
 import { ruinPlaced } from '../../src/lib/settlement-kit/ruins3d.js';
 
@@ -173,7 +174,7 @@ const KNOBS = [
 	{
 		group: 'Houses',
 		key: 'perspective',
-		label: 'Perspective (gable houses, prototype)',
+		label: 'Perspective',
 		type: 'range',
 		min: 0,
 		max: 1,
@@ -525,6 +526,39 @@ let cultureName = 'Default culture';
 /** Key of the loaded culture (preset or import), reused on export; null → slug of the name. @type {string | null} */
 let cultureKey = null;
 
+/** Per-icon pattern-id scope: url(#…) resolves document-wide. */
+let iconSeq = 0;
+
+/**
+ * `<pattern>` defs for the stone / hedge / reef wall roles. The pattern
+ * bodies take their colours from the page's --wall / --ink, so they follow
+ * the colour pickers live; the -shade tiles sit under a --wall-pat override
+ * that darkens the body the way wall-shade does. (The hex fallbacks only
+ * show outside the page, and bakedSvg() resolves them for downloads.)
+ * @param {string[]} roles
+ */
+function wallPatterns(roles) {
+	const scope = `pg${++iconSeq}`;
+	const grey = () => ({ fill: '#cccccc', ink: '#333333' });
+	const base = patternDefs(
+		roles.filter((r) => PATTERN_ROLES.has(r) && !r.endsWith('-shade')),
+		grey,
+		scope,
+	);
+	const shade = patternDefs(
+		roles.filter((r) => PATTERN_ROLES.has(r) && r.endsWith('-shade')),
+		grey,
+		scope,
+	);
+	return {
+		defs:
+			base.defs +
+			(shade.defs &&
+				`<g style="--wall-pat:color-mix(in srgb,var(--wall) 80%,var(--ink))">${shade.defs}</g>`),
+		url: (/** @type {string} */ r) => (r.endsWith('-shade') ? shade.url(r) : base.url(r)),
+	};
+}
+
 /** @param {Placed[]} items */
 function svg(items) {
 	const parts = items.flatMap((it) =>
@@ -540,10 +574,14 @@ function svg(items) {
 		softRadius: drawing.softRadius,
 	});
 	const vb = [b.x - 3, b.y - 3, b.w + 6, b.h + 6].map((n) => n.toFixed(1)).join(' ');
-	const paths = LAYERS.filter((l) => layers[l]).map(
-		(l) => `<path data-role="${l}" d="${layers[l]}"/>`,
+	const used = LAYERS.filter((l) => layers[l]);
+	const { defs, url } = wallPatterns(used);
+	const paths = used.map((l) =>
+		PATTERN_ROLES.has(l)
+			? `<path data-role="${l}" style="fill:${url(l)}" d="${layers[l]}"/>`
+			: `<path data-role="${l}" d="${layers[l]}"/>`,
 	);
-	return `<svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="${vb}"><path class="sil" d="${silhouette}"/>${paths.join('')}</svg>`;
+	return `<svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${defs}<path class="sil" d="${silhouette}"/>${paths.join('')}</svg>`;
 }
 
 /** @param {string} id */
@@ -688,16 +726,27 @@ function applyColours() {
  */
 function bakedSvg(src) {
 	const out = /** @type {SVGSVGElement} */ (src.cloneNode(true));
-	const live = src.querySelectorAll('path');
-	out.querySelectorAll('path').forEach((p, i) => {
+	const live = src.querySelectorAll(':scope > path');
+	out.querySelectorAll(':scope > path').forEach((p, i) => {
 		const cs = getComputedStyle(live[i]);
-		p.setAttribute('fill', toHex(cs.fill));
+		// Pattern-filled walls keep their url(#…) — it's in the copied defs.
+		if (!cs.fill.startsWith('url(')) p.setAttribute('fill', toHex(cs.fill));
 		if (p.classList.contains('sil')) {
 			p.setAttribute('stroke', toHex(cs.stroke));
 			p.setAttribute('stroke-width', cs.strokeWidth);
 			p.setAttribute('stroke-linejoin', 'round');
 		}
 		p.removeAttribute('class');
+	});
+	// Wall-pattern tiles: swap each var()-coloured declaration for its value.
+	const liveTiles = src.querySelectorAll('pattern [style]');
+	out.querySelectorAll('pattern [style]').forEach((el, i) => {
+		const cs = getComputedStyle(liveTiles[i]);
+		const decls = (el.getAttribute('style') ?? '').split(';').map((d) => {
+			const prop = d.split(':')[0].trim();
+			return d.includes('var(') ? `${prop}:${toHex(cs.getPropertyValue(prop))}` : d;
+		});
+		el.setAttribute('style', decls.join(';'));
 	});
 	out.removeAttribute('class');
 	const [, , w, h] = (out.getAttribute('viewBox') ?? '0 0 100 100').split(' ').map(Number);
