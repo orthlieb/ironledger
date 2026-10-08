@@ -43,7 +43,10 @@ import { place } from './render.js';
  *   houses and tower caps alike — with a stone half-sphere; `lancet` caps
  *   towers with a pointed (ogival) dome. `crenel` is the legacy spelling of
  *   `none` + `towerCrenel` (see upgradeDesign()).
- * @property {boolean} towerCrenel a crenellated top on round towers: a short
+ * @property {'square' | 'round'} steeple the shape of the landmark towers —
+ *   church and cathedral towers, the clock tower, a village bell tower. Either
+ *   takes the culture's cap and crenellated top.
+ * @property {boolean} towerCrenel a crenellated top on towers: a short
  *   parapet ring corbelled out on its own 45° slope, with the cap (if any)
  *   sitting on it and the flag on whichever is uppermost.
  * @property {number} spire spire / cone height ÷ tower width
@@ -114,6 +117,7 @@ export const DEFAULT_DESIGN = {
 	taper: 0.04,
 	towerCorbel: 0,
 	towerCrenel: false,
+	steeple: 'square',
 	perspective: 0.5,
 	flags: true,
 	flagLen: 11,
@@ -178,7 +182,8 @@ export function makeDesign(seed) {
 		// Most cultures (~70%) build straight walls (towerCorbel = 0). The
 		// rest get a corbel occupying 10-35% of the tower's upper height.
 		towerCorbel: r() < 0.7 ? 0 : 0.1 + avg() * 0.25,
-		towerCrenel: false, // rolled below, after the draws it must not shift
+		towerCrenel: false, // rolled below, after the draws they must not shift
+		steeple: 'square',
 		perspective: 0.5,
 		flags: r() < 0.75,
 		flagLen: 8 + avg() * 9,
@@ -243,6 +248,8 @@ export function makeDesign(seed) {
 	D.towerCrenel = D.towerRoof === 'none' || r() < 0.35;
 	// Fortifying builders always crenellate their walls.
 	if (D.towerCrenel) D.merlons = true;
+	// About a quarter of cultures raise round steeples.
+	D.steeple = r() < 0.25 ? 'round' : 'square';
 	return D;
 }
 
@@ -1472,7 +1479,10 @@ function flag(/** @type {Design} */ D, /** @type {number} */ x, /** @type {numbe
  * Round tower: shaded cylinder, optionally crenellated at the top, capped
  * per the culture — cone, onion, dome, lancet or nothing.
  * @param {Design} D
- * @param {{r?: number, h?: number, roof?: Design['towerRoof'], crenel?: boolean, flags?: boolean, corbel?: number}} [o]
+ * @param {{r?: number, h?: number, roof?: Design['towerRoof'], crenel?: boolean, flags?: boolean, corbel?: number, belfry?: boolean, clock?: boolean, finial?: boolean}} [o]
+ *   `belfry`: a church bell tower — door, and an arched bell chamber with its
+ *   bell in place of the window; `clock`: a clock face up top instead;
+ *   `finial`: the culture's holy symbol on the top instead of a flag.
  * @returns {Part[]}
  */
 export function roundTower(D, o = {}) {
@@ -1538,14 +1548,32 @@ export function roundTower(D, o = {}) {
 					? winS * 1.4
 					: winS;
 	const winY = clearCorbel(h * 0.55, winH, corbelBelt, corbelOv);
+	// Bell towers and clock towers: a door at the foot, and either a bell
+	// chamber or a clock face near the top — each clear of the corbel bend.
+	const steeple = o.belfry || o.clock;
+	const belfryY = clearCorbel(h - 9.5, 7.5, corbelBelt, corbelOv);
+	const dialR = Math.min(r * 0.62, 3.6);
+	// The dial sits clear below the cap's front rim (h − ry).
+	const dialY = clearCorbel(h - ry - 1.4 - dialR * 2, dialR * 2, corbelBelt, corbelOv) + dialR;
+	/** @type {Poly[]} */
+	const openings = steeple
+		? [
+				archOpening(0, -ry * 0.85, 4, 7),
+				o.clock
+					? opening(D, 0, clearCorbel(h * 0.42, winH, corbelBelt, corbelOv), winS)
+					: archOpening(0, belfryY, 4.4, 7.5),
+			]
+		: [opening(D, -r * 0.35, winY, winS)];
 	/** @type {Part[]} */
 	const parts = [
 		{
 			solid: bodySolids,
 			shadeArea: rect(shadeR * 0.3, -ry - 2, shadeR * 2, h + ry + 4),
 			shadeLines: cylinderHatch(shadeR, -ry - 1, h + 1, D.hatch),
-			fills: [opening(D, -r * 0.35, winY, winS)],
+			fills: openings,
+			cuts: o.belfry && !o.clock ? bellCuts(0, belfryY + 1.9) : [],
 		},
+		...(o.clock ? clockFace(0, dialY, dialR) : []),
 	];
 	// Crenellated top: a short parapet ring corbelled out from the body top
 	// on its own 45° slope — the same look as the body corbel — with merlons
@@ -1554,7 +1582,12 @@ export function roundTower(D, o = {}) {
 	// the platform. Caps sit at `capY` on radius `capR` either way.
 	let capY = h,
 		capR = topCorbel;
-	const flies = D.flags && o.flags !== false;
+	const flies = D.flags && o.flags !== false && !o.finial;
+	/** Flag or finial on the uppermost point `tip` of the top. */
+	const crown = (/** @type {Pt} */ tip, /** @type {number} */ drop, socket = 0) => {
+		if (o.finial) parts.push(...symbolAt(D.symbol, tip, socket));
+		else if (flies) parts.unshift(...flag(D, tip[0], tip[1] - drop));
+	};
 	if (crenel) {
 		const ov = Math.max(0.8, r * 0.2),
 			band = Math.max(3, r);
@@ -1581,7 +1614,6 @@ export function roundTower(D, o = {}) {
 					rim = y2 + ry * Math.sin(t);
 				slots.push(rect(x - w / 2, rim - band * 0.42, w, band * 0.42 + 0.6));
 			}
-		if (!capped && flies) parts.unshift(...flag(D, 0, y2 - 2));
 		parts.push({
 			solid: [ring],
 			fills: slots,
@@ -1590,26 +1622,29 @@ export function roundTower(D, o = {}) {
 			shadeArea: rect(R * 0.3, h - ry - 2, R * 2, y2 - h + ry + 4),
 			shadeLines: cylinderHatch(R, h - ry - 1, y2 + 1, D.hatch),
 		});
-		if (!capped) return parts;
+		if (!capped) {
+			crown([0, y2], 2);
+			return parts;
+		}
 		capY = y2;
 		capR = R;
 	}
 	if (roof === 'onion') {
 		const dome = onionDome(D, 0, capY, capR * 0.95);
-		if (flies) parts.unshift(...flag(D, dome.tip[0], dome.tip[1] - 2));
 		parts.push(...dome.parts);
+		crown(dome.tip, 2);
 		return parts;
 	}
 	if (roof === 'dome') {
 		const dome = hemiDome(0, capY, capR + 0.4, D.hatch);
-		if (flies) parts.unshift(...flag(D, dome.tip[0], dome.tip[1] - 2));
 		parts.push(dome.part);
+		crown(dome.tip, 2);
 		return parts;
 	}
 	if (roof === 'lancet') {
 		const cap = lancetCap(D, 0, capY, capR + 0.2);
-		if (flies) parts.unshift(...flag(D, cap.tip[0], cap.tip[1] - 2));
 		parts.push(cap.part);
+		crown(cap.tip, 2, 3);
 		return parts;
 	}
 	// Cone base sits on whatever is below — the crenellated top, or the
@@ -1624,20 +1659,22 @@ export function roundTower(D, o = {}) {
 		...sag([R, capY], apex, [0, capY], sweep).slice(1),
 		...sag(apex, [-R, capY], [0, capY], sweep).slice(1, -1),
 	];
-	if (flies) parts.unshift(...flag(D, 0, capY + rh - 1));
 	parts.push({
 		solid: [outline],
 		role: 'roof',
 		shadeArea: rect(R * 0.25, capY - ry - 2, R * 2, rh + ry + 4),
 		shadeLines: capHatch(0, R, capY - ry - 2, capY + rh + 2, D.hatch),
 	});
+	crown(apex, 1, 3);
 	return parts;
 }
 
 /**
- * Square tower with a pyramid spire (church tower / donjon).
+ * Square tower (church tower / donjon): optionally crenellated at the top,
+ * capped per the culture — a pyramid spire for cone, or onion, dome, lancet,
+ * or nothing.
  * @param {Design} D
- * @param {{w?: number, h?: number, finial?: boolean, clock?: boolean, corbel?: number}} [o]
+ * @param {{w?: number, h?: number, finial?: boolean, clock?: boolean, corbel?: number, roof?: Design['towerRoof'], crenel?: boolean}} [o]
  *   `finial`: top it with the culture's symbol; `clock`: a clock face instead
  *   of the belfry; `corbel`: override `D.towerCorbel` (0..1).
  * @returns {Part[]}
@@ -1645,7 +1682,15 @@ export function roundTower(D, o = {}) {
 export function squareTower(D, o = {}) {
 	const w = o.w ?? 10,
 		h = (o.h ?? 28) * D.stature;
-	const P = boxProjector(w * 0.8, D.perspective ?? DEFAULT_DESIGN.perspective, h);
+	const { roof, crenel } = towerTop(D, o);
+	// A crenellated top's corbel and band (see below).
+	const ctOv = Math.max(0.8, w * 0.12),
+		ctBand = Math.max(3, w * 0.5);
+	const P = boxProjector(
+		w * 0.8,
+		D.perspective ?? DEFAULT_DESIGN.perspective,
+		crenel ? h + ctOv + ctBand : h,
+	);
 	// Corbelled body: from the belt up, the walls widen by beltOv on every
 	// side via a 45° slope. `D.towerCorbel` is the share of the tower's
 	// height occupied by the corbel (measured down from the top) — 0 means
@@ -1684,28 +1729,6 @@ export function squareTower(D, o = {}) {
 				[w / 2, beltY],
 			])
 		: /** @type {Poly} */ ([[w / 2, 0], P.back([w / 2, 0]), P.back([w / 2, h]), [w / 2, h]]);
-	// Pyramid corners now use `w2` (which equals w/2 when straight, w/2+beltOv
-	// when corbelled), so the pyramid base always matches the tower top.
-	const ov = corbel ? 0 : 1;
-	/** @type {Pt} */ const fl = [-w2 - ov, h];
-	/** @type {Pt} */ const fr = [w2 + ov, h];
-	const br = P.back(fr);
-	const bl = P.back(fl);
-	const apex = P.at([0, h + w * D.spire], 0.5);
-	// Centre of the tower top (where the caps sit) and the scale there; the
-	// spire faces sag toward a point level with the front eave below it.
-	const top = P.at([0, h], 0.5),
-		cs = P.scale(0.5);
-	const c = /** @type {Pt} */ ([top[0], h]);
-	/** @type {Poly} */
-	const flatTop = [[-w / 2, h], [w / 2, h], P.back([w / 2, h]), P.back([-w / 2, h])];
-	/** @type {Poly} */
-	const sideFace = [
-		fr,
-		br,
-		...sag(br, apex, c, D.concave).slice(1),
-		...sag(apex, fr, c, D.concave).slice(1, -1),
-	];
 	// Keep every opening wholly below or above the corbel bend; straddling
 	// kills the 3D read on the 45° slope.
 	const belfryY = clearCorbel(h - 9.5, 7.5, beltY, beltOv);
@@ -1732,39 +1755,163 @@ export function squareTower(D, o = {}) {
 		},
 		...(o.clock ? clockFace(0, h - w * 0.42, w * 0.3) : []),
 	];
-	// Deck polygon at y=h — fills the oblique top of the frustum so the
-	// softened corners where front T, side T, and roof meet don't leave a
-	// sliver of background showing through. Only needed when corbelled.
-	if (corbel) parts.push({ solid: [[fl, fr, br, bl]], role: 'roof' });
-	if (D.towerRoof === 'onion') {
-		if (!corbel) parts.push({ solid: [flatTop] });
-		const dome = onionDome(D, top[0], top[1] - 0.6, w2 * cs);
+	// Crenellated top: a parapet band corbelled out on its own 45° slope, as
+	// on round towers. A cap then sits on it, its crenels showing as dark
+	// slots under the eave; bare, it shows a platform with merlons round the
+	// rim and a back parapet. Caps sit at `topY` on half-width `topW`.
+	let topY = h,
+		topW = w2;
+	if (crenel) {
+		const band = ctBand;
+		const w3 = w2 + ctOv,
+			y1 = h + ctOv,
+			y2 = y1 + band;
+		const capped = roof !== 'none';
+		const notch = Math.min(2, band * 0.45);
+		/** @type {Poly} */
+		const ctFront = [
+			[-w2, h],
+			[w2, h],
+			...(capped
+				? /** @type {Pt[]} */ ([
+						[w3, y1],
+						[w3, y2],
+						[-w3, y2],
+					])
+				: crenellated(-w3, w3, y1, y2, { merlon: 2.2, notch }).slice(1)),
+			[-w3, y1],
+		];
+		/** @type {Poly} */
+		const ctSide = [
+			[w2, h],
+			P.back([w2, h]),
+			P.back([w3, y1]),
+			P.back([w3, y2]),
+			[w3, y2],
+			[w3, y1],
+		];
+		if (!capped) {
+			// Back parapet (its inner face, in shadow), then the platform.
+			const BL = P.back([-w3, y2]),
+				BR = P.back([w3, y2]),
+				sb = P.scale(1);
+			const back = crenellated(BL[0], BR[0], BL[1], BL[1] + band * 0.6 * sb, {
+				merlon: 2.2 * sb,
+				notch: notch * sb,
+			});
+			parts.push(
+				{ solid: [back], shaded: true, lines: hatch(back, 65, D.hatch) },
+				{ solid: [[[-w3, y2], [w3, y2], BR, BL]] },
+			);
+		}
+		/** @type {Poly[]} */
+		const sideMerlons = [];
+		if (!capped)
+			for (let i = 0; i < 3; i++)
+				sideMerlons.push(P.face(rect(-0.9, 0, 1.8, notch), w3, y2 - 0.3, (i + 0.5) / 3));
+		/** @type {Poly[]} */
+		const slots = [];
+		if (capped)
+			for (let x = -w3 + 1.5; x < w3 - 0.9; x += 2.4)
+				slots.push(rect(x - 0.5, y2 - band * 0.42, 1, band * 0.42 + 0.6));
+		parts.push(
+			{ solid: [ctSide, ...sideMerlons], shaded: true, lines: hatch(ctSide, 65, D.hatch) },
+			{
+				solid: [ctFront],
+				fills: slots,
+				// The break where the 45° slope meets the upright band.
+				lines: [
+					{
+						pts: [
+							[-w3, y1],
+							[w3, y1],
+						],
+						w: THIN,
+					},
+				],
+			},
+		);
+		if (!capped) {
+			if (o.finial) parts.push(...symbolAt(D.symbol, P.at([0, y2], 0.5)));
+			return parts;
+		}
+		topY = y2;
+		topW = w3;
+	}
+	// Pyramid corners use `topW` — the tower top, or its crenellated band —
+	// so the pyramid base always matches what it sits on.
+	const ov = corbel || crenel ? 0 : 1;
+	/** @type {Pt} */ const fl = [-topW - ov, topY];
+	/** @type {Pt} */ const fr = [topW + ov, topY];
+	const br = P.back(fr);
+	const bl = P.back(fl);
+	const apex = P.at([0, topY + w * D.spire], 0.5);
+	// Centre of the top (where the caps sit) and the scale there; the spire
+	// faces sag toward a point level with the front eave below it.
+	const top = P.at([0, topY], 0.5),
+		cs = P.scale(0.5);
+	const c = /** @type {Pt} */ ([top[0], topY]);
+	/** @type {Poly} */
+	const flatTop = [[-topW, topY], [topW, topY], P.back([topW, topY]), P.back([-topW, topY])];
+	/** @type {Poly} */
+	const sideFace = [
+		fr,
+		br,
+		...sag(br, apex, c, D.concave).slice(1),
+		...sag(apex, fr, c, D.concave).slice(1, -1),
+	];
+	// Deck at the top — fills the oblique top so the softened corners where
+	// front, side and roof meet don't leave a sliver of background showing.
+	if (corbel && !crenel) parts.push({ solid: [[fl, fr, br, bl]], role: 'roof' });
+	const deck = !corbel || crenel;
+	if (roof === 'onion') {
+		if (deck) parts.push({ solid: [flatTop] });
+		const dome = onionDome(D, top[0], top[1] - 0.6, topW * cs);
 		parts.push(...dome.parts);
 		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
 		return parts;
 	}
-	if (D.towerRoof === 'dome') {
-		if (!corbel) parts.push({ solid: [flatTop] });
-		const dome = hemiDome(top[0], top[1], w2 * 1.04 * cs, D.hatch);
+	if (roof === 'dome') {
+		if (deck) parts.push({ solid: [flatTop] });
+		const dome = hemiDome(top[0], top[1], topW * 1.04 * cs, D.hatch);
 		parts.push(dome.part);
 		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
 		return parts;
 	}
-	if (D.towerRoof === 'lancet') {
-		if (!corbel) parts.push({ solid: [flatTop] });
-		const cap = lancetCap(D, top[0], top[1], w2 * 1.04 * cs);
+	if (roof === 'lancet') {
+		if (deck) parts.push({ solid: [flatTop] });
+		const cap = lancetCap(D, top[0], top[1], topW * 1.04 * cs);
 		parts.push(cap.part);
 		if (o.finial) parts.push(...symbolAt(D.symbol, cap.tip, 3));
 		return parts;
 	}
-	// Pyramid (cone, none and the legacy crenel fall through here), one part
-	// so the apex closes.
+	// Pyramid (the cone cap on a square tower), one part so the apex closes.
 	const ridge = sag(fr, apex, c, D.concave);
 	/** @type {Poly} */
 	const frontFace = [fl, ...ridge, ...sag(apex, fl, c, D.concave).slice(1, -1)];
 	parts.push(pyramid(frontFace, sideFace, ridge, 'roof', D.hatch));
 	if (o.finial) parts.push(...symbolAt(D.symbol, apex, 3));
 	return parts;
+}
+
+/**
+ * A landmark tower — church and cathedral towers, the clock tower, a village
+ * bell tower — square or round per the culture's `steeple`, with the
+ * culture's cap and crenellated top either way.
+ * @param {Design} D
+ * @param {{w?: number, h?: number, finial?: boolean, clock?: boolean}} [o]
+ * @returns {Part[]}
+ */
+export function belfry(D, o = {}) {
+	if (D.steeple !== 'round') return squareTower(D, o);
+	return roundTower(D, {
+		r: (o.w ?? 10) / 2,
+		h: o.h ?? 28,
+		belfry: !o.clock,
+		clock: o.clock,
+		finial: o.finial,
+		flags: false,
+	});
 }
 
 /**
@@ -2544,7 +2691,7 @@ function squareWall(D, o) {
 export function church(D, o = {}) {
 	const w = o.w ?? 28;
 	const tw = 10;
-	const tower = place(squareTower(D, { finial: true, w: tw, h: 34 }), { x: -w / 2 - tw / 2 + 0.5 });
+	const tower = place(belfry(D, { finial: true, w: tw, h: 34 }), { x: -w / 2 - tw / 2 + 0.5 });
 	return [...tower, ...sideHouse(D, { w, seed: o.seed, kind: 'church' })];
 }
 
@@ -3999,7 +4146,7 @@ function clockFace(/** @type {number} */ cx, /** @type {number} */ cy, /** @type
  * @returns {Part[]}
  */
 export function clocktower(D) {
-	return squareTower(D, { w: 11, h: 40, clock: true, finial: D.flourish > 0.4 });
+	return belfry(D, { w: 11, h: 40, clock: true, finial: D.flourish > 0.4 });
 }
 
 /**
@@ -4113,7 +4260,7 @@ export function cathedral(D) {
 	const tw = 9,
 		th = 40 * D.stature;
 	const towerAt = (/** @type {number} */ x) =>
-		place(squareTower(D, { w: tw, h: th / D.stature, finial: true }), { x });
+		place(belfry(D, { w: tw, h: th / D.stature, finial: true }), { x });
 	return [
 		...towerAt(-w / 2 - tw / 2 + 1),
 		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch), fills: sideWindows },

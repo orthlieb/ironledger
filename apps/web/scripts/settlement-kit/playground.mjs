@@ -247,6 +247,14 @@ const KNOBS = [
 	{ group: 'Landmarks', key: 'church', label: 'Church', type: 'check', design: true },
 	{
 		group: 'Landmarks',
+		key: 'steeple',
+		label: 'Steeple',
+		type: 'select',
+		options: ['square', 'round'],
+		design: true,
+	},
+	{
+		group: 'Landmarks',
 		key: 'symbol',
 		label: 'Holy symbol',
 		type: 'select',

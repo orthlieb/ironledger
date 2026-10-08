@@ -29,6 +29,8 @@ import {
 import { TEMPLATES, pieces, settlement } from '../../src/lib/settlement-kit/layouts3d.js';
 import {
 	DEFAULT_DESIGN,
+	church,
+	clocktower,
 	gableHouse,
 	makeDesign,
 	onStilts,
@@ -163,6 +165,14 @@ describe('design-knob variants render', () => {
 			expect(renders(roundTower(D))).toBe(true);
 		});
 	}
+	for (const steeple of ['square', 'round'] as const)
+		for (const roof of towerRoofs)
+			for (const crenel of [false, true])
+				it(`steeple=${steeple} towerRoof=${roof}${crenel ? ' + crenel' : ''} renders a church and a clock tower`, () => {
+					const D = { ...DEFAULT_DESIGN, steeple, towerRoof: roof, towerCrenel: crenel };
+					expect(renders(church(D))).toBe(true);
+					expect(renders(clocktower(D))).toBe(true);
+				});
 	it('a crenellated top adds one part between the body and the cap', () => {
 		const plain = roundTower({ ...DEFAULT_DESIGN, flags: false });
 		const ct = roundTower({ ...DEFAULT_DESIGN, flags: false, towerCrenel: true });

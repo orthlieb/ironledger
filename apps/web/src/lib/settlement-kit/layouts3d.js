@@ -10,6 +10,7 @@
 import { rng } from './geom.js';
 import { ruinPlaced } from './ruins3d.js';
 import {
+	belfry,
 	camp,
 	caravel,
 	cathedral,
@@ -31,7 +32,6 @@ import {
 	roundTower,
 	sideHouse,
 	squareFootprint,
-	squareTower,
 	stiltHut,
 	tent,
 	townhouse,
@@ -389,7 +389,7 @@ export function settlement(tier, D, o = {}) {
 	if (T.shrine !== 'none' && (D.church || D.symbol !== 'none')) {
 		if (D.church && T.shrine === 'full')
 			add(church(D, { w: rank > 0 ? 26 : 20, seed: 3 }), rank >= 2 ? 0.9 : rank > 0 ? 0.8 : 0.72);
-		else add(squareTower(D, { finial: true, w: rank > 0 ? 9 : 8, h: towerH }), 0.9);
+		else add(belfry(D, { finial: true, w: rank > 0 ? 9 : 8, h: towerH }), 0.9);
 	}
 	if (hasKeep) add(keep(D), rank >= 3 ? 1.05 : rank === 2 ? 0.9 : 0.75);
 	// Free-standing towers — towns (and holds) roll 1d2, cities and up 1d3,
@@ -662,7 +662,7 @@ function rawPieces(D) {
 		['Gable house', [{ piece: gableHouse(D, { seed: 4 }) }]],
 		['Side house', [{ piece: sideHouse(D, { seed: 5 }) }]],
 		['Round tower', [{ piece: roundTower(D) }]],
-		['Bell tower', [{ piece: squareTower(D, { finial: true }) }]],
+		['Bell tower', [{ piece: belfry(D, { finial: true }) }]],
 		['Church', [{ piece: church(D) }]],
 		['Keep', [{ piece: keep(D) }]],
 		[
