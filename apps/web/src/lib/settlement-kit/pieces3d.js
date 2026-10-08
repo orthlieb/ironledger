@@ -31,7 +31,7 @@ import { place } from './render.js';
  * @property {number} gable share of houses with the gable to the front (0..1)
  * @property {number} concave how far roof edges sag inward (0 = straight)
  * @property {number} storeys chance a house has a second storey (0..1)
- * @property {'square' | 'arched' | 'slit' | 'round'} window
+ * @property {'square' | 'arched' | 'slit' | 'round' | 'lancet'} window
  * @property {'arched' | 'square' | 'gothic'} door house / vernacular door
  *   shape — arched (default, round-headed Romanesque), square (plain
  *   lintel), gothic (pointed lancet). Specialty structures (keep, cathedral,
@@ -144,7 +144,7 @@ export function makeDesign(seed) {
 		gable: r(),
 		concave: r() < 0.45 ? 0 : 0.06 + avg() * 0.16,
 		storeys: avg() * 0.8,
-		window: pick(['square', 'arched', 'slit', 'round']),
+		window: pick(['square', 'arched', 'slit', 'round', 'lancet']),
 		// Arched is the medieval baseline; square and gothic are the oddities.
 		door: pick(['arched', 'arched', 'arched', 'square', 'gothic']),
 		manyDoors: r() < 0.3,
@@ -467,6 +467,8 @@ function opening(
 	switch (D.window) {
 		case 'arched':
 			return archOpening(cx, y, s * 0.85, s * 1.5);
+		case 'lancet':
+			return lancet(cx, y, s * 0.85, s * 1.6);
 		case 'slit':
 			return rect(cx - s * 0.2, y, s * 0.4, s * 1.4);
 		case 'round':
@@ -1344,9 +1346,16 @@ export function roundTower(D, o = {}) {
 	// slope and the parapet both carry the cylindrical shading.
 	const shadeR = corbel ? topCorbel : r;
 	// Window follows the culture's style. Height varies — compute conservatively
-	// for the straddle check so arched / square never cross the corbel bend.
-	const winS = D.window === 'arched' ? 4.4 : 4;
-	const winH = D.window === 'arched' ? winS * 1.5 : D.window === 'slit' ? winS * 1.4 : winS;
+	// for the straddle check so no shape crosses the corbel bend.
+	const winS = D.window === 'arched' || D.window === 'lancet' ? 4.4 : 4;
+	const winH =
+		D.window === 'arched'
+			? winS * 1.5
+			: D.window === 'lancet'
+				? winS * 1.6
+				: D.window === 'slit'
+					? winS * 1.4
+					: winS;
 	const winY = clearCorbel(h * 0.55, winH, corbelBelt, corbelOv);
 	/** @type {Part[]} */
 	const parts = [
@@ -1477,9 +1486,15 @@ export function squareTower(D, o = {}) {
 	// Keep every opening wholly below or above the corbel bend; straddling
 	// kills the 3D read on the 45° slope.
 	const belfryY = clearCorbel(h - 9.5, 7.5, beltY, beltOv);
-	const clockWinS = D.window === 'arched' ? 4.4 : 4;
+	const clockWinS = D.window === 'arched' || D.window === 'lancet' ? 4.4 : 4;
 	const clockWinH =
-		D.window === 'arched' ? clockWinS * 1.5 : D.window === 'slit' ? clockWinS * 1.4 : clockWinS;
+		D.window === 'arched'
+			? clockWinS * 1.5
+			: D.window === 'lancet'
+				? clockWinS * 1.6
+				: D.window === 'slit'
+					? clockWinS * 1.4
+					: clockWinS;
 	const clockWinY = clearCorbel(h * 0.45, clockWinH, beltY, beltOv);
 	/** @type {Part[]} */
 	const parts = [

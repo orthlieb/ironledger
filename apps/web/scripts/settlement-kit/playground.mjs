@@ -158,7 +158,7 @@ const KNOBS = [
 		key: 'window',
 		label: 'Windows',
 		type: 'select',
-		options: ['square', 'arched', 'slit', 'round'],
+		options: ['square', 'arched', 'slit', 'round', 'lancet'],
 		design: true,
 	},
 	{
