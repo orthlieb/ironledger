@@ -696,22 +696,23 @@ export function gableHouse(D, o = {}) {
 	// dome's near-rim ellipse reads as a seam, not a floating arc.
 	if (D.towerRoof === 'dome') {
 		const facadeFills = facade(D, -w / 2, w / 2, h, two, r);
+		// topCap overlaps the front wall rect by a hair at y=h so softening
+		// can't pull their shared top corners apart (both are 'wall' role,
+		// so the overlap is invisible). The dome stays on its own part and
+		// draws on top of topCap, as before.
 		const topCap = /** @type {Poly} */ ([
-			[-w / 2, h],
-			[w / 2, h],
+			[-w / 2, h - 0.4],
+			[w / 2, h - 0.4],
 			add([w / 2, h], v),
 			add([-w / 2, h], v),
 		]);
 		const { part } = hemiDome(v[0] / 2, h + v[1] / 2, w * 0.42);
-		// Union topCap into the front-wall solid so the softening doesn't
-		// pull the top-left / top-right corners away from the rect wall and
-		// leave a visible gap at the parapet. Both share the 'wall' role so
-		// the merge is a no-op visually.
 		return [
 			{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
+			{ solid: [topCap] },
 			part,
 			{
-				solid: [rect(-w / 2, 0, w, h), topCap],
+				solid: [rect(-w / 2, 0, w, h)],
 				fills: facadeFills,
 				lines: D.masonry ? stoneCourses(-w / 2, w / 2, 0, h) : [],
 			},
