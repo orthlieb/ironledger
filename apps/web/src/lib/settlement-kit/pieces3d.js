@@ -32,6 +32,10 @@ import { place } from './render.js';
  * @property {number} concave how far roof edges sag inward (0 = straight)
  * @property {number} storeys chance a house has a second storey (0..1)
  * @property {'square' | 'arched' | 'slit' | 'round'} window
+ * @property {'arched' | 'square' | 'round'} door house / vernacular door
+ *   shape — arched (default, medieval), square (plain lintel), round (burrow
+ *   mouth). Specialty structures (keep, cathedral, pavilion) keep their own
+ *   thematic door style.
  * @property {boolean} manyDoors
  * @property {'cone' | 'onion' | 'crenel' | 'dome'} towerRoof hemispherical dome
  *   culture replaces every pitched roof — gable houses and tower caps alike —
@@ -93,6 +97,7 @@ export const DEFAULT_DESIGN = {
 	concave: 0,
 	storeys: 0.3,
 	window: 'square',
+	door: 'arched',
 	manyDoors: false,
 	towerRoof: 'cone',
 	spire: 2.2,
@@ -140,6 +145,8 @@ export function makeDesign(seed) {
 		concave: r() < 0.45 ? 0 : 0.06 + avg() * 0.16,
 		storeys: avg() * 0.8,
 		window: pick(['square', 'arched', 'slit', 'round']),
+		// Arched is the medieval baseline; square and round are the oddities.
+		door: pick(['arched', 'arched', 'arched', 'square', 'round']),
 		manyDoors: r() < 0.3,
 		towerRoof: pick(['cone', 'cone', 'cone', 'onion', 'onion', 'crenel', 'crenel', 'dome', 'dome']),
 		spire: 1.3 + avg() * 1.7,
@@ -469,6 +476,26 @@ function opening(
 	}
 }
 
+/** Door opening in the culture's style — same signature as archOpening so
+ * it drops into facade / vernacular callers. 'round' is a burrow mouth
+ * (circle inscribed in the door bay); 'square' is a plain lintel. */
+function doorway(
+	/** @type {Design} */ D,
+	/** @type {number} */ cx,
+	/** @type {number} */ y,
+	/** @type {number} */ w,
+	/** @type {number} */ h,
+) {
+	switch (D.door) {
+		case 'square':
+			return rect(cx - w / 2, y, w, h);
+		case 'round':
+			return circle(cx, y + w / 2, w / 2);
+		default:
+			return archOpening(cx, y, w, h);
+	}
+}
+
 /**
  * Project an upright opening polygon onto an oblique side face: its
  * horizontal axis becomes the depth-vec direction (so bottom and top edges
@@ -512,7 +539,7 @@ function facade(D, x0, x1, h, two, r) {
 		: new Set([Math.floor(r() * n)]);
 	/** @type {Poly[]} */
 	const out = xs.map((x, i) =>
-		doors.has(i) ? archOpening(x, 0, doorW, doorH) : opening(D, x, fh * 0.36, win),
+		doors.has(i) ? doorway(D, x, 0, doorW, doorH) : opening(D, x, fh * 0.36, win),
 	);
 	if (two) for (const x of xs) out.push(opening(D, x, fh + (h - fh) * 0.28, win));
 	return out;

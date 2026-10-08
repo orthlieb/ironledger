@@ -161,6 +161,14 @@ const KNOBS = [
 		options: ['square', 'arched', 'slit', 'round'],
 		design: true,
 	},
+	{
+		group: 'Houses',
+		key: 'door',
+		label: 'Doors',
+		type: 'select',
+		options: ['arched', 'square', 'round'],
+		design: true,
+	},
 	{ group: 'Houses', key: 'manyDoors', label: 'Many doors', type: 'check', design: true },
 	{
 		group: 'Houses',
