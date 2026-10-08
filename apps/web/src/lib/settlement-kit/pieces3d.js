@@ -1458,13 +1458,6 @@ export function squareTower(D, o = {}) {
 		/** @type {Pt} */ const fflApex = add([0, h + w * D.spire], [v[0] / 2, v[1] / 2]);
 		const fflC = /** @type {Pt} */ ([v[0] / 2, h]);
 		/** @type {Poly} */
-		const fflFront = [
-			fflFl,
-			fflFr,
-			...sag(fflFr, fflApex, fflC, D.concave).slice(1),
-			...sag(fflApex, fflFl, fflC, D.concave).slice(1, -1),
-		];
-		/** @type {Poly} */
 		const fflSide = [
 			fflFr,
 			fflBr,
@@ -1475,10 +1468,17 @@ export function squareTower(D, o = {}) {
 		// softened corners where front T, side T, and pyramid faces all meet
 		// don't leave a sliver of background showing through.
 		parts.push({ solid: [[fflFl, fflFr, fflBr, fflBl]], role: 'roof' });
-		parts.push(
-			{ solid: [fflSide], role: 'roof', shaded: true, lines: hatch(fflSide, -40, D.hatch) },
-			{ solid: [fflFront], role: 'roof' },
-		);
+		// Pyramid as one silhouette polygon (no apex gap) with the shaded
+		// side triangle overlaid for the two-tone look. Splitting the
+		// pyramid into two triangles that share only the apex vertex left a
+		// visible notch there once soft-radius rounded both tips.
+		parts.push({ solid: [[fflFl, fflFr, fflBr, fflApex]], role: 'roof' });
+		parts.push({
+			solid: [fflSide],
+			role: 'roof',
+			shaded: true,
+			lines: hatch(fflSide, -40, D.hatch),
+		});
 		if (o.finial) parts.push(...symbolAt(D.symbol, fflApex));
 		return parts;
 	}
