@@ -8,7 +8,11 @@
 // culture downloads the current knobs + colours as a new plugin file.
 // =============================================================================
 
-import { DEFAULT_DESIGN, makeDesign } from '../../src/lib/settlement-kit/pieces3d.js';
+import {
+	DEFAULT_DESIGN,
+	makeDesign,
+	upgradeDesign,
+} from '../../src/lib/settlement-kit/pieces3d.js';
 import { TEMPLATES, pieces, settlement } from '../../src/lib/settlement-kit/layouts3d.js';
 import { PATTERN_ROLES, patternDefs } from '../../src/lib/settlement-kit/patterns.js';
 import { LAYERS, place, renderLayered } from '../../src/lib/settlement-kit/render.js';
@@ -194,9 +198,16 @@ const KNOBS = [
 	{
 		group: 'Towers',
 		key: 'towerRoof',
-		label: 'Tower top',
+		label: 'Tower cap',
 		type: 'select',
-		options: ['cone', 'onion', 'crenel', 'dome', 'lancet'],
+		options: ['none', 'cone', 'onion', 'dome', 'lancet'],
+		design: true,
+	},
+	{
+		group: 'Towers',
+		key: 'towerCrenel',
+		label: 'Crenellated top',
+		type: 'check',
 		design: true,
 	},
 	{
@@ -817,7 +828,7 @@ function importCulture(raw) {
 	if (!c.design || typeof c.design !== 'object') throw new Error('no "design" object');
 	/** @type {Record<string, any>} */
 	const next = { ...DEFAULT_DESIGN };
-	for (const [k, v] of Object.entries(c.design))
+	for (const [k, v] of Object.entries(upgradeDesign(c.design)))
 		if (k in DEFAULT_DESIGN && typeof v === typeof (/** @type {any} */ (DEFAULT_DESIGN)[k]))
 			next[k] = v;
 	design = /** @type {Design} */ (next);
@@ -869,7 +880,7 @@ function init() {
 			cultureKey = null;
 			setPalette('Parchment');
 		} else {
-			design = { ...DEFAULT_DESIGN, ...CULTURES[name].design };
+			design = upgradeDesign({ ...DEFAULT_DESIGN, ...CULTURES[name].design });
 			cultureName = CULTURES[name].name;
 			cultureKey = CULTURES[name].key;
 			setPaletteColours(CULTURES[name].palette);

@@ -300,7 +300,7 @@ const EXTRAS = {
 	windmill: (D) => windmill(D),
 	well: (D) => well(D),
 	watchtower: (D) =>
-		roundTower(D, { r: 6, h: 34, roof: D.towerRoof === 'onion' ? 'onion' : 'crenel' }),
+		roundTower(D, { r: 6, h: 34, roof: D.towerRoof === 'onion' ? 'onion' : 'none' }),
 };
 const EXTRA_SCALE = /** @type {Record<string, number>} */ ({
 	well: 1.6,

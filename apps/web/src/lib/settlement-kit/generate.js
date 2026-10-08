@@ -16,7 +16,7 @@
 // =============================================================================
 
 import { settlement, TEMPLATES } from './layouts3d.js';
-import { DEFAULT_DESIGN } from './pieces3d.js';
+import { DEFAULT_DESIGN, upgradeDesign } from './pieces3d.js';
 import { PATTERN_ROLES, patternDefs } from './patterns.js';
 import { LAYERS, place, renderLayered } from './render.js';
 
@@ -179,7 +179,7 @@ function patternScope(title) {
 export function recipeDesign(recipe, culture) {
 	return {
 		...DEFAULT_DESIGN,
-		...(culture?.design ?? {}),
+		...upgradeDesign(culture?.design ?? {}),
 		...(recipe.wallShape ? { wallShape: recipe.wallShape } : {}),
 		...(recipe.ground ? { ground: recipe.ground } : {}),
 	};

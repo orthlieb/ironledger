@@ -37,10 +37,15 @@ import { place } from './render.js';
  *   lintel), lancet (pointed Gothic arch). Specialty structures (keep,
  *   cathedral, pavilion) keep their own thematic door style.
  * @property {boolean} manyDoors
- * @property {'cone' | 'onion' | 'crenel' | 'dome' | 'lancet'} towerRoof hemispherical dome
- *   culture replaces every pitched roof — gable houses and tower caps alike —
- *   with a stone half-sphere; `lancet` caps towers with a pointed (ogival)
- *   dome flush with the tower top
+ * @property {'none' | 'cone' | 'onion' | 'dome' | 'lancet' | 'crenel'} towerRoof the
+ *   cap on a tower. `none` leaves the crenellated top bare (a roofless tower
+ *   always gets one); `dome` culture replaces every pitched roof — gable
+ *   houses and tower caps alike — with a stone half-sphere; `lancet` caps
+ *   towers with a pointed (ogival) dome. `crenel` is the legacy spelling of
+ *   `none` + `towerCrenel` (see upgradeDesign()).
+ * @property {boolean} towerCrenel a crenellated top on round towers: a short
+ *   parapet ring corbelled out on its own 45° slope, with the cap (if any)
+ *   sitting on it and the flag on whichever is uppermost.
  * @property {number} spire spire / cone height ÷ tower width
  * @property {number} taper tower walls lean in by this share of the radius
  * @property {number} perspective how strongly the receding faces of box-like
@@ -108,6 +113,7 @@ export const DEFAULT_DESIGN = {
 	spire: 2.2,
 	taper: 0.04,
 	towerCorbel: 0,
+	towerCrenel: false,
 	perspective: 0.5,
 	flags: true,
 	flagLen: 11,
@@ -160,8 +166,8 @@ export function makeDesign(seed) {
 			'cone',
 			'onion',
 			'onion',
-			'crenel',
-			'crenel',
+			'none',
+			'none',
 			'dome',
 			'dome',
 			'lancet',
@@ -172,6 +178,7 @@ export function makeDesign(seed) {
 		// Most cultures (~70%) build straight walls (towerCorbel = 0). The
 		// rest get a corbel occupying 10-35% of the tower's upper height.
 		towerCorbel: r() < 0.7 ? 0 : 0.1 + avg() * 0.25,
+		towerCrenel: false, // rolled below, after the draws it must not shift
 		perspective: 0.5,
 		flags: r() < 0.75,
 		flagLen: 8 + avg() * 9,
@@ -225,16 +232,45 @@ export function makeDesign(seed) {
 	};
 	// Linked rules, so a culture hangs together:
 	// low-pitched builders fortify their towers rather than roofing them,
-	if (D.pitch < 0.6 && D.towerRoof === 'cone') D.towerRoof = 'crenel';
+	if (D.pitch < 0.6 && D.towerRoof === 'cone') D.towerRoof = 'none';
 	// onion domes come with concave (swept) roofs on the houses too,
 	if (D.towerRoof === 'onion' && D.concave === 0) D.concave = 0.12;
 	// and tall steep roofs go with tall spires.
 	if (D.pitch > 0.95) D.spire = Math.max(D.spire, 2.4);
 	// Towers and the walls between them usually bow alike.
 	if (r() < 0.7) D.wallBow = D.towerBow;
+	// Roofless towers are crenellated; about a third of capped ones are too.
+	D.towerCrenel = D.towerRoof === 'none' || r() < 0.35;
 	// Fortifying builders always crenellate their walls.
-	if (D.towerRoof === 'crenel') D.merlons = true;
+	if (D.towerCrenel) D.merlons = true;
 	return D;
+}
+
+/**
+ * Bring a stored design (a culture plugin, an imported playground export)
+ * up to date: the legacy `towerRoof: 'crenel'` becomes a bare crenellated
+ * top (`towerRoof: 'none'`, `towerCrenel: true`).
+ * @template {Partial<Design>} T
+ * @param {T} D
+ * @returns {T}
+ */
+export function upgradeDesign(D) {
+	return D.towerRoof === 'crenel' ? { ...D, towerRoof: 'none', towerCrenel: true } : D;
+}
+
+/**
+ * A tower's top, factored into a crenellated top (on / off) and the cap on
+ * it. No cap means a bare crenellated top, so a tower never ends flat.
+ * @param {Design} D
+ * @param {{roof?: Design['towerRoof'], crenel?: boolean}} o per-tower overrides
+ */
+function towerTop(D, o) {
+	const want = o.roof ?? D.towerRoof;
+	const roof = want === 'crenel' ? 'none' : want;
+	return {
+		roof,
+		crenel: roof === 'none' || want === 'crenel' || (o.crenel ?? D.towerCrenel ?? false),
+	};
 }
 
 /** Hatch/detail stroke weight (world units). */
@@ -1429,10 +1465,10 @@ function flag(/** @type {Design} */ D, /** @type {number} */ x, /** @type {numbe
 }
 
 /**
- * Round tower: shaded cylinder topped per the culture — cone, onion dome
- * or a crenellated parapet.
+ * Round tower: shaded cylinder, optionally crenellated at the top, capped
+ * per the culture — cone, onion, dome, lancet or nothing.
  * @param {Design} D
- * @param {{r?: number, h?: number, roof?: Design['towerRoof'], flags?: boolean, corbel?: number}} [o]
+ * @param {{r?: number, h?: number, roof?: Design['towerRoof'], crenel?: boolean, flags?: boolean, corbel?: number}} [o]
  * @returns {Part[]}
  */
 export function roundTower(D, o = {}) {
@@ -1442,7 +1478,7 @@ export function roundTower(D, o = {}) {
 		b = bowAmt(D.towerBow),
 		// Concave (elven) towers flare at the foot and narrow as they rise.
 		top = r * (1 - (b > 0 ? Math.max(D.taper, 0.42 * Math.min(1, D.towerBow)) : D.taper));
-	const roof = o.roof ?? D.towerRoof;
+	const { roof, crenel } = towerTop(D, o);
 	/** @type {Pt} */ const mid = [0, h / 2];
 	// Corbelled body: from the belt up to the parapet, the walls widen via
 	// a 45° slope and then stay flared. `D.towerCorbel` is the share of the
@@ -1507,53 +1543,89 @@ export function roundTower(D, o = {}) {
 			fills: [opening(D, -r * 0.35, winY, winS)],
 		},
 	];
-	if (roof === 'crenel') {
-		const R = topCorbel + 1.4;
-		// A banner on the platform, drawn first so the parapet hides its foot.
-		if (D.flags && o.flags !== false) parts.unshift(...flag(D, 0, h + 3));
+	// Crenellated top: a short parapet ring corbelled out from the body top
+	// on its own 45° slope — the same look as the body corbel — with merlons
+	// round its rim. A cap sits on it (its crenels showing as dark slots under
+	// the eave); with no cap the merlons stand free and the flag flies from
+	// the platform. Caps sit at `capY` on radius `capR` either way.
+	let capY = h,
+		capR = topCorbel;
+	const flies = D.flags && o.flags !== false;
+	if (crenel) {
+		const ov = Math.max(0.8, r * 0.2),
+			band = Math.max(3, r);
+		const R = topCorbel + ov,
+			y1 = h + ov,
+			y2 = y1 + band;
+		const capped = roof !== 'none';
+		/** @type {Poly} */
+		const ring = [
+			...ell(0, h, topCorbel, ry, 180, 360),
+			...(capped
+				? [/** @type {Pt} */ ([R, y1]), /** @type {Pt} */ ([R, y2]), /** @type {Pt} */ ([-R, y2])]
+				: crenellated(-R, R, y1, y2, { merlon: 2.4, notch: Math.min(2, band * 0.45) }).slice(1)),
+			[-R, y1],
+		];
+		/** @type {Poly[]} */
+		const slots = [];
+		if (capped)
+			// Crenels between merlons, seen as dark slots under the cap's rim.
+			for (let a = 215; a <= 325; a += 22) {
+				const t = (a * Math.PI) / 180;
+				const x = R * Math.cos(t),
+					w = 1.1 * Math.abs(Math.sin(t)),
+					rim = y2 + ry * Math.sin(t);
+				slots.push(rect(x - w / 2, rim - band * 0.42, w, band * 0.42 + 0.6));
+			}
+		if (!capped && flies) parts.unshift(...flag(D, 0, y2 - 2));
 		parts.push({
-			solid: [crenellated(-R, R, h - ry, h + 5, { merlon: 2.4, notch: 2 })],
-			shadeArea: rect(R * 0.3, h - ry - 2, R * 2, 10),
-			shadeLines: cylinderHatch(R, h - ry - 1, h + 6, D.hatch),
+			solid: [ring],
+			fills: slots,
+			// The break where the 45° slope meets the upright band.
+			lines: [{ pts: ell(0, y1, R, ry, 180, 360), w: THIN }],
+			shadeArea: rect(R * 0.3, h - ry - 2, R * 2, y2 - h + ry + 4),
+			shadeLines: cylinderHatch(R, h - ry - 1, y2 + 1, D.hatch),
 		});
-		return parts;
+		if (!capped) return parts;
+		capY = y2;
+		capR = R;
 	}
 	if (roof === 'onion') {
-		const dome = onionDome(D, 0, h, topCorbel * 0.95);
-		if (D.flags && o.flags !== false) parts.unshift(...flag(D, dome.tip[0], dome.tip[1] - 2));
+		const dome = onionDome(D, 0, capY, capR * 0.95);
+		if (flies) parts.unshift(...flag(D, dome.tip[0], dome.tip[1] - 2));
 		parts.push(...dome.parts);
 		return parts;
 	}
 	if (roof === 'dome') {
-		const dome = hemiDome(0, h, topCorbel + 0.4, D.hatch);
-		if (D.flags && o.flags !== false) parts.unshift(...flag(D, dome.tip[0], dome.tip[1] - 2));
+		const dome = hemiDome(0, capY, capR + 0.4, D.hatch);
+		if (flies) parts.unshift(...flag(D, dome.tip[0], dome.tip[1] - 2));
 		parts.push(dome.part);
 		return parts;
 	}
 	if (roof === 'lancet') {
-		const cap = lancetCap(D, 0, h, topCorbel + 0.2);
-		if (D.flags && o.flags !== false) parts.unshift(...flag(D, cap.tip[0], cap.tip[1] - 2));
+		const cap = lancetCap(D, 0, capY, capR + 0.2);
+		if (flies) parts.unshift(...flag(D, cap.tip[0], cap.tip[1] - 2));
 		parts.push(cap.part);
 		return parts;
 	}
-	// Cone base sits on whatever the body's actual top radius is: `topCorbel`
-	// absorbs the 45° slope when the corbelled body is enabled.
-	const R = topCorbel + 1.8;
+	// Cone base sits on whatever is below — the crenellated top, or the
+	// body's own top radius (`topCorbel` absorbs a corbel's 45° slope).
+	const R = capR + 1.8;
 	const rh = top * 2 * D.spire * 0.75;
-	/** @type {Pt} */ const apex = [0, h + rh];
+	/** @type {Pt} */ const apex = [0, capY + rh];
 	const sweep = D.concave * 0.8;
 	/** @type {Poly} */
 	const outline = [
-		...ell(0, h, R, ry, 180, 360),
-		...sag([R, h], apex, [0, h], sweep).slice(1),
-		...sag(apex, [-R, h], [0, h], sweep).slice(1, -1),
+		...ell(0, capY, R, ry, 180, 360),
+		...sag([R, capY], apex, [0, capY], sweep).slice(1),
+		...sag(apex, [-R, capY], [0, capY], sweep).slice(1, -1),
 	];
-	if (D.flags && o.flags !== false) parts.unshift(...flag(D, 0, h + rh - 1));
+	if (flies) parts.unshift(...flag(D, 0, capY + rh - 1));
 	parts.push({
 		solid: [outline],
 		role: 'roof',
-		shadeArea: rect(R * 0.25, h - ry - 2, R * 2, rh + ry + 4),
-		shadeLines: capHatch(0, R, h - ry - 2, h + rh + 2, D.hatch),
+		shadeArea: rect(R * 0.25, capY - ry - 2, R * 2, rh + ry + 4),
+		shadeLines: capHatch(0, R, capY - ry - 2, capY + rh + 2, D.hatch),
 	});
 	return parts;
 }
@@ -1681,7 +1753,8 @@ export function squareTower(D, o = {}) {
 		if (o.finial) parts.push(...symbolAt(D.symbol, cap.tip, 3));
 		return parts;
 	}
-	// Pyramid (cone/crenel fall through here), one part so the apex closes.
+	// Pyramid (cone, none and the legacy crenel fall through here), one part
+	// so the apex closes.
 	const ridge = sag(fr, apex, c, D.concave);
 	/** @type {Poly} */
 	const frontFace = [fl, ...ridge, ...sag(apex, fl, c, D.concave).slice(1, -1)];

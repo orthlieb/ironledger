@@ -36,6 +36,7 @@ import {
 	roundTower,
 	squareTower,
 	stiltHut,
+	upgradeDesign,
 } from '../../src/lib/settlement-kit/pieces3d.js';
 import { patternDefs } from '../../src/lib/settlement-kit/patterns.js';
 import { renderLayered, place } from '../../src/lib/settlement-kit/render.js';
@@ -139,7 +140,7 @@ describe('wall patterns', () => {
 });
 
 describe('design-knob variants render', () => {
-	const towerRoofs: Design['towerRoof'][] = ['cone', 'onion', 'crenel', 'dome', 'lancet'];
+	const towerRoofs: Design['towerRoof'][] = ['none', 'cone', 'onion', 'dome', 'lancet'];
 	for (const roof of towerRoofs) {
 		it(`towerRoof=${roof} renders a round tower`, () => {
 			expect(renders(roundTower({ ...DEFAULT_DESIGN, towerRoof: roof }))).toBe(true);
@@ -150,7 +151,30 @@ describe('design-knob variants render', () => {
 				true,
 			);
 		});
+		it(`towerRoof=${roof} on a crenellated top renders a round tower`, () => {
+			const D = { ...DEFAULT_DESIGN, towerRoof: roof, towerCrenel: true, towerCorbel: 0.25 };
+			expect(renders(roundTower(D))).toBe(true);
+		});
 	}
+	it('a crenellated top adds one part between the body and the cap', () => {
+		const plain = roundTower({ ...DEFAULT_DESIGN, flags: false });
+		const ct = roundTower({ ...DEFAULT_DESIGN, flags: false, towerCrenel: true });
+		expect(ct).toHaveLength(plain.length + 1);
+		expect(ct.at(-1)?.role).toBe('roof'); // the cap still sits on top
+	});
+	it('a tower with no cap always gets its crenellated top', () => {
+		const bare = roundTower({ ...DEFAULT_DESIGN, towerRoof: 'none', towerCrenel: false });
+		expect(bare).toEqual(roundTower({ ...DEFAULT_DESIGN, towerRoof: 'none', towerCrenel: true }));
+	});
+	it("legacy towerRoof 'crenel' is a bare crenellated top", () => {
+		expect(upgradeDesign({ towerRoof: 'crenel' })).toEqual({
+			towerRoof: 'none',
+			towerCrenel: true,
+		});
+		expect(roundTower({ ...DEFAULT_DESIGN, towerRoof: 'crenel' })).toEqual(
+			roundTower({ ...DEFAULT_DESIGN, towerRoof: 'none', towerCrenel: true }),
+		);
+	});
 	const flagShapes = ['banner', 'pennant', 'swallowtail'] as const;
 	for (const shape of flagShapes) {
 		it(`flagShape=${shape} renders without throwing`, () => {
