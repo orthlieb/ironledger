@@ -4042,9 +4042,14 @@ export function caravel(D) {
 			w: 0.6,
 		},
 	];
+	// The flag flies at the masthead, its lower edge just above the main yard
+	// (y = 21; the cloth is drawn 10 above the pole's foot). The pole runs
+	// behind the sails like the mast; the cloth goes in front, so the sails'
+	// outlines can't swallow it on a small ship.
+	const [cloth, pole] = D.flags ? flag({ ...D, flagLen: 8, flagFolds: 2 }, 1, 16.2) : [];
 	return [
 		{ solid: [], free: [...rigging, ...masts] },
-		...flag({ ...D, flagLen: 8, flagFolds: 2 }, 1, 24.6),
+		...(pole ? [pole] : []),
 		{ solid: [lateen], shadeArea: rect(-9, 8, 6, 14) },
 		{
 			solid: [main],
@@ -4053,6 +4058,7 @@ export function caravel(D) {
 		},
 		{ solid: [fore], shadeArea: rect(8, 9, 6, 10) },
 		{ solid: [], free: yards },
+		...(cloth ? [cloth] : []),
 		{ solid: [hull], role: 'wood', shadeArea: rect(-14, -3, 28, 3.6), lines: strakes },
 	];
 }
