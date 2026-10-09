@@ -216,8 +216,9 @@ Missing slugs degrade gracefully (empty render + category fallback).
 
 A culture styles the map's generated settlement icons:
 `cultures/<key>.json` = `{key, name, note, design, palette}`, where `design`
-is any subset of the settlement kit's knobs and `palette` its eight colour
-roles. The easiest way to author one is the playground
+is any subset of the settlement kit's 42 knobs (reference:
+`apps/web/src/lib/settlement-kit/README.md` → "Cultures") and `palette` its
+eight colour roles. The easiest way to author one is the playground
 (`tools/settlement-playground.html`): Import an existing culture (or start
 from a preset), set the knobs and colours, then **Export culture** and drop
 the file in. Markers store only the culture's

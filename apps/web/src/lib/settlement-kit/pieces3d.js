@@ -64,7 +64,7 @@ import { place } from './render.js';
  * @property {number} flagLen
  * @property {number} flagFolds
  * @property {'banner' | 'pennant' | 'swallowtail'} [flagShape] rectangular
- *   banner (default), a tapered pennant that comes to a single point, or a
+ *   banner, a tapered pennant that comes to a single point (default), or a
  *   split pennant with a swallowtail notch at the trailing end
  * @property {number} hatch hatch spacing (smaller = darker shade)
  * @property {'none' | 'stone' | 'palisade' | 'hedge' | 'bone' | 'earth' | 'reef'} wall the
