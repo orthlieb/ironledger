@@ -72,23 +72,20 @@ const CORE_ICONS = {
 	'viking-longhouse': ['settlement', () => piece(D, 'Longhouse')],
 	keep: ['settlement', () => piece(D, 'Keep')],
 	'block-house': ['settlement', () => [{ piece: keep({ ...D, flags: false }, { w: 16, h: 20 }) }]],
-	'fortified-tower': ['settlement', () => piece({ ...D, towerRoof: 'crenel' }, 'Round tower')],
+	'fortified-tower': ['settlement', () => piece({ ...D, towerRoof: 'none' }, 'Round tower')],
 	'domed-tower': ['settlement', () => piece({ ...D, towerRoof: 'dome' }, 'Round tower')],
 	'domed-house': [
 		'settlement',
 		() => piece({ ...D, towerRoof: 'dome', storeys: 1 }, 'Gable house'),
 	],
-	watchtower: [
-		'settlement',
-		() => piece({ ...D, towerRoof: 'crenel', stature: 1.2 }, 'Round tower'),
-	],
+	watchtower: ['settlement', () => piece({ ...D, towerRoof: 'none', stature: 1.2 }, 'Round tower')],
 	'guarded-tower': [
 		'settlement',
-		() => piece({ ...D, towerRoof: 'crenel', masonry: true, stature: 1.15 }, 'Round tower'),
+		() => piece({ ...D, towerRoof: 'none', masonry: true, stature: 1.15 }, 'Round tower'),
 	],
 	'stone-tower': [
 		'settlement',
-		() => piece({ ...D, towerRoof: 'crenel', masonry: true }, 'Round tower'),
+		() => piece({ ...D, towerRoof: 'none', masonry: true }, 'Round tower'),
 	],
 	'small-tower': ['settlement', () => piece({ ...D, stature: 0.75, flags: false }, 'Round tower')],
 	'tower-flag': ['settlement', () => piece(D, 'Round tower')],
@@ -160,7 +157,7 @@ const CORE_ICONS = {
 	'cathedral-ruin': ['settlement', () => ruined(piece(D, 'Cathedral'))],
 	'fortified-tower-ruin': [
 		'settlement',
-		() => ruined(piece({ ...D, towerRoof: 'crenel' }, 'Round tower')),
+		() => ruined(piece({ ...D, towerRoof: 'none' }, 'Round tower')),
 	],
 	'tavern-ruin': ['settlement', () => ruined(piece(D, 'Tavern'))],
 	'mine-ruin': ['settlement', () => ruined(piece(D, 'Mine'))],

@@ -29,6 +29,8 @@ import {
 import { TEMPLATES, pieces, settlement } from '../../src/lib/settlement-kit/layouts3d.js';
 import {
 	DEFAULT_DESIGN,
+	church,
+	clocktower,
 	gableHouse,
 	makeDesign,
 	onStilts,
@@ -36,7 +38,9 @@ import {
 	roundTower,
 	squareTower,
 	stiltHut,
+	upgradeDesign,
 } from '../../src/lib/settlement-kit/pieces3d.js';
+import { paletteTone, patternDefs } from '../../src/lib/settlement-kit/patterns.js';
 import { renderLayered, place } from '../../src/lib/settlement-kit/render.js';
 
 type Design = typeof DEFAULT_DESIGN;
@@ -117,6 +121,9 @@ describe('wall patterns', () => {
 		['stone', 'wall-stone'],
 		['hedge', 'wall-hedge'],
 		['reef', 'wall-reef'],
+		['palisade', 'wall-wood'],
+		['earth', 'wall-earth'],
+		['bone', 'wall-bone'],
 	] as const)('%s wall emits a <pattern> and uses url(#…) for its fill', (wall, role) => {
 		const svg = generateSettlementSvg(
 			{ tier: 'village', culture: 'default', seed: 3, walls: wall },
@@ -127,10 +134,19 @@ describe('wall patterns', () => {
 			new RegExp(`data-role="${role}"[^/]*fill="url\\(#pat-${role}-`),
 		);
 	});
+	it.each([
+		['wall-stone', 2],
+		['wall-hedge', 2],
+		['wall-reef', 2.5],
+	] as const)('%s tile is drawn %s× larger via patternTransform', (role, scale) => {
+		const { defs } = patternDefs([role], (r) => paletteTone(r, '#000000', (a) => a), 't');
+		expect(defs).toContain(`patternTransform="scale(${scale})"`);
+		expect(defs.length, 'procedural tile should stay compact').toBeLessThan(12_000);
+	});
 });
 
 describe('design-knob variants render', () => {
-	const towerRoofs: Design['towerRoof'][] = ['cone', 'onion', 'crenel', 'dome'];
+	const towerRoofs: Design['towerRoof'][] = ['none', 'cone', 'onion', 'dome', 'lancet'];
 	for (const roof of towerRoofs) {
 		it(`towerRoof=${roof} renders a round tower`, () => {
 			expect(renders(roundTower({ ...DEFAULT_DESIGN, towerRoof: roof }))).toBe(true);
@@ -141,7 +157,38 @@ describe('design-knob variants render', () => {
 				true,
 			);
 		});
+		it(`towerRoof=${roof} on a crenellated top renders a round tower`, () => {
+			const D = { ...DEFAULT_DESIGN, towerRoof: roof, towerCrenel: true, towerCorbel: 0.25 };
+			expect(renders(roundTower(D))).toBe(true);
+		});
 	}
+	for (const steeple of ['square', 'round'] as const)
+		for (const roof of towerRoofs)
+			for (const crenel of [false, true])
+				it(`steeple=${steeple} towerRoof=${roof}${crenel ? ' + crenel' : ''} renders a church and a clock tower`, () => {
+					const D = { ...DEFAULT_DESIGN, steeple, towerRoof: roof, towerCrenel: crenel };
+					expect(renders(church(D))).toBe(true);
+					expect(renders(clocktower(D))).toBe(true);
+				});
+	it('a crenellated top adds one part between the body and the cap', () => {
+		const plain = roundTower({ ...DEFAULT_DESIGN, flags: false });
+		const ct = roundTower({ ...DEFAULT_DESIGN, flags: false, towerCrenel: true });
+		expect(ct).toHaveLength(plain.length + 1);
+		expect(ct.at(-1)?.role).toBe('roof'); // the cap still sits on top
+	});
+	it('a tower with no cap always gets its crenellated top', () => {
+		const bare = roundTower({ ...DEFAULT_DESIGN, towerRoof: 'none', towerCrenel: false });
+		expect(bare).toEqual(roundTower({ ...DEFAULT_DESIGN, towerRoof: 'none', towerCrenel: true }));
+	});
+	it("legacy towerRoof 'crenel' is a bare crenellated top", () => {
+		expect(upgradeDesign({ towerRoof: 'crenel' })).toEqual({
+			towerRoof: 'none',
+			towerCrenel: true,
+		});
+		expect(roundTower({ ...DEFAULT_DESIGN, towerRoof: 'crenel' })).toEqual(
+			roundTower({ ...DEFAULT_DESIGN, towerRoof: 'none', towerCrenel: true }),
+		);
+	});
 	const flagShapes = ['banner', 'pennant', 'swallowtail'] as const;
 	for (const shape of flagShapes) {
 		it(`flagShape=${shape} renders without throwing`, () => {
@@ -182,6 +229,24 @@ describe('render robustness', () => {
 		const roofs = squareTower(DEFAULT_DESIGN, {}).filter((p) => p.role === 'roof');
 		expect(roofs).toHaveLength(1);
 		expect(roofs[0].shadeLines?.length).toBeGreaterThan(0);
+	});
+});
+
+describe('perspective', () => {
+	// squareTower's first part is its receding right face:
+	// [front-bottom, back-bottom, back-top, front-top, …].
+	const sideOf = (D: Design, h?: number) => squareTower(D, { h }).at(0)?.solid[0] ?? [];
+	it('is parallel at 0: the back edge matches the front edge', () => {
+		const [fb, bb, bt, ft] = sideOf({ ...DEFAULT_DESIGN, perspective: 0 });
+		expect(bt[1] - bb[1]).toBeCloseTo(ft[1] - fb[1]);
+	});
+	it('converges by default: the back edge comes out shorter', () => {
+		const [fb, bb, bt, ft] = sideOf(DEFAULT_DESIGN);
+		expect(bt[1] - bb[1]).toBeLessThan(ft[1] - fb[1]);
+	});
+	it.each([28, 60])('keeps a %s-tall tower top climbing (no seen-from-below tip)', (h) => {
+		const [, , bt, ft] = sideOf({ ...DEFAULT_DESIGN, perspective: 1 }, h);
+		expect(bt[1]).toBeGreaterThan(ft[1]);
 	});
 });
 

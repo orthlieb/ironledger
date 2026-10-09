@@ -8,8 +8,18 @@
 // culture downloads the current knobs + colours as a new plugin file.
 // =============================================================================
 
-import { DEFAULT_DESIGN, makeDesign } from '../../src/lib/settlement-kit/pieces3d.js';
+import {
+	DEFAULT_DESIGN,
+	makeDesign,
+	upgradeDesign,
+} from '../../src/lib/settlement-kit/pieces3d.js';
 import { TEMPLATES, pieces, settlement } from '../../src/lib/settlement-kit/layouts3d.js';
+import {
+	PATTERN_ROLES,
+	FLAT_WALLS,
+	PATTERN_SHADE,
+	patternDefs,
+} from '../../src/lib/settlement-kit/patterns.js';
 import { LAYERS, place, renderLayered } from '../../src/lib/settlement-kit/render.js';
 import { ruinPlaced } from '../../src/lib/settlement-kit/ruins3d.js';
 
@@ -172,6 +182,16 @@ const KNOBS = [
 	{ group: 'Houses', key: 'manyDoors', label: 'Many doors', type: 'check', design: true },
 	{
 		group: 'Houses',
+		key: 'perspective',
+		label: 'Perspective',
+		type: 'range',
+		min: 0,
+		max: 1,
+		step: 0.05,
+		design: true,
+	},
+	{
+		group: 'Houses',
 		key: 'industry',
 		label: 'Trade buildings',
 		type: 'range',
@@ -183,9 +203,16 @@ const KNOBS = [
 	{
 		group: 'Towers',
 		key: 'towerRoof',
-		label: 'Tower top',
+		label: 'Tower cap',
 		type: 'select',
-		options: ['cone', 'onion', 'crenel', 'dome'],
+		options: ['none', 'cone', 'onion', 'dome', 'lancet'],
+		design: true,
+	},
+	{
+		group: 'Towers',
+		key: 'towerCrenel',
+		label: 'Crenellated top',
+		type: 'check',
 		design: true,
 	},
 	{
@@ -219,6 +246,14 @@ const KNOBS = [
 		design: true,
 	},
 	{ group: 'Landmarks', key: 'church', label: 'Church', type: 'check', design: true },
+	{
+		group: 'Landmarks',
+		key: 'steeple',
+		label: 'Steeple',
+		type: 'select',
+		options: ['square', 'round'],
+		design: true,
+	},
 	{
 		group: 'Landmarks',
 		key: 'symbol',
@@ -515,6 +550,28 @@ let cultureName = 'Default culture';
 /** Key of the loaded culture (preset or import), reused on export; null → slug of the name. @type {string | null} */
 let cultureKey = null;
 
+/** Per-icon pattern-id scope: url(#…) resolves document-wide. */
+let iconSeq = 0;
+
+/**
+ * `<pattern>` defs for the patterned wall roles. The materials have fixed
+ * colours; every -shade tile mixes toward the page's --ink the way
+ * wall-shade does, so it follows the ink picker live. bakedSvg() resolves
+ * the CSS for downloads.
+ * @param {string[]} roles
+ */
+function wallPatterns(roles) {
+	return patternDefs(
+		roles,
+		(role) => ({
+			ink: 'var(--ink)',
+			tone: (c) =>
+				role.endsWith('-shade') ? `color-mix(in srgb,${c} ${PATTERN_SHADE * 100}%,var(--ink))` : c,
+		}),
+		`pg${++iconSeq}`,
+	);
+}
+
 /** @param {Placed[]} items */
 function svg(items) {
 	const parts = items.flatMap((it) =>
@@ -530,10 +587,14 @@ function svg(items) {
 		softRadius: drawing.softRadius,
 	});
 	const vb = [b.x - 3, b.y - 3, b.w + 6, b.h + 6].map((n) => n.toFixed(1)).join(' ');
-	const paths = LAYERS.filter((l) => layers[l]).map(
-		(l) => `<path data-role="${l}" d="${layers[l]}"/>`,
+	const used = LAYERS.filter((l) => layers[l]);
+	const { defs, url } = wallPatterns(used);
+	const paths = used.map((l) =>
+		PATTERN_ROLES.has(l)
+			? `<path data-role="${l}" style="fill:${url(l)}" d="${layers[l]}"/>`
+			: `<path data-role="${l}" d="${layers[l]}"/>`,
 	);
-	return `<svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="${vb}"><path class="sil" d="${silhouette}"/>${paths.join('')}</svg>`;
+	return `<svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${defs}<path class="sil" d="${silhouette}"/>${paths.join('')}</svg>`;
 }
 
 /** @param {string} id */
@@ -678,16 +739,27 @@ function applyColours() {
  */
 function bakedSvg(src) {
 	const out = /** @type {SVGSVGElement} */ (src.cloneNode(true));
-	const live = src.querySelectorAll('path');
-	out.querySelectorAll('path').forEach((p, i) => {
+	const live = src.querySelectorAll(':scope > path');
+	out.querySelectorAll(':scope > path').forEach((p, i) => {
 		const cs = getComputedStyle(live[i]);
-		p.setAttribute('fill', toHex(cs.fill));
+		// Pattern-filled walls keep their url(#…) — it's in the copied defs.
+		if (!cs.fill.startsWith('url(')) p.setAttribute('fill', toHex(cs.fill));
 		if (p.classList.contains('sil')) {
 			p.setAttribute('stroke', toHex(cs.stroke));
 			p.setAttribute('stroke-width', cs.strokeWidth);
 			p.setAttribute('stroke-linejoin', 'round');
 		}
 		p.removeAttribute('class');
+	});
+	// Wall-pattern tiles: swap each var()-coloured declaration for its value.
+	const liveTiles = src.querySelectorAll('pattern [style]');
+	out.querySelectorAll('pattern [style]').forEach((el, i) => {
+		const cs = getComputedStyle(liveTiles[i]);
+		const decls = (el.getAttribute('style') ?? '').split(';').map((d) => {
+			const prop = d.split(':')[0].trim();
+			return d.includes('var(') ? `${prop}:${toHex(cs.getPropertyValue(prop))}` : d;
+		});
+		el.setAttribute('style', decls.join(';'));
 	});
 	out.removeAttribute('class');
 	const [, , w, h] = (out.getAttribute('viewBox') ?? '0 0 100 100').split(' ').map(Number);
@@ -758,7 +830,7 @@ function importCulture(raw) {
 	if (!c.design || typeof c.design !== 'object') throw new Error('no "design" object');
 	/** @type {Record<string, any>} */
 	const next = { ...DEFAULT_DESIGN };
-	for (const [k, v] of Object.entries(c.design))
+	for (const [k, v] of Object.entries(upgradeDesign(c.design)))
 		if (k in DEFAULT_DESIGN && typeof v === typeof (/** @type {any} */ (DEFAULT_DESIGN)[k]))
 			next[k] = v;
 	design = /** @type {Design} */ (next);
@@ -781,7 +853,24 @@ function importCulture(raw) {
 	schedule();
 }
 
+/**
+ * The marker-size strip draws its walls flat, as the map does for small
+ * icons (a pattern finer than a pixel only muddies the wall) — rules that
+ * beat the paths' inline pattern fills.
+ */
+function flatStripWalls() {
+	const css = Object.entries(FLAT_WALLS)
+		.map(
+			([role, hex]) =>
+				`#map .ic [data-role=${role}]{fill:${hex}!important}` +
+				`#map .ic [data-role=${role}-shade]{fill:color-mix(in srgb,${hex} ${PATTERN_SHADE * 100}%,var(--ink))!important}`,
+		)
+		.join('');
+	document.head.append(Object.assign(document.createElement('style'), { textContent: css }));
+}
+
 function init() {
+	flatStripWalls();
 	document.querySelector('main')?.addEventListener('click', (e) => {
 		const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-fmt]');
 		const fig = btn?.closest('figure');
@@ -810,7 +899,7 @@ function init() {
 			cultureKey = null;
 			setPalette('Parchment');
 		} else {
-			design = { ...DEFAULT_DESIGN, ...CULTURES[name].design };
+			design = upgradeDesign({ ...DEFAULT_DESIGN, ...CULTURES[name].design });
 			cultureName = CULTURES[name].name;
 			cultureKey = CULTURES[name].key;
 			setPaletteColours(CULTURES[name].palette);

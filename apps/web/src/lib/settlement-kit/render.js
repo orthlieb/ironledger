@@ -36,7 +36,7 @@ import ClipperLib from 'clipper-lib';
 /** @typedef {import('./geom.js').Pt} Pt */
 /** @typedef {import('./geom.js').Poly} Poly */
 /** @typedef {{pts: Poly, w?: number, round?: boolean, outline?: boolean}} Line */
-/** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
+/** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'wall-wood' | 'wall-earth' | 'wall-bone' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
 /** @typedef {{solid: Poly[], lines?: Line[], shadeLines?: Line[], fills?: Poly[], cuts?: Line[], free?: Line[], mask?: Poly, role?: Role, shaded?: boolean, shadeArea?: Poly, terrain?: boolean}} Part */
 /** @typedef {{X: number, Y: number}[][]} CPaths */
 
@@ -73,6 +73,24 @@ function bool(ct, a, b) {
 }
 /** @param {CPaths} a @param {CPaths} b */
 const union = (a, b) => bool(ClipperLib.ClipType.ctUnion, a, b);
+/**
+ * Union a list of clean ring sets pairwise in a balanced tree: the same
+ * result as folding union() left to right, but each ring is re-processed
+ * O(log n) times instead of once per later operand.
+ * @param {CPaths[]} sets
+ * @returns {CPaths}
+ */
+function unionAll(sets) {
+	let level = sets.filter((s) => s.length);
+	while (level.length > 1) {
+		/** @type {CPaths[]} */
+		const next = [];
+		for (let i = 0; i < level.length; i += 2)
+			next.push(i + 1 < level.length ? union(level[i], level[i + 1]) : level[i]);
+		level = next;
+	}
+	return level[0] ?? [];
+}
 /** @param {CPaths} a @param {CPaths} b */
 const minus = (a, b) => bool(ClipperLib.ClipType.ctDifference, a, b);
 /** @param {CPaths} a @param {CPaths} b */
@@ -132,8 +150,8 @@ function offset(paths, d, round = false) {
  * @returns {CPaths}
  */
 function stroke(lines, round = false, outlineW = OUTLINE) {
-	/** @type {CPaths} */
-	let out = [];
+	/** @type {CPaths[]} */
+	const out = [];
 	for (const l of lines) {
 		const co = new ClipperLib.ClipperOffset(2, 0.05 * S);
 		co.AddPath(
@@ -144,9 +162,9 @@ function stroke(lines, round = false, outlineW = OUTLINE) {
 		/** @type {CPaths} */
 		const sol = [];
 		co.Execute(sol, ((l.outline ? outlineW : (l.w ?? DETAIL)) / 2) * S);
-		out = union(out, sol);
+		out.push(sol);
 	}
-	return out;
+	return unionAll(out);
 }
 
 /** @param {CPaths} paths */
@@ -209,9 +227,9 @@ export function place(parts, at) {
 }
 
 /** Colour layers emitted by renderLayered(), in paint order. The
- *  `wall-*` material roles (stone / hedge / reef) take an SVG `<pattern>`
- *  fill in place of a flat colour — see settlement-kit/patterns.js. Each
- *  pattern role shares its shade bucket with the generic `wall` role. */
+ *  `wall-*` material roles (stone / hedge / reef / wood / earth / bone) take
+ *  an SVG `<pattern>` fill in place of a flat colour — see
+ *  settlement-kit/patterns.js — each with its own -shade tile. */
 export const LAYERS = /** @type {const} */ ([
 	'water',
 	'water-shade',
@@ -223,6 +241,12 @@ export const LAYERS = /** @type {const} */ ([
 	'wall-hedge-shade',
 	'wall-reef',
 	'wall-reef-shade',
+	'wall-wood',
+	'wall-wood-shade',
+	'wall-earth',
+	'wall-earth-shade',
+	'wall-bone',
+	'wall-bone-shade',
 	'wood',
 	'wood-shade',
 	'earth',
@@ -251,7 +275,7 @@ export function renderLayered(parts, opts = {}) {
 	const half = (opts.outline ?? OUTLINE) / 2;
 	const round = opts.join === 'round' || opts.join === 'soft';
 	const soft = opts.join === 'soft' ? (opts.softRadius ?? 0.9) : 0;
-	/** @type {Record<string, CPaths>} */
+	/** Visible pieces per layer, unioned once at the end. @type {Record<string, CPaths[]>} */
 	const acc = Object.fromEntries(LAYERS.map((l) => [l, []]));
 	/** @type {CPaths} */
 	let occ = [];
@@ -282,21 +306,21 @@ export function renderLayered(parts, opts = {}) {
 		let free = p.free?.length ? stroke(p.free) : [];
 		if (mask) free = intersect(free, mask);
 		ink = union(ink, free);
-		acc.ink = union(acc.ink, minus(ink, occ));
+		acc.ink.push(minus(ink, occ));
 
 		const face = minus(solid, occ);
 		const role = p.role ?? 'wall';
-		if (role === 'flag') acc.flag = union(acc.flag, face);
+		if (role === 'flag') acc.flag.push(face);
 		else {
 			const shade = p.shaded ? face : p.shadeArea ? intersect(face, [toC(p.shadeArea)]) : [];
-			acc[role] = union(acc[role], minus(face, shade));
-			acc[`${role}-shade`] = union(acc[`${role}-shade`], shade);
+			acc[role].push(minus(face, shade));
+			acc[`${role}-shade`].push(shade);
 		}
 		occ = union(occ, union(outer, free));
 	}
 	const clean = (/** @type {CPaths} */ c) => ClipperLib.Clipper.CleanPolygons(c, 0.02 * S);
 	return {
-		layers: Object.fromEntries(LAYERS.map((l) => [l, toPathData(clean(acc[l]))])),
+		layers: Object.fromEntries(LAYERS.map((l) => [l, toPathData(clean(unionAll(acc[l])))])),
 		silhouette: toPathData(clean(occ)),
 		bounds: boundsOf(occ),
 	};

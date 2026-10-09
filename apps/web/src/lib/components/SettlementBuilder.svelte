@@ -188,7 +188,7 @@
 					>
 						{#if ric}
 							<svg viewBox={haloPaddedViewBox(ric)} aria-hidden="true">
-								{@html mapGlyphInner(ric, color, `sb-recent-${i}`, 'proportional')}
+								{@html mapGlyphInner(ric, color, `sb-recent-${i}`, 'proportional', 48)}
 							</svg>
 						{/if}
 					</button>
@@ -246,7 +246,7 @@
 			<div class="sb-actual">
 				{#if icon}
 					<svg viewBox={haloPaddedViewBox(icon)} aria-hidden="true">
-						{@html mapGlyphInner(icon, color, 'sb-small', 'proportional')}
+						{@html mapGlyphInner(icon, color, 'sb-small', 'proportional', 34)}
 					</svg>
 				{/if}
 				<span>marker size</span>

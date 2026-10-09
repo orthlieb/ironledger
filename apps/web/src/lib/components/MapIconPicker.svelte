@@ -263,7 +263,7 @@
 											     to the icon so it doesn't read as a faint hairline at the
 											     picker's larger tile size. Keeps every icon legible on
 											     the tile's `--bg-control` background in both themes. -->
-											{@html mapGlyphInner(ic, selectedColor, `pick-${key}`, 'proportional')}
+											{@html mapGlyphInner(ic, selectedColor, `pick-${key}`, 'proportional', 56)}
 										</svg>
 									</button>
 								{/each}

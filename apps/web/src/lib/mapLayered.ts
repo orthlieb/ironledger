@@ -9,9 +9,15 @@
 // palette (carried on the root as `data-palette`) and only its ROOFS take
 // the marker colour, so a red marker still reads as "a town with red roofs".
 //
+// Patterned wall materials (stone, hedge, reef, palisade, earth, bone) draw
+// through the settlement kit's own <pattern> defs (settlement-kit/
+// patterns.js), so the map and the generated files can't drift apart.
+//
 // This module is pure (no DOM, no Svelte) so it can be unit-tested; the
 // lazy fetch + cache lives in mapIconCache.ts.
 // =============================================================================
+
+import { PATTERN_ROLES, flatWall, paletteTone, patternDefs } from './settlement-kit/patterns.js';
 
 /** Base colours of a layered icon; shaded variants are derived. */
 export interface LayeredPalette {
@@ -43,12 +49,10 @@ export interface LayeredPath {
 	d: string;
 }
 
-/** How much of the base colour each shaded role keeps (the rest is ink). */
+/** How much of the base colour each shaded role keeps (the rest is ink).
+ *  Patterned wall roles shade inside their pattern tiles instead. */
 const SHADE_MIX: Record<string, number> = {
 	'wall-shade': 0.8,
-	'wall-stone-shade': 0.8,
-	'wall-hedge-shade': 0.8,
-	'wall-reef-shade': 0.8,
 	'wood-shade': 0.75,
 	'earth-shade': 0.75,
 	'water-shade': 0.8,
@@ -57,15 +61,8 @@ const SHADE_MIX: Record<string, number> = {
 
 /** Material-specific wall roles that take an SVG `<pattern>` fill
  *  (settlement-kit/patterns.js) in place of a flat colour, plus their
- *  -shade variants. Keep in sync with PATTERN_ROLES there. */
-export const PATTERN_WALL_ROLES = new Set([
-	'wall-stone',
-	'wall-stone-shade',
-	'wall-hedge',
-	'wall-hedge-shade',
-	'wall-reef',
-	'wall-reef-shade',
-]);
+ *  -shade variants. */
+export const PATTERN_WALL_ROLES: ReadonlySet<string> = PATTERN_ROLES;
 
 const HEX = /^#[0-9a-fA-F]{6}$/;
 
@@ -113,11 +110,6 @@ export function roleColours(p: LayeredPalette, roof?: string): Record<string, st
 	const r = (roof && toHex6(roof)) ?? p.roof;
 	const base: Record<string, string> = {
 		wall: p.wall,
-		// Material-specific wall bodies share the wall colour; the pattern
-		// (brick, hedge-stipple, coral) is layered on top in layeredMarkup().
-		'wall-stone': p.wall,
-		'wall-hedge': p.wall,
-		'wall-reef': p.wall,
 		roof: r,
 		wood: p.wood,
 		earth: p.earth,
@@ -159,20 +151,22 @@ export function layeredMarkup(
 	paths: LayeredPath[],
 	colours: Record<string, string>,
 	haloAttrs: string | null,
-	scope: string = 'x',
+	scope?: string,
+	detail = true,
 ): string {
-	// Pattern defs for any wall-roled path the icon uses, keyed by scope so
-	// two icons on the same page don't collide on `#pat-wall-stone`.
-	const patterned = paths.filter((p) => PATTERN_WALL_ROLES.has(p.role));
-	let defs = '';
-	if (patterned.length) {
-		const used = new Set(patterned.map((p) => p.role));
-		defs = '<defs>';
-		for (const role of used) {
-			defs += patternSvg(role, colours[role] ?? colours.wall, colours.ink, scope);
-		}
-		defs += '</defs>';
-	}
+	// Pattern defs for any wall-roled path the icon uses — or none at all
+	// when the icon is too small for a pattern to read (`detail` false): its
+	// walls then take flat material colours. Pass a per-instance `scope`:
+	// shared ids resolve to the first copy in the document, and a copy
+	// inside a display:none subtree (a closed picker, say) never paints.
+	scope ??= colours.ink.replace('#', '');
+	const { defs } = detail
+		? patternDefs(
+				paths.map((p) => p.role),
+				(role) => paletteTone(role, colours.ink, mixHex),
+				scope,
+			)
+		: { defs: '' };
 	let s = defs;
 	for (const { role, d } of paths) {
 		if (role === 'sil') {
@@ -180,50 +174,12 @@ export function layeredMarkup(
 			continue;
 		}
 		if (PATTERN_WALL_ROLES.has(role)) {
-			s += `<path fill="url(#pat-${role}-${scope})" d="${d}"/>`;
+			const fill = detail ? `url(#pat-${role}-${scope})` : flatWall(role, colours.ink, mixHex);
+			s += `<path fill="${fill}" d="${d}"/>`;
 			continue;
 		}
 		const fill = colours[role];
 		if (fill) s += `<path fill="${fill}" d="${d}"/>`;
 	}
 	return s;
-}
-
-/** Inner body of a `<pattern>` for a material-wall role. Mirrors the
- *  settlement-kit's own patterns.js — kept here so the main app can
- *  recolour at render time without re-fetching the icon. */
-function patternSvg(role: string, fill: string, ink: string, scope: string): string {
-	const w = role.startsWith('wall-stone') ? 4.4 : role.startsWith('wall-hedge') ? 5 : 6;
-	const h = role.startsWith('wall-stone') ? 4.8 : role.startsWith('wall-hedge') ? 5 : 6;
-	let body: string;
-	if (role.startsWith('wall-stone')) {
-		body =
-			`<rect width="4.4" height="4.8" fill="${fill}"/>` +
-			`<path stroke="${ink}" stroke-width="0.3" fill="none" d="M0 0h4.4M0 2.4h4.4M0 0v2.4M4.4 0v2.4M2.2 2.4v2.4"/>`;
-	} else if (role.startsWith('wall-hedge')) {
-		body =
-			`<rect width="5" height="5" fill="${fill}"/>` +
-			`<g fill="${ink}" fill-opacity="0.42">` +
-			'<circle cx="1.1" cy="1.2" r="0.9"/>' +
-			'<circle cx="3.4" cy="0.7" r="0.75"/>' +
-			'<circle cx="4.5" cy="2.4" r="0.85"/>' +
-			'<circle cx="2.4" cy="2.6" r="0.7"/>' +
-			'<circle cx="0.4" cy="3.4" r="0.8"/>' +
-			'<circle cx="3.7" cy="4.1" r="0.9"/>' +
-			'<circle cx="1.7" cy="4.5" r="0.75"/>' +
-			'</g>';
-	} else {
-		body =
-			`<rect width="6" height="6" fill="${fill}"/>` +
-			`<g fill="${ink}" fill-opacity="0.55">` +
-			'<path d="M1.1 1.6l0.1 -1 0.2 1 1 0.1-1 0.2-0.1 1-0.2-1-1-0.2z"/>' +
-			'<path d="M4.3 0.8l0.1 -0.8 0.2 0.8 0.8 0.1-0.8 0.2-0.1 0.8-0.2-0.8-0.8-0.2z"/>' +
-			'<circle cx="2.6" cy="2.6" r="0.4"/>' +
-			'<path d="M5 3.6l0.1 -1 0.2 1 1 0.1-1 0.2-0.1 1-0.2-1-1-0.2z"/>' +
-			'<circle cx="0.8" cy="4.1" r="0.5"/>' +
-			'<path d="M3.3 4.6l0.1 -0.8 0.2 0.8 0.8 0.1-0.8 0.2-0.1 0.8-0.2-0.8-0.8-0.2z"/>' +
-			'<circle cx="5.2" cy="5.5" r="0.4"/>' +
-			'</g>';
-	}
-	return `<pattern id="pat-${role}-${scope}" width="${w}" height="${h}" patternUnits="userSpaceOnUse">${body}</pattern>`;
 }

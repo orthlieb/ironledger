@@ -16,8 +16,8 @@
 // =============================================================================
 
 import { settlement, TEMPLATES } from './layouts3d.js';
-import { DEFAULT_DESIGN } from './pieces3d.js';
-import { PATTERN_ROLES, patternDefs } from './patterns.js';
+import { DEFAULT_DESIGN, upgradeDesign } from './pieces3d.js';
+import { PATTERN_ROLES, paletteTone, patternDefs } from './patterns.js';
 import { LAYERS, place, renderLayered } from './render.js';
 
 export { fallbackIcon } from './fallback.js';
@@ -93,14 +93,8 @@ function fills(p) {
 	f['earth-shade'] = mix(p.earth, p.ink, 0.75);
 	f['water-shade'] = mix(p.water, p.ink, 0.8);
 	f['roof-shade'] = mix(p.roof, p.ink, 0.7);
-	// Pattern-filled wall roles share the base wall colour for their body
-	// and the ink colour for seams/stipples (encoded into the <pattern> at
-	// bake time). The -shade variants darken the body colour the same way
-	// generic wall-shade does, but keep the same pattern tile.
-	for (const role of ['wall-stone', 'wall-hedge', 'wall-reef']) {
-		f[role] = p.wall;
-		f[`${role}-shade`] = mix(p.wall, p.ink, 0.8);
-	}
+	// Pattern-filled wall roles (stone, hedge, reef, palisade, earth, bone)
+	// draw through their <pattern> — see patterns.js.
 	return f;
 }
 
@@ -139,7 +133,7 @@ export function toLayeredSvg(title, items, palette, o = {}) {
 	const used = LAYERS.filter((l) => layers[l]);
 	const { defs, url } = patternDefs(
 		used.filter((l) => PATTERN_ROLES.has(l)),
-		(role) => ({ fill: f[role], ink: palette.ink }),
+		(role) => paletteTone(role, palette.ink, mix),
 		scope,
 	);
 	const paths = [
@@ -179,7 +173,7 @@ function patternScope(title) {
 export function recipeDesign(recipe, culture) {
 	return {
 		...DEFAULT_DESIGN,
-		...(culture?.design ?? {}),
+		...upgradeDesign(culture?.design ?? {}),
 		...(recipe.wallShape ? { wallShape: recipe.wallShape } : {}),
 		...(recipe.ground ? { ground: recipe.ground } : {}),
 	};

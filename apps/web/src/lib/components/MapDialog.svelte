@@ -489,6 +489,10 @@
 		const baseH = bodyAspect < mapAspect ? canvasPxW / mapAspect : canvasPxH;
 		return baseH * zoom;
 	});
+	/** Screen pixels per world unit inside a marker group — constant across
+	 *  zoom, since the group's scale(1/zoom) cancels it. Tells mapGlyphInner
+	 *  how big a marker icon really draws (small ones skip wall patterns). */
+	const markerPxPerUnit = $derived(svgWidth / zoom / Math.max(1, gridDims.cols));
 
 	// Zoom + pan are restored once per (open × active map) via these guards.
 	// `armViewRestore()` re-arms them so a reopen or a map switch re-applies the
@@ -2115,7 +2119,13 @@
 									(PNG) icons, whose black line-art is tinted through
 									the same call. `m.id` keys the raster filter id.
 								-->
-										{@html mapGlyphInner(ic, color, `mk-${m.id}`, true)}
+										{@html mapGlyphInner(
+											ic,
+											color,
+											`mk-${m.id}`,
+											true,
+											iconExtent * markerPxPerUnit,
+										)}
 									</svg>
 								{:else if hasIcon}
 									<!-- Legacy/broken slug: fall back to a plain dot so
@@ -2344,6 +2354,7 @@
 								m.color || DEFAULT_MARKER_COLOR,
 								`pile-${m.id}`,
 								'proportional',
+								20,
 							)}
 						</svg>
 					{:else}
