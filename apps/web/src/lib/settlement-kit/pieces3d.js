@@ -1420,8 +1420,17 @@ function chimneys(
 	return out;
 }
 
-/** Flag on a pole, folded `D.flagFolds` times. */
-function flag(/** @type {Design} */ D, /** @type {number} */ x, /** @type {number} */ y) {
+/**
+ * A flag on a pole whose foot is at (x, y), folded `D.flagFolds` times; the
+ * cloth streams out from the pole's head to the right, or to the left with
+ * `dir` −1.
+ * @param {Design} D
+ * @param {number} x
+ * @param {number} y
+ * @param {1 | -1} [dir]
+ * @returns {Part[]}
+ */
+function flag(D, x, y, dir = 1) {
 	const L = D.flagLen,
 		hgt = 4.2,
 		n = D.flagFolds * 4,
@@ -1439,8 +1448,8 @@ function flag(/** @type {Design} */ D, /** @type {number} */ x, /** @type {numbe
 		//   swallowtail → no taper, full-height trailing edge (= 1) with a
 		//                 deep V-notch cut between its two tips.
 		const taper = shape === 'pennant' ? 1 - t : shape === 'swallowtail' ? 1 : 1 - t * 0.45;
-		top.push([x + 0.4 + L * t, y + 10 + wave - t * 0.8]);
-		bot.push([x + 0.4 + L * t, y + 10 - hgt * taper + wave - t * 0.8]);
+		top.push([x + dir * (0.4 + L * t), y + 10 + wave - t * 0.8]);
+		bot.push([x + dir * (0.4 + L * t), y + 10 - hgt * taper + wave - t * 0.8]);
 	}
 	/** @type {Poly} */
 	let cloth;
@@ -1448,7 +1457,7 @@ function flag(/** @type {Design} */ D, /** @type {number} */ x, /** @type {numbe
 		const topTip = top[top.length - 1],
 			botTip = bot[bot.length - 1];
 		const notchDepth = L * 0.4;
-		const notch = /** @type {Pt} */ ([topTip[0] - notchDepth, (topTip[1] + botTip[1]) / 2]);
+		const notch = /** @type {Pt} */ ([topTip[0] - dir * notchDepth, (topTip[1] + botTip[1]) / 2]);
 		cloth = [...top, notch, ...bot.reverse()];
 	} else if (shape === 'pennant') {
 		// Both edges meet at the same trailing point; drop the duplicate tip.
@@ -4043,10 +4052,11 @@ export function caravel(D) {
 		},
 	];
 	// The flag flies at the masthead, its lower edge just above the main yard
-	// (y = 21; the cloth is drawn 10 above the pole's foot). The pole runs
-	// behind the sails like the mast; the cloth goes in front, so the sails'
-	// outlines can't swallow it on a small ship.
-	const [cloth, pole] = D.flags ? flag({ ...D, flagLen: 8, flagFolds: 2 }, 1, 16.2) : [];
+	// (y = 21; the cloth is drawn 10 above the pole's foot), streaming aft —
+	// she sails to the right. The pole runs behind the sails like the mast;
+	// the cloth goes in front, so the sails' outlines can't swallow it on a
+	// small ship.
+	const [cloth, pole] = D.flags ? flag({ ...D, flagLen: 8, flagFolds: 2 }, 1, 16.2, -1) : [];
 	return [
 		{ solid: [], free: [...rigging, ...masts] },
 		...(pole ? [pole] : []),
