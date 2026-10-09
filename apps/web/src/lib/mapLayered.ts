@@ -17,7 +17,7 @@
 // lazy fetch + cache lives in mapIconCache.ts.
 // =============================================================================
 
-import { PATTERN_ROLES, paletteTone, patternDefs } from './settlement-kit/patterns.js';
+import { PATTERN_ROLES, flatWall, paletteTone, patternDefs } from './settlement-kit/patterns.js';
 
 /** Base colours of a layered icon; shaded variants are derived. */
 export interface LayeredPalette {
@@ -152,17 +152,21 @@ export function layeredMarkup(
 	colours: Record<string, string>,
 	haloAttrs: string | null,
 	scope?: string,
+	detail = true,
 ): string {
-	// Pattern defs for any wall-roled path the icon uses. Material colours
-	// are fixed, but shade tiles mix toward the palette ink, so ids are
-	// scoped by it: icons in different palettes on one map never pick up
-	// each other's tiles, while same-ink icons share them.
+	// Pattern defs for any wall-roled path the icon uses — or none at all
+	// when the icon is too small for a pattern to read (`detail` false): its
+	// walls then take flat material colours. Pass a per-instance `scope`:
+	// shared ids resolve to the first copy in the document, and a copy
+	// inside a display:none subtree (a closed picker, say) never paints.
 	scope ??= colours.ink.replace('#', '');
-	const { defs } = patternDefs(
-		paths.map((p) => p.role),
-		(role) => paletteTone(role, colours.ink, mixHex),
-		scope,
-	);
+	const { defs } = detail
+		? patternDefs(
+				paths.map((p) => p.role),
+				(role) => paletteTone(role, colours.ink, mixHex),
+				scope,
+			)
+		: { defs: '' };
 	let s = defs;
 	for (const { role, d } of paths) {
 		if (role === 'sil') {
@@ -170,7 +174,8 @@ export function layeredMarkup(
 			continue;
 		}
 		if (PATTERN_WALL_ROLES.has(role)) {
-			s += `<path fill="url(#pat-${role}-${scope})" d="${d}"/>`;
+			const fill = detail ? `url(#pat-${role}-${scope})` : flatWall(role, colours.ink, mixHex);
+			s += `<path fill="${fill}" d="${d}"/>`;
 			continue;
 		}
 		const fill = colours[role];

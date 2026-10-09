@@ -493,6 +493,35 @@ export function paletteTone(role, ink, mix) {
 	return { ink, tone: (c) => (shade ? mix(c, ink, PATTERN_SHADE) : c) };
 }
 
+/** Below this many screen pixels per icon unit, patterned walls draw flat:
+ *  a texture finer than a pixel only muddies the wall (or, at worst, fails
+ *  to paint at all). */
+export const PATTERN_MIN_PX = 0.35;
+
+/** Flat colour of each patterned wall — its material at a glance, for an
+ *  icon drawn too small for the pattern to resolve.
+ *  @type {Record<string, string>} */
+export const FLAT_WALLS = {
+	'wall-stone': '#BEBCB6',
+	'wall-hedge': '#6A8749',
+	'wall-reef': '#DEDCD6',
+	'wall-wood': '#9A6B42',
+	'wall-earth': '#8A6843',
+	'wall-bone': '#E9E5DB',
+};
+
+/**
+ * Flat fill for a patterned wall role; a -shade role mixes toward ink like
+ * the shade tiles do.
+ * @param {string} role
+ * @param {string} ink
+ * @param {(a: string, b: string, t: number) => string} mix `t` of a, the rest b
+ */
+export function flatWall(role, ink, mix) {
+	const base = FLAT_WALLS[role.replace(/-shade$/, '')] ?? FLAT_WALLS['wall-stone'];
+	return role.endsWith('-shade') ? mix(base, ink, PATTERN_SHADE) : base;
+}
+
 /** Role names of walls that use a pattern fill (both base and -shade). */
 export const PATTERN_ROLES = new Set(Object.keys(PATTERNS));
 

@@ -784,7 +784,13 @@
 										<!-- 'proportional' halo so the preview glow matches the
 										     map's weight at this larger button size, not a faint
 										     hairline. -->
-										{@html mapGlyphInner(draftIcon, draftColor, 'props-preview', 'proportional')}
+										{@html mapGlyphInner(
+											draftIcon,
+											draftColor,
+											'props-preview',
+											'proportional',
+											22,
+										)}
 									</svg>
 								{:else}
 									<span class="mp-sel-icon-none" aria-hidden="true">Aa</span>

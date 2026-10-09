@@ -16,6 +16,7 @@ import {
 import { TEMPLATES, pieces, settlement } from '../../src/lib/settlement-kit/layouts3d.js';
 import {
 	PATTERN_ROLES,
+	FLAT_WALLS,
 	PATTERN_SHADE,
 	patternDefs,
 } from '../../src/lib/settlement-kit/patterns.js';
@@ -852,7 +853,24 @@ function importCulture(raw) {
 	schedule();
 }
 
+/**
+ * The marker-size strip draws its walls flat, as the map does for small
+ * icons (a pattern finer than a pixel only muddies the wall) — rules that
+ * beat the paths' inline pattern fills.
+ */
+function flatStripWalls() {
+	const css = Object.entries(FLAT_WALLS)
+		.map(
+			([role, hex]) =>
+				`#map .ic [data-role=${role}]{fill:${hex}!important}` +
+				`#map .ic [data-role=${role}-shade]{fill:color-mix(in srgb,${hex} ${PATTERN_SHADE * 100}%,var(--ink))!important}`,
+		)
+		.join('');
+	document.head.append(Object.assign(document.createElement('style'), { textContent: css }));
+}
+
 function init() {
+	flatStripWalls();
 	document.querySelector('main')?.addEventListener('click', (e) => {
 		const btn = /** @type {HTMLElement} */ (e.target).closest('button[data-fmt]');
 		const fig = btn?.closest('figure');

@@ -32,6 +32,7 @@
 import { MAP_ICONS, MAP_ICON_LIST, type MapIcon } from './generated/mapIconManifest.js';
 import { layeredPaths } from './mapIconCache.js';
 import { layeredMarkup, parsePalette, roleColours } from './mapLayered.js';
+import { PATTERN_MIN_PX } from './settlement-kit/patterns.js';
 
 /** Default aspect ratio (width / height) for a newly-created map with no
  *  background image yet — 16:9. Once a background is uploaded, the map's
@@ -220,13 +221,20 @@ const VECTOR_HALO_STROKE_RATIO = 0.16;
  *   the silhouette layer alone. Returns '' until the file has loaded.
  *
  * `uid` MUST be unique per rendered instance (marker id, manifest key, …)
- * so the generated `<filter>` ids don't collide across the document.
+ * so the generated `<filter>` / `<pattern>` ids don't collide across the
+ * document.
+ *
+ * `px` is the icon box's rendered size in CSS pixels, when the caller knows
+ * it. A layered icon drawn too small for its wall textures to resolve
+ * (below PATTERN_MIN_PX per icon unit) gets flat material colours on its
+ * walls instead of patterns; without `px` the patterns are kept.
  */
 export function mapGlyphInner(
 	ic: MapIcon,
 	color: string | undefined | null,
 	uid: string,
 	halo: boolean | 'proportional' = false,
+	px?: number,
 ): string {
 	const c = safeMarkerColor(color);
 	if (ic.layered && ic.src) {
@@ -234,15 +242,16 @@ export function mapGlyphInner(
 		if (!paths) return '';
 		const palette = parsePalette(ic.palette);
 		const colours = roleColours(palette, c === DEFAULT_MARKER_COLOR ? undefined : c);
+		const [, , vbW, vbH] = ic.viewBox.split(/\s+/).map(Number);
 		let haloAttrs: string | null = null;
 		if (halo === 'proportional') {
-			const [, , vbW, vbH] = ic.viewBox.split(/\s+/).map(Number);
 			const sw = Math.max(1, Math.max(vbW || 0, vbH || 0) * VECTOR_HALO_STROKE_RATIO * 0.5);
 			haloAttrs = ` stroke="${colours.sil}" stroke-width="${sw}" stroke-linejoin="round"`;
 		} else if (halo) {
 			haloAttrs = ` stroke="${colours.sil}" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"`;
 		}
-		return layeredMarkup(paths, colours, haloAttrs);
+		const detail = px === undefined || px / Math.max(vbW || 1, vbH || 1) >= PATTERN_MIN_PX;
+		return layeredMarkup(paths, colours, haloAttrs, uid.replace(/[^\w-]/g, '_'), detail);
 	}
 	const halo_ = halo ? haloColor(c) : '';
 	if (!ic.raster) {

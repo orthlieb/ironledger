@@ -16,7 +16,7 @@ import {
 	roleColours,
 } from '../../src/lib/mapLayered.js';
 import { primeLayered } from '../../src/lib/mapIconCache.js';
-import { MATERIALS } from '../../src/lib/settlement-kit/patterns.js';
+import { FLAT_WALLS, MATERIALS, flatWall } from '../../src/lib/settlement-kit/patterns.js';
 import { mapGlyphInner } from '../../src/lib/mapConstants.js';
 import type { MapIcon } from '../../src/lib/generated/mapIconManifest.js';
 
@@ -95,6 +95,24 @@ describe('layeredMarkup — patterned walls', () => {
 	});
 });
 
+describe('layeredMarkup — small icons', () => {
+	const paths = [
+		{ role: 'wall-stone', d: 'M0 0L4 0L4 4Z' },
+		{ role: 'wall-hedge-shade', d: 'M5 0L9 0L9 4Z' },
+	];
+	it('draws walls in flat material colours, with no pattern defs, without detail', () => {
+		const colours = roleColours(DEFAULT_LAYERED_PALETTE);
+		const out = layeredMarkup(paths, colours, null, 's', false);
+		expect(out).not.toContain('<pattern');
+		expect(out).toContain(`fill="${FLAT_WALLS['wall-stone']}"`);
+		expect(out).toContain(`fill="${flatWall('wall-hedge-shade', colours.ink, mixHex)}"`);
+	});
+	it('scopes pattern ids per instance when given a scope', () => {
+		const out = layeredMarkup(paths, roleColours(DEFAULT_LAYERED_PALETTE), null, 'mk-7');
+		expect(out).toContain('id="pat-wall-stone-mk-7"');
+	});
+});
+
 describe('mapGlyphInner — layered icons', () => {
 	const icon: MapIcon = {
 		slug: 'village',
@@ -120,6 +138,21 @@ describe('mapGlyphInner — layered icons', () => {
 		expect(out).toContain('fill="#ff0000"'); // roofs follow the marker
 		expect(out).toContain('fill="#eeeeee"'); // walls keep the palette
 		expect(out).toContain('vector-effect="non-scaling-stroke"'); // halo on the silhouette
+	});
+	it('drops wall patterns when the icon draws too small for them', () => {
+		const walled = { ...icon, src: '/map/settlement/test-walled.svg', viewBox: '0 0 100 100' };
+		primeLayered(
+			walled.src,
+			SVG.replace('data-role="wall"', 'data-role="wall-stone"').replace(
+				'viewBox="0 0 10 10"',
+				'viewBox="0 0 100 100"',
+			),
+		);
+		expect(mapGlyphInner(walled, '#ff0000', 'w1', true, 20)).not.toContain('<pattern');
+		expect(mapGlyphInner(walled, '#ff0000', 'w2', true, 100)).toContain(
+			'<pattern id="pat-wall-stone-w2"',
+		);
+		expect(mapGlyphInner(walled, '#ff0000', 'w3', true)).toContain('<pattern'); // size unknown
 	});
 	it('keeps the icon roof colour for the default (black) marker', () => {
 		primeLayered(icon.src!, SVG);
