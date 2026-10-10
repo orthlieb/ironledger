@@ -82,6 +82,38 @@ function jitterDesign(D, r) {
 }
 
 /**
+ * A building's own look in a mixed culture — a freeport's patchwork of
+ * builders. With the culture's `variety` as its chance, a building rolls
+ * its own tower cap, crenellated top, corbel, steeple shape, roof pitch and
+ * sweep, windows and doors instead of the culture's. At `variety` 0 it
+ * draws no random numbers, so an unmixed culture lays out as it always has.
+ * @param {Design} D
+ * @param {() => number} r
+ * @returns {Design}
+ */
+function mixDesign(D, r) {
+	if (!(D.variety > 0) || r() >= D.variety) return D;
+	const pick = (/** @type {any[]} */ xs) => xs[Math.floor(r() * xs.length)];
+	const roof = /** @type {Design['towerRoof']} */ (
+		pick(['none', 'cone', 'cone', 'onion', 'dome', 'lancet'])
+	);
+	return {
+		...D,
+		towerRoof: roof,
+		towerCrenel: roof === 'none' || r() < 0.4,
+		towerCorbel: r() < 0.5 ? 0 : 0.1 + r() * 0.25,
+		steeple: r() < 0.4 ? 'round' : 'square',
+		spire: 1.4 + r() * 1.6,
+		pitch: 0.45 + r() * 0.7,
+		concave: r() < 0.6 ? 0 : 0.05 + r() * 0.2,
+		gable: r(),
+		window: pick(['square', 'arched', 'slit', 'round', 'lancet']),
+		door: pick(['arched', 'square', 'lancet']),
+		masonry: r() < 0.4,
+	};
+}
+
+/**
  * A dwelling in the culture's house form (timber, round hut, turf mound
  * or stilt hut), or — in towns and cities, at the culture's `industry` rate — a
  * warehouse or workshop.
@@ -91,7 +123,7 @@ function jitterDesign(D, r) {
  * @param {boolean} trade
  */
 function house(D, r, w, trade) {
-	D = jitterDesign(D, r);
+	D = jitterDesign(mixDesign(D, r), r);
 	const seed = Math.floor(r() * 1e6);
 	if (!trade || r() >= D.industry) {
 		if (D.houseForm === 'round') return roundHut(D, { r: w * 0.32 });
@@ -388,8 +420,11 @@ export function settlement(tier, D, o = {}) {
 	// No church and no holy symbol: no bell tower either (trolls, giants).
 	if (T.shrine !== 'none' && (D.church || D.symbol !== 'none')) {
 		if (D.church && T.shrine === 'full')
-			add(church(D, { w: rank > 0 ? 26 : 20, seed: 3 }), rank >= 2 ? 0.9 : rank > 0 ? 0.8 : 0.72);
-		else add(belfry(D, { finial: true, w: rank > 0 ? 9 : 8, h: towerH }), 0.9);
+			add(
+				church(mixDesign(D, r), { w: rank > 0 ? 26 : 20, seed: 3 }),
+				rank >= 2 ? 0.9 : rank > 0 ? 0.8 : 0.72,
+			);
+		else add(belfry(mixDesign(D, r), { finial: true, w: rank > 0 ? 9 : 8, h: towerH }), 0.9);
 	}
 	if (hasKeep) add(keep(D), rank >= 3 ? 1.05 : rank === 2 ? 0.9 : 0.75);
 	// Free-standing towers — towns (and holds) roll 1d2, cities and up 1d3,
@@ -398,7 +433,7 @@ export function settlement(tier, D, o = {}) {
 	if (rank >= 1) {
 		const towers = 1 + Math.floor(r() * (rank >= 2 ? 3 : 2));
 		for (let i = 0; i < towers; i++)
-			add(roundTower(D, { r: 5 + r() * 1.5, h: 32 + r() * 14 }), 0.9);
+			add(roundTower(mixDesign(D, r), { r: 5 + r() * 1.5, h: 32 + r() * 14 }), 0.9);
 	}
 	/** The market square is held back and set in the middle of town. @type {Item | null} */
 	let marketItem = null;

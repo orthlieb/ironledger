@@ -147,7 +147,7 @@ A culture plugin (`cultures/<key>.json` in an extension, or
 `apps/api/data/cultures/` for the base game) is
 `{key, name, note, design, palette}`. `design` is any subset of the
 `Design` knobs below, laid over `DEFAULT_DESIGN`; `palette` gives the eight
-colour roles. A culture is therefore up to **42 knobs** — 22 numbers, 14
+colour roles. A culture is therefore up to **43 knobs** — 23 numbers, 14
 choices and 6 on/off switches — **plus 8 colours**. The shipped cultures
 set 15–26 knobs each (the Sample culture 36; Ironlanders is the default,
 with none).
@@ -159,14 +159,15 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 
 **Build**
 
-| Knob        | Values (default)                   | What it drives                                             |
-| ----------- | ---------------------------------- | ---------------------------------------------------------- |
-| `houseForm` | **timber** / round / mound / stilt | Framed houses, round huts, turf mounds or huts on stilts.  |
-| `ground`    | **land** / water                   | Water lays a lagoon with waves under the settlement.       |
-| `stature`   | 0.6–1.5 (**1**)                    | Building height (small folk < 1 < giants).                 |
-| `scale`     | 0.7–1.8 (**1**)                    | Building size; bigger means fewer per layout.              |
-| `flourish`  | 0–1 (**0**)                        | Ornament: finials, eave knobs, ridge cresting, more flags. |
-| `masonry`   | on / **off**                       | Stone courses on house walls.                              |
+| Knob        | Values (default)                   | What it drives                                                                                                                                                                            |
+| ----------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `houseForm` | **timber** / round / mound / stilt | Framed houses, round huts, turf mounds or huts on stilts.                                                                                                                                 |
+| `ground`    | **land** / water                   | Water lays a lagoon with waves under the settlement.                                                                                                                                      |
+| `stature`   | 0.6–1.5 (**1**)                    | Building height (small folk < 1 < giants).                                                                                                                                                |
+| `scale`     | 0.7–1.8 (**1**)                    | Building size; bigger means fewer per layout.                                                                                                                                             |
+| `flourish`  | 0–1 (**0**)                        | Ornament: finials, eave knobs, ridge cresting, more flags.                                                                                                                                |
+| `masonry`   | on / **off**                       | Stone courses on house walls.                                                                                                                                                             |
+| `variety`   | 0–1 (**0**)                        | A mixed culture (a freeport): the chance each house, free-standing tower and landmark rolls its own tower cap, crenellated top, corbel, steeple, roof pitch and sweep, windows and doors. |
 
 **Houses**
 
@@ -244,8 +245,9 @@ every knob, then applies linked rules so a culture hangs together:
 low-pitched builders leave towers roofless (crenellated); onion domes
 bring swept roofs; steep roofs bring tall spires; towers and walls usually
 bow alike; crenellated towers bring merlons on the walls. About a third of
-capped cultures get crenellated tops and a quarter round steeples — those
-two are rolled after every other draw, so older seeds keep their looks.
+capped cultures get crenellated tops, a quarter round steeples and one in
+ten some `variety` — those are rolled after every other draw, so older
+seeds keep their looks.
 
 ## Recipe overrides
 

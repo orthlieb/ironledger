@@ -94,6 +94,16 @@ const KNOBS = [
 	},
 	{ group: 'Build', key: 'masonry', label: 'Masonry', type: 'check', design: true },
 	{
+		group: 'Build',
+		key: 'variety',
+		label: 'Variety (mixed builders)',
+		type: 'range',
+		min: 0,
+		max: 1,
+		step: 0.05,
+		design: true,
+	},
+	{
 		group: 'Houses',
 		key: 'longhouse',
 		label: 'Longhouse share',

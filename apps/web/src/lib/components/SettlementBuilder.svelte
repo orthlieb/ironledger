@@ -54,17 +54,20 @@
 		useButton?: HTMLButtonElement | null;
 	} = $props();
 
+	// Sizes with their populations (as in the kit's TEMPLATES — kept here so
+	// the builder doesn't pull the kit into its bundle). Freeport isn't on
+	// the list — a freeport is a culture's mix, not a size — but a marker
+	// that already is one keeps it.
 	const TIERS: { value: SettlementTier; label: string }[] = [
-		{ value: 'stead', label: 'Stead' },
-		{ value: 'camp', label: 'Camp' },
-		{ value: 'outpost', label: 'Outpost' },
-		{ value: 'hamlet', label: 'Hamlet' },
-		{ value: 'village', label: 'Village' },
-		{ value: 'hold', label: 'Hold' },
-		{ value: 'town', label: 'Town' },
-		{ value: 'city', label: 'City' },
-		{ value: 'capital', label: 'Capital' },
-		{ value: 'freeport', label: 'Freeport' },
+		{ value: 'stead', label: 'Stead · 5–20' },
+		{ value: 'camp', label: 'Camp · 20–200, transient' },
+		{ value: 'outpost', label: 'Outpost · 20–100' },
+		{ value: 'hamlet', label: 'Hamlet · 20–100' },
+		{ value: 'village', label: 'Village · 100–600' },
+		{ value: 'hold', label: 'Hold · 600–2,500' },
+		{ value: 'town', label: 'Town · 600–2,500' },
+		{ value: 'city', label: 'City · 2,500–6,000' },
+		{ value: 'capital', label: 'Capital · 6,000–10,000' },
 	];
 	const WALLS: { value: SettlementWalls; label: string }[] = [
 		{ value: 'auto', label: 'Usual for its size' },
@@ -95,6 +98,12 @@
 	// builder on every open, so this never needs to re-sync).
 	const start = untrack(() => initial);
 	let tier = $state<SettlementTier>(start?.tier ?? 'village');
+	/** The sizes on offer: a freeport marker keeps its own. */
+	const tierOptions = $derived(
+		tier === 'freeport'
+			? [...TIERS, { value: 'freeport' as const, label: 'Freeport · ~15,900' }]
+			: TIERS,
+	);
 	let culture = $state(start?.culture ?? DEFAULT_CULTURE);
 	let seed = $state(start?.seed ?? newSeed());
 	let walls = $state<SettlementWalls>(start?.walls ?? 'auto');
@@ -201,7 +210,7 @@
 		<div class="sb-knobs">
 			<label class="sb-field">
 				<span class="sb-label">Size</span>
-				<Select bind:value={tier} options={TIERS} ariaLabel="Settlement size" />
+				<Select bind:value={tier} options={tierOptions} ariaLabel="Settlement size" />
 			</label>
 			<label class="sb-field">
 				<span class="sb-label">Culture</span>

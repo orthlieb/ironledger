@@ -318,8 +318,10 @@ and every culture knob. It's used three ways:
     the kit.
 
 - **The Settlement builder** — the Choose Icon dialog's second tab
-  (`SettlementBuilder.svelte`). Just the essentials: size (tier),
-  culture, walls and wall shape, harbour, ruined +
+  (`SettlementBuilder.svelte`). Just the essentials: size (tier, shown
+  with its population; Freeport isn't offered — a culture with a high
+  `variety` makes a freeport's mix of builders), culture, walls and wall
+  shape, harbour, ruined +
   decay (optionally burned: scorch marks and sooty walls), and a reroll
   for the layout seed, with a large preview and a marker-size preview in
   the marker's colour. "Use this" stores a **recipe** on the marker (see
@@ -340,8 +342,8 @@ apps/web`). Its presets are the culture plugins, baked in at build
 A culture is extension content: `cultures/<key>.json` in an extension
 (or `apps/api/data/cultures/` for the base game) holding `{key, name,
 note, design, palette}` — `design` is any subset of the kit's `Design`
-knobs (`pieces3d.js`), `palette` the eight colour roles — up to 42 knobs
-(22 numbers, 14 choices, 6 switches) and 8 colours in all. The full knob
+knobs (`pieces3d.js`), `palette` the eight colour roles — up to 43 knobs
+(23 numbers, 14 choices, 6 switches) and 8 colours in all. The full knob
 reference, with defaults and ranges, is in
 `src/lib/settlement-kit/README.md` → "Cultures". They're served merged at
 `/catalogue/cultures` (tagged with `source`) and loaded by

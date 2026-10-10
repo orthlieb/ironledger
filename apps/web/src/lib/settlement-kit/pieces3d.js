@@ -80,6 +80,10 @@ import { place } from './render.js';
  *   waves)
  * @property {number} stature building height factor (small folk < 1 < giants)
  * @property {number} scale building size factor; bigger means fewer of them
+ * @property {number} variety 0..1: a mixed culture (a freeport) — the chance
+ *   each house, free-standing tower and landmark rolls its own roof and tower
+ *   styles instead of the culture's (see mixDesign() in layouts3d.js). 0 by
+ *   default: every building in the culture's own style.
  * @property {number} flourish ornament: finials, eave knobs, ridge cresting, extra flags
  *   (0..1)
  * @property {boolean} masonry stone courses on house walls
@@ -139,6 +143,7 @@ export const DEFAULT_DESIGN = {
 	ground: 'land',
 	stature: 1,
 	scale: 1,
+	variety: 0,
 	flourish: 0,
 	masonry: false,
 	longhouse: 0,
@@ -228,6 +233,7 @@ export function makeDesign(seed) {
 		stature: 0.8 + avg() * 0.4,
 		scale: 0.85 + avg() * 0.35,
 		flourish: avg(),
+		variety: 0, // rolled below, after the draws it must not shift
 		masonry: r() < 0.3,
 		longhouse: r() < 0.3 ? avg() : 0,
 		huts: r() < 0.25 ? avg() * 0.6 : 0,
@@ -248,8 +254,10 @@ export function makeDesign(seed) {
 	D.towerCrenel = D.towerRoof === 'none' || r() < 0.35;
 	// Fortifying builders always crenellate their walls.
 	if (D.towerCrenel) D.merlons = true;
-	// About a quarter of cultures raise round steeples.
+	// About a quarter of cultures raise round steeples,
 	D.steeple = r() < 0.25 ? 'round' : 'square';
+	// and one in ten is a mixed, freeport-like patchwork of builders.
+	D.variety = r() < 0.1 ? 0.3 + r() * 0.5 : 0;
 	return D;
 }
 
@@ -491,13 +499,15 @@ function clipToBox(ab, x0, y0, x1, y1) {
 
 /**
  * Parallel hatch lines covering a polygon's bounding box; the renderer
- * clips them to the face.
+ * clips them to the face. They're drawn at the shading weight by default,
+ * so every shaded face — house and gate walls, roofs, keeps, the ring's
+ * back — reads as dark as the towers.
  * @param {Poly} poly
  * @param {number} angle degrees
  * @param {number} spacing
  * @returns {Line[]}
  */
-function hatch(poly, angle, spacing, w = THIN) {
+function hatch(poly, angle, spacing, w = SHADE_W) {
 	const xs = poly.map((p) => p[0]),
 		ys = poly.map((p) => p[1]);
 	const cx = (Math.min(...xs) + Math.max(...xs)) / 2,
@@ -2224,8 +2234,8 @@ export function ringWall(D, o = {}) {
 	// across the segments (each clips it to its own face).
 	const backHatch = hatch(
 		/** @type {Poly} */ ([...topEdge(0, 180), ...ell(0, 0, rx, ry, 180, 0)]),
-		70,
-		D.hatch * 1.1,
+		55,
+		D.hatch,
 	);
 	/** Radius of the tower standing at angle `a`, if any (towers at 0° also
 	 *  stand at 360°). */
@@ -2786,7 +2796,9 @@ function squareWall(D, o) {
 	const n = mat.towers ? Math.min(slots.length, o.towers ?? D.wallTowers) : 0;
 	for (const [p, behind] of slots.slice(0, n)) {
 		const item = {
-			piece: roundTower(D, { r: 5, h: h + 8, flags: D.flourish > 0.7 }),
+			// Back corners sit deep behind the town, so their towers rise
+			// higher to clear its roofs.
+			piece: roundTower(D, { r: 5, h: behind ? h + 18 : h + 8, flags: D.flourish > 0.7 }),
 			x: p[0],
 			y: p[1] - 0.5,
 		};

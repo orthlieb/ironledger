@@ -217,6 +217,16 @@ function netArea(d: string): number {
 	return Math.abs(total);
 }
 
+describe('variety (mixed builders)', () => {
+	it('mixes the buildings of a culture with variety, and leaves one without alone', () => {
+		const plain = settlement('city', DEFAULT_DESIGN, { seed: 3 });
+		const zero = settlement('city', { ...DEFAULT_DESIGN, variety: 0 }, { seed: 3 });
+		expect(JSON.stringify(zero)).toBe(JSON.stringify(plain));
+		const mixed = settlement('city', { ...DEFAULT_DESIGN, variety: 1 }, { seed: 3 });
+		expect(JSON.stringify(mixed)).not.toBe(JSON.stringify(plain));
+	});
+});
+
 describe('gate towers', () => {
 	it('stand astride the ring: the wall right of the gate draws after the tower', () => {
 		// The stretch that meets the tower's right face is drawn last, so the
