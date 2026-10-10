@@ -30,7 +30,7 @@ marker size (32–48 px) without any shading beyond flat-tinted faces.
 - **Light comes from the upper left**, so every right-facing face (side
   walls, right roof slopes, right flanks of cylinders and cones) is
   shaded: a darker role colour plus hatching — diagonal (55°) on
-  cylinders, horizontal on cones and domes, thinner diagonal strokes on
+  cylinders and the ring wall's front flank, horizontal on cones and domes, thinner diagonal strokes on
   house and tower walls.
 - Line widths are in world units and **do not scale** with a placed
   piece, so every icon shares one stroke weight no matter how big its

@@ -449,6 +449,47 @@ function ell(
 }
 
 /**
+ * The part of segment ab inside the box [x0, x1] × [y0, y1], or null —
+ * Liang–Barsky, so the piece stays on the original line.
+ * @param {Poly} ab
+ * @param {number} x0
+ * @param {number} y0
+ * @param {number} x1
+ * @param {number} y1
+ * @returns {Poly | null}
+ */
+function clipToBox(ab, x0, y0, x1, y1) {
+	const [a, b] = ab;
+	const dx = b[0] - a[0],
+		dy = b[1] - a[1];
+	let t0 = 0,
+		t1 = 1;
+	for (const [p, q] of [
+		[-dx, a[0] - x0],
+		[dx, x1 - a[0]],
+		[-dy, a[1] - y0],
+		[dy, y1 - a[1]],
+	]) {
+		if (p === 0) {
+			if (q < 0) return null;
+			continue;
+		}
+		const r = q / p;
+		if (p < 0) {
+			if (r > t1) return null;
+			t0 = Math.max(t0, r);
+		} else {
+			if (r < t0) return null;
+			t1 = Math.min(t1, r);
+		}
+	}
+	return [
+		[a[0] + t0 * dx, a[1] + t0 * dy],
+		[a[0] + t1 * dx, a[1] + t1 * dy],
+	];
+}
+
+/**
  * Parallel hatch lines covering a polygon's bounding box; the renderer
  * clips them to the face.
  * @param {Poly} poly
@@ -2125,18 +2166,28 @@ export function ringWall(D, o = {}) {
 		if (a0 === 180) poly.push(...sag([-rx - F, 0], [-rx, sh], [-rx, 0], 0.35).slice(1, -1));
 		return poly;
 	};
-	/** @type {Line[]} */
-	const shade = [];
-	for (let t = 25; t < 90; t += 4) {
-		const x = rx * Math.sin(rad(t));
-		shade.push({
-			pts: [
-				[x, -ry - h],
-				[x, h + ry],
-			],
-			w: THIN,
-		});
-	}
+	// The front's shaded right flank takes the towers' diagonal hatch: one
+	// field for the whole flank, clipped to each segment's box below, so the
+	// strokes run on unbroken from segment to segment.
+	const flankHatch = hatch(flank, 55, D.hatch, SHADE_W);
+	/** The flank hatch inside the box of the outer face from a0 to a1. */
+	const flankShade = (/** @type {number} */ a0, /** @type {number} */ a1) => {
+		const box = facePoly(a0, a1);
+		const xs = box.map((p) => p[0]),
+			ys = box.map((p) => p[1]);
+		const x0 = Math.max(Math.min(...xs) - F, flank[0][0]) - 1,
+			x1 = Math.max(...xs) + F + 1,
+			y0 = Math.min(...ys) - 1,
+			y1 = Math.max(...ys) + 1;
+		/** @type {Line[]} */
+		const out = [];
+		if (x1 <= x0) return out;
+		for (const l of flankHatch) {
+			const seg = clipToBox(l.pts, x0, y0, x1, y1);
+			if (seg) out.push({ ...l, pts: seg });
+		}
+		return out;
+	};
 	// One hatch field for the whole back face, so it runs on unbroken
 	// across the segments (each clips it to its own face).
 	const backHatch = hatch(
@@ -2246,7 +2297,8 @@ export function ringWall(D, o = {}) {
 							solid: F ? [facePoly(a0, a1), flareSeg(a0, a1)] : [facePoly(a0, a1)],
 							role,
 							shadeArea: flank,
-							lines: [...shade, ...seams(a0, a1)],
+							shadeLines: flankShade(a0, a1),
+							lines: seams(a0, a1),
 						},
 					];
 		if (archGate && a0 < 270 && a1 > 270)
