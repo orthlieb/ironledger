@@ -34,6 +34,7 @@ import {
 	gableHouse,
 	makeDesign,
 	onStilts,
+	ringWall,
 	roundHut,
 	roundTower,
 	squareTower,
@@ -215,6 +216,16 @@ function netArea(d: string): number {
 	}
 	return Math.abs(total);
 }
+
+describe('gate towers', () => {
+	it('stand astride the ring: the wall right of the gate draws after the tower', () => {
+		// The stretch that meets the tower's right face is drawn last, so the
+		// wall runs into the tower's side rather than out from behind it.
+		const { front } = ringWall({ ...DEFAULT_DESIGN, wall: 'stone', gate: 'tower' });
+		expect(front.at(-1)?.wall).toBe(true);
+		expect(front.at(-2)?.wall).toBeFalsy(); // the gate tower
+	});
+});
 
 describe('sharp parts', () => {
 	type P = Parameters<typeof renderLayered>[0][number];

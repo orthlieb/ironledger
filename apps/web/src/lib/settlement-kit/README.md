@@ -85,6 +85,11 @@ village bell tower — go through `belfry(D, o)`, which builds them square
 face, and finial) per the culture's `steeple`. Towns and holds raise 1d2
 free-standing round towers and cities and up 1d3, walled or not.
 
+**Gate towers** stand astride their wall: `gateSeat()` places the tower so
+the wall's line crosses the middle of its receding right face, and the
+wall is cut there, its stretch to the right drawn after the tower — so the
+wall runs into the tower's side, not out from behind it.
+
 ## Material walls
 
 Every wall material fills with an SVG `<pattern>` tile from `patterns.js`

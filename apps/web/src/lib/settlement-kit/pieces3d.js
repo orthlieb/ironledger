@@ -1966,6 +1966,38 @@ export function belfry(D, o = {}) {
 	});
 }
 
+/** Gate tower width and depth (world units). */
+const GATE_W = 11,
+	GATE_D = 5;
+
+/**
+ * Seat a gate tower astride its wall: the front line `y0` that puts the
+ * wall's ground line (`wallY(x)`) across the middle of the tower's receding
+ * right face, and the `x` where it crosses — where the wall to the right
+ * meets the tower. (Bisection: the face's mid-foot moves back as y0 does.)
+ * @param {Design} D
+ * @param {number} h the tower's height (as passed to gateTower)
+ * @param {(x: number) => number} wallY
+ * @returns {{y0: number, x: number}}
+ */
+function gateSeat(D, h, wallY) {
+	const midFoot = (/** @type {number} */ y0) => {
+		const P = boxProjector(GATE_D, D.perspective ?? DEFAULT_DESIGN.perspective, y0 + h);
+		const B = P.back([GATE_W / 2, y0]);
+		return /** @type {Pt} */ ([(GATE_W / 2 + B[0]) / 2, (y0 + B[1]) / 2]);
+	};
+	let lo = wallY(GATE_W / 2) - 8,
+		hi = wallY(GATE_W / 2);
+	for (let i = 0; i < 30; i++) {
+		const mid = (lo + hi) / 2;
+		const m = midFoot(mid);
+		if (m[1] > wallY(m[0])) hi = mid;
+		else lo = mid;
+	}
+	const y0 = (lo + hi) / 2;
+	return { y0, x: midFoot(y0)[0] };
+}
+
 /**
  * Square gate tower: lit front with an arch, shaded right side. Stone
  * towers get merlons; wooden ones (palisades) a row of sharpened planks.
@@ -1976,8 +2008,8 @@ export function belfry(D, o = {}) {
  * @returns {Part[]}
  */
 function gateTower(D, y0, h, wood) {
-	const w = 11;
-	const P = boxProjector(5, D.perspective ?? DEFAULT_DESIGN.perspective, y0 + h);
+	const w = GATE_W;
+	const P = boxProjector(GATE_D, D.perspective ?? DEFAULT_DESIGN.perspective, y0 + h);
 	const side = /** @type {Poly} */ ([
 		[w / 2, y0],
 		P.back([w / 2, y0]),
@@ -2284,7 +2316,16 @@ export function ringWall(D, o = {}) {
 		});
 	}
 	// Front half: outer faces, lit on the left and shaded on the right flank.
-	const fc = cuts(180, 360, [...towerAngles, ...twinAngles, ...(archGate ? [] : [270])]);
+	// A gate tower stands astride the wall: the ring is cut where the wall
+	// meets the middle of its right face, and the stretch from there on is
+	// drawn after the tower, so the wall runs into the tower's side rather
+	// than out from behind it. (The sliver between the gate and that point
+	// sits behind the tower.)
+	const gateH = h + (wood ? 6 : 9);
+	const ringY = (/** @type {number} */ x) => -ry * Math.sqrt(Math.max(0, 1 - (x / rx) ** 2));
+	const seat = archGate ? null : gateSeat(D, gateH, ringY);
+	const meet = seat ? 360 - (Math.acos(Math.min(1, seat.x / rx)) * 180) / Math.PI : 0;
+	const fc = cuts(180, 360, [...towerAngles, ...twinAngles, ...(seat ? [270, meet] : [])]);
 	for (let i = 0; i + 1 < fc.length; i++) {
 		const mid = (fc[i] + fc[i + 1]) / 2;
 		const [a0, a1] = [trim(fc[i], mid), trim(fc[i + 1], mid)];
@@ -2314,16 +2355,17 @@ export function ringWall(D, o = {}) {
 			if (merlons.length) seg.push({ solid: merlons, role, shadeArea: flank });
 		}
 		frontList.push({
-			k: ry * Math.sin(rad(mid)),
+			// The stretch that meets the gate tower's side draws after it.
+			k: seat && fc[i] === meet ? -ry - 3 : ry * Math.sin(rad(mid)),
 			item: { piece: seg, wall: true, wallShare: (a1 - a0) / 180 },
 		});
 	}
 	// The gate, nearest of all.
 	if (gk === 'jawbone') frontList.push({ k: -ry - 2, item: { piece: jawGate(-ry, h) } });
-	else if (!archGate)
+	else if (seat)
 		frontList.push({
 			k: -ry - 2,
-			item: { piece: gateTower(D, -ry - 1, h + (wood ? 6 : 9), wood) },
+			item: { piece: gateTower(D, seat.y0, gateH, wood) },
 		});
 	for (const a of twinAngles) {
 		const y = ry * Math.sin(rad(a)) - 0.5;
@@ -2584,7 +2626,7 @@ function squareWall(D, o) {
 	 * Top edge from a to b (both at wall height) — sharpened stakes on a
 	 * palisade; bowed between the corner posts by the culture's wall bow.
 	 */
-	const edge = (/** @type {Pt} */ a, /** @type {Pt} */ b) => {
+	const edge = (/** @type {Pt} */ a, /** @type {Pt} */ b, ta = 0, tb = 1) => {
 		const bowed = !!bow(D);
 		if (!wood && !bowed) return [a, b];
 		const stride = mat.crest === 'stake' ? STAKE : 3.4;
@@ -2594,7 +2636,7 @@ function squareWall(D, o) {
 		const at = (/** @type {number} */ i) =>
 			/** @type {Pt} */ ([
 				a[0] + ((b[0] - a[0]) * i) / n,
-				a[1] + ((b[1] - a[1]) * i) / n + spanH(D, h, i / n) - h,
+				a[1] + ((b[1] - a[1]) * i) / n + spanH(D, h, ta + ((tb - ta) * i) / n) - h,
 			]);
 		if (!wood) return Array.from({ length: n + 1 }, (_, i) => at(i));
 		for (let i = 0; i <= n; i++) {
@@ -2603,8 +2645,10 @@ function squareWall(D, o) {
 		}
 		return pts;
 	};
-	const face = (/** @type {Pt} */ p, /** @type {Pt} */ q) =>
-		/** @type {Poly} */ ([p, q, ...edge(up(q), up(p))]);
+	/** A face from p to q; `tp` / `tq` place them within the whole run, so a
+	 *  run split in two keeps one continuous bow. */
+	const face = (/** @type {Pt} */ p, /** @type {Pt} */ q, tp = 0, tq = 1) =>
+		/** @type {Poly} */ ([p, q, ...edge(up(q), up(p), tq, tp)]);
 	/** Stake joints on a palisade. */
 	const seams = (/** @type {Pt} */ p, /** @type {Pt} */ q) => {
 		/** @type {Line[]} */
@@ -2635,7 +2679,7 @@ function squareWall(D, o) {
 	// (Stone brick-courses were generated here as Clipper lines; now the
 	//  stone body uses the wall-stone pattern role — see patterns.js.)
 	/** Merlons along a stone wall's top edge. */
-	const merlons = (/** @type {Pt} */ p, /** @type {Pt} */ q) => {
+	const merlons = (/** @type {Pt} */ p, /** @type {Pt} */ q, tp = 0, tq = 1) => {
 		/** @type {Poly[]} */
 		const out = [];
 		if (wood || !D.merlons) return out;
@@ -2643,7 +2687,7 @@ function squareWall(D, o) {
 		for (let i = 0; i < n; i++) {
 			const t = (i + 0.5) / n;
 			const x = p[0] + (q[0] - p[0]) * t,
-				y = p[1] + (q[1] - p[1]) * t + spanH(D, h, t);
+				y = p[1] + (q[1] - p[1]) * t + spanH(D, h, tp + (tq - tp) * t);
 			out.push(rect(x - 1.1, y - 0.4, 2.2, 2.6));
 		}
 		return out;
@@ -2655,6 +2699,8 @@ function squareWall(D, o) {
 		/** @type {Pt} */ q,
 		/** @type {boolean} */ shaded,
 		/** @type {Pt | null} */ outward = null,
+		tp = 0,
+		tq = 1,
 	) => {
 		if (mat.crest === 'mound') {
 			// Earthworks: a bank along the side crested with heaps.
@@ -2667,15 +2713,15 @@ function squareWall(D, o) {
 					return /** @type {[number, number, number]} */ ([
 						p[0] + (q[0] - p[0]) * t,
 						p[1] + (q[1] - p[1]) * t,
-						spanH(D, h, t),
+						spanH(D, h, tp + (tq - tp) * t),
 					]);
 				}),
 				[p, q, [q[0], q[1] + hb], [p[0], p[1] + hb]],
 				shaded ? { role, shaded: true } : { role },
 			);
 		}
-		const poly = face(p, q);
-		const m = merlons(p, q);
+		const poly = face(p, q, tp, tq);
+		const m = merlons(p, q, tp, tq);
 		/** @type {Part[]} */
 		const parts = [
 			{
@@ -2690,12 +2736,27 @@ function squareWall(D, o) {
 	};
 	const gk = gateKind(type, D);
 	const twin = gk === 'twin';
-	const front = wallPart(FL, FR, false, [0, -F * 0.6]);
-	if (gk === 'twin' || gk === 'arch' || gk === 'jawbone')
+	/** @type {Part[]} */
+	let front;
+	if (gk === 'tower' || gk === 'woodtower') {
+		// The gate tower stands astride the front wall: the wall is split
+		// where it meets the middle of the tower's right face, and the right
+		// stretch draws after the tower, so the wall runs into its side.
+		const gateH = h + (wood ? 6 : 9);
+		const seat = gateSeat(D, gateH, () => 0);
+		/** @type {Pt} */ const S = [seat.x, 0];
+		const tS = (seat.x - FL[0]) / (FR[0] - FL[0]);
+		const out = /** @type {Pt} */ ([0, -F * 0.6]);
+		front = [
+			...wallPart(FL, S, false, out, 0, tS),
+			...gateTower(D, seat.y0, gateH, wood),
+			...wallPart(S, FR, false, out, tS, 1),
+		];
+	} else {
+		front = wallPart(FL, FR, false, [0, -F * 0.6]);
 		front[0].fills = [archOpening(0, 0, 6, Math.min(h * 0.85, 8))];
-	if (gk === 'jawbone') front.push(...jawGate(0, h));
-	else if (gk === 'tower' || gk === 'woodtower')
-		front.push(...gateTower(D, -1, h + (wood ? 6 : 9), wood));
+		if (gk === 'jawbone') front.push(...jawGate(0, h));
+	}
 
 	/** @type {Placed[]} */
 	const back = [
@@ -4372,12 +4433,16 @@ export function gatehouse(D, o = {}) {
 	const wood = !!o.wood;
 	const span = wood ? 15 : 17,
 		wh = (wood ? 8 : 9) * D.stature;
-	if (wood)
+	if (wood) {
+		// The tower stands astride the palisade; the right run meets the
+		// middle of its side and draws after it.
+		const seat = gateSeat(D, wh + 7, () => 0);
 		return [
 			...wallRun(D, -span, -4, wh, true),
-			...wallRun(D, 4, span, wh, true),
-			...gateTower(D, -0.5, wh + 7, true),
+			...gateTower(D, seat.y0, wh + 7, true),
+			...wallRun(D, seat.x, span, wh, true),
 		];
+	}
 	// The banner flies from the right-hand tower's top.
 	const tower = (/** @type {number} */ x, /** @type {boolean} */ flags) =>
 		place(roundTower(D, { r: 4.6, h: wh + 13, flags }), { x, y: -0.3 });
