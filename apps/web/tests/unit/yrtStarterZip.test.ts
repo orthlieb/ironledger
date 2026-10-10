@@ -19,6 +19,7 @@ import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { unzipSync } from 'fflate';
 import { parseImportZip } from '../../src/lib/importSanitizer.js';
+import { cleanSettlementRecipe } from '../../src/lib/settlementRecipe.js';
 
 const STARTER_PATH = resolve(__dirname, '../../static/about/yrt-starter.zip');
 const MAX_BYTES = 20 * 1024 * 1024; // importSanitizer
@@ -49,6 +50,27 @@ describe('YRT starter zip', () => {
 	// message is a lot clearer than a bare count assertion.
 	// Containment moved from `region` to `withinRef` in the 2026-10-04 refresh;
 	// `region` is now the country (Nysis), so check the place it sits within.
+	// The Regional map's Freeport draws as a generated settlement in YRT's
+	// Freeport culture (a harbour freeport). Guards a refresh of the starter
+	// (yrt-vault) dropping the recipe back to the plain large-city icon.
+	it("draws the Regional map's Freeport in the Freeport culture", () => {
+		// Bundled maps live at maps/<id>/map.json (parseBundledMaps reads the same).
+		type MapBody = { name?: string; markers?: { label?: string; settlement?: unknown }[] };
+		const maps = Object.entries(unzipSync(bytes()))
+			.filter(([path]) => /^maps\/[^/]+\/map\.json$/.test(path))
+			.map(([, b]) => JSON.parse(new TextDecoder().decode(b)) as MapBody);
+		const markers = maps.find((m) => m.name === 'Regional')?.markers;
+		const freeport = markers?.find((m) => m.label === 'Freeport');
+		expect(cleanSettlementRecipe(freeport?.settlement)).toEqual({
+			tier: 'freeport',
+			culture: 'freeport',
+			seed: 2,
+			harbor: true,
+		});
+		const culture = resolve(__dirname, '../../../../extensions/yrt/cultures/freeport.json');
+		expect(JSON.parse(readFileSync(culture, 'utf8')).key).toBe('freeport');
+	});
+
 	it('includes Providence Mine among the Pinna Mtns places', () => {
 		const providence = body().places.find((p) => p.name === 'Providence Mine');
 		expect(providence, 'Providence Mine missing from the starter zip').toBeDefined();

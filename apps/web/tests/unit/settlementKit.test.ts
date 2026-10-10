@@ -34,6 +34,7 @@ import {
 	gableHouse,
 	makeDesign,
 	onStilts,
+	ringWall,
 	roundHut,
 	roundTower,
 	squareTower,
@@ -215,6 +216,60 @@ function netArea(d: string): number {
 	}
 	return Math.abs(total);
 }
+
+describe('variety (mixed builders)', () => {
+	it('mixes the buildings of a culture with variety, and leaves one without alone', () => {
+		const plain = settlement('city', DEFAULT_DESIGN, { seed: 3 });
+		const zero = settlement('city', { ...DEFAULT_DESIGN, variety: 0 }, { seed: 3 });
+		expect(JSON.stringify(zero)).toBe(JSON.stringify(plain));
+		const mixed = settlement('city', { ...DEFAULT_DESIGN, variety: 1 }, { seed: 3 });
+		expect(JSON.stringify(mixed)).not.toBe(JSON.stringify(plain));
+	});
+});
+
+describe('gate towers', () => {
+	it('stand astride the ring: the wall right of the gate draws after the tower', () => {
+		// The stretch that meets the tower's right face is drawn last, so the
+		// wall runs into the tower's side rather than out from behind it.
+		const { front } = ringWall({ ...DEFAULT_DESIGN, wall: 'stone', gate: 'tower' });
+		expect(front.at(-1)?.wall).toBe(true);
+		expect(front.at(-2)?.wall).toBeFalsy(); // the gate tower
+	});
+});
+
+describe('sharp parts', () => {
+	type P = Parameters<typeof renderLayered>[0][number];
+	const tri = (sharp: boolean): P[] =>
+		place(
+			[
+				{
+					solid: [
+						[
+							[0, 0],
+							[10, 0],
+							[0, 4],
+						],
+					],
+					role: 'flag',
+					sharp,
+				},
+			],
+			{ s: 2 },
+		);
+	it('keep their corners whatever the join', () => {
+		const soft = renderLayered(tri(true), { join: 'soft' }).layers;
+		const crisp = renderLayered(tri(true), { join: 'sharp' }).layers;
+		expect(soft.flag).toBe(crisp.flag);
+		expect(soft.ink).toBe(crisp.ink);
+		// …where an ordinary part is softened.
+		expect(renderLayered(tri(false), { join: 'soft' }).layers.flag).not.toBe(crisp.flag);
+	});
+	it('flag cloth is sharp', () => {
+		const cloth = roundTower(DEFAULT_DESIGN).filter((p) => p.role === 'flag');
+		expect(cloth.length).toBeGreaterThan(0);
+		expect(cloth.every((p) => p.sharp)).toBe(true);
+	});
+});
 
 describe('render robustness', () => {
 	it('ink stays an outline under the soft join (seed-42 house went solid black)', () => {

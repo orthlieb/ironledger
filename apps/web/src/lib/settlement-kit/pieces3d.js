@@ -64,7 +64,7 @@ import { place } from './render.js';
  * @property {number} flagLen
  * @property {number} flagFolds
  * @property {'banner' | 'pennant' | 'swallowtail'} [flagShape] rectangular
- *   banner (default), a tapered pennant that comes to a single point, or a
+ *   banner, a tapered pennant that comes to a single point (default), or a
  *   split pennant with a swallowtail notch at the trailing end
  * @property {number} hatch hatch spacing (smaller = darker shade)
  * @property {'none' | 'stone' | 'palisade' | 'hedge' | 'bone' | 'earth' | 'reef'} wall the
@@ -80,6 +80,10 @@ import { place } from './render.js';
  *   waves)
  * @property {number} stature building height factor (small folk < 1 < giants)
  * @property {number} scale building size factor; bigger means fewer of them
+ * @property {number} variety 0..1: a mixed culture (a freeport) — the chance
+ *   each house, free-standing tower and landmark rolls its own roof and tower
+ *   styles instead of the culture's (see mixDesign() in layouts3d.js). 0 by
+ *   default: every building in the culture's own style.
  * @property {number} flourish ornament: finials, eave knobs, ridge cresting, extra flags
  *   (0..1)
  * @property {boolean} masonry stone courses on house walls
@@ -139,6 +143,7 @@ export const DEFAULT_DESIGN = {
 	ground: 'land',
 	stature: 1,
 	scale: 1,
+	variety: 0,
 	flourish: 0,
 	masonry: false,
 	longhouse: 0,
@@ -228,6 +233,7 @@ export function makeDesign(seed) {
 		stature: 0.8 + avg() * 0.4,
 		scale: 0.85 + avg() * 0.35,
 		flourish: avg(),
+		variety: 0, // rolled below, after the draws it must not shift
 		masonry: r() < 0.3,
 		longhouse: r() < 0.3 ? avg() : 0,
 		huts: r() < 0.25 ? avg() * 0.6 : 0,
@@ -248,8 +254,10 @@ export function makeDesign(seed) {
 	D.towerCrenel = D.towerRoof === 'none' || r() < 0.35;
 	// Fortifying builders always crenellate their walls.
 	if (D.towerCrenel) D.merlons = true;
-	// About a quarter of cultures raise round steeples.
+	// About a quarter of cultures raise round steeples,
 	D.steeple = r() < 0.25 ? 'round' : 'square';
+	// and one in ten is a mixed, freeport-like patchwork of builders.
+	D.variety = r() < 0.1 ? 0.3 + r() * 0.5 : 0;
 	return D;
 }
 
@@ -449,14 +457,57 @@ function ell(
 }
 
 /**
+ * The part of segment ab inside the box [x0, x1] × [y0, y1], or null —
+ * Liang–Barsky, so the piece stays on the original line.
+ * @param {Poly} ab
+ * @param {number} x0
+ * @param {number} y0
+ * @param {number} x1
+ * @param {number} y1
+ * @returns {Poly | null}
+ */
+function clipToBox(ab, x0, y0, x1, y1) {
+	const [a, b] = ab;
+	const dx = b[0] - a[0],
+		dy = b[1] - a[1];
+	let t0 = 0,
+		t1 = 1;
+	for (const [p, q] of [
+		[-dx, a[0] - x0],
+		[dx, x1 - a[0]],
+		[-dy, a[1] - y0],
+		[dy, y1 - a[1]],
+	]) {
+		if (p === 0) {
+			if (q < 0) return null;
+			continue;
+		}
+		const r = q / p;
+		if (p < 0) {
+			if (r > t1) return null;
+			t0 = Math.max(t0, r);
+		} else {
+			if (r < t0) return null;
+			t1 = Math.min(t1, r);
+		}
+	}
+	return [
+		[a[0] + t0 * dx, a[1] + t0 * dy],
+		[a[0] + t1 * dx, a[1] + t1 * dy],
+	];
+}
+
+/**
  * Parallel hatch lines covering a polygon's bounding box; the renderer
- * clips them to the face.
+ * clips them to the face. They're drawn at the shading weight by default,
+ * so every shaded face — house and gate walls, roofs, keeps, the ring's
+ * back — reads as dark as the towers.
  * @param {Poly} poly
  * @param {number} angle degrees
  * @param {number} spacing
  * @returns {Line[]}
  */
-function hatch(poly, angle, spacing, w = THIN) {
+function hatch(poly, angle, spacing, w = SHADE_W) {
 	const xs = poly.map((p) => p[0]),
 		ys = poly.map((p) => p[1]);
 	const cx = (Math.min(...xs) + Math.max(...xs)) / 2,
@@ -1467,7 +1518,9 @@ function flag(D, x, y, dir = 1) {
 	}
 	/** @type {Part[]} */
 	const parts = [
-		{ solid: [cloth], role: 'flag' },
+		// Always crisp, whatever the culture's join: a soft join would round
+		// a pennant's tip and a swallowtail's points into blobs.
+		{ solid: [cloth], role: 'flag', sharp: true },
 		{
 			solid: [],
 			free: [
@@ -1923,6 +1976,38 @@ export function belfry(D, o = {}) {
 	});
 }
 
+/** Gate tower width and depth (world units). */
+const GATE_W = 11,
+	GATE_D = 5;
+
+/**
+ * Seat a gate tower astride its wall: the front line `y0` that puts the
+ * wall's ground line (`wallY(x)`) across the middle of the tower's receding
+ * right face, and the `x` where it crosses — where the wall to the right
+ * meets the tower. (Bisection: the face's mid-foot moves back as y0 does.)
+ * @param {Design} D
+ * @param {number} h the tower's height (as passed to gateTower)
+ * @param {(x: number) => number} wallY
+ * @returns {{y0: number, x: number}}
+ */
+function gateSeat(D, h, wallY) {
+	const midFoot = (/** @type {number} */ y0) => {
+		const P = boxProjector(GATE_D, D.perspective ?? DEFAULT_DESIGN.perspective, y0 + h);
+		const B = P.back([GATE_W / 2, y0]);
+		return /** @type {Pt} */ ([(GATE_W / 2 + B[0]) / 2, (y0 + B[1]) / 2]);
+	};
+	let lo = wallY(GATE_W / 2) - 8,
+		hi = wallY(GATE_W / 2);
+	for (let i = 0; i < 30; i++) {
+		const mid = (lo + hi) / 2;
+		const m = midFoot(mid);
+		if (m[1] > wallY(m[0])) hi = mid;
+		else lo = mid;
+	}
+	const y0 = (lo + hi) / 2;
+	return { y0, x: midFoot(y0)[0] };
+}
+
 /**
  * Square gate tower: lit front with an arch, shaded right side. Stone
  * towers get merlons; wooden ones (palisades) a row of sharpened planks.
@@ -1933,8 +2018,8 @@ export function belfry(D, o = {}) {
  * @returns {Part[]}
  */
 function gateTower(D, y0, h, wood) {
-	const w = 11;
-	const P = boxProjector(5, D.perspective ?? DEFAULT_DESIGN.perspective, y0 + h);
+	const w = GATE_W;
+	const P = boxProjector(GATE_D, D.perspective ?? DEFAULT_DESIGN.perspective, y0 + h);
 	const side = /** @type {Poly} */ ([
 		[w / 2, y0],
 		P.back([w / 2, y0]),
@@ -2123,24 +2208,34 @@ export function ringWall(D, o = {}) {
 		if (a0 === 180) poly.push(...sag([-rx - F, 0], [-rx, sh], [-rx, 0], 0.35).slice(1, -1));
 		return poly;
 	};
-	/** @type {Line[]} */
-	const shade = [];
-	for (let t = 25; t < 90; t += 4) {
-		const x = rx * Math.sin(rad(t));
-		shade.push({
-			pts: [
-				[x, -ry - h],
-				[x, h + ry],
-			],
-			w: THIN,
-		});
-	}
+	// The front's shaded right flank takes the towers' diagonal hatch: one
+	// field for the whole flank, clipped to each segment's box below, so the
+	// strokes run on unbroken from segment to segment.
+	const flankHatch = hatch(flank, 55, D.hatch, SHADE_W);
+	/** The flank hatch inside the box of the outer face from a0 to a1. */
+	const flankShade = (/** @type {number} */ a0, /** @type {number} */ a1) => {
+		const box = facePoly(a0, a1);
+		const xs = box.map((p) => p[0]),
+			ys = box.map((p) => p[1]);
+		const x0 = Math.max(Math.min(...xs) - F, flank[0][0]) - 1,
+			x1 = Math.max(...xs) + F + 1,
+			y0 = Math.min(...ys) - 1,
+			y1 = Math.max(...ys) + 1;
+		/** @type {Line[]} */
+		const out = [];
+		if (x1 <= x0) return out;
+		for (const l of flankHatch) {
+			const seg = clipToBox(l.pts, x0, y0, x1, y1);
+			if (seg) out.push({ ...l, pts: seg });
+		}
+		return out;
+	};
 	// One hatch field for the whole back face, so it runs on unbroken
 	// across the segments (each clips it to its own face).
 	const backHatch = hatch(
 		/** @type {Poly} */ ([...topEdge(0, 180), ...ell(0, 0, rx, ry, 180, 0)]),
-		70,
-		D.hatch * 1.1,
+		55,
+		D.hatch,
 	);
 	/** Radius of the tower standing at angle `a`, if any (towers at 0° also
 	 *  stand at 360°). */
@@ -2231,7 +2326,16 @@ export function ringWall(D, o = {}) {
 		});
 	}
 	// Front half: outer faces, lit on the left and shaded on the right flank.
-	const fc = cuts(180, 360, [...towerAngles, ...twinAngles, ...(archGate ? [] : [270])]);
+	// A gate tower stands astride the wall: the ring is cut where the wall
+	// meets the middle of its right face, and the stretch from there on is
+	// drawn after the tower, so the wall runs into the tower's side rather
+	// than out from behind it. (The sliver between the gate and that point
+	// sits behind the tower.)
+	const gateH = h + (wood ? 6 : 9);
+	const ringY = (/** @type {number} */ x) => -ry * Math.sqrt(Math.max(0, 1 - (x / rx) ** 2));
+	const seat = archGate ? null : gateSeat(D, gateH, ringY);
+	const meet = seat ? 360 - (Math.acos(Math.min(1, seat.x / rx)) * 180) / Math.PI : 0;
+	const fc = cuts(180, 360, [...towerAngles, ...twinAngles, ...(seat ? [270, meet] : [])]);
 	for (let i = 0; i + 1 < fc.length; i++) {
 		const mid = (fc[i] + fc[i + 1]) / 2;
 		const [a0, a1] = [trim(fc[i], mid), trim(fc[i + 1], mid)];
@@ -2244,7 +2348,8 @@ export function ringWall(D, o = {}) {
 							solid: F ? [facePoly(a0, a1), flareSeg(a0, a1)] : [facePoly(a0, a1)],
 							role,
 							shadeArea: flank,
-							lines: [...shade, ...seams(a0, a1)],
+							shadeLines: flankShade(a0, a1),
+							lines: seams(a0, a1),
 						},
 					];
 		if (archGate && a0 < 270 && a1 > 270)
@@ -2260,16 +2365,17 @@ export function ringWall(D, o = {}) {
 			if (merlons.length) seg.push({ solid: merlons, role, shadeArea: flank });
 		}
 		frontList.push({
-			k: ry * Math.sin(rad(mid)),
+			// The stretch that meets the gate tower's side draws after it.
+			k: seat && fc[i] === meet ? -ry - 3 : ry * Math.sin(rad(mid)),
 			item: { piece: seg, wall: true, wallShare: (a1 - a0) / 180 },
 		});
 	}
 	// The gate, nearest of all.
 	if (gk === 'jawbone') frontList.push({ k: -ry - 2, item: { piece: jawGate(-ry, h) } });
-	else if (!archGate)
+	else if (seat)
 		frontList.push({
 			k: -ry - 2,
-			item: { piece: gateTower(D, -ry - 1, h + (wood ? 6 : 9), wood) },
+			item: { piece: gateTower(D, seat.y0, gateH, wood) },
 		});
 	for (const a of twinAngles) {
 		const y = ry * Math.sin(rad(a)) - 0.5;
@@ -2530,7 +2636,7 @@ function squareWall(D, o) {
 	 * Top edge from a to b (both at wall height) — sharpened stakes on a
 	 * palisade; bowed between the corner posts by the culture's wall bow.
 	 */
-	const edge = (/** @type {Pt} */ a, /** @type {Pt} */ b) => {
+	const edge = (/** @type {Pt} */ a, /** @type {Pt} */ b, ta = 0, tb = 1) => {
 		const bowed = !!bow(D);
 		if (!wood && !bowed) return [a, b];
 		const stride = mat.crest === 'stake' ? STAKE : 3.4;
@@ -2540,7 +2646,7 @@ function squareWall(D, o) {
 		const at = (/** @type {number} */ i) =>
 			/** @type {Pt} */ ([
 				a[0] + ((b[0] - a[0]) * i) / n,
-				a[1] + ((b[1] - a[1]) * i) / n + spanH(D, h, i / n) - h,
+				a[1] + ((b[1] - a[1]) * i) / n + spanH(D, h, ta + ((tb - ta) * i) / n) - h,
 			]);
 		if (!wood) return Array.from({ length: n + 1 }, (_, i) => at(i));
 		for (let i = 0; i <= n; i++) {
@@ -2549,8 +2655,10 @@ function squareWall(D, o) {
 		}
 		return pts;
 	};
-	const face = (/** @type {Pt} */ p, /** @type {Pt} */ q) =>
-		/** @type {Poly} */ ([p, q, ...edge(up(q), up(p))]);
+	/** A face from p to q; `tp` / `tq` place them within the whole run, so a
+	 *  run split in two keeps one continuous bow. */
+	const face = (/** @type {Pt} */ p, /** @type {Pt} */ q, tp = 0, tq = 1) =>
+		/** @type {Poly} */ ([p, q, ...edge(up(q), up(p), tq, tp)]);
 	/** Stake joints on a palisade. */
 	const seams = (/** @type {Pt} */ p, /** @type {Pt} */ q) => {
 		/** @type {Line[]} */
@@ -2581,7 +2689,7 @@ function squareWall(D, o) {
 	// (Stone brick-courses were generated here as Clipper lines; now the
 	//  stone body uses the wall-stone pattern role — see patterns.js.)
 	/** Merlons along a stone wall's top edge. */
-	const merlons = (/** @type {Pt} */ p, /** @type {Pt} */ q) => {
+	const merlons = (/** @type {Pt} */ p, /** @type {Pt} */ q, tp = 0, tq = 1) => {
 		/** @type {Poly[]} */
 		const out = [];
 		if (wood || !D.merlons) return out;
@@ -2589,7 +2697,7 @@ function squareWall(D, o) {
 		for (let i = 0; i < n; i++) {
 			const t = (i + 0.5) / n;
 			const x = p[0] + (q[0] - p[0]) * t,
-				y = p[1] + (q[1] - p[1]) * t + spanH(D, h, t);
+				y = p[1] + (q[1] - p[1]) * t + spanH(D, h, tp + (tq - tp) * t);
 			out.push(rect(x - 1.1, y - 0.4, 2.2, 2.6));
 		}
 		return out;
@@ -2601,6 +2709,8 @@ function squareWall(D, o) {
 		/** @type {Pt} */ q,
 		/** @type {boolean} */ shaded,
 		/** @type {Pt | null} */ outward = null,
+		tp = 0,
+		tq = 1,
 	) => {
 		if (mat.crest === 'mound') {
 			// Earthworks: a bank along the side crested with heaps.
@@ -2613,15 +2723,15 @@ function squareWall(D, o) {
 					return /** @type {[number, number, number]} */ ([
 						p[0] + (q[0] - p[0]) * t,
 						p[1] + (q[1] - p[1]) * t,
-						spanH(D, h, t),
+						spanH(D, h, tp + (tq - tp) * t),
 					]);
 				}),
 				[p, q, [q[0], q[1] + hb], [p[0], p[1] + hb]],
 				shaded ? { role, shaded: true } : { role },
 			);
 		}
-		const poly = face(p, q);
-		const m = merlons(p, q);
+		const poly = face(p, q, tp, tq);
+		const m = merlons(p, q, tp, tq);
 		/** @type {Part[]} */
 		const parts = [
 			{
@@ -2636,12 +2746,27 @@ function squareWall(D, o) {
 	};
 	const gk = gateKind(type, D);
 	const twin = gk === 'twin';
-	const front = wallPart(FL, FR, false, [0, -F * 0.6]);
-	if (gk === 'twin' || gk === 'arch' || gk === 'jawbone')
+	/** @type {Part[]} */
+	let front;
+	if (gk === 'tower' || gk === 'woodtower') {
+		// The gate tower stands astride the front wall: the wall is split
+		// where it meets the middle of the tower's right face, and the right
+		// stretch draws after the tower, so the wall runs into its side.
+		const gateH = h + (wood ? 6 : 9);
+		const seat = gateSeat(D, gateH, () => 0);
+		/** @type {Pt} */ const S = [seat.x, 0];
+		const tS = (seat.x - FL[0]) / (FR[0] - FL[0]);
+		const out = /** @type {Pt} */ ([0, -F * 0.6]);
+		front = [
+			...wallPart(FL, S, false, out, 0, tS),
+			...gateTower(D, seat.y0, gateH, wood),
+			...wallPart(S, FR, false, out, tS, 1),
+		];
+	} else {
+		front = wallPart(FL, FR, false, [0, -F * 0.6]);
 		front[0].fills = [archOpening(0, 0, 6, Math.min(h * 0.85, 8))];
-	if (gk === 'jawbone') front.push(...jawGate(0, h));
-	else if (gk === 'tower' || gk === 'woodtower')
-		front.push(...gateTower(D, -1, h + (wood ? 6 : 9), wood));
+		if (gk === 'jawbone') front.push(...jawGate(0, h));
+	}
 
 	/** @type {Placed[]} */
 	const back = [
@@ -2671,7 +2796,9 @@ function squareWall(D, o) {
 	const n = mat.towers ? Math.min(slots.length, o.towers ?? D.wallTowers) : 0;
 	for (const [p, behind] of slots.slice(0, n)) {
 		const item = {
-			piece: roundTower(D, { r: 5, h: h + 8, flags: D.flourish > 0.7 }),
+			// Back corners sit deep behind the town, so their towers rise
+			// higher to clear its roofs.
+			piece: roundTower(D, { r: 5, h: behind ? h + 18 : h + 8, flags: D.flourish > 0.7 }),
 			x: p[0],
 			y: p[1] - 0.5,
 		};
@@ -4318,12 +4445,16 @@ export function gatehouse(D, o = {}) {
 	const wood = !!o.wood;
 	const span = wood ? 15 : 17,
 		wh = (wood ? 8 : 9) * D.stature;
-	if (wood)
+	if (wood) {
+		// The tower stands astride the palisade; the right run meets the
+		// middle of its side and draws after it.
+		const seat = gateSeat(D, wh + 7, () => 0);
 		return [
 			...wallRun(D, -span, -4, wh, true),
-			...wallRun(D, 4, span, wh, true),
-			...gateTower(D, -0.5, wh + 7, true),
+			...gateTower(D, seat.y0, wh + 7, true),
+			...wallRun(D, seat.x, span, wh, true),
 		];
+	}
 	// The banner flies from the right-hand tower's top.
 	const tower = (/** @type {number} */ x, /** @type {boolean} */ flags) =>
 		place(roundTower(D, { r: 4.6, h: wh + 13, flags }), { x, y: -0.3 });

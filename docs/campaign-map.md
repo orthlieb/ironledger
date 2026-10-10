@@ -241,7 +241,9 @@ marker path:
 - **Layered SVG** (the generated settlement kit) — multi-colour art with
   one `<path data-role="…">` per colour role (`sil`, `wall`,
   `wall-shade`, `wood`, `earth`, `water`, `roof`, `roof-shade`, `flag`,
-  `ink`) and the culture's palette on the root
+  `ink`, plus the material-wall roles `wall-stone`, `wall-hedge`,
+  `wall-reef`, `wall-wood`, `wall-earth`, `wall-bone` and their `-shade`
+  variants) and the culture's palette on the root
   (`data-palette="wall:#…;roof:#…;…"`). Detected by its `data-role`
   paths. These run to tens of KB each, so they are **not inlined**: the
   manifest keeps a tight `viewBox`, the `palette` and a `src` URL, and
@@ -250,9 +252,14 @@ marker path:
   until then). `mapGlyphInner()` recolours by role via `mapLayered.ts`:
   everything keeps the icon's palette except the **roofs, which take the
   marker colour** (the default black marker keeps the icon's own roof
-  colour); the halo goes on the `sil` layer only. Markers draw them at
-  the raster scale (`RASTER_ICON_SCALE`). The files are _generated_ — see
-  "Settlement kit" below; don't hand-edit them.
+  colour); the halo goes on the `sil` layer only. Material walls draw
+  through the kit's own `<pattern>` tiles (`settlement-kit/patterns.js`,
+  ids scoped per rendered icon) in fixed material colours; an icon drawn
+  too small for a texture to resolve — every ordinary map marker; callers
+  pass `mapGlyphInner()` the rendered size — gets flat material colours on
+  its walls instead. Markers draw them at the raster scale
+  (`RASTER_ICON_SCALE`). The files are _generated_ — see "Settlement kit"
+  below; don't hand-edit them.
 
 When both a `<slug>.svg` and a `<slug>.png` exist in the same category,
 the **PNG wins** (a dropped-in raster supersedes the old vector glyph of
@@ -291,8 +298,10 @@ already placed with one keep rendering when it's off.
 ### Settlement kit (generated icons)
 
 The generator lives in `src/lib/settlement-kit/` (`geom`, `render`,
-`pieces3d`, `layouts3d`, `ruins3d`; `generate.js` is the one entry point:
-recipe + culture → layered SVG). It's used three ways:
+`pieces3d`, `layouts3d`, `ruins3d`, `patterns`; `generate.js` is the one
+entry point: recipe + culture → layered SVG). Its README is the reference
+for the drawing model (projection, perspective, towers, wall materials)
+and every culture knob. It's used three ways:
 
 - **Baked icons** — `scripts/build-settlement-icons.mjs`
   (`npm run build:settlement-icons -w apps/web`) writes, in the layered
@@ -309,8 +318,10 @@ recipe + culture → layered SVG). It's used three ways:
     the kit.
 
 - **The Settlement builder** — the Choose Icon dialog's second tab
-  (`SettlementBuilder.svelte`). Just the essentials: size (tier),
-  culture, walls and wall shape, harbour, ruined +
+  (`SettlementBuilder.svelte`). Just the essentials: size (tier, shown
+  with its population; Freeport isn't offered — a culture with a high
+  `variety` makes a freeport's mix of builders), culture, walls and wall
+  shape, harbour, ruined +
   decay (optionally burned: scorch marks and sooty walls), and a reroll
   for the layout seed, with a large preview and a marker-size preview in
   the marker's colour. "Use this" stores a **recipe** on the marker (see
@@ -331,24 +342,41 @@ apps/web`). Its presets are the culture plugins, baked in at build
 A culture is extension content: `cultures/<key>.json` in an extension
 (or `apps/api/data/cultures/` for the base game) holding `{key, name,
 note, design, palette}` — `design` is any subset of the kit's `Design`
-knobs (`pieces3d.js`), `palette` the eight colour roles. They're served
-merged at `/catalogue/cultures` (tagged with `source`) and loaded by
-`cultureStore.svelte.ts`. The builder offers the cultures of enabled
-sources, minus any an enabled extension supersedes via
-`supersedesCultures` in its `extension.json` (YRT: `{"elves":
-"verdani"}`). Two knobs set the overall line: `join` (sharp / round /
-soft joins — soft by default; Mososi alone keeps sharp), `towerBow`
-(straight / concave / convex tower walls — concave flares at the foot and
-narrows as it rises) and `wallBow` (wall tops that dip or crest between
-towers), both sliders from −1 (convex) to +1 (concave) set in the
-playground. Elves and Verdani swoop both inward.
+knobs (`pieces3d.js`), `palette` the eight colour roles — up to 43 knobs
+(23 numbers, 14 choices, 6 switches) and 8 colours in all. The full knob
+reference, with defaults and ranges, is in
+`src/lib/settlement-kit/README.md` → "Cultures". They're served merged at
+`/catalogue/cultures` (tagged with `source`) and loaded by
+`cultureStore.svelte.ts`; `recipeDesign()` migrates retired spellings on
+the way in (the legacy `towerRoof: "crenel"` becomes `"none"` +
+`towerCrenel: true`). The builder offers the cultures of enabled sources,
+minus any an enabled extension supersedes via `supersedesCultures` in its
+`extension.json` (YRT: `{"elves": "verdani"}`).
 
-| Source | Cultures                                                 |
-| ------ | -------------------------------------------------------- |
-| base   | Ironlanders (default), Elves, Giants, Varou, Trolls      |
-| delve  | Merrow, Atanya                                           |
-| yrt    | Buralia, Mososi, Nysis, Ostrea, Verdani (replaces Elves) |
-| sample | Sample Culture (dev-only reference)                      |
+Three knobs set the overall line: `join` (sharp / round / soft joins —
+soft by default; Mososi alone keeps sharp), `towerBow` (straight / concave
+/ convex tower walls — concave flares at the foot and narrows as it rises)
+and `wallBow` (wall tops that dip or crest between towers), the two bows
+sliders from −1 (convex) to +1 (concave). Elves and Verdani swoop both
+inward. `perspective` (0.5 by default) sets how strongly the receding
+faces of box-like buildings converge.
+
+Towers are body + crenellated top + cap: `towerCorbel` widens the top of
+the body on a 45° slope, `towerCrenel` adds a parapet band with its own
+corbel, and `towerRoof` caps it (cone, onion, dome, lancet, or none — a
+bare crenellated top). `steeple` makes the church, cathedral, clock and
+bell towers square or round; either takes the same cap and top. A
+culture's `wall` picks the material, and every material draws in its own
+colours whatever the palette: stone grey, hedges green and brown (a
+bramble pattern), coral and bone white and grey (coral as a brain-coral
+maze), palisades and earth banks brown (planks, speckled dirt).
+
+| Source | Cultures                                                           |
+| ------ | ------------------------------------------------------------------ |
+| base   | Ironlanders (default), Elves, Giants, Varou, Trolls                |
+| delve  | Merrow, Atanya                                                     |
+| yrt    | Buralia, Freeport, Mososi, Nysis, Ostrea, Verdani (replaces Elves) |
+| sample | Sample Culture (dev-only reference)                                |
 
 #### Recipe markers
 
