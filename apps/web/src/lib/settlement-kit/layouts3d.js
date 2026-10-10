@@ -85,7 +85,8 @@ function jitterDesign(D, r) {
  * A building's own look in a mixed culture — a freeport's patchwork of
  * builders. With the culture's `variety` as its chance, a building rolls
  * its own tower cap, crenellated top, corbel, steeple shape, roof pitch and
- * sweep, windows and doors instead of the culture's. At `variety` 0 it
+ * sweep, storeys, windows and doors instead of the culture's (and house()
+ * then rolls a house type from MIXED_HOUSES). At `variety` 0 it
  * draws no random numbers, so an unmixed culture lays out as it always has.
  * @param {Design} D
  * @param {() => number} r
@@ -110,8 +111,22 @@ function mixDesign(D, r) {
 		window: pick(['square', 'arched', 'slit', 'round', 'lancet']),
 		door: pick(['arched', 'square', 'lancet']),
 		masonry: r() < 0.4,
+		storeys: r(),
 	};
 }
+
+/** House types a mixed culture's builders choose among (gable-front and
+ *  side-on houses twice as often as the rest). */
+const MIXED_HOUSES = /** @type {const} */ ([
+	'gable',
+	'gable',
+	'side',
+	'side',
+	'townhouse',
+	'longhouse',
+	'hut',
+	'dome',
+]);
 
 /**
  * A dwelling in the culture's house form (timber, round hut, turf mound
@@ -123,9 +138,23 @@ function mixDesign(D, r) {
  * @param {boolean} trade
  */
 function house(D, r, w, trade) {
-	D = jitterDesign(mixDesign(D, r), r);
+	const own = mixDesign(D, r);
+	const mixed = own !== D;
+	D = jitterDesign(own, r);
 	const seed = Math.floor(r() * 1e6);
 	if (!trade || r() >= D.industry) {
+		// A mixed culture's builder picks the type of house too.
+		if (mixed) {
+			const kind = MIXED_HOUSES[Math.floor(r() * MIXED_HOUSES.length)];
+			if (kind === 'townhouse') return townhouse(D, { floors: 2 + Math.floor(r() * 2) });
+			if (kind === 'longhouse') return sideHouse(D, { w: w * 1.55, seed, kind: 'longhouse' });
+			if (kind === 'hut') return roundHut(D, { r: w * 0.32 });
+			if (kind === 'dome') return gableHouse({ ...D, towerRoof: 'dome' }, { w: w * 0.75, seed });
+			const flat = D.towerRoof === 'dome' ? { ...D, towerRoof: /** @type {const} */ ('cone') } : D;
+			return kind === 'gable'
+				? gableHouse(flat, { w: w * 0.75, seed })
+				: sideHouse(flat, { w, seed });
+		}
 		if (D.houseForm === 'round') return roundHut(D, { r: w * 0.32 });
 		if (D.houseForm === 'mound') return moundHut(D, { r: w * 0.42 });
 		if (D.houseForm === 'stilt') return stiltHut(D, { r: w * 0.3 });
