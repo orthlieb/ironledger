@@ -76,7 +76,8 @@ cap** — read from the culture with `towerTop(D, o)`:
   `onion`, `dome`, `lancet`, or `none` — a bare crenellated top. A tower
   with no cap always gets the crenellated top, so it never ends flat.
 - The **flag** flies from whichever is uppermost; landmark towers carry the
-  culture's holy-symbol finial instead.
+  culture's holy-symbol finial instead. Flag cloth is a `sharp` part, so
+  its corners and points stay crisp whatever the culture's `join`.
 
 **Landmark towers** — church and cathedral towers, the clock tower, a
 village bell tower — go through `belfry(D, o)`, which builds them square
@@ -223,10 +224,10 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 
 **Drawing**
 
-| Knob    | Values (default)         | What it drives                                              |
-| ------- | ------------------------ | ----------------------------------------------------------- |
-| `join`  | sharp / round / **soft** | Line joins: mitred, rounded, or rounded + softened corners. |
-| `hatch` | 0.9–2.6 (**1.4**)        | Hatch spacing — smaller is a darker shade.                  |
+| Knob    | Values (default)         | What it drives                                                                 |
+| ------- | ------------------------ | ------------------------------------------------------------------------------ |
+| `join`  | sharp / round / **soft** | Line joins: mitred, rounded, or rounded + softened corners (flags stay crisp). |
+| `hatch` | 0.9–2.6 (**1.4**)        | Hatch spacing — smaller is a darker shade.                                     |
 
 **Palette** — `wall`, `roof`, `wood`, `earth`, `water`, `flag`, `ink`,
 `halo` (`#rrggbb`). Roofs take the marker colour on the map (the default

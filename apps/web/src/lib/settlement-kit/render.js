@@ -37,7 +37,9 @@ import ClipperLib from 'clipper-lib';
 /** @typedef {import('./geom.js').Poly} Poly */
 /** @typedef {{pts: Poly, w?: number, round?: boolean, outline?: boolean}} Line */
 /** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'wall-wood' | 'wall-earth' | 'wall-bone' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
-/** @typedef {{solid: Poly[], lines?: Line[], shadeLines?: Line[], fills?: Poly[], cuts?: Line[], free?: Line[], mask?: Poly, role?: Role, shaded?: boolean, shadeArea?: Poly, terrain?: boolean}} Part */
+/** `sharp`: keep the part's corners crisp whatever the drawing's join (flag
+ *  cloth — a soft join would melt a pennant's tip into a blob).
+ *  @typedef {{solid: Poly[], lines?: Line[], shadeLines?: Line[], fills?: Poly[], cuts?: Line[], free?: Line[], mask?: Poly, role?: Role, shaded?: boolean, shadeArea?: Poly, terrain?: boolean, sharp?: boolean}} Part */
 /** @typedef {{X: number, Y: number}[][]} CPaths */
 
 /** Default outline stroke weight (world units). */
@@ -124,13 +126,16 @@ function rawUnion(polys) {
 /**
  * Grow (d > 0) or shrink (d < 0) closed shapes. Mitred by default so
  * roofs, merlons and spires keep crisp corners; `round` softens them.
+ * `miter` caps how far a mitred point may reach (× the offset) before it is
+ * squared off.
  * @param {CPaths} paths
  * @param {number} d world units
  * @param {boolean} [round]
+ * @param {number} [miter]
  * @returns {CPaths}
  */
-function offset(paths, d, round = false) {
-	const co = new ClipperLib.ClipperOffset(1.6, 0.05 * S);
+function offset(paths, d, round = false, miter = 1.6) {
+	const co = new ClipperLib.ClipperOffset(miter, 0.05 * S);
 	co.AddPaths(
 		paths,
 		round ? ClipperLib.JoinType.jtRound : ClipperLib.JoinType.jtMiter,
@@ -223,6 +228,7 @@ export function place(parts, at) {
 		terrain: p.terrain,
 		shaded: p.shaded,
 		shadeArea: p.shadeArea && tp(p.shadeArea),
+		sharp: p.sharp,
 	}));
 }
 
@@ -285,10 +291,14 @@ export function renderLayered(parts, opts = {}) {
 		const mask = p.mask ? [toC(p.mask)] : null;
 		if (mask) solid = intersect(solid, mask);
 		// Morphological opening: shrink then regrow with round joins,
-		// which rounds every convex corner by `soft`.
-		if (soft) solid = offset(offset(solid, -soft, true), soft, true);
-		const outer = offset(solid, half, round);
-		const inner = offset(solid, -half, round);
+		// which rounds every convex corner by `soft`. A sharp part skips it
+		// and keeps mitred outlines, with a longer mitre so a pennant's tip
+		// still comes to a point.
+		const sharp = !!p.sharp;
+		if (soft && !sharp) solid = offset(offset(solid, -soft, true), soft, true);
+		const miter = sharp ? 4 : 1.6;
+		const outer = offset(solid, half, round && !sharp, miter);
+		const inner = offset(solid, -half, round && !sharp, miter);
 		let ink = minus(outer, inner);
 		const fillInk = p.fills?.length ? intersect(rawUnion(p.fills), outer) : [];
 		if (p.lines?.length)

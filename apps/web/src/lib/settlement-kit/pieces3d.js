@@ -1467,7 +1467,9 @@ function flag(D, x, y, dir = 1) {
 	}
 	/** @type {Part[]} */
 	const parts = [
-		{ solid: [cloth], role: 'flag' },
+		// Always crisp, whatever the culture's join: a soft join would round
+		// a pennant's tip and a swallowtail's points into blobs.
+		{ solid: [cloth], role: 'flag', sharp: true },
 		{
 			solid: [],
 			free: [

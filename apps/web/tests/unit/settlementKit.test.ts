@@ -216,6 +216,40 @@ function netArea(d: string): number {
 	return Math.abs(total);
 }
 
+describe('sharp parts', () => {
+	type P = Parameters<typeof renderLayered>[0][number];
+	const tri = (sharp: boolean): P[] =>
+		place(
+			[
+				{
+					solid: [
+						[
+							[0, 0],
+							[10, 0],
+							[0, 4],
+						],
+					],
+					role: 'flag',
+					sharp,
+				},
+			],
+			{ s: 2 },
+		);
+	it('keep their corners whatever the join', () => {
+		const soft = renderLayered(tri(true), { join: 'soft' }).layers;
+		const crisp = renderLayered(tri(true), { join: 'sharp' }).layers;
+		expect(soft.flag).toBe(crisp.flag);
+		expect(soft.ink).toBe(crisp.ink);
+		// …where an ordinary part is softened.
+		expect(renderLayered(tri(false), { join: 'soft' }).layers.flag).not.toBe(crisp.flag);
+	});
+	it('flag cloth is sharp', () => {
+		const cloth = roundTower(DEFAULT_DESIGN).filter((p) => p.role === 'flag');
+		expect(cloth.length).toBeGreaterThan(0);
+		expect(cloth.every((p) => p.sharp)).toBe(true);
+	});
+});
+
 describe('render robustness', () => {
 	it('ink stays an outline under the soft join (seed-42 house went solid black)', () => {
 		// Clipper can return a mis-oriented outer ring after the soft-rounding
