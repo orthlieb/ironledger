@@ -1,0 +1,33 @@
+{
+  "key": "freeport",
+  "name": "Freeport",
+  "note": "The great port of the Reaches, bigger than anywhere and fed by ship: a patchwork of every builder who ever landed — domes beside gables, onion towers by crenellated ones — with warehouses, markets and flags on every quay.",
+  "design": {
+    "variety": 0.75,
+    "flourish": 0.45,
+    "storeys": 0.6,
+    "stature": 1.05,
+    "pitch": 0.8,
+    "industry": 0.5,
+    "market": "all",
+    "keep": "city",
+    "church": true,
+    "flags": true,
+    "flagShape": "pennant",
+    "flagLen": 13,
+    "wall": "stone",
+    "wallShape": "round",
+    "wallTowers": 6,
+    "gate": "twin"
+  },
+  "palette": {
+    "wall": "#F1E8D8",
+    "roof": "#C46A3F",
+    "wood": "#9C7650",
+    "earth": "#8E7152",
+    "water": "#7FA7B5",
+    "ink": "#2E2A2B",
+    "flag": "#2F6F8F",
+    "halo": "#F7F2E8"
+  }
+}

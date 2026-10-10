@@ -391,6 +391,7 @@
         ],
         "cultures": [
           "cultures/buralia.json",
+          "cultures/freeport.json",
           "cultures/mososi.json",
           "cultures/nysis.json",
           "cultures/ostrea.json",

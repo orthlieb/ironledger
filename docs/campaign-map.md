@@ -371,12 +371,12 @@ colours whatever the palette: stone grey, hedges green and brown (a
 bramble pattern), coral and bone white and grey (coral as a brain-coral
 maze), palisades and earth banks brown (planks, speckled dirt).
 
-| Source | Cultures                                                 |
-| ------ | -------------------------------------------------------- |
-| base   | Ironlanders (default), Elves, Giants, Varou, Trolls      |
-| delve  | Merrow, Atanya                                           |
-| yrt    | Buralia, Mososi, Nysis, Ostrea, Verdani (replaces Elves) |
-| sample | Sample Culture (dev-only reference)                      |
+| Source | Cultures                                                           |
+| ------ | ------------------------------------------------------------------ |
+| base   | Ironlanders (default), Elves, Giants, Varou, Trolls                |
+| delve  | Merrow, Atanya                                                     |
+| yrt    | Buralia, Freeport, Mososi, Nysis, Ostrea, Verdani (replaces Elves) |
+| sample | Sample Culture (dev-only reference)                                |
 
 #### Recipe markers
 
