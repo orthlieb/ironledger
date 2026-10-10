@@ -1054,7 +1054,10 @@ export function sideHouse(D, o = {}) {
 						? barracksWindows(w, h)
 						: facade(D, -w / 2, w / 2, h, two, r);
 	const barn = kind === 'barn';
-	const wallRole = barn ? /** @type {const} */ ('wood') : undefined;
+	// Barns are plank-walled — unless the culture builds in masonry, when
+	// they're stone barns (still with their braced doors and hayloft).
+	const woodBarn = barn && !D.masonry;
+	const wallRole = woodBarn ? /** @type {const} */ ('wood') : undefined;
 	/** Vertical plank seams on a barn. @param {number} x0 @param {number} x1 */
 	const planks = (x0, x1, y0 = 0, y1 = h + rh + 10) => {
 		/** @type {Line[]} */
@@ -1210,7 +1213,7 @@ export function sideHouse(D, o = {}) {
 			shaded: true,
 			lines: [
 				...hatch(gableEnd, 65, D.hatch),
-				...(barn ? planks(w / 2, w / 2 + v[0], 0, h + rh + v[1]) : []),
+				...(woodBarn ? planks(w / 2, w / 2 + v[0], 0, h + rh + v[1]) : []),
 			],
 			fills:
 				kind === 'warehouse'
@@ -1359,6 +1362,39 @@ function stoneCourses(
 				],
 				w: 0.45,
 			});
+	}
+	return out;
+}
+
+/**
+ * Stone courses wrapped round a cylinder (a round tower's masonry): each
+ * course is the front half of an ellipse, and the staggered joints sit at
+ * even steps round the circumference, so they bunch toward the sides the
+ * way a curved wall foreshortens.
+ * @param {number} r radius the courses follow (the renderer clips to the body)
+ * @param {number} ry the ellipse's half-height (the tower's)
+ * @param {number} y0
+ * @param {number} y1
+ * @returns {Line[]}
+ */
+function roundCourses(r, ry, y0, y1) {
+	/** @type {Line[]} */
+	const out = [];
+	const step = 4.4 / r; // radians between joints: a 4.4-unit stone
+	let row = 0;
+	for (let y = y0 + 2.4; y < y1 + 2.4; y += 2.4, row++) {
+		if (y < y1) out.push({ pts: ell(0, y, r, ry, 180, 360), w: 0.45 });
+		for (let a = Math.PI + (row % 2 ? step / 2 : 0); a < 2 * Math.PI; a += step) {
+			const x = r * Math.cos(a),
+				dy = ry * Math.sin(a);
+			out.push({
+				pts: [
+					[x, y - 2.4 + dy],
+					[x, y + dy],
+				],
+				w: 0.45,
+			});
+		}
 	}
 	return out;
 }
@@ -1632,6 +1668,7 @@ export function roundTower(D, o = {}) {
 			solid: bodySolids,
 			shadeArea: rect(shadeR * 0.3, -ry - 2, shadeR * 2, h + ry + 4),
 			shadeLines: cylinderHatch(shadeR, -ry - 1, h + 1, D.hatch),
+			lines: D.masonry ? roundCourses(Math.max(r, topCorbel) + 1, ry, 0, h) : [],
 			fills: openings,
 			cuts: o.belfry && !o.clock ? bellCuts(0, belfryY + 1.9) : [],
 		},
@@ -1680,7 +1717,10 @@ export function roundTower(D, o = {}) {
 			solid: [ring],
 			fills: slots,
 			// The break where the 45° slope meets the upright band.
-			lines: [{ pts: ell(0, y1, R, ry, 180, 360), w: THIN }],
+			lines: [
+				{ pts: ell(0, y1, R, ry, 180, 360), w: THIN },
+				...(D.masonry ? roundCourses(R + 0.5, ry, y1, y2) : []),
+			],
 			shadeArea: rect(R * 0.3, h - ry - 2, R * 2, y2 - h + ry + 4),
 			shadeLines: cylinderHatch(R, h - ry - 1, y2 + 1, D.hatch),
 		});
@@ -2047,6 +2087,7 @@ function gateTower(D, y0, h, wood) {
 			solid: [front],
 			role,
 			fills: [archOpening(0, y0, 5.6, Math.min(8.5, h * 0.7))],
+			lines: D.masonry && !wood ? stoneCourses(-w / 2, w / 2, y0, y0 + h) : [],
 		},
 	];
 	// Every gate gets a sheltered cap: dome in dome culture, otherwise a
@@ -2884,6 +2925,7 @@ export function keep(D, o = {}) {
 		{
 			solid: [crenellated(-w / 2, w / 2, 0, h + 3, { merlon: 2.4, notch: 2.2 })],
 			fills: [...slits, archOpening(0, 4, 4.4, 7.5), opening(D, 0, h * 0.6, 3.4)],
+			lines: D.masonry ? stoneCourses(-w / 2, w / 2, 0, h) : [],
 		},
 		// Steps up to the raised door.
 		{ solid: [rect(-3.6, 0, 7.2, 1.5), rect(-3, 1.5, 6, 1.5), rect(-2.4, 3, 4.8, 1.2)] },

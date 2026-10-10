@@ -32,6 +32,7 @@ import {
 	church,
 	clocktower,
 	gableHouse,
+	keep,
 	makeDesign,
 	onStilts,
 	ringWall,
@@ -216,6 +217,25 @@ function netArea(d: string): number {
 	}
 	return Math.abs(total);
 }
+
+describe('masonry', () => {
+	const lines = (parts: ReturnType<typeof roundTower>) =>
+		parts.reduce((n, p) => n + (p.lines?.length ?? 0), 0);
+	it.each([
+		['round tower', (D: Design) => roundTower(D)],
+		['keep', (D: Design) => keep(D)],
+	])('lays stone courses on a %s', (_, piece) => {
+		expect(lines(piece({ ...DEFAULT_DESIGN, masonry: true }))).toBeGreaterThan(
+			lines(piece({ ...DEFAULT_DESIGN, masonry: false })),
+		);
+	});
+	it('builds a masonry barn in stone, not planks', () => {
+		const barn = (masonry: boolean) =>
+			pieces({ ...DEFAULT_DESIGN, masonry }).find(([n]) => n === 'Barn')?.[1][0].piece ?? [];
+		expect(barn(false).some((p) => p.role === 'wood')).toBe(true);
+		expect(barn(true).some((p) => p.role === 'wood')).toBe(false);
+	});
+});
 
 describe('variety (mixed builders)', () => {
 	it('mixes the buildings of a culture with variety, and leaves one without alone', () => {
