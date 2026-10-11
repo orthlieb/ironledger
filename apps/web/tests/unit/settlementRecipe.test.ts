@@ -37,8 +37,8 @@ describe('building recipes', () => {
 		expect(recipeLabel(tower, elves)).toBe('Elves Round tower, walled');
 		expect(recipeLabel({ ...tower, walls: undefined }, elves)).toBe('Elves Round tower');
 		// A wall building is never enclosed, whatever `walls` says.
-		expect(recipeLabel({ ...tower, building: 'palisade', ruin: { decay: 0.5 } }, elves)).toBe(
-			'Ruined Elves Palisade',
+		expect(recipeLabel({ ...tower, building: 'wall', ruin: { decay: 0.5 } }, elves)).toBe(
+			'Ruined Elves Wall',
 		);
 		expect(
 			recipeLabel({ tier: 'town', culture: 'x', seed: 1, ruin: { decay: 1, burned: true } }, null),

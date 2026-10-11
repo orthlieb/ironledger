@@ -39,8 +39,10 @@ export const SETTLEMENT_WALLS = [
 ] as const;
 export type SettlementWalls = (typeof SETTLEMENT_WALLS)[number];
 
-/** The Choose Icon dialog's Buildings tab: each single building it draws
- *  (settlement-kit layouts3d.js BUILDINGS), key → label, in menu order. */
+/** The Choose Icon dialog's Buildings tab: each single building it offers
+ *  (settlement-kit layouts3d.js BUILDINGS), key → label, in menu order. The
+ *  kit's RETIRED_BUILDINGS aren't here: a marker that already has one still
+ *  draws it, but a recipe naming one is no longer accepted on import. */
 export const SETTLEMENT_BUILDINGS = {
 	'gable-house': 'Gable house',
 	'side-house': 'Side house',
@@ -59,26 +61,19 @@ export const SETTLEMENT_BUILDINGS = {
 	mine: 'Mine',
 	well: 'Well',
 	lighthouse: 'Lighthouse',
-	caravel: 'Caravel',
 	warehouse: 'Warehouse',
 	workshop: 'Workshop',
 	cathedral: 'Cathedral',
 	'clock-tower': 'Clock tower',
 	tent: 'Tent',
 	pavilion: 'Pavilion',
-	gatehouse: 'Gatehouse',
-	'wooden-gate': 'Wooden gate',
 	'witch-hut': 'Witch hut',
 	wall: 'Wall',
-	'wall-tower': 'Wall tower',
-	palisade: 'Palisade',
-	dock: 'Dock',
-	pier: 'Pier',
 } as const;
 export type SettlementBuilding = keyof typeof SETTLEMENT_BUILDINGS;
 
 /** Buildings never given a wall of their own, so no Walls or Wall shape:
- *  the wall buildings, each in its own material, and the caravel — a ship.
+ *  the wall buildings, each in its own material, and the harbour pieces.
  *  (settlement-kit layouts3d.js UNWALLED_BUILDINGS; a test holds them in
  *  step.) */
 export const UNWALLED_BUILDINGS: ReadonlySet<string> = new Set([
@@ -88,6 +83,8 @@ export const UNWALLED_BUILDINGS: ReadonlySet<string> = new Set([
 	'gatehouse',
 	'wooden-gate',
 	'caravel',
+	'dock',
+	'pier',
 ]);
 
 export interface SettlementRecipe {

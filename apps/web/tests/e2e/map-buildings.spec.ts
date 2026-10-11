@@ -11,8 +11,7 @@
  *   • Controls — a building's own knobs (Building, Culture, Walls, Ground,
  *     Ruined); Wall shape only once there are walls; none of the
  *     settlement-only ones (Size, On stilts, Harbour); and no Walls at all
- *     for a wall building (Palisade), which comes in its own material, or
- *     for the caravel, a ship.
+ *     for the Wall, which comes in its own material.
  *   • Persist — the recipe the tab makes reaches the server intact
  *     (asserted via the API: the marker schema once stripped `ground` and
  *     `stilts`), the marker survives a full reload, and re-opening the
@@ -155,14 +154,10 @@ test.describe('Map markers — Buildings tab', () => {
 		await expect(select(page, 'Wall shape')).toBeVisible();
 
 		// A wall building comes in its own material: no Walls, no Wall shape.
-		await choose(page, 'Building', 'palisade');
+		await choose(page, 'Building', 'wall');
 		await expect(select(page, 'Walls')).toHaveCount(0);
 		await expect(select(page, 'Wall shape')).toHaveCount(0);
 		await expect(select(page, 'Ground')).toBeVisible();
-		await drawn(page);
-		// Nor does a ship get walls.
-		await choose(page, 'Building', 'caravel');
-		await expect(select(page, 'Walls')).toHaveCount(0);
 		await drawn(page);
 
 		// Ruined shows the ruin's own knobs.

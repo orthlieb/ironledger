@@ -1,7 +1,8 @@
 <script lang="ts">
 	/**
 	 * MapIconPicker — the icon-chooser modal extracted out of MapDialog. Lists
-	 * every manifest icon grouped by category with a live search filter and a
+	 * every manifest icon grouped by category (bar the settlement kit's baked
+	 * Settlement icons, which the builder tabs make) with a live search filter and a
 	 * "No icon" (label-only) tile; each tile previews in the marker's current
 	 * colour. Purely presentational: it owns its own search state and reports
 	 * the picked icon key back to MapDialog via `onpick`.
@@ -84,10 +85,16 @@
 	);
 
 	/** Icons on offer: core icons plus those of extensions that are enabled
-	 *  (an extension's icons carry `source`). Markers already placed with a
-	 *  disabled extension's icon keep rendering — this only gates picking. */
+	 *  (an extension's icons carry `source`). The settlement kit's baked
+	 *  icons (the `settlement` category) aren't offered — the Buildings and
+	 *  Settlement builder tabs draw any of them in any culture — but stay in
+	 *  the manifest for markers that use them and for recipes' fallbacks.
+	 *  Markers already placed with a hidden or disabled extension's icon
+	 *  keep rendering — this only gates picking. */
 	const offeredIcons = $derived(
-		MAP_ICON_LIST.filter((i) => !i.source || isSourceEnabled(i.source)),
+		MAP_ICON_LIST.filter(
+			(i) => i.category !== 'settlement' && (!i.source || isSourceEnabled(i.source)),
+		),
 	);
 	const offeredCategories = $derived(
 		MAP_ICON_CATEGORIES.filter((c) => offeredIcons.some((i) => i.category === c)),

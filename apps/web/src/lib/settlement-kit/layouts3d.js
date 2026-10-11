@@ -802,13 +802,25 @@ export function pieces(D) {
 	return PIECES.map(([, name, make]) => [name, normalized(make(D))]);
 }
 
+/** Buildings the Buildings tab no longer offers. building() still draws
+ *  them, for a marker that already uses one. */
+export const RETIRED_BUILDINGS = new Set([
+	'gatehouse',
+	'wooden-gate',
+	'wall-tower',
+	'palisade',
+	'caravel',
+	'dock',
+	'pier',
+]);
+
 /** The Buildings tab's buildings, as [key, name], in menu order. */
 export const BUILDINGS = /** @type {[string, string][]} */ (
-	PIECES.flatMap(([key, name]) => (key ? [[key, name]] : []))
+	PIECES.flatMap(([key, name]) => (key && !RETIRED_BUILDINGS.has(key) ? [[key, name]] : []))
 );
 
 /** Buildings never given a wall of their own: the wall buildings, each in
- *  its own material, and the caravel — a ship. */
+ *  its own material, and the harbour pieces — the caravel, dock and pier. */
 export const UNWALLED_BUILDINGS = new Set([
 	'wall',
 	'wall-tower',
@@ -816,6 +828,8 @@ export const UNWALLED_BUILDINGS = new Set([
 	'gatehouse',
 	'wooden-gate',
 	'caravel',
+	'dock',
+	'pier',
 ]);
 
 /**

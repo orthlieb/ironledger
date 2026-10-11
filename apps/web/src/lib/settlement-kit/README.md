@@ -302,8 +302,10 @@ puts a small ring or square wall of its own round it, fitted to its
 footprint the way a settlement's is (`enclosed()`), with up to two towers
 where the wall type carries them — never round the `UNWALLED_BUILDINGS`:
 the wall buildings (Wall, Wall tower, Palisade, Gatehouse, Wooden gate),
-which come in their own material, and the Caravel, a ship. A culture on
-water lays a lagoon under it. `seed` varies it as a settlement varies its
+which come in their own material, and the harbour pieces (Caravel, Dock,
+Pier). Of those only the Wall is still on the Buildings tab: the rest are
+`RETIRED_BUILDINGS`, which `building()` still draws for a marker that
+already has one. A culture on water lays a lagoon under it. `seed` varies it as a settlement varies its
 buildings — `jitterDesign()` (pitch, sweep,
 ornament, now and then the windows or doors), a round tower's girth and
 height, a house's details — and lets a mixed culture's builder roll its

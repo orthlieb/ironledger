@@ -3286,7 +3286,10 @@
 		left: 50%;
 		transform: translate(-50%, -50%);
 		width: min(460px, calc(100vw - 2rem));
+		/* dvh, the viewport a phone actually shows (vh fallback) — see the
+		   icon picker's height below. */
 		max-height: 82vh;
+		max-height: 82dvh;
 		display: flex;
 		flex-direction: column;
 		background: var(--bg-card);
@@ -3595,6 +3598,7 @@
 		:global(.mp-props-dialog) {
 			width: 90vw;
 			max-height: 90vh;
+			max-height: 90dvh;
 		}
 	}
 

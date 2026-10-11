@@ -313,30 +313,38 @@ and every culture knob. It's used three ways:
     tower, mill, mine, lighthouse, tents, pavilion, gatehouses, walls,
     docks…), settlements by size and wall, and ruins. Each replaces any old
     icon of the same slug; `RETIRED` lists the old hand-drawn buildings
-    the kit drops outright. The non-building props (anvil, wheat, coins,
-    crowns, bridges…) stay hand-drawn.
-    Culture-styled settlements aren't baked: every culture is one pick away
-    in the builder. Output is checked in; re-run the script after changing
-    the kit.
+    the kit drops outright. `settlement/` holds nothing else: the
+    hand-drawn props that used to share it now live in the categories
+    they fit (bridges and the aqueduct in Travel; anvil, masonry, pickaxe,
+    plow, mine wagon in Profession; barrels, coal, planks, wheat, coins in
+    Supply; campfire, brazier, tavern sign, crowns in Site; the crater in
+    Terrain), and `resolveMapIcon()` still finds a marker saved with the
+    old `settlement/<slug>` key by its slug.
+    The Icons tab doesn't offer the Settlement category: the Buildings and
+    Settlement builder tabs draw any of it, in any culture. The baked
+    files stay for markers that already use them and as recipes' plain
+    fallbacks (`fallbackIcon()`). Culture-styled settlements aren't
+    baked: every culture is one pick away in the builder. Output is
+    checked in; re-run the script after changing the kit.
 
 - **The Buildings tab** — the Choose Icon dialog's second tab, between
   Icons and Settlement builder (`SettlementBuilder.svelte` with
-  `kind="building"`). One building — any of the kit's 32 single pieces
-  (`SETTLEMENT_BUILDINGS`, from houses and towers to the cathedral, docks
-  and walls) — in any culture, where the baked single-building icons are
-  all the default culture with one-off tweaks. Walls (None by default)
-  puts a small ring or square wall of that type round it (in the chosen
-  wall shape); the wall buildings — Wall, Wall tower, Palisade,
-  Gatehouse, Wooden gate — come in their own material and have no Walls
-  or Wall shape; nor does the Caravel, a ship. The tab lays itself out to
+  `kind="building"`). One building — any of 25 of the kit's single
+  pieces (`SETTLEMENT_BUILDINGS`, from houses and towers to the
+  cathedral, a market and a stone wall) — in any culture. Walls (None by
+  default) puts a small ring or square wall of that type round it (in
+  the chosen wall shape); the Wall comes in its own stone and has no
+  Walls or Wall shape. (The gatehouses, wall tower, palisade, caravel,
+  dock and pier are no longer offered — the kit's `RETIRED_BUILDINGS` —
+  but still draw on a marker that already has one.) The tab lays itself out to
   fit the dialog (the preview takes whatever height the knobs leave, the
   knobs go two to a row on a phone), so "Use this" is always on screen.
   Ground (the culture's own, land or water: a lagoon under
   it) and Ruined + decay (optionally burned) as below. The reroll varies
   the building as a settlement varies its own — pitch, sweep, ornament,
   now and then the windows or doors, a tower's height — and a mixed
-  culture's builder; a few fixed pieces (tent, mine, caravel, walls,
-  docks…) only change when ruined.
+  culture's builder; a few fixed pieces (tent, pavilion, mine, witch hut,
+  the wall) only change when ruined.
   Recents are kept apart (`il:recentBuildings`); opening Change Icon on a
   marker with a building recipe lands here.
 - **The Settlement builder** — the Choose Icon dialog's third tab
@@ -615,7 +623,9 @@ maps have been removed — the top-nav Map button is the sole UI entry
 point now, and any map (owned or standalone) shows up in its picker.
 
 - **Click "Change icon…"** — opens a nested picker dialog listing
-  every manifest icon grouped by category with a search filter.
+  every manifest icon grouped by category with a search filter (all but
+  the settlement kit's baked Settlement icons — the Buildings and
+  Settlement builder tabs make those).
   Previews render at the marker's current color so the swatch matches
   what you'll see on the map.
 - **Color** — the native picker button + a strip of preset swatches.
