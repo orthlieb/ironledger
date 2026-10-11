@@ -26,7 +26,14 @@ import {
 	generateSettlementSvg,
 	recipeDesign,
 } from '../../src/lib/settlement-kit/generate.js';
-import { TEMPLATES, pieces, settlement } from '../../src/lib/settlement-kit/layouts3d.js';
+import {
+	BUILDINGS,
+	TEMPLATES,
+	building,
+	pieces,
+	settlement,
+} from '../../src/lib/settlement-kit/layouts3d.js';
+import { SETTLEMENT_BUILDINGS } from '../../src/lib/settlementRecipe.js';
 import {
 	DEFAULT_DESIGN,
 	church,
@@ -260,6 +267,87 @@ describe('ring wall texture', () => {
 			const tex = ringLines(wall).filter((l) => l.role === 'ink-texture');
 			expect(tex.length, wall).toBeGreaterThan(40);
 		}
+	});
+});
+
+describe('buildings (the Buildings tab)', () => {
+	const roles = (svg: string) =>
+		new Set([...svg.matchAll(/data-role="([\w-]+)"/g)].map((m) => m[1]));
+	it('offers the same buildings the app lists, in the same order', () => {
+		expect(BUILDINGS).toEqual(Object.entries(SETTLEMENT_BUILDINGS));
+	});
+	it('keeps the reference row of pieces the icon bake draws by name', () => {
+		const names = pieces(DEFAULT_DESIGN).map(([n]) => n);
+		expect(names).toHaveLength(33);
+		for (const n of ['Camp', 'Palisade', 'Wooden gate']) expect(names).toContain(n);
+	});
+	it.each(BUILDINGS.map(([key]) => key))('draws %s on its own', (key) => {
+		const svg = generateSettlementSvg(
+			{ tier: 'stead', culture: 'default', seed: 5, building: key },
+			null,
+		);
+		expect(svg).toMatch(/data-role="sil"[^>]* d="M/);
+		expect(svg).toContain(`"Default ${key.replace(/-/g, ' ')}"`);
+	});
+	it('puts a wall of its own round a building, in the chosen shape', () => {
+		const D = { ...DEFAULT_DESIGN };
+		const walled = (walls: 'hedge' | 'none', wallShape: 'round' | 'square' = 'round') =>
+			building('round-tower', { ...D, wallShape }, { walls, seed: 3 });
+		expect(walled('none').some((it) => it.wall)).toBe(false);
+		expect(walled('hedge').some((it) => it.wall)).toBe(true);
+		const ring = generateSettlementSvg(
+			{ tier: 'stead', culture: 'default', seed: 3, building: 'church', walls: 'hedge' },
+			null,
+		);
+		expect(roles(ring)).toContain('wall-hedge-ring');
+		const square = generateSettlementSvg(
+			{
+				tier: 'stead',
+				culture: 'default',
+				seed: 3,
+				building: 'church',
+				walls: 'palisade',
+				wallShape: 'square',
+			},
+			null,
+		);
+		expect(roles(square)).toContain('wall-wood');
+	});
+	it.each([
+		['stone', 'wall-stone'],
+		['hedge', 'wall-hedge'],
+		['reef', 'wall-reef'],
+		['palisade', 'wall-wood'],
+		['earth', 'wall-earth'],
+		['bone', 'wall-bone'],
+	] as const)('builds the wall buildings of %s, unenclosed', (walls, role) => {
+		for (const key of ['wall', 'wall-tower', 'gatehouse']) {
+			const svg = generateSettlementSvg(
+				{ tier: 'stead', culture: 'default', seed: 3, building: key, walls },
+				null,
+			);
+			expect(roles(svg), key).toContain(role);
+			expect(
+				[...roles(svg)].some((r) => r.endsWith('-ring')),
+				key,
+			).toBe(false);
+		}
+	});
+	it('ruins a building, and a reroll changes a house', () => {
+		const at = (seed: number, ruin?: { decay: number }) =>
+			generateSettlementSvg(
+				{
+					tier: 'stead',
+					culture: 'default',
+					seed,
+					building: 'gable-house',
+					...(ruin ? { ruin } : {}),
+				},
+				null,
+			);
+		expect(at(3, { decay: 0.6 })).not.toBe(at(3));
+		expect(at(3)).toBe(at(3));
+		expect(new Set([1, 2, 3, 4, 5].map((s) => at(s))).size).toBeGreaterThan(1);
 	});
 });
 

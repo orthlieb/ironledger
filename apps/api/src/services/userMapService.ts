@@ -51,8 +51,11 @@ export interface MapMarker {
     seed: number;
     walls?: string;
     wallShape?: 'round' | 'square';
+    ground?: 'land' | 'water';
+    stilts?: boolean;
     harbor?: boolean;
     ruin?: { decay: number; burned?: boolean };
+    building?: string;
   };
 }
 

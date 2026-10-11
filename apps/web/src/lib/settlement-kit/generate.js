@@ -16,7 +16,7 @@
 // Texture off adds data-texture="off": its walls draw flat, there too.
 // =============================================================================
 
-import { settlement, TEMPLATES } from './layouts3d.js';
+import { building, settlement, TEMPLATES } from './layouts3d.js';
 import { DEFAULT_DESIGN, upgradeDesign } from './pieces3d.js';
 import { PATTERN_ROLES, flatWall, paletteTone, patternDefs } from './patterns.js';
 import { LAYERS, place, renderLayered } from './render.js';
@@ -39,9 +39,13 @@ export { fallbackIcon } from './fallback.js';
  */
 /**
  * What a marker stores: a REFERENCE to a culture, never the culture itself.
+ * `building` (a key of layouts3d.js BUILDINGS) draws that one building
+ * instead of a settlement — the Buildings tab: `walls` then encloses it (or,
+ * for a wall building, is its material) and `tier`, `ground`, `stilts` and
+ * `harbor` don't apply.
  * @typedef {{tier: Tier, culture: string, seed: number, walls?: Walls,
  *   wallShape?: 'round' | 'square', ground?: 'land' | 'water',
- *   stilts?: boolean, harbor?: boolean,
+ *   stilts?: boolean, harbor?: boolean, building?: string,
  *   ruin?: {decay: number, burned?: boolean}}} SettlementRecipe
  */
 
@@ -197,22 +201,25 @@ export function recipeDesign(recipe, culture) {
 export function generateSettlementSvg(recipe, culture) {
 	const tier = recipe.tier in TEMPLATES ? recipe.tier : 'village';
 	const design = recipeDesign(recipe, culture);
-	const items = settlement(tier, design, {
-		walls: recipe.walls ?? 'auto',
-		seed: recipe.seed,
-		harbor: recipe.harbor ? 'side' : 'none',
-		stilts: !!recipe.stilts,
-		ruin: recipe.ruin
-			? {
-					decay: recipe.ruin.decay,
-					overgrowth: 0.4,
-					burned: !!recipe.ruin.burned,
-					seed: recipe.seed,
-				}
-			: null,
-	});
+	const ruin = recipe.ruin
+		? {
+				decay: recipe.ruin.decay,
+				overgrowth: 0.4,
+				burned: !!recipe.ruin.burned,
+				seed: recipe.seed,
+			}
+		: null;
+	const items = recipe.building
+		? building(recipe.building, design, { walls: recipe.walls, seed: recipe.seed, ruin })
+		: settlement(tier, design, {
+				walls: recipe.walls ?? 'auto',
+				seed: recipe.seed,
+				harbor: recipe.harbor ? 'side' : 'none',
+				stilts: !!recipe.stilts,
+				ruin,
+			});
 	return toLayeredSvg(
-		`${culture?.name ?? 'Default'} ${tier}`,
+		`${culture?.name ?? 'Default'} ${recipe.building ?? tier}`,
 		items,
 		culture?.palette ?? PARCHMENT,
 		{

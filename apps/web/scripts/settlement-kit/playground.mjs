@@ -13,7 +13,13 @@ import {
 	makeDesign,
 	upgradeDesign,
 } from '../../src/lib/settlement-kit/pieces3d.js';
-import { TEMPLATES, pieces, settlement } from '../../src/lib/settlement-kit/layouts3d.js';
+import {
+	BUILDINGS,
+	TEMPLATES,
+	building,
+	pieces,
+	settlement,
+} from '../../src/lib/settlement-kit/layouts3d.js';
 import {
 	PATTERN_ROLES,
 	FLAT_WALLS,
@@ -419,6 +425,15 @@ const KNOBS = [
 	},
 	{ group: 'Drawing', key: 'stilts', label: 'On stilts', type: 'check' },
 	{
+		// The map's Buildings tab: pieces drawn as buildings, each in a wall of
+		// its own (the wall pieces in that wall type) — see building().
+		group: 'Drawing',
+		key: 'buildingWalls',
+		label: 'Building walls',
+		type: 'select',
+		options: ['pieces', 'none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef'],
+	},
+	{
 		group: 'Drawing',
 		key: 'join',
 		label: 'Joins',
@@ -482,6 +497,7 @@ const DRAWING = {
 	harbor: 'none',
 	walls: 'auto',
 	stilts: false,
+	buildingWalls: 'pieces',
 	softRadius: 0.9,
 	outline: 1.4,
 	layout: 1,
@@ -648,10 +664,22 @@ function render() {
 				svg(settlement(tier, design, opts)),
 			]),
 	);
-	const bits = pieces(design).map(
-		([t, items]) =>
-			/** @type {[string, string]} */ ([t, svg(ruin ? ruinPlaced(items, ruin) : items)]),
-	);
+	// The reference row of pieces — or, as the map's Buildings tab draws
+	// them, buildings with walls of their own.
+	const bw = drawing.buildingWalls;
+	const bits =
+		bw === 'pieces'
+			? pieces(design).map(
+					([t, items]) =>
+						/** @type {[string, string]} */ ([t, svg(ruin ? ruinPlaced(items, ruin) : items)]),
+				)
+			: BUILDINGS.map(
+					([key, t]) =>
+						/** @type {[string, string]} */ ([
+							t,
+							svg(building(key, design, { walls: bw, seed: drawing.layout, ruin })),
+						]),
+				);
 	const card = (/** @type {[string, string]} */ [t, s], cls = '') =>
 		`<figure class="${cls}" data-name="${t}">${s}<figcaption>${t}<span class="dl"><button data-fmt="svg">SVG</button><button data-fmt="png">PNG</button></span></figcaption></figure>`;
 	$('towns').innerHTML = towns.map((c) => card(c, 'big')).join('');

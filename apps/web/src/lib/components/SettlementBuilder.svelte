@@ -1,6 +1,7 @@
 <script lang="ts">
 	/**
-	 * SettlementBuilder — the Choose Icon dialog's "Settlement builder" tab.
+	 * SettlementBuilder — the Choose Icon dialog's "Settlement builder" and
+	 * "Buildings" tabs (`kind`).
 	 *
 	 * Just the essentials of the settlement kit: tier, culture, walls and
 	 * their shape, a harbour, ruined (with decay, and
@@ -11,9 +12,16 @@
 	 * set of knobs lives in the standalone playground under tools/, which
 	 * also exports new culture plugins.
 	 *
-	 * A Recent strip above the knobs keeps the last few recipes used (per
-	 * browser, like the colour picker's swatches); clicking one reuses it
-	 * straight away. Generation runs in a worker via settlementIcons.
+	 * The Buildings kind draws one building instead of a settlement: the
+	 * building in place of the size, walls that enclose it (none by default;
+	 * for the wall buildings — Wall, Wall tower, Gatehouse — their material),
+	 * and no ground, stilts or harbour. Its reroll varies the building's
+	 * details (and a mixed culture's builder).
+	 *
+	 * A Recent strip above the knobs keeps the last few recipes used, per
+	 * kind (per browser, like the colour picker's swatches); clicking one
+	 * reuses it straight away. Generation runs in a worker via
+	 * settlementIcons.
 	 */
 	import { untrack } from 'svelte';
 	import Select from '$lib/components/Select.svelte';
@@ -31,19 +39,25 @@
 	} from '$lib/cultureStore.svelte.js';
 	import { recipeLabel, settlementIcon } from '$lib/settlementIcons.svelte.js';
 	import {
+		SETTLEMENT_BUILDINGS,
+		WALL_BUILDINGS,
 		cleanSettlementRecipe,
 		sameRecipe,
+		type SettlementBuilding,
 		type SettlementRecipe,
 		type SettlementTier,
 		type SettlementWalls,
 	} from '$lib/settlementRecipe.js';
 
 	let {
+		kind = 'settlement',
 		color,
 		initial,
 		onuse,
 		useButton = $bindable(null),
 	}: {
+		/** A whole settlement, or one building (the Buildings tab). */
+		kind?: 'settlement' | 'building';
 		/** The marker's colour — roofs take it in every preview. */
 		color: string;
 		/** Recipe to start from (the marker's own when it already has one). */
@@ -92,11 +106,17 @@
 		{ value: 'water', label: 'Water' },
 	];
 
+	const BUILDINGS = Object.entries(SETTLEMENT_BUILDINGS).map(([value, label]) => ({
+		value: value as SettlementBuilding,
+		label,
+	}));
+
 	const newSeed = () => Math.floor(Math.random() * 999_999) + 1;
 
 	// Knob state, seeded once from `initial` (the dialog remounts the
 	// builder on every open, so this never needs to re-sync).
 	const start = untrack(() => initial);
+	const isBuilding = untrack(() => kind) === 'building';
 	let tier = $state<SettlementTier>(start?.tier ?? 'village');
 	/** The sizes on offer: a freeport marker keeps its own. */
 	const tierOptions = $derived(
@@ -104,9 +124,10 @@
 			? [...TIERS, { value: 'freeport' as const, label: 'Freeport · ~15,900' }]
 			: TIERS,
 	);
+	let building = $state<SettlementBuilding>(start?.building ?? 'gable-house');
 	let culture = $state(start?.culture ?? DEFAULT_CULTURE);
 	let seed = $state(start?.seed ?? newSeed());
-	let walls = $state<SettlementWalls>(start?.walls ?? 'auto');
+	let walls = $state<SettlementWalls>(start?.walls ?? (isBuilding ? 'none' : 'auto'));
 	let shape = $state<Shape>(start?.wallShape ?? 'culture');
 	let ground = $state<Ground>(start?.ground ?? 'culture');
 	let stilts = $state(!!start?.stilts);
@@ -117,24 +138,53 @@
 
 	void loadCultures();
 
-	const recipe = $derived<SettlementRecipe>({
-		tier,
-		culture,
-		seed,
-		...(walls !== 'auto' ? { walls } : {}),
-		...(shape !== 'culture' ? { wallShape: shape } : {}),
-		...(ground !== 'culture' ? { ground } : {}),
-		...(stilts ? { stilts: true } : {}),
-		...(harbor ? { harbor: true } : {}),
-		...(ruined
+	/** A wall building: Walls is its material, and it has no wall shape. */
+	const wallBuilding = $derived(isBuilding && WALL_BUILDINGS.has(building));
+	/** A building's walls are an enclosure (or a wall building's material):
+	 *  none by default, and no "usual for its size". */
+	const wallOptions = $derived(
+		isBuilding
+			? [
+					{ value: 'none' as const, label: wallBuilding ? "Culture's own" : 'None' },
+					...WALLS.filter((w) => w.value !== 'auto' && w.value !== 'none'),
+				]
+			: WALLS,
+	);
+	const showShape = $derived(!isBuilding || (!wallBuilding && walls !== 'none'));
+	const ruin = $derived(
+		ruined
 			? {
 					ruin: {
 						decay: Math.round(decay * 100) / 100,
 						...(burned ? { burned: true } : {}),
 					},
 				}
-			: {}),
-	});
+			: {},
+	);
+	const recipe = $derived<SettlementRecipe>(
+		isBuilding
+			? {
+					// A building has no size; `tier` stays for the recipe's shape.
+					tier: 'stead',
+					culture,
+					seed,
+					building,
+					...(walls !== 'none' && walls !== 'auto' ? { walls } : {}),
+					...(showShape && shape !== 'culture' ? { wallShape: shape } : {}),
+					...ruin,
+				}
+			: {
+					tier,
+					culture,
+					seed,
+					...(walls !== 'auto' ? { walls } : {}),
+					...(shape !== 'culture' ? { wallShape: shape } : {}),
+					...(ground !== 'culture' ? { ground } : {}),
+					...(stilts ? { stilts: true } : {}),
+					...(harbor ? { harbor: true } : {}),
+					...ruin,
+				},
+	);
 	const icon = $derived(settlementIcon(recipe));
 
 	/** Offered cultures, plus the starting one if it's no longer offered
@@ -150,14 +200,16 @@
 	});
 	const note = $derived(resolveCulture(culture)?.note ?? '');
 
-	// ─── Recent recipes (MRU, per browser) ──────────────────────────────
-	const RECENTS_KEY = 'il:recentSettlements';
+	// ─── Recent recipes (MRU, per browser, per kind) ────────────────────
+	const RECENTS_KEY = isBuilding ? 'il:recentBuildings' : 'il:recentSettlements';
 	const RECENTS_MAX = 8;
 	function readRecents(): SettlementRecipe[] {
 		try {
 			const raw = JSON.parse(localStorage.getItem(RECENTS_KEY) ?? '[]');
 			return Array.isArray(raw)
-				? raw.map(cleanSettlementRecipe).filter((r): r is SettlementRecipe => !!r)
+				? raw
+						.map(cleanSettlementRecipe)
+						.filter((r): r is SettlementRecipe => !!r && !!r.building === isBuilding)
 				: [];
 		} catch {
 			return [];
@@ -182,7 +234,7 @@
 
 <div class="sb">
 	{#if recents.length}
-		<div class="sb-recents" aria-label="Recent settlements">
+		<div class="sb-recents" aria-label={isBuilding ? 'Recent buildings' : 'Recent settlements'}>
 			<span class="sb-label">Recent</span>
 			<div class="sb-recent-row">
 				{#each recents as r, i (i)}
@@ -208,29 +260,44 @@
 
 	<div class="sb-main">
 		<div class="sb-knobs">
-			<label class="sb-field">
-				<span class="sb-label">Size</span>
-				<Select bind:value={tier} options={tierOptions} ariaLabel="Settlement size" />
-			</label>
+			{#if isBuilding}
+				<label class="sb-field">
+					<span class="sb-label">Building</span>
+					<Select bind:value={building} options={BUILDINGS} ariaLabel="Building" />
+				</label>
+			{:else}
+				<label class="sb-field">
+					<span class="sb-label">Size</span>
+					<Select bind:value={tier} options={tierOptions} ariaLabel="Settlement size" />
+				</label>
+			{/if}
 			<label class="sb-field">
 				<span class="sb-label">Culture</span>
 				<Select bind:value={culture} options={cultureOptions} ariaLabel="Culture" />
 			</label>
 			{#if note}<p class="sb-note">{note}</p>{/if}
 			<label class="sb-field">
-				<span class="sb-label">Walls</span>
-				<Select bind:value={walls} options={WALLS} ariaLabel="Walls" />
+				<span class="sb-label">{wallBuilding ? 'Built of' : 'Walls'}</span>
+				<Select
+					bind:value={walls}
+					options={wallOptions}
+					ariaLabel={wallBuilding ? 'Built of' : 'Walls'}
+				/>
 			</label>
-			<label class="sb-field">
-				<span class="sb-label">Wall shape</span>
-				<Select bind:value={shape} options={SHAPES} ariaLabel="Wall shape" />
-			</label>
-			<label class="sb-field">
-				<span class="sb-label">Ground</span>
-				<Select bind:value={ground} options={GROUNDS} ariaLabel="Ground" />
-			</label>
-			<Checkbox bind:checked={stilts}><span class="sb-check">On stilts</span></Checkbox>
-			<Checkbox bind:checked={harbor}><span class="sb-check">Harbour</span></Checkbox>
+			{#if showShape}
+				<label class="sb-field">
+					<span class="sb-label">Wall shape</span>
+					<Select bind:value={shape} options={SHAPES} ariaLabel="Wall shape" />
+				</label>
+			{/if}
+			{#if !isBuilding}
+				<label class="sb-field">
+					<span class="sb-label">Ground</span>
+					<Select bind:value={ground} options={GROUNDS} ariaLabel="Ground" />
+				</label>
+				<Checkbox bind:checked={stilts}><span class="sb-check">On stilts</span></Checkbox>
+				<Checkbox bind:checked={harbor}><span class="sb-check">Harbour</span></Checkbox>
+			{/if}
 			<Checkbox bind:checked={ruined}><span class="sb-check">Ruined</span></Checkbox>
 			{#if ruined}
 				<label class="sb-field sb-field--range">
@@ -265,8 +332,9 @@
 					class="dice-btn"
 					type="button"
 					onclick={() => (seed = newSeed())}
-					use:tooltip={'Reroll the layout'}
-					aria-label="Reroll the layout">{@html diceD6Svg}</button
+					use:tooltip={isBuilding ? 'Reroll the details' : 'Reroll the layout'}
+					aria-label={isBuilding ? 'Reroll the details' : 'Reroll the layout'}
+					>{@html diceD6Svg}</button
 				>
 				<span class="sb-name">{icon?.label ?? ''}</span>
 				<button

@@ -39,6 +39,45 @@ export const SETTLEMENT_WALLS = [
 ] as const;
 export type SettlementWalls = (typeof SETTLEMENT_WALLS)[number];
 
+/** The Choose Icon dialog's Buildings tab: each single building it draws
+ *  (settlement-kit layouts3d.js BUILDINGS), key → label, in menu order. */
+export const SETTLEMENT_BUILDINGS = {
+	'gable-house': 'Gable house',
+	'side-house': 'Side house',
+	'round-tower': 'Round tower',
+	'bell-tower': 'Bell tower',
+	church: 'Church',
+	keep: 'Keep',
+	market: 'Market',
+	longhouse: 'Longhouse',
+	windmill: 'Windmill',
+	townhouse: 'Townhouse',
+	barn: 'Barn',
+	tavern: 'Tavern',
+	barracks: 'Barracks',
+	'water-mill': 'Water mill',
+	mine: 'Mine',
+	well: 'Well',
+	lighthouse: 'Lighthouse',
+	caravel: 'Caravel',
+	warehouse: 'Warehouse',
+	workshop: 'Workshop',
+	cathedral: 'Cathedral',
+	'clock-tower': 'Clock tower',
+	tent: 'Tent',
+	pavilion: 'Pavilion',
+	gatehouse: 'Gatehouse',
+	'witch-hut': 'Witch hut',
+	wall: 'Wall',
+	'wall-tower': 'Wall tower',
+	dock: 'Dock',
+	pier: 'Pier',
+} as const;
+export type SettlementBuilding = keyof typeof SETTLEMENT_BUILDINGS;
+
+/** The wall buildings: `walls` is their material, never an enclosure. */
+export const WALL_BUILDINGS: ReadonlySet<string> = new Set(['wall', 'wall-tower', 'gatehouse']);
+
 export interface SettlementRecipe {
 	tier: SettlementTier;
 	/** Culture plugin key, e.g. "elves" or "nysis". */
@@ -54,6 +93,10 @@ export interface SettlementRecipe {
 	harbor?: boolean;
 	/** A ruin: how far gone (0–1), and whether it burned (scorch, soot). */
 	ruin?: { decay: number; burned?: boolean };
+	/** One building instead of a settlement (the Buildings tab). `walls` then
+	 *  puts a wall of its own round it — or, for a wall building, is its
+	 *  material — and `tier`, `ground`, `stilts` and `harbor` don't apply. */
+	building?: SettlementBuilding;
 }
 
 /** Stable cache key for a recipe (field order fixed). */
@@ -68,6 +111,7 @@ export function recipeKey(r: SettlementRecipe): string {
 		r.stilts ? 's' : '',
 		r.harbor ? 'h' : '',
 		r.ruin ? r.ruin.decay.toFixed(2) + (r.ruin.burned ? 'b' : '') : '',
+		r.building ?? '',
 	].join('|');
 }
 
@@ -100,5 +144,12 @@ export function cleanSettlementRecipe(v: unknown): SettlementRecipe | undefined 
 	const ruin = o.ruin as { decay?: unknown; burned?: unknown } | undefined;
 	if (ruin && typeof ruin.decay === 'number' && ruin.decay >= 0 && ruin.decay <= 1)
 		out.ruin = ruin.burned === true ? { decay: ruin.decay, burned: true } : { decay: ruin.decay };
+	if (o.building !== undefined) {
+		// An unknown building can't fall back to a settlement — that would
+		// draw something else entirely — so the recipe goes.
+		if (typeof o.building !== 'string' || !Object.hasOwn(SETTLEMENT_BUILDINGS, o.building))
+			return undefined;
+		out.building = o.building as SettlementBuilding;
+	}
 	return out;
 }

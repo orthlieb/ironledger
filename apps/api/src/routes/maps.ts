@@ -104,9 +104,17 @@ export const mapMarkerSchema = z.object({
         .enum(['auto', 'none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef'])
         .optional(),
       wallShape: z.enum(['round', 'square']).optional(),
+      ground: z.enum(['land', 'water']).optional(),
+      stilts: z.boolean().optional(),
       harbor: z.boolean().optional(),
       ruin: z
         .object({ decay: z.number().min(0).max(1), burned: z.boolean().optional() })
+        .optional(),
+      // One building instead of a settlement (the Buildings tab), by key —
+      // the client validates the key and draws it.
+      building: z
+        .string()
+        .regex(/^[a-z][a-z-]{0,31}$/)
         .optional(),
     })
     .optional(),

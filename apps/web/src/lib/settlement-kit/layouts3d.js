@@ -35,6 +35,7 @@ import {
 	stiltHut,
 	tent,
 	townhouse,
+	wallPiece,
 	wallSegment,
 	well,
 	witchHut,
@@ -712,64 +713,192 @@ function normalized(items) {
 	}));
 }
 
+/**
+ * The single pieces, as [key, name, make]: the reference row (pieces()) and
+ * the map's Buildings tab (building()). `make` draws the piece in a culture's
+ * Design; a Buildings-tab `seed` varies a house's details, and the reference
+ * row passes none. A null key is a reference piece the Buildings tab doesn't
+ * offer on its own — there a palisade or wooden gate is the Wall or Gatehouse
+ * in palisade, and a camp is a Settlement-builder size.
+ * @type {[string | null, string, (D: Design, seed?: number) => Placed[]][]}
+ */
+const PIECES = [
+	['gable-house', 'Gable house', (D, s) => [{ piece: gableHouse(D, { seed: s ?? 4 }) }]],
+	['side-house', 'Side house', (D, s) => [{ piece: sideHouse(D, { seed: s ?? 5 }) }]],
+	['round-tower', 'Round tower', (D) => [{ piece: roundTower(D) }]],
+	['bell-tower', 'Bell tower', (D) => [{ piece: belfry(D, { finial: true }) }]],
+	['church', 'Church', (D, s) => [{ piece: church(D, { seed: s }) }]],
+	['keep', 'Keep', (D) => [{ piece: keep(D) }]],
+	[
+		'market',
+		'Market',
+		(D) => {
+			// Drawn larger on its own so its line weight matches the other
+			// single pieces (line widths don't scale with a placed piece).
+			const m = market(D),
+				S = 1.7;
+			return [{ piece: m.ground }, ...m.items].map((it) => ({
+				...it,
+				s: (it.s ?? 1) * S,
+				x: (it.x ?? 0) * S,
+				y: (it.y ?? 0) * S,
+			}));
+		},
+	],
+	[
+		'longhouse',
+		'Longhouse',
+		(D, s) => [{ piece: sideHouse(D, { seed: s ?? 8, kind: 'longhouse' }) }],
+	],
+	['windmill', 'Windmill', (D) => [{ piece: windmill(D) }]],
+	['townhouse', 'Townhouse', (D) => [{ piece: townhouse(D) }]],
+	['barn', 'Barn', (D, s) => [{ piece: sideHouse(D, { seed: s ?? 9, kind: 'barn' }) }]],
+	['tavern', 'Tavern', (D, s) => [{ piece: sideHouse(D, { seed: s ?? 10, kind: 'tavern' }) }]],
+	[
+		'barracks',
+		'Barracks',
+		(D, s) => [{ piece: sideHouse(D, { seed: s ?? 11, kind: 'barracks' }) }],
+	],
+	[
+		'water-mill',
+		'Water mill',
+		(D, s) => [{ piece: sideHouse(D, { seed: s ?? 12, kind: 'mill' }) }],
+	],
+	[null, 'Camp', (D) => camp(D).items],
+	['mine', 'Mine', (D) => [{ piece: mine(D) }]],
+	['well', 'Well', (D) => [{ piece: well(D), s: 2.2 }]],
+	['lighthouse', 'Lighthouse', (D) => [{ piece: lighthouse(D) }]],
+	['caravel', 'Caravel', (D) => [{ piece: caravel(D) }]],
+	[
+		'warehouse',
+		'Warehouse',
+		(D, s) => [{ piece: sideHouse(D, { seed: s ?? 6, kind: 'warehouse' }) }],
+	],
+	['workshop', 'Workshop', (D, s) => [{ piece: sideHouse(D, { seed: s ?? 7, kind: 'workshop' }) }]],
+	['cathedral', 'Cathedral', (D) => [{ piece: cathedral(D) }]],
+	['clock-tower', 'Clock tower', (D) => [{ piece: clocktower(D) }]],
+	['tent', 'Tent', (D) => [{ piece: tent(D) }]],
+	['pavilion', 'Pavilion', (D) => [{ piece: pavilion(D) }]],
+	['gatehouse', 'Gatehouse', (D) => [{ piece: gatehouse(D) }]],
+	[null, 'Wooden gate', (D) => [{ piece: gatehouse(D, { wood: true }) }]],
+	['witch-hut', 'Witch hut', (D) => [{ piece: witchHut(D) }]],
+	['wall', 'Wall', (D) => [{ piece: wallSegment(D) }]],
+	['wall-tower', 'Wall tower', (D) => [{ piece: wallSegment(D, { tower: true }) }]],
+	[null, 'Palisade', (D) => [{ piece: wallSegment(D, { wood: true }) }]],
+	['dock', 'Dock', (D) => dock(D, { ship: true })],
+	['pier', 'Pier', (D) => dock(D)],
+];
+
 /** Single pieces for the reference row. @param {Design} D @returns {[string, Placed[]][]} */
 export function pieces(D) {
-	return /** @type {[string, Placed[]][]} */ (rawPieces(D)).map(([n, items]) => [
-		n,
-		normalized(items),
-	]);
+	return PIECES.map(([, name, make]) => [name, normalized(make(D))]);
 }
 
-/** @param {Design} D @returns {[string, Placed[]][]} */
-function rawPieces(D) {
+/** The Buildings tab's buildings, as [key, name], in menu order. */
+export const BUILDINGS = /** @type {[string, string][]} */ (
+	PIECES.flatMap(([key, name]) => (key ? [[key, name]] : []))
+);
+
+/** The wall buildings: drawn in the chosen wall type (see wallPiece()),
+ *  never enclosed. @type {Record<string, 'wall' | 'tower' | 'gate'>} */
+const WALL_RUNS = { wall: 'wall', 'wall-tower': 'tower', gatehouse: 'gate' };
+
+/**
+ * One building as a map icon — the Buildings tab: a single piece in the
+ * culture's style (a mixed culture's builder rolls its own, by `seed`),
+ * inside an optional wall of its own (`walls`, in the culture's wall shape),
+ * and optionally ruined. The wall buildings — wall, wall-tower, gatehouse —
+ * are drawn in `walls` instead (the culture's own wall type when none).
+ * @param {string} key one of BUILDINGS (unknown → a gable house)
+ * @param {Design} D
+ * @param {{walls?: Walls, seed?: number,
+ *   ruin?: import('./ruins3d.js').RuinOptions | null}} [o]
+ * @returns {Placed[]}
+ */
+export function building(key, D, o = {}) {
+	const seed = o.seed ?? 1;
+	const r = rng(seed * 7919 + 4099);
+	const own = mixDesign(D, r);
+	const walls = o.walls && o.walls !== 'auto' && o.walls !== 'none' ? o.walls : null;
+	/** @type {Placed[]} */
+	let items;
+	if (key in WALL_RUNS) {
+		const type = walls ?? (D.wall === 'none' ? 'stone' : D.wall);
+		items = wallPiece(own, type, WALL_RUNS[key]);
+	} else {
+		const make = (PIECES.find(([k]) => k === key) ?? PIECES[0])[2];
+		items = make(own, 1 + Math.floor(r() * 999_999));
+		if (walls) items = enclosed(D, items, walls);
+	}
+	if (D.ground === 'water') {
+		// Water-dwellers' buildings stand in a lagoon, as their settlements do.
+		const { x0, x1 } = placedExtent(items);
+		const rx = Math.max(16, (x1 - x0) / 2 + 8);
+		items = [{ piece: lagoon(rx, rx * 0.4), x: (x0 + x1) / 2 }, ...items];
+	}
+	if (o.ruin) items = ruinPlaced(items, { ...o.ruin, seed });
+	return normalized(items);
+}
+
+/** Horizontal extent of a placed group. @param {Placed[]} items */
+function placedExtent(items) {
+	let x0 = Infinity,
+		x1 = -Infinity;
+	for (const it of items) {
+		const e = extent(it.piece),
+			s = it.s ?? 1;
+		x0 = Math.min(x0, (it.x ?? 0) + e.x0 * s);
+		x1 = Math.max(x1, (it.x ?? 0) + e.x1 * s);
+	}
+	return Number.isFinite(x0) ? { x0, x1 } : { x0: 0, x1: 0 };
+}
+
+/**
+ * A building inside a small wall of its own: a ring — or a square, by the
+ * culture's wall shape — fitted round its footprint as a settlement's is,
+ * with two towers where the wall type carries them.
+ * @param {Design} D
+ * @param {Placed[]} items
+ * @param {Exclude<Walls, 'auto' | 'none'>} wall
+ * @returns {Placed[]}
+ */
+function enclosed(D, items, wall) {
+	const square = D.wallShape === 'square';
+	const { x0, x1 } = placedExtent(items);
+	const w = x1 - x0;
+	let wrx = Math.max(16, w / 2 + 6),
+		wry = wrx * 0.42;
+	let { W, dv } = squareFootprint(wrx, wry);
+	// Where the building stands: a one-row settlement's row.
+	const at = () =>
+		square
+			? [0.47 * dv[0] - (x0 + x1) / 2, 0.47 * dv[1] + 1]
+			: [-(x0 + x1) / 2, wry * (0.5 - 0.57)];
+	const fits = (/** @type {number} */ x, /** @type {number} */ y) => {
+		if (!square) return (x / (wrx - 3)) ** 2 + (y / (wry - 1.5)) ** 2 <= 1;
+		const t = y / dv[1]; // 0 = front wall … 1 = back wall
+		return t >= 0 && t <= 1 && Math.abs(x - t * dv[0]) <= W / 2 - 3;
+	};
+	for (let g = 0; g < 40; g++) {
+		const [ox, oy] = at();
+		if (fits(x0 + ox, oy) && fits(x1 + ox, oy) && fits(x1 + ox, oy + w * 0.25)) break;
+		wrx *= 1.04;
+		wry *= 1.04;
+		({ W, dv } = squareFootprint(wrx, wry));
+	}
+	const [ox, oy] = at();
+	const ring = ringWall(D, {
+		rx: wrx,
+		ry: wry,
+		h: 9,
+		type: wall,
+		shape: D.wallShape,
+		towers: Math.min(2, D.wallTowers),
+	});
 	return [
-		['Gable house', [{ piece: gableHouse(D, { seed: 4 }) }]],
-		['Side house', [{ piece: sideHouse(D, { seed: 5 }) }]],
-		['Round tower', [{ piece: roundTower(D) }]],
-		['Bell tower', [{ piece: belfry(D, { finial: true }) }]],
-		['Church', [{ piece: church(D) }]],
-		['Keep', [{ piece: keep(D) }]],
-		[
-			'Market',
-			(() => {
-				// Drawn larger on its own so its line weight matches the other
-				// single pieces (line widths don't scale with a placed piece).
-				const m = market(D),
-					S = 1.7;
-				return [{ piece: m.ground }, ...m.items].map((it) => ({
-					...it,
-					s: (it.s ?? 1) * S,
-					x: (it.x ?? 0) * S,
-					y: (it.y ?? 0) * S,
-				}));
-			})(),
-		],
-		['Longhouse', [{ piece: sideHouse(D, { seed: 8, kind: 'longhouse' }) }]],
-		['Windmill', [{ piece: windmill(D) }]],
-		['Townhouse', [{ piece: townhouse(D) }]],
-		['Barn', [{ piece: sideHouse(D, { seed: 9, kind: 'barn' }) }]],
-		['Tavern', [{ piece: sideHouse(D, { seed: 10, kind: 'tavern' }) }]],
-		['Barracks', [{ piece: sideHouse(D, { seed: 11, kind: 'barracks' }) }]],
-		['Water mill', [{ piece: sideHouse(D, { seed: 12, kind: 'mill' }) }]],
-		['Camp', camp(D).items],
-		['Mine', [{ piece: mine(D) }]],
-		['Well', [{ piece: well(D), s: 2.2 }]],
-		['Lighthouse', [{ piece: lighthouse(D) }]],
-		['Caravel', [{ piece: caravel(D) }]],
-		['Warehouse', [{ piece: sideHouse(D, { seed: 6, kind: 'warehouse' }) }]],
-		['Workshop', [{ piece: sideHouse(D, { seed: 7, kind: 'workshop' }) }]],
-		['Cathedral', [{ piece: cathedral(D) }]],
-		['Clock tower', [{ piece: clocktower(D) }]],
-		['Tent', [{ piece: tent(D) }]],
-		['Pavilion', [{ piece: pavilion(D) }]],
-		['Gatehouse', [{ piece: gatehouse(D) }]],
-		['Wooden gate', [{ piece: gatehouse(D, { wood: true }) }]],
-		['Witch hut', [{ piece: witchHut(D) }]],
-		['Wall', [{ piece: wallSegment(D) }]],
-		['Wall tower', [{ piece: wallSegment(D, { tower: true }) }]],
-		['Palisade', [{ piece: wallSegment(D, { wood: true }) }]],
-		['Dock', dock(D, { ship: true })],
-		['Pier', dock(D)],
+		...ring.back,
+		...items.map((it) => ({ ...it, x: (it.x ?? 0) + ox, y: (it.y ?? 0) + oy })),
+		...ring.front,
 	];
 }
 

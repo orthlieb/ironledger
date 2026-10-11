@@ -319,7 +319,20 @@ and every culture knob. It's used three ways:
     in the builder. Output is checked in; re-run the script after changing
     the kit.
 
-- **The Settlement builder** — the Choose Icon dialog's second tab
+- **The Buildings tab** — the Choose Icon dialog's second tab, between
+  Icons and Settlement builder (`SettlementBuilder.svelte` with
+  `kind="building"`). One building — any of the kit's 30 single pieces
+  (`SETTLEMENT_BUILDINGS`, from houses and towers to the cathedral, docks
+  and walls) — in any culture, where the baked single-building icons are
+  all the default culture with one-off tweaks. Walls (None by default)
+  puts a small ring or square wall of that type round it (in the chosen
+  wall shape); for the wall buildings — Wall, Wall tower, Gatehouse — it
+  is their material instead ("Built of", the culture's own by default),
+  with no wall shape. Ruined + decay (optionally burned) as below; the
+  reroll varies the building's details, and a mixed culture's builder.
+  Recents are kept apart (`il:recentBuildings`); opening Change Icon on a
+  marker with a building recipe lands here.
+- **The Settlement builder** — the Choose Icon dialog's third tab
   (`SettlementBuilder.svelte`). Just the essentials: size (tier, shown
   with its population; Freeport isn't offered — a culture with a high
   `variety` makes a freeport's mix of builders), culture, walls and wall
@@ -383,8 +396,10 @@ maze), palisades and earth banks brown (planks, speckled dirt).
 #### Recipe markers
 
 A marker with a generated icon carries `settlement: {tier, culture, seed,
-walls?, wallShape?, harbor?, ruin?: {decay,
-burned?}}` (`settlementRecipe.ts`) —
+walls?, wallShape?, ground?, stilts?, harbor?, ruin?: {decay, burned?},
+building?}` (`settlementRecipe.ts`) — `building` (a Buildings-tab key)
+draws that one building, enclosed by `walls`, in place of the settlement;
+
 a culture **key**, never the culture definition. `icon` still holds the
 plain fallback (`fallbackIcon(recipe)`, e.g. `settlement/town`) for older
 clients and the moment before the custom icon is drawn. At render time
@@ -396,7 +411,9 @@ generates the SVG in a Web Worker (`settlementWorker.ts`), primes
 does. Generation is deterministic, so the same recipe always draws the
 same icon. Picking a plain icon clears the recipe. The API schema
 (`mapMarkerSchema`) and the zip importer (`cleanSettlementRecipe`) both
-validate the recipe.
+validate the recipe — and the API schema strips any field it doesn't
+list, so a new recipe field goes there too (`ground` and `stilts` were
+once lost on save that way).
 
 #### Picker lightbox
 

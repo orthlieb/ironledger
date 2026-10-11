@@ -19,7 +19,12 @@ import { primeLayered } from '$lib/mapIconCache.js';
 import type { MapMarker } from '$lib/mapStore.svelte.js';
 import type { Culture } from '$lib/settlement-kit/generate.js';
 import { culturesLoaded, loadCultures, resolveCulture } from '$lib/cultureStore.svelte.js';
-import { recipeKey, type SettlementRecipe } from '$lib/settlementRecipe.js';
+import {
+	SETTLEMENT_BUILDINGS,
+	WALL_BUILDINGS,
+	recipeKey,
+	type SettlementRecipe,
+} from '$lib/settlementRecipe.js';
 
 /** Most generated icons kept (rerolls in the builder make a lot of them). */
 const MAX_CACHED = 120;
@@ -104,10 +109,17 @@ const TIER_LABEL: Record<string, string> = {
 	freeport: 'Freeport',
 };
 
-/** Human label for a recipe, e.g. "Ruined Nysis Town". */
+/** Human label for a recipe, e.g. "Ruined Nysis Town" or "Elves Round
+ *  tower, walled". */
 export function recipeLabel(recipe: SettlementRecipe, culture: Culture | null): string {
 	const name = culture?.name ?? 'Ironlander';
 	const state = recipe.ruin ? (recipe.ruin.burned ? 'Burned ' : 'Ruined ') : '';
+	const b = recipe.building;
+	if (b) {
+		const walled =
+			recipe.walls && recipe.walls !== 'none' && recipe.walls !== 'auto' && !WALL_BUILDINGS.has(b);
+		return `${state}${name} ${SETTLEMENT_BUILDINGS[b] ?? b}${walled ? ', walled' : ''}`;
+	}
 	return `${state}${name} ${TIER_LABEL[recipe.tier] ?? recipe.tier}`;
 }
 
