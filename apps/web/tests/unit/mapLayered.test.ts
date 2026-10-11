@@ -107,20 +107,35 @@ describe('layeredMarkup — small icons', () => {
 		expect(out).toContain(`fill="${FLAT_WALLS['wall-stone']}"`);
 		expect(out).toContain(`fill="${flatWall('wall-hedge-shade', colours.ink, mixHex)}"`);
 	});
-	it('leaves out the ring line-work without detail', () => {
+	it('leaves out the line-work texture without detail', () => {
 		const colours = roleColours(DEFAULT_LAYERED_PALETTE);
 		const ringed = [
 			{ role: 'wall-hedge-ring', d: 'M0 0L4 0L4 4Z' },
 			{ role: 'wall-hedge-cane', d: 'M1 1L2 1L2 2Z' },
 			{ role: 'wall-reef-groove', d: 'M5 1L6 1L6 2Z' },
+			{ role: 'ink-texture', d: 'M7 1L8 1L8 2Z' },
 		];
 		const small = layeredMarkup(ringed, colours, null, 's', false);
 		expect(small).toContain(`fill="${FLAT_WALLS['wall-hedge-ring']}"`);
 		expect(small).not.toContain('M1 1L2 1L2 2Z');
 		expect(small).not.toContain('M5 1L6 1L6 2Z');
+		expect(small).not.toContain('M7 1L8 1L8 2Z');
 		const large = layeredMarkup(ringed, colours, null, 's');
 		expect(large).toContain('url(#pat-wall-hedge-cane-s)');
 		expect(large).toContain('url(#pat-wall-reef-groove-s)');
+		expect(large).toContain(`<path fill="${colours.ink}" d="M7 1L8 1L8 2Z"/>`);
+	});
+	it('draws the walls of a Texture-off file flat at any size', () => {
+		const svg =
+			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10" data-texture="off">' +
+			'<path data-role="wall-stone" fill="#BEBCB6" d="M0 0L4 0L4 4Z"/>' +
+			'<path data-role="roof" fill="#aa0000" d="M5 0L9 0L9 4Z"/></svg>';
+		const paths = parseLayeredSvg(svg);
+		expect(paths[0]).toEqual({ role: 'wall-stone', d: 'M0 0L4 0L4 4Z', flat: true });
+		expect(paths[1].flat).toBeUndefined();
+		const out = layeredMarkup(paths, roleColours(DEFAULT_LAYERED_PALETTE), null, 'f');
+		expect(out).not.toContain('<pattern');
+		expect(out).toContain(`fill="${FLAT_WALLS['wall-stone']}"`);
 	});
 	it('scopes pattern ids per instance when given a scope', () => {
 		const out = layeredMarkup(paths, roleColours(DEFAULT_LAYERED_PALETTE), null, 'mk-7');

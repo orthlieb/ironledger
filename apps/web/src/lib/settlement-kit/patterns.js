@@ -629,10 +629,14 @@ export const FLAT_WALLS = {
 	'wall-bone-ring': '#E9E5DB',
 };
 
-/** The tinted line-work laid round ring walls (ringTextures.js). An icon
- *  drawn too small for its patterns leaves these out too: they're the
- *  same sub-pixel texture, and would only speckle the flat wall. */
-export const RING_LINE_ROLES = new Set([
+/** Layers of line-work texture: the tinted lines laid round ring walls
+ *  (ringTextures.js), and `ink-texture` — masonry courses, barn planks and
+ *  the stone, palisade and bone wall seams, drawn in ink. A culture with
+ *  Texture off draws none of them, and an icon drawn too small for its
+ *  patterns leaves them out too: they're the same sub-pixel texture, and
+ *  would only speckle the flat wall. */
+export const TEXTURE_ROLES = new Set([
+	'ink-texture',
 	'wall-hedge-cane',
 	'wall-reef-groove',
 	'wall-reef-vein',

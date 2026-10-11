@@ -18,7 +18,7 @@ import {
 	PATTERN_ROLES,
 	FLAT_WALLS,
 	PATTERN_SHADE,
-	RING_LINE_ROLES,
+	TEXTURE_ROLES,
 	patternDefs,
 } from '../../src/lib/settlement-kit/patterns.js';
 import { LAYERS, place, renderLayered } from '../../src/lib/settlement-kit/render.js';
@@ -94,6 +94,7 @@ const KNOBS = [
 		design: true,
 	},
 	{ group: 'Build', key: 'masonry', label: 'Masonry', type: 'check', design: true },
+	{ group: 'Build', key: 'texture', label: 'Texture', type: 'check', design: true },
 	{
 		group: 'Build',
 		key: 'variety',
@@ -583,6 +584,15 @@ function wallPatterns(roles) {
 	);
 }
 
+/** A wall's flat material colour, its -shade mixed toward the page's --ink.
+ *  @param {string} role */
+function flatFill(role) {
+	const hex = FLAT_WALLS[role.replace(/-shade$/, '')] ?? FLAT_WALLS['wall-stone'];
+	return role.endsWith('-shade')
+		? `color-mix(in srgb,${hex} ${PATTERN_SHADE * 100}%,var(--ink))`
+		: hex;
+}
+
 /** @param {Placed[]} items */
 function svg(items) {
 	const parts = items.flatMap((it) =>
@@ -596,13 +606,15 @@ function svg(items) {
 		outline: drawing.outline,
 		join: design.join,
 		softRadius: drawing.softRadius,
+		texture: design.texture,
 	});
 	const vb = [b.x - 3, b.y - 3, b.w + 6, b.h + 6].map((n) => n.toFixed(1)).join(' ');
 	const used = LAYERS.filter((l) => layers[l]);
-	const { defs, url } = wallPatterns(used);
+	// Texture off: every wall in its flat material colour, as the map draws it.
+	const { defs, url } = wallPatterns(design.texture ? used : []);
 	const paths = used.map((l) =>
 		PATTERN_ROLES.has(l)
-			? `<path data-role="${l}" style="fill:${url(l)}" d="${layers[l]}"/>`
+			? `<path data-role="${l}" style="fill:${design.texture ? url(l) : flatFill(l)}" d="${layers[l]}"/>`
 			: `<path data-role="${l}" d="${layers[l]}"/>`,
 	);
 	return `<svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${defs}<path class="sil" d="${silhouette}"/>${paths.join('')}</svg>`;
@@ -753,8 +765,12 @@ function bakedSvg(src) {
 	const live = src.querySelectorAll(':scope > path');
 	out.querySelectorAll(':scope > path').forEach((p, i) => {
 		const cs = getComputedStyle(live[i]);
-		// Pattern-filled walls keep their url(#…) — it's in the copied defs.
-		if (!cs.fill.startsWith('url(')) p.setAttribute('fill', toHex(cs.fill));
+		// Pattern-filled walls keep their url(#…) — it's in the copied defs;
+		// a flat wall's inline var()-coloured fill gives way to its value.
+		if (!cs.fill.startsWith('url(')) {
+			p.setAttribute('fill', toHex(cs.fill));
+			p.removeAttribute('style');
+		}
 		if (p.classList.contains('sil')) {
 			p.setAttribute('stroke', toHex(cs.stroke));
 			p.setAttribute('stroke-width', cs.strokeWidth);
@@ -866,9 +882,8 @@ function importCulture(raw) {
 
 /**
  * The marker-size strip draws its walls flat, and leaves out the line-work
- * round its ring walls, as the map does for small icons (a pattern finer
- * than a pixel only muddies the wall) — rules that beat the paths' inline
- * pattern fills.
+ * texture, as the map does for small icons (a pattern finer than a pixel
+ * only muddies the wall) — rules that beat the paths' inline pattern fills.
  */
 function flatStripWalls() {
 	const css =
@@ -879,7 +894,7 @@ function flatStripWalls() {
 					`#map .ic [data-role=${role}-shade]{fill:color-mix(in srgb,${hex} ${PATTERN_SHADE * 100}%,var(--ink))!important}`,
 			)
 			.join('') +
-		[...RING_LINE_ROLES].map((role) => `#map .ic [data-role=${role}]{display:none}`).join('');
+		[...TEXTURE_ROLES].map((role) => `#map .ic [data-role=${role}]{display:none}`).join('');
 	document.head.append(Object.assign(document.createElement('style'), { textContent: css }));
 }
 

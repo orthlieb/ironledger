@@ -257,8 +257,9 @@ marker path:
   ids scoped per rendered icon) in fixed material colours; an icon drawn
   too small for a texture to resolve — every ordinary map marker; callers
   pass `mapGlyphInner()` the rendered size — gets flat material colours on
-  its walls instead, without the hedge, coral, earth and bone line-work
-  laid round its ring walls. Markers draw them at the raster scale
+  its walls instead, without its line-work texture (masonry courses, barn
+  planks, the line-work round ring walls); an icon whose culture has
+  Texture off draws flat walls at any size. Markers draw them at the raster scale
   (`RASTER_ICON_SCALE`). The files are _generated_ — see "Settlement kit"
   below; don't hand-edit them.
 
@@ -343,8 +344,8 @@ apps/web`). Its presets are the culture plugins, baked in at build
 A culture is extension content: `cultures/<key>.json` in an extension
 (or `apps/api/data/cultures/` for the base game) holding `{key, name,
 note, design, palette}` — `design` is any subset of the kit's `Design`
-knobs (`pieces3d.js`), `palette` the eight colour roles — up to 43 knobs
-(23 numbers, 14 choices, 6 switches) and 8 colours in all. The full knob
+knobs (`pieces3d.js`), `palette` the eight colour roles — up to 44 knobs
+(23 numbers, 14 choices, 7 switches) and 8 colours in all. The full knob
 reference, with defaults and ranges, is in
 `src/lib/settlement-kit/README.md` → "Cultures". They're served merged at
 `/catalogue/cultures` (tagged with `source`) and loaded by

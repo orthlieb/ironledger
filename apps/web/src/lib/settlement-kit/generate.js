@@ -12,12 +12,13 @@
 // Layered SVG shape: one <path data-role="…"> per colour role (sil, wall,
 // wall-shade, wood, …, ink) carrying a real fill so the file also views on its
 // own, plus the palette on the root as data-palette="wall:#…;roof:#…". The app
-// recolours by role at render time (src/lib/mapLayered.ts).
+// recolours by role at render time (src/lib/mapLayered.ts). A culture with
+// Texture off adds data-texture="off": its walls draw flat, there too.
 // =============================================================================
 
 import { settlement, TEMPLATES } from './layouts3d.js';
 import { DEFAULT_DESIGN, upgradeDesign } from './pieces3d.js';
-import { PATTERN_ROLES, paletteTone, patternDefs } from './patterns.js';
+import { PATTERN_ROLES, flatWall, paletteTone, patternDefs } from './patterns.js';
 import { LAYERS, place, renderLayered } from './render.js';
 
 export { fallbackIcon } from './fallback.js';
@@ -87,6 +88,7 @@ function fills(p) {
 		water: p.water,
 		flag: p.flag,
 		ink: p.ink,
+		'ink-texture': p.ink,
 	};
 	f['wall-shade'] = mix(p.wall, p.ink, 0.8);
 	f['wood-shade'] = mix(p.wood, p.ink, 0.75);
@@ -103,10 +105,13 @@ function fills(p) {
  * @param {string} title
  * @param {Placed[]} items
  * @param {Palette} palette
- * @param {{join?: Design['join']}} [o] line joins (default: the default culture's)
+ * @param {{join?: Design['join'], texture?: boolean}} [o] line joins (default:
+ *   the default culture's); `texture: false` draws no textures — no line-work
+ *   texture layers, and every wall in its flat material colour
  * @returns {string}
  */
 export function toLayeredSvg(title, items, palette, o = {}) {
+	const texture = o.texture ?? true;
 	const parts = items.flatMap((it) =>
 		place(it.piece, { ...it, x: (it.x ?? 0) * K, y: (it.y ?? 0) * K, s: (it.s ?? 1) * K }),
 	);
@@ -117,6 +122,7 @@ export function toLayeredSvg(title, items, palette, o = {}) {
 	} = renderLayered(parts, {
 		outline: OUTLINE,
 		join: o.join ?? DEFAULT_DESIGN.join,
+		texture,
 	});
 	const f = fills(palette);
 	const pad = 2;
@@ -132,20 +138,22 @@ export function toLayeredSvg(title, items, palette, o = {}) {
 	const scope = patternScope(title);
 	const used = LAYERS.filter((l) => layers[l]);
 	const { defs, url } = patternDefs(
-		used.filter((l) => PATTERN_ROLES.has(l)),
+		texture ? used.filter((l) => PATTERN_ROLES.has(l)) : [],
 		(role) => paletteTone(role, palette.ink, mix),
 		scope,
 	);
+	/** @param {string} l */
+	const wallFill = (l) => (texture ? url(l) : flatWall(l, palette.ink, mix));
 	const paths = [
 		`  <path data-role="sil" fill="${palette.halo}" stroke="${palette.halo}" stroke-width="3" stroke-linejoin="round" d="${silhouette}"/>`,
 		...used.map(
 			(l) =>
-				`  <path data-role="${l}" fill="${PATTERN_ROLES.has(l) ? url(l) : f[l]}" d="${layers[l]}"/>`,
+				`  <path data-role="${l}" fill="${PATTERN_ROLES.has(l) ? wallFill(l) : f[l]}" d="${layers[l]}"/>`,
 		),
 	];
 	const safeTitle = title.replace(/[<>&"-]/g, ' ');
 	return (
-		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" data-palette="${pal}"><!--"${safeTitle}" — Iron Ledger settlement kit-->\n` +
+		`<svg xmlns="http://www.w3.org/2000/svg" viewBox="${vb}" data-palette="${pal}"${texture ? '' : ' data-texture="off"'}><!--"${safeTitle}" — Iron Ledger settlement kit-->\n` +
 		(defs ? `  ${defs}\n` : '') +
 		paths.join('\n') +
 		'\n</svg>\n'
@@ -209,6 +217,7 @@ export function generateSettlementSvg(recipe, culture) {
 		culture?.palette ?? PARCHMENT,
 		{
 			join: design.join,
+			texture: design.texture,
 		},
 	);
 }

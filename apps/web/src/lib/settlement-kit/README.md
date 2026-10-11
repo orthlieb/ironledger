@@ -121,8 +121,15 @@ pebbles as round dots, from a wider 12-unit speckle field of its own so no
 small tile repeats in rows. Those lines carry a `role`, so the renderer
 paints them in the material's own colour (`wall-hedge-cane`,
 `wall-reef-groove`, `wall-reef-vein`, `wall-earth-grit`,
-`wall-earth-pebble`, `wall-bone-grain`) instead of ink. Flat walls (square
-enclosures, gatehouse wings) keep the full tiles.
+`wall-earth-pebble`, `wall-bone-grain`) instead of ink. Stone courses,
+palisade seams and bone seams — like masonry courses and barn planks on
+buildings — stay ink but paint in a layer of their own, `ink-texture`.
+Flat walls (square enclosures, gatehouse wings) keep the full tiles.
+
+All of that line-work is texture (`TEXTURE_ROLES` in `patterns.js`): a
+culture with `texture` off draws none of it, its walls in flat material
+colours (`renderLayered(…, {texture: false})`), and a map icon drawn
+smaller than `PATTERN_MIN_PX` leaves it out too.
 
 The hedge and coral tiles are drawn procedurally, once at load; anything
 crossing a tile edge is repeated a tile over, so every tile is seamless.
@@ -146,7 +153,9 @@ shaded). `patternDefs(roles, paintFor, scope)` emits the `<defs>` and
   subtree never paints). Below `PATTERN_MIN_PX` screen pixels per icon
   unit — every ordinary map marker — walls draw flat in `FLAT_WALLS`
   instead, since a sub-pixel texture only muddies the wall, and the
-  tinted ring line-work (`RING_LINE_ROLES`) is left out.
+  line-work texture layers (`TEXTURE_ROLES`) are left out. An icon whose
+  culture has `texture` off carries `data-texture="off"` on its root and
+  draws its walls flat at any size.
 - The playground passes `var(--ink)` / `color-mix()` so shading follows
   its ink picker; its marker-size strip draws walls flat to match the map.
 
@@ -167,8 +176,8 @@ A culture plugin (`cultures/<key>.json` in an extension, or
 `apps/api/data/cultures/` for the base game) is
 `{key, name, note, design, palette}`. `design` is any subset of the
 `Design` knobs below, laid over `DEFAULT_DESIGN`; `palette` gives the eight
-colour roles. A culture is therefore up to **43 knobs** — 23 numbers, 14
-choices and 6 on/off switches — **plus 8 colours**. The shipped cultures
+colour roles. A culture is therefore up to **44 knobs** — 23 numbers, 14
+choices and 7 on/off switches — **plus 8 colours**. The shipped cultures
 set 15–26 knobs each (the Sample culture 36; Ironlanders is the default,
 with none).
 
@@ -186,7 +195,8 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 | `stature`   | 0.6–1.5 (**1**)                    | Building height (small folk < 1 < giants).                                                                                                                                                                                                                                      |
 | `scale`     | 0.7–1.8 (**1**)                    | Building size; bigger means fewer per layout.                                                                                                                                                                                                                                   |
 | `flourish`  | 0–1 (**0**)                        | Ornament: finials, eave knobs, ridge cresting, more flags.                                                                                                                                                                                                                      |
-| `masonry`   | on / **off**                       | Stone courses on house walls.                                                                                                                                                                                                                                                   |
+| `masonry`   | on / **off**                       | Stone-built: stone courses on house and tower walls, stone barns (not plank), no timber framing on a townhouse's ground floor.                                                                                                                                                  |
+| `texture`   | **on** / off                       | Draw textures: wall patterns, the line-work round ring walls, masonry courses, barn planks. Off draws every wall in its flat material colour — what a small map icon draws anyway.                                                                                              |
 | `variety`   | 0–1 (**0**)                        | A mixed culture (a freeport): the chance each house, free-standing tower and landmark rolls its own house type (gable-front, side-on, townhouse, longhouse, round hut or domed), storeys, tower cap, crenellated top, corbel, steeple, roof pitch and sweep, windows and doors. |
 
 **Houses**

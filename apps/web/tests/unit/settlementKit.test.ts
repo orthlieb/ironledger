@@ -42,7 +42,12 @@ import {
 	stiltHut,
 	upgradeDesign,
 } from '../../src/lib/settlement-kit/pieces3d.js';
-import { paletteTone, patternDefs } from '../../src/lib/settlement-kit/patterns.js';
+import {
+	FLAT_WALLS,
+	TEXTURE_ROLES,
+	paletteTone,
+	patternDefs,
+} from '../../src/lib/settlement-kit/patterns.js';
 import { renderLayered, place } from '../../src/lib/settlement-kit/render.js';
 
 type Design = typeof DEFAULT_DESIGN;
@@ -249,7 +254,54 @@ describe('ring wall texture', () => {
 		expect(roles('earth')).toContain('wall-earth-grit');
 		expect(roles('earth')).toContain('wall-earth-pebble');
 		expect(roles('bone').filter((r) => r === 'wall-bone-grain').length).toBeGreaterThan(20);
-		expect(roles('stone')).toHaveLength(0); // stone courses stay ink
+	});
+	it('draws stone courses, palisade seams and bone seams as ink texture', () => {
+		for (const wall of ['stone', 'palisade', 'bone'] as const) {
+			const tex = ringLines(wall).filter((l) => l.role === 'ink-texture');
+			expect(tex.length, wall).toBeGreaterThan(40);
+		}
+	});
+});
+
+describe('texture', () => {
+	const culture = (design: Partial<Design>) => ({
+		key: 't',
+		name: 'Texture test',
+		design: { masonry: true, wallShape: 'round' as const, ...design },
+		palette: PARCHMENT,
+	});
+	const town = (wall: Design['wall'], texture?: boolean) =>
+		generateSettlementSvg(
+			{ tier: 'town', culture: 't', seed: 3 },
+			culture({ wall, ...(texture === undefined ? {} : { texture }) }),
+		);
+	const roles = (svg: string) => [...svg.matchAll(/data-role="([\w-]+)"/g)].map((m) => m[1]);
+	it('is on by default: masonry and ring line-work draw in their own layers', () => {
+		expect(DEFAULT_DESIGN.texture).toBe(true);
+		const stone = town('stone');
+		expect(roles(stone)).toContain('ink-texture');
+		expect(stone).toContain('<pattern');
+		expect(stone).not.toContain('data-texture');
+		expect(roles(town('hedge'))).toContain('wall-hedge-cane');
+	});
+	it.each(['stone', 'hedge', 'reef', 'palisade', 'earth', 'bone'] as const)(
+		'off: a %s town draws no texture layers and flat walls',
+		(wall) => {
+			const svg = town(wall, false);
+			expect(svg).toContain('data-texture="off"');
+			expect(svg).not.toContain('<pattern');
+			expect(svg).not.toContain('url(#');
+			expect(roles(svg).filter((r) => TEXTURE_ROLES.has(r))).toEqual([]);
+			const ring = roles(svg).find((r) => r.endsWith('-ring'));
+			expect(ring, 'a ring wall').toBeDefined();
+			expect(svg).toContain(`data-role="${ring}" fill="${FLAT_WALLS[ring!]}"`);
+		},
+	);
+	it('leaves masonry its building materials when off: a stone barn stays stone', () => {
+		const barn = (texture: boolean) =>
+			pieces({ ...DEFAULT_DESIGN, masonry: true, texture }).find(([n]) => n === 'Barn')?.[1][0]
+				.piece ?? [];
+		expect(barn(false).some((p) => p.role === 'wood')).toBe(false);
 	});
 });
 
