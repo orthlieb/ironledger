@@ -107,6 +107,21 @@ describe('layeredMarkup — small icons', () => {
 		expect(out).toContain(`fill="${FLAT_WALLS['wall-stone']}"`);
 		expect(out).toContain(`fill="${flatWall('wall-hedge-shade', colours.ink, mixHex)}"`);
 	});
+	it('leaves out the ring line-work without detail', () => {
+		const colours = roleColours(DEFAULT_LAYERED_PALETTE);
+		const ringed = [
+			{ role: 'wall-hedge-ring', d: 'M0 0L4 0L4 4Z' },
+			{ role: 'wall-hedge-cane', d: 'M1 1L2 1L2 2Z' },
+			{ role: 'wall-reef-groove', d: 'M5 1L6 1L6 2Z' },
+		];
+		const small = layeredMarkup(ringed, colours, null, 's', false);
+		expect(small).toContain(`fill="${FLAT_WALLS['wall-hedge-ring']}"`);
+		expect(small).not.toContain('M1 1L2 1L2 2Z');
+		expect(small).not.toContain('M5 1L6 1L6 2Z');
+		const large = layeredMarkup(ringed, colours, null, 's');
+		expect(large).toContain('url(#pat-wall-hedge-cane-s)');
+		expect(large).toContain('url(#pat-wall-reef-groove-s)');
+	});
 	it('scopes pattern ids per instance when given a scope', () => {
 		const out = layeredMarkup(paths, roleColours(DEFAULT_LAYERED_PALETTE), null, 'mk-7');
 		expect(out).toContain('id="pat-wall-stone-mk-7"');

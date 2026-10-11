@@ -625,15 +625,21 @@ export const FLAT_WALLS = {
 	'wall-wood-ring': '#9A6B42',
 	'wall-hedge-ring': '#6A8749',
 	'wall-reef-ring': '#DEDCD6',
-	'wall-hedge-cane': MATERIALS.hedge.cane,
-	'wall-reef-groove': MATERIALS.coral.wall,
-	'wall-reef-vein': MATERIALS.coral.groove,
 	'wall-earth-ring': '#8A6843',
 	'wall-bone-ring': '#E9E5DB',
-	'wall-earth-grit': MATERIALS.earth.dark,
-	'wall-earth-pebble': MATERIALS.earth.light,
-	'wall-bone-grain': MATERIALS.bone.grain,
 };
+
+/** The tinted line-work laid round ring walls (ringTextures.js). An icon
+ *  drawn too small for its patterns leaves these out too: they're the
+ *  same sub-pixel texture, and would only speckle the flat wall. */
+export const RING_LINE_ROLES = new Set([
+	'wall-hedge-cane',
+	'wall-reef-groove',
+	'wall-reef-vein',
+	'wall-earth-grit',
+	'wall-earth-pebble',
+	'wall-bone-grain',
+]);
 
 /**
  * Flat fill for a patterned wall role; a -shade role mixes toward ink like

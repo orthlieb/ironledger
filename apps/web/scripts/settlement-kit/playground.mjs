@@ -18,6 +18,7 @@ import {
 	PATTERN_ROLES,
 	FLAT_WALLS,
 	PATTERN_SHADE,
+	RING_LINE_ROLES,
 	patternDefs,
 } from '../../src/lib/settlement-kit/patterns.js';
 import { LAYERS, place, renderLayered } from '../../src/lib/settlement-kit/render.js';
@@ -864,18 +865,21 @@ function importCulture(raw) {
 }
 
 /**
- * The marker-size strip draws its walls flat, as the map does for small
- * icons (a pattern finer than a pixel only muddies the wall) — rules that
- * beat the paths' inline pattern fills.
+ * The marker-size strip draws its walls flat, and leaves out the line-work
+ * round its ring walls, as the map does for small icons (a pattern finer
+ * than a pixel only muddies the wall) — rules that beat the paths' inline
+ * pattern fills.
  */
 function flatStripWalls() {
-	const css = Object.entries(FLAT_WALLS)
-		.map(
-			([role, hex]) =>
-				`#map .ic [data-role=${role}]{fill:${hex}!important}` +
-				`#map .ic [data-role=${role}-shade]{fill:color-mix(in srgb,${hex} ${PATTERN_SHADE * 100}%,var(--ink))!important}`,
-		)
-		.join('');
+	const css =
+		Object.entries(FLAT_WALLS)
+			.map(
+				([role, hex]) =>
+					`#map .ic [data-role=${role}]{fill:${hex}!important}` +
+					`#map .ic [data-role=${role}-shade]{fill:color-mix(in srgb,${hex} ${PATTERN_SHADE * 100}%,var(--ink))!important}`,
+			)
+			.join('') +
+		[...RING_LINE_ROLES].map((role) => `#map .ic [data-role=${role}]{display:none}`).join('');
 	document.head.append(Object.assign(document.createElement('style'), { textContent: css }));
 }
 

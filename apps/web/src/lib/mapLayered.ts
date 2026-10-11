@@ -17,7 +17,13 @@
 // lazy fetch + cache lives in mapIconCache.ts.
 // =============================================================================
 
-import { PATTERN_ROLES, flatWall, paletteTone, patternDefs } from './settlement-kit/patterns.js';
+import {
+	PATTERN_ROLES,
+	RING_LINE_ROLES,
+	flatWall,
+	paletteTone,
+	patternDefs,
+} from './settlement-kit/patterns.js';
 
 /** Base colours of a layered icon; shaded variants are derived. */
 export interface LayeredPalette {
@@ -156,7 +162,8 @@ export function layeredMarkup(
 ): string {
 	// Pattern defs for any wall-roled path the icon uses — or none at all
 	// when the icon is too small for a pattern to read (`detail` false): its
-	// walls then take flat material colours. Pass a per-instance `scope`:
+	// walls then take flat material colours, and the line-work laid round
+	// its ring walls is left out. Pass a per-instance `scope`:
 	// shared ids resolve to the first copy in the document, and a copy
 	// inside a display:none subtree (a closed picker, say) never paints.
 	scope ??= colours.ink.replace('#', '');
@@ -173,6 +180,7 @@ export function layeredMarkup(
 			if (haloAttrs !== null) s += `<path fill="${colours.sil}"${haloAttrs} d="${d}"/>`;
 			continue;
 		}
+		if (!detail && RING_LINE_ROLES.has(role)) continue;
 		if (PATTERN_WALL_ROLES.has(role)) {
 			const fill = detail ? `url(#pat-${role}-${scope})` : flatWall(role, colours.ink, mixHex);
 			s += `<path fill="${fill}" d="${d}"/>`;

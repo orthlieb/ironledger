@@ -145,7 +145,8 @@ shaded). `patternDefs(roles, paintFor, scope)` emits the `<defs>` and
   the first copy in the document, and a copy inside a `display:none`
   subtree never paints). Below `PATTERN_MIN_PX` screen pixels per icon
   unit — every ordinary map marker — walls draw flat in `FLAT_WALLS`
-  instead, since a sub-pixel texture only muddies the wall.
+  instead, since a sub-pixel texture only muddies the wall, and the
+  tinted ring line-work (`RING_LINE_ROLES`) is left out.
 - The playground passes `var(--ink)` / `color-mix()` so shading follows
   its ink picker; its marker-size strip draws walls flat to match the map.
 

@@ -257,7 +257,8 @@ marker path:
   ids scoped per rendered icon) in fixed material colours; an icon drawn
   too small for a texture to resolve — every ordinary map marker; callers
   pass `mapGlyphInner()` the rendered size — gets flat material colours on
-  its walls instead. Markers draw them at the raster scale
+  its walls instead, without the hedge, coral, earth and bone line-work
+  laid round its ring walls. Markers draw them at the raster scale
   (`RASTER_ICON_SCALE`). The files are _generated_ — see "Settlement kit"
   below; don't hand-edit them.
 
