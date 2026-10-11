@@ -13,6 +13,7 @@
 // =============================================================================
 
 import { archOpening, circle, crenellated, lancet, rect, rng } from './geom.js';
+import { RING_TEXTURES } from './ringTextures.js';
 import { place } from './render.js';
 
 /** @typedef {import('./render.js').Part} Part */
@@ -2221,12 +2222,14 @@ export function ringWall(D, o = {}) {
 	// with joints, or plank seams, spaced evenly round it so they bunch
 	// toward the sides as the wall foreshortens (as on round towers) — over
 	// a plain body tile (the -ring roles in patterns.js).
-	const faceRole =
-		role === 'wall-stone'
-			? /** @type {const} */ ('wall-stone-ring')
-			: role === 'wall-wood'
-				? /** @type {const} */ ('wall-wood-ring')
-				: role;
+	/** @type {Record<string, Part['role']>} */
+	const RING_ROLE = {
+		'wall-stone': 'wall-stone-ring',
+		'wall-wood': 'wall-wood-ring',
+		'wall-hedge': 'wall-hedge-ring',
+		'wall-reef': 'wall-reef-ring',
+	};
+	const faceRole = (role && RING_ROLE[role]) ?? role;
 	/** Degrees round the ring per 4.4-unit stone. */
 	const stoneStep = (4.4 / rx / Math.PI) * 180;
 	/** The ring's own texture between angles a0 and a1 (lines; clipped to the face). */
@@ -2235,8 +2238,11 @@ export function ringWall(D, o = {}) {
 		const out = [];
 		const at = (/** @type {number} */ deg, /** @type {number} */ y) =>
 			/** @type {Pt} */ ([rx * Math.cos(rad(deg)), ry * Math.sin(rad(deg)) + y]);
+		// The wall's tallest point over the span (a bow can crest it above h).
+		let top = 0;
+		for (let k = 0; k <= 8; k++) top = Math.max(top, hAt(a0 + ((a1 - a0) * k) / 8));
+		top += 1;
 		if (faceRole === 'wall-stone-ring') {
-			const top = h * 1.6; // a convex bow can crest the wall above h
 			for (let c = 2.4, row = 0; c < top + 2.4; c += 2.4, row++) {
 				if (c < top)
 					out.push({
@@ -2250,6 +2256,26 @@ export function ringWall(D, o = {}) {
 					if (Math.abs(Math.sin(rad(a))) > 0.3)
 						out.push({ pts: [at(a, c - 2.4), at(a, c)], w: 0.45 });
 			}
+		} else if (faceRole && faceRole in RING_TEXTURES) {
+			// An irregular texture (hedge, coral): the tile's line-work laid
+			// end to end round the ring by arc length, row on row up the wall.
+			const tex = RING_TEXTURES[/** @type {keyof typeof RING_TEXTURES} */ (faceRole)];
+			const T = tex.size;
+			const u0 = rad(a0) * rx,
+				u1 = rad(a1) * rx;
+			for (let i = Math.floor(u0 / T); i * T < u1; i++)
+				for (let j = 0; j * T < top; j++)
+					for (const l of tex.lines) {
+						if (i * T + l.x0 > u1 + 1 || i * T + l.x1 < u0 - 1 || j * T + l.y0 > top) continue;
+						out.push({
+							pts: l.pts.map(([x, y]) => {
+								const a = (i * T + x) / rx;
+								return /** @type {Pt} */ ([rx * Math.cos(a), ry * Math.sin(a) + j * T + y]);
+							}),
+							w: l.w,
+							role: /** @type {Part['role']} */ (l.role),
+						});
+					}
 		} else if (faceRole === 'wall-wood-ring') {
 			// A seam at each notch between the stake tips topEdge() draws.
 			const n = Math.max(1, Math.round((Math.abs(a1 - a0) * Math.PI * rx) / 180 / STAKE));

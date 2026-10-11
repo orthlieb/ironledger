@@ -35,8 +35,10 @@ import ClipperLib from 'clipper-lib';
 
 /** @typedef {import('./geom.js').Pt} Pt */
 /** @typedef {import('./geom.js').Poly} Poly */
-/** @typedef {{pts: Poly, w?: number, round?: boolean, outline?: boolean}} Line */
-/** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'wall-wood' | 'wall-earth' | 'wall-bone' | 'wall-stone-ring' | 'wall-wood-ring' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
+/** `role`: paint the line in that colour role instead of ink (a tinted
+ *  texture line, e.g. a coral wall's grey grooves).
+ *  @typedef {{pts: Poly, w?: number, round?: boolean, outline?: boolean, role?: Role}} Line */
+/** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'wall-wood' | 'wall-earth' | 'wall-bone' | 'wall-stone-ring' | 'wall-wood-ring' | 'wall-hedge-ring' | 'wall-reef-ring' | 'wall-hedge-cane' | 'wall-reef-groove' | 'wall-reef-vein' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
 /** `sharp`: keep the part's corners crisp whatever the drawing's join (flag
  *  cloth — a soft join would melt a pennant's tip into a blob).
  *  @typedef {{solid: Poly[], lines?: Line[], shadeLines?: Line[], fills?: Poly[], cuts?: Line[], free?: Line[], mask?: Poly, role?: Role, shaded?: boolean, shadeArea?: Poly, terrain?: boolean, sharp?: boolean}} Part */
@@ -155,18 +157,31 @@ function offset(paths, d, round = false, miter = 1.6) {
  * @returns {CPaths}
  */
 function stroke(lines, round = false, outlineW = OUTLINE) {
+	// Lines of one style (width, joins) are offset together: ClipperOffset
+	// unions what it emits, so one pass per style replaces a pass per line.
+	/** @type {Map<string, {co: any, d: number}>} */
+	const groups = new Map();
+	for (const l of lines) {
+		const r = !!(l.round || round);
+		const d = ((l.outline ? outlineW : (l.w ?? DETAIL)) / 2) * S;
+		const key = `${r}:${d}`;
+		let g = groups.get(key);
+		if (!g) {
+			g = { co: new ClipperLib.ClipperOffset(2, 0.05 * S), d };
+			groups.set(key, g);
+		}
+		g.co.AddPath(
+			toC(l.pts),
+			r ? ClipperLib.JoinType.jtRound : ClipperLib.JoinType.jtMiter,
+			r ? ClipperLib.EndType.etOpenRound : ClipperLib.EndType.etOpenButt,
+		);
+	}
 	/** @type {CPaths[]} */
 	const out = [];
-	for (const l of lines) {
-		const co = new ClipperLib.ClipperOffset(2, 0.05 * S);
-		co.AddPath(
-			toC(l.pts),
-			l.round || round ? ClipperLib.JoinType.jtRound : ClipperLib.JoinType.jtMiter,
-			l.round || round ? ClipperLib.EndType.etOpenRound : ClipperLib.EndType.etOpenButt,
-		);
+	for (const { co, d } of groups.values()) {
 		/** @type {CPaths} */
 		const sol = [];
-		co.Execute(sol, ((l.outline ? outlineW : (l.w ?? DETAIL)) / 2) * S);
+		co.Execute(sol, d);
 		out.push(sol);
 	}
 	return unionAll(out);
@@ -257,6 +272,13 @@ export const LAYERS = /** @type {const} */ ([
 	'wall-stone-ring-shade',
 	'wall-wood-ring',
 	'wall-wood-ring-shade',
+	'wall-hedge-ring',
+	'wall-hedge-ring-shade',
+	'wall-reef-ring',
+	'wall-reef-ring-shade',
+	'wall-hedge-cane',
+	'wall-reef-groove',
+	'wall-reef-vein',
 	'wood',
 	'wood-shade',
 	'earth',
@@ -305,11 +327,16 @@ export function renderLayered(parts, opts = {}) {
 		const inner = offset(solid, -half, round && !sharp, miter);
 		let ink = minus(outer, inner);
 		const fillInk = p.fills?.length ? intersect(rawUnion(p.fills), outer) : [];
-		if (p.lines?.length)
+		const inkLines = p.lines?.filter((l) => !l.role);
+		if (inkLines?.length)
 			ink = union(
 				ink,
-				minus(intersect(stroke(p.lines, false, half * 2), inner), offset(fillInk, 0.6)),
+				minus(intersect(stroke(inkLines, false, half * 2), inner), offset(fillInk, 0.6)),
 			);
+		/** Tinted lines, by role: painted in their own layer, inside the face. */
+		/** @type {Map<string, Line[]>} */
+		const tints = new Map();
+		for (const l of p.lines ?? []) if (l.role) tints.set(l.role, [...(tints.get(l.role) ?? []), l]);
 		const shadeClip = p.shaded ? inner : p.shadeArea ? intersect(inner, [toC(p.shadeArea)]) : [];
 		if (p.shadeLines?.length && shadeClip.length)
 			ink = union(
@@ -321,6 +348,7 @@ export function renderLayered(parts, opts = {}) {
 		if (mask) free = intersect(free, mask);
 		ink = union(ink, free);
 		acc.ink.push(minus(ink, occ));
+		for (const [r, ls] of tints) acc[r].push(minus(intersect(stroke(ls), inner), occ));
 
 		const face = minus(solid, occ);
 		const role = p.role ?? 'wall';

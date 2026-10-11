@@ -119,13 +119,16 @@ describe('wall patterns', () => {
 	// Each pattern-filled wall type should emit a <pattern> def and a
 	// pattern-filled wall path. Guards against a regression where the kit
 	// quietly reverts to flat fills (which would read as "lost its texture").
-	// Stone and palisade rings take a plain body tile (their courses / seams
-	// are drawn as lines round the ring); square walls keep the full tile.
+	// Stone, palisade, hedge and coral rings take a body tile (their courses,
+	// seams, canes and grooves are drawn as lines round the ring); square
+	// walls keep the full tile.
 	it.each([
 		['stone', 'round', 'wall-stone-ring'],
 		['stone', 'square', 'wall-stone'],
-		['hedge', 'round', 'wall-hedge'],
-		['reef', 'round', 'wall-reef'],
+		['hedge', 'round', 'wall-hedge-ring'],
+		['hedge', 'square', 'wall-hedge'],
+		['reef', 'round', 'wall-reef-ring'],
+		['reef', 'square', 'wall-reef'],
 		['palisade', 'round', 'wall-wood-ring'],
 		['palisade', 'square', 'wall-wood'],
 		['earth', 'round', 'wall-earth'],
@@ -226,13 +229,22 @@ function netArea(d: string): number {
 }
 
 describe('ring wall texture', () => {
-	const lineCount = (type: Design['wall']) =>
+	const ringLines = (type: Design['wall']) =>
 		ringWall({ ...DEFAULT_DESIGN, wall: type })
 			.front.flatMap((it) => it.piece)
-			.reduce((n, p) => n + (p.lines?.length ?? 0), 0);
-	it('draws stone courses and palisade seams round the ring, but not hedge', () => {
-		expect(lineCount('stone')).toBeGreaterThan(lineCount('hedge') + 40);
-		expect(lineCount('palisade')).toBeGreaterThan(lineCount('hedge') + 40);
+			.flatMap((p) => p.lines ?? []);
+	it('draws stone courses and palisade seams round the ring', () => {
+		// Course and seam lines are drawn at 0.45 (hatching and outlines aren't).
+		for (const wall of ['stone', 'palisade'] as const)
+			expect(ringLines(wall).filter((l) => l.w === 0.45).length, wall).toBeGreaterThan(40);
+	});
+	it('paints hedge canes and coral grooves round the ring in their own colours', () => {
+		const roles = (type: Design['wall']) =>
+			ringLines(type).flatMap((l) => (l.role ? [l.role] : []));
+		expect(roles('hedge').filter((r) => r === 'wall-hedge-cane').length).toBeGreaterThan(20);
+		expect(roles('reef').filter((r) => r === 'wall-reef-groove').length).toBeGreaterThan(20);
+		expect(roles('reef')).toContain('wall-reef-vein');
+		expect(roles('stone')).toHaveLength(0); // stone courses stay ink
 	});
 });
 

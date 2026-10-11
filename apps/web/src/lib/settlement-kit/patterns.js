@@ -488,6 +488,55 @@ const woodRing = {
 	},
 };
 
+/** Ring-wall hedge: the leafy body — mass, leaves and midribs, which an
+ *  irregular texture needn't bend — while the long bramble canes are drawn
+ *  as lines round the ring (RING_TEXTURES), arching with the wall. */
+/** @type {PatternDef} */
+const hedgeRing = {
+	w: HEDGE,
+	h: HEDGE,
+	scale: 2,
+	body: ({ tone }) => {
+		const m = MATERIALS.hedge;
+		return (
+			`<rect width="${HEDGE}" height="${HEDGE}" style="fill:${tone(m.body)}"/>` +
+			`<path style="fill:${tone(m.mass)};fill-opacity:0.6" d="${BRAMBLE.mass}"/>` +
+			`<path style="fill:${tone(m.leaf)}" d="${BRAMBLE.leaves}"/>` +
+			`<path style="stroke:${tone(m.rib)};stroke-width:0.1;fill:none;stroke-opacity:0.8" d="${BRAMBLE.ribs}"/>`
+		);
+	},
+};
+
+/** Ring-wall coral: the white-and-grey body; the maze's grooves are drawn
+ *  as lines round the ring (RING_TEXTURES). */
+/** @type {PatternDef} */
+const reefRing = {
+	w: 4,
+	h: 4,
+	body: ({ tone }) => `<rect width="4" height="4" style="fill:${tone(MATERIALS.coral.body)}"/>`,
+};
+
+/**
+ * The hedge and coral tiles' own path data, for ring walls that lay it
+ * round the ring as lines (ringTextures.js): tile size in tile units, the
+ * tile's patternTransform scale, and the paths.
+ */
+export const TILE_ART = {
+	hedge: { tile: HEDGE, scale: 2, cane: BRAMBLE.cane },
+	coral: { tile: CORAL, scale: 2.5, maze: CORAL_MAZE, band: CORAL_BAND },
+};
+
+/** A flat tile in one fixed colour — for tinted lines (ringTextures.js),
+ *  which paint in a material's own colour rather than ink.
+ *  @param {string} colour @returns {PatternDef} */
+function flat(colour) {
+	return {
+		w: 4,
+		h: 4,
+		body: ({ tone }) => `<rect width="4" height="4" style="fill:${tone(colour)}"/>`,
+	};
+}
+
 /** @type {Record<string, PatternDef>} */
 export const PATTERNS = {
 	'wall-stone': stone,
@@ -506,6 +555,13 @@ export const PATTERNS = {
 	'wall-stone-ring-shade': stoneRing,
 	'wall-wood-ring': woodRing,
 	'wall-wood-ring-shade': woodRing,
+	'wall-hedge-ring': hedgeRing,
+	'wall-hedge-ring-shade': hedgeRing,
+	'wall-reef-ring': reefRing,
+	'wall-reef-ring-shade': reefRing,
+	'wall-hedge-cane': flat(MATERIALS.hedge.cane),
+	'wall-reef-groove': flat(MATERIALS.coral.wall),
+	'wall-reef-vein': flat(MATERIALS.coral.groove),
 };
 
 /** How much of each colour a -shade tile keeps (the rest is ink) — the
@@ -542,6 +598,11 @@ export const FLAT_WALLS = {
 	'wall-bone': '#E9E5DB',
 	'wall-stone-ring': '#BEBCB6',
 	'wall-wood-ring': '#9A6B42',
+	'wall-hedge-ring': '#6A8749',
+	'wall-reef-ring': '#DEDCD6',
+	'wall-hedge-cane': MATERIALS.hedge.cane,
+	'wall-reef-groove': MATERIALS.coral.wall,
+	'wall-reef-vein': MATERIALS.coral.groove,
 };
 
 /**
