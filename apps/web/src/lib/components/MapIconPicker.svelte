@@ -6,10 +6,11 @@
 	 * colour. Purely presentational: it owns its own search state and reports
 	 * the picked icon key back to MapDialog via `onpick`.
 	 *
-	 * Two tabs (bits-ui Tabs): Icons — the manifest grid, where hovering a
-	 * tile lightboxes it at a readable size — and Settlement builder, which
-	 * generates a settlement icon from a recipe (SettlementBuilder). Opening
-	 * on a marker that already has a recipe lands on the builder.
+	 * Three tabs (bits-ui Tabs): Icons — the manifest grid, where hovering a
+	 * tile lightboxes it at a readable size — then Buildings and Settlement
+	 * builder, which generate an icon from a recipe (SettlementBuilder, one
+	 * building or a whole settlement) in any culture. Opening on a marker
+	 * that already has a recipe lands on the tab that made it.
 	 *
 	 * The `.mp-icon-*` styles live (as `:global`) in MapDialog's <style> — this
 	 * component is only ever rendered by MapDialog, so those rules are always
@@ -52,7 +53,7 @@
 		currentSettlement?: SettlementRecipe;
 		/** Called with the chosen icon manifest key ('' for the No-icon tile). */
 		onpick: (key: string) => void;
-		/** Called with the recipe the builder tab's "Use this" made. */
+		/** Called with the recipe a builder tab's "Use this" made. */
 		onpicksettlement: (recipe: SettlementRecipe) => void;
 		/** Called when the dialog is dismissed. */
 		onclose: () => void;
@@ -63,7 +64,7 @@
 	let activeCategories = $state(new Set<string>());
 	let filtersOpen = $state(false);
 	let stackDepth = $state(1);
-	let tab = $state<'icons' | 'builder'>('icons');
+	let tab = $state<'icons' | 'buildings' | 'builder'>('icons');
 	let useButton = $state<HTMLButtonElement | null>(null);
 	let dialogEl = $state<HTMLElement | null>(null);
 
@@ -110,20 +111,21 @@
 	});
 
 	// Reset the search + category filters each time the picker opens, and
-	// land on the builder when the marker's icon is already generated.
+	// land on the tab that made the marker's icon when it's generated.
 	$effect(() => {
 		if (open) {
 			iconSearch = '';
 			activeCategories = new Set();
 			filtersOpen = false;
-			tab = untrack(() => currentSettlement) ? 'builder' : 'icons';
+			const made = untrack(() => currentSettlement);
+			tab = made ? (made.building ? 'buildings' : 'builder') : 'icons';
 			lightbox = null;
 		}
 	});
 
 	/** Focus what the tab is for: the search field, or "Use this". */
 	function focusTab() {
-		setTimeout(() => (tab === 'builder' ? useButton : iconSearchInputEl)?.focus(), 0);
+		setTimeout(() => (tab === 'icons' ? iconSearchInputEl : useButton)?.focus(), 0);
 	}
 
 	// ─── Hover lightbox ─────────────────────────────────────────────────
@@ -190,7 +192,7 @@
 			class="mp-icon-dialog"
 			style="z-index: {contentZ(stackDepth)}"
 			onOpenAutoFocus={(e) => {
-				// Focus the search input — or, on the builder tab, "Use this"
+				// Focus the search input — or, on a builder tab, "Use this"
 				// (CLAUDE.md focus rule).
 				e.preventDefault();
 				focusTab();
@@ -211,7 +213,12 @@
 			>
 				<Tabs.List class="mp-icon-tabs">
 					<Tabs.Trigger value="icons" class="mp-icon-tab">Icons</Tabs.Trigger>
-					<Tabs.Trigger value="builder" class="mp-icon-tab">Settlement builder</Tabs.Trigger>
+					<Tabs.Trigger value="buildings" class="mp-icon-tab">Buildings</Tabs.Trigger>
+					<Tabs.Trigger value="builder" class="mp-icon-tab" aria-label="Settlement builder">
+						<!-- Shortened on a phone so three tabs fit on one line. -->
+						<span class="mp-icon-tab-long">Settlement builder</span>
+						<span class="mp-icon-tab-short">Settlements</span>
+					</Tabs.Trigger>
 				</Tabs.List>
 				<Tabs.Content value="icons" class="mp-icon-panel">
 					<div class="mp-icon-search-row">
@@ -274,11 +281,22 @@
 						{/if}
 					</div>
 				</Tabs.Content>
+				<Tabs.Content value="buildings" class="mp-icon-panel mp-icon-body">
+					{#if open && tab === 'buildings'}
+						<SettlementBuilder
+							kind="building"
+							color={selectedColor}
+							initial={currentSettlement?.building ? currentSettlement : undefined}
+							onuse={onpicksettlement}
+							bind:useButton
+						/>
+					{/if}
+				</Tabs.Content>
 				<Tabs.Content value="builder" class="mp-icon-panel mp-icon-body">
 					{#if open && tab === 'builder'}
 						<SettlementBuilder
 							color={selectedColor}
-							initial={currentSettlement}
+							initial={currentSettlement?.building ? undefined : currentSettlement}
 							onuse={onpicksettlement}
 							bind:useButton
 						/>

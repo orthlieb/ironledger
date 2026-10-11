@@ -8,16 +8,16 @@ hand-drawn map markers without clashing.
 A handful of self-contained files do the work; a renderer collapses them
 into one layered SVG per piece or per settlement.
 
-| File           | Responsibility                                                                                            |
-| -------------- | --------------------------------------------------------------------------------------------------------- |
-| `geom.js`      | Primitive shapes (`rect`, `arc`, `circle`, `archOpening`, `lancet`, `crenellated`) and the PRNG.          |
-| `pieces3d.js`  | Every drawable piece (house, tower, keep, well, …) and the `Design` typedef with the culture knobs.       |
-| `layouts3d.js` | Templates (stead → freeport) that lay pieces out into a settlement, including the ring wall.              |
-| `ruins3d.js`   | Decay / overgrowth / scorch transformation applied over any `Placed[]` list.                              |
-| `render.js`    | Clipper-based renderer that collapses the final back-to-front list into one path per colour role.         |
-| `patterns.js`  | Material-wall `<pattern>` tiles in fixed colours (stone, bramble hedge, brain coral, planks, dirt, bone). |
-| `generate.js`  | `recipeDesign()` + `generateSettlementSvg()` — the only entry points app code should call.                |
-| `fallback.js`  | Marker-chip fallback (plain core icon) for recipes a client can't yet render.                             |
+| File           | Responsibility                                                                                                                                   |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `geom.js`      | Primitive shapes (`rect`, `arc`, `circle`, `archOpening`, `lancet`, `crenellated`) and the PRNG.                                                 |
+| `pieces3d.js`  | Every drawable piece (house, tower, keep, well, …) and the `Design` typedef with the culture knobs.                                              |
+| `layouts3d.js` | Templates (stead → freeport) that lay pieces out into a settlement, including the ring wall; `building()` draws one piece for the Buildings tab. |
+| `ruins3d.js`   | Decay / overgrowth / scorch transformation applied over any `Placed[]` list.                                                                     |
+| `render.js`    | Clipper-based renderer that collapses the final back-to-front list into one path per colour role.                                                |
+| `patterns.js`  | Material-wall `<pattern>` tiles in fixed colours (stone, bramble hedge, brain coral, planks, dirt, bone).                                        |
+| `generate.js`  | `recipeDesign()` + `generateSettlementSvg()` — the only entry points app code should call.                                                       |
+| `fallback.js`  | Marker-chip fallback (plain core icon) for recipes a client can't yet render.                                                                    |
 
 ## Oblique projection
 
@@ -121,8 +121,15 @@ pebbles as round dots, from a wider 12-unit speckle field of its own so no
 small tile repeats in rows. Those lines carry a `role`, so the renderer
 paints them in the material's own colour (`wall-hedge-cane`,
 `wall-reef-groove`, `wall-reef-vein`, `wall-earth-grit`,
-`wall-earth-pebble`, `wall-bone-grain`) instead of ink. Flat walls (square
-enclosures, gatehouse wings) keep the full tiles.
+`wall-earth-pebble`, `wall-bone-grain`) instead of ink. Stone courses,
+palisade seams and bone seams — like masonry courses and barn planks on
+buildings — stay ink but paint in a layer of their own, `ink-texture`.
+Flat walls (square enclosures, gatehouse wings) keep the full tiles.
+
+All of that line-work is texture (`TEXTURE_ROLES` in `patterns.js`): a
+culture with `texture` off draws none of it, its walls in flat material
+colours (`renderLayered(…, {texture: false})`), and a map icon drawn
+smaller than `PATTERN_MIN_PX` leaves it out too.
 
 The hedge and coral tiles are drawn procedurally, once at load; anything
 crossing a tile edge is repeated a tile over, so every tile is seamless.
@@ -145,7 +152,10 @@ shaded). `patternDefs(roles, paintFor, scope)` emits the `<defs>` and
   the first copy in the document, and a copy inside a `display:none`
   subtree never paints). Below `PATTERN_MIN_PX` screen pixels per icon
   unit — every ordinary map marker — walls draw flat in `FLAT_WALLS`
-  instead, since a sub-pixel texture only muddies the wall.
+  instead, since a sub-pixel texture only muddies the wall, and the
+  line-work texture layers (`TEXTURE_ROLES`) are left out. An icon whose
+  culture has `texture` off carries `data-texture="off"` on its root and
+  draws its walls flat at any size.
 - The playground passes `var(--ink)` / `color-mix()` so shading follows
   its ink picker; its marker-size strip draws walls flat to match the map.
 
@@ -166,8 +176,8 @@ A culture plugin (`cultures/<key>.json` in an extension, or
 `apps/api/data/cultures/` for the base game) is
 `{key, name, note, design, palette}`. `design` is any subset of the
 `Design` knobs below, laid over `DEFAULT_DESIGN`; `palette` gives the eight
-colour roles. A culture is therefore up to **43 knobs** — 23 numbers, 14
-choices and 6 on/off switches — **plus 8 colours**. The shipped cultures
+colour roles. A culture is therefore up to **44 knobs** — 23 numbers, 14
+choices and 7 on/off switches — **plus 8 colours**. The shipped cultures
 set 15–26 knobs each (the Sample culture 36; Ironlanders is the default,
 with none).
 
@@ -185,7 +195,8 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 | `stature`   | 0.6–1.5 (**1**)                    | Building height (small folk < 1 < giants).                                                                                                                                                                                                                                      |
 | `scale`     | 0.7–1.8 (**1**)                    | Building size; bigger means fewer per layout.                                                                                                                                                                                                                                   |
 | `flourish`  | 0–1 (**0**)                        | Ornament: finials, eave knobs, ridge cresting, more flags.                                                                                                                                                                                                                      |
-| `masonry`   | on / **off**                       | Stone courses on house walls.                                                                                                                                                                                                                                                   |
+| `masonry`   | on / **off**                       | Stone-built: stone courses on house and tower walls, stone barns (not plank), no timber framing on a townhouse's ground floor.                                                                                                                                                  |
+| `texture`   | **on** / off                       | Draw textures: wall patterns, the line-work round ring walls, masonry courses, barn planks. Off draws every wall in its flat material colour — what a small map icon draws anyway.                                                                                              |
 | `variety`   | 0–1 (**0**)                        | A mixed culture (a freeport): the chance each house, free-standing tower and landmark rolls its own house type (gable-front, side-on, townhouse, longhouse, round hut or domed), storeys, tower cap, crenellated top, corbel, steeple, roof pitch and sweep, windows and doors. |
 
 **Houses**
@@ -270,24 +281,39 @@ seeds keep their looks.
 
 ## Recipe overrides
 
-Six recipe-only fields let a marker override the culture:
+Seven recipe-only fields let a marker override the culture:
 
-| Recipe field | Effect                                                                                          |
-| ------------ | ----------------------------------------------------------------------------------------------- |
-| `walls`      | Override the culture's own ring-wall material (`'none'`, `'stone'`, `'palisade'`, …).           |
-| `wallShape`  | Force `'round'` or `'square'` regardless of what the culture rolls.                             |
-| `ground`     | Override `D.ground` ('land' / 'water') — the easy knob for "put this settlement on a lagoon."   |
-| `stilts`     | Wrap every inside-the-walls piece with `onStilts(...)` so the whole settlement sits on pilings. |
-| `harbor`     | `true` adds a side harbour with pier + caravel.                                                 |
-| `ruin`       | `{ decay, burned? }` runs `ruinPlaced()` over the final list.                                   |
+| Recipe field | Effect                                                                                              |
+| ------------ | --------------------------------------------------------------------------------------------------- |
+| `walls`      | Override the culture's own ring-wall material (`'none'`, `'stone'`, `'palisade'`, …).               |
+| `wallShape`  | Force `'round'` or `'square'` regardless of what the culture rolls.                                 |
+| `ground`     | Override `D.ground` ('land' / 'water') — the easy knob for "put this settlement on a lagoon."       |
+| `stilts`     | Wrap every inside-the-walls piece with `onStilts(...)` so the whole settlement sits on pilings.     |
+| `harbor`     | `true` adds a side harbour with pier + caravel.                                                     |
+| `ruin`       | `{ decay, burned? }` runs `ruinPlaced()` over the final list.                                       |
+| `building`   | A `BUILDINGS` key: `building()` draws that one piece instead of the settlement (the Buildings tab). |
 
 See CLAUDE.md ("Standing order — settlement-recipe override fields live
-in four places") for the plumbing contract when adding a new one.
+in five places") for the plumbing contract when adding a new one.
+
+**Buildings.** `building(key, D, {walls, seed, ruin})` draws one of the
+`BUILDINGS` (the keyed entries of the `PIECES` table) on its own. `walls`
+puts a small ring or square wall of its own round it, fitted to its
+footprint the way a settlement's is (`enclosed()`), with up to two towers
+where the wall type carries them — never round the `WALL_BUILDINGS`
+(Wall, Wall tower, Palisade, Gatehouse, Wooden gate), which come in their
+own material. A culture on water lays a lagoon under it. `seed` varies it
+as a settlement varies its buildings — `jitterDesign()` (pitch, sweep,
+ornament, now and then the windows or doors), a round tower's girth and
+height, a house's details — and lets a mixed culture's builder roll its
+own style (`mixDesign()`); the reference row (`pieces()`) passes no seed,
+so it and the baked icons stay fixed.
 
 ## Pieces catalogue (abridged)
 
 Exported from `pieces3d.js`; `layouts3d.js` → `pieces(D)` returns the full
-list with human-readable names. Partial map, as a quick index:
+list with human-readable names (the `PIECES` table; `BUILDINGS` is the
+part the Buildings tab offers). Partial map, as a quick index:
 
 - Dwellings: `gableHouse`, `sideHouse` (handles house / warehouse /
   workshop / church / longhouse / barn / tavern / barracks / mill via
@@ -330,8 +356,13 @@ marker colour on the `roof` layer, and inlines the SVG.
    hatching kept to the shaded part, `shadeArea` (or `shaded: true`) for
    the darker right flank. Build receding faces with `boxProjector` and
    put openings on them through `P.face()`.
-2. Export the function and add an entry to `rawPieces()` in `layouts3d.js`
-   so the playground can show it in the pieces row.
+2. Export the function and add a `[key, name, make]` entry to `PIECES` in
+   `layouts3d.js` so the playground can show it in the pieces row. To
+   offer it on the map's Buildings tab too, give it a key (else `null`),
+   add the same key and name to `SETTLEMENT_BUILDINGS` in
+   `src/lib/settlementRecipe.ts` and its nearest baked icon to
+   `BUILDING_ICONS` in `fallback.js` (tests hold all three in step); a
+   wall piece also goes in both `WALL_BUILDINGS` sets.
 3. If it's a dwelling, route it through the `house()` picker there. If
    it's an inside-the-walls extra, add it to `EXTRAS` so templates can
    call for it.
@@ -356,8 +387,11 @@ export as a `cultures/*.json` plugin ready to drop into an extension.
 It runs the same kit code as the app, bundled at build time, so rebuild it
 after every kit change. Its Outline and Soft radius sliders are drawing
 options the app doesn't expose; at their defaults (1.4, 0.9) it draws
-exactly as the app does. The main app's Settlement builder offers only a
-recipe's essentials (tier, culture, walls and wall shape, harbour, ruin,
-seed) — the
+exactly as the app does. Its Building walls option draws the pieces as
+the app's Buildings tab does (`building()` in `layouts3d.js`: one piece,
+optionally in a ring or square wall of its own — the wall pieces never
+are). The main app's Settlement builder and Buildings tab offer
+only a recipe's essentials (tier or building, culture, walls and wall
+shape, harbour, ruin, seed) — the
 Design knobs come from the culture, so the playground is where a culture
 is designed.

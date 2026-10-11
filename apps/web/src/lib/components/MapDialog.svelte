@@ -3729,6 +3729,18 @@
 		border-bottom: 2px solid transparent;
 		padding: 8px 10px 6px;
 		margin-bottom: -1px;
+		white-space: nowrap;
+	}
+	:global(.mp-icon-tab-short) {
+		display: none;
+	}
+	@media (max-width: 480px) {
+		:global(.mp-icon-tab-long) {
+			display: none;
+		}
+		:global(.mp-icon-tab-short) {
+			display: inline;
+		}
 	}
 	:global(.mp-icon-tab:hover) {
 		color: var(--text-muted);

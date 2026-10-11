@@ -86,6 +86,7 @@ figcaption{font-size:13px;display:flex;justify-content:center;align-items:center
 .ic [data-role=roof-shade]{fill:color-mix(in srgb,var(--roof) 70%,var(--ink))}
 .ic [data-role=flag]{fill:var(--flag)}
 .ic [data-role=ink]{fill:var(--ink)}
+.ic [data-role=ink-texture]{fill:var(--ink)}
 @media (max-width:760px){.layout{grid-template-columns:1fr}#knobs{position:static;max-height:none}figure{width:calc(50% - 6px)}}
 </style></head><body>
 <header><h1>Settlement playground</h1>

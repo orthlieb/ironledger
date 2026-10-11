@@ -88,11 +88,11 @@ which exits non-zero if any reference page is stale. The generator lives
 at `scripts/gen-yrt-reference.mjs`; it's deterministic (no timestamps),
 so a re-run on an up-to-date tree is a no-op.
 
-## Standing order — settlement-recipe override fields live in four places
+## Standing order — settlement-recipe override fields live in five places
 
 A `SettlementRecipe` field that overrides a `Design` or a layout option
 (e.g. `walls`, `wallShape`, `ground`, `stilts`) has to be plumbed through
-**four** sites in lockstep, or the knob exists but silently has no effect:
+**five** sites in lockstep, or the knob exists but silently has no effect:
 
 1. **`apps/web/src/lib/settlementRecipe.ts`** — add the field to the
    `SettlementRecipe` interface, to `recipeKey()` (so cached icons don't
@@ -109,10 +109,17 @@ A `SettlementRecipe` field that overrides a `Design` or a layout option
    `recipe` block.
 4. **`apps/web/scripts/settlement-kit/playground.mjs`** — mirror the knob
    in the Drawing or Build group so the playground tool reaches it too.
+5. **`apps/api/src/routes/maps.ts`** — add the field to the `settlement`
+   object in `mapMarkerSchema` (and the `userMapService.ts` type). Zod
+   strips keys it doesn't list, so without this the field draws fine
+   until the marker is saved, then vanishes. Pin it in
+   `apps/api/tests/unit/mapMarkerSchema.test.ts`.
 
-`stilts` and `ground` were added following this pattern; the
-`settlementKit.test.ts` smoke suite exercises both. Skip any of the four
-sites and the field looks wired but doesn't actually travel.
+`stilts` and `ground` were added following this pattern — but skipped
+site 5, so both were dropped on every save until the `building` field
+(the Buildings tab) added all three; the `settlementKit.test.ts` smoke
+suite exercises them. Skip any of the five sites and the field looks
+wired but doesn't actually travel.
 
 ## App-level scroll architecture
 

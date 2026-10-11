@@ -23,6 +23,33 @@ describe('mapMarkerSchema', () => {
     expect(mapMarkerSchema.parse({ ...base, settlement }).settlement).toEqual(settlement);
   });
 
+  it('keeps a recipe on water and on stilts', () => {
+    const settlement = {
+      tier: 'village',
+      culture: 'merrow',
+      seed: 7,
+      ground: 'water',
+      stilts: true,
+    };
+    expect(mapMarkerSchema.parse({ ...base, settlement }).settlement).toEqual(settlement);
+  });
+
+  it('keeps a building recipe', () => {
+    const settlement = {
+      tier: 'stead',
+      culture: 'elves',
+      seed: 12,
+      building: 'round-tower',
+      walls: 'hedge',
+      ruin: { decay: 0.5 },
+    };
+    expect(mapMarkerSchema.parse({ ...base, settlement }).settlement).toEqual(settlement);
+    expect(
+      mapMarkerSchema.safeParse({ ...base, settlement: { ...settlement, building: '<b>' } })
+        .success,
+    ).toBe(false);
+  });
+
   it('rejects a malformed recipe', () => {
     expect(
       mapMarkerSchema.safeParse({

@@ -11,13 +11,20 @@
 //
 // Patterned wall materials (stone, hedge, reef, palisade, earth, bone) draw
 // through the settlement kit's own <pattern> defs (settlement-kit/
-// patterns.js), so the map and the generated files can't drift apart.
+// patterns.js), so the map and the generated files can't drift apart — flat
+// instead in an icon whose culture has Texture off (data-texture="off").
 //
 // This module is pure (no DOM, no Svelte) so it can be unit-tested; the
 // lazy fetch + cache lives in mapIconCache.ts.
 // =============================================================================
 
-import { PATTERN_ROLES, flatWall, paletteTone, patternDefs } from './settlement-kit/patterns.js';
+import {
+	PATTERN_ROLES,
+	TEXTURE_ROLES,
+	flatWall,
+	paletteTone,
+	patternDefs,
+} from './settlement-kit/patterns.js';
 
 /** Base colours of a layered icon; shaded variants are derived. */
 export interface LayeredPalette {
@@ -43,10 +50,12 @@ export const DEFAULT_LAYERED_PALETTE: LayeredPalette = {
 	halo: '#F4EFE4',
 };
 
-/** One drawable layer of a layered icon. */
+/** One drawable layer of a layered icon. `flat`: a wall drawn in its flat
+ *  material colour, never a pattern (its culture has Texture off). */
 export interface LayeredPath {
 	role: string;
 	d: string;
+	flat?: boolean;
 }
 
 /** How much of the base colour each shaded role keeps (the rest is ink).
@@ -116,6 +125,7 @@ export function roleColours(p: LayeredPalette, roof?: string): Record<string, st
 		water: p.water,
 		flag: p.flag,
 		ink: p.ink,
+		'ink-texture': p.ink,
 		sil: p.halo,
 	};
 	for (const [role, keep] of Object.entries(SHADE_MIX)) {
@@ -128,14 +138,18 @@ export function roleColours(p: LayeredPalette, roof?: string): Record<string, st
 /** Path data the parser accepts: numbers and path commands only. */
 const SAFE_D = /^[MLHVCSQTAZmlhvcsqtaz0-9eE.,\s-]+$/;
 
-/** Pull the `data-role` paths out of a layered SVG file, in paint order. */
+/** Pull the `data-role` paths out of a layered SVG file, in paint order. A
+ *  file drawn with Texture off (`data-texture="off"` on the root) marks its
+ *  walls flat. */
 export function parseLayeredSvg(text: string): LayeredPath[] {
 	const out: LayeredPath[] = [];
+	const flat = /<svg\b[^>]*\sdata-texture\s*=\s*"off"/i.test(text);
 	for (const m of text.matchAll(/<path\b([^>]*)>/gi)) {
 		const attrs = m[1];
 		const role = attrs.match(/\bdata-role\s*=\s*"([\w-]+)"/)?.[1];
 		const d = attrs.match(/\sd\s*=\s*"([^"]+)"/)?.[1];
-		if (role && d && SAFE_D.test(d)) out.push({ role, d });
+		if (role && d && SAFE_D.test(d))
+			out.push(flat && PATTERN_ROLES.has(role) ? { role, d, flat } : { role, d });
 	}
 	return out;
 }
@@ -156,25 +170,29 @@ export function layeredMarkup(
 ): string {
 	// Pattern defs for any wall-roled path the icon uses — or none at all
 	// when the icon is too small for a pattern to read (`detail` false): its
-	// walls then take flat material colours. Pass a per-instance `scope`:
-	// shared ids resolve to the first copy in the document, and a copy
-	// inside a display:none subtree (a closed picker, say) never paints.
+	// walls then take flat material colours, and its line-work texture
+	// (masonry, planks, wall seams, ring line-work) is left out. Pass a
+	// per-instance `scope`: shared ids resolve to the first copy in the
+	// document, and a copy inside a display:none subtree (a closed picker,
+	// say) never paints.
 	scope ??= colours.ink.replace('#', '');
 	const { defs } = detail
 		? patternDefs(
-				paths.map((p) => p.role),
+				paths.filter((p) => !p.flat).map((p) => p.role),
 				(role) => paletteTone(role, colours.ink, mixHex),
 				scope,
 			)
 		: { defs: '' };
 	let s = defs;
-	for (const { role, d } of paths) {
+	for (const { role, d, flat } of paths) {
 		if (role === 'sil') {
 			if (haloAttrs !== null) s += `<path fill="${colours.sil}"${haloAttrs} d="${d}"/>`;
 			continue;
 		}
+		if (!detail && TEXTURE_ROLES.has(role)) continue;
 		if (PATTERN_WALL_ROLES.has(role)) {
-			const fill = detail ? `url(#pat-${role}-${scope})` : flatWall(role, colours.ink, mixHex);
+			const fill =
+				detail && !flat ? `url(#pat-${role}-${scope})` : flatWall(role, colours.ink, mixHex);
 			s += `<path fill="${fill}" d="${d}"/>`;
 			continue;
 		}

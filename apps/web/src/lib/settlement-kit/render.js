@@ -32,13 +32,14 @@
 // =============================================================================
 
 import ClipperLib from 'clipper-lib';
+import { TEXTURE_ROLES } from './patterns.js';
 
 /** @typedef {import('./geom.js').Pt} Pt */
 /** @typedef {import('./geom.js').Poly} Poly */
 /** `role`: paint the line in that colour role instead of ink (a tinted
  *  texture line, e.g. a coral wall's grey grooves).
  *  @typedef {{pts: Poly, w?: number, round?: boolean, outline?: boolean, role?: Role}} Line */
-/** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'wall-wood' | 'wall-earth' | 'wall-bone' | 'wall-stone-ring' | 'wall-wood-ring' | 'wall-hedge-ring' | 'wall-reef-ring' | 'wall-hedge-cane' | 'wall-reef-groove' | 'wall-reef-vein' | 'wall-earth-ring' | 'wall-bone-ring' | 'wall-earth-grit' | 'wall-earth-pebble' | 'wall-bone-grain' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
+/** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'wall-wood' | 'wall-earth' | 'wall-bone' | 'wall-stone-ring' | 'wall-wood-ring' | 'wall-hedge-ring' | 'wall-reef-ring' | 'wall-hedge-cane' | 'wall-reef-groove' | 'wall-reef-vein' | 'wall-earth-ring' | 'wall-bone-ring' | 'wall-earth-grit' | 'wall-earth-pebble' | 'wall-bone-grain' | 'ink-texture' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
 /** `sharp`: keep the part's corners crisp whatever the drawing's join (flag
  *  cloth — a soft join would melt a pennant's tip into a blob).
  *  @typedef {{solid: Poly[], lines?: Line[], shadeLines?: Line[], fills?: Poly[], cuts?: Line[], free?: Line[], mask?: Poly, role?: Role, shaded?: boolean, shadeArea?: Poly, terrain?: boolean, sharp?: boolean}} Part */
@@ -293,6 +294,7 @@ export const LAYERS = /** @type {const} */ ([
 	'roof',
 	'roof-shade',
 	'flag',
+	'ink-texture',
 	'ink',
 ]);
 
@@ -305,15 +307,17 @@ export const LAYERS = /** @type {const} */ ([
  * for drawing a halo behind the icon.
  * `join` softens the drawing: 'round' rounds every line join and end;
  * 'soft' also rounds the shapes' own convex corners (roof peaks, eaves,
- * merlons) by `softRadius`.
+ * merlons) by `softRadius`. `texture: false` leaves out every line-work
+ * texture layer (TEXTURE_ROLES): masonry, planks, ring-wall line-work.
  * @param {Part[]} parts back → front
- * @param {{outline?: number, join?: 'sharp' | 'round' | 'soft', softRadius?: number}} [opts]
+ * @param {{outline?: number, join?: 'sharp' | 'round' | 'soft', softRadius?: number, texture?: boolean}} [opts]
  * @returns {{layers: Record<string, string>, silhouette: string, bounds: {x: number, y: number, w: number, h: number}}}
  */
 export function renderLayered(parts, opts = {}) {
 	const half = (opts.outline ?? OUTLINE) / 2;
 	const round = opts.join === 'round' || opts.join === 'soft';
 	const soft = opts.join === 'soft' ? (opts.softRadius ?? 0.9) : 0;
+	const texture = opts.texture ?? true;
 	/** Visible pieces per layer, unioned once at the end. @type {Record<string, CPaths[]>} */
 	const acc = Object.fromEntries(LAYERS.map((l) => [l, []]));
 	/** @type {CPaths} */
@@ -343,7 +347,9 @@ export function renderLayered(parts, opts = {}) {
 		/** Tinted lines, by role: painted in their own layer, inside the face. */
 		/** @type {Map<string, Line[]>} */
 		const tints = new Map();
-		for (const l of p.lines ?? []) if (l.role) tints.set(l.role, [...(tints.get(l.role) ?? []), l]);
+		for (const l of p.lines ?? [])
+			if (l.role && (texture || !TEXTURE_ROLES.has(l.role)))
+				tints.set(l.role, [...(tints.get(l.role) ?? []), l]);
 		const shadeClip = p.shaded ? inner : p.shadeArea ? intersect(inner, [toC(p.shadeArea)]) : [];
 		if (p.shadeLines?.length && shadeClip.length)
 			ink = union(
@@ -355,7 +361,9 @@ export function renderLayered(parts, opts = {}) {
 		if (mask) free = intersect(free, mask);
 		ink = union(ink, free);
 		acc.ink.push(minus(ink, occ));
-		for (const [r, ls] of tints) acc[r].push(minus(intersect(stroke(ls), inner), occ));
+		// Kept clear of the windows and doors, as ink lines are.
+		const clear = fillInk.length ? union(occ, offset(fillInk, 0.6)) : occ;
+		for (const [r, ls] of tints) acc[r].push(minus(intersect(stroke(ls), inner), clear));
 
 		const face = minus(solid, occ);
 		const role = p.role ?? 'wall';

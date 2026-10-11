@@ -87,7 +87,11 @@ import { place } from './render.js';
  *   default: every building in the culture's own style.
  * @property {number} flourish ornament: finials, eave knobs, ridge cresting, extra flags
  *   (0..1)
- * @property {boolean} masonry stone courses on house walls
+ * @property {boolean} masonry stone-built: stone courses on house walls, stone
+ *   barns, no timber framing on a townhouse's ground floor
+ * @property {boolean} texture draw textures — wall patterns, the line-work
+ *   round ring walls, masonry courses, barn planks; off draws every wall in
+ *   its flat material colour. On by default.
  * @property {number} longhouse share of timber dwellings that are Norse longhouses (0..1)
  * @property {number} huts share of timber dwellings that are round huts (0..1)
  * @property {'round' | 'square'} wallShape
@@ -147,6 +151,7 @@ export const DEFAULT_DESIGN = {
 	variety: 0,
 	flourish: 0,
 	masonry: false,
+	texture: true,
 	longhouse: 0,
 	huts: 0,
 	join: 'soft',
@@ -236,6 +241,7 @@ export function makeDesign(seed) {
 		flourish: avg(),
 		variety: 0, // rolled below, after the draws it must not shift
 		masonry: r() < 0.3,
+		texture: true,
 		longhouse: r() < 0.3 ? avg() : 0,
 		huts: r() < 0.25 ? avg() * 0.6 : 0,
 		join: r() < 0.15 ? 'sharp' : r() < 0.7 ? 'round' : 'soft',
@@ -295,6 +301,11 @@ const STAKE = 1.6;
 
 /** Hatch/detail stroke weight (world units). */
 export const THIN = 0.6;
+
+/** The role of line-work texture drawn in ink — masonry courses, barn
+ *  planks, wall seams — so the Texture switch and small map icons can leave
+ *  it out (TEXTURE_ROLES in patterns.js). */
+const TEXTURE = /** @type {const} */ ('ink-texture');
 
 /** Depth axis in screen space — tightened cab-oblique (~34° above
  *  horizontal, length ≈ 0.90). Previously `[0.62, 0.42]` (length ≈ 0.75)
@@ -1070,6 +1081,7 @@ export function sideHouse(D, o = {}) {
 					[x + v[0], y1 + v[1]],
 				],
 				w: 0.45,
+				role: TEXTURE,
 			});
 		return out;
 	};
@@ -1354,6 +1366,7 @@ function stoneCourses(
 				[x1 + 2, y],
 			],
 			w: 0.45,
+			role: TEXTURE,
 		});
 		for (let x = x0 + (row % 2 ? 2.2 : 0); x < x1; x += 4.4)
 			out.push({
@@ -1362,6 +1375,7 @@ function stoneCourses(
 					[x, y],
 				],
 				w: 0.45,
+				role: TEXTURE,
 			});
 	}
 	return out;
@@ -1384,7 +1398,7 @@ function roundCourses(r, ry, y0, y1) {
 	const step = 4.4 / r; // radians between joints: a 4.4-unit stone
 	let row = 0;
 	for (let y = y0 + 2.4; y < y1 + 2.4; y += 2.4, row++) {
-		if (y < y1) out.push({ pts: ell(0, y, r, ry, 180, 360), w: 0.45 });
+		if (y < y1) out.push({ pts: ell(0, y, r, ry, 180, 360), w: 0.45, role: TEXTURE });
 		for (let a = Math.PI + (row % 2 ? step / 2 : 0); a < 2 * Math.PI; a += step) {
 			const x = r * Math.cos(a),
 				dy = ry * Math.sin(a);
@@ -1394,6 +1408,7 @@ function roundCourses(r, ry, y0, y1) {
 					[x, y + dy],
 				],
 				w: 0.45,
+				role: TEXTURE,
 			});
 		}
 	}
@@ -2213,6 +2228,7 @@ export function ringWall(D, o = {}) {
 							[x, y + h + 3],
 						],
 				w: THIN,
+				role: TEXTURE,
 			});
 		}
 		return out;
@@ -2251,13 +2267,14 @@ export function ringWall(D, o = {}) {
 					out.push({
 						pts: ell(0, c, rx, ry, a0, a1, Math.max(4, Math.ceil((a1 - a0) / 3))),
 						w: 0.45,
+						role: TEXTURE,
 					});
 				const off = row % 2 ? stoneStep / 2 : 0;
 				for (let a = Math.ceil((a0 - off) / stoneStep) * stoneStep + off; a <= a1; a += stoneStep)
 					// Near the sides, where the wall turns away, joints would crowd
 					// closer than ~1.3 units on screen: leave those out.
 					if (Math.abs(Math.sin(rad(a))) > 0.3)
-						out.push({ pts: [at(a, c - 2.4), at(a, c)], w: 0.45 });
+						out.push({ pts: [at(a, c - 2.4), at(a, c)], w: 0.45, role: TEXTURE });
 			}
 		} else if (faceRole && faceRole in RING_TEXTURES) {
 			// An irregular texture (hedge, coral): the tile's line-work laid
@@ -2285,7 +2302,7 @@ export function ringWall(D, o = {}) {
 			const n = Math.max(1, Math.round((Math.abs(a1 - a0) * Math.PI * rx) / 180 / STAKE));
 			for (let i = 1; i < n; i++) {
 				const a = a0 + ((a1 - a0) * i) / n;
-				out.push({ pts: [at(a, -1), at(a, hAt(a) + 3)], w: 0.45 });
+				out.push({ pts: [at(a, -1), at(a, hAt(a) + 3)], w: 0.45, role: TEXTURE });
 			}
 		}
 		return out;
@@ -2793,6 +2810,7 @@ function squareWall(D, o) {
 							[x, y + h + 3],
 						],
 				w: THIN,
+				role: TEXTURE,
 			});
 		}
 		return out;

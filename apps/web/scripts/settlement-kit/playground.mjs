@@ -13,11 +13,18 @@ import {
 	makeDesign,
 	upgradeDesign,
 } from '../../src/lib/settlement-kit/pieces3d.js';
-import { TEMPLATES, pieces, settlement } from '../../src/lib/settlement-kit/layouts3d.js';
+import {
+	BUILDINGS,
+	TEMPLATES,
+	building,
+	pieces,
+	settlement,
+} from '../../src/lib/settlement-kit/layouts3d.js';
 import {
 	PATTERN_ROLES,
 	FLAT_WALLS,
 	PATTERN_SHADE,
+	TEXTURE_ROLES,
 	patternDefs,
 } from '../../src/lib/settlement-kit/patterns.js';
 import { LAYERS, place, renderLayered } from '../../src/lib/settlement-kit/render.js';
@@ -93,6 +100,7 @@ const KNOBS = [
 		design: true,
 	},
 	{ group: 'Build', key: 'masonry', label: 'Masonry', type: 'check', design: true },
+	{ group: 'Build', key: 'texture', label: 'Texture', type: 'check', design: true },
 	{
 		group: 'Build',
 		key: 'variety',
@@ -417,6 +425,15 @@ const KNOBS = [
 	},
 	{ group: 'Drawing', key: 'stilts', label: 'On stilts', type: 'check' },
 	{
+		// The map's Buildings tab: pieces drawn as buildings, each in a wall of
+		// its own (the wall pieces never are) — see building().
+		group: 'Drawing',
+		key: 'buildingWalls',
+		label: 'Building walls',
+		type: 'select',
+		options: ['pieces', 'none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef'],
+	},
+	{
 		group: 'Drawing',
 		key: 'join',
 		label: 'Joins',
@@ -480,6 +497,7 @@ const DRAWING = {
 	harbor: 'none',
 	walls: 'auto',
 	stilts: false,
+	buildingWalls: 'pieces',
 	softRadius: 0.9,
 	outline: 1.4,
 	layout: 1,
@@ -582,6 +600,15 @@ function wallPatterns(roles) {
 	);
 }
 
+/** A wall's flat material colour, its -shade mixed toward the page's --ink.
+ *  @param {string} role */
+function flatFill(role) {
+	const hex = FLAT_WALLS[role.replace(/-shade$/, '')] ?? FLAT_WALLS['wall-stone'];
+	return role.endsWith('-shade')
+		? `color-mix(in srgb,${hex} ${PATTERN_SHADE * 100}%,var(--ink))`
+		: hex;
+}
+
 /** @param {Placed[]} items */
 function svg(items) {
 	const parts = items.flatMap((it) =>
@@ -595,13 +622,15 @@ function svg(items) {
 		outline: drawing.outline,
 		join: design.join,
 		softRadius: drawing.softRadius,
+		texture: design.texture,
 	});
 	const vb = [b.x - 3, b.y - 3, b.w + 6, b.h + 6].map((n) => n.toFixed(1)).join(' ');
 	const used = LAYERS.filter((l) => layers[l]);
-	const { defs, url } = wallPatterns(used);
+	// Texture off: every wall in its flat material colour, as the map draws it.
+	const { defs, url } = wallPatterns(design.texture ? used : []);
 	const paths = used.map((l) =>
 		PATTERN_ROLES.has(l)
-			? `<path data-role="${l}" style="fill:${url(l)}" d="${layers[l]}"/>`
+			? `<path data-role="${l}" style="fill:${design.texture ? url(l) : flatFill(l)}" d="${layers[l]}"/>`
 			: `<path data-role="${l}" d="${layers[l]}"/>`,
 	);
 	return `<svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${defs}<path class="sil" d="${silhouette}"/>${paths.join('')}</svg>`;
@@ -635,10 +664,22 @@ function render() {
 				svg(settlement(tier, design, opts)),
 			]),
 	);
-	const bits = pieces(design).map(
-		([t, items]) =>
-			/** @type {[string, string]} */ ([t, svg(ruin ? ruinPlaced(items, ruin) : items)]),
-	);
+	// The reference row of pieces — or, as the map's Buildings tab draws
+	// them, buildings with walls of their own.
+	const bw = drawing.buildingWalls;
+	const bits =
+		bw === 'pieces'
+			? pieces(design).map(
+					([t, items]) =>
+						/** @type {[string, string]} */ ([t, svg(ruin ? ruinPlaced(items, ruin) : items)]),
+				)
+			: BUILDINGS.map(
+					([key, t]) =>
+						/** @type {[string, string]} */ ([
+							t,
+							svg(building(key, design, { walls: bw, seed: drawing.layout, ruin })),
+						]),
+				);
 	const card = (/** @type {[string, string]} */ [t, s], cls = '') =>
 		`<figure class="${cls}" data-name="${t}">${s}<figcaption>${t}<span class="dl"><button data-fmt="svg">SVG</button><button data-fmt="png">PNG</button></span></figcaption></figure>`;
 	$('towns').innerHTML = towns.map((c) => card(c, 'big')).join('');
@@ -752,8 +793,12 @@ function bakedSvg(src) {
 	const live = src.querySelectorAll(':scope > path');
 	out.querySelectorAll(':scope > path').forEach((p, i) => {
 		const cs = getComputedStyle(live[i]);
-		// Pattern-filled walls keep their url(#…) — it's in the copied defs.
-		if (!cs.fill.startsWith('url(')) p.setAttribute('fill', toHex(cs.fill));
+		// Pattern-filled walls keep their url(#…) — it's in the copied defs;
+		// a flat wall's inline var()-coloured fill gives way to its value.
+		if (!cs.fill.startsWith('url(')) {
+			p.setAttribute('fill', toHex(cs.fill));
+			p.removeAttribute('style');
+		}
 		if (p.classList.contains('sil')) {
 			p.setAttribute('stroke', toHex(cs.stroke));
 			p.setAttribute('stroke-width', cs.strokeWidth);
@@ -864,18 +909,20 @@ function importCulture(raw) {
 }
 
 /**
- * The marker-size strip draws its walls flat, as the map does for small
- * icons (a pattern finer than a pixel only muddies the wall) — rules that
- * beat the paths' inline pattern fills.
+ * The marker-size strip draws its walls flat, and leaves out the line-work
+ * texture, as the map does for small icons (a pattern finer than a pixel
+ * only muddies the wall) — rules that beat the paths' inline pattern fills.
  */
 function flatStripWalls() {
-	const css = Object.entries(FLAT_WALLS)
-		.map(
-			([role, hex]) =>
-				`#map .ic [data-role=${role}]{fill:${hex}!important}` +
-				`#map .ic [data-role=${role}-shade]{fill:color-mix(in srgb,${hex} ${PATTERN_SHADE * 100}%,var(--ink))!important}`,
-		)
-		.join('');
+	const css =
+		Object.entries(FLAT_WALLS)
+			.map(
+				([role, hex]) =>
+					`#map .ic [data-role=${role}]{fill:${hex}!important}` +
+					`#map .ic [data-role=${role}-shade]{fill:color-mix(in srgb,${hex} ${PATTERN_SHADE * 100}%,var(--ink))!important}`,
+			)
+			.join('') +
+		[...TEXTURE_ROLES].map((role) => `#map .ic [data-role=${role}]{display:none}`).join('');
 	document.head.append(Object.assign(document.createElement('style'), { textContent: css }));
 }
 

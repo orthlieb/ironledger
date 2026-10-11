@@ -257,7 +257,9 @@ marker path:
   ids scoped per rendered icon) in fixed material colours; an icon drawn
   too small for a texture to resolve — every ordinary map marker; callers
   pass `mapGlyphInner()` the rendered size — gets flat material colours on
-  its walls instead. Markers draw them at the raster scale
+  its walls instead, without its line-work texture (masonry courses, barn
+  planks, the line-work round ring walls); an icon whose culture has
+  Texture off draws flat walls at any size. Markers draw them at the raster scale
   (`RASTER_ICON_SCALE`). The files are _generated_ — see "Settlement kit"
   below; don't hand-edit them.
 
@@ -317,7 +319,24 @@ and every culture knob. It's used three ways:
     in the builder. Output is checked in; re-run the script after changing
     the kit.
 
-- **The Settlement builder** — the Choose Icon dialog's second tab
+- **The Buildings tab** — the Choose Icon dialog's second tab, between
+  Icons and Settlement builder (`SettlementBuilder.svelte` with
+  `kind="building"`). One building — any of the kit's 32 single pieces
+  (`SETTLEMENT_BUILDINGS`, from houses and towers to the cathedral, docks
+  and walls) — in any culture, where the baked single-building icons are
+  all the default culture with one-off tweaks. Walls (None by default)
+  puts a small ring or square wall of that type round it (in the chosen
+  wall shape); the wall buildings — Wall, Wall tower, Palisade,
+  Gatehouse, Wooden gate — come in their own material and have no Walls
+  or Wall shape. Ground (the culture's own, land or water: a lagoon under
+  it) and Ruined + decay (optionally burned) as below. The reroll varies
+  the building as a settlement varies its own — pitch, sweep, ornament,
+  now and then the windows or doors, a tower's height — and a mixed
+  culture's builder; a few fixed pieces (tent, mine, caravel, walls,
+  docks…) only change when ruined.
+  Recents are kept apart (`il:recentBuildings`); opening Change Icon on a
+  marker with a building recipe lands here.
+- **The Settlement builder** — the Choose Icon dialog's third tab
   (`SettlementBuilder.svelte`). Just the essentials: size (tier, shown
   with its population; Freeport isn't offered — a culture with a high
   `variety` makes a freeport's mix of builders), culture, walls and wall
@@ -342,8 +361,8 @@ apps/web`). Its presets are the culture plugins, baked in at build
 A culture is extension content: `cultures/<key>.json` in an extension
 (or `apps/api/data/cultures/` for the base game) holding `{key, name,
 note, design, palette}` — `design` is any subset of the kit's `Design`
-knobs (`pieces3d.js`), `palette` the eight colour roles — up to 43 knobs
-(23 numbers, 14 choices, 6 switches) and 8 colours in all. The full knob
+knobs (`pieces3d.js`), `palette` the eight colour roles — up to 44 knobs
+(23 numbers, 14 choices, 7 switches) and 8 colours in all. The full knob
 reference, with defaults and ranges, is in
 `src/lib/settlement-kit/README.md` → "Cultures". They're served merged at
 `/catalogue/cultures` (tagged with `source`) and loaded by
@@ -381,8 +400,10 @@ maze), palisades and earth banks brown (planks, speckled dirt).
 #### Recipe markers
 
 A marker with a generated icon carries `settlement: {tier, culture, seed,
-walls?, wallShape?, harbor?, ruin?: {decay,
-burned?}}` (`settlementRecipe.ts`) —
+walls?, wallShape?, ground?, stilts?, harbor?, ruin?: {decay, burned?},
+building?}` (`settlementRecipe.ts`) — `building` (a Buildings-tab key)
+draws that one building, enclosed by `walls`, in place of the settlement;
+
 a culture **key**, never the culture definition. `icon` still holds the
 plain fallback (`fallbackIcon(recipe)`, e.g. `settlement/town`) for older
 clients and the moment before the custom icon is drawn. At render time
@@ -394,7 +415,9 @@ generates the SVG in a Web Worker (`settlementWorker.ts`), primes
 does. Generation is deterministic, so the same recipe always draws the
 same icon. Picking a plain icon clears the recipe. The API schema
 (`mapMarkerSchema`) and the zip importer (`cleanSettlementRecipe`) both
-validate the recipe.
+validate the recipe — and the API schema strips any field it doesn't
+list, so a new recipe field goes there too (`ground` and `stilts` were
+once lost on save that way).
 
 #### Picker lightbox
 
