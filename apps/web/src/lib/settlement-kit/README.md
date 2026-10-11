@@ -105,6 +105,22 @@ palette; only the shaded tile mixes toward the palette ink.
 | `earth`    | `wall-earth` | Brown speckled dirt, heaped into mounds.                                   | 1×         |
 | `bone`     | `wall-bone`  | White with faint grey grain; rib crests.                                   | 1×         |
 
+**Ring walls** curve away from the viewer, so a flat tile can't follow
+them: stone, palisade, hedge and coral rings draw their texture as lines
+round the ring instead, over plain body tiles (the `-ring` roles), so it
+bunches toward the sides as the wall foreshortens — as `roundCourses()`
+does on round towers. Stone draws courses (front-half ellipses) with
+staggered joints, left out where they'd crowd closer than ~1.3 units; a
+palisade, a seam at each stake notch. Hedge and coral reuse their tiles'
+own art (`ringTextures.js`): each tile's line-work is laid end to end round
+the ring by arc length, row on row up the wall — the hedge's bramble canes
+(its leaves stay in the body tile: irregular foliage needn't bend), and
+the coral's grooves, whose two walls come from thickening the maze's
+centrelines and outlining the union. Those lines carry a `role`, so the
+renderer paints them in the material's own colour (`wall-hedge-cane`,
+`wall-reef-groove`, `wall-reef-vein`) instead of ink. Flat walls (square
+enclosures, gatehouse wings) keep the full tiles.
+
 The hedge and coral tiles are drawn procedurally, once at load; anything
 crossing a tile edge is repeated a tile over, so every tile is seamless.
 Wall merlons and wooden gates take their wall's role.
@@ -159,15 +175,15 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 
 **Build**
 
-| Knob        | Values (default)                   | What it drives                                                                                                                                                                            |
-| ----------- | ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `houseForm` | **timber** / round / mound / stilt | Framed houses, round huts, turf mounds or huts on stilts.                                                                                                                                 |
-| `ground`    | **land** / water                   | Water lays a lagoon with waves under the settlement.                                                                                                                                      |
-| `stature`   | 0.6–1.5 (**1**)                    | Building height (small folk < 1 < giants).                                                                                                                                                |
-| `scale`     | 0.7–1.8 (**1**)                    | Building size; bigger means fewer per layout.                                                                                                                                             |
-| `flourish`  | 0–1 (**0**)                        | Ornament: finials, eave knobs, ridge cresting, more flags.                                                                                                                                |
-| `masonry`   | on / **off**                       | Stone courses on house walls.                                                                                                                                                             |
-| `variety`   | 0–1 (**0**)                        | A mixed culture (a freeport): the chance each house, free-standing tower and landmark rolls its own tower cap, crenellated top, corbel, steeple, roof pitch and sweep, windows and doors. |
+| Knob        | Values (default)                   | What it drives                                                                                                                                                                                                                                                                  |
+| ----------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `houseForm` | **timber** / round / mound / stilt | Framed houses, round huts, turf mounds or huts on stilts.                                                                                                                                                                                                                       |
+| `ground`    | **land** / water                   | Water lays a lagoon with waves under the settlement.                                                                                                                                                                                                                            |
+| `stature`   | 0.6–1.5 (**1**)                    | Building height (small folk < 1 < giants).                                                                                                                                                                                                                                      |
+| `scale`     | 0.7–1.8 (**1**)                    | Building size; bigger means fewer per layout.                                                                                                                                                                                                                                   |
+| `flourish`  | 0–1 (**0**)                        | Ornament: finials, eave knobs, ridge cresting, more flags.                                                                                                                                                                                                                      |
+| `masonry`   | on / **off**                       | Stone courses on house walls.                                                                                                                                                                                                                                                   |
+| `variety`   | 0–1 (**0**)                        | A mixed culture (a freeport): the chance each house, free-standing tower and landmark rolls its own house type (gable-front, side-on, townhouse, longhouse, round hut or domed), storeys, tower cap, crenellated top, corbel, steeple, roof pitch and sweep, windows and doors. |
 
 **Houses**
 
