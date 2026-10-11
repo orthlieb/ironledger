@@ -105,6 +105,16 @@ palette; only the shaded tile mixes toward the palette ink.
 | `earth`    | `wall-earth` | Brown speckled dirt, heaped into mounds.                                   | 1×         |
 | `bone`     | `wall-bone`  | White with faint grey grain; rib crests.                                   | 1×         |
 
+**Ring walls** curve away from the viewer, so a flat tile's courses can't
+follow them: stone and palisade rings draw their texture as lines round the
+ring instead — stone courses (front-half ellipses) with staggered joints,
+or plank seams at each stake notch — spaced evenly round it so they bunch
+toward the sides as the wall foreshortens, as `roundCourses()` does on
+round towers. Joints are left out where they would crowd closer than ~1.3
+units. Those rings fill with plain body tiles (`wall-stone-ring`,
+`wall-wood-ring`); flat walls (square enclosures, gatehouse wings) keep the
+full tiles.
+
 The hedge and coral tiles are drawn procedurally, once at load; anything
 crossing a tile edge is repeated a tile over, so every tile is seamless.
 Wall merlons and wooden gates take their wall's role.

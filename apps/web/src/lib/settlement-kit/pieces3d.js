@@ -2216,10 +2216,50 @@ export function ringWall(D, o = {}) {
 		}
 		return out;
 	};
-	// (Stone brick-courses used to be generated here as Clipper lines; now
-	//  the stone body is pattern-filled via the wall-stone role — see
-	//  settlement-kit/patterns.js. The pattern-filled role is set by
-	//  `material('stone').role`; segments below just carry it on their part.)
+	// A flat tile can't follow the ring as it curves away, so stone and
+	// palisade rings draw their texture as lines round the ring — courses
+	// with joints, or plank seams, spaced evenly round it so they bunch
+	// toward the sides as the wall foreshortens (as on round towers) — over
+	// a plain body tile (the -ring roles in patterns.js).
+	const faceRole =
+		role === 'wall-stone'
+			? /** @type {const} */ ('wall-stone-ring')
+			: role === 'wall-wood'
+				? /** @type {const} */ ('wall-wood-ring')
+				: role;
+	/** Degrees round the ring per 4.4-unit stone. */
+	const stoneStep = (4.4 / rx / Math.PI) * 180;
+	/** The ring's own texture between angles a0 and a1 (lines; clipped to the face). */
+	const texture = (/** @type {number} */ a0, /** @type {number} */ a1) => {
+		/** @type {Line[]} */
+		const out = [];
+		const at = (/** @type {number} */ deg, /** @type {number} */ y) =>
+			/** @type {Pt} */ ([rx * Math.cos(rad(deg)), ry * Math.sin(rad(deg)) + y]);
+		if (faceRole === 'wall-stone-ring') {
+			const top = h * 1.6; // a convex bow can crest the wall above h
+			for (let c = 2.4, row = 0; c < top + 2.4; c += 2.4, row++) {
+				if (c < top)
+					out.push({
+						pts: ell(0, c, rx, ry, a0, a1, Math.max(4, Math.ceil((a1 - a0) / 3))),
+						w: 0.45,
+					});
+				const off = row % 2 ? stoneStep / 2 : 0;
+				for (let a = Math.ceil((a0 - off) / stoneStep) * stoneStep + off; a <= a1; a += stoneStep)
+					// Near the sides, where the wall turns away, joints would crowd
+					// closer than ~1.3 units on screen: leave those out.
+					if (Math.abs(Math.sin(rad(a))) > 0.3)
+						out.push({ pts: [at(a, c - 2.4), at(a, c)], w: 0.45 });
+			}
+		} else if (faceRole === 'wall-wood-ring') {
+			// A seam at each notch between the stake tips topEdge() draws.
+			const n = Math.max(1, Math.round((Math.abs(a1 - a0) * Math.PI * rx) / 180 / STAKE));
+			for (let i = 1; i < n; i++) {
+				const a = a0 + ((a1 - a0) * i) / n;
+				out.push({ pts: [at(a, -1), at(a, hAt(a) + 3)], w: 0.45 });
+			}
+		}
+		return out;
+	};
 	// The ring is cut into segments at its towers so towers and wall can be
 	// depth-sorted together: a tower then sits behind the stretch of wall
 	// that curves nearer the viewer than it, and in front of the stretch
@@ -2356,9 +2396,9 @@ export function ringWall(D, o = {}) {
 						: [
 								{
 									solid: [facePoly(a0, a1)],
-									role,
+									role: faceRole,
 									shaded: true,
-									lines: [...backHatch, ...seams(a0, a1)],
+									lines: [...backHatch, ...seams(a0, a1), ...texture(a0, a1)],
 								},
 							],
 				wall: true,
@@ -2387,10 +2427,10 @@ export function ringWall(D, o = {}) {
 				: [
 						{
 							solid: F ? [facePoly(a0, a1), flareSeg(a0, a1)] : [facePoly(a0, a1)],
-							role,
+							role: faceRole,
 							shadeArea: flank,
 							shadeLines: flankShade(a0, a1),
-							lines: seams(a0, a1),
+							lines: [...seams(a0, a1), ...texture(a0, a1)],
 						},
 					];
 		if (archGate && a0 < 270 && a1 > 270)
@@ -2403,7 +2443,7 @@ export function ringWall(D, o = {}) {
 					merlons.push(
 						rect(rx * Math.cos(rad(t)) - 1.1, hAt(t) + ry * Math.sin(rad(t)) - 0.4, 2.2, 2.6),
 					);
-			if (merlons.length) seg.push({ solid: merlons, role, shadeArea: flank });
+			if (merlons.length) seg.push({ solid: merlons, role: faceRole, shadeArea: flank });
 		}
 		frontList.push({
 			// The stretch that meets the gate tower's side draws after it.

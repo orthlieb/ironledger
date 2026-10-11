@@ -36,7 +36,7 @@ import ClipperLib from 'clipper-lib';
 /** @typedef {import('./geom.js').Pt} Pt */
 /** @typedef {import('./geom.js').Poly} Poly */
 /** @typedef {{pts: Poly, w?: number, round?: boolean, outline?: boolean}} Line */
-/** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'wall-wood' | 'wall-earth' | 'wall-bone' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
+/** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'wall-wood' | 'wall-earth' | 'wall-bone' | 'wall-stone-ring' | 'wall-wood-ring' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
 /** `sharp`: keep the part's corners crisp whatever the drawing's join (flag
  *  cloth — a soft join would melt a pennant's tip into a blob).
  *  @typedef {{solid: Poly[], lines?: Line[], shadeLines?: Line[], fills?: Poly[], cuts?: Line[], free?: Line[], mask?: Poly, role?: Role, shaded?: boolean, shadeArea?: Poly, terrain?: boolean, sharp?: boolean}} Part */
@@ -253,6 +253,10 @@ export const LAYERS = /** @type {const} */ ([
 	'wall-earth-shade',
 	'wall-bone',
 	'wall-bone-shade',
+	'wall-stone-ring',
+	'wall-stone-ring-shade',
+	'wall-wood-ring',
+	'wall-wood-ring-shade',
 	'wood',
 	'wood-shade',
 	'earth',

@@ -460,6 +460,34 @@ const bone = {
 	},
 };
 
+// ─── Ring walls: the body alone ──────────────────────────────────────────────
+// A ring wall curves away from the viewer, so a flat tile's courses can't
+// follow it. Stone and palisade rings draw their courses / plank seams as
+// lines that run round the ring (ringWall in pieces3d.js), and take these
+// tiles for the body: the material's colour, and the planks' grain.
+
+/** Ring-wall stone: the masonry's body, its courses drawn as lines. */
+/** @type {PatternDef} */
+const stoneRing = {
+	w: 4,
+	h: 4,
+	body: ({ tone }) => `<rect width="4" height="4" style="fill:${tone(MATERIALS.stone.body)}"/>`,
+};
+
+/** Ring-wall palisade: the planks' body and grain, its seams drawn as lines. */
+/** @type {PatternDef} */
+const woodRing = {
+	w: 3.2,
+	h: 6,
+	body: ({ tone }) => {
+		const m = MATERIALS.wood;
+		return (
+			`<rect width="3.2" height="6" style="fill:${tone(m.body)}"/>` +
+			`<path style="stroke:${tone(m.grain)};stroke-width:0.18;fill:none;stroke-linecap:round" d="M1.2 0.4v2M2 3.1v2.4M0.9 4v1.3"/>`
+		);
+	},
+};
+
 /** @type {Record<string, PatternDef>} */
 export const PATTERNS = {
 	'wall-stone': stone,
@@ -474,6 +502,10 @@ export const PATTERNS = {
 	'wall-earth-shade': earth,
 	'wall-bone': bone,
 	'wall-bone-shade': bone,
+	'wall-stone-ring': stoneRing,
+	'wall-stone-ring-shade': stoneRing,
+	'wall-wood-ring': woodRing,
+	'wall-wood-ring-shade': woodRing,
 };
 
 /** How much of each colour a -shade tile keeps (the rest is ink) — the
@@ -508,6 +540,8 @@ export const FLAT_WALLS = {
 	'wall-wood': '#9A6B42',
 	'wall-earth': '#8A6843',
 	'wall-bone': '#E9E5DB',
+	'wall-stone-ring': '#BEBCB6',
+	'wall-wood-ring': '#9A6B42',
 };
 
 /**

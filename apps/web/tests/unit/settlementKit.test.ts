@@ -119,23 +119,30 @@ describe('wall patterns', () => {
 	// Each pattern-filled wall type should emit a <pattern> def and a
 	// pattern-filled wall path. Guards against a regression where the kit
 	// quietly reverts to flat fills (which would read as "lost its texture").
+	// Stone and palisade rings take a plain body tile (their courses / seams
+	// are drawn as lines round the ring); square walls keep the full tile.
 	it.each([
-		['stone', 'wall-stone'],
-		['hedge', 'wall-hedge'],
-		['reef', 'wall-reef'],
-		['palisade', 'wall-wood'],
-		['earth', 'wall-earth'],
-		['bone', 'wall-bone'],
-	] as const)('%s wall emits a <pattern> and uses url(#…) for its fill', (wall, role) => {
-		const svg = generateSettlementSvg(
-			{ tier: 'village', culture: 'default', seed: 3, walls: wall },
-			null,
-		);
-		expect(svg, `${wall} should contain its pattern def`).toContain(`id="pat-${role}-`);
-		expect(svg, `${wall} should use url(#…) for its wall fill`).toMatch(
-			new RegExp(`data-role="${role}"[^/]*fill="url\\(#pat-${role}-`),
-		);
-	});
+		['stone', 'round', 'wall-stone-ring'],
+		['stone', 'square', 'wall-stone'],
+		['hedge', 'round', 'wall-hedge'],
+		['reef', 'round', 'wall-reef'],
+		['palisade', 'round', 'wall-wood-ring'],
+		['palisade', 'square', 'wall-wood'],
+		['earth', 'round', 'wall-earth'],
+		['bone', 'round', 'wall-bone'],
+	] as const)(
+		'%s %s wall emits a <pattern> and uses url(#…) for its fill',
+		(wall, wallShape, role) => {
+			const svg = generateSettlementSvg(
+				{ tier: 'village', culture: 'default', seed: 3, walls: wall, wallShape },
+				null,
+			);
+			expect(svg, `${wall} should contain its pattern def`).toContain(`id="pat-${role}-`);
+			expect(svg, `${wall} should use url(#…) for its wall fill`).toMatch(
+				new RegExp(`data-role="${role}"[^/]*fill="url\\(#pat-${role}-`),
+			);
+		},
+	);
 	it.each([
 		['wall-stone', 2],
 		['wall-hedge', 2],
@@ -217,6 +224,17 @@ function netArea(d: string): number {
 	}
 	return Math.abs(total);
 }
+
+describe('ring wall texture', () => {
+	const lineCount = (type: Design['wall']) =>
+		ringWall({ ...DEFAULT_DESIGN, wall: type })
+			.front.flatMap((it) => it.piece)
+			.reduce((n, p) => n + (p.lines?.length ?? 0), 0);
+	it('draws stone courses and palisade seams round the ring, but not hedge', () => {
+		expect(lineCount('stone')).toBeGreaterThan(lineCount('hedge') + 40);
+		expect(lineCount('palisade')).toBeGreaterThan(lineCount('hedge') + 40);
+	});
+});
 
 describe('masonry', () => {
 	const lines = (parts: ReturnType<typeof roundTower>) =>
