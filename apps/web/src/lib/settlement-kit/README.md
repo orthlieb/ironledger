@@ -300,10 +300,11 @@ in five places") for the plumbing contract when adding a new one.
 `BUILDINGS` (the keyed entries of the `PIECES` table) on its own. `walls`
 puts a small ring or square wall of its own round it, fitted to its
 footprint the way a settlement's is (`enclosed()`), with up to two towers
-where the wall type carries them — never round the `WALL_BUILDINGS`
-(Wall, Wall tower, Palisade, Gatehouse, Wooden gate), which come in their
-own material. A culture on water lays a lagoon under it. `seed` varies it
-as a settlement varies its buildings — `jitterDesign()` (pitch, sweep,
+where the wall type carries them — never round the `UNWALLED_BUILDINGS`:
+the wall buildings (Wall, Wall tower, Palisade, Gatehouse, Wooden gate),
+which come in their own material, and the Caravel, a ship. A culture on
+water lays a lagoon under it. `seed` varies it as a settlement varies its
+buildings — `jitterDesign()` (pitch, sweep,
 ornament, now and then the windows or doors), a round tower's girth and
 height, a house's details — and lets a mixed culture's builder roll its
 own style (`mixDesign()`); the reference row (`pieces()`) passes no seed,
@@ -362,7 +363,8 @@ marker colour on the `roof` layer, and inlines the SVG.
    add the same key and name to `SETTLEMENT_BUILDINGS` in
    `src/lib/settlementRecipe.ts` and its nearest baked icon to
    `BUILDING_ICONS` in `fallback.js` (tests hold all three in step); a
-   wall piece also goes in both `WALL_BUILDINGS` sets.
+   wall piece (or anything else that never gets walls) also goes in both
+   `UNWALLED_BUILDINGS` sets.
 3. If it's a dwelling, route it through the `house()` picker there. If
    it's an inside-the-walls extra, add it to `EXTRAS` so templates can
    call for it.

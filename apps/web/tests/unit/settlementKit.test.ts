@@ -29,14 +29,14 @@ import {
 import {
 	BUILDINGS,
 	TEMPLATES,
-	WALL_BUILDINGS,
+	UNWALLED_BUILDINGS,
 	building,
 	pieces,
 	settlement,
 } from '../../src/lib/settlement-kit/layouts3d.js';
 import {
 	SETTLEMENT_BUILDINGS,
-	WALL_BUILDINGS as APP_WALL_BUILDINGS,
+	UNWALLED_BUILDINGS as APP_UNWALLED_BUILDINGS,
 } from '../../src/lib/settlementRecipe.js';
 import {
 	DEFAULT_DESIGN,
@@ -349,8 +349,15 @@ describe('buildings (the Buildings tab)', () => {
 		expect(on()).not.toContain('water');
 		expect(on('water')).toContain('water');
 	});
-	it('agrees with the app on which buildings are walls', () => {
-		expect([...WALL_BUILDINGS].sort()).toEqual([...APP_WALL_BUILDINGS].sort());
+	it('never walls a caravel', () => {
+		const svg = generateSettlementSvg(
+			{ tier: 'stead', culture: 'default', seed: 3, building: 'caravel', walls: 'stone' },
+			null,
+		);
+		expect([...roles(svg)].some((r) => r.startsWith('wall-stone'))).toBe(false);
+	});
+	it('agrees with the app on which buildings are never walled', () => {
+		expect([...UNWALLED_BUILDINGS].sort()).toEqual([...APP_UNWALLED_BUILDINGS].sort());
 	});
 	it('ruins a building, and a reroll changes a house', () => {
 		const at = (seed: number, ruin?: { decay: number }) =>

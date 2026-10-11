@@ -807,19 +807,21 @@ export const BUILDINGS = /** @type {[string, string][]} */ (
 	PIECES.flatMap(([key, name]) => (key ? [[key, name]] : []))
 );
 
-/** The wall buildings, each in its own material: never enclosed. */
-export const WALL_BUILDINGS = new Set([
+/** Buildings never given a wall of their own: the wall buildings, each in
+ *  its own material, and the caravel — a ship. */
+export const UNWALLED_BUILDINGS = new Set([
 	'wall',
 	'wall-tower',
 	'palisade',
 	'gatehouse',
 	'wooden-gate',
+	'caravel',
 ]);
 
 /**
  * One building as a map icon — the Buildings tab: a single piece in the
  * culture's style, inside an optional wall of its own (`walls`, in the
- * culture's wall shape; never round a wall building), and optionally
+ * culture's wall shape; never round UNWALLED_BUILDINGS), and optionally
  * ruined. `seed` rerolls it as a settlement varies its buildings: pitch,
  * sweep and ornament jittered, now and then other windows or doors, a
  * tower's height — and a mixed culture's builder rolls its own style.
@@ -836,7 +838,7 @@ export function building(key, D, o = {}) {
 	const walls = o.walls && o.walls !== 'auto' && o.walls !== 'none' ? o.walls : null;
 	const make = (PIECES.find(([k]) => k === key) ?? PIECES[0])[2];
 	let items = make(own, 1 + Math.floor(r() * 999_999));
-	if (walls && !WALL_BUILDINGS.has(key)) items = enclosed(D, items, walls);
+	if (walls && !UNWALLED_BUILDINGS.has(key)) items = enclosed(D, items, walls);
 	if (D.ground === 'water') {
 		// Water-dwellers' buildings stand in a lagoon, as their settlements do.
 		const { x0, x1 } = placedExtent(items);

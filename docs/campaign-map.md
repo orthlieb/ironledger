@@ -328,7 +328,10 @@ and every culture knob. It's used three ways:
   puts a small ring or square wall of that type round it (in the chosen
   wall shape); the wall buildings — Wall, Wall tower, Palisade,
   Gatehouse, Wooden gate — come in their own material and have no Walls
-  or Wall shape. Ground (the culture's own, land or water: a lagoon under
+  or Wall shape; nor does the Caravel, a ship. The tab lays itself out to
+  fit the dialog (the preview takes whatever height the knobs leave, the
+  knobs go two to a row on a phone), so "Use this" is always on screen.
+  Ground (the culture's own, land or water: a lagoon under
   it) and Ruined + decay (optionally burned) as below. The reroll varies
   the building as a settlement varies its own — pitch, sweep, ornament,
   now and then the windows or doors, a tower's height — and a mixed
@@ -342,8 +345,7 @@ and every culture knob. It's used three ways:
   `variety` makes a freeport's mix of builders), culture, walls and wall
   shape, harbour, ruined +
   decay (optionally burned: scorch marks and sooty walls), and a reroll
-  for the layout seed, with a large preview and a marker-size preview in
-  the marker's colour. "Use this" stores a **recipe** on the marker (see
+  for the layout seed, with a large preview in the marker's colour. "Use this" stores a **recipe** on the marker (see
   below). A Recent strip keeps the last 8 recipes per browser
   (`localStorage` `il:recentSettlements`, like the colour picker's
   swatches); clicking one reuses it at once. Opening Change Icon on a
