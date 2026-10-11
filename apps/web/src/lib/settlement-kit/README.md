@@ -106,19 +106,22 @@ palette; only the shaded tile mixes toward the palette ink.
 | `bone`     | `wall-bone`  | White with faint grey grain; rib crests.                                   | 1×         |
 
 **Ring walls** curve away from the viewer, so a flat tile can't follow
-them: stone, palisade, hedge and coral rings draw their texture as lines
-round the ring instead, over plain body tiles (the `-ring` roles), so it
-bunches toward the sides as the wall foreshortens — as `roundCourses()`
-does on round towers. Stone draws courses (front-half ellipses) with
-staggered joints, left out where they'd crowd closer than ~1.3 units; a
-palisade, a seam at each stake notch. Hedge and coral reuse their tiles'
-own art (`ringTextures.js`): each tile's line-work is laid end to end round
-the ring by arc length, row on row up the wall — the hedge's bramble canes
-(its leaves stay in the body tile: irregular foliage needn't bend), and
-the coral's grooves, whose two walls come from thickening the maze's
-centrelines and outlining the union. Those lines carry a `role`, so the
-renderer paints them in the material's own colour (`wall-hedge-cane`,
-`wall-reef-groove`, `wall-reef-vein`) instead of ink. Flat walls (square
+them: every ring material draws its texture as lines round the ring
+instead, over plain body tiles (the `-ring` roles), so it bunches toward
+the sides as the wall foreshortens — as `roundCourses()` does on round
+towers. Stone draws courses (front-half ellipses) with staggered joints,
+left out where they'd crowd closer than ~1.3 units; a palisade, a seam at
+each stake notch. The others reuse their tiles' own art (`ringTextures.js`):
+each tile's line-work is laid end to end round the ring by arc length, row
+on row up the wall — the hedge's bramble canes (its leaves stay in the
+body tile: irregular foliage needn't bend), the coral's grooves (two walls
+from thickening the maze's centrelines and outlining the union, plus the
+pale vein), bone's grain strokes and pores (at 1.5×), and earth's grit and
+pebbles as round dots, from a wider 12-unit speckle field of its own so no
+small tile repeats in rows. Those lines carry a `role`, so the renderer
+paints them in the material's own colour (`wall-hedge-cane`,
+`wall-reef-groove`, `wall-reef-vein`, `wall-earth-grit`,
+`wall-earth-pebble`, `wall-bone-grain`) instead of ink. Flat walls (square
 enclosures, gatehouse wings) keep the full tiles.
 
 The hedge and coral tiles are drawn procedurally, once at load; anything
