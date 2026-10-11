@@ -369,8 +369,8 @@ after every kit change. Its Outline and Soft radius sliders are drawing
 options the app doesn't expose; at their defaults (1.4, 0.9) it draws
 exactly as the app does. Its Building walls option draws the pieces as
 the app's Buildings tab does (`building()` in `layouts3d.js`: one piece,
-optionally in a ring or square wall of its own, the wall pieces in that
-wall type). The main app's Settlement builder and Buildings tab offer
+optionally in a ring or square wall of its own — the wall pieces never
+are). The main app's Settlement builder and Buildings tab offer
 only a recipe's essentials (tier or building, culture, walls and wall
 shape, harbour, ruin, seed) — the
 Design knobs come from the culture, so the playground is where a culture

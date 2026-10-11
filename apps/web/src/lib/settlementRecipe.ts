@@ -67,16 +67,25 @@ export const SETTLEMENT_BUILDINGS = {
 	tent: 'Tent',
 	pavilion: 'Pavilion',
 	gatehouse: 'Gatehouse',
+	'wooden-gate': 'Wooden gate',
 	'witch-hut': 'Witch hut',
 	wall: 'Wall',
 	'wall-tower': 'Wall tower',
+	palisade: 'Palisade',
 	dock: 'Dock',
 	pier: 'Pier',
 } as const;
 export type SettlementBuilding = keyof typeof SETTLEMENT_BUILDINGS;
 
-/** The wall buildings: `walls` is their material, never an enclosure. */
-export const WALL_BUILDINGS: ReadonlySet<string> = new Set(['wall', 'wall-tower', 'gatehouse']);
+/** The wall buildings, each in its own material: never enclosed, so no
+ *  Walls or Wall shape for them. */
+export const WALL_BUILDINGS: ReadonlySet<string> = new Set([
+	'wall',
+	'wall-tower',
+	'palisade',
+	'gatehouse',
+	'wooden-gate',
+]);
 
 export interface SettlementRecipe {
 	tier: SettlementTier;
@@ -94,8 +103,8 @@ export interface SettlementRecipe {
 	/** A ruin: how far gone (0–1), and whether it burned (scorch, soot). */
 	ruin?: { decay: number; burned?: boolean };
 	/** One building instead of a settlement (the Buildings tab). `walls` then
-	 *  puts a wall of its own round it — or, for a wall building, is its
-	 *  material — and `tier`, `ground`, `stilts` and `harbor` don't apply. */
+	 *  puts a wall of its own round it (never round a wall building), and
+	 *  `tier`, `stilts` and `harbor` don't apply. */
 	building?: SettlementBuilding;
 }
 

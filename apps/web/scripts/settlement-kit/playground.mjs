@@ -426,7 +426,7 @@ const KNOBS = [
 	{ group: 'Drawing', key: 'stilts', label: 'On stilts', type: 'check' },
 	{
 		// The map's Buildings tab: pieces drawn as buildings, each in a wall of
-		// its own (the wall pieces in that wall type) — see building().
+		// its own (the wall pieces never are) — see building().
 		group: 'Drawing',
 		key: 'buildingWalls',
 		label: 'Building walls',

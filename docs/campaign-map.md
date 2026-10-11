@@ -321,15 +321,19 @@ and every culture knob. It's used three ways:
 
 - **The Buildings tab** — the Choose Icon dialog's second tab, between
   Icons and Settlement builder (`SettlementBuilder.svelte` with
-  `kind="building"`). One building — any of the kit's 30 single pieces
+  `kind="building"`). One building — any of the kit's 32 single pieces
   (`SETTLEMENT_BUILDINGS`, from houses and towers to the cathedral, docks
   and walls) — in any culture, where the baked single-building icons are
   all the default culture with one-off tweaks. Walls (None by default)
   puts a small ring or square wall of that type round it (in the chosen
-  wall shape); for the wall buildings — Wall, Wall tower, Gatehouse — it
-  is their material instead ("Built of", the culture's own by default),
-  with no wall shape. Ruined + decay (optionally burned) as below; the
-  reroll varies the building's details, and a mixed culture's builder.
+  wall shape); the wall buildings — Wall, Wall tower, Palisade,
+  Gatehouse, Wooden gate — come in their own material and have no Walls
+  or Wall shape. Ground (the culture's own, land or water: a lagoon under
+  it) and Ruined + decay (optionally burned) as below. The reroll varies
+  the building as a settlement varies its own — pitch, sweep, ornament,
+  now and then the windows or doors, a tower's height — and a mixed
+  culture's builder; a few fixed pieces (tent, mine, caravel, walls,
+  docks…) only change when ruined.
   Recents are kept apart (`il:recentBuildings`); opening Change Icon on a
   marker with a building recipe lands here.
 - **The Settlement builder** — the Choose Icon dialog's third tab

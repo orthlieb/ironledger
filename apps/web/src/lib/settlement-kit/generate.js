@@ -40,9 +40,8 @@ export { fallbackIcon } from './fallback.js';
 /**
  * What a marker stores: a REFERENCE to a culture, never the culture itself.
  * `building` (a key of layouts3d.js BUILDINGS) draws that one building
- * instead of a settlement — the Buildings tab: `walls` then encloses it (or,
- * for a wall building, is its material) and `tier`, `ground`, `stilts` and
- * `harbor` don't apply.
+ * instead of a settlement — the Buildings tab: `walls` then encloses it
+ * (never a wall building), and `tier`, `stilts` and `harbor` don't apply.
  * @typedef {{tier: Tier, culture: string, seed: number, walls?: Walls,
  *   wallShape?: 'round' | 'square', ground?: 'land' | 'water',
  *   stilts?: boolean, harbor?: boolean, building?: string,

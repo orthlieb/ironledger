@@ -35,7 +35,6 @@ import {
 	stiltHut,
 	tent,
 	townhouse,
-	wallPiece,
 	wallSegment,
 	well,
 	witchHut,
@@ -716,16 +715,25 @@ function normalized(items) {
 /**
  * The single pieces, as [key, name, make]: the reference row (pieces()) and
  * the map's Buildings tab (building()). `make` draws the piece in a culture's
- * Design; a Buildings-tab `seed` varies a house's details, and the reference
- * row passes none. A null key is a reference piece the Buildings tab doesn't
- * offer on its own — there a palisade or wooden gate is the Wall or Gatehouse
- * in palisade, and a camp is a Settlement-builder size.
+ * Design; a Buildings-tab `seed` varies a house's details and a tower's
+ * height, and the reference row passes none. A null key is a reference
+ * piece the Buildings tab doesn't offer — a camp is a Settlement-builder
+ * size.
  * @type {[string | null, string, (D: Design, seed?: number) => Placed[]][]}
  */
 const PIECES = [
 	['gable-house', 'Gable house', (D, s) => [{ piece: gableHouse(D, { seed: s ?? 4 }) }]],
 	['side-house', 'Side house', (D, s) => [{ piece: sideHouse(D, { seed: s ?? 5 }) }]],
-	['round-tower', 'Round tower', (D) => [{ piece: roundTower(D) }]],
+	[
+		'round-tower',
+		'Round tower',
+		(D, s) => {
+			if (s === undefined) return [{ piece: roundTower(D) }];
+			// A settlement's free-standing towers vary in girth and height.
+			const r = rng(s);
+			return [{ piece: roundTower(D, { r: 5 + r() * 1.5, h: 32 + r() * 14 }) }];
+		},
+	],
 	['bell-tower', 'Bell tower', (D) => [{ piece: belfry(D, { finial: true }) }]],
 	['church', 'Church', (D, s) => [{ piece: church(D, { seed: s }) }]],
 	['keep', 'Keep', (D) => [{ piece: keep(D) }]],
@@ -780,11 +788,11 @@ const PIECES = [
 	['tent', 'Tent', (D) => [{ piece: tent(D) }]],
 	['pavilion', 'Pavilion', (D) => [{ piece: pavilion(D) }]],
 	['gatehouse', 'Gatehouse', (D) => [{ piece: gatehouse(D) }]],
-	[null, 'Wooden gate', (D) => [{ piece: gatehouse(D, { wood: true }) }]],
+	['wooden-gate', 'Wooden gate', (D) => [{ piece: gatehouse(D, { wood: true }) }]],
 	['witch-hut', 'Witch hut', (D) => [{ piece: witchHut(D) }]],
 	['wall', 'Wall', (D) => [{ piece: wallSegment(D) }]],
 	['wall-tower', 'Wall tower', (D) => [{ piece: wallSegment(D, { tower: true }) }]],
-	[null, 'Palisade', (D) => [{ piece: wallSegment(D, { wood: true }) }]],
+	['palisade', 'Palisade', (D) => [{ piece: wallSegment(D, { wood: true }) }]],
 	['dock', 'Dock', (D) => dock(D, { ship: true })],
 	['pier', 'Pier', (D) => dock(D)],
 ];
@@ -799,16 +807,22 @@ export const BUILDINGS = /** @type {[string, string][]} */ (
 	PIECES.flatMap(([key, name]) => (key ? [[key, name]] : []))
 );
 
-/** The wall buildings: drawn in the chosen wall type (see wallPiece()),
- *  never enclosed. @type {Record<string, 'wall' | 'tower' | 'gate'>} */
-const WALL_RUNS = { wall: 'wall', 'wall-tower': 'tower', gatehouse: 'gate' };
+/** The wall buildings, each in its own material: never enclosed. */
+export const WALL_BUILDINGS = new Set([
+	'wall',
+	'wall-tower',
+	'palisade',
+	'gatehouse',
+	'wooden-gate',
+]);
 
 /**
  * One building as a map icon — the Buildings tab: a single piece in the
- * culture's style (a mixed culture's builder rolls its own, by `seed`),
- * inside an optional wall of its own (`walls`, in the culture's wall shape),
- * and optionally ruined. The wall buildings — wall, wall-tower, gatehouse —
- * are drawn in `walls` instead (the culture's own wall type when none).
+ * culture's style, inside an optional wall of its own (`walls`, in the
+ * culture's wall shape; never round a wall building), and optionally
+ * ruined. `seed` rerolls it as a settlement varies its buildings: pitch,
+ * sweep and ornament jittered, now and then other windows or doors, a
+ * tower's height — and a mixed culture's builder rolls its own style.
  * @param {string} key one of BUILDINGS (unknown → a gable house)
  * @param {Design} D
  * @param {{walls?: Walls, seed?: number,
@@ -818,18 +832,11 @@ const WALL_RUNS = { wall: 'wall', 'wall-tower': 'tower', gatehouse: 'gate' };
 export function building(key, D, o = {}) {
 	const seed = o.seed ?? 1;
 	const r = rng(seed * 7919 + 4099);
-	const own = mixDesign(D, r);
+	const own = jitterDesign(mixDesign(D, r), r);
 	const walls = o.walls && o.walls !== 'auto' && o.walls !== 'none' ? o.walls : null;
-	/** @type {Placed[]} */
-	let items;
-	if (key in WALL_RUNS) {
-		const type = walls ?? (D.wall === 'none' ? 'stone' : D.wall);
-		items = wallPiece(own, type, WALL_RUNS[key]);
-	} else {
-		const make = (PIECES.find(([k]) => k === key) ?? PIECES[0])[2];
-		items = make(own, 1 + Math.floor(r() * 999_999));
-		if (walls) items = enclosed(D, items, walls);
-	}
+	const make = (PIECES.find(([k]) => k === key) ?? PIECES[0])[2];
+	let items = make(own, 1 + Math.floor(r() * 999_999));
+	if (walls && !WALL_BUILDINGS.has(key)) items = enclosed(D, items, walls);
 	if (D.ground === 'water') {
 		// Water-dwellers' buildings stand in a lagoon, as their settlements do.
 		const { x0, x1 } = placedExtent(items);

@@ -29,11 +29,15 @@ import {
 import {
 	BUILDINGS,
 	TEMPLATES,
+	WALL_BUILDINGS,
 	building,
 	pieces,
 	settlement,
 } from '../../src/lib/settlement-kit/layouts3d.js';
-import { SETTLEMENT_BUILDINGS } from '../../src/lib/settlementRecipe.js';
+import {
+	SETTLEMENT_BUILDINGS,
+	WALL_BUILDINGS as APP_WALL_BUILDINGS,
+} from '../../src/lib/settlementRecipe.js';
 import {
 	DEFAULT_DESIGN,
 	church,
@@ -279,7 +283,8 @@ describe('buildings (the Buildings tab)', () => {
 	it('keeps the reference row of pieces the icon bake draws by name', () => {
 		const names = pieces(DEFAULT_DESIGN).map(([n]) => n);
 		expect(names).toHaveLength(33);
-		for (const n of ['Camp', 'Palisade', 'Wooden gate']) expect(names).toContain(n);
+		expect(names).toContain('Camp'); // a Settlement-builder size, not a building
+		expect(BUILDINGS).toHaveLength(32);
 	});
 	it.each(BUILDINGS.map(([key]) => key))('draws %s on its own', (key) => {
 		const svg = generateSettlementSvg(
@@ -314,24 +319,38 @@ describe('buildings (the Buildings tab)', () => {
 		expect(roles(square)).toContain('wall-wood');
 	});
 	it.each([
-		['stone', 'wall-stone'],
-		['hedge', 'wall-hedge'],
-		['reef', 'wall-reef'],
+		['wall', 'wall-stone'],
+		['wall-tower', 'wall-stone'],
 		['palisade', 'wall-wood'],
-		['earth', 'wall-earth'],
-		['bone', 'wall-bone'],
-	] as const)('builds the wall buildings of %s, unenclosed', (walls, role) => {
-		for (const key of ['wall', 'wall-tower', 'gatehouse']) {
-			const svg = generateSettlementSvg(
-				{ tier: 'stead', culture: 'default', seed: 3, building: key, walls },
-				null,
+		['gatehouse', 'wall-stone'],
+		['wooden-gate', 'wall-wood'],
+	] as const)('draws %s in its own material, never enclosed', (key, role) => {
+		const svg = generateSettlementSvg(
+			{ tier: 'stead', culture: 'default', seed: 3, building: key, walls: 'hedge' },
+			null,
+		);
+		expect(roles(svg)).toContain(role);
+		expect([...roles(svg)].some((r) => r.startsWith('wall-hedge'))).toBe(false);
+	});
+	it('lays a lagoon under a building on water', () => {
+		const on = (ground?: 'water') =>
+			roles(
+				generateSettlementSvg(
+					{
+						tier: 'stead',
+						culture: 'default',
+						seed: 3,
+						building: 'windmill',
+						...(ground ? { ground } : {}),
+					},
+					null,
+				),
 			);
-			expect(roles(svg), key).toContain(role);
-			expect(
-				[...roles(svg)].some((r) => r.endsWith('-ring')),
-				key,
-			).toBe(false);
-		}
+		expect(on()).not.toContain('water');
+		expect(on('water')).toContain('water');
+	});
+	it('agrees with the app on which buildings are walls', () => {
+		expect([...WALL_BUILDINGS].sort()).toEqual([...APP_WALL_BUILDINGS].sort());
 	});
 	it('ruins a building, and a reroll changes a house', () => {
 		const at = (seed: number, ruin?: { decay: number }) =>
@@ -348,6 +367,12 @@ describe('buildings (the Buildings tab)', () => {
 		expect(at(3, { decay: 0.6 })).not.toBe(at(3));
 		expect(at(3)).toBe(at(3));
 		expect(new Set([1, 2, 3, 4, 5].map((s) => at(s))).size).toBeGreaterThan(1);
+		const tower = (seed: number) =>
+			generateSettlementSvg(
+				{ tier: 'stead', culture: 'default', seed, building: 'round-tower' },
+				null,
+			);
+		expect(tower(1)).not.toBe(tower(2));
 	});
 });
 

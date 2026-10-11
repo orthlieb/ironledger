@@ -14,9 +14,10 @@
 	 *
 	 * The Buildings kind draws one building instead of a settlement: the
 	 * building in place of the size, walls that enclose it (none by default;
-	 * for the wall buildings — Wall, Wall tower, Gatehouse — their material),
-	 * and no ground, stilts or harbour. Its reroll varies the building's
-	 * details (and a mixed culture's builder).
+	 * none at all for the wall buildings — Wall, Wall tower, Palisade,
+	 * Gatehouse, Wooden gate — each in its own material), ground, and no
+	 * stilts or harbour. Its reroll varies the building's details (and a
+	 * mixed culture's builder).
 	 *
 	 * A Recent strip above the knobs keeps the last few recipes used, per
 	 * kind (per browser, like the colour picker's swatches); clicking one
@@ -138,18 +139,12 @@
 
 	void loadCultures();
 
-	/** A wall building: Walls is its material, and it has no wall shape. */
+	/** A wall building, in its own material: never enclosed, so no Walls. */
 	const wallBuilding = $derived(isBuilding && WALL_BUILDINGS.has(building));
-	/** A building's walls are an enclosure (or a wall building's material):
-	 *  none by default, and no "usual for its size". */
-	const wallOptions = $derived(
-		isBuilding
-			? [
-					{ value: 'none' as const, label: wallBuilding ? "Culture's own" : 'None' },
-					...WALLS.filter((w) => w.value !== 'auto' && w.value !== 'none'),
-				]
-			: WALLS,
-	);
+	/** A building's walls are an enclosure: none by default, and no "usual
+	 *  for its size". */
+	const wallOptions = isBuilding ? WALLS.filter((w) => w.value !== 'auto') : WALLS;
+	const showWalls = $derived(!wallBuilding);
 	const showShape = $derived(!isBuilding || (!wallBuilding && walls !== 'none'));
 	const ruin = $derived(
 		ruined
@@ -169,8 +164,9 @@
 					culture,
 					seed,
 					building,
-					...(walls !== 'none' && walls !== 'auto' ? { walls } : {}),
+					...(showWalls && walls !== 'none' && walls !== 'auto' ? { walls } : {}),
 					...(showShape && shape !== 'culture' ? { wallShape: shape } : {}),
+					...(ground !== 'culture' ? { ground } : {}),
 					...ruin,
 				}
 			: {
@@ -276,25 +272,23 @@
 				<Select bind:value={culture} options={cultureOptions} ariaLabel="Culture" />
 			</label>
 			{#if note}<p class="sb-note">{note}</p>{/if}
-			<label class="sb-field">
-				<span class="sb-label">{wallBuilding ? 'Built of' : 'Walls'}</span>
-				<Select
-					bind:value={walls}
-					options={wallOptions}
-					ariaLabel={wallBuilding ? 'Built of' : 'Walls'}
-				/>
-			</label>
+			{#if showWalls}
+				<label class="sb-field">
+					<span class="sb-label">Walls</span>
+					<Select bind:value={walls} options={wallOptions} ariaLabel="Walls" />
+				</label>
+			{/if}
 			{#if showShape}
 				<label class="sb-field">
 					<span class="sb-label">Wall shape</span>
 					<Select bind:value={shape} options={SHAPES} ariaLabel="Wall shape" />
 				</label>
 			{/if}
+			<label class="sb-field">
+				<span class="sb-label">Ground</span>
+				<Select bind:value={ground} options={GROUNDS} ariaLabel="Ground" />
+			</label>
 			{#if !isBuilding}
-				<label class="sb-field">
-					<span class="sb-label">Ground</span>
-					<Select bind:value={ground} options={GROUNDS} ariaLabel="Ground" />
-				</label>
 				<Checkbox bind:checked={stilts}><span class="sb-check">On stilts</span></Checkbox>
 				<Checkbox bind:checked={harbor}><span class="sb-check">Harbour</span></Checkbox>
 			{/if}

@@ -35,9 +35,11 @@ const BUILDING_ICONS = /** @type {Record<string, string>} */ ({
 	tent: 'camping-tent',
 	pavilion: 'medieval-pavilion',
 	gatehouse: 'medieval-gate',
+	'wooden-gate': 'wooden-gate',
 	'witch-hut': 'witches-hut',
 	wall: 'stone-wall',
 	'wall-tower': 'defensive-wall',
+	palisade: 'palisade',
 	dock: 'harbor-dock',
 	pier: 'wooden-pier',
 });

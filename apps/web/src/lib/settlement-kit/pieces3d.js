@@ -2744,10 +2744,8 @@ export function squareFootprint(rx, ry) {
  * and right walls show their OUTER faces (in front of the town) and the
  * back and left walls show their INNER faces (behind it). Towers go on
  * the corners first, then mid-wall; the gate is centred on the front.
- * `run` draws just a straight front run instead — see wallPiece().
  * @param {Design} D
- * @param {{rx?: number, ry?: number, h?: number, type?: Design['wall'], towers?: number,
- *   run?: 'wall' | 'tower' | 'gate'}} o
+ * @param {{rx?: number, ry?: number, h?: number, type?: Design['wall'], towers?: number}} o
  * @returns {{back: Placed[], front: Placed[]}}
  */
 function squareWall(D, o) {
@@ -2875,7 +2873,7 @@ function squareWall(D, o) {
 		if (m.length) parts.push({ solid: m, role, shaded });
 		return parts;
 	};
-	const gk = o.run === 'wall' || o.run === 'tower' ? 'none' : gateKind(type, D);
+	const gk = gateKind(type, D);
 	const twin = gk === 'twin';
 	/** @type {Part[]} */
 	let front;
@@ -2895,27 +2893,8 @@ function squareWall(D, o) {
 		];
 	} else {
 		front = wallPart(FL, FR, false, [0, -F * 0.6]);
-		if (gk !== 'none') front[0].fills = [archOpening(0, 0, 6, Math.min(h * 0.85, 8))];
+		front[0].fills = [archOpening(0, 0, 6, Math.min(h * 0.85, 8))];
 		if (gk === 'jawbone') front.push(...jawGate(0, h));
-	}
-	if (o.run) {
-		// A straight run on its own: the front face with its right end
-		// receding, and a tower or the gate in the middle.
-		/** @type {Placed[]} */
-		const run = [
-			{ piece: wallPart(FR, add(FR, depthVec(4)), true, [F, -F * 0.3]), wall: true },
-			{ piece: front, wall: true },
-		];
-		if (o.run === 'tower')
-			run.push({ piece: roundTower(D, { r: 5, h: h + 10, flags: D.flags }), y: -0.4 });
-		if (twin)
-			for (const x of [-7.5, 7.5])
-				run.push({
-					piece: roundTower(D, { r: 4.2, h: h + 7, flags: D.flourish > 0.7 }),
-					x,
-					y: -0.5,
-				});
-		return { back: [], front: run };
 	}
 
 	/** @type {Placed[]} */
@@ -2963,20 +2942,6 @@ function squareWall(D, o) {
 			});
 	towers.sort((p, q) => (q.y ?? 0) - (p.y ?? 0));
 	return { back, front: [...frontItems, ...towers] };
-}
-
-/**
- * A straight wall on its own in a wall type's material — the map's Wall,
- * Wall tower and Gatehouse buildings: a plain run, one with a tower at its
- * middle, or one with the type's gate.
- * @param {Design} D
- * @param {Exclude<Design['wall'], 'none'>} type
- * @param {'wall' | 'tower' | 'gate'} kind
- * @returns {Placed[]}
- */
-export function wallPiece(D, type, kind) {
-	const len = kind === 'gate' ? 34 : 36;
-	return squareWall(D, { type, rx: len / 1.75, ry: 4, run: kind }).front;
 }
 
 /**

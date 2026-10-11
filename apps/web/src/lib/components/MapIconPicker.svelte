@@ -214,7 +214,11 @@
 				<Tabs.List class="mp-icon-tabs">
 					<Tabs.Trigger value="icons" class="mp-icon-tab">Icons</Tabs.Trigger>
 					<Tabs.Trigger value="buildings" class="mp-icon-tab">Buildings</Tabs.Trigger>
-					<Tabs.Trigger value="builder" class="mp-icon-tab">Settlement builder</Tabs.Trigger>
+					<Tabs.Trigger value="builder" class="mp-icon-tab" aria-label="Settlement builder">
+						<!-- Shortened on a phone so three tabs fit on one line. -->
+						<span class="mp-icon-tab-long">Settlement builder</span>
+						<span class="mp-icon-tab-short">Settlements</span>
+					</Tabs.Trigger>
 				</Tabs.List>
 				<Tabs.Content value="icons" class="mp-icon-panel">
 					<div class="mp-icon-search-row">
