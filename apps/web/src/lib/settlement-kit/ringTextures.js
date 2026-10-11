@@ -191,7 +191,32 @@ function worldLines(tile, scale, pls, w, whole, role) {
 		});
 }
 
-const { hedge, coral } = TILE_ART;
+const { hedge, coral, earth, bone } = TILE_ART;
+/** How much larger than its flat tile the bone art is laid round a ring. */
+const BONE_RING = 1.5;
+
+/**
+ * Speckles as round dots — a stroke of no length with round caps stays a
+ * dot wherever it's laid round the ring — in their own colour roles.
+ * @param {number} tile
+ * @param {number} scale
+ * @param {[number, number, number, (boolean | string)?][]} dots `[x, y, r, dark?]`
+ * @param {(d: [number, number, number, (boolean | string)?]) => string} role
+ */
+function dotLines(tile, scale, dots, role) {
+	const f = scale / SVG_PER_WORLD;
+	return dots.map((d) => {
+		const [x, y, r] = d;
+		const px = x * f,
+			py = (tile - y) * f;
+		/** @type {P2[]} */
+		const pts = [
+			[px, py],
+			[px + 0.01, py],
+		];
+		return { pts, w: 2 * r * f, round: true, role: role(d), x0: px, x1: px, y0: py };
+	});
+}
 
 /** Line-work laid round ring walls, by role: `size` is the tile's width and
  *  height in world units, `lines` its polylines within it. */
@@ -230,6 +255,30 @@ export const RING_TEXTURES = {
 				true,
 				'wall-reef-vein',
 			),
+		],
+	},
+	// Earth: grit and pebbles, as dots — twice the flat tile's specks, fewer
+	// of them (the flat tile's tiny specks would cost ~1 s more per ring and
+	// draw too faint).
+	'wall-earth-ring': {
+		size: (earth.tile * earth.scale) / SVG_PER_WORLD,
+		lines: dotLines(earth.tile, earth.scale, earth.dots, ([, , , dark]) =>
+			dark ? 'wall-earth-grit' : 'wall-earth-pebble',
+		),
+	},
+	// Bone: its grain strokes and pores, a little larger than the flat tile.
+	'wall-bone-ring': {
+		size: (bone.tile * bone.scale * BONE_RING) / SVG_PER_WORLD,
+		lines: [
+			...worldLines(
+				bone.tile,
+				bone.scale * BONE_RING,
+				polylines(bone.grain, 6),
+				(0.18 * bone.scale * BONE_RING) / SVG_PER_WORLD,
+				true,
+				'wall-bone-grain',
+			).map((l) => ({ ...l, round: true })),
+			...dotLines(bone.tile, bone.scale * BONE_RING, bone.pores, () => 'wall-bone-grain'),
 		],
 	},
 };

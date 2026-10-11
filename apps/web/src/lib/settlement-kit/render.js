@@ -38,7 +38,7 @@ import ClipperLib from 'clipper-lib';
 /** `role`: paint the line in that colour role instead of ink (a tinted
  *  texture line, e.g. a coral wall's grey grooves).
  *  @typedef {{pts: Poly, w?: number, round?: boolean, outline?: boolean, role?: Role}} Line */
-/** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'wall-wood' | 'wall-earth' | 'wall-bone' | 'wall-stone-ring' | 'wall-wood-ring' | 'wall-hedge-ring' | 'wall-reef-ring' | 'wall-hedge-cane' | 'wall-reef-groove' | 'wall-reef-vein' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
+/** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'wall-wood' | 'wall-earth' | 'wall-bone' | 'wall-stone-ring' | 'wall-wood-ring' | 'wall-hedge-ring' | 'wall-reef-ring' | 'wall-hedge-cane' | 'wall-reef-groove' | 'wall-reef-vein' | 'wall-earth-ring' | 'wall-bone-ring' | 'wall-earth-grit' | 'wall-earth-pebble' | 'wall-bone-grain' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
 /** `sharp`: keep the part's corners crisp whatever the drawing's join (flag
  *  cloth — a soft join would melt a pennant's tip into a blob).
  *  @typedef {{solid: Poly[], lines?: Line[], shadeLines?: Line[], fills?: Poly[], cuts?: Line[], free?: Line[], mask?: Poly, role?: Role, shaded?: boolean, shadeArea?: Poly, terrain?: boolean, sharp?: boolean}} Part */
@@ -276,9 +276,16 @@ export const LAYERS = /** @type {const} */ ([
 	'wall-hedge-ring-shade',
 	'wall-reef-ring',
 	'wall-reef-ring-shade',
+	'wall-earth-ring',
+	'wall-earth-ring-shade',
+	'wall-bone-ring',
+	'wall-bone-ring-shade',
 	'wall-hedge-cane',
 	'wall-reef-groove',
 	'wall-reef-vein',
+	'wall-earth-grit',
+	'wall-earth-pebble',
+	'wall-bone-grain',
 	'wood',
 	'wood-shade',
 	'earth',

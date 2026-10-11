@@ -417,16 +417,21 @@ function speckles(size, n, seed) {
 	const dark = [];
 	/** @type {string[]} */
 	const light = [];
+	/** Each speckle once, `[x, y, r, dark?]` — for ring walls (ringTextures.js). */
+	/** @type {[number, number, number, boolean][]} */
+	const dots = [];
 	for (let i = 0; i < n; i++) {
 		const x = rand() * size,
 			y = rand() * size,
 			r = 0.18 + rand() * 0.3;
-		const out = rand() < 0.65 ? dark : light;
+		const isDark = rand() < 0.65;
+		const out = isDark ? dark : light;
+		dots.push([x, y, r, isDark]);
 		for (const dx of [0, ...(x - r < 0 ? [size] : []), ...(x + r > size ? [-size] : [])])
 			for (const dy of [0, ...(y - r < 0 ? [size] : []), ...(y + r > size ? [-size] : [])])
 				out.push(`<circle cx="${r1(x + dx)}" cy="${r1(y + dy)}" r="${r1(r)}"/>`);
 	}
-	return { dark: dark.join(''), light: light.join('') };
+	return { dark: dark.join(''), light: light.join(''), dots };
 }
 const DIRT = speckles(6, 18, 11);
 
@@ -445,6 +450,15 @@ const earth = {
 	},
 };
 
+/** Bone's grain strokes and pores (`[x, y, r]`), in its 7-unit tile. */
+const BONE_GRAIN = 'M0.6 1.4Q2 1 3.4 1.5M4.2 3.6Q5.4 3.2 6.5 3.8M1.2 5.4Q2.4 5 3.6 5.6';
+/** @type {[number, number, number][]} */
+const BONE_PORES = [
+	[5.3, 1.2, 0.22],
+	[2.2, 3.3, 0.18],
+	[5.6, 5.9, 0.2],
+];
+
 /** Bone, white and grey: faint grain strokes and a few pores. */
 /** @type {PatternDef} */
 const bone = {
@@ -454,8 +468,8 @@ const bone = {
 		const m = MATERIALS.bone;
 		return (
 			`<rect width="7" height="7" style="fill:${tone(m.body)}"/>` +
-			`<path style="stroke:${tone(m.grain)};stroke-width:0.18;fill:none;stroke-linecap:round" d="M0.6 1.4Q2 1 3.4 1.5M4.2 3.6Q5.4 3.2 6.5 3.8M1.2 5.4Q2.4 5 3.6 5.6"/>` +
-			`<g style="fill:${tone(m.grain)}"><circle cx="5.3" cy="1.2" r="0.22"/><circle cx="2.2" cy="3.3" r="0.18"/><circle cx="5.6" cy="5.9" r="0.2"/></g>`
+			`<path style="stroke:${tone(m.grain)};stroke-width:0.18;fill:none;stroke-linecap:round" d="${BONE_GRAIN}"/>` +
+			`<g style="fill:${tone(m.grain)}">${BONE_PORES.map(([x, y, r]) => `<circle cx="${x}" cy="${y}" r="${r}"/>`).join('')}</g>`
 		);
 	},
 };
@@ -524,6 +538,10 @@ const reefRing = {
 export const TILE_ART = {
 	hedge: { tile: HEDGE, scale: 2, cane: BRAMBLE.cane },
 	coral: { tile: CORAL, scale: 2.5, maze: CORAL_MAZE, band: CORAL_BAND },
+	// A ring wall's dirt: its own wider speckle field (12 tile units at 2× =
+	// 12 world units, 72 specks), so no small tile repeats in rows round it.
+	earth: { tile: 12, scale: 2, dots: speckles(12, 72, 23).dots },
+	bone: { tile: 7, scale: 1, grain: BONE_GRAIN, pores: BONE_PORES },
 };
 
 /** A flat tile in one fixed colour — for tinted lines (ringTextures.js),
@@ -562,6 +580,13 @@ export const PATTERNS = {
 	'wall-hedge-cane': flat(MATERIALS.hedge.cane),
 	'wall-reef-groove': flat(MATERIALS.coral.wall),
 	'wall-reef-vein': flat(MATERIALS.coral.groove),
+	'wall-earth-ring': flat(MATERIALS.earth.body),
+	'wall-earth-ring-shade': flat(MATERIALS.earth.body),
+	'wall-bone-ring': flat(MATERIALS.bone.body),
+	'wall-bone-ring-shade': flat(MATERIALS.bone.body),
+	'wall-earth-grit': flat(MATERIALS.earth.dark),
+	'wall-earth-pebble': flat(MATERIALS.earth.light),
+	'wall-bone-grain': flat(MATERIALS.bone.grain),
 };
 
 /** How much of each colour a -shade tile keeps (the rest is ink) — the
@@ -603,6 +628,11 @@ export const FLAT_WALLS = {
 	'wall-hedge-cane': MATERIALS.hedge.cane,
 	'wall-reef-groove': MATERIALS.coral.wall,
 	'wall-reef-vein': MATERIALS.coral.groove,
+	'wall-earth-ring': '#8A6843',
+	'wall-bone-ring': '#E9E5DB',
+	'wall-earth-grit': MATERIALS.earth.dark,
+	'wall-earth-pebble': MATERIALS.earth.light,
+	'wall-bone-grain': MATERIALS.bone.grain,
 };
 
 /**

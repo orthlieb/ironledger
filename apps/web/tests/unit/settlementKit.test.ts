@@ -119,9 +119,9 @@ describe('wall patterns', () => {
 	// Each pattern-filled wall type should emit a <pattern> def and a
 	// pattern-filled wall path. Guards against a regression where the kit
 	// quietly reverts to flat fills (which would read as "lost its texture").
-	// Stone, palisade, hedge and coral rings take a body tile (their courses,
-	// seams, canes and grooves are drawn as lines round the ring); square
-	// walls keep the full tile.
+	// Ring walls take a body tile (their courses, seams, canes, grooves,
+	// speckles and grain are drawn as lines round the ring); square walls
+	// keep the full tile.
 	it.each([
 		['stone', 'round', 'wall-stone-ring'],
 		['stone', 'square', 'wall-stone'],
@@ -131,8 +131,10 @@ describe('wall patterns', () => {
 		['reef', 'square', 'wall-reef'],
 		['palisade', 'round', 'wall-wood-ring'],
 		['palisade', 'square', 'wall-wood'],
-		['earth', 'round', 'wall-earth'],
-		['bone', 'round', 'wall-bone'],
+		['earth', 'round', 'wall-earth-ring'],
+		['earth', 'square', 'wall-earth'],
+		['bone', 'round', 'wall-bone-ring'],
+		['bone', 'square', 'wall-bone'],
 	] as const)(
 		'%s %s wall emits a <pattern> and uses url(#…) for its fill',
 		(wall, wallShape, role) => {
@@ -244,6 +246,9 @@ describe('ring wall texture', () => {
 		expect(roles('hedge').filter((r) => r === 'wall-hedge-cane').length).toBeGreaterThan(20);
 		expect(roles('reef').filter((r) => r === 'wall-reef-groove').length).toBeGreaterThan(20);
 		expect(roles('reef')).toContain('wall-reef-vein');
+		expect(roles('earth')).toContain('wall-earth-grit');
+		expect(roles('earth')).toContain('wall-earth-pebble');
+		expect(roles('bone').filter((r) => r === 'wall-bone-grain').length).toBeGreaterThan(20);
 		expect(roles('stone')).toHaveLength(0); // stone courses stay ink
 	});
 });

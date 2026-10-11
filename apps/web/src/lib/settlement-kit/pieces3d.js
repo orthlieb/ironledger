@@ -2228,6 +2228,8 @@ export function ringWall(D, o = {}) {
 		'wall-wood': 'wall-wood-ring',
 		'wall-hedge': 'wall-hedge-ring',
 		'wall-reef': 'wall-reef-ring',
+		'wall-earth': 'wall-earth-ring',
+		'wall-bone': 'wall-bone-ring',
 	};
 	const faceRole = (role && RING_ROLE[role]) ?? role;
 	/** Degrees round the ring per 4.4-unit stone. */
@@ -2241,7 +2243,8 @@ export function ringWall(D, o = {}) {
 		// The wall's tallest point over the span (a bow can crest it above h).
 		let top = 0;
 		for (let k = 0; k <= 8; k++) top = Math.max(top, hAt(a0 + ((a1 - a0) * k) / 8));
-		top += 1;
+		// Earth heaps its mounds up to ~1.2× the wall line.
+		top = (faceRole === 'wall-earth-ring' ? top * 1.3 : top) + 1;
 		if (faceRole === 'wall-stone-ring') {
 			for (let c = 2.4, row = 0; c < top + 2.4; c += 2.4, row++) {
 				if (c < top)
@@ -2273,6 +2276,7 @@ export function ringWall(D, o = {}) {
 								return /** @type {Pt} */ ([rx * Math.cos(a), ry * Math.sin(a) + j * T + y]);
 							}),
 							w: l.w,
+							round: 'round' in l ? l.round : undefined,
 							role: /** @type {Part['role']} */ (l.role),
 						});
 					}
@@ -2418,7 +2422,7 @@ export function ringWall(D, o = {}) {
 			item: {
 				piece:
 					mat.crest === 'mound'
-						? moundParts(a0, a1, { role, shaded: true })
+						? moundParts(a0, a1, { role: faceRole, shaded: true, lines: texture(a0, a1) })
 						: [
 								{
 									solid: [facePoly(a0, a1)],
@@ -2449,7 +2453,7 @@ export function ringWall(D, o = {}) {
 		/** @type {Part[]} */
 		const seg =
 			mat.crest === 'mound'
-				? moundParts(a0, a1, { role, shadeArea: flank })
+				? moundParts(a0, a1, { role: faceRole, shadeArea: flank, lines: texture(a0, a1) })
 				: [
 						{
 							solid: F ? [facePoly(a0, a1), flareSeg(a0, a1)] : [facePoly(a0, a1)],
