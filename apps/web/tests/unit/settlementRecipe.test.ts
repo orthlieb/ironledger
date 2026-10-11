@@ -1,12 +1,13 @@
 /**
- * settlementRecipe.test.ts — the marker recipe's validation, cache key and
- * fallback icon, for Buildings-tab buildings.
+ * settlementRecipe.test.ts — the marker recipe's validation, cache key,
+ * label and fallback icon, for Buildings-tab buildings.
  */
 import { describe, expect, it } from 'vitest';
 import {
 	SETTLEMENT_BUILDINGS,
 	cleanSettlementRecipe,
 	recipeKey,
+	recipeLabel,
 	type SettlementRecipe,
 } from '../../src/lib/settlementRecipe.js';
 import { fallbackIcon } from '../../src/lib/settlement-kit/fallback.js';
@@ -31,6 +32,18 @@ describe('building recipes', () => {
 		expect(recipeKey(tower)).not.toBe(recipeKey(plain));
 		expect(recipeKey(tower)).not.toBe(recipeKey({ ...tower, building: 'church' }));
 	});
+	it('are labelled by building — walled when enclosed — as settlements are by size', () => {
+		const elves = { name: 'Elves' };
+		expect(recipeLabel(tower, elves)).toBe('Elves Round tower, walled');
+		expect(recipeLabel({ ...tower, walls: undefined }, elves)).toBe('Elves Round tower');
+		// A wall building is never enclosed, whatever `walls` says.
+		expect(recipeLabel({ ...tower, building: 'palisade', ruin: { decay: 0.5 } }, elves)).toBe(
+			'Ruined Elves Palisade',
+		);
+		expect(
+			recipeLabel({ tier: 'town', culture: 'x', seed: 1, ruin: { decay: 1, burned: true } }, null),
+		).toBe('Burned Ironlander Town');
+	});
 	it('fall back to a core icon that exists, ruined or not', () => {
 		const keys = new Set(MAP_ICON_LIST.map((i) => `${i.category}/${i.slug}`));
 		for (const building of Object.keys(SETTLEMENT_BUILDINGS) as SettlementRecipe['building'][])
@@ -38,5 +51,12 @@ describe('building recipes', () => {
 				const icon = fallbackIcon({ ...tower, building, ...(ruin ? { ruin } : {}) });
 				expect(keys.has(icon), `${building}${ruin ? ' ruined' : ''} → ${icon}`).toBe(true);
 			}
+	});
+	it('give every building an icon of its own, not the generic house', () => {
+		// A building missing from fallback.js BUILDING_ICONS would quietly
+		// fall back to the house.
+		for (const building of Object.keys(SETTLEMENT_BUILDINGS) as SettlementRecipe['building'][])
+			if (building !== 'gable-house')
+				expect(fallbackIcon({ ...tower, building }), building).not.toBe('settlement/house');
 	});
 });

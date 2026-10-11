@@ -108,6 +108,36 @@ export interface SettlementRecipe {
 	building?: SettlementBuilding;
 }
 
+const TIER_LABEL: Record<string, string> = {
+	stead: 'Stead',
+	camp: 'Camp',
+	outpost: 'Outpost',
+	hamlet: 'Hamlet',
+	village: 'Village',
+	hold: 'Hold',
+	town: 'Town',
+	city: 'City',
+	capital: 'Capital',
+	freeport: 'Freeport',
+};
+
+/** Human label for a recipe, e.g. "Ruined Nysis Town" or "Elves Round
+ *  tower, walled". */
+export function recipeLabel(
+	recipe: SettlementRecipe,
+	culture: { name: string } | null | undefined,
+): string {
+	const name = culture?.name ?? 'Ironlander';
+	const state = recipe.ruin ? (recipe.ruin.burned ? 'Burned ' : 'Ruined ') : '';
+	const b = recipe.building;
+	if (b) {
+		const walled =
+			recipe.walls && recipe.walls !== 'none' && recipe.walls !== 'auto' && !WALL_BUILDINGS.has(b);
+		return `${state}${name} ${SETTLEMENT_BUILDINGS[b] ?? b}${walled ? ', walled' : ''}`;
+	}
+	return `${state}${name} ${TIER_LABEL[recipe.tier] ?? recipe.tier}`;
+}
+
 /** Stable cache key for a recipe (field order fixed). */
 export function recipeKey(r: SettlementRecipe): string {
 	return [

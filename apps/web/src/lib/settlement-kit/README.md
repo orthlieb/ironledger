@@ -8,16 +8,16 @@ hand-drawn map markers without clashing.
 A handful of self-contained files do the work; a renderer collapses them
 into one layered SVG per piece or per settlement.
 
-| File           | Responsibility                                                                                            |
-| -------------- | --------------------------------------------------------------------------------------------------------- |
-| `geom.js`      | Primitive shapes (`rect`, `arc`, `circle`, `archOpening`, `lancet`, `crenellated`) and the PRNG.          |
-| `pieces3d.js`  | Every drawable piece (house, tower, keep, well, …) and the `Design` typedef with the culture knobs.       |
-| `layouts3d.js` | Templates (stead → freeport) that lay pieces out into a settlement, including the ring wall.              |
-| `ruins3d.js`   | Decay / overgrowth / scorch transformation applied over any `Placed[]` list.                              |
-| `render.js`    | Clipper-based renderer that collapses the final back-to-front list into one path per colour role.         |
-| `patterns.js`  | Material-wall `<pattern>` tiles in fixed colours (stone, bramble hedge, brain coral, planks, dirt, bone). |
-| `generate.js`  | `recipeDesign()` + `generateSettlementSvg()` — the only entry points app code should call.                |
-| `fallback.js`  | Marker-chip fallback (plain core icon) for recipes a client can't yet render.                             |
+| File           | Responsibility                                                                                                                                   |
+| -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `geom.js`      | Primitive shapes (`rect`, `arc`, `circle`, `archOpening`, `lancet`, `crenellated`) and the PRNG.                                                 |
+| `pieces3d.js`  | Every drawable piece (house, tower, keep, well, …) and the `Design` typedef with the culture knobs.                                              |
+| `layouts3d.js` | Templates (stead → freeport) that lay pieces out into a settlement, including the ring wall; `building()` draws one piece for the Buildings tab. |
+| `ruins3d.js`   | Decay / overgrowth / scorch transformation applied over any `Placed[]` list.                                                                     |
+| `render.js`    | Clipper-based renderer that collapses the final back-to-front list into one path per colour role.                                                |
+| `patterns.js`  | Material-wall `<pattern>` tiles in fixed colours (stone, bramble hedge, brain coral, planks, dirt, bone).                                        |
+| `generate.js`  | `recipeDesign()` + `generateSettlementSvg()` — the only entry points app code should call.                                                       |
+| `fallback.js`  | Marker-chip fallback (plain core icon) for recipes a client can't yet render.                                                                    |
 
 ## Oblique projection
 
@@ -281,24 +281,39 @@ seeds keep their looks.
 
 ## Recipe overrides
 
-Six recipe-only fields let a marker override the culture:
+Seven recipe-only fields let a marker override the culture:
 
-| Recipe field | Effect                                                                                          |
-| ------------ | ----------------------------------------------------------------------------------------------- |
-| `walls`      | Override the culture's own ring-wall material (`'none'`, `'stone'`, `'palisade'`, …).           |
-| `wallShape`  | Force `'round'` or `'square'` regardless of what the culture rolls.                             |
-| `ground`     | Override `D.ground` ('land' / 'water') — the easy knob for "put this settlement on a lagoon."   |
-| `stilts`     | Wrap every inside-the-walls piece with `onStilts(...)` so the whole settlement sits on pilings. |
-| `harbor`     | `true` adds a side harbour with pier + caravel.                                                 |
-| `ruin`       | `{ decay, burned? }` runs `ruinPlaced()` over the final list.                                   |
+| Recipe field | Effect                                                                                              |
+| ------------ | --------------------------------------------------------------------------------------------------- |
+| `walls`      | Override the culture's own ring-wall material (`'none'`, `'stone'`, `'palisade'`, …).               |
+| `wallShape`  | Force `'round'` or `'square'` regardless of what the culture rolls.                                 |
+| `ground`     | Override `D.ground` ('land' / 'water') — the easy knob for "put this settlement on a lagoon."       |
+| `stilts`     | Wrap every inside-the-walls piece with `onStilts(...)` so the whole settlement sits on pilings.     |
+| `harbor`     | `true` adds a side harbour with pier + caravel.                                                     |
+| `ruin`       | `{ decay, burned? }` runs `ruinPlaced()` over the final list.                                       |
+| `building`   | A `BUILDINGS` key: `building()` draws that one piece instead of the settlement (the Buildings tab). |
 
 See CLAUDE.md ("Standing order — settlement-recipe override fields live
-in four places") for the plumbing contract when adding a new one.
+in five places") for the plumbing contract when adding a new one.
+
+**Buildings.** `building(key, D, {walls, seed, ruin})` draws one of the
+`BUILDINGS` (the keyed entries of the `PIECES` table) on its own. `walls`
+puts a small ring or square wall of its own round it, fitted to its
+footprint the way a settlement's is (`enclosed()`), with up to two towers
+where the wall type carries them — never round the `WALL_BUILDINGS`
+(Wall, Wall tower, Palisade, Gatehouse, Wooden gate), which come in their
+own material. A culture on water lays a lagoon under it. `seed` varies it
+as a settlement varies its buildings — `jitterDesign()` (pitch, sweep,
+ornament, now and then the windows or doors), a round tower's girth and
+height, a house's details — and lets a mixed culture's builder roll its
+own style (`mixDesign()`); the reference row (`pieces()`) passes no seed,
+so it and the baked icons stay fixed.
 
 ## Pieces catalogue (abridged)
 
 Exported from `pieces3d.js`; `layouts3d.js` → `pieces(D)` returns the full
-list with human-readable names. Partial map, as a quick index:
+list with human-readable names (the `PIECES` table; `BUILDINGS` is the
+part the Buildings tab offers). Partial map, as a quick index:
 
 - Dwellings: `gableHouse`, `sideHouse` (handles house / warehouse /
   workshop / church / longhouse / barn / tavern / barracks / mill via
@@ -341,8 +356,13 @@ marker colour on the `roof` layer, and inlines the SVG.
    hatching kept to the shaded part, `shadeArea` (or `shaded: true`) for
    the darker right flank. Build receding faces with `boxProjector` and
    put openings on them through `P.face()`.
-2. Export the function and add an entry to `rawPieces()` in `layouts3d.js`
-   so the playground can show it in the pieces row.
+2. Export the function and add a `[key, name, make]` entry to `PIECES` in
+   `layouts3d.js` so the playground can show it in the pieces row. To
+   offer it on the map's Buildings tab too, give it a key (else `null`),
+   add the same key and name to `SETTLEMENT_BUILDINGS` in
+   `src/lib/settlementRecipe.ts` and its nearest baked icon to
+   `BUILDING_ICONS` in `fallback.js` (tests hold all three in step); a
+   wall piece also goes in both `WALL_BUILDINGS` sets.
 3. If it's a dwelling, route it through the `house()` picker there. If
    it's an inside-the-walls extra, add it to `EXTRAS` so templates can
    call for it.

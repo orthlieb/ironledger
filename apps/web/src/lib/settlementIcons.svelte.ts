@@ -19,12 +19,7 @@ import { primeLayered } from '$lib/mapIconCache.js';
 import type { MapMarker } from '$lib/mapStore.svelte.js';
 import type { Culture } from '$lib/settlement-kit/generate.js';
 import { culturesLoaded, loadCultures, resolveCulture } from '$lib/cultureStore.svelte.js';
-import {
-	SETTLEMENT_BUILDINGS,
-	WALL_BUILDINGS,
-	recipeKey,
-	type SettlementRecipe,
-} from '$lib/settlementRecipe.js';
+import { recipeKey, recipeLabel, type SettlementRecipe } from '$lib/settlementRecipe.js';
 
 /** Most generated icons kept (rerolls in the builder make a lot of them). */
 const MAX_CACHED = 120;
@@ -96,32 +91,7 @@ export function generatedIcon(key: string, label: string, svg: string): MapIcon 
 	};
 }
 
-const TIER_LABEL: Record<string, string> = {
-	stead: 'Stead',
-	camp: 'Camp',
-	outpost: 'Outpost',
-	hamlet: 'Hamlet',
-	village: 'Village',
-	hold: 'Hold',
-	town: 'Town',
-	city: 'City',
-	capital: 'Capital',
-	freeport: 'Freeport',
-};
-
-/** Human label for a recipe, e.g. "Ruined Nysis Town" or "Elves Round
- *  tower, walled". */
-export function recipeLabel(recipe: SettlementRecipe, culture: Culture | null): string {
-	const name = culture?.name ?? 'Ironlander';
-	const state = recipe.ruin ? (recipe.ruin.burned ? 'Burned ' : 'Ruined ') : '';
-	const b = recipe.building;
-	if (b) {
-		const walled =
-			recipe.walls && recipe.walls !== 'none' && recipe.walls !== 'auto' && !WALL_BUILDINGS.has(b);
-		return `${state}${name} ${SETTLEMENT_BUILDINGS[b] ?? b}${walled ? ', walled' : ''}`;
-	}
-	return `${state}${name} ${TIER_LABEL[recipe.tier] ?? recipe.tier}`;
-}
+export { recipeLabel };
 
 /**
  * The generated icon for a recipe, or undefined while cultures load / the
