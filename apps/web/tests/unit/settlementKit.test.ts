@@ -132,8 +132,8 @@ describe('recipe overrides', () => {
 	});
 	it("takes ground and walls from the recipe alone, never the culture's", () => {
 		// A culture file that still says where it stands, and what wall it
-		// builds, has no say: no ground unless the recipe asks, and a town
-		// 'Usual for its size' in stone.
+		// builds, has no say: no ground and no wall unless the recipe asks —
+		// whatever the settlement's size.
 		const old = {
 			key: 'old',
 			name: 'Old',
@@ -143,8 +143,10 @@ describe('recipe overrides', () => {
 		const roles = (svg: string) => [...svg.matchAll(/data-role="([\w-]+)"/g)].map((m) => m[1]);
 		const plain = roles(generateSettlementSvg({ tier: 'town', culture: 'old', seed: 3 }, old));
 		expect(plain).not.toContain('water');
-		expect(plain).toContain('wall-stone-ring');
-		expect(plain.some((x) => x?.startsWith('wall-reef'))).toBe(false);
+		expect(plain.some((x) => x?.endsWith('-ring'))).toBe(false);
+		expect(
+			roles(generateSettlementSvg({ tier: 'town', culture: 'old', seed: 3, walls: 'stone' }, old)),
+		).toContain('wall-stone-ring');
 		expect(
 			roles(generateSettlementSvg({ tier: 'town', culture: 'old', seed: 3, ground: 'water' }, old)),
 		).toContain('water');

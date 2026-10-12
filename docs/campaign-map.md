@@ -360,7 +360,8 @@ and every culture knob. It's used three ways:
 - **The Settlement builder** — the Choose Icon dialog's third tab
   (`SettlementBuilder.svelte`). Just the essentials: size (tier, shown
   with its population; Freeport isn't offered — a culture with a high
-  `variety` makes a freeport's mix of builders), culture, walls and wall
+  `variety` makes a freeport's mix of builders), culture, walls (None by
+  default) and wall
   shape, ground (as on the Buildings tab), on stilts, harbour, ruined +
   decay (optionally burned: scorch marks and sooty walls — the buildings
   come down by degrees as on the Buildings tab, each a little either side
@@ -409,8 +410,8 @@ the body on a 45° slope, `towerCrenel` adds a parapet band with its own
 corbel, and `towerRoof` caps it (cone, onion, dome, lancet, or none — a
 bare crenellated top). `steeple` makes the church, cathedral, clock and
 bell towers square or round; either takes the same cap and top. The
-recipe's walls pick the material — a culture never does ("Usual for its
-size" is an outpost's palisade, stone from a hold up) — and every material draws in its own
+recipe's walls pick the material (None by default) — never the culture or
+the settlement's size — and every material draws in its own
 colours whatever the palette: stone grey, hedges green and brown (a
 bramble pattern), coral and bone white and grey (coral as a brain-coral
 maze), palisades and earth banks brown (planks, speckled dirt).
