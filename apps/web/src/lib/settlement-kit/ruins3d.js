@@ -92,7 +92,7 @@ export function ruinPlaced(items, o) {
  * @param {number} seed
  * @returns {Part[]}
  */
-export function ruinPiece(parts, o, seed) {
+function ruinPiece(parts, o, seed) {
 	const r = rng(seed);
 	const d = o.single ? o.decay : Math.max(0.05, Math.min(1, o.decay + (r() - 0.5) * 0.5));
 	const built = parts.filter((p) => !p.terrain && p.solid.length);

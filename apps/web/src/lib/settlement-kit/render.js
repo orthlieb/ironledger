@@ -48,9 +48,9 @@ import { TEXTURE_ROLES } from './patterns.js';
 /** @typedef {{X: number, Y: number}[][]} CPaths */
 
 /** Default outline stroke weight (world units). */
-export const OUTLINE = 3;
+const OUTLINE = 3;
 /** Default detail stroke weight. */
-export const DETAIL = 1.7;
+const DETAIL = 1.7;
 
 const S = 1000; // Clipper works in integers
 

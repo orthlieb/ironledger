@@ -199,7 +199,6 @@ function extent(piece) {
  * @typedef {object} Template
  * @property {string} label
  * @property {string} pop
- * @property {string} note
  * @property {number} rx building area half-width (the wall sits ~20–30% outside it)
  * @property {number} ry building area half-depth
  * @property {number} n ordinary dwellings, before the culture's scale
@@ -223,7 +222,6 @@ export const TEMPLATES = {
 	stead: {
 		label: 'Stead',
 		pop: '~5–20',
-		note: 'Tiny, self-sustaining: a few family dwellings',
 		rx: 28,
 		ry: 9,
 		n: 2,
@@ -235,7 +233,6 @@ export const TEMPLATES = {
 	camp: {
 		label: 'Camp',
 		pop: '~20–200 (transient)',
-		note: 'Temporary: nomads, soldiers or seasonal workers',
 		rx: 0,
 		ry: 0,
 		n: 0,
@@ -247,7 +244,6 @@ export const TEMPLATES = {
 	outpost: {
 		label: 'Outpost',
 		pop: '20–100',
-		note: 'Border or frontier post for defence, trade or exploration',
 		rx: 22,
 		ry: 8,
 		n: 1,
@@ -261,7 +257,6 @@ export const TEMPLATES = {
 	hamlet: {
 		label: 'Hamlet',
 		pop: '20–100',
-		note: 'A few homes, limited services, informal leadership',
 		rx: 24,
 		ry: 9,
 		n: 3,
@@ -273,7 +268,6 @@ export const TEMPLATES = {
 	village: {
 		label: 'Village',
 		pop: '100–600',
-		note: 'Communal buildings and recognised leadership',
 		rx: 30,
 		ry: 11,
 		n: 4,
@@ -285,7 +279,6 @@ export const TEMPLATES = {
 	hold: {
 		label: 'Hold',
 		pop: '600–2,500',
-		note: 'Large and fortified, with diverse trades',
 		rx: 34,
 		ry: 12,
 		n: 4,
@@ -300,7 +293,6 @@ export const TEMPLATES = {
 	town: {
 		label: 'Town',
 		pop: '600–2,500',
-		note: 'Established market town (Termin, Sveba)',
 		rx: 38,
 		ry: 13,
 		n: 5,
@@ -313,7 +305,6 @@ export const TEMPLATES = {
 	city: {
 		label: 'City',
 		pop: '2,500–6,000',
-		note: 'Ostrea, Piscis, Fluenti, Materton, Mons',
 		rx: 48,
 		ry: 17,
 		n: 8,
@@ -327,7 +318,6 @@ export const TEMPLATES = {
 	capital: {
 		label: 'Capital',
 		pop: '6,000–10,000',
-		note: 'Seat of a country (Typpe)',
 		rx: 58,
 		ry: 21,
 		n: 11,
@@ -342,7 +332,6 @@ export const TEMPLATES = {
 	freeport: {
 		label: 'Freeport',
 		pop: '~15,900',
-		note: 'Sui generis: bigger than everything, and fed by ship (always has a harbour)',
 		rx: 62,
 		ry: 22,
 		n: 11,

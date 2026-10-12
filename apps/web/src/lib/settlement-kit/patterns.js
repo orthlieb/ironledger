@@ -551,7 +551,7 @@ export const TILE_ART = {
 // role, with ink waves); 'none' draws no plane at all.
 
 /** Ground colours, fixed like the wall materials'. */
-export const GROUND_COLOURS = {
+const GROUND_COLOURS = {
 	dirt: { body: '#B39874', dark: '#8C7253', light: '#CDB693' },
 	grass: { body: '#A9BA7C', blade: '#7A9455', light: '#C2D097' },
 	farmland: {
@@ -799,7 +799,7 @@ function flat(colour) {
 }
 
 /** @type {Record<string, PatternDef>} */
-export const PATTERNS = {
+const PATTERNS = {
 	'wall-stone': stone,
 	'wall-stone-shade': stone,
 	'wall-hedge': hedge,

@@ -275,14 +275,14 @@ export function upgradeDesign(D) {
  * A tower's top, factored into a crenellated top (on / off) and the cap on
  * it. No cap means a bare crenellated top, so a tower never ends flat.
  * @param {Design} D
- * @param {{roof?: Design['towerRoof'], crenel?: boolean}} o per-tower overrides
+ * @param {Design['towerRoof']} [cap] this tower's cap, if not the culture's
  */
-function towerTop(D, o) {
-	const want = o.roof ?? D.towerRoof;
+function towerTop(D, cap) {
+	const want = cap ?? D.towerRoof;
 	const roof = want === 'crenel' ? 'none' : want;
 	return {
 		roof,
-		crenel: roof === 'none' || want === 'crenel' || (o.crenel ?? D.towerCrenel ?? false),
+		crenel: roof === 'none' || want === 'crenel' || (D.towerCrenel ?? false),
 	};
 }
 
@@ -291,7 +291,7 @@ function towerTop(D, o) {
 const STAKE = 1.6;
 
 /** Hatch/detail stroke weight (world units). */
-export const THIN = 0.6;
+const THIN = 0.6;
 
 /** The role of line-work texture drawn in ink — masonry courses, barn
  *  planks, wall seams — so the Texture switch and small map icons can leave
@@ -895,14 +895,14 @@ function boxProjector(d, k, h = 0, ridge = 0) {
 /**
  * House with its gable facing the viewer.
  * @param {Design} D
- * @param {{w?: number, h?: number, seed?: number}} [o]
+ * @param {{w?: number, seed?: number}} [o]
  * @returns {Part[]}
  */
 export function gableHouse(D, o = {}) {
 	const r = rng(o.seed ?? 1);
 	const two = r() < D.storeys;
 	const w = o.w ?? 16,
-		h = (o.h ?? 10) * (two ? 1.65 : 1) * D.stature,
+		h = 10 * (two ? 1.65 : 1) * D.stature,
 		rh = w * D.pitch,
 		ov = 1.5;
 	const dome = D.towerRoof === 'dome';
@@ -994,7 +994,7 @@ export function gableHouse(D, o = {}) {
  *   'barracks'  — long stone hall, a row of slit windows, a banner;
  *   'mill'      — a waterwheel at the front, standing in a mill race.
  * @param {Design} D
- * @param {{w?: number, h?: number, seed?: number, kind?: 'house' | 'warehouse' | 'workshop' | 'church' | 'longhouse' | 'barn' | 'tavern' | 'barracks' | 'mill'}} [o]
+ * @param {{w?: number, seed?: number, kind?: 'house' | 'warehouse' | 'workshop' | 'church' | 'longhouse' | 'barn' | 'tavern' | 'barracks' | 'mill'}} [o]
  * @returns {Part[]}
  */
 export function sideHouse(D, o = {}) {
@@ -1005,7 +1005,7 @@ export function sideHouse(D, o = {}) {
 	const W0 = { house: 22, longhouse: 34, barn: 26, tavern: 24, barracks: 38, mill: 22 };
 	const H0 = { church: 13, longhouse: 6.5, barn: 11, barracks: 8 };
 	const w = o.w ?? W0[/** @type {keyof typeof W0} */ (kind)] ?? 30,
-		h = (o.h ?? H0[/** @type {keyof typeof H0} */ (kind)] ?? 9) * (two ? 1.65 : 1) * D.stature,
+		h = (H0[/** @type {keyof typeof H0} */ (kind)] ?? 9) * (two ? 1.65 : 1) * D.stature,
 		d = 12 * D.depth * (kind === 'house' ? 1 : kind === 'church' ? 1.35 : long ? 1.15 : 1.2),
 		rh = d * D.pitch * (kind === 'warehouse' ? 1.1 : long ? 1.9 : 1.5),
 		ov = 1.4;
@@ -1585,7 +1585,7 @@ function flag(D, x, y, dir = 1) {
  * Round tower: shaded cylinder, optionally crenellated at the top, capped
  * per the culture — cone, onion, dome, lancet or nothing.
  * @param {Design} D
- * @param {{r?: number, h?: number, roof?: Design['towerRoof'], crenel?: boolean, flags?: boolean, corbel?: number, belfry?: boolean, clock?: boolean, finial?: boolean}} [o]
+ * @param {{r?: number, h?: number, roof?: Design['towerRoof'], flags?: boolean, belfry?: boolean, clock?: boolean, finial?: boolean}} [o]
  *   `belfry`: a church bell tower — door, and an arched bell chamber with its
  *   bell in place of the window; `clock`: a clock face up top instead;
  *   `finial`: the culture's holy symbol on the top instead of a flag.
@@ -1598,14 +1598,14 @@ export function roundTower(D, o = {}) {
 		b = bowAmt(D.towerBow),
 		// Concave (elven) towers flare at the foot and narrow as they rise.
 		top = r * (1 - (b > 0 ? Math.max(D.taper, 0.42 * Math.min(1, D.towerBow)) : D.taper));
-	const { roof, crenel } = towerTop(D, o);
+	const { roof, crenel } = towerTop(D, o.roof);
 	/** @type {Pt} */ const mid = [0, h / 2];
 	// Corbelled body: from the belt up to the parapet, the walls widen via
 	// a 45° slope and then stay flared. `D.towerCorbel` is the share of the
 	// tower's height occupied by the corbel, measured down from the top —
 	// 0 means no corbel, 1 means the whole tower is the slope. Orthogonal
 	// to roof style: any cap can sit on a corbelled or straight body.
-	const corbelAmount = Math.max(0, Math.min(1, o.corbel ?? D.towerCorbel ?? 0));
+	const corbelAmount = Math.max(0, Math.min(1, D.towerCorbel ?? 0));
 	const corbelOvMax = Math.max(1.6, r * 0.26);
 	const corbelBelt = (1 - corbelAmount) * h;
 	// Project outward by the fixed max, clamped to the room available above
@@ -1784,15 +1784,15 @@ export function roundTower(D, o = {}) {
  * capped per the culture — a pyramid spire for cone, or onion, dome, lancet,
  * or nothing.
  * @param {Design} D
- * @param {{w?: number, h?: number, finial?: boolean, clock?: boolean, corbel?: number, roof?: Design['towerRoof'], crenel?: boolean}} [o]
+ * @param {{w?: number, h?: number, finial?: boolean, clock?: boolean}} [o]
  *   `finial`: top it with the culture's symbol; `clock`: a clock face instead
- *   of the belfry; `corbel`: override `D.towerCorbel` (0..1).
+ *   of the belfry.
  * @returns {Part[]}
  */
 export function squareTower(D, o = {}) {
 	const w = o.w ?? 10,
 		h = (o.h ?? 28) * D.stature;
-	const { roof, crenel } = towerTop(D, o);
+	const { roof, crenel } = towerTop(D);
 	// A crenellated top's corbel and band (see below).
 	const ctOv = Math.max(0.8, w * 0.12),
 		ctBand = Math.max(3, w * 0.5);
@@ -1806,7 +1806,7 @@ export function squareTower(D, o = {}) {
 	// height occupied by the corbel (measured down from the top) — 0 means
 	// no corbel, 1 means the whole tower is the slope. Pyramid / onion /
 	// dome above rises from the wider top.
-	const corbelAmount = Math.max(0, Math.min(1, o.corbel ?? D.towerCorbel ?? 0));
+	const corbelAmount = Math.max(0, Math.min(1, D.towerCorbel ?? 0));
 	const beltOvMax = Math.max(1.4, w * 0.14);
 	const beltY = (1 - corbelAmount) * h;
 	const beltOv = Math.min(beltOvMax, Math.max(0, h - beltY));
@@ -4539,20 +4539,6 @@ export function cathedral(D) {
 	];
 }
 
-/** Sharpened-stake top edge from x1 back to x0 at height y. */
-function stakes(/** @type {number} */ x0, /** @type {number} */ x1, /** @type {number} */ y) {
-	const n = Math.max(2, Math.round((x1 - x0) / STAKE));
-	/** @type {Poly} */
-	const out = [];
-	for (let i = n; i > 0; i--) {
-		const b = x0 + ((x1 - x0) * i) / n,
-			a = b - (x1 - x0) / n;
-		out.push([b, y - 1.6], [(a + b) / 2, y]);
-	}
-	out.push([x0, y - 1.6]);
-	return out;
-}
-
 /**
  * Witch's hut: a crooked round hut with a steep, shaggy thatch, perched on
  * leaning stilts over the bog, a smoking chimney pot through the roof.
@@ -4638,48 +4624,21 @@ export function witchHut(D) {
 }
 
 /**
- * A straight run of wall from x0 to x1, `wh` high, seen square-on with a
- * shaded end face: crenellated stone, or sharpened palisade stakes.
+ * Standalone wall segment: a straight run of crenellated stone, 36 long,
+ * seen square-on with a shaded end face (the Wall building).
  * @param {Design} D
- * @param {number} x0
- * @param {number} x1
- * @param {number} wh
- * @param {boolean} wood
  * @returns {Part[]}
  */
-function wallRun(D, x0, x1, wh, wood) {
+export function wallSegment(D) {
+	const x0 = -18,
+		x1 = 18,
+		wh = 9 * D.stature;
 	const v = depthVec(4);
-	const front = /** @type {Poly} */ (
-		wood
-			? [[x0, 0], [x1, 0], ...stakes(x0, x1, wh)]
-			: crenellated(x0, x1, 0, wh, { merlon: 2.2, notch: 2 })
-	);
-	const role = wood ? /** @type {const} */ ('wall-wood') : /** @type {const} */ ('wall-stone');
+	const front = crenellated(x0, x1, 0, wh, { merlon: 2.2, notch: 2 });
 	const sideFace = /** @type {Poly} */ ([[x1, 0], add([x1, 0], v), add([x1, wh], v), [x1, wh]]);
-	/** @type {Part[]} */
-	const parts = [
-		{ solid: [sideFace], role, shaded: true, lines: hatch(sideFace, 65, D.hatch) },
-		// Both bodies take their texture from the pattern fill: running-bond
-		// courses for stone, plank stripes for a palisade.
-		{ solid: [front], role },
-	];
-	return parts;
-}
-
-/**
- * Standalone wall segment: a run of stone (optionally with a tower at its
- * middle) or of palisade.
- * @param {Design} D
- * @param {{wood?: boolean, len?: number, tower?: boolean, h?: number}} [o]
- * @returns {Part[]}
- */
-export function wallSegment(D, o = {}) {
-	const wood = !!o.wood,
-		len = o.len ?? 36,
-		wh = (o.h ?? (wood ? 8 : 9)) * D.stature;
-	if (!o.tower) return wallRun(D, -len / 2, len / 2, wh, wood);
+	// Both bodies take their texture from the stone pattern fill.
 	return [
-		...wallRun(D, -len / 2, len / 2, wh, wood),
-		...place(roundTower(D, { r: 5, h: wh + 10, flags: D.flags }), { y: -0.4 }),
+		{ solid: [sideFace], role: 'wall-stone', shaded: true, lines: hatch(sideFace, 65, D.hatch) },
+		{ solid: [front], role: 'wall-stone' },
 	];
 }
