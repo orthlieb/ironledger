@@ -107,7 +107,6 @@ export const mapMarkerSchema = z.object({
       ground: z
         .enum([
           'none',
-          'hex',
           'dirt',
           'grass',
           'farmland',

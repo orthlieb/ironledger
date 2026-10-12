@@ -34,7 +34,6 @@ describe('building recipes', () => {
 		expect(cleanSettlementRecipe({ ...tower, ground: 'magma' })).not.toHaveProperty('ground');
 		expect(SETTLEMENT_GROUNDS).toEqual([
 			'none',
-			'hex',
 			'dirt',
 			'grass',
 			'farmland',

@@ -41,8 +41,10 @@ import { TEXTURE_ROLES } from './patterns.js';
  *  @typedef {{pts: Poly, w?: number, round?: boolean, outline?: boolean, role?: Role}} Line */
 /** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'wall-wood' | 'wall-earth' | 'wall-bone' | 'wall-stone-ring' | 'wall-wood-ring' | 'wall-hedge-ring' | 'wall-reef-ring' | 'wall-hedge-cane' | 'wall-reef-groove' | 'wall-reef-vein' | 'wall-earth-ring' | 'wall-bone-ring' | 'wall-earth-grit' | 'wall-earth-pebble' | 'wall-bone-grain' | 'ink-texture' | 'ground-dirt' | 'ground-grass' | 'ground-farmland' | 'ground-sand' | 'ground-rock' | 'ground-snow' | 'ground-ice' | 'ground-marsh' | 'ground-lava' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
 /** `sharp`: keep the part's corners crisp whatever the drawing's join (flag
- *  cloth — a soft join would melt a pennant's tip into a blob).
- *  @typedef {{solid: Poly[], lines?: Line[], shadeLines?: Line[], fills?: Poly[], cuts?: Line[], free?: Line[], mask?: Poly, role?: Role, shaded?: boolean, shadeArea?: Poly, terrain?: boolean, sharp?: boolean}} Part */
+ *  cloth — a soft join would melt a pennant's tip into a blob). `aloft`:
+ *  hung from high up (a mill's sails) — a ruin drops it, however low it
+ *  reaches. `smoke`: a chimney's plume — a ruin never smokes.
+ *  @typedef {{solid: Poly[], lines?: Line[], shadeLines?: Line[], fills?: Poly[], cuts?: Line[], free?: Line[], mask?: Poly, role?: Role, shaded?: boolean, shadeArea?: Poly, terrain?: boolean, sharp?: boolean, aloft?: boolean, smoke?: boolean}} Part */
 /** @typedef {{X: number, Y: number}[][]} CPaths */
 
 /** Default outline stroke weight (world units). */
@@ -248,11 +250,11 @@ export function place(parts, at) {
 	}));
 }
 
-/** Colour layers emitted by renderLayered(), in paint order. The
- *  `wall-*` material roles (stone / hedge / reef / wood / earth / bone) take
- *  an SVG `<pattern>` fill in place of a flat colour — see
- *  settlement-kit/patterns.js — each with its own -shade tile. */
-export const LAYERS = /** @type {const} */ ([
+/** Face layers, in paint order. The `wall-*` material roles (stone /
+ *  hedge / reef / wood / earth / bone) take an SVG `<pattern>` fill in place
+ *  of a flat colour — see settlement-kit/patterns.js — each with its own
+ *  -shade tile. */
+const FACE_LAYERS = /** @type {const} */ ([
 	// The ground plane under everything (groundPlane() in pieces3d.js);
 	// never shaded, but every part gets a -shade layer.
 	'ground-dirt',
@@ -314,9 +316,19 @@ export const LAYERS = /** @type {const} */ ([
 	'roof',
 	'roof-shade',
 	'flag',
-	'ink-texture',
-	'ink',
 ]);
+
+/** One outline layer per role a part can be drawn in (its face roles, bar
+ *  the -shade and line-work texture ones): each part's outline is drawn in a
+ *  darker shade of its own colour (patterns.js lineColour()), not in ink. */
+export const LINE_ROLES = FACE_LAYERS.filter(
+	(l) => !l.endsWith('-shade') && !TEXTURE_ROLES.has(l),
+).map((l) => `${l}-line`);
+
+/** Colour layers emitted by renderLayered(), in paint order: the faces,
+ *  their outlines, then the ink line-work (windows, doors, hatching, …) on
+ *  top. */
+export const LAYERS = [...FACE_LAYERS, ...LINE_ROLES, 'ink-texture', 'ink'];
 
 /**
  * Render parts to one path per colour role, so the consumer can colour
@@ -356,7 +368,11 @@ export function renderLayered(parts, opts = {}) {
 		const miter = sharp ? 4 : 1.6;
 		const outer = offset(solid, half, round && !sharp, miter);
 		const inner = offset(solid, -half, round && !sharp, miter);
-		let ink = minus(outer, inner);
+		// The outline, in a darker shade of the part's own colour; the ink
+		// is the line-work inside it.
+		const outline = minus(outer, inner);
+		/** @type {CPaths} */
+		let ink = [];
 		const fillInk = p.fills?.length ? intersect(rawUnion(p.fills), outer) : [];
 		const inkLines = p.lines?.filter((l) => !l.role);
 		if (inkLines?.length)
@@ -380,13 +396,14 @@ export function renderLayered(parts, opts = {}) {
 		let free = p.free?.length ? stroke(p.free) : [];
 		if (mask) free = intersect(free, mask);
 		ink = union(ink, free);
+		const role = p.role ?? 'wall';
+		acc[`${role}-line`]?.push(minus(outline, occ));
 		acc.ink.push(minus(ink, occ));
 		// Kept clear of the windows and doors, as ink lines are.
 		const clear = fillInk.length ? union(occ, offset(fillInk, 0.6)) : occ;
 		for (const [r, ls] of tints) acc[r].push(minus(intersect(stroke(ls), inner), clear));
 
 		const face = minus(solid, occ);
-		const role = p.role ?? 'wall';
 		if (role === 'flag') acc.flag.push(face);
 		else {
 			const shade = p.shaded ? face : p.shadeArea ? intersect(face, [toC(p.shadeArea)]) : [];

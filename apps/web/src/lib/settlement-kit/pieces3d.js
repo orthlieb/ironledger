@@ -20,6 +20,11 @@ import { place } from './render.js';
 /** @typedef {import('./render.js').Line} Line */
 /** @typedef {import('./geom.js').Poly} Poly */
 /** @typedef {import('./geom.js').Pt} Pt */
+/** What a settlement or building stands on — set by the recipe, not the
+ *  culture: nothing, a plane of a ground type (groundPlane()), or water (a
+ *  lagoon). @typedef {'none' | 'dirt' | 'grass' | 'farmland' | 'sand' | 'rock' | 'snow' | 'ice' | 'marsh' | 'lava' | 'water'} Ground */
+/** A wall's material — set by the recipe (or the settlement's size), not
+ *  the culture. @typedef {'none' | 'stone' | 'palisade' | 'hedge' | 'bone' | 'earth' | 'reef'} WallType */
 
 /** Bow of a line, -1 … 1: positive swoops inward (concave), negative bulges
  *  outward (convex), 0 is straight. @typedef {number} Bow */
@@ -68,8 +73,6 @@ import { place } from './render.js';
  *   banner, a tapered pennant that comes to a single point (default), or a
  *   split pennant with a swallowtail notch at the trailing end
  * @property {number} hatch hatch spacing (smaller = darker shade)
- * @property {'none' | 'stone' | 'palisade' | 'hedge' | 'bone' | 'earth' | 'reef'} wall the
- *   culture's usual town wall
  * @property {number} wallH wall height factor
  * @property {boolean} merlons crenellated parapet on stone walls
  * @property {number} wallTowers towers around a city ring (towns get half)
@@ -77,11 +80,6 @@ import { place } from './render.js';
  *   whale-jaw arch
  * @property {'timber' | 'round' | 'mound' | 'stilt'} houseForm framed houses, round huts,
  *   turf mounds, or huts on stilts
- * @property {'none' | 'hex' | 'dirt' | 'grass' | 'farmland' | 'sand' | 'rock' | 'snow' | 'ice' | 'marsh' | 'lava' | 'water'} ground
- *   what the settlement stands on: 'none' draws no ground; 'hex' a dashed hex tile behind it,
- *   as a hex map's cell frames it (hexTile() in layouts3d.js); the others a plane
- *   under the whole of it in their own colour and texture (groundPlane());
- *   water a lagoon with waves
  * @property {number} stature building height factor (small folk < 1 < giants)
  * @property {number} scale building size factor; bigger means fewer of them
  * @property {number} variety 0..1: a mixed culture (a freeport) — the chance
@@ -136,7 +134,6 @@ export const DEFAULT_DESIGN = {
 	flagFolds: 3,
 	flagShape: 'pennant',
 	hatch: 1.4,
-	wall: 'stone',
 	wallH: 1,
 	merlons: true,
 	wallTowers: 4,
@@ -148,7 +145,6 @@ export const DEFAULT_DESIGN = {
 	keep: 'city',
 	market: 'town',
 	houseForm: 'timber',
-	ground: 'none',
 	stature: 1,
 	scale: 1,
 	variety: 0,
@@ -204,17 +200,6 @@ export function makeDesign(seed) {
 		flagFolds: 2 + Math.floor(r() * 3),
 		flagShape: pick(['pennant', 'pennant', 'pennant', 'banner', 'banner', 'swallowtail']),
 		hatch: 1.25 + avg() * 0.45,
-		wall: pick([
-			'stone',
-			'stone',
-			'stone',
-			'palisade',
-			'palisade',
-			'earth',
-			'hedge',
-			'bone',
-			'reef',
-		]),
 		wallH: 0.75 + avg() * 0.6,
 		merlons: r() < 0.75,
 		wallTowers: 2 + Math.floor(avg() * 5),
@@ -238,7 +223,6 @@ export function makeDesign(seed) {
 		keep: pick(['none', 'city', 'city', 'town', 'all']),
 		market: pick(['none', 'town', 'town', 'all']),
 		houseForm: pick(['timber', 'timber', 'timber', 'timber', 'round', 'round', 'mound', 'stilt']),
-		ground: r() < 0.12 ? 'water' : 'none',
 		stature: 0.8 + avg() * 0.4,
 		scale: 0.85 + avg() * 0.35,
 		flourish: avg(),
@@ -274,13 +258,17 @@ export function makeDesign(seed) {
 /**
  * Bring a stored design (a culture plugin, an imported playground export)
  * up to date: the legacy `towerRoof: 'crenel'` becomes a bare crenellated
- * top (`towerRoof: 'none'`, `towerCrenel: true`).
+ * top (`towerRoof: 'none'`, `towerCrenel: true`), and an older file's
+ * `ground` and `wall` are dropped — what it stands on and its wall's
+ * material are the recipe's now, not the culture's.
  * @template {Partial<Design>} T
  * @param {T} D
  * @returns {T}
  */
 export function upgradeDesign(D) {
-	return D.towerRoof === 'crenel' ? { ...D, towerRoof: 'none', towerCrenel: true } : D;
+	const { ground: _ground, wall: _wall, ...rest } = /** @type {Record<string, unknown>} */ (D);
+	const out = /** @type {T} */ (rest);
+	return out.towerRoof === 'crenel' ? { ...out, towerRoof: 'none', towerCrenel: true } : out;
 }
 
 /**
@@ -1520,6 +1508,7 @@ function chimneys(
 					circle(cx + 4.6, top + 5.6, 3),
 					circle(cx + 8.6, top + 7.2, 2.4),
 				],
+				smoke: true,
 			},
 		);
 	}
@@ -2150,19 +2139,19 @@ function gateTower(D, y0, h, wood) {
 
 /**
  * Ring wall around a settlement, seen from above-front, in the culture's
- * style (or `o.type`). Returns placed pieces in two batches: `back` goes
+ * style and of `o.type` (default stone). Returns placed pieces in two batches: `back` goes
  * BEHIND the buildings (the wall's far half and the towers on it), `front`
  * goes IN FRONT (near half, gate, near towers) — already depth-sorted.
  * @param {Design} D
  * `shape` (default: the culture's `wallShape`) switches to a square
  * enclosure — see squareWall().
  * @param {Design} D
- * @param {{rx?: number, ry?: number, h?: number, type?: Design['wall'], towers?: number, shape?: 'round' | 'square'}} [o]
+ * @param {{rx?: number, ry?: number, h?: number, type?: WallType, towers?: number, shape?: 'round' | 'square'}} [o]
  * @returns {{back: Placed[], front: Placed[]}}
  */
 export function ringWall(D, o = {}) {
 	if ((o.shape ?? D.wallShape) === 'square') return squareWall(D, o);
-	const type = o.type ?? D.wall;
+	const type = o.type ?? 'stone';
 	const mat = material(type);
 	const wood = mat.soft;
 	const rx = o.rx ?? 40,
@@ -2748,11 +2737,11 @@ export function squareFootprint(rx, ry) {
  * back and left walls show their INNER faces (behind it). Towers go on
  * the corners first, then mid-wall; the gate is centred on the front.
  * @param {Design} D
- * @param {{rx?: number, ry?: number, h?: number, type?: Design['wall'], towers?: number}} o
+ * @param {{rx?: number, ry?: number, h?: number, type?: WallType, towers?: number}} o
  * @returns {{back: Placed[], front: Placed[]}}
  */
 function squareWall(D, o) {
-	const type = o.type ?? D.wall;
+	const type = o.type ?? 'stone';
 	const mat = material(type);
 	const wood = mat.soft;
 	const { W, dv } = squareFootprint(o.rx ?? 40, o.ry ?? 14);
@@ -3522,11 +3511,11 @@ export function onStilts(parts, D) {
 
 /**
  * The ground plane a settlement or building stands on, of a ground type
- * (Design.ground): an ellipse rx × ry under the whole of it, in the type's
- * own colour and texture (the `ground-<type>` pattern role, patterns.js) —
- * or, for water, the lagoon. Terrain, so ruins never break it. (The hex
- * ground is a frame, not a plane: hexTile() in layouts3d.js.)
- * @param {Exclude<Design['ground'], 'none' | 'hex'>} kind
+ * (the recipe's `ground` — not the culture's): an ellipse rx × ry under the
+ * whole of it, in the type's own colour and texture (the `ground-<type>`
+ * pattern role, patterns.js) — or, for water, the lagoon. Terrain, so ruins
+ * never break it.
+ * @param {Exclude<Ground, 'none'>} kind
  * @param {number} rx
  * @param {number} ry
  * @returns {Part[]}
@@ -3631,6 +3620,7 @@ export function windmill(D) {
 			solid: [[P(L * 0.25, 0.3), P(L, 0.3), P(L, 3.4), P(L * 0.25, 3.4)]],
 			lines: lattice,
 			free: [{ pts: [hub, P(L + 0.6, 0)], w: 0.9 }],
+			aloft: true,
 		});
 	}
 	parts.push({ solid: [circle(hub[0], hub[1], 1.1)], role: 'wood' });

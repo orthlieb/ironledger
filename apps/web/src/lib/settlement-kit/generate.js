@@ -16,9 +16,9 @@
 // Texture off adds data-texture="off": its walls draw flat, there too.
 // =============================================================================
 
-import { building, settlement, TEMPLATES } from './layouts3d.js';
+import { building, placedBox, settlement, TEMPLATES } from './layouts3d.js';
 import { DEFAULT_DESIGN, upgradeDesign } from './pieces3d.js';
-import { PATTERN_ROLES, flatWall, paletteTone, patternDefs } from './patterns.js';
+import { PATTERN_ROLES, flatWall, lineColour, paletteTone, patternDefs } from './patterns.js';
 import { LAYERS, place, renderLayered } from './render.js';
 
 export { fallbackIcon } from './fallback.js';
@@ -41,9 +41,12 @@ export { fallbackIcon } from './fallback.js';
  * What a marker stores: a REFERENCE to a culture, never the culture itself.
  * `building` (a key of layouts3d.js BUILDINGS) draws that one building
  * instead of a settlement — the Buildings tab: `walls` then encloses it
- * (never a wall building), and `tier`, `stilts` and `harbor` don't apply.
+ * (never a wall building), `stilts` sets it on a deck, and `tier` and
+ * `harbor` don't apply.
+ * `walls` and `ground` are the recipe's alone — a culture has no say in
+ * either (its wall *style* — height, merlons, towers, gate, shape — it has).
  * @typedef {{tier: Tier, culture: string, seed: number, walls?: Walls,
- *   wallShape?: 'round' | 'square', ground?: Design['ground'],
+ *   wallShape?: 'round' | 'square', ground?: import('./pieces3d.js').Ground,
  *   stilts?: boolean, harbor?: boolean, building?: string,
  *   ruin?: {decay: number, burned?: boolean}}} SettlementRecipe
  */
@@ -108,9 +111,12 @@ function fills(p) {
  * @param {string} title
  * @param {Placed[]} items
  * @param {Palette} palette
- * @param {{join?: Design['join'], texture?: boolean}} [o] line joins (default:
- *   the default culture's); `texture: false` draws no textures — no line-work
- *   texture layers, and every wall in its flat material colour
+ * @param {{join?: Design['join'], texture?: boolean,
+ *   frame?: {x0: number, x1: number, y0: number, y1: number} | null}} [o]
+ *   line joins (default: the default culture's); `texture: false` draws no
+ *   textures — no line-work texture layers, and every wall in its flat
+ *   material colour; `frame` takes in that box too (placed units, y up —
+ *   placedBox()): a ruin framed as its building was
  * @returns {string}
  */
 export function toLayeredSvg(title, items, palette, o = {}) {
@@ -129,7 +135,20 @@ export function toLayeredSvg(title, items, palette, o = {}) {
 	});
 	const f = fills(palette);
 	const pad = 2;
-	const vb = [b.x - pad, b.y - pad, b.w + 2 * pad, b.h + 2 * pad]
+	let { x, y, w, h } = b;
+	// Taking in the frame too — outlined, as b is, and flipped to SVG's y
+	// down — so a marker shows it at that scale and standing there, not
+	// zoomed to fill.
+	if (o.frame) {
+		const e = OUTLINE / 2,
+			x0 = Math.min(x, o.frame.x0 * K - e),
+			y0 = Math.min(y, -o.frame.y1 * K - e);
+		w = Math.max(x + w, o.frame.x1 * K + e) - x0;
+		h = Math.max(y + h, -o.frame.y0 * K + e) - y0;
+		x = x0;
+		y = y0;
+	}
+	const vb = [x - pad, y - pad, w + 2 * pad, h + 2 * pad]
 		.map((n) => Number(n.toFixed(2)))
 		.join(' ');
 	const pal = Object.entries(palette)
@@ -151,7 +170,7 @@ export function toLayeredSvg(title, items, palette, o = {}) {
 		`  <path data-role="sil" fill="${palette.halo}" stroke="${palette.halo}" stroke-width="3" stroke-linejoin="round" d="${silhouette}"/>`,
 		...used.map(
 			(l) =>
-				`  <path data-role="${l}" fill="${PATTERN_ROLES.has(l) ? wallFill(l) : f[l]}" d="${layers[l]}"/>`,
+				`  <path data-role="${l}" fill="${l.endsWith('-line') ? lineColour(l, f, mix) : PATTERN_ROLES.has(l) ? wallFill(l) : f[l]}" d="${layers[l]}"/>`,
 		),
 	];
 	const safeTitle = title.replace(/[<>&"-]/g, ' ');
@@ -186,7 +205,6 @@ export function recipeDesign(recipe, culture) {
 		...DEFAULT_DESIGN,
 		...upgradeDesign(culture?.design ?? {}),
 		...(recipe.wallShape ? { wallShape: recipe.wallShape } : {}),
-		...(recipe.ground ? { ground: recipe.ground } : {}),
 	};
 }
 
@@ -208,15 +226,29 @@ export function generateSettlementSvg(recipe, culture) {
 				seed: recipe.seed,
 			}
 		: null;
-	const items = recipe.building
-		? building(recipe.building, design, { walls: recipe.walls, seed: recipe.seed, ruin })
-		: settlement(tier, design, {
-				walls: recipe.walls ?? 'auto',
-				seed: recipe.seed,
-				harbor: recipe.harbor ? 'side' : 'none',
-				stilts: !!recipe.stilts,
-				ruin,
-			});
+	/** @param {typeof ruin} r the ruin, or none for the whole thing */
+	const draw = (r) =>
+		recipe.building
+			? building(recipe.building, design, {
+					walls: recipe.walls,
+					seed: recipe.seed,
+					ground: recipe.ground,
+					stilts: !!recipe.stilts,
+					ruin: r,
+				})
+			: settlement(tier, design, {
+					walls: recipe.walls ?? 'auto',
+					seed: recipe.seed,
+					ground: recipe.ground,
+					harbor: recipe.harbor ? 'side' : 'none',
+					stilts: !!recipe.stilts,
+					ruin: r,
+				});
+	const items = draw(ruin);
+	// A ruin is framed as the building or settlement was, so what's left
+	// doesn't swell to fill the marker (its ink thickening) as it comes down,
+	// but stands where it stood, at its scale.
+	const frame = ruin ? placedBox(draw(null)) : null;
 	return toLayeredSvg(
 		`${culture?.name ?? 'Default'} ${recipe.building ?? tier}`,
 		items,
@@ -224,6 +256,7 @@ export function generateSettlementSvg(recipe, culture) {
 		{
 			join: design.join,
 			texture: design.texture,
+			frame,
 		},
 	);
 }

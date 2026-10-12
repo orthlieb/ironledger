@@ -17,7 +17,6 @@
     "window": "slit",
     "towerRoof": "cone",
     "flags": false,
-    "wall": "none",
     "church": false,
     "symbol": "none",
     "keep": "none",

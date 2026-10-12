@@ -4,7 +4,6 @@
   "note": "Semiaquatic and zealous: stilt huts over a salt lagoon behind a jagged reef, shrines to the deep gods under a trident — no markets, no traffic with outsiders.",
   "design": {
     "houseForm": "stilt",
-    "ground": "water",
     "stature": 0.95,
     "pitch": 1.05,
     "concave": 0.22,
@@ -12,7 +11,6 @@
     "towerRoof": "cone",
     "spire": 2.4,
     "flags": false,
-    "wall": "reef",
     "wallShape": "round",
     "church": false,
     "symbol": "trident",

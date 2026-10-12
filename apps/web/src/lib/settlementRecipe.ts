@@ -75,13 +75,11 @@ export type SettlementBuilding = keyof typeof SETTLEMENT_BUILDINGS;
  *  UNWALLED_BUILDINGS; a test holds them in step). */
 export const UNWALLED_BUILDINGS: ReadonlySet<string> = new Set(['wall']);
 
-/** What a settlement or building stands on (Design.ground): 'none' draws no
- *  ground; 'hex' a dashed hex tile behind it, as a hex map's cell frames
- *  it; the rest a plane under it in their own colour and texture; water a
- *  lagoon. */
+/** What a settlement or building stands on — the recipe's alone, not the
+ *  culture's: 'none' (the default) draws no ground; the rest a plane under
+ *  it in their own colour and texture; water a lagoon. */
 export const SETTLEMENT_GROUNDS = [
 	'none',
-	'hex',
 	'dirt',
 	'grass',
 	'farmland',
@@ -103,7 +101,7 @@ export interface SettlementRecipe {
 	seed: number;
 	walls?: SettlementWalls;
 	wallShape?: 'round' | 'square';
-	/** Override the culture's own `ground`: what the whole icon stands on. */
+	/** What the whole icon stands on (default none) — not a culture setting. */
 	ground?: SettlementGround;
 	/** Lift every building onto a timber-post deck (over water or sand). */
 	stilts?: boolean;
@@ -111,8 +109,8 @@ export interface SettlementRecipe {
 	/** A ruin: how far gone (0–1), and whether it burned (scorch, soot). */
 	ruin?: { decay: number; burned?: boolean };
 	/** One building instead of a settlement (the Buildings tab). `walls` then
-	 *  puts a wall of its own round it (never round UNWALLED_BUILDINGS), and
-	 *  `tier`, `stilts` and `harbor` don't apply. */
+	 *  puts a wall of its own round it and `stilts` sets it on a deck (neither
+	 *  for UNWALLED_BUILDINGS), and `tier` and `harbor` don't apply. */
 	building?: SettlementBuilding;
 }
 

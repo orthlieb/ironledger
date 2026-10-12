@@ -243,7 +243,10 @@ marker path:
   `wall-shade`, `wood`, `earth`, `water`, `roof`, `roof-shade`, `flag`,
   `ink`, plus the material-wall roles `wall-stone`, `wall-hedge`,
   `wall-reef`, `wall-wood`, `wall-earth`, `wall-bone` and their `-shade`
-  variants) and the culture's palette on the root
+  variants, and a `<role>-line` outline layer per face role — `wall-line`,
+  `roof-line`, … — drawn in a darker shade of that colour rather than ink;
+  a roof's outline follows the marker colour as the roof does) and the
+  culture's palette on the root
   (`data-palette="wall:#…;roof:#…;…"`). Detected by its `data-role`
   paths. These run to tens of KB each, so they are **not inlined**: the
   manifest keeps a tight `viewBox`, the `palette` and a `src` URL, and
@@ -252,7 +255,9 @@ marker path:
   until then). `mapGlyphInner()` recolours by role via `mapLayered.ts`:
   everything keeps the icon's palette except the **roofs, which take the
   marker colour** (the default black marker keeps the icon's own roof
-  colour); the halo goes on the `sil` layer only. Material walls draw
+  colour); the halo goes on the `sil` layer only — a thin fixed-px edge (2
+  px on the map, 3 px in the previews), since the icon has its own ink
+  outline. Material walls draw
   through the kit's own `<pattern>` tiles (`settlement-kit/patterns.js`,
   ids scoped per rendered icon) in fixed material colours; an icon drawn
   too small for a texture to resolve — every ordinary map marker; callers
@@ -332,14 +337,20 @@ and every culture knob. It's used three ways:
   pieces (`SETTLEMENT_BUILDINGS`, from houses and towers to the
   cathedral, a market and a stone wall) — in any culture. Walls (None by
   default) puts a small ring or square wall of that type round it (in
-  the chosen wall shape); the Wall comes in its own stone and has no
-  Walls or Wall shape. The tab lays itself out to
+  the chosen wall shape); On stilts sets it on a timber-post deck (its
+  terrain — a market's square — stays on the ground); the Wall comes in
+  its own stone and has no Walls, Wall shape or stilts. The tab lays itself out to
   fit the dialog (the preview takes whatever height the knobs leave, the
   knobs go two to a row on a phone), so "Use this" is always on screen.
-  Ground (the culture's own, or None, Hex — a dashed hex tile behind it, as
-  a hex map's cell frames it — Dirt, Grass, Farmland, Sand, Rock, Snow,
+  Ground (None by default, or Dirt, Grass, Farmland, Sand, Rock, Snow,
   Ice, Marsh, Lava, Water: a plane under it in its own colour and
-  texture, a lagoon for water) and Ruined + decay (optionally burned) as below. The reroll varies
+  texture, a lagoon for water — the recipe's alone; no culture sets it, nor
+  its walls) and Ruined + decay (optionally burned) as below
+  — a building comes down by degrees (`ruinPiece()`): its roof opens from
+  a gap at 0.1 and is gone by 0.4, then the walls break off lower and
+  lower to foundations at 1, so it stays recognisable well past halfway;
+  drawn at its scale and standing where it stood, not zoomed in.
+  The reroll varies
   the building as a settlement varies its own — pitch, sweep, ornament,
   now and then the windows or doors, a tower's height — and a mixed
   culture's builder; a few fixed pieces (tent, pavilion, mine, witch hut,
@@ -351,7 +362,9 @@ and every culture knob. It's used three ways:
   with its population; Freeport isn't offered — a culture with a high
   `variety` makes a freeport's mix of builders), culture, walls and wall
   shape, ground (as on the Buildings tab), on stilts, harbour, ruined +
-  decay (optionally burned: scorch marks and sooty walls), and a reroll
+  decay (optionally burned: scorch marks and sooty walls — the buildings
+  come down by degrees as on the Buildings tab, each a little either side
+  of the slider, the walls breached more and wider as it rises), and a reroll
   for the layout seed, with a large preview in the marker's colour. "Use this" stores a **recipe** on the marker (see
   below). A Recent strip keeps the last 8 recipes per browser
   (`localStorage` `il:recentSettlements`, like the colour picker's
@@ -393,8 +406,9 @@ Towers are body + crenellated top + cap: `towerCorbel` widens the top of
 the body on a 45° slope, `towerCrenel` adds a parapet band with its own
 corbel, and `towerRoof` caps it (cone, onion, dome, lancet, or none — a
 bare crenellated top). `steeple` makes the church, cathedral, clock and
-bell towers square or round; either takes the same cap and top. A
-culture's `wall` picks the material, and every material draws in its own
+bell towers square or round; either takes the same cap and top. The
+recipe's walls pick the material — a culture never does ("Usual for its
+size" is an outpost's palisade, stone from a hold up) — and every material draws in its own
 colours whatever the palette: stone grey, hedges green and brown (a
 bramble pattern), coral and bone white and grey (coral as a brain-coral
 maze), palisades and earth banks brown (planks, speckled dirt).
@@ -431,8 +445,12 @@ once lost on save that way).
 #### Picker lightbox
 
 Hovering a tile on the Icons tab shows the icon enlarged beside it
-(tiles are ~48 px, too small to judge a detailed settlement). Mouse and
-pen only; touch keeps tap-to-pick.
+(tiles are ~48 px, too small to judge a detailed settlement). A mouse on
+a device that can hover (`(hover: hover) and (pointer: fine)`) only:
+iOS can fire a mouse-type enter on a tap, or on the tile that lands
+under the finger as the dialog opens, and with no hover to end it the
+lightbox stuck over the grid. Touch keeps tap-to-pick
+(`tests/e2e/map-icon-lightbox.spec.ts`).
 
 ### Data compatibility
 

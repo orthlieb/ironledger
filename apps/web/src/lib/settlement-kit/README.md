@@ -172,14 +172,15 @@ The app needs no change: it draws whatever `patterns.js` defines.
 
 ## Ground
 
-`Design.ground` (or a recipe's `ground`) is what a settlement or building
-stands on. `'none'` draws nothing; every other type is a plane under the
+A recipe's `ground` (the `ground` option to `settlement()` and
+`building()`) is what a settlement or building stands on — the recipe's
+alone, not a culture setting. `'none'` (the default) draws nothing; every
+other type is a plane under the
 whole of it — `groundPlane(kind, rx, ry)` in `pieces3d.js`, an ellipse of
 `terrain` (never ruined) laid first, under everything:
 
 | Type       | Role              | Look                                                                                                  |
 | ---------- | ----------------- | ----------------------------------------------------------------------------------------------------- |
-| `hex`      | (ink)             | A dashed hex tile behind it — see Hex below.                                                          |
 | `dirt`     | `ground-dirt`     | Bare light-brown earth, speckled.                                                                     |
 | `grass`    | `ground-grass`    | Green sward with tufts of blades.                                                                     |
 | `farmland` | `ground-farmland` | A patchwork of fields — wheat, a green crop in rows, ploughed soil — furrowed across, with hedgerows. |
@@ -199,17 +200,6 @@ fits it to the enclosure (a ring's ellipse, or one round the whole of a
 square enclosure's parallelogram); under a lone building, an ellipse round
 its footprint.
 
-**Hex.** The `hex` ground is a frame, not a plane: a hex tile behind the
-layout, laid last (`withHexTile()` in `layouts3d.js`), as a hex map's cell
-would frame it — a regular flat-topped hexagon upright in the picture (not
-lying on the ground, as Watabou's generator draws it), round the ground
-footprint and set a little high so the buildings rising from it stay
-inside, drawn as a dashed outline with a dash centred on each corner. Its
-dashes are sized to the whole icon it frames — a house's are the yardstick
-(`HEX_SPAN0`, `HEX_W`, `HEX_PERIOD`) — so every hex reads the same at the
-size its icon is drawn, a capital's or a tower standing out of its tile.
-Every other ground keeps its ellipse.
-
 ## Cultures: one culture = one Design + palette
 
 A culture plugin (`cultures/<key>.json` in an extension, or
@@ -228,16 +218,15 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 
 **Build**
 
-| Knob        | Values (default)                                                                           | What it drives                                                                                                                                                                                                                                                                  |
-| ----------- | ------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `houseForm` | **timber** / round / mound / stilt                                                         | Framed houses, round huts, turf mounds or huts on stilts.                                                                                                                                                                                                                       |
-| `ground`    | **none** / hex / dirt / grass / farmland / sand / rock / snow / ice / marsh / lava / water | What it stands on: nothing drawn for none; a dashed hex tile behind it for hex; a plane under the whole settlement in the type's own colour and texture (see Ground); water a lagoon with waves.                                                                                |
-| `stature`   | 0.6–1.5 (**1**)                                                                            | Building height (small folk < 1 < giants).                                                                                                                                                                                                                                      |
-| `scale`     | 0.7–1.8 (**1**)                                                                            | Building size; bigger means fewer per layout.                                                                                                                                                                                                                                   |
-| `flourish`  | 0–1 (**0**)                                                                                | Ornament: finials, eave knobs, ridge cresting, more flags.                                                                                                                                                                                                                      |
-| `masonry`   | on / **off**                                                                               | Stone-built: stone courses on house and tower walls, stone barns (not plank), no timber framing on a townhouse's ground floor.                                                                                                                                                  |
-| `texture`   | **on** / off                                                                               | Draw textures: wall patterns, the line-work round ring walls, masonry courses, barn planks. Off draws every wall in its flat material colour — what a small map icon draws anyway.                                                                                              |
-| `variety`   | 0–1 (**0**)                                                                                | A mixed culture (a freeport): the chance each house, free-standing tower and landmark rolls its own house type (gable-front, side-on, townhouse, longhouse, round hut or domed), storeys, tower cap, crenellated top, corbel, steeple, roof pitch and sweep, windows and doors. |
+| Knob        | Values (default)                   | What it drives                                                                                                                                                                                                                                                                  |
+| ----------- | ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `houseForm` | **timber** / round / mound / stilt | Framed houses, round huts, turf mounds or huts on stilts.                                                                                                                                                                                                                       |
+| `stature`   | 0.6–1.5 (**1**)                    | Building height (small folk < 1 < giants).                                                                                                                                                                                                                                      |
+| `scale`     | 0.7–1.8 (**1**)                    | Building size; bigger means fewer per layout.                                                                                                                                                                                                                                   |
+| `flourish`  | 0–1 (**0**)                        | Ornament: finials, eave knobs, ridge cresting, more flags.                                                                                                                                                                                                                      |
+| `masonry`   | on / **off**                       | Stone-built: stone courses on house and tower walls, stone barns (not plank), no timber framing on a townhouse's ground floor.                                                                                                                                                  |
+| `texture`   | **on** / off                       | Draw textures: wall patterns, the line-work round ring walls, masonry courses, barn planks. Off draws every wall in its flat material colour — what a small map icon draws anyway.                                                                                              |
+| `variety`   | 0–1 (**0**)                        | A mixed culture (a freeport): the chance each house, free-standing tower and landmark rolls its own house type (gable-front, side-on, townhouse, longhouse, round hut or domed), storeys, tower cap, crenellated top, corbel, steeple, roof pitch and sweep, windows and doors. |
 
 **Houses**
 
@@ -288,15 +277,14 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 
 **Walls**
 
-| Knob         | Values (default)                                          | What it drives                                                  |
-| ------------ | --------------------------------------------------------- | --------------------------------------------------------------- |
-| `wall`       | none / **stone** / palisade / hedge / bone / earth / reef | The culture's own ring wall (see Material walls).               |
-| `wallShape`  | **round** / square                                        | Ring or square enclosure.                                       |
-| `wallH`      | 0.6–1.6 (**1**)                                           | Wall height factor.                                             |
-| `merlons`    | **on** / off                                              | Crenellated parapet on stone walls.                             |
-| `wallBow`    | −1–1 (**0**)                                              | Concave (> 0) dips the tops between towers; convex crests them. |
-| `wallTowers` | 0–8 (**4**)                                               | Towers round a city ring (towns get half).                      |
-| `gate`       | **tower** / twin / jawbone                                | Gate tower, an arch between two towers, or a whale-jaw arch.    |
+| Knob         | Values (default)           | What it drives                                                  |
+| ------------ | -------------------------- | --------------------------------------------------------------- |
+| `wallShape`  | **round** / square         | Ring or square enclosure.                                       |
+| `wallH`      | 0.6–1.6 (**1**)            | Wall height factor.                                             |
+| `merlons`    | **on** / off               | Crenellated parapet on stone walls.                             |
+| `wallBow`    | −1–1 (**0**)               | Concave (> 0) dips the tops between towers; convex crests them. |
+| `wallTowers` | 0–8 (**4**)                | Towers round a city ring (towns get half).                      |
+| `gate`       | **tower** / twin / jawbone | Gate tower, an arch between two towers, or a whale-jaw arch.    |
 
 **Drawing**
 
@@ -308,7 +296,11 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 **Palette** — `wall`, `roof`, `wood`, `earth`, `water`, `flag`, `ink`,
 `halo` (`#rrggbb`). Roofs take the marker colour on the map (the default
 black marker keeps the culture's own); walls use their material colours
-above, not `wall`.
+above, not `wall`. Outlines are tinted, not ink: each part's outline is
+its own colour mixed toward `ink` (`LINE_MIX` = 0.45 of the colour,
+`lineColour()` in `patterns.js` — a roof's follows the marker colour, a
+patterned wall's comes from its flat material colour). The line-work
+inside — windows, doors, hatching, spars — stays `ink`.
 
 **Random cultures.** `makeDesign(seed)` (the playground's Culture ⟳) rolls
 every knob, then applies linked rules so a culture hangs together:
@@ -323,31 +315,54 @@ seeds keep their looks.
 
 Seven recipe-only fields let a marker override the culture:
 
-| Recipe field | Effect                                                                                                                       |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------- |
-| `walls`      | Override the culture's own ring-wall material (`'none'`, `'stone'`, `'palisade'`, …).                                        |
-| `wallShape`  | Force `'round'` or `'square'` regardless of what the culture rolls.                                                          |
-| `ground`     | Override `D.ground` (`'none'`, a ground type, or `'water'`) — the easy knob for "put this settlement on sand / in a lagoon." |
-| `stilts`     | Wrap every inside-the-walls piece with `onStilts(...)` so the whole settlement sits on pilings.                              |
-| `harbor`     | `true` adds a side harbour with pier + caravel.                                                                              |
-| `ruin`       | `{ decay, burned? }` runs `ruinPlaced()` over the final list.                                                                |
-| `building`   | A `BUILDINGS` key: `building()` draws that one piece instead of the settlement (the Buildings tab).                          |
+| Recipe field | Effect                                                                                                                                                                           |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `walls`      | The ring-wall material (`'none'`, `'stone'`, `'palisade'`, …), or `'auto'`: usual for its size (`TEMPLATES` — an outpost's palisade, stone from a hold up). Never the culture's. |
+| `wallShape`  | Force `'round'` or `'square'` regardless of what the culture rolls.                                                                                                              |
+| `ground`     | What it stands on (`'none'`, a ground type, or `'water'`) — passed to `settlement()` / `building()`, never the culture's.                                                        |
+| `stilts`     | Wrap every inside-the-walls piece with `onStilts(...)` so the whole settlement sits on pilings — or, for a `building`, the building (bar its terrain; never the Wall).           |
+| `harbor`     | `true` adds a side harbour with pier + caravel.                                                                                                                                  |
+| `ruin`       | `{ decay, burned? }` runs `ruinPlaced()` over the final list.                                                                                                                    |
+| `building`   | A `BUILDINGS` key: `building()` draws that one piece instead of the settlement (the Buildings tab).                                                                              |
 
 See CLAUDE.md ("Standing order — settlement-recipe override fields live
 in five places") for the plumbing contract when adding a new one.
 
-**Buildings.** `building(key, D, {walls, seed, ruin})` draws one of the
+**Buildings.** `building(key, D, {walls, seed, ground, stilts, ruin})` draws one of the
 `BUILDINGS` (the keyed entries of the `PIECES` table) on its own. `walls`
 puts a small ring or square wall of its own round it, fitted to its
 footprint the way a settlement's is (`enclosed()`), with up to two towers
 where the wall type carries them — never round the `UNWALLED_BUILDINGS`:
-the Wall, in its own stone.
-A culture on water lays a lagoon under it. `seed` varies it as a settlement varies its
+the Wall, in its own stone. `stilts` sets it on a deck (`onStilts()`), its
+terrain left on the ground — the Wall, again, never.
+On water a lagoon goes under it. `seed` varies it as a settlement varies its
 buildings — `jitterDesign()` (pitch, sweep,
 ornament, now and then the windows or doors), a round tower's girth and
 height, a house's details — and lets a mixed culture's builder roll its
 own style (`mixDesign()`); the reference row (`pieces()`) passes no seed,
-so it and the baked icons stay fixed.
+so it and the baked icons stay fixed. `ruin` ruins it at exactly the
+slider's decay (`RuinOptions.single`; in a settlement each building takes
+its own, up to 0.25 either side, so they don't come down in step). Every
+building comes down by degrees (`ruinPiece()` in `ruins3d.js`), so the
+Decay slider reads as a progression:
+
+| Decay   | What's left                                                                                                                                       |
+| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| any     | No flags, banners, smoke (`smoke`) or lamp rays; a mill's sails (`aloft`) come off one by one by 0.3.                                             |
+| 0.1–0.4 | Every roof (the `role: 'roof'` parts overlapping across, and what rides on it — a chimney through it, a cross) opens from a gap to a ragged hole. |
+| 0.4     | Roofless, the walls at full height.                                                                                                               |
+| 0.4–1   | The walls break off along a stepped line, at each point a share of the height there, down to foundations at 1.                                    |
+
+Enclosure walls keep their height and are breached — none at the light end,
+up to four, wider, as the decay rises. Roof-coloured paint on a wall (a
+lighthouse's bands — a roof part inside a wall's box) stands with the wall. Burned, the roofs go sooner, the walls
+are sooted and charred beams fall; rubble, ivy and bushes grow with the
+decay, sized to the building. It's scaled by its intact size
+(`normalScale()` before the ruin), and `generateSettlementSvg()` frames
+any ruin — a building's or a settlement's — as it was whole (`placedBox()`
+→ `toLayeredSvg()`'s `frame`), so what's left stands where it stood
+instead of swelling to fill the marker. The baked ruin icons take decay
+0.6 (a single building's set per icon, `single`).
 
 ## Pieces catalogue (abridged)
 
@@ -375,8 +390,10 @@ part the Buildings tab offers). Partial map, as a quick index:
 `render.js` → `renderLayered(parts, opts)` collapses a back-to-front list
 of `Part`s into one SVG path per colour role (`wall`, `wall-shade`, the
 `wall-<material>` pattern roles, `wood`, `wood-shade`, …, `roof`,
-`roof-shade`, `flag`, `ink`). Each path is a filled polygon — no
-`<stroke>` on the server-rendered output.
+`roof-shade`, `flag`), one outline layer per face role (`LINE_ROLES`:
+`wall-line`, `roof-line`, `wall-stone-line`, …), then `ink-texture` and
+`ink` on top. Each path is a filled polygon — no `<stroke>` on the
+server-rendered output.
 
 Nearly all the time goes into Clipper unions, so they're balanced: each
 part's strokes, and each layer's pieces, are unioned pairwise in a tree

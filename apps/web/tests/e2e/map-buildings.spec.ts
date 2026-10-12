@@ -9,9 +9,9 @@
  *
  *   • Tabs — the three tabs, in order.
  *   • Controls — a building's own knobs (Building, Culture, Walls, Ground,
- *     Ruined); Wall shape only once there are walls; none of the
- *     settlement-only ones (Size, On stilts, Harbour); and no Walls at all
- *     for the Wall, which comes in its own material.
+ *     On stilts, Ruined); Wall shape only once there are walls; none of the
+ *     settlement-only ones (Size, Harbour); and no Walls or On stilts at
+ *     all for the Wall, which comes in its own material.
  *   • Persist — the recipe the tab makes reaches the server intact
  *     (asserted via the API: the marker schema once stripped `ground` and
  *     `stilts`), the marker survives a full reload, and re-opening the
@@ -142,8 +142,8 @@ test.describe('Map markers — Buildings tab', () => {
 		for (const label of ['Building', 'Culture', 'Walls', 'Ground'])
 			await expect(select(page, label), label).toBeVisible();
 		await expect(dlg.getByRole('checkbox', { name: 'Ruined' })).toBeVisible();
+		await expect(dlg.getByRole('checkbox', { name: 'On stilts' })).toBeVisible();
 		await expect(select(page, 'Settlement size')).toHaveCount(0);
-		await expect(dlg.getByRole('checkbox', { name: 'On stilts' })).toHaveCount(0);
 		await expect(dlg.getByRole('checkbox', { name: 'Harbour' })).toHaveCount(0);
 		await drawn(page);
 
@@ -153,10 +153,12 @@ test.describe('Map markers — Buildings tab', () => {
 		await choose(page, 'Walls', 'hedge');
 		await expect(select(page, 'Wall shape')).toBeVisible();
 
-		// A wall building comes in its own material: no Walls, no Wall shape.
+		// A wall building comes in its own material: no Walls, no Wall shape,
+		// and it stays on the ground.
 		await choose(page, 'Building', 'wall');
 		await expect(select(page, 'Walls')).toHaveCount(0);
 		await expect(select(page, 'Wall shape')).toHaveCount(0);
+		await expect(dlg.getByRole('checkbox', { name: 'On stilts' })).toHaveCount(0);
 		await expect(select(page, 'Ground')).toBeVisible();
 		await drawn(page);
 

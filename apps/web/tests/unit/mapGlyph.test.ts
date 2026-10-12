@@ -168,6 +168,12 @@ describe('haloPaddedViewBox — room for the proportional glow', () => {
 		const [x] = haloPaddedViewBox(raster).split(/\s+/).map(Number); // 0 0 221 235 → maxDim 235
 		expect(-x).toBeCloseTo(235 * 0.06, 5);
 	});
+
+	it('pads a layered icon by just a sliver (its preview halo is a thin edge)', () => {
+		const layered = { ...vector, viewBox: '0 0 200 100', layered: true };
+		const [x] = haloPaddedViewBox(layered).split(/\s+/).map(Number);
+		expect(-x).toBeCloseTo(200 * 0.03, 5);
+	});
 });
 
 describe('mapGlyphInner — raster icons', () => {

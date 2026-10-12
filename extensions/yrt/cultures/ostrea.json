@@ -13,7 +13,6 @@
     "spire": 2.4,
     "flags": true,
     "flagFolds": 3,
-    "wall": "bone",
     "gate": "jawbone",
     "wallShape": "round",
     "industry": 0.5,

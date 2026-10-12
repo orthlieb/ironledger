@@ -23,6 +23,7 @@ import {
 import {
 	PATTERN_ROLES,
 	FLAT_WALLS,
+	LINE_MIX,
 	PATTERN_SHADE,
 	TEXTURE_ROLES,
 	patternDefs,
@@ -59,27 +60,6 @@ const KNOBS = [
 		label: 'House form',
 		type: 'select',
 		options: ['timber', 'round', 'mound', 'stilt'],
-		design: true,
-	},
-	{
-		group: 'Build',
-		key: 'ground',
-		label: 'Ground',
-		type: 'select',
-		options: [
-			'none',
-			'hex',
-			'dirt',
-			'grass',
-			'farmland',
-			'sand',
-			'rock',
-			'snow',
-			'ice',
-			'marsh',
-			'lava',
-			'water',
-		],
 		design: true,
 	},
 	{
@@ -340,14 +320,6 @@ const KNOBS = [
 	},
 	{
 		group: 'Walls',
-		key: 'wall',
-		label: 'Culture wall',
-		type: 'select',
-		options: ['none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef'],
-		design: true,
-	},
-	{
-		group: 'Walls',
 		key: 'wallShape',
 		label: 'Wall shape',
 		type: 'select',
@@ -438,6 +410,26 @@ const KNOBS = [
 	},
 	{ group: 'Drawing', key: 'stilts', label: 'On stilts', type: 'check' },
 	{
+		// What it stands on — the drawing's, not the culture's.
+		group: 'Drawing',
+		key: 'ground',
+		label: 'Ground',
+		type: 'select',
+		options: [
+			'none',
+			'dirt',
+			'grass',
+			'farmland',
+			'sand',
+			'rock',
+			'snow',
+			'ice',
+			'marsh',
+			'lava',
+			'water',
+		],
+	},
+	{
 		// The map's Buildings tab: pieces drawn as buildings, each in a wall of
 		// its own (the wall pieces never are) — see building().
 		group: 'Drawing',
@@ -510,6 +502,7 @@ const DRAWING = {
 	harbor: 'none',
 	walls: 'auto',
 	stilts: false,
+	ground: 'none',
 	buildingWalls: 'pieces',
 	softRadius: 0.9,
 	outline: 1.4,
@@ -622,6 +615,17 @@ function flatFill(role) {
 		: hex;
 }
 
+/** An outline's colour (patterns.js lineColour()), mixed live toward the
+ *  page's --ink: a darker shade of its role's picker colour, or of a
+ *  patterned wall's flat material colour. @param {string} lineRole */
+function lineFill(lineRole) {
+	const role = lineRole.replace(/-line$/, '');
+	const base = PATTERN_ROLES.has(role)
+		? (FLAT_WALLS[role] ?? FLAT_WALLS['wall-stone'])
+		: `var(--${role})`;
+	return `color-mix(in srgb,${base} ${LINE_MIX * 100}%,var(--ink))`;
+}
+
 /** @param {Placed[]} items */
 function svg(items) {
 	const parts = items.flatMap((it) =>
@@ -642,9 +646,11 @@ function svg(items) {
 	// Texture off: every wall in its flat material colour, as the map draws it.
 	const { defs, url } = wallPatterns(design.texture ? used : []);
 	const paths = used.map((l) =>
-		PATTERN_ROLES.has(l)
-			? `<path data-role="${l}" style="fill:${design.texture ? url(l) : flatFill(l)}" d="${layers[l]}"/>`
-			: `<path data-role="${l}" d="${layers[l]}"/>`,
+		l.endsWith('-line')
+			? `<path data-role="${l}" style="fill:${lineFill(l)}" d="${layers[l]}"/>`
+			: PATTERN_ROLES.has(l)
+				? `<path data-role="${l}" style="fill:${design.texture ? url(l) : flatFill(l)}" d="${layers[l]}"/>`
+				: `<path data-role="${l}" d="${layers[l]}"/>`,
 	);
 	return `<svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${defs}<path class="sil" d="${silhouette}"/>${paths.join('')}</svg>`;
 }
@@ -667,6 +673,7 @@ function render() {
 		seed: drawing.layout,
 		harbor: drawing.harbor,
 		stilts: !!drawing.stilts,
+		ground: drawing.ground,
 		ruin,
 	};
 	/** @type {[string, string][]} */
@@ -690,7 +697,15 @@ function render() {
 					([key, t]) =>
 						/** @type {[string, string]} */ ([
 							t,
-							svg(building(key, design, { walls: bw, seed: drawing.layout, ruin })),
+							svg(
+								building(key, design, {
+									walls: bw,
+									seed: drawing.layout,
+									ground: drawing.ground,
+									stilts: !!drawing.stilts,
+									ruin,
+								}),
+							),
 						]),
 				);
 	const card = (/** @type {[string, string]} */ [t, s], cls = '') =>

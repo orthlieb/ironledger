@@ -143,8 +143,14 @@
 	const LB = 176;
 	let lightbox = $state<{ ic: MapIcon; x: number; y: number } | null>(null);
 	let lbTimer: ReturnType<typeof setTimeout> | undefined;
+	/** A real hover: a mouse, on a device that has one. On a phone a tap —
+	 *  or the tile that lands under the finger as the dialog opens — can fire
+	 *  an enter that iOS doesn't report as touch, and with no hover to end it
+	 *  the lightbox stuck over the grid. */
+	const hovers = (e: PointerEvent) =>
+		e.pointerType === 'mouse' && window.matchMedia('(hover: hover) and (pointer: fine)').matches;
 	function showLightbox(e: PointerEvent, ic: MapIcon) {
-		if (e.pointerType === 'touch' || !dialogEl) return;
+		if (!hovers(e) || !dialogEl) return;
 		const tile = (e.currentTarget as HTMLElement).getBoundingClientRect();
 		const box = dialogEl.getBoundingClientRect();
 		clearTimeout(lbTimer);

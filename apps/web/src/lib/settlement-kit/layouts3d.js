@@ -3,8 +3,9 @@
 //
 // Settlement templates (stead → freeport, from the YRT settlement-type
 // oracle) laid out from the pieces3d.js pieces for one culture
-// (`Design`). `walls` overrides the ring wall; 'auto' follows each
-// template's rule applied to the culture's own wall type.
+// (`Design`). `walls` picks the ring wall; 'auto' is each template's own
+// ("Usual for its size") — the culture has no say in it, nor in the
+// `ground` it stands on.
 // =============================================================================
 
 import { rng } from './geom.js';
@@ -203,7 +204,8 @@ function extent(piece) {
  * @property {number} ry building area half-depth
  * @property {number} n ordinary dwellings, before the culture's scale
  * @property {number} rank -1 below village · 0 village · 1 town · 2 city · 3 capital
- * @property {'none' | 'village' | 'outpost' | 'fortified' | 'culture'} walls
+ * @property {'none' | 'palisade' | 'stone'} walls the wall it usually has —
+ *   what "Usual for its size" (walls 'auto') draws
  * @property {'none' | 'tower' | 'full'} shrine
  * @property {boolean} [keep] always has a keep, whatever the culture says
  * @property {string[]} extras special buildings, see EXTRAS
@@ -250,7 +252,7 @@ export const TEMPLATES = {
 		ry: 8,
 		n: 1,
 		rank: -1,
-		walls: 'outpost',
+		walls: 'palisade',
 		shrine: 'none',
 		extras: ['watchtower', 'barracks'],
 		wallH: 0.9,
@@ -276,7 +278,7 @@ export const TEMPLATES = {
 		ry: 11,
 		n: 4,
 		rank: 0,
-		walls: 'village',
+		walls: 'none',
 		shrine: 'full',
 		extras: ['well', 'tavern', 'windmill'],
 	},
@@ -288,7 +290,7 @@ export const TEMPLATES = {
 		ry: 12,
 		n: 4,
 		rank: 1,
-		walls: 'fortified',
+		walls: 'stone',
 		shrine: 'full',
 		keep: true,
 		extras: ['barracks', 'workshop', 'barn'],
@@ -303,7 +305,7 @@ export const TEMPLATES = {
 		ry: 13,
 		n: 5,
 		rank: 1,
-		walls: 'culture',
+		walls: 'stone',
 		shrine: 'full',
 		extras: ['tavern', 'warehouse'],
 		towers: 0.5,
@@ -316,7 +318,7 @@ export const TEMPLATES = {
 		ry: 17,
 		n: 8,
 		rank: 2,
-		walls: 'culture',
+		walls: 'stone',
 		shrine: 'full',
 		extras: ['tavern', 'warehouse', 'workshop'],
 		wallH: 1.2,
@@ -330,7 +332,7 @@ export const TEMPLATES = {
 		ry: 21,
 		n: 11,
 		rank: 3,
-		walls: 'culture',
+		walls: 'stone',
 		shrine: 'full',
 		keep: true,
 		extras: ['barracks', 'tavern', 'warehouse', 'workshop'],
@@ -345,7 +347,7 @@ export const TEMPLATES = {
 		ry: 22,
 		n: 11,
 		rank: 3,
-		walls: 'culture',
+		walls: 'stone',
 		shrine: 'full',
 		harbor: true,
 		extras: ['warehouse', 'warehouse', 'warehouse', 'tavern', 'workshop', 'workshop'],
@@ -373,28 +375,15 @@ const EXTRA_SCALE = /** @type {Record<string, number>} */ ({
 });
 
 /**
- * Which wall a template gets: the drawing override wins; otherwise the
- * template's rule applied to the culture's own wall.
+ * Which wall a template gets: the drawing's, or for 'auto' ("Usual for its
+ * size") the template's own — a frontier post's palisade, a hold's or a
+ * town's stone; the culture has no say.
  * @param {Template} T
  * @param {Walls} walls
- * @param {Design} D
  * @returns {Exclude<Walls, 'auto'>}
  */
-function wallFor(T, walls, D) {
-	if (walls !== 'auto') return walls;
-	switch (T.walls) {
-		case 'none':
-		case 'village':
-			return 'none';
-		case 'outpost':
-			// A frontier post is always enclosed; cultures without walls stake one.
-			return D.wall === 'none' ? 'palisade' : D.wall;
-		case 'fortified':
-			return D.wall === 'none' || D.wall === 'hedge' ? 'stone' : D.wall;
-		default:
-			// D.wall may itself be 'none' — trolls, for one, build no walls.
-			return D.wall;
-	}
+function wallFor(T, walls) {
+	return walls === 'auto' ? T.walls : walls;
 }
 
 /**
@@ -407,14 +396,15 @@ function wallFor(T, walls, D) {
  * `stilts` lifts every inside-the-walls piece onto a timber-post deck —
  * think a lagoon settlement over water or dune boardwalks over sand. The
  * ring wall and the ground stay on the ground.
- * @param {{walls?: Walls, seed?: number, harbor?: 'none' | 'side', ruin?: import('./ruins3d.js').RuinOptions | null, stilts?: boolean}} [o]
+ * `ground` is what it stands on (default none).
+ * @param {{walls?: Walls, seed?: number, harbor?: 'none' | 'side', ruin?: import('./ruins3d.js').RuinOptions | null, stilts?: boolean, ground?: Ground}} [o]
  * @returns {Placed[]}
  */
 export function settlement(tier, D, o = {}) {
 	const T = TEMPLATES[tier];
 	if (tier === 'camp') return camp(D).items;
 	const r = rng((o.seed ?? 1) * 7919 + Object.keys(TEMPLATES).indexOf(tier));
-	const wall = wallFor(T, o.walls ?? 'auto', D);
+	const wall = wallFor(T, o.walls ?? 'auto');
 	const { rx, ry, rank } = T;
 	// The wall encloses the building area with room to spare — grown below
 	// if the culture's buildings are too big for the template (trolls'
@@ -597,20 +587,15 @@ export function settlement(tier, D, o = {}) {
 		T.harbor || (o.harbor === 'side' && rank >= 0)
 			? harbor(D, wrx, wry, square ? W / 2 + dv[0] * 0.4 : wrx, square ? dv[1] * 0.4 : 0)
 			: { water: [], piers: [] };
-	// The ground it stands on — a hex tile, dirt, grass, farmland, sand,
-	// rock, snow, ice, marsh, lava, or (water-dwellers, the merrow) a
-	// lagoon. It's the base plane for everything else, so it goes with
-	// port.water at the back of the stacking order — if it were in `ground`
-	// (drawn after `ring.back`) the back half of the ring wall would be
-	// painted over by it.
-	const g = groundOf(D);
-	if (g && g !== 'hex') port.water.push(enclosureGround(g, square, wrx, wry));
-	// The hex ground frames the whole of it, so it's laid once the rest is.
+	// The ground it stands on — dirt, grass, farmland, sand, rock, snow,
+	// ice, marsh, lava, or a lagoon. It's the base plane for everything
+	// else, so it goes with port.water at the back of the stacking order —
+	// if it were in `ground` (drawn after `ring.back`) the back half of the
+	// ring wall would be painted over by it.
+	const g = groundOf(o.ground);
+	if (g) port.water.push(enclosureGround(g, square, wrx, wry));
 	/** @param {import('./ruins3d.js').RuinPlaced[]} list */
-	const finish = (list) => {
-		const done = o.ruin ? ruinPlaced(list, { ...o.ruin, seed: o.seed ?? 1 }) : list;
-		return g === 'hex' ? withHexTile(done, ...enclosureFootprint(square, wrx, wry)) : done;
-	};
+	const finish = (list) => (o.ruin ? ruinPlaced(list, { ...o.ruin, seed: o.seed ?? 1 }) : list);
 	if (wall === 'none') return finish([...port.water, ...ground, ...inside, ...port.piers]);
 	const ring = ringWall(D, {
 		rx: wrx,
@@ -690,15 +675,15 @@ const MIN_PIECE_SIZE = 26;
 
 /** The bounds of a placed group's solids, as placed (banners aside).
  *  @param {Placed[]} items */
-function placedBounds(items) {
+function placedBounds(items, flags = false) {
 	let x0 = Infinity,
 		x1 = -Infinity,
 		y0 = Infinity,
 		y1 = -Infinity;
 	for (const it of items)
 		for (const p of it.piece)
-			// Banners don't count (see extent()).
-			for (const poly of p.role === 'flag' ? [] : p.solid)
+			// Banners don't count (see extent()), unless asked.
+			for (const poly of p.role === 'flag' && !flags ? [] : p.solid)
 				for (const [x, y] of poly) {
 					const s = it.s ?? 1,
 						X = (it.x ?? 0) + x * s,
@@ -709,6 +694,13 @@ function placedBounds(items) {
 					y1 = Math.max(y1, Y);
 				}
 	return { x0, x1, y0, y1 };
+}
+
+/** A placed group's box as drawn, banners and all (y up) — what
+ *  toLayeredSvg()'s `frame` takes. @param {Placed[]} items */
+export function placedBox(items) {
+	const box = placedBounds(items, true);
+	return Number.isFinite(box.x0) ? box : null;
 }
 
 /** How much normalized() scales a placed group by (1: not at all).
@@ -831,7 +823,9 @@ export const UNWALLED_BUILDINGS = new Set(['wall']);
  * tower's height — and a mixed culture's builder rolls its own style.
  * @param {string} key one of BUILDINGS (unknown → a gable house)
  * @param {Design} D
- * @param {{walls?: Walls, seed?: number,
+ * `stilts` sets it on a timber-post deck, as a stilt settlement's
+ * buildings are (never the Wall).
+ * @param {{walls?: Walls, seed?: number, ground?: Ground, stilts?: boolean,
  *   ruin?: import('./ruins3d.js').RuinOptions | null}} [o]
  * @returns {Placed[]}
  */
@@ -842,27 +836,30 @@ export function building(key, D, o = {}) {
 	const walls = o.walls && o.walls !== 'auto' && o.walls !== 'none' ? o.walls : null;
 	const make = (PIECES.find(([k]) => k === key) ?? PIECES[0])[2];
 	let items = make(own, 1 + Math.floor(r() * 999_999));
-	const g = groundOf(D);
-	/** Where its ground lies — centre and half-width — for the hex tile.
-	 *  @type {[number, number, number]} */
-	let foot;
-	if (walls && !UNWALLED_BUILDINGS.has(key)) ({ items, foot } = enclosed(D, items, walls));
-	else {
-		// A building stands on its ground — water-dwellers' in a lagoon — as
-		// a settlement does (an enclosure lays its own, under the whole of it).
+	// On stilts: each part of it on a deck of its own, its terrain (a
+	// market's square, a mine's mountain) left on the ground.
+	if (o.stilts && !UNWALLED_BUILDINGS.has(key))
+		items = items.map((it) => {
+			const built = it.piece.filter((p) => !p.terrain);
+			return built.length
+				? { ...it, piece: [...it.piece.filter((p) => p.terrain), ...onStilts(built, own)] }
+				: it;
+		});
+	const g = groundOf(o.ground);
+	if (walls && !UNWALLED_BUILDINGS.has(key)) items = enclosed(D, items, walls, g);
+	else if (g) {
+		// A building stands on its ground — in a lagoon, on water — as a
+		// settlement does (an enclosure lays its own, under the whole of it).
 		const { x0, x1 } = placedExtent(items);
 		// A narrow building (a tower) still gets a plane a fair width.
-		const hw = Math.max(16, (x1 - x0) / 2 + (g === 'hex' ? 6 : 8));
-		foot = [(x0 + x1) / 2, 0, hw];
-		if (g && g !== 'hex')
-			items = [{ piece: groundPlane(g, hw, hw * 0.4), x: (x0 + x1) / 2 }, ...items];
+		const hw = Math.max(16, (x1 - x0) / 2 + 8);
+		items = [{ piece: groundPlane(g, hw, hw * 0.4), x: (x0 + x1) / 2 }, ...items];
 	}
-	if (o.ruin) items = ruinPlaced(items, { ...o.ruin, seed });
-	// A small building is scaled up to read with the rest; the hex tile
-	// goes in after, at that scale, framing the whole of it.
+	// A small building is scaled up to read with the rest — sized whole, so
+	// its ruin is drawn at the same scale, not blown up as it crumbles.
 	const k = normalScale(items);
-	items = normalized(items, k);
-	return g === 'hex' ? withHexTile(items, foot[0] * k, foot[1] * k, foot[2], k) : items;
+	if (o.ruin) items = ruinPlaced(items, { ...o.ruin, seed, single: true });
+	return normalized(items, k);
 }
 
 /** Horizontal extent of a placed group, banners aside (see extent()). @param {Placed[]} items */
@@ -888,10 +885,10 @@ function placedExtent(items) {
  * @param {Design} D
  * @param {Placed[]} items
  * @param {Exclude<Walls, 'auto' | 'none'>} wall
- * @returns {{items: Placed[], foot: [number, number, number]}} the group, and
- *   where its ground lies (enclosureFootprint()) — for a hex tile
+ * @param {Exclude<Ground, 'none'> | null} g what it stands on
+ * @returns {Placed[]}
  */
-function enclosed(D, items, wall) {
+function enclosed(D, items, wall, g) {
 	const square = D.wallShape === 'square';
 	const { x0, x1 } = placedExtent(items);
 	const w = x1 - x0;
@@ -924,130 +921,32 @@ function enclosed(D, items, wall) {
 		shape: D.wallShape,
 		towers: Math.min(2, D.wallTowers),
 	});
-	const g = groundOf(D);
-	return {
-		items: [
-			...(g && g !== 'hex' ? [enclosureGround(g, square, wrx, wry)] : []),
-			...ring.back,
-			...items.map((it) => ({ ...it, x: (it.x ?? 0) + ox, y: (it.y ?? 0) + oy })),
-			...ring.front,
-		],
-		foot: enclosureFootprint(square, wrx, wry),
-	};
+	return [
+		...(g ? [enclosureGround(g, square, wrx, wry)] : []),
+		...ring.back,
+		...items.map((it) => ({ ...it, x: (it.x ?? 0) + ox, y: (it.y ?? 0) + oy })),
+		...ring.front,
+	];
 }
 
-/** @typedef {Exclude<Design['ground'], 'none'>} Ground */
+/** @typedef {import('./pieces3d.js').Ground} Ground */
 
 /**
- * Where a walled layout's ground lies: its centre and half-width — a ring's
- * own, or the whole of a square enclosure's parallelogram.
- * @param {boolean} square
- * @param {number} wrx
- * @param {number} wry
- * @returns {[number, number, number]} cx, cy, half-width
+ * The ground to lay, or null for none.
+ * @param {Ground | undefined} ground
+ * @returns {Exclude<Ground, 'none'> | null}
  */
-function enclosureFootprint(square, wrx, wry) {
-	if (!square) return [0, 0, wrx];
-	const { W, dv } = squareFootprint(wrx, wry);
-	return [dv[0] / 2, dv[1] / 2, W / 2 + dv[0] / 2];
-}
-
-/** A hex tile's dashed outline, as a house's: a dash weight of HEX_W and a
- *  dash period of HEX_PERIOD (dash : gap = 3.2 : 2.2) on an icon HEX_SPAN0
- *  across. Both scale with the whole icon the tile frames, so its dashes
- *  read the same at the size any icon is drawn — a cottage's or a capital's,
- *  or a tower standing out of its tile. */
-const HEX_SPAN0 = 60,
-	HEX_W = 1.1,
-	HEX_PERIOD = 6,
-	HEX_DASH = 3.2 / 5.4;
-const SIN60 = Math.sqrt(3) / 2;
-
-/**
- * The hex ground: a hex tile behind a laid-out group, as a hex map's cell
- * frames it. A regular flat-topped hexagon upright in the picture (a frame,
- * not lying on the ground, as Watabou's generator draws it), round the
- * ground footprint (centre cx, cy; half-width hw, at the group's scale k)
- * and set a little high, so the buildings rising from it stay inside.
- * @param {Placed[]} items
- * @param {number} cx
- * @param {number} cy
- * @param {number} hw
- * @param {number} [k] the scale the group's been drawn at (normalized())
- * @returns {Placed[]} the tile, first, then the group
- */
-function withHexTile(items, cx, cy, hw, k = 1) {
-	const R = (hw * 1.25 + 4) * k;
-	const oy = cy + R * 0.2;
-	// The whole icon's span — the group's, and the tile's own.
-	const b = placedBounds(items);
-	const span = Math.max(
-		Math.max(b.x1, cx + R) - Math.min(b.x0, cx - R),
-		Math.max(b.y1, oy + R * SIN60) - Math.min(b.y0, oy - R * SIN60),
-	);
-	return [hexTile(cx, oy, R, span), ...items];
-}
-
-/**
- * A hex tile's dashed outline: radius R about (cx, cy), its dashes sized to
- * an icon `span` across — whole dash periods to an edge, a dash centred on
- * each corner.
- * @param {number} cx
- * @param {number} cy
- * @param {number} R
- * @param {number} span
- * @returns {Placed}
- */
-function hexTile(cx, cy, R, span) {
-	const u = span / HEX_SPAN0;
-	/** @type {Poly} */
-	const hex = Array.from({ length: 6 }, (_, i) => {
-		const a = (i * Math.PI) / 3;
-		return /** @type {Pt} */ ([R * Math.cos(a), R * Math.sin(a)]);
-	});
-	const per = Math.max(1, Math.round(R / (HEX_PERIOD * u)));
-	const q = R / per,
-		half = (q * HEX_DASH) / 2,
-		w = HEX_W * u;
-	/** The point s along the perimeter from corner 0. @param {number} s */
-	const along = (s) => {
-		const t = ((s % (6 * R)) + 6 * R) % (6 * R);
-		const i = Math.floor(t / R),
-			f = (t - i * R) / R;
-		const [a, b] = [hex[i % 6], hex[(i + 1) % 6]];
-		return /** @type {Pt} */ ([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]);
-	};
-	/** @type {import('./render.js').Line[]} */
-	const free = [];
-	for (let n = 0; n < 6 * per; n++) {
-		const s = n * q;
-		// A dash centred on a corner bends round it.
-		const pts =
-			n % per === 0
-				? [along(s - half), hex[n / per], along(s + half)]
-				: [along(s - half), along(s + half)];
-		free.push({ pts, w });
-	}
-	return { piece: [{ solid: [], free, terrain: true }], x: cx, y: cy };
-}
-
-/**
- * The ground a design stands on, or null for none.
- * @param {Design} D
- * @returns {Ground | null}
- */
-function groundOf(D) {
-	return D.ground && D.ground !== 'none' ? D.ground : null;
+function groundOf(ground) {
+	return ground && ground !== 'none' ? ground : null;
 }
 
 /**
  * The ground a walled layout stands on — a lagoon, or a plane of another
- * ground type (groundPlane()); the hex ground is a frame laid once the
- * layout is (withHexTile()). A ring gets an ellipse a little larger than
+ * ground type (groundPlane()). A ring gets an ellipse a little larger than
  * itself; a square enclosure — a parallelogram in this view, its sides
  * receding to the right — one wide and deep enough to take its front-left
  * and back-right corners too, so no wall stands off the ground.
- * @param {Exclude<Ground, 'hex'>} kind
+ * @param {Exclude<Ground, 'none'>} kind
  * @param {boolean} square
  * @param {number} wrx
  * @param {number} wry
