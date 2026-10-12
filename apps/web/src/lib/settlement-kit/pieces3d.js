@@ -4001,9 +4001,10 @@ function pickaxe(a, b) {
 }
 
 /**
- * Lighthouse on a rocky foot at the water's edge: tapered tower painted in
- * bands of the marker colour, a railed gallery, a glazed lantern throwing
- * light, and a cap in the culture's roof style.
+ * Lighthouse on a rocky foot: tapered tower painted in bands of the marker
+ * colour, a railed gallery, a glazed lantern throwing light, and a cap in
+ * the culture's roof style. It brings no sea of its own — the Water ground
+ * (a lagoon) puts it at sea, so the two never stack.
  * @param {Design} D
  * @returns {Part[]}
  */
@@ -4020,27 +4021,6 @@ export function lighthouse(D) {
 			...ell(0, y1, rAt(y1), rAt(y1) * k, 360, 180, 16),
 		]);
 	const flank = rect(r0 * 0.3, -r0, r0 * 2, h + r0 * 2);
-	/** @type {Poly} */
-	const sea = ell(1, -2.4, 17, 5.2, 0, 360, 40).slice(0, -1);
-	/** @type {Line[]} */
-	const waves = [];
-	for (const [x, y] of [
-		[-12, -4],
-		[-7, -6.4],
-		[9, -5.6],
-		[13, -3.2],
-		[3, -6.8],
-	])
-		waves.push({
-			pts: [
-				[x - 2, y],
-				[x - 1, y + 0.5],
-				[x, y],
-				[x + 1, y + 0.5],
-				[x + 2, y],
-			],
-			w: 0.5,
-		});
 	/** @type {Poly[]} */
 	const rocks = [
 		[
@@ -4071,9 +4051,8 @@ export function lighthouse(D) {
 	for (const f of [0.38, 0.62]) slits.push(rect(-0.6, h * f, 1.2, 3));
 	/** @type {Part[]} */
 	const parts = [
-		{ solid: [sea], role: 'water', lines: waves, terrain: true },
-		// One solid rock mass under the whole foot of the tower, so no sea
-		// shows through beneath it; the outlying stones merge into it.
+		// One solid rock mass under the whole foot of the tower; the outlying
+		// stones merge into it.
 		{
 			solid: [foundation(r0 + 3.4, r0 * k + 2.4), ...rocks.slice(0, 2)],
 			shadeArea: rect(1, -9, 13, 14),
