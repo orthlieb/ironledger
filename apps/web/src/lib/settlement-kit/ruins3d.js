@@ -1,21 +1,25 @@
 // =============================================================================
 // Settlement kit — ruins
 //
-// Ruins any list of placed pieces (a settlement, or a standalone):
-//   * roofs, spires, domes, parapets, sails and flags fall in — every part
-//     that doesn't stand on the ground is dropped;
-//   * what's left breaks off along a seeded, stepped line (courses of
-//     masonry fallen away), lower or higher per building by `decay`;
-//   * enclosure walls (`wall: true` pieces) keep their height but get one
-//     to three breaches down to the ground;
+// Ruins any list of placed pieces (a settlement, or a standalone), by
+// degrees as `decay` rises (ruinPiece()):
+//   * at once: flags, banners, smoke, a lamp's rays; a mill's sails come off
+//     one by one;
+//   * the roofs (and what rides on them) open from a gap to a ragged hole
+//     and are gone by 0.4;
+//   * then the walls break off along a seeded, stepped line (courses of
+//     masonry fallen away), lower and lower to foundations at 1;
+//   * in a settlement each building takes a decay of its own, a little
+//     either side, so they don't come down in step; one on its own (the
+//     Buildings tab, `single`) takes the slider's exactly;
+//   * enclosure walls (`wall: true` pieces) keep their height but are
+//     breached down to the ground, more and wider breaches as it rises;
 //   * rubble at every foot; when burned, charred beams, darker walls and
 //     soot scorch marks above every opening and below the broken top;
 //   * overgrowth — ivy,
 //     bushes and a tree in the bigger shells — in the MARKER colour (role
 //     'roof'), so ruins stay colour-coded on the map once the roofs are gone.
 // Terrain parts (`terrain: true`: sea, rock, mountains, plazas) are never cut.
-// A building on its own (the Buildings tab, `single`) comes down by degrees
-// instead — see crumble().
 // =============================================================================
 
 import { rect, rng } from './geom.js';
@@ -24,9 +28,9 @@ import { rect, rng } from './geom.js';
 /** @typedef {import('./render.js').Line} Line */
 /** @typedef {import('./geom.js').Poly} Poly */
 /** @typedef {import('./pieces3d.js').Placed} Placed */
-/** `single`: one building on its own (the Buildings tab), not one of many —
- *  ruined by crumble(), a step at a time as `decay` rises, rather than
- *  rolling building by building whether the roof survives.
+/** `single`: one building on its own (the Buildings tab), ruined at exactly
+ *  `decay`; in a settlement each building takes a decay of its own, a
+ *  little either side, so they don't come down in step.
  *  @typedef {{decay: number, overgrowth: number, burned: boolean, seed?: number, single?: boolean}} RuinOptions */
 /** @typedef {Placed} RuinPlaced */
 
@@ -65,67 +69,10 @@ export function ruinPlaced(items, o) {
 }
 
 /**
- * Ruin one building.
- * @param {Part[]} parts
- * @param {RuinOptions} o
- * @param {number} seed
- * @returns {Part[]}
- */
-export function ruinPiece(parts, o, seed) {
-	if (o.single) return crumble(parts, o, seed);
-	const r = rng(seed);
-	const terrain = parts.filter((p) => p.terrain);
-	const built = parts.filter((p) => !p.terrain && p.solid.length);
-	const all = bounds(built);
-	if (!all.ok) return terrain;
-	// Only what stands on the ground survives; roofs and spires fall in.
-	// (Anything starting in the bottom 30% of the building counts as standing,
-	// so a low pickaxe or mill race doesn't make the walls look elevated.)
-	const ground = all.y0 + Math.max(0.6, (all.y1 - all.y0) * 0.3);
-	// Signs, flags and banners (role 'flag') never survive, however low they
-	// hang; nor do a mill's sails (aloft), though a blade reaches the ground.
-	const standing = built.filter(
-		(p) => bounds([p]).y0 <= ground && p.role !== 'roof' && p.role !== 'flag' && !p.aloft,
-	);
-	// Line-only parts low down (rails, posts) stay; high ones (flags, crosses) fall.
-	const lowLines = parts.filter(
-		(p) =>
-			!p.terrain &&
-			!p.solid.length &&
-			(p.free ?? []).every((l) => l.pts.every(([, y]) => y <= ground)),
-	);
-	const b = bounds(standing);
-	if (!b.ok) return [...terrain, rubble(all, r, 6)];
-	// Some buildings keep their roof — more often the less decayed the ruin,
-	// less often if it burned — about half of those with a hole in it.
-	if (r() < (1 - o.decay) * 0.35 * (o.burned ? 0.5 : 1)) return roofed(parts, terrain, all, o, r);
-	const hgt = b.y1 - b.y0;
-	// How much is left: decay 0 keeps most of the walls, 1 leaves foundations.
-	const keep = Math.max(0.08, 0.88 - o.decay * 0.75 + (r() - 0.5) * 0.22);
-	const base = b.y0 + hgt * keep;
-	const mask = brokenTop(b, base, hgt, r);
-	/** @type {Part[]} */
-	const out = [...terrain];
-	const top = (/** @type {number} */ x) => maskTop(mask, x, base);
-	const tree = o.overgrowth > 0.6 && b.x1 - b.x0 > 12 ? growTree(b, top, r) : [];
-	const shell = standing.map((p) =>
-		o.burned ? scorch({ ...p, mask, free: [] }, top) : { ...p, mask, free: [] },
-	);
-	out.push(...tree, ...lowLines, ...shell);
-	if (o.burned) out.push(beams(b, top, r));
-	out.push(rubble(b, r, keep < 0.2 ? 7 : 4));
-	if (o.overgrowth > 0)
-		out.push(...ivy(standing, top, o.overgrowth, r), ...bushes(b, o.overgrowth, r));
-	return out;
-}
-
-/**
- * Ruin one building on its own a step at a time as `decay` rises — the
- * Buildings tab's Decay slider. Where ruinPiece() rolls building by building
- * (roof kept or fallen in, walls cut to a height) and so jumps, this one
- * comes down by degrees and stays recognisable a long way down:
- *   * at once: flags, banners, smoke, a lamp's rays and the high line-work
- *     (rails, poles); a mill's sails come off one by one by 0.3;
+ * Ruin one building, by degrees as the decay rises, so a ruin stays
+ * recognisable a long way down:
+ *   * at once: flags, banners, smoke, a lamp's rays; a mill's sails come
+ *     off one by one by 0.3;
  *   * the roofs (role 'roof': roofs, cones, spires, domes) open from a gap
  *     at 0.1 to a ragged hole, each roof on its own — the parts that overlap
  *     across, as its lit and shaded sides do — and are gone by 0.4 (sooner,
@@ -134,16 +81,20 @@ export function ruinPiece(parts, o, seed) {
  *     a stepped line down to the foundations at 1 — at each point a share
  *     of the height that stands there, so a tower and the nave beside it
  *     come down together, and nothing is left hanging;
- *   * rubble, ivy and bushes grow with it; burned, the walls are sooted and
- *     charred beams fall once the roof is in.
+ *   * rubble, ivy and bushes grow with it (and a tree in a big shell, when
+ *     overgrown); burned, the walls are sooted and charred beams fall once
+ *     the roof is in.
+ * In a settlement the building takes a decay of its own, up to 0.25 either
+ * side of the settlement's — so a few keep a holed roof well into the ruin
+ * — and on its own (`single`) the slider's exactly.
  * @param {Part[]} parts
  * @param {RuinOptions} o
  * @param {number} seed
  * @returns {Part[]}
  */
-function crumble(parts, o, seed) {
+export function ruinPiece(parts, o, seed) {
 	const r = rng(seed);
-	const d = o.decay;
+	const d = o.single ? o.decay : Math.max(0.05, Math.min(1, o.decay + (r() - 0.5) * 0.5));
 	const built = parts.filter((p) => !p.terrain && p.solid.length);
 	const all = bounds(built);
 	if (!all.ok) return parts.filter((p) => p.terrain);
@@ -213,6 +164,9 @@ function crumble(parts, o, seed) {
 			out.push(o.burned && p.solid.length ? scorch(q, top) : q);
 		}
 	}
+	// An overgrown shell, roofless and big enough, has a tree growing in it,
+	// behind its walls.
+	if (o.overgrowth > 0.6 && keep < 1 && b.x1 - b.x0 > 12) out.unshift(...growTree(b, top, r));
 	// Rubble and bushes sized to the building, so a well isn't buried.
 	const size = Math.max(0.45, Math.min(1, (b.x1 - b.x0) / 14));
 	if (o.burned && gone >= 0.6) out.push(beams(b, top, r));
@@ -309,9 +263,10 @@ function fallingTop(walls, b, keep, r) {
 }
 
 /**
- * Enclosure wall: stays standing but gets 1–3 breaches down to the ground
- * (scaled by `share` when the wall is cut into segments, so the whole run
- * still gets about that many).
+ * Enclosure wall: stays standing but is breached down to the ground — none
+ * at the light end, up to four as the decay rises, wider as they go (scaled
+ * by `share` when the wall is cut into segments, so the whole run still gets
+ * about that many).
  * @param {Part[]} parts
  * @param {RuinOptions} o
  * @param {number} seed
@@ -322,7 +277,7 @@ function breach(parts, o, seed, share) {
 	const r = rng(seed);
 	const b = bounds(parts.filter((p) => !p.terrain));
 	if (!b.ok) return parts;
-	const n = Math.round((1 + Math.floor(r() * (1 + o.decay * 2.2))) * share);
+	const n = Math.round(Math.floor(r() * (0.3 + o.decay * 4)) * share);
 	const top = b.y1 + 30;
 	/** @type {Poly} */
 	const mask = [
@@ -340,7 +295,7 @@ function breach(parts, o, seed, share) {
 	for (const cx of centres) {
 		// Keep the gateway itself (front-centre) standing.
 		if (Math.abs(cx) < 9) continue;
-		const w = 5 + r() * 6 + o.decay * 4;
+		const w = 3 + r() * 5 + o.decay * 7;
 		mask.push(
 			[cx - w, top],
 			[cx - w * 0.6, b.y0 + 5 + r() * 3],
@@ -361,33 +316,6 @@ function breach(parts, o, seed, share) {
 	if (stones.length) out.push({ solid: stones, shadeArea: rect(b.x0, b.y0 - 8, span * 2, 12) });
 	if (o.overgrowth > 0) out.push(...bushes(b, o.overgrowth * 0.6, r));
 	return out;
-}
-
-/**
- * Keep-region under a stepped broken top: level runs joined by vertical
- * drops, sloping down toward one (seeded) end.
- * @param {{x0: number, x1: number, y0: number, y1: number}} b
- * @param {number} base
- * @param {number} hgt
- * @param {() => number} r
- * @returns {Poly}
- */
-function brokenTop(b, base, hgt, r) {
-	const slope = (r() < 0.5 ? -1 : 1) * hgt * 0.3;
-	/** @type {Poly} */
-	const mask = [
-		[b.x1 + 6, b.y0 - 8],
-		[b.x0 - 6, b.y0 - 8],
-	];
-	let x = b.x0 - 6;
-	while (x < b.x1 + 6) {
-		const t = (x - b.x0) / Math.max(1, b.x1 - b.x0) - 0.5;
-		const y = Math.max(b.y0 + 1.2, Math.min(b.y1, base + slope * t + (r() - 0.5) * hgt * 0.25));
-		const run = 2.5 + r() * 4;
-		mask.push([x, y], [Math.min(x + run, b.x1 + 6), y]);
-		x += run;
-	}
-	return mask;
 }
 
 /** An irregular stone. */
@@ -442,59 +370,6 @@ function maskTop(mask, x, base) {
 		if (x >= Math.min(ax, bx) && x <= Math.max(ax, bx)) return ay;
 	}
 	return base;
-}
-
-/**
- * A ruined building whose roof survived: everything stands except flags,
- * banners and smoke, the roof may have a jagged hole bitten out of it, and
- * it still gets rubble, overgrowth and (if burned) scorched walls.
- * @param {Part[]} parts
- * @param {Part[]} terrain
- * @param {{x0: number, x1: number, y0: number, y1: number}} all
- * @param {RuinOptions} o
- * @param {() => number} r
- * @returns {Part[]}
- */
-function roofed(parts, terrain, all, o, r) {
-	/** @type {Poly | undefined} */
-	let hole;
-	if (r() < 0.5) {
-		// Keep-region with a ragged bite out of the roof, from above.
-		const w = (all.x1 - all.x0) * (0.18 + r() * 0.16),
-			cx = all.x0 + (all.x1 - all.x0) * (0.3 + r() * 0.4),
-			deep = all.y1 - (all.y1 - all.y0) * (0.2 + r() * 0.15),
-			hi = all.y1 + 20;
-		hole = [
-			[all.x0 - 20, all.y0 - 20],
-			[all.x1 + 20, all.y0 - 20],
-			[all.x1 + 20, hi],
-			[cx + w / 2, hi],
-			[cx + w * 0.42, deep + 1.4],
-			[cx + w * 0.15, deep + 0.4],
-			[cx - w * 0.05, deep + 1.6],
-			[cx - w * 0.3, deep],
-			[cx - w / 2, hi],
-			[all.x0 - 20, hi],
-		];
-	}
-	const top = () => all.y1;
-	/** @type {Part[]} */
-	const kept = parts
-		.filter((p) => !p.terrain && p.role !== 'flag' && !p.smoke)
-		.map((p) => {
-			const q = p.role === 'roof' && hole ? { ...p, mask: hole } : p;
-			return o.burned && p.role !== 'roof' ? scorch(q, top) : q;
-		});
-	/** @type {Part[]} */
-	const out = [...terrain, ...kept, rubble(all, r, 3)];
-	if (o.overgrowth > 0) {
-		const walls = kept.filter((p) => p.role !== 'roof' && bounds([p]).y0 <= all.y0 + 1);
-		out.push(
-			...ivy(walls, () => all.y0 + (all.y1 - all.y0) * 0.45, o.overgrowth * 0.7, r),
-			...bushes(all, o.overgrowth, r),
-		);
-	}
-	return out;
 }
 
 /**

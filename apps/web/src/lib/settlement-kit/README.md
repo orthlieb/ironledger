@@ -347,10 +347,11 @@ buildings — `jitterDesign()` (pitch, sweep,
 ornament, now and then the windows or doors), a round tower's girth and
 height, a house's details — and lets a mixed culture's builder roll its
 own style (`mixDesign()`); the reference row (`pieces()`) passes no seed,
-so it and the baked icons stay fixed. `ruin` ruins it as one building on
-its own (`RuinOptions.single` → `crumble()` in `ruins3d.js`), by degrees
-rather than the settlement's per-building rolls, so the Decay slider reads
-as a progression:
+so it and the baked icons stay fixed. `ruin` ruins it at exactly the
+slider's decay (`RuinOptions.single`; in a settlement each building takes
+its own, up to 0.25 either side, so they don't come down in step). Every
+building comes down by degrees (`ruinPiece()` in `ruins3d.js`), so the
+Decay slider reads as a progression:
 
 | Decay   | What's left                                                                                                                                       |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -359,14 +360,16 @@ as a progression:
 | 0.4     | Roofless, the walls at full height.                                                                                                               |
 | 0.4–1   | The walls break off along a stepped line, at each point a share of the height there, down to foundations at 1.                                    |
 
-Roof-coloured paint on a wall (a lighthouse's bands — a roof part inside a
-wall's box) stands with the wall. Burned, the roofs go sooner, the walls
+Enclosure walls keep their height and are breached — none at the light end,
+up to four, wider, as the decay rises. Roof-coloured paint on a wall (a
+lighthouse's bands — a roof part inside a wall's box) stands with the wall. Burned, the roofs go sooner, the walls
 are sooted and charred beams fall; rubble, ivy and bushes grow with the
 decay, sized to the building. It's scaled by its intact size
 (`normalScale()` before the ruin), and `generateSettlementSvg()` frames
-the ruin as the building was (`placedBox()` → `toLayeredSvg()`'s `frame`),
-so a stump stands where the building stood instead of swelling to fill
-the marker.
+any ruin — a building's or a settlement's — as it was whole (`placedBox()`
+→ `toLayeredSvg()`'s `frame`), so what's left stands where it stood
+instead of swelling to fill the marker. The baked ruin icons take decay
+0.6 (a single building's set per icon, `single`).
 
 ## Pieces catalogue (abridged)
 

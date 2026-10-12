@@ -48,9 +48,14 @@ const piece = (d, name) => {
 	if (!hit) throw new Error(`no piece "${name}"`);
 	return hit[1];
 };
-const RUIN = { decay: 0.5, overgrowth: 0.4, burned: false, seed: 3 };
+// Ruins come down by degrees (ruins3d.js). A settlement at 0.6 is mostly
+// roofless shells, a few still holed-roofed; a building on its own takes
+// its decay exactly (`single`), set per icon so each reads as a ruin.
+const RUIN = { decay: 0.6, overgrowth: 0.4, burned: false, seed: 3 };
 /** @param {Placed[]} items */
 const ruined = (items) => ruinPlaced(items, RUIN);
+/** @param {Placed[]} items @param {number} decay */
+const ruinedPiece = (items, decay) => ruinPlaced(items, { ...RUIN, decay, single: true });
 
 /**
  * Core icons the kit now covers, keyed by the OLD slug they replace.
@@ -148,13 +153,13 @@ const CORE_ICONS = {
 	],
 	// Ruins.
 	'castle-ruin': ['settlement', () => ruined(settlement('hold', D, { walls: 'stone' }))],
-	'cathedral-ruin': ['settlement', () => ruined(piece(D, 'Cathedral'))],
+	'cathedral-ruin': ['settlement', () => ruinedPiece(piece(D, 'Cathedral'), 0.6)],
 	'fortified-tower-ruin': [
 		'settlement',
-		() => ruined(piece({ ...D, towerRoof: 'none' }, 'Round tower')),
+		() => ruinedPiece(piece({ ...D, towerRoof: 'none' }, 'Round tower'), 0.55),
 	],
-	'tavern-ruin': ['settlement', () => ruined(piece(D, 'Tavern'))],
-	'mine-ruin': ['settlement', () => ruined(piece(D, 'Mine'))],
+	'tavern-ruin': ['settlement', () => ruinedPiece(piece(D, 'Tavern'), 0.6)],
+	'mine-ruin': ['settlement', () => ruinedPiece(piece(D, 'Mine'), 0.6)],
 	'town-ruin': ['settlement', () => ruined(settlement('town', D, { walls: 'stone' }))],
 	'village-ruin': ['settlement', () => ruined(settlement('village', D))],
 	'village-stone-wall-ruin': [
@@ -165,8 +170,8 @@ const CORE_ICONS = {
 		'settlement',
 		() => ruined(settlement('hold', { ...D, wallShape: 'square' }, { walls: 'stone' })),
 	],
-	'house-ruin': ['settlement', () => ruinPlaced(piece(D, 'Gable house'), { ...RUIN, decay: 0.2 })],
-	'broken-wall': ['settlement', () => ruined(piece(D, 'Wall'))],
+	'house-ruin': ['settlement', () => ruinedPiece(piece(D, 'Gable house'), 0.5)],
+	'broken-wall': ['settlement', () => ruinedPiece(piece(D, 'Wall'), 0.6)],
 };
 
 /** Delete any existing icon (svg or png) for a slug in a category folder. */

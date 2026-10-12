@@ -224,22 +224,22 @@ export function generateSettlementSvg(recipe, culture) {
 				seed: recipe.seed,
 			}
 		: null;
-	const items = recipe.building
-		? building(recipe.building, design, { walls: recipe.walls, seed: recipe.seed, ruin })
-		: settlement(tier, design, {
-				walls: recipe.walls ?? 'auto',
-				seed: recipe.seed,
-				harbor: recipe.harbor ? 'side' : 'none',
-				stilts: !!recipe.stilts,
-				ruin,
-			});
-	// A ruined building is framed as the building was, so a stump doesn't
-	// swell to fill the marker (its ink thickening) but stands where the
-	// building stood, at its scale.
-	const frame =
-		recipe.building && ruin
-			? placedBox(building(recipe.building, design, { walls: recipe.walls, seed: recipe.seed }))
-			: null;
+	/** @param {typeof ruin} r the ruin, or none for the whole thing */
+	const draw = (r) =>
+		recipe.building
+			? building(recipe.building, design, { walls: recipe.walls, seed: recipe.seed, ruin: r })
+			: settlement(tier, design, {
+					walls: recipe.walls ?? 'auto',
+					seed: recipe.seed,
+					harbor: recipe.harbor ? 'side' : 'none',
+					stilts: !!recipe.stilts,
+					ruin: r,
+				});
+	const items = draw(ruin);
+	// A ruin is framed as the building or settlement was, so what's left
+	// doesn't swell to fill the marker (its ink thickening) as it comes down,
+	// but stands where it stood, at its scale.
+	const frame = ruin ? placedBox(draw(null)) : null;
 	return toLayeredSvg(
 		`${culture?.name ?? 'Default'} ${recipe.building ?? tier}`,
 		items,

@@ -342,10 +342,10 @@ and every culture knob. It's used three ways:
   a hex map's cell frames it — Dirt, Grass, Farmland, Sand, Rock, Snow,
   Ice, Marsh, Lava, Water: a plane under it in its own colour and
   texture, a lagoon for water) and Ruined + decay (optionally burned) as below
-  — on its own a building comes down by degrees (`crumble()`): its roof
-  opens from a gap at 0.1 and is gone by 0.4, then the walls break off
-  lower and lower to foundations at 1, so it stays recognisable well past
-  halfway; drawn at its scale and standing where it stood, not zoomed in.
+  — a building comes down by degrees (`ruinPiece()`): its roof opens from
+  a gap at 0.1 and is gone by 0.4, then the walls break off lower and
+  lower to foundations at 1, so it stays recognisable well past halfway;
+  drawn at its scale and standing where it stood, not zoomed in.
   The reroll varies
   the building as a settlement varies its own — pitch, sweep, ornament,
   now and then the windows or doors, a tower's height — and a mixed
@@ -358,7 +358,9 @@ and every culture knob. It's used three ways:
   with its population; Freeport isn't offered — a culture with a high
   `variety` makes a freeport's mix of builders), culture, walls and wall
   shape, ground (as on the Buildings tab), on stilts, harbour, ruined +
-  decay (optionally burned: scorch marks and sooty walls), and a reroll
+  decay (optionally burned: scorch marks and sooty walls — the buildings
+  come down by degrees as on the Buildings tab, each a little either side
+  of the slider, the walls breached more and wider as it rises), and a reroll
   for the layout seed, with a large preview in the marker's colour. "Use this" stores a **recipe** on the marker (see
   below). A Recent strip keeps the last 8 recipes per browser
   (`localStorage` `il:recentSettlements`, like the colour picker's

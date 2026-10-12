@@ -275,6 +275,23 @@ describe('ring wall texture', () => {
 	});
 });
 
+/** Area a placed group covers as drawn (its silhouette path, holes out). */
+const drawnArea = (items: ReturnType<typeof building>) => {
+	const parts = items.flatMap((it) =>
+		place(it.piece, { x: it.x ?? 0, y: it.y ?? 0, s: it.s ?? 1 }),
+	);
+	const { silhouette } = renderLayered(parts, { outline: 1.4, join: DEFAULT_DESIGN.join });
+	let total = 0;
+	for (const sub of silhouette.split('M').slice(1)) {
+		const n = sub.replace(/[LZ]/g, ' ').trim().split(/\s+/).map(Number);
+		for (let i = 0; i < n.length; i += 2) {
+			const j = (i + 2) % n.length;
+			total += (n[i]! * n[j + 1]! - n[j]! * n[i + 1]!) / 2;
+		}
+	}
+	return Math.abs(total);
+};
+
 describe('buildings (the Buildings tab)', () => {
 	const roles = (svg: string) =>
 		new Set([...svg.matchAll(/data-role="([\w-]+)"/g)].map((m) => m[1]));
@@ -373,22 +390,6 @@ describe('buildings (the Buildings tab)', () => {
 		expect(tower(1)).not.toBe(tower(2));
 	});
 	const ruin = (decay: number) => ({ decay, overgrowth: 0.4, burned: false });
-	/** Area a placed group covers as drawn (its silhouette path, holes out). */
-	const drawnArea = (items: ReturnType<typeof building>) => {
-		const parts = items.flatMap((it) =>
-			place(it.piece, { x: it.x ?? 0, y: it.y ?? 0, s: it.s ?? 1 }),
-		);
-		const { silhouette } = renderLayered(parts, { outline: 1.4, join: DEFAULT_DESIGN.join });
-		let total = 0;
-		for (const sub of silhouette.split('M').slice(1)) {
-			const n = sub.replace(/[LZ]/g, ' ').trim().split(/\s+/).map(Number);
-			for (let i = 0; i < n.length; i += 2) {
-				const j = (i + 2) % n.length;
-				total += (n[i]! * n[j + 1]! - n[j]! * n[i + 1]!) / 2;
-			}
-		}
-		return Math.abs(total);
-	};
 	it('ruins a building on its own by degrees, recognisable well past halfway', () => {
 		const steps = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
 		for (const key of ['gable-house', 'church', 'keep', 'lighthouse'])
@@ -474,6 +475,51 @@ describe('buildings (the Buildings tab)', () => {
 				);
 				for (const foot of feet) expect(foot, `${key} seed ${seed}`).toBeLessThan(2);
 			}
+		}
+	});
+});
+
+describe('ruined settlements', () => {
+	it('come down by degrees, each building at a decay of its own', () => {
+		const ruin = (decay: number) => ({ decay, overgrowth: 0.4, burned: false });
+		const steps = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
+		for (const [tier, walls] of [
+			['hamlet', 'none'],
+			['village', 'none'],
+			['town', 'stone'],
+		] as const) {
+			const whole = drawnArea(settlement(tier, DEFAULT_DESIGN, { seed: 1, walls }));
+			const left = steps.map(
+				(d) =>
+					drawnArea(settlement(tier, DEFAULT_DESIGN, { seed: 1, walls, ruin: ruin(d) })) / whole,
+			);
+			const what = `${tier}: ${left.map((a) => a.toFixed(2)).join(' ')}`;
+			// Barely touched at the light end — not most roofs and towers gone
+			// at once — and well over half there at 0.5 …
+			expect(left[0], what).toBeGreaterThan(0.85);
+			expect(left[4], what).toBeGreaterThan(0.6);
+			// … then a little more at every step, never a lurch.
+			for (let i = 1; i < steps.length; i++) {
+				expect(left[i], what).toBeLessThan(left[i - 1]! * 1.05);
+				expect(left[i - 1]! - left[i]!, what).toBeLessThan(0.2);
+			}
+		}
+	}, 60_000); // 33 settlements drawn: seconds, not milliseconds
+	it('frames a ruined settlement as it was', () => {
+		const box = (decay?: number) =>
+			generateSettlementSvg(
+				{ tier: 'village', culture: 'default', seed: 2, ...(decay ? { ruin: { decay } } : {}) },
+				null,
+			)
+				.match(/viewBox="([^"]+)"/)![1]!
+				.split(' ')
+				.map(Number);
+		const [, y, w, h] = box();
+		for (const decay of [0.5, 1]) {
+			const [, ry, rw, rh] = box(decay);
+			expect(rw).toBeGreaterThan(w! - 2);
+			expect(rh).toBeGreaterThan(h! - 2);
+			expect(ry).toBeLessThan(y! + 1);
 		}
 	});
 });
