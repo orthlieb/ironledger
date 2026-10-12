@@ -32,7 +32,6 @@ describe('resolveMapIcon', () => {
 			'stone-bridge': 'travel',
 			wheat: 'supply',
 			campfire: 'site',
-			crater: 'terrain',
 		};
 		for (const [slug, category] of Object.entries(moved))
 			expect(resolveMapIcon(`settlement/${slug}`)?.category, slug).toBe(category);

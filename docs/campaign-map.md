@@ -317,9 +317,9 @@ and every culture knob. It's used three ways:
     hand-drawn props that used to share it now live in the categories
     they fit (bridges and the aqueduct in Travel; anvil, masonry, pickaxe,
     plow, mine wagon in Profession; barrels, coal, planks, wheat, coins in
-    Supply; campfire, brazier, tavern sign, crowns in Site; the crater in
-    Terrain), and `resolveMapIcon()` still finds a marker saved with the
-    old `settlement/<slug>` key by its slug.
+    Supply; campfire, brazier, tavern sign, crowns in Site — the crater,
+    the one raster icon, was dropped), and `resolveMapIcon()` still finds
+    a marker saved with the old `settlement/<slug>` key by its slug.
     The Icons tab doesn't offer the Settlement category: the Buildings and
     Settlement builder tabs draw any of it, in any culture. The baked
     files stay for markers that already use them and as recipes' plain
