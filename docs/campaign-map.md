@@ -318,8 +318,7 @@ and every culture knob. It's used three ways:
     they fit (bridges and the aqueduct in Travel; anvil, masonry, pickaxe,
     plow, mine wagon in Profession; barrels, coal, planks, wheat, coins in
     Supply; campfire, brazier, tavern sign, crowns in Site — the crater,
-    the one raster icon, was dropped), and `resolveMapIcon()` still finds
-    a marker saved with the old `settlement/<slug>` key by its slug.
+    the one raster icon, was dropped).
     The Icons tab doesn't offer the Settlement category: the Buildings and
     Settlement builder tabs draw any of it, in any culture. The baked
     files stay for markers that already use them and as recipes' plain
@@ -334,9 +333,7 @@ and every culture knob. It's used three ways:
   cathedral, a market and a stone wall) — in any culture. Walls (None by
   default) puts a small ring or square wall of that type round it (in
   the chosen wall shape); the Wall comes in its own stone and has no
-  Walls or Wall shape. (The gatehouses, wall tower, palisade, caravel,
-  dock and pier are no longer offered — the kit's `RETIRED_BUILDINGS` —
-  but still draw on a marker that already has one.) The tab lays itself out to
+  Walls or Wall shape. The tab lays itself out to
   fit the dialog (the preview takes whatever height the knobs leave, the
   knobs go two to a row on a phone), so "Use this" is always on screen.
   Ground (the culture's own, or None, Hex — a dashed hex tile behind it, as

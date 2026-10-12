@@ -28,10 +28,9 @@ describe('building recipes', () => {
 		expect(cleanSettlementRecipe({ ...tower, building: 'skyscraper' })).toBeUndefined();
 		expect(cleanSettlementRecipe({ ...tower, building: 'toString' })).toBeUndefined();
 	});
-	it("accept every ground type — 'land' as 'none' — and drop one they don't know", () => {
+	it("accept every ground type, and drop one they don't know", () => {
 		for (const ground of SETTLEMENT_GROUNDS)
 			expect(cleanSettlementRecipe({ ...tower, ground })?.ground).toBe(ground);
-		expect(cleanSettlementRecipe({ ...tower, ground: 'land' })?.ground).toBe('none');
 		expect(cleanSettlementRecipe({ ...tower, ground: 'magma' })).not.toHaveProperty('ground');
 		expect(SETTLEMENT_GROUNDS).toEqual([
 			'none',

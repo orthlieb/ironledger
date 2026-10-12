@@ -173,9 +173,7 @@ The app needs no change: it draws whatever `patterns.js` defines.
 ## Ground
 
 `Design.ground` (or a recipe's `ground`) is what a settlement or building
-stands on. `'none'` draws nothing (`'land'`, its old name, still reads as
-none: `upgradeDesign()` and `cleanSettlementRecipe()` rename it, and the
-layouts treat it as none); every other type is a plane under the
+stands on. `'none'` draws nothing; every other type is a plane under the
 whole of it — `groundPlane(kind, rx, ry)` in `pieces3d.js`, an ellipse of
 `terrain` (never ruined) laid first, under everything:
 
@@ -343,11 +341,9 @@ in five places") for the plumbing contract when adding a new one.
 puts a small ring or square wall of its own round it, fitted to its
 footprint the way a settlement's is (`enclosed()`), with up to two towers
 where the wall type carries them — never round the `UNWALLED_BUILDINGS`:
-the wall buildings (Wall, Wall tower, Palisade, Gatehouse, Wooden gate),
-which come in their own material, and the harbour pieces (Caravel, Dock,
-Pier). Of those only the Wall is still on the Buildings tab: the rest are
-`RETIRED_BUILDINGS`, which `building()` still draws for a marker that
-already has one. A culture on water lays a lagoon under it. `seed` varies it as a settlement varies its
+the Wall, in its own stone. (The gatehouses, wall tower, palisade,
+caravel, dock and pier are reference pieces only, for the baked icons.)
+A culture on water lays a lagoon under it. `seed` varies it as a settlement varies its
 buildings — `jitterDesign()` (pitch, sweep,
 ornament, now and then the windows or doors), a round tower's girth and
 height, a house's details — and lets a mixed culture's builder roll its

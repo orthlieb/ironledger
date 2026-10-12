@@ -124,20 +124,14 @@ export const MARKER_COLOR_PRESETS: string[] = [
 /**
  * Resolve a Marker.icon reference against the build-time manifest. Accepts
  * the canonical `<category>/<slug>` form and, as a fallback for legacy data,
- * a bare slug (returns the first manifest entry that matches) — or a slug
- * whose icon has since moved category (the hand-drawn `settlement/` props
- * now live under travel / profession / supply / site / terrain). Returns
+ * a bare slug (returns the first manifest entry that matches). Returns
  * `undefined` when nothing matches — callers substitute a default glyph.
  */
 export function resolveMapIcon(ref: string | undefined | null): MapIcon | undefined {
 	if (!ref) return undefined;
 	const hit = MAP_ICONS[ref];
 	if (hit) return hit;
-	const cut = ref.lastIndexOf('/');
-	if (cut < 0) return MAP_ICON_LIST.find((i) => i.slug === ref);
-	// A core icon that moved category keeps its slug.
-	const slug = ref.slice(cut + 1);
-	return MAP_ICON_LIST.find((i) => i.slug === slug && !i.source);
+	return MAP_ICON_LIST.find((i) => i.slug === ref);
 }
 
 /**

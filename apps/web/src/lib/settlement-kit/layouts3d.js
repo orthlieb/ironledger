@@ -172,19 +172,17 @@ function house(D, r, w, trade) {
 
 /**
  * Horizontal extent and height of a piece (from its silhouettes), so a
- * layout can pack buildings by their real footprint. `banners: false`
- * leaves the flags out — for the ground under a building, which a tower's
- * streaming banner mustn't widen or pull off-centre. (A settlement still
- * packs by the whole piece, banners and all, so its layouts stay put.)
+ * layout can pack buildings by their real footprint. Banners don't count:
+ * a flag streams out over its neighbours rather than pushing them away,
+ * and a tower's mustn't widen (or pull off-centre) the ground it stands on.
  * @param {import('./render.js').Part[]} piece
- * @param {boolean} [banners]
  */
-function extent(piece, banners = true) {
+function extent(piece) {
 	let x0 = Infinity,
 		x1 = -Infinity,
 		y1 = 0;
 	for (const p of piece)
-		for (const poly of banners || p.role !== 'flag' ? p.solid : [])
+		for (const poly of p.role === 'flag' ? [] : p.solid)
 			for (const [x, y] of poly) {
 				x0 = Math.min(x0, x);
 				x1 = Math.max(x1, x);
@@ -739,8 +737,9 @@ function normalized(items, k = normalScale(items)) {
  * the map's Buildings tab (building()). `make` draws the piece in a culture's
  * Design; a Buildings-tab `seed` varies a house's details and a tower's
  * height, and the reference row passes none. A null key is a reference
- * piece the Buildings tab doesn't offer — a camp is a Settlement-builder
- * size.
+ * piece (drawn for the baked icons) the Buildings tab doesn't offer — a
+ * camp is a Settlement-builder size; the gatehouses, wall tower, palisade,
+ * caravel, dock and pier were dropped from the tab.
  * @type {[string | null, string, (D: Design, seed?: number) => Placed[]][]}
  */
 const PIECES = [
@@ -798,7 +797,7 @@ const PIECES = [
 	['mine', 'Mine', (D) => [{ piece: mine(D) }]],
 	['well', 'Well', (D) => [{ piece: well(D), s: 2.2 }]],
 	['lighthouse', 'Lighthouse', (D) => [{ piece: lighthouse(D) }]],
-	['caravel', 'Caravel', (D) => [{ piece: caravel(D) }]],
+	[null, 'Caravel', (D) => [{ piece: caravel(D) }]],
 	[
 		'warehouse',
 		'Warehouse',
@@ -809,14 +808,14 @@ const PIECES = [
 	['clock-tower', 'Clock tower', (D) => [{ piece: clocktower(D) }]],
 	['tent', 'Tent', (D) => [{ piece: tent(D) }]],
 	['pavilion', 'Pavilion', (D) => [{ piece: pavilion(D) }]],
-	['gatehouse', 'Gatehouse', (D) => [{ piece: gatehouse(D) }]],
-	['wooden-gate', 'Wooden gate', (D) => [{ piece: gatehouse(D, { wood: true }) }]],
+	[null, 'Gatehouse', (D) => [{ piece: gatehouse(D) }]],
+	[null, 'Wooden gate', (D) => [{ piece: gatehouse(D, { wood: true }) }]],
 	['witch-hut', 'Witch hut', (D) => [{ piece: witchHut(D) }]],
 	['wall', 'Wall', (D) => [{ piece: wallSegment(D) }]],
-	['wall-tower', 'Wall tower', (D) => [{ piece: wallSegment(D, { tower: true }) }]],
-	['palisade', 'Palisade', (D) => [{ piece: wallSegment(D, { wood: true }) }]],
-	['dock', 'Dock', (D) => dock(D, { ship: true })],
-	['pier', 'Pier', (D) => dock(D)],
+	[null, 'Wall tower', (D) => [{ piece: wallSegment(D, { tower: true }) }]],
+	[null, 'Palisade', (D) => [{ piece: wallSegment(D, { wood: true }) }]],
+	[null, 'Dock', (D) => dock(D, { ship: true })],
+	[null, 'Pier', (D) => dock(D)],
 ];
 
 /** Single pieces for the reference row. @param {Design} D @returns {[string, Placed[]][]} */
@@ -824,35 +823,13 @@ export function pieces(D) {
 	return PIECES.map(([, name, make]) => [name, normalized(make(D))]);
 }
 
-/** Buildings the Buildings tab no longer offers. building() still draws
- *  them, for a marker that already uses one. */
-export const RETIRED_BUILDINGS = new Set([
-	'gatehouse',
-	'wooden-gate',
-	'wall-tower',
-	'palisade',
-	'caravel',
-	'dock',
-	'pier',
-]);
-
 /** The Buildings tab's buildings, as [key, name], in menu order. */
 export const BUILDINGS = /** @type {[string, string][]} */ (
-	PIECES.flatMap(([key, name]) => (key && !RETIRED_BUILDINGS.has(key) ? [[key, name]] : []))
+	PIECES.flatMap(([key, name]) => (key ? [[key, name]] : []))
 );
 
-/** Buildings never given a wall of their own: the wall buildings, each in
- *  its own material, and the harbour pieces — the caravel, dock and pier. */
-export const UNWALLED_BUILDINGS = new Set([
-	'wall',
-	'wall-tower',
-	'palisade',
-	'gatehouse',
-	'wooden-gate',
-	'caravel',
-	'dock',
-	'pier',
-]);
+/** Buildings never given a wall of their own: the wall, in its own stone. */
+export const UNWALLED_BUILDINGS = new Set(['wall']);
 
 /**
  * One building as a map icon — the Buildings tab: a single piece in the
@@ -902,7 +879,7 @@ function placedExtent(items) {
 	let x0 = Infinity,
 		x1 = -Infinity;
 	for (const it of items) {
-		const e = extent(it.piece, false),
+		const e = extent(it.piece),
 			s = it.s ?? 1;
 		x0 = Math.min(x0, (it.x ?? 0) + e.x0 * s);
 		x1 = Math.max(x1, (it.x ?? 0) + e.x1 * s);
@@ -1064,14 +1041,12 @@ function hexTile(cx, cy, R, span) {
 }
 
 /**
- * The ground a design stands on, or null for none — 'land', its old name,
- * included, for a design that hasn't been through upgradeDesign().
+ * The ground a design stands on, or null for none.
  * @param {Design} D
  * @returns {Ground | null}
  */
 function groundOf(D) {
-	const g = /** @type {string | undefined} */ (D.ground);
-	return g && g !== 'none' && g !== 'land' ? /** @type {Ground} */ (g) : null;
+	return D.ground && D.ground !== 'none' ? D.ground : null;
 }
 
 /**

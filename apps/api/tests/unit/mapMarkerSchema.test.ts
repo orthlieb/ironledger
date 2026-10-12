@@ -34,10 +34,9 @@ describe('mapMarkerSchema', () => {
     expect(mapMarkerSchema.parse({ ...base, settlement }).settlement).toEqual(settlement);
   });
 
-  it("keeps every ground type ('land' too, the old name for 'none'), and rejects one it doesn't know", () => {
+  it("keeps every ground type, and rejects one it doesn't know", () => {
     for (const ground of [
       'none',
-      'land',
       'hex',
       'dirt',
       'grass',

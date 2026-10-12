@@ -78,8 +78,7 @@ import { place } from './render.js';
  * @property {'timber' | 'round' | 'mound' | 'stilt'} houseForm framed houses, round huts,
  *   turf mounds, or huts on stilts
  * @property {'none' | 'hex' | 'dirt' | 'grass' | 'farmland' | 'sand' | 'rock' | 'snow' | 'ice' | 'marsh' | 'lava' | 'water'} ground
- *   what the settlement stands on: 'none' draws no ground (upgradeDesign()
- *   turns the old name, 'land', into it); 'hex' a dashed hex tile behind it,
+ *   what the settlement stands on: 'none' draws no ground; 'hex' a dashed hex tile behind it,
  *   as a hex map's cell frames it (hexTile() in layouts3d.js); the others a plane
  *   under the whole of it in their own colour and texture (groundPlane());
  *   water a lagoon with waves
@@ -275,17 +274,13 @@ export function makeDesign(seed) {
 /**
  * Bring a stored design (a culture plugin, an imported playground export)
  * up to date: the legacy `towerRoof: 'crenel'` becomes a bare crenellated
- * top (`towerRoof: 'none'`, `towerCrenel: true`), and the old name for no
- * ground, `ground: 'land'`, becomes `'none'`.
+ * top (`towerRoof: 'none'`, `towerCrenel: true`).
  * @template {Partial<Design>} T
  * @param {T} D
  * @returns {T}
  */
 export function upgradeDesign(D) {
-	let out = D;
-	if (out.towerRoof === 'crenel') out = { ...out, towerRoof: 'none', towerCrenel: true };
-	if (/** @type {string | undefined} */ (out.ground) === 'land') out = { ...out, ground: 'none' };
-	return out;
+	return D.towerRoof === 'crenel' ? { ...D, towerRoof: 'none', towerCrenel: true } : D;
 }
 
 /**

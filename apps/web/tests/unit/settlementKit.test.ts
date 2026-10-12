@@ -28,7 +28,6 @@ import {
 } from '../../src/lib/settlement-kit/generate.js';
 import {
 	BUILDINGS,
-	RETIRED_BUILDINGS,
 	TEMPLATES,
 	UNWALLED_BUILDINGS,
 	building,
@@ -288,18 +287,6 @@ describe('buildings (the Buildings tab)', () => {
 		expect(names).toContain('Camp'); // a Settlement-builder size, not a building
 		expect(BUILDINGS).toHaveLength(25);
 	});
-	it('still draws a retired building for a marker that has one, but no longer offers it', () => {
-		const keys = BUILDINGS.map(([k]) => k);
-		for (const key of RETIRED_BUILDINGS) {
-			expect(keys, key).not.toContain(key);
-			const svg = generateSettlementSvg(
-				{ tier: 'stead', culture: 'default', seed: 3, building: key },
-				null,
-			);
-			expect(svg, key).not.toContain('"Default gable house"');
-			expect(svg, key).toMatch(/data-role="sil"[^>]* d="M/);
-		}
-	});
 	it.each(BUILDINGS.map(([key]) => key))('draws %s on its own', (key) => {
 		const svg = generateSettlementSvg(
 			{ tier: 'stead', culture: 'default', seed: 5, building: key },
@@ -332,20 +319,17 @@ describe('buildings (the Buildings tab)', () => {
 		);
 		expect(roles(square)).toContain('wall-wood');
 	});
-	it.each([
-		['wall', 'wall-stone'],
-		['wall-tower', 'wall-stone'],
-		['palisade', 'wall-wood'],
-		['gatehouse', 'wall-stone'],
-		['wooden-gate', 'wall-wood'],
-	] as const)('draws %s in its own material, never enclosed', (key, role) => {
-		const svg = generateSettlementSvg(
-			{ tier: 'stead', culture: 'default', seed: 3, building: key, walls: 'hedge' },
-			null,
-		);
-		expect(roles(svg)).toContain(role);
-		expect([...roles(svg)].some((r) => r.startsWith('wall-hedge'))).toBe(false);
-	});
+	it.each([['wall', 'wall-stone']] as const)(
+		'draws %s in its own material, never enclosed',
+		(key, role) => {
+			const svg = generateSettlementSvg(
+				{ tier: 'stead', culture: 'default', seed: 3, building: key, walls: 'hedge' },
+				null,
+			);
+			expect(roles(svg)).toContain(role);
+			expect([...roles(svg)].some((r) => r.startsWith('wall-hedge'))).toBe(false);
+		},
+	);
 	it('lays a lagoon under a building on water', () => {
 		const on = (ground?: 'water') =>
 			roles(
@@ -362,61 +346,6 @@ describe('buildings (the Buildings tab)', () => {
 			);
 		expect(on()).not.toContain('water');
 		expect(on('water')).toContain('water');
-	});
-	it('never walls a caravel', () => {
-		const svg = generateSettlementSvg(
-			{ tier: 'stead', culture: 'default', seed: 3, building: 'caravel', walls: 'stone' },
-			null,
-		);
-		expect([...roles(svg)].some((r) => r.startsWith('wall-stone'))).toBe(false);
-	});
-	it.each([
-		['stone', 'square'],
-		['earth', 'square'],
-		['hedge', 'round'],
-	] as const)('stands a %s %s enclosure on water inside its lagoon', (walls, wallShape) => {
-		// Regression: the lagoon once sat where the building alone would, so a
-		// square enclosure's back walls (and the building) stood behind it.
-		const items = building(
-			'gable-house',
-			{ ...DEFAULT_DESIGN, ground: 'water', wallShape },
-			{ walls, seed: 4 },
-		);
-		const water = items.find((it) => it.piece.some((p) => p.role === 'water'));
-		if (!water) throw new Error('no lagoon');
-		const s0 = water.s ?? 1;
-		const xs = water.piece[0].solid[0].map(([x]) => (water.x ?? 0) + x * s0);
-		const ys = water.piece[0].solid[0].map(([, y]) => (water.y ?? 0) + y * s0);
-		const cx = (Math.min(...xs) + Math.max(...xs)) / 2,
-			cy = (Math.min(...ys) + Math.max(...ys)) / 2,
-			rx = (Math.max(...xs) - Math.min(...xs)) / 2,
-			ry = (Math.max(...ys) - Math.min(...ys)) / 2;
-		// The foot of every wall face: the vertices along its polygon's lower
-		// edge (slanted on the receding sides). Merlons, flags and the like
-		// stand on top of the wall, so only the faces themselves count.
-		/** Lowest y of the polygon's outline at x. */
-		const lowAt = (poly: [number, number][], x: number) => {
-			let low = Infinity;
-			poly.forEach(([ax, ay], i) => {
-				const [bx, by] = poly[(i + 1) % poly.length];
-				if ((x - ax) * (x - bx) > 0 || ax === bx) return;
-				low = Math.min(low, ay + ((by - ay) * (x - ax)) / (bx - ax));
-			});
-			return low;
-		};
-		for (const it of items.filter((i) => i.wall)) {
-			const s = it.s ?? 1;
-			for (const p of it.piece)
-				for (const poly of p.solid) {
-					const w = Math.max(...poly.map(([x]) => x)) - Math.min(...poly.map(([x]) => x));
-					if (!p.role?.startsWith('wall') || w < 6) continue;
-					for (const [x, y] of poly.filter(([x, y]) => y - lowAt(poly, x) < 0.5)) {
-						const dx = ((it.x ?? 0) + x * s - cx) / rx,
-							dy = ((it.y ?? 0) + y * s - cy) / ry;
-						expect(dx * dx + dy * dy, `${walls} ${wallShape} wall foot`).toBeLessThanOrEqual(1);
-					}
-				}
-		}
 	});
 	it('agrees with the app on which buildings are never walled', () => {
 		expect([...UNWALLED_BUILDINGS].sort()).toEqual([...APP_UNWALLED_BUILDINGS].sort());
@@ -454,19 +383,10 @@ describe('ground', () => {
 			null,
 		);
 	const rolesOf = (svg: string) => [...svg.matchAll(/data-role="([\w-]+)"/g)].map((m) => m[1]);
-	it("draws no ground for 'none' (or 'land', its old name), and a lagoon on water", () => {
-		for (const none of ['none', 'land']) {
-			const roles = rolesOf(svgOf(none));
-			expect(
-				roles.some((r) => r.startsWith('ground-') || r === 'water'),
-				none,
-			).toBe(false);
-		}
+	it("draws no ground for 'none', and a lagoon on water", () => {
+		const roles = rolesOf(svgOf('none'));
+		expect(roles.some((r) => r.startsWith('ground-') || r === 'water')).toBe(false);
 		expect(rolesOf(svgOf('water'))).toContain('water');
-	});
-	it("upgrades a culture's ground 'land' to 'none'", () => {
-		expect(upgradeDesign({ ground: 'land' as never }).ground).toBe('none');
-		expect(recipeDesign({ tier: 'village', culture: 'x', seed: 1 }, null).ground).toBe('none');
 	});
 	it.each(GROUND_TYPES)('lays a %s plane, textured, under a settlement and a building', (g) => {
 		for (const svg of [svgOf(g), svgOf(g, { tier: 'stead', building: 'barn', walls: 'stone' })]) {

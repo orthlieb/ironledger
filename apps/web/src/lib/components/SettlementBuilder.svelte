@@ -140,10 +140,7 @@
 	let seed = $state(start?.seed ?? newSeed());
 	let walls = $state<SettlementWalls>(start?.walls ?? (isBuilding ? 'none' : 'auto'));
 	let shape = $state<Shape>(start?.wallShape ?? 'culture');
-	// A marker saved before 'none' was named stores 'land'.
-	let ground = $state<Ground>(
-		(start?.ground as string) === 'land' ? 'none' : (start?.ground ?? 'culture'),
-	);
+	let ground = $state<Ground>(start?.ground ?? 'culture');
 	let stilts = $state(!!start?.stilts);
 	let harbor = $state(!!start?.harbor);
 	let ruined = $state(!!start?.ruin);

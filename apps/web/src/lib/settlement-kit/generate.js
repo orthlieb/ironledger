@@ -182,14 +182,12 @@ function patternScope(title) {
  * @returns {Design}
  */
 export function recipeDesign(recipe, culture) {
-	// Upgraded as a whole, so a recipe's own legacy values (ground 'land')
-	// come up to date as the culture's do.
-	return upgradeDesign({
+	return {
 		...DEFAULT_DESIGN,
-		...(culture?.design ?? {}),
+		...upgradeDesign(culture?.design ?? {}),
 		...(recipe.wallShape ? { wallShape: recipe.wallShape } : {}),
 		...(recipe.ground ? { ground: recipe.ground } : {}),
-	});
+	};
 }
 
 /**
