@@ -11,6 +11,19 @@
 /** @typedef {Pt[]} Poly */
 
 /**
+ * A straight line from a to b, `w` wide, for a part's `lines` / `free` /
+ * `shadeLines` — with any further Line fields (`role`, `round`, …).
+ * @param {Pt} a
+ * @param {Pt} b
+ * @param {number} w
+ * @param {Omit<import('./render.js').Line, 'pts' | 'w'>} [more]
+ * @returns {import('./render.js').Line}
+ */
+export function seg(a, b, w, more) {
+	return { pts: [a, b], w, ...more };
+}
+
+/**
  * @param {number} x left
  * @param {number} y bottom
  * @param {number} w
