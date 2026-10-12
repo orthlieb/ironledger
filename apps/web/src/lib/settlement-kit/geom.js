@@ -50,13 +50,86 @@ export function rect(x, y, w, h) {
  * @returns {Poly}
  */
 export function arc(cx, cy, r, a0, a1, n = 12) {
+	return ell(cx, cy, r, r, a0, a1, n);
+}
+
+/**
+ * Points along an elliptical arc (degrees, counter-clockwise, 0 = +x).
+ * @param {number} cx
+ * @param {number} cy
+ * @param {number} rx
+ * @param {number} ry
+ * @param {number} a0
+ * @param {number} a1
+ * @param {number} [n]
+ * @returns {Poly}
+ */
+export function ell(cx, cy, rx, ry, a0, a1, n = 24) {
 	/** @type {Poly} */
 	const out = [];
 	for (let i = 0; i <= n; i++) {
 		const a = ((a0 + ((a1 - a0) * i) / n) * Math.PI) / 180;
-		out.push([cx + r * Math.cos(a), cy + r * Math.sin(a)]);
+		out.push([cx + rx * Math.cos(a), cy + ry * Math.sin(a)]);
 	}
 	return out;
+}
+
+/**
+ * Bounds of polygons' points — Infinity / -Infinity when there are none.
+ * @param {Iterable<Poly>} polys
+ */
+export function polyBounds(polys) {
+	let x0 = Infinity,
+		x1 = -Infinity,
+		y0 = Infinity,
+		y1 = -Infinity;
+	for (const poly of polys)
+		for (const [x, y] of poly) {
+			x0 = Math.min(x0, x);
+			x1 = Math.max(x1, x);
+			y0 = Math.min(y0, y);
+			y1 = Math.max(y1, y);
+		}
+	return { x0, x1, y0, y1 };
+}
+
+/**
+ * Liang–Barsky: the stretch [t0, t1] of segment a → b inside the box
+ * [x0, x1] × [y0, y1], or null where it misses — so a clipped piece stays
+ * on the original line.
+ * @param {Pt} a
+ * @param {Pt} b
+ * @param {number} x0
+ * @param {number} y0
+ * @param {number} x1
+ * @param {number} y1
+ * @returns {[number, number] | null}
+ */
+export function clipSegment(a, b, x0, y0, x1, y1) {
+	const dx = b[0] - a[0],
+		dy = b[1] - a[1];
+	let t0 = 0,
+		t1 = 1;
+	for (const [p, q] of [
+		[-dx, a[0] - x0],
+		[dx, x1 - a[0]],
+		[-dy, a[1] - y0],
+		[dy, y1 - a[1]],
+	]) {
+		if (p === 0) {
+			if (q < 0) return null;
+			continue;
+		}
+		const r = q / p;
+		if (p < 0) {
+			if (r > t1) return null;
+			t0 = Math.max(t0, r);
+		} else {
+			if (r < t0) return null;
+			t1 = Math.min(t1, r);
+		}
+	}
+	return [t0, t1];
 }
 
 /** @param {number} cx @param {number} cy @param {number} r @returns {Poly} */

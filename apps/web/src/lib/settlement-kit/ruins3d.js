@@ -22,7 +22,7 @@
 // Terrain parts (`terrain: true`: sea, rock, mountains, plazas) are never cut.
 // =============================================================================
 
-import { rect, rng, seg } from './geom.js';
+import { polyBounds, rect, rng, seg } from './geom.js';
 
 /** @typedef {import('./render.js').Part} Part */
 /** @typedef {import('./render.js').Line} Line */
@@ -36,19 +36,8 @@ import { rect, rng, seg } from './geom.js';
 
 /** Bounds of the given parts' silhouettes. @param {Part[]} parts */
 function bounds(parts) {
-	let x0 = Infinity,
-		x1 = -Infinity,
-		y0 = Infinity,
-		y1 = -Infinity;
-	for (const p of parts)
-		for (const poly of p.solid)
-			for (const [x, y] of poly) {
-				x0 = Math.min(x0, x);
-				x1 = Math.max(x1, x);
-				y0 = Math.min(y0, y);
-				y1 = Math.max(y1, y);
-			}
-	return { x0, x1, y0, y1, ok: Number.isFinite(x0) };
+	const b = polyBounds(parts.flatMap((p) => p.solid));
+	return { ...b, ok: Number.isFinite(b.x0) };
 }
 
 /**

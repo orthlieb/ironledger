@@ -11,6 +11,7 @@
 // =============================================================================
 
 import ClipperLib from 'clipper-lib';
+import { clipSegment } from './geom.js';
 import { TILE_ART } from './patterns.js';
 
 /** @typedef {[number, number]} P2 */
@@ -93,30 +94,15 @@ function clipToTile(pl, size) {
 	let run = [];
 	for (let k = 0; k + 1 < pl.length; k++) {
 		const [a, b] = [pl[k], pl[k + 1]];
-		const dx = b[0] - a[0],
-			dy = b[1] - a[1];
-		let t0 = 0,
-			t1 = 1,
-			inside = true;
-		for (const [p, q] of [
-			[-dx, a[0]],
-			[dx, size - a[0]],
-			[-dy, a[1]],
-			[dy, size - a[1]],
-		]) {
-			if (p === 0) {
-				if (q < 0) inside = false;
-				continue;
-			}
-			const r = q / p;
-			if (p < 0) t0 = Math.max(t0, r);
-			else t1 = Math.min(t1, r);
-		}
-		if (!inside || t0 > t1) {
+		const t = clipSegment(a, b, 0, 0, size, size);
+		if (!t) {
 			if (run.length > 1) out.push(run);
 			run = [];
 			continue;
 		}
+		const [t0, t1] = t,
+			dx = b[0] - a[0],
+			dy = b[1] - a[1];
 		/** @type {P2} */ const s0 = [a[0] + t0 * dx, a[1] + t0 * dy];
 		/** @type {P2} */ const s1 = [a[0] + t1 * dx, a[1] + t1 * dy];
 		if (!run.length || t0 > 0) {

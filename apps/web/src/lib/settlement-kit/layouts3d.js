@@ -8,7 +8,7 @@
 // `ground` it stands on.
 // =============================================================================
 
-import { rng } from './geom.js';
+import { polyBounds, rng } from './geom.js';
 import { ruinPlaced } from './ruins3d.js';
 import {
 	belfry,
@@ -178,17 +178,12 @@ function house(D, r, w, trade) {
  * @param {import('./render.js').Part[]} piece
  */
 function extent(piece) {
-	let x0 = Infinity,
-		x1 = -Infinity,
-		y1 = 0;
-	for (const p of piece)
-		for (const poly of p.role === 'flag' ? [] : p.solid)
-			for (const [x, y] of poly) {
-				x0 = Math.min(x0, x);
-				x1 = Math.max(x1, x);
-				y1 = Math.max(y1, y);
-			}
-	return { x0: Number.isFinite(x0) ? x0 : 0, x1: Number.isFinite(x1) ? x1 : 0, y1 };
+	const b = polyBounds(piece.flatMap((p) => (p.role === 'flag' ? [] : p.solid)));
+	return {
+		x0: Number.isFinite(b.x0) ? b.x0 : 0,
+		x1: Number.isFinite(b.x1) ? b.x1 : 0,
+		y1: Math.max(0, b.y1),
+	};
 }
 
 /**

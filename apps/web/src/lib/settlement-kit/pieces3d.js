@@ -12,7 +12,18 @@
 // middle, flags are weighted coin-flips, and a few rules tie them together.
 // =============================================================================
 
-import { archOpening, circle, crenellated, lancet, rect, rng, seg } from './geom.js';
+import {
+	archOpening,
+	circle,
+	clipSegment,
+	crenellated,
+	ell,
+	lancet,
+	polyBounds,
+	rect,
+	rng,
+	seg,
+} from './geom.js';
 import { RING_TEXTURES } from './ringTextures.js';
 import { place } from './render.js';
 
@@ -440,25 +451,6 @@ function bulwark(D, feet, body, look) {
 	];
 }
 
-/** Ellipse arc points (degrees). */
-function ell(
-	/** @type {number} */ cx,
-	/** @type {number} */ cy,
-	/** @type {number} */ rx,
-	/** @type {number} */ ry,
-	/** @type {number} */ a0,
-	/** @type {number} */ a1,
-	n = 24,
-) {
-	/** @type {Poly} */
-	const out = [];
-	for (let i = 0; i <= n; i++) {
-		const a = ((a0 + ((a1 - a0) * i) / n) * Math.PI) / 180;
-		out.push([cx + rx * Math.cos(a), cy + ry * Math.sin(a)]);
-	}
-	return out;
-}
-
 /**
  * The part of segment ab inside the box [x0, x1] × [y0, y1], or null —
  * Liang–Barsky, so the piece stays on the original line.
@@ -471,29 +463,11 @@ function ell(
  */
 function clipToBox(ab, x0, y0, x1, y1) {
 	const [a, b] = ab;
-	const dx = b[0] - a[0],
+	const t = clipSegment(a, b, x0, y0, x1, y1);
+	if (!t) return null;
+	const [t0, t1] = t,
+		dx = b[0] - a[0],
 		dy = b[1] - a[1];
-	let t0 = 0,
-		t1 = 1;
-	for (const [p, q] of [
-		[-dx, a[0] - x0],
-		[dx, x1 - a[0]],
-		[-dy, a[1] - y0],
-		[dy, y1 - a[1]],
-	]) {
-		if (p === 0) {
-			if (q < 0) return null;
-			continue;
-		}
-		const r = q / p;
-		if (p < 0) {
-			if (r > t1) return null;
-			t0 = Math.max(t0, r);
-		} else {
-			if (r < t0) return null;
-			t1 = Math.min(t1, r);
-		}
-	}
 	return [
 		[a[0] + t0 * dx, a[1] + t0 * dy],
 		[a[0] + t1 * dx, a[1] + t1 * dy],
@@ -3299,14 +3273,7 @@ export function stiltHut(D, o = {}) {
  * @returns {Part[]}
  */
 export function onStilts(parts, D) {
-	let x0 = Infinity,
-		x1 = -Infinity;
-	for (const p of parts)
-		for (const poly of p.solid)
-			for (const [x] of poly) {
-				if (x < x0) x0 = x;
-				if (x > x1) x1 = x;
-			}
+	const { x0, x1 } = polyBounds(parts.flatMap((p) => p.solid));
 	if (!Number.isFinite(x0)) return parts;
 	const cx = (x0 + x1) / 2;
 	const xHalf = (x1 - x0) / 2;
