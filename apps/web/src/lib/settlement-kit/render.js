@@ -307,10 +307,28 @@ export function renderLayered(parts, opts = {}) {
 	const round = opts.join === 'round' || opts.join === 'soft';
 	const soft = opts.join === 'soft' ? (opts.softRadius ?? 0.9) : 0;
 	const texture = opts.texture ?? true;
-	/** Visible pieces per layer, unioned once at the end. @type {Record<string, CPaths[]>} */
+	/** Visible pieces per layer, merged once at the end. @type {Record<string, CPaths[]>} */
 	const acc = Object.fromEntries(LAYERS.map((l) => [l, []]));
+	/** What's drawn so far (in front), one entry per part with its box: a
+	 *  part is clipped only against those that overlap it, not against the
+	 *  whole growing silhouette — every piece it draws lies inside its own
+	 *  outline and free lines, so nothing beyond that box can cover it.
+	 *  @type {{rings: CPaths, box: Box}[]} */
+	const drawn = [];
+	// When most of what's drawn is near a part (a small walled layout, where
+	// the ring overlaps everything), one running union of it all serves
+	// better than unioning the near ones afresh — and covers the same, since
+	// the rest lies clear of the part's box.
 	/** @type {CPaths} */
-	let occ = [];
+	let folded = [];
+	let nFolded = 0;
+	/** Everything drawn so far that could cover what lies in `box`. @param {Box} box */
+	const cover = (box) => {
+		const near = drawn.filter((d) => overlaps(d.box, box));
+		if (near.length * 2 <= drawn.length) return unionAll(near.map((d) => d.rings));
+		for (; nFolded < drawn.length; nFolded++) folded = union(folded, drawn[nFolded].rings);
+		return folded;
+	};
 	for (let i = parts.length - 1; i >= 0; i--) {
 		const p = parts[i];
 		let solid = rawUnion(p.solid);
@@ -325,6 +343,11 @@ export function renderLayered(parts, opts = {}) {
 		const miter = sharp ? 4 : 1.6;
 		const outer = offset(solid, half, round && !sharp, miter);
 		const inner = offset(solid, -half, round && !sharp, miter);
+		let free = p.free?.length ? stroke(p.free) : [];
+		if (mask) free = intersect(free, mask);
+		const mine = union(outer, free);
+		const box = boxOf(mine);
+		const occ = cover(box);
 		// The outline, in a darker shade of the part's own colour; the ink
 		// is the line-work inside it.
 		const outline = minus(outer, inner);
@@ -350,8 +373,6 @@ export function renderLayered(parts, opts = {}) {
 				minus(intersect(stroke(p.shadeLines, false, half * 2), shadeClip), offset(fillInk, 0.6)),
 			);
 		if (fillInk.length) ink = union(ink, p.cuts?.length ? minus(fillInk, stroke(p.cuts)) : fillInk);
-		let free = p.free?.length ? stroke(p.free) : [];
-		if (mask) free = intersect(free, mask);
 		ink = union(ink, free);
 		const role = p.role ?? 'wall';
 		acc[`${role}-line`]?.push(minus(outline, occ));
@@ -367,12 +388,57 @@ export function renderLayered(parts, opts = {}) {
 			acc[role].push(minus(face, shade));
 			acc[`${role}-shade`].push(shade);
 		}
-		occ = union(occ, union(outer, free));
+		if (mine.length) drawn.push({ rings: mine, box });
 	}
+	const all = unionAll(drawn.map((d) => d.rings));
 	const clean = (/** @type {CPaths} */ c) => ClipperLib.Clipper.CleanPolygons(c, 0.02 * S);
 	return {
-		layers: Object.fromEntries(LAYERS.map((l) => [l, toPathData(clean(unionAll(acc[l])))])),
-		silhouette: toPathData(clean(occ)),
-		bounds: boundsOf(occ),
+		layers: Object.fromEntries(LAYERS.map((l) => [l, toPathData(clean(merge(acc[l])))])),
+		silhouette: toPathData(clean(all)),
+		bounds: boundsOf(all),
 	};
 }
+
+/**
+ * One layer's pieces in one Clipper pass. Each was clipped clear of
+ * everything drawn in front of it, so none overlap and even-odd (as bool())
+ * merges them as a union would — without unioning them pairwise.
+ * @param {CPaths[]} sets
+ * @returns {CPaths}
+ */
+function merge(sets) {
+	const all = sets.flat();
+	if (!all.length) return [];
+	const c = new ClipperLib.Clipper();
+	c.AddPaths(all, ClipperLib.PolyType.ptSubject, true);
+	/** @type {CPaths} */
+	const out = [];
+	c.Execute(
+		ClipperLib.ClipType.ctUnion,
+		out,
+		ClipperLib.PolyFillType.pftEvenOdd,
+		ClipperLib.PolyFillType.pftEvenOdd,
+	);
+	return out;
+}
+
+/** @typedef {{x0: number, y0: number, x1: number, y1: number}} Box */
+
+/** A ring set's box, in Clipper's integer units. @param {CPaths} paths @returns {Box} */
+function boxOf(paths) {
+	let x0 = Infinity,
+		y0 = Infinity,
+		x1 = -Infinity,
+		y1 = -Infinity;
+	for (const p of paths)
+		for (const q of p) {
+			if (q.X < x0) x0 = q.X;
+			if (q.X > x1) x1 = q.X;
+			if (q.Y < y0) y0 = q.Y;
+			if (q.Y > y1) y1 = q.Y;
+		}
+	return { x0, y0, x1, y1 };
+}
+
+/** @param {Box} a @param {Box} b */
+const overlaps = (a, b) => a.x0 <= b.x1 && b.x0 <= a.x1 && a.y0 <= b.y1 && b.y0 <= a.y1;

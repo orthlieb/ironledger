@@ -395,11 +395,17 @@ of `Part`s into one SVG path per colour role (`wall`, `wall-shade`, the
 `ink` on top. Each path is a filled polygon — no `<stroke>` on the
 server-rendered output.
 
-Nearly all the time goes into Clipper unions, so they're balanced: each
-part's strokes, and each layer's pieces, are unioned pairwise in a tree
-(`unionAll`) rather than folded one at a time. On a 2.8 GHz Xeon a village
-draws in ~0.1 s, a city in ~1.2 s and a freeport in 2–8 s (ornate cultures
-are the slow end); the icon baker runs all 71 core icons in ~25 s.
+Nearly all the time goes into Clipper. Parts are drawn front to back, each
+clipped clear of what's in front of it — but only of the drawn parts whose
+box overlaps its own (every piece a part draws lies inside its outline and
+free lines, so nothing further off can cover it); when most of what's drawn
+is near (a small walled layout, its ring overlapping everything), one
+running union of it all serves instead. A part's strokes are unioned
+pairwise in a tree (`unionAll`), and each layer's pieces — which never
+overlap — are merged in one even-odd pass (`merge()`). On a 2.8 GHz Xeon a
+building draws in ~10 ms, a village in ~0.07 s, a city in ~0.4 s and a
+freeport in ~0.6 s (ruined, too — about 3–5× faster than unioning
+everything drawn so far); the icon baker runs all 71 core icons in ~8 s.
 
 The caller (the main app's `mapLayered.ts`, the `build-settlement-icons.mjs`
 script, or `generateSettlementSvg()`) assigns colours per role, puts the
