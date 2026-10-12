@@ -54,6 +54,7 @@ export interface MapMarker {
     ground?:
       | 'none'
       | 'land'
+      | 'hex'
       | 'dirt'
       | 'grass'
       | 'farmland'
@@ -66,7 +67,6 @@ export interface MapMarker {
       | 'water';
     stilts?: boolean;
     harbor?: boolean;
-    hex?: boolean;
     ruin?: { decay: number; burned?: boolean };
     building?: string;
   };

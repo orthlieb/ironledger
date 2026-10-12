@@ -68,6 +68,7 @@ const KNOBS = [
 		type: 'select',
 		options: [
 			'none',
+			'hex',
 			'dirt',
 			'grass',
 			'farmland',
@@ -436,7 +437,6 @@ const KNOBS = [
 		options: ['auto', 'none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef'],
 	},
 	{ group: 'Drawing', key: 'stilts', label: 'On stilts', type: 'check' },
-	{ group: 'Drawing', key: 'hex', label: 'Hex tile', type: 'check' },
 	{
 		// The map's Buildings tab: pieces drawn as buildings, each in a wall of
 		// its own (the wall pieces never are) — see building().
@@ -510,7 +510,6 @@ const DRAWING = {
 	harbor: 'none',
 	walls: 'auto',
 	stilts: false,
-	hex: false,
 	buildingWalls: 'pieces',
 	softRadius: 0.9,
 	outline: 1.4,
@@ -668,7 +667,6 @@ function render() {
 		seed: drawing.layout,
 		harbor: drawing.harbor,
 		stilts: !!drawing.stilts,
-		hex: !!drawing.hex,
 		ruin,
 	};
 	/** @type {[string, string][]} */
@@ -692,14 +690,7 @@ function render() {
 					([key, t]) =>
 						/** @type {[string, string]} */ ([
 							t,
-							svg(
-								building(key, design, {
-									walls: bw,
-									seed: drawing.layout,
-									ruin,
-									hex: !!drawing.hex,
-								}),
-							),
+							svg(building(key, design, { walls: bw, seed: drawing.layout, ruin })),
 						]),
 				);
 	const card = (/** @type {[string, string]} */ [t, s], cls = '') =>

@@ -104,6 +104,7 @@
 	const GROUNDS: { value: Ground; label: string }[] = [
 		{ value: 'culture', label: "Culture's own" },
 		{ value: 'none', label: 'None' },
+		{ value: 'hex', label: 'Hex' },
 		{ value: 'dirt', label: 'Dirt' },
 		{ value: 'grass', label: 'Grass' },
 		{ value: 'farmland', label: 'Farmland' },
@@ -145,7 +146,6 @@
 	);
 	let stilts = $state(!!start?.stilts);
 	let harbor = $state(!!start?.harbor);
-	let hex = $state(!!start?.hex);
 	let ruined = $state(!!start?.ruin);
 	let decay = $state(start?.ruin?.decay ?? 0.5);
 	let burned = $state(!!start?.ruin?.burned);
@@ -181,7 +181,6 @@
 					...(showWalls && walls !== 'none' && walls !== 'auto' ? { walls } : {}),
 					...(showShape && shape !== 'culture' ? { wallShape: shape } : {}),
 					...(ground !== 'culture' ? { ground } : {}),
-					...(hex ? { hex: true } : {}),
 					...ruin,
 				}
 			: {
@@ -193,7 +192,6 @@
 					...(ground !== 'culture' ? { ground } : {}),
 					...(stilts ? { stilts: true } : {}),
 					...(harbor ? { harbor: true } : {}),
-					...(hex ? { hex: true } : {}),
 					...ruin,
 				},
 	);
@@ -310,7 +308,6 @@
 					<Checkbox bind:checked={stilts}><span class="sb-check">On stilts</span></Checkbox>
 					<Checkbox bind:checked={harbor}><span class="sb-check">Harbour</span></Checkbox>
 				{/if}
-				<Checkbox bind:checked={hex}><span class="sb-check">Hex tile</span></Checkbox>
 				<Checkbox bind:checked={ruined}><span class="sb-check">Ruined</span></Checkbox>
 			</div>
 			{#if ruined}

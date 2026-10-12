@@ -38,6 +38,7 @@ describe('mapMarkerSchema', () => {
     for (const ground of [
       'none',
       'land',
+      'hex',
       'dirt',
       'grass',
       'farmland',
@@ -58,11 +59,6 @@ describe('mapMarkerSchema', () => {
         settlement: { tier: 'village', culture: 'elves', seed: 7, ground: 'magma' },
       }).success,
     ).toBe(false);
-  });
-
-  it('keeps a hex tile', () => {
-    const settlement = { tier: 'city', culture: 'elves', seed: 7, hex: true, ground: 'grass' };
-    expect(mapMarkerSchema.parse({ ...base, settlement }).settlement).toEqual(settlement);
   });
 
   it('keeps a building recipe', () => {

@@ -88,11 +88,13 @@ export const UNWALLED_BUILDINGS: ReadonlySet<string> = new Set([
 ]);
 
 /** What a settlement or building stands on (Design.ground): 'none' draws no
- *  ground; the rest a plane under it in their own colour and texture; water
- *  a lagoon. ('land' is the old name for 'none': cleanSettlementRecipe()
+ *  ground; 'hex' a dashed hex tile behind it, as a hex map's cell frames
+ *  it; the rest a plane under it in their own colour and texture; water a
+ *  lagoon. ('land' is the old name for 'none': cleanSettlementRecipe()
  *  turns it into 'none', and the generator draws it as none.) */
 export const SETTLEMENT_GROUNDS = [
 	'none',
+	'hex',
 	'dirt',
 	'grass',
 	'farmland',
@@ -119,9 +121,6 @@ export interface SettlementRecipe {
 	/** Lift every building onto a timber-post deck (over water or sand). */
 	stilts?: boolean;
 	harbor?: boolean;
-	/** A hex tile behind the icon, as a hex map's cell frames it: the ground
-	 *  in a hexagon's shape, or a dashed hexagon with no ground. */
-	hex?: boolean;
 	/** A ruin: how far gone (0–1), and whether it burned (scorch, soot). */
 	ruin?: { decay: number; burned?: boolean };
 	/** One building instead of a settlement (the Buildings tab). `walls` then
@@ -176,7 +175,6 @@ export function recipeKey(r: SettlementRecipe): string {
 		r.harbor ? 'h' : '',
 		r.ruin ? r.ruin.decay.toFixed(2) + (r.ruin.burned ? 'b' : '') : '',
 		r.building ?? '',
-		r.hex ? 'x' : '',
 	].join('|');
 }
 
@@ -208,7 +206,6 @@ export function cleanSettlementRecipe(v: unknown): SettlementRecipe | undefined 
 		out.ground = ground as SettlementGround;
 	if (o.stilts === true) out.stilts = true;
 	if (o.harbor === true) out.harbor = true;
-	if (o.hex === true) out.hex = true;
 	const ruin = o.ruin as { decay?: unknown; burned?: unknown } | undefined;
 	if (ruin && typeof ruin.decay === 'number' && ruin.decay >= 0 && ruin.decay <= 1)
 		out.ruin = ruin.burned === true ? { decay: ruin.decay, burned: true } : { decay: ruin.decay };

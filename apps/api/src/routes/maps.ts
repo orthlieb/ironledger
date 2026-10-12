@@ -109,6 +109,7 @@ export const mapMarkerSchema = z.object({
         .enum([
           'none',
           'land',
+          'hex',
           'dirt',
           'grass',
           'farmland',
@@ -123,8 +124,6 @@ export const mapMarkerSchema = z.object({
         .optional(),
       stilts: z.boolean().optional(),
       harbor: z.boolean().optional(),
-      // A hex tile behind the icon.
-      hex: z.boolean().optional(),
       ruin: z
         .object({ decay: z.number().min(0).max(1), burned: z.boolean().optional() })
         .optional(),

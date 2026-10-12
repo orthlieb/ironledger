@@ -484,34 +484,24 @@ describe('ground', () => {
 		);
 		expect(svg).toContain(`data-role="ground-${g}" fill="${FLAT_WALLS[`ground-${g}`]}"`);
 	});
-	it('sets a hex tile behind a layout: the ground as a hexagon, or a dashed one', () => {
+	it('draws the hex ground as a dashed hex tile behind it — ovals for the rest', () => {
 		const D = { ...DEFAULT_DESIGN };
-		const tile = (ground: Design['ground']) =>
-			building('barn', { ...D, ground }, { seed: 2, hex: true })[0];
-		// With a ground, the plane is a hexagon in the ground's role.
-		const grass = tile('grass');
-		expect(grass.piece[0].role).toBe('ground-grass');
-		expect(grass.piece[0].solid[0]).toHaveLength(6);
-		// With none, a dashed outline: free strokes only, no fill.
-		const none = tile('none');
-		expect(none.piece[0].solid).toHaveLength(0);
-		expect(none.piece[0].free?.length).toBeGreaterThan(12);
-		// Settlements and walled buildings too, walls or not.
+		// A lone building's: free dashes only, no fill.
+		const tile = building('barn', { ...D, ground: 'hex' }, { seed: 2 })[0];
+		expect(tile.piece[0].solid).toHaveLength(0);
+		expect(tile.piece[0].free?.length).toBeGreaterThan(12);
+		// A walled building's and a settlement's draw no ground plane.
 		for (const r of [
 			{ tier: 'city', walls: 'stone' },
 			{ tier: 'stead', building: 'church', walls: 'hedge' },
 		] as const) {
-			const svg = generateSettlementSvg(
-				{ culture: 'default', seed: 3, ground: 'sand', hex: true, ...r },
-				null,
-			);
-			expect(svg).toContain('data-role="ground-sand"');
+			const svg = generateSettlementSvg({ culture: 'default', seed: 3, ground: 'hex', ...r }, null);
+			expect(rolesOf(svg).some((x) => x.startsWith('ground-') || x === 'water')).toBe(false);
+			expect(svg).not.toBe(generateSettlementSvg({ culture: 'default', seed: 3, ...r }, null));
 		}
-		// And without it, nothing changes.
-		const plain = generateSettlementSvg({ tier: 'village', culture: 'default', seed: 3 }, null);
-		expect(
-			generateSettlementSvg({ tier: 'village', culture: 'default', seed: 3, hex: false }, null),
-		).toBe(plain);
+		// Any other ground keeps its oval: a 48-point ellipse.
+		const grass = building('barn', { ...D, ground: 'grass' }, { seed: 2 })[0];
+		expect(grass.piece[0].solid[0]).toHaveLength(48);
 	});
 	it('keeps the ground pattern tiles compact', () => {
 		for (const g of GROUND_TYPES) {

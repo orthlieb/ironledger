@@ -35,6 +35,7 @@ describe('building recipes', () => {
 		expect(cleanSettlementRecipe({ ...tower, ground: 'magma' })).not.toHaveProperty('ground');
 		expect(SETTLEMENT_GROUNDS).toEqual([
 			'none',
+			'hex',
 			'dirt',
 			'grass',
 			'farmland',
@@ -46,11 +47,6 @@ describe('building recipes', () => {
 			'lava',
 			'water',
 		]);
-	});
-	it('keep a hex tile, and key apart from one without', () => {
-		expect(cleanSettlementRecipe({ ...tower, hex: true })?.hex).toBe(true);
-		expect(cleanSettlementRecipe({ ...tower, hex: 'yes' })).not.toHaveProperty('hex');
-		expect(recipeKey({ ...tower, hex: true })).not.toBe(recipeKey(tower));
 	});
 	it('key apart from the settlement with the same knobs', () => {
 		const { building: _, ...plain } = tower;
