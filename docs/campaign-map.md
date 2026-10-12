@@ -341,7 +341,9 @@ and every culture knob. It's used three ways:
   knobs go two to a row on a phone), so "Use this" is always on screen.
   Ground (the culture's own, or None, Dirt, Grass, Farmland, Sand, Rock,
   Snow, Ice, Marsh, Lava, Water: a plane under it in its own colour and
-  texture, a lagoon for water) and Ruined + decay (optionally burned) as below. The reroll varies
+  texture, a lagoon for water), Hex tile (a hexagon behind it, as a hex
+  map's cell frames it: the ground in a hexagon's shape, or a dashed
+  hexagon with no ground) and Ruined + decay (optionally burned) as below. The reroll varies
   the building as a settlement varies its own — pitch, sweep, ornament,
   now and then the windows or doors, a tower's height — and a mixed
   culture's builder; a few fixed pieces (tent, pavilion, mine, witch hut,
@@ -352,7 +354,8 @@ and every culture knob. It's used three ways:
   (`SettlementBuilder.svelte`). Just the essentials: size (tier, shown
   with its population; Freeport isn't offered — a culture with a high
   `variety` makes a freeport's mix of builders), culture, walls and wall
-  shape, ground (as on the Buildings tab), on stilts, harbour, ruined +
+  shape, ground and Hex tile (as on the Buildings tab), on stilts,
+  harbour, ruined +
   decay (optionally burned: scorch marks and sooty walls), and a reroll
   for the layout seed, with a large preview in the marker's colour. "Use this" stores a **recipe** on the marker (see
   below). A Recent strip keeps the last 8 recipes per browser
@@ -411,8 +414,8 @@ maze), palisades and earth banks brown (planks, speckled dirt).
 #### Recipe markers
 
 A marker with a generated icon carries `settlement: {tier, culture, seed,
-walls?, wallShape?, ground?, stilts?, harbor?, ruin?: {decay, burned?},
-building?}` (`settlementRecipe.ts`) — `building` (a Buildings-tab key)
+walls?, wallShape?, ground?, stilts?, harbor?, hex?, ruin?: {decay,
+burned?}, building?}` (`settlementRecipe.ts`) — `building` (a Buildings-tab key)
 draws that one building, enclosed by `walls`, in place of the settlement;
 
 a culture **key**, never the culture definition. `icon` still holds the

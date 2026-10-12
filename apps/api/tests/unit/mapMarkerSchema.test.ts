@@ -60,6 +60,11 @@ describe('mapMarkerSchema', () => {
     ).toBe(false);
   });
 
+  it('keeps a hex tile', () => {
+    const settlement = { tier: 'city', culture: 'elves', seed: 7, hex: true, ground: 'grass' };
+    expect(mapMarkerSchema.parse({ ...base, settlement }).settlement).toEqual(settlement);
+  });
+
   it('keeps a building recipe', () => {
     const settlement = {
       tier: 'stead',

@@ -3528,16 +3528,18 @@ export function onStilts(parts, D) {
  * The ground plane a settlement or building stands on, of a ground type
  * (Design.ground): an ellipse rx × ry under the whole of it, in the type's
  * own colour and texture (the `ground-<type>` pattern role, patterns.js) —
- * or, for water, the lagoon. Terrain, so ruins never break it.
+ * or, for water, the lagoon. Terrain, so ruins never break it. `outline`
+ * gives the plane another shape (a hex tile) round the same centre.
  * @param {Exclude<Design['ground'], 'none'>} kind
  * @param {number} rx
  * @param {number} ry
+ * @param {Poly} [outline]
  * @returns {Part[]}
  */
-export function groundPlane(kind, rx, ry) {
-	if (kind === 'water') return lagoon(rx, ry);
+export function groundPlane(kind, rx, ry, outline) {
+	if (kind === 'water') return lagoon(rx, ry, outline);
 	/** @type {Poly} */
-	const plane = ell(0, 0, rx, ry, 0, 360, 48).slice(0, -1);
+	const plane = outline ?? ell(0, 0, rx, ry, 0, 360, 48).slice(0, -1);
 	return [{ solid: [plane], role: /** @type {Part['role']} */ (`ground-${kind}`), terrain: true }];
 }
 
@@ -3545,12 +3547,13 @@ export function groundPlane(kind, rx, ry) {
  * Lagoon the settlement stands in: a water plane with wave ticks, drawn
  * under everything else.
  * @param {number} rx
- * @param {number} ry
+ * @param {number} ry the waves fall within rx × ry
+ * @param {Poly} [outline] the water's shape, if not that ellipse (a hex tile)
  * @returns {Part[]}
  */
-export function lagoon(rx, ry) {
+export function lagoon(rx, ry, outline) {
 	/** @type {Poly} */
-	const plane = ell(0, 0, rx, ry, 0, 360, 48).slice(0, -1);
+	const plane = outline ?? ell(0, 0, rx, ry, 0, 360, 48).slice(0, -1);
 	/** @type {Line[]} */
 	const waves = [];
 	const r = rng(17);

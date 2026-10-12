@@ -200,6 +200,15 @@ fits it to the enclosure (a ring's ellipse, or one round the whole of a
 square enclosure's parallelogram); under a lone building, an ellipse round
 its footprint.
 
+**Hex tile.** A recipe's `hex` (the builders' Hex tile) sets a hex tile
+behind the layout instead (`hexTile()` in `layouts3d.js`), as a hex map's
+cell would frame it: a regular flat-topped hexagon upright in the picture —
+a frame, not lying on the ground, as Watabou's generator draws it — round
+the ground footprint and set a little high, so the buildings rising from it
+stay inside. With a ground type it's that ground's plane in the hex's shape
+(`groundPlane(kind, rx, ry, outline)`; water a hex-shaped lagoon); with
+none, a dashed outline, a dash centred on each corner.
+
 ## Cultures: one culture = one Design + palette
 
 A culture plugin (`cultures/<key>.json` in an extension, or
@@ -311,7 +320,7 @@ seeds keep their looks.
 
 ## Recipe overrides
 
-Seven recipe-only fields let a marker override the culture:
+Eight recipe-only fields let a marker override the culture:
 
 | Recipe field | Effect                                                                                                                       |
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------- |
@@ -320,6 +329,7 @@ Seven recipe-only fields let a marker override the culture:
 | `ground`     | Override `D.ground` (`'none'`, a ground type, or `'water'`) — the easy knob for "put this settlement on sand / in a lagoon." |
 | `stilts`     | Wrap every inside-the-walls piece with `onStilts(...)` so the whole settlement sits on pilings.                              |
 | `harbor`     | `true` adds a side harbour with pier + caravel.                                                                              |
+| `hex`        | `true` sets a hex tile behind it, as a hex map's cell frames it (see Ground).                                                |
 | `ruin`       | `{ decay, burned? }` runs `ruinPlaced()` over the final list.                                                                |
 | `building`   | A `BUILDINGS` key: `building()` draws that one piece instead of the settlement (the Buildings tab).                          |
 

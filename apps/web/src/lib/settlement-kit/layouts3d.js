@@ -43,6 +43,8 @@ import {
 
 /** @typedef {import('./pieces3d.js').Design} Design */
 /** @typedef {import('./pieces3d.js').Placed} Placed */
+/** @typedef {import('./geom.js').Pt} Pt */
+/** @typedef {import('./geom.js').Poly} Poly */
 /** @typedef {'auto' | 'none' | 'stone' | 'palisade' | 'earth' | 'hedge' | 'bone' | 'reef'} Walls */
 
 /**
@@ -404,7 +406,8 @@ function wallFor(T, walls, D) {
  * `stilts` lifts every inside-the-walls piece onto a timber-post deck —
  * think a lagoon settlement over water or dune boardwalks over sand. The
  * ring wall and the ground stay on the ground.
- * @param {{walls?: Walls, seed?: number, harbor?: 'none' | 'side', ruin?: import('./ruins3d.js').RuinOptions | null, stilts?: boolean}} [o]
+ * @param {{walls?: Walls, seed?: number, harbor?: 'none' | 'side', ruin?: import('./ruins3d.js').RuinOptions | null, stilts?: boolean, hex?: boolean}} [o]
+ *   `hex`: a hex tile behind it (hexTile()) in place of the ground's ellipse
  * @returns {Placed[]}
  */
 export function settlement(tier, D, o = {}) {
@@ -600,7 +603,8 @@ export function settlement(tier, D, o = {}) {
 	// stacking order — if it were in `ground` (drawn after `ring.back`) the
 	// back half of the ring wall would be painted over by it.
 	const g = groundOf(D);
-	if (g) port.water.push(enclosureGround(g, square, wrx, wry));
+	if (o.hex) port.water.push(hexTile(g, ...enclosureFootprint(square, wrx, wry)));
+	else if (g) port.water.push(enclosureGround(g, square, wrx, wry));
 	/** @param {import('./ruins3d.js').RuinPlaced[]} list */
 	const finish = (list) => (o.ruin ? ruinPlaced(list, { ...o.ruin, seed: o.seed ?? 1 }) : list);
 	if (wall === 'none') return finish([...port.water, ...ground, ...inside, ...port.piers]);
@@ -838,8 +842,9 @@ export const UNWALLED_BUILDINGS = new Set([
  * tower's height — and a mixed culture's builder rolls its own style.
  * @param {string} key one of BUILDINGS (unknown → a gable house)
  * @param {Design} D
- * @param {{walls?: Walls, seed?: number,
- *   ruin?: import('./ruins3d.js').RuinOptions | null}} [o]
+ * @param {{walls?: Walls, seed?: number, hex?: boolean,
+ *   ruin?: import('./ruins3d.js').RuinOptions | null}} [o] `hex`: a hex tile
+ *   behind it (hexTile()) in place of the ground's ellipse
  * @returns {Placed[]}
  */
 export function building(key, D, o = {}) {
@@ -849,13 +854,15 @@ export function building(key, D, o = {}) {
 	const walls = o.walls && o.walls !== 'auto' && o.walls !== 'none' ? o.walls : null;
 	const make = (PIECES.find(([k]) => k === key) ?? PIECES[0])[2];
 	let items = make(own, 1 + Math.floor(r() * 999_999));
-	if (walls && !UNWALLED_BUILDINGS.has(key)) items = enclosed(D, items, walls);
+	if (walls && !UNWALLED_BUILDINGS.has(key)) items = enclosed(D, items, walls, !!o.hex);
 	else {
 		// A building stands on its ground — water-dwellers' in a lagoon — as
 		// a settlement does (an enclosure lays its own, under the whole of it).
 		const g = groundOf(D);
-		if (g) {
-			const { x0, x1 } = placedExtent(items);
+		const { x0, x1 } = placedExtent(items);
+		// A narrow building (a tower) gets the same least width as its plane.
+		if (o.hex) items = [hexTile(g, (x0 + x1) / 2, 0, Math.max(16, (x1 - x0) / 2 + 6)), ...items];
+		else if (g) {
 			const rx = Math.max(16, (x1 - x0) / 2 + 8);
 			items = [{ piece: groundPlane(g, rx, rx * 0.4), x: (x0 + x1) / 2 }, ...items];
 		}
@@ -887,9 +894,10 @@ function placedExtent(items) {
  * @param {Design} D
  * @param {Placed[]} items
  * @param {Exclude<Walls, 'auto' | 'none'>} wall
+ * @param {boolean} [hex] a hex tile behind it, in place of the ground's ellipse
  * @returns {Placed[]}
  */
-function enclosed(D, items, wall) {
+function enclosed(D, items, wall, hex = false) {
 	const square = D.wallShape === 'square';
 	const { x0, x1 } = placedExtent(items);
 	const w = x1 - x0;
@@ -924,7 +932,11 @@ function enclosed(D, items, wall) {
 	});
 	const g = groundOf(D);
 	return [
-		...(g ? [enclosureGround(g, square, wrx, wry)] : []),
+		...(hex
+			? [hexTile(g, ...enclosureFootprint(square, wrx, wry))]
+			: g
+				? [enclosureGround(g, square, wrx, wry)]
+				: []),
 		...ring.back,
 		...items.map((it) => ({ ...it, x: (it.x ?? 0) + ox, y: (it.y ?? 0) + oy })),
 		...ring.front,
@@ -932,6 +944,73 @@ function enclosed(D, items, wall) {
 }
 
 /** @typedef {Exclude<Design['ground'], 'none'>} Ground */
+
+/**
+ * Where a walled layout's ground lies: its centre and half-width — a ring's
+ * own, or the whole of a square enclosure's parallelogram.
+ * @param {boolean} square
+ * @param {number} wrx
+ * @param {number} wry
+ * @returns {[number, number, number]} cx, cy, half-width
+ */
+function enclosureFootprint(square, wrx, wry) {
+	if (!square) return [0, 0, wrx];
+	const { W, dv } = squareFootprint(wrx, wry);
+	return [dv[0] / 2, dv[1] / 2, W / 2 + dv[0] / 2];
+}
+
+/** Dash and gap of a hex tile's dashed outline (world units). */
+const HEX_DASH = 3.2,
+	HEX_GAP = 2.2;
+
+/**
+ * A hex tile behind a layout, as a hex map's cell frames it — the builders'
+ * Hex tile. A regular flat-topped hexagon upright in the picture (a frame,
+ * not lying on the ground, as Watabou's generator draws it), round the
+ * ground footprint (centre cx, cy; half-width hw) and set a little high, so
+ * the buildings rising from it stay inside. With a ground type it's that
+ * ground's plane in the hex's shape; with none, a dashed outline, a dash
+ * centred on each corner.
+ * @param {Ground | null} kind
+ * @param {number} cx
+ * @param {number} cy
+ * @param {number} hw
+ * @returns {Placed}
+ */
+function hexTile(kind, cx, cy, hw) {
+	const R = hw * 1.25 + 4;
+	const at = { x: cx, y: cy + R * 0.2 };
+	/** @type {Poly} */
+	const hex = Array.from({ length: 6 }, (_, i) => {
+		const a = (i * Math.PI) / 3;
+		return /** @type {Pt} */ ([R * Math.cos(a), R * Math.sin(a)]);
+	});
+	if (kind) return { piece: groundPlane(kind, R * 0.8, R * 0.62, hex), ...at };
+	// The perimeter in whole dash periods per edge (each edge is R long).
+	const per = Math.max(1, Math.round(R / (HEX_DASH + HEX_GAP)));
+	const q = R / per,
+		half = (q * HEX_DASH) / (HEX_DASH + HEX_GAP) / 2;
+	/** The point s along the perimeter from corner 0. @param {number} s */
+	const along = (s) => {
+		const t = ((s % (6 * R)) + 6 * R) % (6 * R);
+		const i = Math.floor(t / R),
+			f = (t - i * R) / R;
+		const [a, b] = [hex[i % 6], hex[(i + 1) % 6]];
+		return /** @type {Pt} */ ([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]);
+	};
+	/** @type {import('./render.js').Line[]} */
+	const free = [];
+	for (let k = 0; k < 6 * per; k++) {
+		const s = k * q;
+		// A dash centred on a corner bends round it.
+		const pts =
+			k % per === 0
+				? [along(s - half), hex[k / per], along(s + half)]
+				: [along(s - half), along(s + half)];
+		free.push({ pts, w: 1.1 });
+	}
+	return { piece: [{ solid: [], free, terrain: true }], ...at };
+}
 
 /**
  * The ground a design stands on, or null for none — 'land', its old name,

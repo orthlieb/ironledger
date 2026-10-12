@@ -47,6 +47,11 @@ describe('building recipes', () => {
 			'water',
 		]);
 	});
+	it('keep a hex tile, and key apart from one without', () => {
+		expect(cleanSettlementRecipe({ ...tower, hex: true })?.hex).toBe(true);
+		expect(cleanSettlementRecipe({ ...tower, hex: 'yes' })).not.toHaveProperty('hex');
+		expect(recipeKey({ ...tower, hex: true })).not.toBe(recipeKey(tower));
+	});
 	it('key apart from the settlement with the same knobs', () => {
 		const { building: _, ...plain } = tower;
 		expect(recipeKey(tower)).not.toBe(recipeKey(plain));

@@ -42,9 +42,11 @@ export { fallbackIcon } from './fallback.js';
  * `building` (a key of layouts3d.js BUILDINGS) draws that one building
  * instead of a settlement — the Buildings tab: `walls` then encloses it
  * (never a wall building), and `tier`, `stilts` and `harbor` don't apply.
+ * `hex` sets a hex tile behind the icon, as a hex map's cell would frame it:
+ * the ground in a hexagon's shape, or a dashed hexagon with no ground.
  * @typedef {{tier: Tier, culture: string, seed: number, walls?: Walls,
  *   wallShape?: 'round' | 'square', ground?: Design['ground'],
- *   stilts?: boolean, harbor?: boolean, building?: string,
+ *   stilts?: boolean, harbor?: boolean, building?: string, hex?: boolean,
  *   ruin?: {decay: number, burned?: boolean}}} SettlementRecipe
  */
 
@@ -210,14 +212,16 @@ export function generateSettlementSvg(recipe, culture) {
 				seed: recipe.seed,
 			}
 		: null;
+	const hex = !!recipe.hex;
 	const items = recipe.building
-		? building(recipe.building, design, { walls: recipe.walls, seed: recipe.seed, ruin })
+		? building(recipe.building, design, { walls: recipe.walls, seed: recipe.seed, ruin, hex })
 		: settlement(tier, design, {
 				walls: recipe.walls ?? 'auto',
 				seed: recipe.seed,
 				harbor: recipe.harbor ? 'side' : 'none',
 				stilts: !!recipe.stilts,
 				ruin,
+				hex,
 			});
 	return toLayeredSvg(
 		`${culture?.name ?? 'Default'} ${recipe.building ?? tier}`,

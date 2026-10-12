@@ -145,6 +145,7 @@
 	);
 	let stilts = $state(!!start?.stilts);
 	let harbor = $state(!!start?.harbor);
+	let hex = $state(!!start?.hex);
 	let ruined = $state(!!start?.ruin);
 	let decay = $state(start?.ruin?.decay ?? 0.5);
 	let burned = $state(!!start?.ruin?.burned);
@@ -180,6 +181,7 @@
 					...(showWalls && walls !== 'none' && walls !== 'auto' ? { walls } : {}),
 					...(showShape && shape !== 'culture' ? { wallShape: shape } : {}),
 					...(ground !== 'culture' ? { ground } : {}),
+					...(hex ? { hex: true } : {}),
 					...ruin,
 				}
 			: {
@@ -191,6 +193,7 @@
 					...(ground !== 'culture' ? { ground } : {}),
 					...(stilts ? { stilts: true } : {}),
 					...(harbor ? { harbor: true } : {}),
+					...(hex ? { hex: true } : {}),
 					...ruin,
 				},
 	);
@@ -301,11 +304,15 @@
 				<span class="sb-label">Ground</span>
 				<Select bind:value={ground} options={GROUNDS} ariaLabel="Ground" />
 			</label>
-			{#if !isBuilding}
-				<Checkbox bind:checked={stilts}><span class="sb-check">On stilts</span></Checkbox>
-				<Checkbox bind:checked={harbor}><span class="sb-check">Harbour</span></Checkbox>
-			{/if}
-			<Checkbox bind:checked={ruined}><span class="sb-check">Ruined</span></Checkbox>
+			<!-- Side by side, wrapping, so the switches don't each take a row. -->
+			<div class="sb-checks">
+				{#if !isBuilding}
+					<Checkbox bind:checked={stilts}><span class="sb-check">On stilts</span></Checkbox>
+					<Checkbox bind:checked={harbor}><span class="sb-check">Harbour</span></Checkbox>
+				{/if}
+				<Checkbox bind:checked={hex}><span class="sb-check">Hex tile</span></Checkbox>
+				<Checkbox bind:checked={ruined}><span class="sb-check">Ruined</span></Checkbox>
+			</div>
 			{#if ruined}
 				<label class="sb-field sb-field--range">
 					<span class="sb-label">Decay</span>
@@ -438,6 +445,11 @@
 	.sb-check {
 		font-size: 0.85rem;
 	}
+	.sb-checks {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 6px 14px;
+	}
 	.sb-note {
 		margin: 0;
 		font-size: 0.75rem;
@@ -498,6 +510,7 @@
 			gap: 8px 10px;
 		}
 		.sb-note,
+		.sb-checks,
 		.sb-field--range {
 			grid-column: 1 / -1;
 		}
