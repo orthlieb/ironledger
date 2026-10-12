@@ -39,8 +39,10 @@ export const SETTLEMENT_WALLS = [
 ] as const;
 export type SettlementWalls = (typeof SETTLEMENT_WALLS)[number];
 
-/** The Choose Icon dialog's Buildings tab: each single building it draws
- *  (settlement-kit layouts3d.js BUILDINGS), key → label, in menu order. */
+/** The Choose Icon dialog's Buildings tab: each single building it offers
+ *  (settlement-kit layouts3d.js BUILDINGS), key → label, in menu order. The
+ *  kit's RETIRED_BUILDINGS aren't here: a marker that already has one still
+ *  draws it, but a recipe naming one is no longer accepted on import. */
 export const SETTLEMENT_BUILDINGS = {
 	'gable-house': 'Gable house',
 	'side-house': 'Side house',
@@ -59,32 +61,30 @@ export const SETTLEMENT_BUILDINGS = {
 	mine: 'Mine',
 	well: 'Well',
 	lighthouse: 'Lighthouse',
-	caravel: 'Caravel',
 	warehouse: 'Warehouse',
 	workshop: 'Workshop',
 	cathedral: 'Cathedral',
 	'clock-tower': 'Clock tower',
 	tent: 'Tent',
 	pavilion: 'Pavilion',
-	gatehouse: 'Gatehouse',
-	'wooden-gate': 'Wooden gate',
 	'witch-hut': 'Witch hut',
 	wall: 'Wall',
-	'wall-tower': 'Wall tower',
-	palisade: 'Palisade',
-	dock: 'Dock',
-	pier: 'Pier',
 } as const;
 export type SettlementBuilding = keyof typeof SETTLEMENT_BUILDINGS;
 
-/** The wall buildings, each in its own material: never enclosed, so no
- *  Walls or Wall shape for them. */
-export const WALL_BUILDINGS: ReadonlySet<string> = new Set([
+/** Buildings never given a wall of their own, so no Walls or Wall shape:
+ *  the wall buildings, each in its own material, and the harbour pieces.
+ *  (settlement-kit layouts3d.js UNWALLED_BUILDINGS; a test holds them in
+ *  step.) */
+export const UNWALLED_BUILDINGS: ReadonlySet<string> = new Set([
 	'wall',
 	'wall-tower',
 	'palisade',
 	'gatehouse',
 	'wooden-gate',
+	'caravel',
+	'dock',
+	'pier',
 ]);
 
 export interface SettlementRecipe {
@@ -103,7 +103,7 @@ export interface SettlementRecipe {
 	/** A ruin: how far gone (0–1), and whether it burned (scorch, soot). */
 	ruin?: { decay: number; burned?: boolean };
 	/** One building instead of a settlement (the Buildings tab). `walls` then
-	 *  puts a wall of its own round it (never round a wall building), and
+	 *  puts a wall of its own round it (never round UNWALLED_BUILDINGS), and
 	 *  `tier`, `stilts` and `harbor` don't apply. */
 	building?: SettlementBuilding;
 }
@@ -132,7 +132,10 @@ export function recipeLabel(
 	const b = recipe.building;
 	if (b) {
 		const walled =
-			recipe.walls && recipe.walls !== 'none' && recipe.walls !== 'auto' && !WALL_BUILDINGS.has(b);
+			recipe.walls &&
+			recipe.walls !== 'none' &&
+			recipe.walls !== 'auto' &&
+			!UNWALLED_BUILDINGS.has(b);
 		return `${state}${name} ${SETTLEMENT_BUILDINGS[b] ?? b}${walled ? ', walled' : ''}`;
 	}
 	return `${state}${name} ${TIER_LABEL[recipe.tier] ?? recipe.tier}`;

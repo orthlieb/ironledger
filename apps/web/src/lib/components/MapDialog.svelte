@@ -3286,7 +3286,10 @@
 		left: 50%;
 		transform: translate(-50%, -50%);
 		width: min(460px, calc(100vw - 2rem));
+		/* dvh, the viewport a phone actually shows (vh fallback) — see the
+		   icon picker's height below. */
 		max-height: 82vh;
+		max-height: 82dvh;
 		display: flex;
 		flex-direction: column;
 		background: var(--bg-card);
@@ -3595,6 +3598,7 @@
 		:global(.mp-props-dialog) {
 			width: 90vw;
 			max-height: 90vh;
+			max-height: 90dvh;
 		}
 	}
 
@@ -3620,8 +3624,13 @@
 		/* Fixed height (not max-height) so switching tabs, or a search that
 		   empties the grid, never resizes the panel — it's centred via
 		   translate(-50%, -50%), so any height change would rock it around
-		   the viewport centre. The tab panels flex into the space. */
+		   the viewport centre. The tab panels flex into the space.
+		   In `dvh`, the viewport a phone actually shows: `vh` counts the
+		   space under the browser's toolbars too, so a vh-tall picker ran
+		   off the visible screen. (A bits-ui Dialog is a fixed div, not a
+		   top-layer <dialog>, so dvh is safe here; vh is the fallback.) */
 		height: 82vh;
+		height: 82dvh;
 		display: flex;
 		flex-direction: column;
 		overflow: hidden;
@@ -3664,6 +3673,7 @@
 		:global(.mp-icon-dialog) {
 			width: 90vw;
 			height: 90vh;
+			height: 90dvh;
 		}
 	}
 	:global(.mp-icon-cat-label) {

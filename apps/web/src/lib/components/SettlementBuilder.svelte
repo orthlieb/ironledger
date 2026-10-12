@@ -6,8 +6,7 @@
 	 * Just the essentials of the settlement kit: tier, culture, walls and
 	 * their shape, a harbour, ruined (with decay, and
 	 * optionally burned), and a reroll for the
-	 * layout. A large preview and a marker-size preview show the result in
-	 * the marker's colour; "Use this" hands the RECIPE back to the caller
+	 * layout. A large preview shows the result in the marker's colour; "Use this" hands the RECIPE back to the caller
 	 * (the marker stores the recipe, never the culture definition). The full
 	 * set of knobs lives in the standalone playground under tools/, which
 	 * also exports new culture plugins.
@@ -41,7 +40,7 @@
 	import { recipeLabel, settlementIcon } from '$lib/settlementIcons.svelte.js';
 	import {
 		SETTLEMENT_BUILDINGS,
-		WALL_BUILDINGS,
+		UNWALLED_BUILDINGS,
 		cleanSettlementRecipe,
 		sameRecipe,
 		type SettlementBuilding,
@@ -139,8 +138,9 @@
 
 	void loadCultures();
 
-	/** A wall building, in its own material: never enclosed, so no Walls. */
-	const wallBuilding = $derived(isBuilding && WALL_BUILDINGS.has(building));
+	/** A wall building (in its own material) or a ship: never enclosed, so
+	 *  no Walls. */
+	const wallBuilding = $derived(isBuilding && UNWALLED_BUILDINGS.has(building));
 	/** A building's walls are an enclosure: none by default, and no "usual
 	 *  for its size". */
 	const wallOptions = isBuilding ? WALLS.filter((w) => w.value !== 'auto') : WALLS;
@@ -313,14 +313,6 @@
 					<span class="sb-drawing">Drawing…</span>
 				{/if}
 			</div>
-			<div class="sb-actual">
-				{#if icon}
-					<svg viewBox={haloPaddedViewBox(icon)} aria-hidden="true">
-						{@html mapGlyphInner(icon, color, 'sb-small', 'proportional', 34)}
-					</svg>
-				{/if}
-				<span>marker size</span>
-			</div>
 			<div class="sb-actions">
 				<button
 					class="dice-btn"
@@ -345,7 +337,12 @@
 </div>
 
 <style>
+	/* The builder fills its tab panel, and the big preview takes whatever
+	   height the knobs leave, so the whole tab — "Use this" included —
+	   fits the dialog without scrolling; only when even the smallest
+	   preview won't fit does the panel scroll. */
 	.sb {
+		flex: 1 0 auto;
 		display: flex;
 		flex-direction: column;
 		gap: 12px;
@@ -391,10 +388,13 @@
 		height: 100%;
 	}
 	.sb-main {
+		flex: 1;
 		display: grid;
 		grid-template-columns: minmax(180px, 230px) minmax(0, 1fr);
 		gap: 16px;
-		align-items: start;
+	}
+	.sb-knobs {
+		align-self: start;
 	}
 	.sb-knobs {
 		display: flex;
@@ -438,7 +438,8 @@
 		min-width: 0;
 	}
 	.sb-big {
-		height: 260px;
+		flex: 1 1 0;
+		min-height: 140px;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -454,25 +455,6 @@
 	.sb-drawing {
 		font-size: 0.85rem;
 		color: var(--text-dimmer);
-	}
-	.sb-actual {
-		display: flex;
-		align-items: flex-end;
-		gap: 10px;
-		padding: 8px 10px;
-		border-radius: 6px;
-		border: 1px solid var(--border);
-		/* A hint of map parchment behind the actual-size marker. */
-		background: color-mix(in srgb, #d8cba5 55%, var(--bg-inset));
-		font-size: 0.72rem;
-		color: var(--text-muted);
-	}
-	.sb-actual svg {
-		width: 34px;
-		height: 34px;
-	}
-	.sb-actual span {
-		margin-left: auto;
 	}
 	.sb-actions {
 		display: flex;
@@ -494,12 +476,40 @@
 		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
+	/* Phones — narrow, or short in landscape: knobs two to a row so the
+	   preview and "Use this" keep their room on screen. */
+	@media (max-width: 640px), (max-height: 500px) {
+		.sb-knobs {
+			display: grid;
+			grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+			gap: 8px 10px;
+		}
+		.sb-note,
+		.sb-field--range {
+			grid-column: 1 / -1;
+		}
+		.sb-note {
+			display: -webkit-box;
+			-webkit-box-orient: vertical;
+			-webkit-line-clamp: 2;
+			line-clamp: 2;
+			overflow: hidden;
+		}
+		.sb-big {
+			min-height: 110px;
+		}
+	}
+	/* Narrow: the knobs above the preview. */
 	@media (max-width: 640px) {
 		.sb-main {
 			grid-template-columns: 1fr;
+			grid-template-rows: auto 1fr;
 		}
-		.sb-big {
-			height: 200px;
+	}
+	/* Short and wide (a phone on its side): a wider knobs column beside it. */
+	@media (min-width: 641px) and (max-height: 500px) {
+		.sb-main {
+			grid-template-columns: minmax(0, 3fr) minmax(0, 2fr);
 		}
 	}
 </style>
