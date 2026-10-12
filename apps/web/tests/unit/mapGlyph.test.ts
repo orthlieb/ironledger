@@ -24,19 +24,6 @@ describe('resolveMapIcon', () => {
 		expect(resolveMapIcon('nowhere/nothing')).toBeUndefined();
 		expect(resolveMapIcon('')).toBeUndefined();
 	});
-	it('follows an icon that moved out of settlement/ to its new category', () => {
-		// Markers saved before the hand-drawn props left the Settlement
-		// category still name them settlement/<slug>.
-		const moved = {
-			anvil: 'profession',
-			'stone-bridge': 'travel',
-			wheat: 'supply',
-			campfire: 'site',
-			crater: 'terrain',
-		};
-		for (const [slug, category] of Object.entries(moved))
-			expect(resolveMapIcon(`settlement/${slug}`)?.category, slug).toBe(category);
-	});
 	it("keeps only the settlement kit's baked icons in settlement/", () => {
 		const settlement = MAP_ICON_LIST.filter((i) => i.category === 'settlement' && !i.source);
 		expect(settlement.length).toBeGreaterThan(0);

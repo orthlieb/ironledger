@@ -40,9 +40,7 @@ export const SETTLEMENT_WALLS = [
 export type SettlementWalls = (typeof SETTLEMENT_WALLS)[number];
 
 /** The Choose Icon dialog's Buildings tab: each single building it offers
- *  (settlement-kit layouts3d.js BUILDINGS), key → label, in menu order. The
- *  kit's RETIRED_BUILDINGS aren't here: a marker that already has one still
- *  draws it, but a recipe naming one is no longer accepted on import. */
+ *  (settlement-kit layouts3d.js BUILDINGS), key → label, in menu order. */
 export const SETTLEMENT_BUILDINGS = {
 	'gable-house': 'Gable house',
 	'side-house': 'Side house',
@@ -73,19 +71,29 @@ export const SETTLEMENT_BUILDINGS = {
 export type SettlementBuilding = keyof typeof SETTLEMENT_BUILDINGS;
 
 /** Buildings never given a wall of their own, so no Walls or Wall shape:
- *  the wall buildings, each in its own material, and the harbour pieces.
- *  (settlement-kit layouts3d.js UNWALLED_BUILDINGS; a test holds them in
- *  step.) */
-export const UNWALLED_BUILDINGS: ReadonlySet<string> = new Set([
-	'wall',
-	'wall-tower',
-	'palisade',
-	'gatehouse',
-	'wooden-gate',
-	'caravel',
-	'dock',
-	'pier',
-]);
+ *  the wall, in its own stone (settlement-kit layouts3d.js
+ *  UNWALLED_BUILDINGS; a test holds them in step). */
+export const UNWALLED_BUILDINGS: ReadonlySet<string> = new Set(['wall']);
+
+/** What a settlement or building stands on (Design.ground): 'none' draws no
+ *  ground; 'hex' a dashed hex tile behind it, as a hex map's cell frames
+ *  it; the rest a plane under it in their own colour and texture; water a
+ *  lagoon. */
+export const SETTLEMENT_GROUNDS = [
+	'none',
+	'hex',
+	'dirt',
+	'grass',
+	'farmland',
+	'sand',
+	'rock',
+	'snow',
+	'ice',
+	'marsh',
+	'lava',
+	'water',
+] as const;
+export type SettlementGround = (typeof SETTLEMENT_GROUNDS)[number];
 
 export interface SettlementRecipe {
 	tier: SettlementTier;
@@ -95,8 +103,8 @@ export interface SettlementRecipe {
 	seed: number;
 	walls?: SettlementWalls;
 	wallShape?: 'round' | 'square';
-	/** Override the culture's own `ground`: a lagoon under the whole icon. */
-	ground?: 'land' | 'water';
+	/** Override the culture's own `ground`: what the whole icon stands on. */
+	ground?: SettlementGround;
 	/** Lift every building onto a timber-post deck (over water or sand). */
 	stilts?: boolean;
 	harbor?: boolean;
@@ -180,7 +188,8 @@ export function cleanSettlementRecipe(v: unknown): SettlementRecipe | undefined 
 	};
 	if (SETTLEMENT_WALLS.includes(o.walls as SettlementWalls)) out.walls = o.walls as SettlementWalls;
 	if (o.wallShape === 'round' || o.wallShape === 'square') out.wallShape = o.wallShape;
-	if (o.ground === 'land' || o.ground === 'water') out.ground = o.ground;
+	if (SETTLEMENT_GROUNDS.includes(o.ground as SettlementGround))
+		out.ground = o.ground as SettlementGround;
 	if (o.stilts === true) out.stilts = true;
 	if (o.harbor === true) out.harbor = true;
 	const ruin = o.ruin as { decay?: unknown; burned?: unknown } | undefined;

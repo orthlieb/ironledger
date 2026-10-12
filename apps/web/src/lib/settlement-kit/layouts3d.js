@@ -17,9 +17,8 @@ import {
 	church,
 	clocktower,
 	gableHouse,
-	gatehouse,
+	groundPlane,
 	keep,
-	lagoon,
 	lighthouse,
 	market,
 	mine,
@@ -43,6 +42,8 @@ import {
 
 /** @typedef {import('./pieces3d.js').Design} Design */
 /** @typedef {import('./pieces3d.js').Placed} Placed */
+/** @typedef {import('./geom.js').Pt} Pt */
+/** @typedef {import('./geom.js').Poly} Poly */
 /** @typedef {'auto' | 'none' | 'stone' | 'palisade' | 'earth' | 'hedge' | 'bone' | 'reef'} Walls */
 
 /**
@@ -170,7 +171,9 @@ function house(D, r, w, trade) {
 
 /**
  * Horizontal extent and height of a piece (from its silhouettes), so a
- * layout can pack buildings by their real footprint.
+ * layout can pack buildings by their real footprint. Banners don't count:
+ * a flag streams out over its neighbours rather than pushing them away,
+ * and a tower's mustn't widen (or pull off-centre) the ground it stands on.
  * @param {import('./render.js').Part[]} piece
  */
 function extent(piece) {
@@ -178,7 +181,7 @@ function extent(piece) {
 		x1 = -Infinity,
 		y1 = 0;
 	for (const p of piece)
-		for (const poly of p.solid)
+		for (const poly of p.role === 'flag' ? [] : p.solid)
 			for (const [x, y] of poly) {
 				x0 = Math.min(x0, x);
 				x1 = Math.max(x1, x);
@@ -594,18 +597,20 @@ export function settlement(tier, D, o = {}) {
 		T.harbor || (o.harbor === 'side' && rank >= 0)
 			? harbor(D, wrx, wry, square ? W / 2 + dv[0] * 0.4 : wrx, square ? dv[1] * 0.4 : 0)
 			: { water: [], piers: [] };
-	// Water-dwellers (merrow) build in a lagoon. The lagoon is the base
-	// plane for everything else, so it goes with port.water at the back of
-	// the stacking order — if it were in `ground` (drawn after `ring.back`)
-	// the back half of the ring wall would be painted over by it.
-	if (D.ground === 'water')
-		port.water.push({
-			piece: lagoon(wrx * 1.15, wry * 1.25),
-			x: square ? dv[0] * 0.5 : 0,
-			y: square ? dv[1] * 0.5 : 0,
-		});
+	// The ground it stands on — a hex tile, dirt, grass, farmland, sand,
+	// rock, snow, ice, marsh, lava, or (water-dwellers, the merrow) a
+	// lagoon. It's the base plane for everything else, so it goes with
+	// port.water at the back of the stacking order — if it were in `ground`
+	// (drawn after `ring.back`) the back half of the ring wall would be
+	// painted over by it.
+	const g = groundOf(D);
+	if (g && g !== 'hex') port.water.push(enclosureGround(g, square, wrx, wry));
+	// The hex ground frames the whole of it, so it's laid once the rest is.
 	/** @param {import('./ruins3d.js').RuinPlaced[]} list */
-	const finish = (list) => (o.ruin ? ruinPlaced(list, { ...o.ruin, seed: o.seed ?? 1 }) : list);
+	const finish = (list) => {
+		const done = o.ruin ? ruinPlaced(list, { ...o.ruin, seed: o.seed ?? 1 }) : list;
+		return g === 'hex' ? withHexTile(done, ...enclosureFootprint(square, wrx, wry)) : done;
+	};
 	if (wall === 'none') return finish([...port.water, ...ground, ...inside, ...port.piers]);
 	const ring = ringWall(D, {
 		rx: wrx,
@@ -683,15 +688,17 @@ function harbor(D, wrx, wry, shoreX, shoreY) {
  */
 const MIN_PIECE_SIZE = 26;
 
-/** Scale a placed group (sizes and positions) up to MIN_PIECE_SIZE. @param {Placed[]} items */
-function normalized(items) {
+/** The bounds of a placed group's solids, as placed (banners aside).
+ *  @param {Placed[]} items */
+function placedBounds(items) {
 	let x0 = Infinity,
 		x1 = -Infinity,
 		y0 = Infinity,
 		y1 = -Infinity;
 	for (const it of items)
 		for (const p of it.piece)
-			for (const poly of p.solid)
+			// Banners don't count (see extent()).
+			for (const poly of p.role === 'flag' ? [] : p.solid)
 				for (const [x, y] of poly) {
 					const s = it.s ?? 1,
 						X = (it.x ?? 0) + x * s,
@@ -701,9 +708,21 @@ function normalized(items) {
 					y0 = Math.min(y0, Y);
 					y1 = Math.max(y1, Y);
 				}
+	return { x0, x1, y0, y1 };
+}
+
+/** How much normalized() scales a placed group by (1: not at all).
+ *  @param {Placed[]} items */
+function normalScale(items) {
+	const { x0, x1, y0, y1 } = placedBounds(items);
 	const size = Math.sqrt(Math.max(0, x1 - x0) * Math.max(0, y1 - y0));
-	if (!(size > 0) || size >= MIN_PIECE_SIZE) return items;
-	const k = MIN_PIECE_SIZE / size;
+	return !(size > 0) || size >= MIN_PIECE_SIZE ? 1 : MIN_PIECE_SIZE / size;
+}
+
+/** Scale a placed group (sizes and positions) up to MIN_PIECE_SIZE.
+ *  @param {Placed[]} items @param {number} [k] the scale, if already known */
+function normalized(items, k = normalScale(items)) {
+	if (k === 1) return items;
 	return items.map((it) => ({
 		...it,
 		s: (it.s ?? 1) * k,
@@ -717,8 +736,8 @@ function normalized(items) {
  * the map's Buildings tab (building()). `make` draws the piece in a culture's
  * Design; a Buildings-tab `seed` varies a house's details and a tower's
  * height, and the reference row passes none. A null key is a reference
- * piece the Buildings tab doesn't offer — a camp is a Settlement-builder
- * size.
+ * piece (drawn for the baked icons) the Buildings tab doesn't offer — a
+ * camp is a Settlement-builder size.
  * @type {[string | null, string, (D: Design, seed?: number) => Placed[]][]}
  */
 const PIECES = [
@@ -776,7 +795,6 @@ const PIECES = [
 	['mine', 'Mine', (D) => [{ piece: mine(D) }]],
 	['well', 'Well', (D) => [{ piece: well(D), s: 2.2 }]],
 	['lighthouse', 'Lighthouse', (D) => [{ piece: lighthouse(D) }]],
-	['caravel', 'Caravel', (D) => [{ piece: caravel(D) }]],
 	[
 		'warehouse',
 		'Warehouse',
@@ -787,14 +805,8 @@ const PIECES = [
 	['clock-tower', 'Clock tower', (D) => [{ piece: clocktower(D) }]],
 	['tent', 'Tent', (D) => [{ piece: tent(D) }]],
 	['pavilion', 'Pavilion', (D) => [{ piece: pavilion(D) }]],
-	['gatehouse', 'Gatehouse', (D) => [{ piece: gatehouse(D) }]],
-	['wooden-gate', 'Wooden gate', (D) => [{ piece: gatehouse(D, { wood: true }) }]],
 	['witch-hut', 'Witch hut', (D) => [{ piece: witchHut(D) }]],
 	['wall', 'Wall', (D) => [{ piece: wallSegment(D) }]],
-	['wall-tower', 'Wall tower', (D) => [{ piece: wallSegment(D, { tower: true }) }]],
-	['palisade', 'Palisade', (D) => [{ piece: wallSegment(D, { wood: true }) }]],
-	['dock', 'Dock', (D) => dock(D, { ship: true })],
-	['pier', 'Pier', (D) => dock(D)],
 ];
 
 /** Single pieces for the reference row. @param {Design} D @returns {[string, Placed[]][]} */
@@ -802,35 +814,13 @@ export function pieces(D) {
 	return PIECES.map(([, name, make]) => [name, normalized(make(D))]);
 }
 
-/** Buildings the Buildings tab no longer offers. building() still draws
- *  them, for a marker that already uses one. */
-export const RETIRED_BUILDINGS = new Set([
-	'gatehouse',
-	'wooden-gate',
-	'wall-tower',
-	'palisade',
-	'caravel',
-	'dock',
-	'pier',
-]);
-
 /** The Buildings tab's buildings, as [key, name], in menu order. */
 export const BUILDINGS = /** @type {[string, string][]} */ (
-	PIECES.flatMap(([key, name]) => (key && !RETIRED_BUILDINGS.has(key) ? [[key, name]] : []))
+	PIECES.flatMap(([key, name]) => (key ? [[key, name]] : []))
 );
 
-/** Buildings never given a wall of their own: the wall buildings, each in
- *  its own material, and the harbour pieces — the caravel, dock and pier. */
-export const UNWALLED_BUILDINGS = new Set([
-	'wall',
-	'wall-tower',
-	'palisade',
-	'gatehouse',
-	'wooden-gate',
-	'caravel',
-	'dock',
-	'pier',
-]);
+/** Buildings never given a wall of their own: the wall, in its own stone. */
+export const UNWALLED_BUILDINGS = new Set(['wall']);
 
 /**
  * One building as a map icon — the Buildings tab: a single piece in the
@@ -852,18 +842,30 @@ export function building(key, D, o = {}) {
 	const walls = o.walls && o.walls !== 'auto' && o.walls !== 'none' ? o.walls : null;
 	const make = (PIECES.find(([k]) => k === key) ?? PIECES[0])[2];
 	let items = make(own, 1 + Math.floor(r() * 999_999));
-	if (walls && !UNWALLED_BUILDINGS.has(key)) items = enclosed(D, items, walls);
-	if (D.ground === 'water') {
-		// Water-dwellers' buildings stand in a lagoon, as their settlements do.
+	const g = groundOf(D);
+	/** Where its ground lies — centre and half-width — for the hex tile.
+	 *  @type {[number, number, number]} */
+	let foot;
+	if (walls && !UNWALLED_BUILDINGS.has(key)) ({ items, foot } = enclosed(D, items, walls));
+	else {
+		// A building stands on its ground — water-dwellers' in a lagoon — as
+		// a settlement does (an enclosure lays its own, under the whole of it).
 		const { x0, x1 } = placedExtent(items);
-		const rx = Math.max(16, (x1 - x0) / 2 + 8);
-		items = [{ piece: lagoon(rx, rx * 0.4), x: (x0 + x1) / 2 }, ...items];
+		// A narrow building (a tower) still gets a plane a fair width.
+		const hw = Math.max(16, (x1 - x0) / 2 + (g === 'hex' ? 6 : 8));
+		foot = [(x0 + x1) / 2, 0, hw];
+		if (g && g !== 'hex')
+			items = [{ piece: groundPlane(g, hw, hw * 0.4), x: (x0 + x1) / 2 }, ...items];
 	}
 	if (o.ruin) items = ruinPlaced(items, { ...o.ruin, seed });
-	return normalized(items);
+	// A small building is scaled up to read with the rest; the hex tile
+	// goes in after, at that scale, framing the whole of it.
+	const k = normalScale(items);
+	items = normalized(items, k);
+	return g === 'hex' ? withHexTile(items, foot[0] * k, foot[1] * k, foot[2], k) : items;
 }
 
-/** Horizontal extent of a placed group. @param {Placed[]} items */
+/** Horizontal extent of a placed group, banners aside (see extent()). @param {Placed[]} items */
 function placedExtent(items) {
 	let x0 = Infinity,
 		x1 = -Infinity;
@@ -879,11 +881,15 @@ function placedExtent(items) {
 /**
  * A building inside a small wall of its own: a ring — or a square, by the
  * culture's wall shape — fitted round its footprint as a settlement's is,
- * with two towers where the wall type carries them.
+ * with two towers where the wall type carries them. On water the lagoon is
+ * a settlement's too: centred on the enclosure and sized to it, so a square
+ * one's back walls and the building inside stand in the water, not behind
+ * it.
  * @param {Design} D
  * @param {Placed[]} items
  * @param {Exclude<Walls, 'auto' | 'none'>} wall
- * @returns {Placed[]}
+ * @returns {{items: Placed[], foot: [number, number, number]}} the group, and
+ *   where its ground lies (enclosureFootprint()) — for a hex tile
  */
 function enclosed(D, items, wall) {
 	const square = D.wallShape === 'square';
@@ -918,21 +924,145 @@ function enclosed(D, items, wall) {
 		shape: D.wallShape,
 		towers: Math.min(2, D.wallTowers),
 	});
-	return [
-		...ring.back,
-		...items.map((it) => ({ ...it, x: (it.x ?? 0) + ox, y: (it.y ?? 0) + oy })),
-		...ring.front,
-	];
+	const g = groundOf(D);
+	return {
+		items: [
+			...(g && g !== 'hex' ? [enclosureGround(g, square, wrx, wry)] : []),
+			...ring.back,
+			...items.map((it) => ({ ...it, x: (it.x ?? 0) + ox, y: (it.y ?? 0) + oy })),
+			...ring.front,
+		],
+		foot: enclosureFootprint(square, wrx, wry),
+	};
+}
+
+/** @typedef {Exclude<Design['ground'], 'none'>} Ground */
+
+/**
+ * Where a walled layout's ground lies: its centre and half-width — a ring's
+ * own, or the whole of a square enclosure's parallelogram.
+ * @param {boolean} square
+ * @param {number} wrx
+ * @param {number} wry
+ * @returns {[number, number, number]} cx, cy, half-width
+ */
+function enclosureFootprint(square, wrx, wry) {
+	if (!square) return [0, 0, wrx];
+	const { W, dv } = squareFootprint(wrx, wry);
+	return [dv[0] / 2, dv[1] / 2, W / 2 + dv[0] / 2];
+}
+
+/** A hex tile's dashed outline, as a house's: a dash weight of HEX_W and a
+ *  dash period of HEX_PERIOD (dash : gap = 3.2 : 2.2) on an icon HEX_SPAN0
+ *  across. Both scale with the whole icon the tile frames, so its dashes
+ *  read the same at the size any icon is drawn — a cottage's or a capital's,
+ *  or a tower standing out of its tile. */
+const HEX_SPAN0 = 60,
+	HEX_W = 1.1,
+	HEX_PERIOD = 6,
+	HEX_DASH = 3.2 / 5.4;
+const SIN60 = Math.sqrt(3) / 2;
+
+/**
+ * The hex ground: a hex tile behind a laid-out group, as a hex map's cell
+ * frames it. A regular flat-topped hexagon upright in the picture (a frame,
+ * not lying on the ground, as Watabou's generator draws it), round the
+ * ground footprint (centre cx, cy; half-width hw, at the group's scale k)
+ * and set a little high, so the buildings rising from it stay inside.
+ * @param {Placed[]} items
+ * @param {number} cx
+ * @param {number} cy
+ * @param {number} hw
+ * @param {number} [k] the scale the group's been drawn at (normalized())
+ * @returns {Placed[]} the tile, first, then the group
+ */
+function withHexTile(items, cx, cy, hw, k = 1) {
+	const R = (hw * 1.25 + 4) * k;
+	const oy = cy + R * 0.2;
+	// The whole icon's span — the group's, and the tile's own.
+	const b = placedBounds(items);
+	const span = Math.max(
+		Math.max(b.x1, cx + R) - Math.min(b.x0, cx - R),
+		Math.max(b.y1, oy + R * SIN60) - Math.min(b.y0, oy - R * SIN60),
+	);
+	return [hexTile(cx, oy, R, span), ...items];
 }
 
 /**
- * A harbour on its own: the round sea with a pier, and (with `ship`) the
- * caravel moored behind it.
- * @param {Design} D
- * @param {{ship?: boolean}} [o]
- * @returns {Placed[]}
+ * A hex tile's dashed outline: radius R about (cx, cy), its dashes sized to
+ * an icon `span` across — whole dash periods to an edge, a dash centred on
+ * each corner.
+ * @param {number} cx
+ * @param {number} cy
+ * @param {number} R
+ * @param {number} span
+ * @returns {Placed}
  */
-export function dock(D, o = {}) {
-	const h = harbor(D, 34, 12, 0, 0);
-	return [...h.water, ...h.piers.filter((p) => o.ship || !('ship' in p))];
+function hexTile(cx, cy, R, span) {
+	const u = span / HEX_SPAN0;
+	/** @type {Poly} */
+	const hex = Array.from({ length: 6 }, (_, i) => {
+		const a = (i * Math.PI) / 3;
+		return /** @type {Pt} */ ([R * Math.cos(a), R * Math.sin(a)]);
+	});
+	const per = Math.max(1, Math.round(R / (HEX_PERIOD * u)));
+	const q = R / per,
+		half = (q * HEX_DASH) / 2,
+		w = HEX_W * u;
+	/** The point s along the perimeter from corner 0. @param {number} s */
+	const along = (s) => {
+		const t = ((s % (6 * R)) + 6 * R) % (6 * R);
+		const i = Math.floor(t / R),
+			f = (t - i * R) / R;
+		const [a, b] = [hex[i % 6], hex[(i + 1) % 6]];
+		return /** @type {Pt} */ ([a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f]);
+	};
+	/** @type {import('./render.js').Line[]} */
+	const free = [];
+	for (let n = 0; n < 6 * per; n++) {
+		const s = n * q;
+		// A dash centred on a corner bends round it.
+		const pts =
+			n % per === 0
+				? [along(s - half), hex[n / per], along(s + half)]
+				: [along(s - half), along(s + half)];
+		free.push({ pts, w });
+	}
+	return { piece: [{ solid: [], free, terrain: true }], x: cx, y: cy };
+}
+
+/**
+ * The ground a design stands on, or null for none.
+ * @param {Design} D
+ * @returns {Ground | null}
+ */
+function groundOf(D) {
+	return D.ground && D.ground !== 'none' ? D.ground : null;
+}
+
+/**
+ * The ground a walled layout stands on — a lagoon, or a plane of another
+ * ground type (groundPlane()); the hex ground is a frame laid once the
+ * layout is (withHexTile()). A ring gets an ellipse a little larger than
+ * itself; a square enclosure — a parallelogram in this view, its sides
+ * receding to the right — one wide and deep enough to take its front-left
+ * and back-right corners too, so no wall stands off the ground.
+ * @param {Exclude<Ground, 'hex'>} kind
+ * @param {boolean} square
+ * @param {number} wrx
+ * @param {number} wry
+ * @returns {Placed}
+ */
+function enclosureGround(kind, square, wrx, wry) {
+	if (!square) return { piece: groundPlane(kind, wrx * 1.15, wry * 1.25) };
+	const { W, dv } = squareFootprint(wrx, wry);
+	// An ellipse k× the parallelogram's half-width takes its far corners
+	// (±half-width, ±half-depth) once its half-depth is ≥ that half-depth
+	// ÷ √(1 − 1/k²) — 0.83 × the depth at k = 1.25; plus a margin, so the
+	// corners stand in the water rather than on its edge.
+	return {
+		piece: groundPlane(kind, 1.25 * (W / 2 + dv[0] / 2) + 5, 0.9 * dv[1] + 5),
+		x: dv[0] / 2,
+		y: dv[1] / 2,
+	};
 }

@@ -77,8 +77,11 @@ import { place } from './render.js';
  *   whale-jaw arch
  * @property {'timber' | 'round' | 'mound' | 'stilt'} houseForm framed houses, round huts,
  *   turf mounds, or huts on stilts
- * @property {'land' | 'water'} ground what the settlement stands on (water: a lagoon with
- *   waves)
+ * @property {'none' | 'hex' | 'dirt' | 'grass' | 'farmland' | 'sand' | 'rock' | 'snow' | 'ice' | 'marsh' | 'lava' | 'water'} ground
+ *   what the settlement stands on: 'none' draws no ground; 'hex' a dashed hex tile behind it,
+ *   as a hex map's cell frames it (hexTile() in layouts3d.js); the others a plane
+ *   under the whole of it in their own colour and texture (groundPlane());
+ *   water a lagoon with waves
  * @property {number} stature building height factor (small folk < 1 < giants)
  * @property {number} scale building size factor; bigger means fewer of them
  * @property {number} variety 0..1: a mixed culture (a freeport) — the chance
@@ -145,7 +148,7 @@ export const DEFAULT_DESIGN = {
 	keep: 'city',
 	market: 'town',
 	houseForm: 'timber',
-	ground: 'land',
+	ground: 'none',
 	stature: 1,
 	scale: 1,
 	variety: 0,
@@ -235,7 +238,7 @@ export function makeDesign(seed) {
 		keep: pick(['none', 'city', 'city', 'town', 'all']),
 		market: pick(['none', 'town', 'town', 'all']),
 		houseForm: pick(['timber', 'timber', 'timber', 'timber', 'round', 'round', 'mound', 'stilt']),
-		ground: r() < 0.12 ? 'water' : 'land',
+		ground: r() < 0.12 ? 'water' : 'none',
 		stature: 0.8 + avg() * 0.4,
 		scale: 0.85 + avg() * 0.35,
 		flourish: avg(),
@@ -3518,6 +3521,24 @@ export function onStilts(parts, D) {
 }
 
 /**
+ * The ground plane a settlement or building stands on, of a ground type
+ * (Design.ground): an ellipse rx × ry under the whole of it, in the type's
+ * own colour and texture (the `ground-<type>` pattern role, patterns.js) —
+ * or, for water, the lagoon. Terrain, so ruins never break it. (The hex
+ * ground is a frame, not a plane: hexTile() in layouts3d.js.)
+ * @param {Exclude<Design['ground'], 'none' | 'hex'>} kind
+ * @param {number} rx
+ * @param {number} ry
+ * @returns {Part[]}
+ */
+export function groundPlane(kind, rx, ry) {
+	if (kind === 'water') return lagoon(rx, ry);
+	/** @type {Poly} */
+	const plane = ell(0, 0, rx, ry, 0, 360, 48).slice(0, -1);
+	return [{ solid: [plane], role: /** @type {Part['role']} */ (`ground-${kind}`), terrain: true }];
+}
+
+/**
  * Lagoon the settlement stands in: a water plane with wave ticks, drawn
  * under everything else.
  * @param {number} rx
@@ -3975,9 +3996,10 @@ function pickaxe(a, b) {
 }
 
 /**
- * Lighthouse on a rocky foot at the water's edge: tapered tower painted in
- * bands of the marker colour, a railed gallery, a glazed lantern throwing
- * light, and a cap in the culture's roof style.
+ * Lighthouse on a rocky foot: tapered tower painted in bands of the marker
+ * colour, a railed gallery, a glazed lantern throwing light, and a cap in
+ * the culture's roof style. It brings no sea of its own — the Water ground
+ * (a lagoon) puts it at sea, so the two never stack.
  * @param {Design} D
  * @returns {Part[]}
  */
@@ -3994,27 +4016,6 @@ export function lighthouse(D) {
 			...ell(0, y1, rAt(y1), rAt(y1) * k, 360, 180, 16),
 		]);
 	const flank = rect(r0 * 0.3, -r0, r0 * 2, h + r0 * 2);
-	/** @type {Poly} */
-	const sea = ell(1, -2.4, 17, 5.2, 0, 360, 40).slice(0, -1);
-	/** @type {Line[]} */
-	const waves = [];
-	for (const [x, y] of [
-		[-12, -4],
-		[-7, -6.4],
-		[9, -5.6],
-		[13, -3.2],
-		[3, -6.8],
-	])
-		waves.push({
-			pts: [
-				[x - 2, y],
-				[x - 1, y + 0.5],
-				[x, y],
-				[x + 1, y + 0.5],
-				[x + 2, y],
-			],
-			w: 0.5,
-		});
 	/** @type {Poly[]} */
 	const rocks = [
 		[
@@ -4045,9 +4046,8 @@ export function lighthouse(D) {
 	for (const f of [0.38, 0.62]) slits.push(rect(-0.6, h * f, 1.2, 3));
 	/** @type {Part[]} */
 	const parts = [
-		{ solid: [sea], role: 'water', lines: waves, terrain: true },
-		// One solid rock mass under the whole foot of the tower, so no sea
-		// shows through beneath it; the outlying stones merge into it.
+		// One solid rock mass under the whole foot of the tower; the outlying
+		// stones merge into it.
 		{
 			solid: [foundation(r0 + 3.4, r0 * k + 2.4), ...rocks.slice(0, 2)],
 			shadeArea: rect(1, -9, 13, 14),
@@ -4561,77 +4561,6 @@ function stakes(/** @type {number} */ x0, /** @type {number} */ x1, /** @type {n
 	}
 	out.push([x0, y - 1.6]);
 	return out;
-}
-
-/**
- * Gatehouse: a fortified gate on a short run of wall. Stone: a crenellated
- * gate block with a great arch between two round towers. Wood: a timber
- * gate tower in a stretch of palisade.
- * @param {Design} D
- * @param {{wood?: boolean}} [o]
- * @returns {Part[]}
- */
-export function gatehouse(D, o = {}) {
-	const wood = !!o.wood;
-	const span = wood ? 15 : 17,
-		wh = (wood ? 8 : 9) * D.stature;
-	if (wood) {
-		// The tower stands astride the palisade; the right run meets the
-		// middle of its side and draws after it.
-		const seat = gateSeat(D, wh + 7, () => 0);
-		return [
-			...wallRun(D, -span, -4, wh, true),
-			...gateTower(D, seat.y0, wh + 7, true),
-			...wallRun(D, seat.x, span, wh, true),
-		];
-	}
-	// The banner flies from the right-hand tower's top.
-	const tower = (/** @type {number} */ x, /** @type {boolean} */ flags) =>
-		place(roundTower(D, { r: 4.6, h: wh + 13, flags }), { x, y: -0.3 });
-	const gw = 12,
-		gh = wh + 7;
-	const P = boxProjector(7, D.perspective ?? DEFAULT_DESIGN.perspective, gh);
-	const gside = /** @type {Poly} */ ([
-		[gw / 2, 0],
-		P.back([gw / 2, 0]),
-		P.back([gw / 2, gh]),
-		[gw / 2, gh],
-	]);
-	const roof = /** @type {Poly} */ ([
-		[-gw / 2, gh],
-		[gw / 2, gh],
-		P.back([gw / 2, gh]),
-		P.back([-gw / 2, gh]),
-	]);
-	return [
-		...wallRun(D, -span - 4, -7, wh, false),
-		...wallRun(D, 7, span + 4, wh, false),
-		{ solid: [roof] },
-		{ solid: [gside], shaded: true, lines: hatch(gside, 65, D.hatch) },
-		{
-			solid: [crenellated(-gw / 2, gw / 2, 0, gh + 2.6, { merlon: 2.2, notch: 2 })],
-			fills: [archOpening(0, 0, 6.4, 9), rect(-3.2, gh - 4.4, 1.2, 3), rect(2, gh - 4.4, 1.2, 3)],
-			cuts: [
-				...[-1.6, 0, 1.6].map((x) => ({
-					pts: /** @type {Poly} */ ([
-						[x, 0],
-						[x, 7.6],
-					]),
-					w: 0.5,
-				})),
-				{
-					pts: /** @type {Poly} */ ([
-						[-3.2, 3.6],
-						[3.2, 3.6],
-					]),
-					w: 0.5,
-				},
-			],
-			lines: D.masonry ? stoneCourses(-gw / 2, gw / 2, 0, gh) : [],
-		},
-		...tower(-gw / 2 - 2, D.flourish > 0.5),
-		...tower(gw / 2 + 2, D.flags),
-	];
 }
 
 /**

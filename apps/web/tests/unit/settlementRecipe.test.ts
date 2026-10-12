@@ -5,6 +5,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	SETTLEMENT_BUILDINGS,
+	SETTLEMENT_GROUNDS,
 	cleanSettlementRecipe,
 	recipeKey,
 	recipeLabel,
@@ -26,6 +27,25 @@ describe('building recipes', () => {
 		expect(cleanSettlementRecipe(tower)).toEqual(tower);
 		expect(cleanSettlementRecipe({ ...tower, building: 'skyscraper' })).toBeUndefined();
 		expect(cleanSettlementRecipe({ ...tower, building: 'toString' })).toBeUndefined();
+	});
+	it("accept every ground type, and drop one they don't know", () => {
+		for (const ground of SETTLEMENT_GROUNDS)
+			expect(cleanSettlementRecipe({ ...tower, ground })?.ground).toBe(ground);
+		expect(cleanSettlementRecipe({ ...tower, ground: 'magma' })).not.toHaveProperty('ground');
+		expect(SETTLEMENT_GROUNDS).toEqual([
+			'none',
+			'hex',
+			'dirt',
+			'grass',
+			'farmland',
+			'sand',
+			'rock',
+			'snow',
+			'ice',
+			'marsh',
+			'lava',
+			'water',
+		]);
 	});
 	it('key apart from the settlement with the same knobs', () => {
 		const { building: _, ...plain } = tower;

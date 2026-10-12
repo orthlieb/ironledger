@@ -104,7 +104,22 @@ export const mapMarkerSchema = z.object({
         .enum(['auto', 'none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef'])
         .optional(),
       wallShape: z.enum(['round', 'square']).optional(),
-      ground: z.enum(['land', 'water']).optional(),
+      ground: z
+        .enum([
+          'none',
+          'hex',
+          'dirt',
+          'grass',
+          'farmland',
+          'sand',
+          'rock',
+          'snow',
+          'ice',
+          'marsh',
+          'lava',
+          'water',
+        ])
+        .optional(),
       stilts: z.boolean().optional(),
       harbor: z.boolean().optional(),
       ruin: z

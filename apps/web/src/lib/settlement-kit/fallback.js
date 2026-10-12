@@ -27,21 +27,14 @@ const BUILDING_ICONS = /** @type {Record<string, string>} */ ({
 	mine: 'mine',
 	well: 'well',
 	lighthouse: 'lighthouse',
-	caravel: 'harbor-dock',
 	warehouse: 'warehouse',
 	workshop: 'factory',
 	cathedral: 'cathedral',
 	'clock-tower': 'clocktower',
 	tent: 'camping-tent',
 	pavilion: 'medieval-pavilion',
-	gatehouse: 'medieval-gate',
-	'wooden-gate': 'wooden-gate',
 	'witch-hut': 'witches-hut',
 	wall: 'stone-wall',
-	'wall-tower': 'defensive-wall',
-	palisade: 'palisade',
-	dock: 'harbor-dock',
-	pier: 'wooden-pier',
 });
 
 /** Ruins of the buildings that have one baked. @type {Record<string, string>} */
@@ -55,7 +48,6 @@ const BUILDING_RUINS = {
 	mine: 'mine-ruin',
 	'round-tower': 'fortified-tower-ruin',
 	wall: 'broken-wall',
-	'wall-tower': 'broken-wall',
 };
 
 /**

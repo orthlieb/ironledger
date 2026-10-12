@@ -544,6 +544,249 @@ export const TILE_ART = {
 	bone: { tile: 7, scale: 1, grain: BONE_GRAIN, pores: BONE_PORES },
 };
 
+// ─── Ground planes ───────────────────────────────────────────────────────────
+// What a settlement or building stands on (Design.ground): a plane under the
+// whole of it (groundPlane() in pieces3d.js) in a fixed colour with its own
+// texture, as the wall materials have. Water is the lagoon (the `water`
+// role, with ink waves); 'none' draws no plane at all.
+
+/** Ground colours, fixed like the wall materials'. */
+export const GROUND_COLOURS = {
+	dirt: { body: '#B39874', dark: '#8C7253', light: '#CDB693' },
+	grass: { body: '#A9BA7C', blade: '#7A9455', light: '#C2D097' },
+	farmland: {
+		wheat: '#D8C27E',
+		chaff: '#BFA45E',
+		crop: '#A6B66F',
+		row: '#7F9450',
+		soil: '#A88A60',
+		furrow: '#86693F',
+		hedge: '#6F7A4A',
+	},
+	sand: { body: '#E6D3A1', grain: '#C9B07A', light: '#F2E5C4', ripple: '#CDB582' },
+	rock: { body: '#B2ABA0', crack: '#827C71', pebble: '#9A9387', light: '#CDC7BD' },
+	snow: { body: '#F2F5F7', drift: '#CCD7E1', speck: '#DCE4EB' },
+	ice: { body: '#D3E6EF', crack: '#97B9CB', sheen: '#F5FAFC', deep: '#BCD6E3' },
+	lava: { body: '#4B3B36', crust: '#3A2E2B', glow: '#D9542A', core: '#F5A03A' },
+	marsh: { body: '#8F9A69', pool: '#8EAAB2', rim: '#6F8A86', reed: '#56633A', mud: '#76704F' },
+};
+
+/** `n` points in a `size` tile, `margin` clear of its edges — so whatever
+ *  is drawn at them never crosses a seam. @param {number} size
+ *  @param {number} n @param {number} seed @param {number} margin */
+function scatter(size, n, seed, margin) {
+	const rand = rng(seed);
+	/** @type {[number, number][]} */
+	const out = [];
+	for (let i = 0; i < n; i++)
+		out.push([
+			r1(margin + rand() * (size - 2 * margin)),
+			r1(margin + rand() * (size - 2 * margin)),
+		]);
+	return out;
+}
+
+const DIRT_GROUND = speckles(8, 20, 41);
+/** Dirt: bare brown earth, speckled. @type {PatternDef} */
+const dirtGround = {
+	w: 8,
+	h: 8,
+	scale: 1.5,
+	body: ({ tone }) => {
+		const m = GROUND_COLOURS.dirt;
+		return (
+			`<rect width="8" height="8" style="fill:${tone(m.body)}"/>` +
+			`<g style="fill:${tone(m.dark)}">${DIRT_GROUND.dark}</g>` +
+			`<g style="fill:${tone(m.light)}">${DIRT_GROUND.light}</g>`
+		);
+	},
+};
+
+const GRASS_TUFTS = scatter(9, 6, 43, 1.3)
+	.map(([x, y]) => `M${x} ${y}l-0.55 -1.1M${x} ${y}v-1.35M${x} ${y}l0.55 -1.1`)
+	.join('');
+const GRASS_LIGHT = speckles(9, 8, 47);
+/** Grass: green sward with tufts of blades. @type {PatternDef} */
+const grassGround = {
+	w: 9,
+	h: 9,
+	scale: 1.5,
+	body: ({ tone }) => {
+		const m = GROUND_COLOURS.grass;
+		return (
+			`<rect width="9" height="9" style="fill:${tone(m.body)}"/>` +
+			`<g style="fill:${tone(m.light)}">${GRASS_LIGHT.dark}${GRASS_LIGHT.light}</g>` +
+			`<path style="stroke:${tone(m.blade)};stroke-width:0.24;fill:none;stroke-linecap:round" d="${GRASS_TUFTS}"/>`
+		);
+	},
+};
+
+/** Furrow lines across a field from x0 to x1, y0 to y1, `gap` apart. */
+const furrows = (
+	/** @type {number} */ x0,
+	/** @type {number} */ x1,
+	/** @type {number} */ y0,
+	/** @type {number} */ y1,
+	gap = 0.9,
+) => {
+	let d = '';
+	for (let y = y0 + gap / 2; y < y1; y += gap) d += `M${r1(x0 + 0.3)} ${r1(y)}H${r1(x1 - 0.3)}`;
+	return d;
+};
+/** Farmland: a patchwork of fields — wheat, a green crop in rows, ploughed
+ *  soil — furrowed across (rows that run away from the viewer read as
+ *  lines across in this view), with dark hedgerows between. @type {PatternDef} */
+const farmGround = {
+	w: 18,
+	h: 10,
+	// Fields larger than the other grounds' texture: a patchwork reads as
+	// fields only when each is a good few houses wide.
+	scale: 2.2,
+	body: ({ tone }) => {
+		const m = GROUND_COLOURS.farmland;
+		/** @param {string} c @param {number} x @param {number} y @param {number} w @param {number} h */
+		const field = (c, x, y, w, h) =>
+			`<rect x="${x}" y="${y}" width="${w}" height="${h}" style="fill:${tone(c)}"/>`;
+		/** @param {string} c @param {string} d @param {number} [w] */
+		const lines = (c, d, w = 0.2) =>
+			`<path style="stroke:${tone(c)};stroke-width:${w};fill:none;stroke-linecap:round" d="${d}"/>`;
+		return (
+			field(m.wheat, 0, 0, 10, 5) +
+			field(m.crop, 10, 0, 8, 5) +
+			field(m.soil, 0, 5, 6, 5) +
+			field(m.wheat, 6, 5, 12, 5) +
+			lines(m.chaff, furrows(0, 10, 0, 5) + furrows(6, 18, 5, 10)) +
+			lines(m.row, furrows(10, 18, 0, 5, 1.1), 0.35) +
+			lines(m.furrow, furrows(0, 6, 5, 10, 0.7), 0.25) +
+			// Hedgerows on the tile's top and left edges and between fields
+			// (the next tile draws the bottom and right ones).
+			lines(m.hedge, 'M0 0H18M0 5H18M0 0V10M10 0V5M6 5V10', 0.4)
+		);
+	},
+};
+
+const SAND_GRAIN = speckles(10, 26, 59);
+/** Sand: pale desert, stippled, with a few wind ripples. @type {PatternDef} */
+const sandGround = {
+	w: 10,
+	h: 10,
+	scale: 1.5,
+	body: ({ tone }) => {
+		const m = GROUND_COLOURS.sand;
+		return (
+			`<rect width="10" height="10" style="fill:${tone(m.body)}"/>` +
+			`<g style="fill:${tone(m.grain)}">${SAND_GRAIN.dark}</g>` +
+			`<g style="fill:${tone(m.light)}">${SAND_GRAIN.light}</g>` +
+			`<path style="stroke:${tone(m.ripple)};stroke-width:0.24;fill:none;stroke-linecap:round" d="M1.4 3.2q1.7 -0.9 3.4 0M5.4 7.4q1.6 -0.8 3.2 0M2.2 8.3q1.1 -0.5 2.2 0"/>`
+		);
+	},
+};
+
+/** Rock: grey stone ground, cracked, with pebbles catching the light. @type {PatternDef} */
+const rockGround = {
+	w: 10,
+	h: 10,
+	scale: 1.5,
+	body: ({ tone }) => {
+		const m = GROUND_COLOURS.rock;
+		const pebbles = scatter(10, 5, 61, 1.2);
+		return (
+			`<rect width="10" height="10" style="fill:${tone(m.body)}"/>` +
+			`<path style="stroke:${tone(m.crack)};stroke-width:0.22;fill:none;stroke-linecap:round;stroke-linejoin:round" d="M0.8 2.4l1.5 0.8l0.9 -0.7l1.4 1.2M5.6 6.1l1.2 -0.9l1.1 0.5l1.1 -0.8M1.6 7.6l1.3 0.6l0.6 1"/>` +
+			`<g style="fill:${tone(m.pebble)}">${pebbles.map(([x, y], i) => `<ellipse cx="${x}" cy="${y}" rx="${0.45 + (i % 3) * 0.15}" ry="${0.3 + (i % 2) * 0.1}"/>`).join('')}</g>` +
+			`<g style="fill:${tone(m.light)}">${pebbles.map(([x, y]) => `<circle cx="${r1(x - 0.15)}" cy="${r1(y - 0.1)}" r="0.14"/>`).join('')}</g>`
+		);
+	},
+};
+
+const SNOW_SPECKS = speckles(12, 10, 67);
+/** Snow: near-white, with a few soft blue-grey drifts. @type {PatternDef} */
+const snowGround = {
+	w: 12,
+	h: 12,
+	scale: 1.5,
+	body: ({ tone }) => {
+		const m = GROUND_COLOURS.snow;
+		return (
+			`<rect width="12" height="12" style="fill:${tone(m.body)}"/>` +
+			`<g style="fill:${tone(m.speck)}">${SNOW_SPECKS.dark}${SNOW_SPECKS.light}</g>` +
+			`<path style="stroke:${tone(m.drift)};stroke-width:0.35;fill:none;stroke-linecap:round" d="M1.5 3.6q2.2 -1.2 4.4 0M6.6 8.8q2.1 -1.1 4.2 0M2.2 10.2q1.2 -0.6 2.4 0"/>`
+		);
+	},
+};
+
+const MARSH_REEDS = scatter(12, 5, 71, 1.4)
+	.map(([x, y]) => `M${x} ${y}l-0.35 -1.3M${r1(x + 0.3)} ${y}v-1.6M${r1(x + 0.6)} ${y}l0.35 -1.2`)
+	.join('');
+const MARSH_MUD = speckles(12, 12, 73);
+/** Marsh: olive bog with pools of water and tufts of reeds. @type {PatternDef} */
+const marshGround = {
+	w: 12,
+	h: 12,
+	scale: 1.5,
+	body: ({ tone }) => {
+		const m = GROUND_COLOURS.marsh;
+		return (
+			`<rect width="12" height="12" style="fill:${tone(m.body)}"/>` +
+			`<g style="fill:${tone(m.mud)}">${MARSH_MUD.dark}</g>` +
+			`<g style="fill:${tone(m.pool)};stroke:${tone(m.rim)};stroke-width:0.2"><ellipse cx="3.6" cy="4.2" rx="2.2" ry="0.9"/><ellipse cx="8.4" cy="9" rx="1.7" ry="0.7"/></g>` +
+			`<path style="stroke:${tone(m.reed)};stroke-width:0.22;fill:none;stroke-linecap:round" d="${MARSH_REEDS}"/>`
+		);
+	},
+};
+
+/** Ice: pale blue sheet, hairline cracks and streaks of sheen. @type {PatternDef} */
+const iceGround = {
+	w: 12,
+	h: 12,
+	scale: 1.5,
+	body: ({ tone }) => {
+		const m = GROUND_COLOURS.ice;
+		return (
+			`<rect width="12" height="12" style="fill:${tone(m.body)}"/>` +
+			`<g style="fill:${tone(m.deep)}"><ellipse cx="8.6" cy="4.6" rx="2.2" ry="0.8"/><ellipse cx="3" cy="9.6" rx="1.6" ry="0.6"/></g>` +
+			`<path style="stroke:${tone(m.crack)};stroke-width:0.2;fill:none;stroke-linecap:round;stroke-linejoin:round" d="M1.2 2.6l1.8 1.1l1.2 -0.5l1.6 1.4M6.4 7.4l1.5 -0.6l1 0.9l1.6 -0.4M2.4 6.6l1.1 1.3l-0.4 0.9"/>` +
+			`<path style="stroke:${tone(m.sheen)};stroke-width:0.35;fill:none;stroke-linecap:round" d="M7.4 1.8l1.6 -0.9M8.3 2.7l1 -0.6M1.8 5.2l1.4 -0.8M6.6 10.6l1.4 -0.8"/>`
+		);
+	},
+};
+
+const LAVA_CRUST = speckles(12, 14, 79);
+/** Lava: dark basalt crust split by glowing fissures, with a pool or two of
+ *  molten rock. @type {PatternDef} */
+const lavaGround = {
+	w: 12,
+	h: 12,
+	scale: 1.5,
+	body: ({ tone }) => {
+		const m = GROUND_COLOURS.lava;
+		const veins =
+			'M1 3.2l2 0.7l1.4 -0.9l2.2 1.1l1.6 -0.6M5.2 8.6l1.8 -0.7l1.2 0.8l2 -0.5M1.6 9.8l1.3 -0.8';
+		return (
+			`<rect width="12" height="12" style="fill:${tone(m.body)}"/>` +
+			`<g style="fill:${tone(m.crust)}">${LAVA_CRUST.dark}${LAVA_CRUST.light}</g>` +
+			`<path style="stroke:${tone(m.glow)};stroke-width:0.6;fill:none;stroke-linecap:round;stroke-linejoin:round" d="${veins}"/>` +
+			`<path style="stroke:${tone(m.core)};stroke-width:0.2;fill:none;stroke-linecap:round;stroke-linejoin:round" d="${veins}"/>` +
+			`<ellipse cx="9" cy="2.6" rx="1.5" ry="0.6" style="fill:${tone(m.glow)}"/>` +
+			`<ellipse cx="9" cy="2.6" rx="0.8" ry="0.3" style="fill:${tone(m.core)}"/>`
+		);
+	},
+};
+
+/** The ground types that draw a textured plane, each its pattern role
+ *  `ground-<type>` — 'none' draws none, and water is the lagoon. */
+export const GROUND_TYPES = [
+	'dirt',
+	'grass',
+	'farmland',
+	'sand',
+	'rock',
+	'snow',
+	'ice',
+	'marsh',
+	'lava',
+];
+
 /** A flat tile in one fixed colour — for tinted lines (ringTextures.js),
  *  which paint in a material's own colour rather than ink.
  *  @param {string} colour @returns {PatternDef} */
@@ -587,6 +830,24 @@ export const PATTERNS = {
 	'wall-earth-grit': flat(MATERIALS.earth.dark),
 	'wall-earth-pebble': flat(MATERIALS.earth.light),
 	'wall-bone-grain': flat(MATERIALS.bone.grain),
+	'ground-dirt': dirtGround,
+	'ground-dirt-shade': dirtGround,
+	'ground-grass': grassGround,
+	'ground-grass-shade': grassGround,
+	'ground-farmland': farmGround,
+	'ground-farmland-shade': farmGround,
+	'ground-sand': sandGround,
+	'ground-sand-shade': sandGround,
+	'ground-rock': rockGround,
+	'ground-rock-shade': rockGround,
+	'ground-snow': snowGround,
+	'ground-snow-shade': snowGround,
+	'ground-marsh': marshGround,
+	'ground-marsh-shade': marshGround,
+	'ground-ice': iceGround,
+	'ground-ice-shade': iceGround,
+	'ground-lava': lavaGround,
+	'ground-lava-shade': lavaGround,
 };
 
 /** How much of each colour a -shade tile keeps (the rest is ink) — the
@@ -611,8 +872,8 @@ export function paletteTone(role, ink, mix) {
  *  to paint at all). */
 export const PATTERN_MIN_PX = 0.35;
 
-/** Flat colour of each patterned wall — its material at a glance, for an
- *  icon drawn too small for the pattern to resolve.
+/** Flat colour of each patterned wall (and ground plane) — its material at
+ *  a glance, for an icon drawn too small for the pattern to resolve.
  *  @type {Record<string, string>} */
 export const FLAT_WALLS = {
 	'wall-stone': '#BEBCB6',
@@ -627,6 +888,16 @@ export const FLAT_WALLS = {
 	'wall-reef-ring': '#DEDCD6',
 	'wall-earth-ring': '#8A6843',
 	'wall-bone-ring': '#E9E5DB',
+	// The ground planes, too.
+	'ground-dirt': '#AE9370',
+	'ground-grass': '#A2B476',
+	'ground-farmland': '#C6B577',
+	'ground-sand': '#E1CD9C',
+	'ground-rock': '#AAA398',
+	'ground-snow': '#EEF2F5',
+	'ground-marsh': '#8E9A6C',
+	'ground-ice': '#CFE2EB',
+	'ground-lava': '#6E3A2A',
 };
 
 /** Layers of line-work texture: the tinted lines laid round ring walls

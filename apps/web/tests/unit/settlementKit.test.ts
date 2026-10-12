@@ -28,7 +28,6 @@ import {
 } from '../../src/lib/settlement-kit/generate.js';
 import {
 	BUILDINGS,
-	RETIRED_BUILDINGS,
 	TEMPLATES,
 	UNWALLED_BUILDINGS,
 	building,
@@ -56,6 +55,7 @@ import {
 } from '../../src/lib/settlement-kit/pieces3d.js';
 import {
 	FLAT_WALLS,
+	GROUND_TYPES,
 	TEXTURE_ROLES,
 	paletteTone,
 	patternDefs,
@@ -283,21 +283,9 @@ describe('buildings (the Buildings tab)', () => {
 	});
 	it('keeps the reference row of pieces the icon bake draws by name', () => {
 		const names = pieces(DEFAULT_DESIGN).map(([n]) => n);
-		expect(names).toHaveLength(33);
+		expect(names).toHaveLength(26);
 		expect(names).toContain('Camp'); // a Settlement-builder size, not a building
 		expect(BUILDINGS).toHaveLength(25);
-	});
-	it('still draws a retired building for a marker that has one, but no longer offers it', () => {
-		const keys = BUILDINGS.map(([k]) => k);
-		for (const key of RETIRED_BUILDINGS) {
-			expect(keys, key).not.toContain(key);
-			const svg = generateSettlementSvg(
-				{ tier: 'stead', culture: 'default', seed: 3, building: key },
-				null,
-			);
-			expect(svg, key).not.toContain('"Default gable house"');
-			expect(svg, key).toMatch(/data-role="sil"[^>]* d="M/);
-		}
 	});
 	it.each(BUILDINGS.map(([key]) => key))('draws %s on its own', (key) => {
 		const svg = generateSettlementSvg(
@@ -331,20 +319,17 @@ describe('buildings (the Buildings tab)', () => {
 		);
 		expect(roles(square)).toContain('wall-wood');
 	});
-	it.each([
-		['wall', 'wall-stone'],
-		['wall-tower', 'wall-stone'],
-		['palisade', 'wall-wood'],
-		['gatehouse', 'wall-stone'],
-		['wooden-gate', 'wall-wood'],
-	] as const)('draws %s in its own material, never enclosed', (key, role) => {
-		const svg = generateSettlementSvg(
-			{ tier: 'stead', culture: 'default', seed: 3, building: key, walls: 'hedge' },
-			null,
-		);
-		expect(roles(svg)).toContain(role);
-		expect([...roles(svg)].some((r) => r.startsWith('wall-hedge'))).toBe(false);
-	});
+	it.each([['wall', 'wall-stone']] as const)(
+		'draws %s in its own material, never enclosed',
+		(key, role) => {
+			const svg = generateSettlementSvg(
+				{ tier: 'stead', culture: 'default', seed: 3, building: key, walls: 'hedge' },
+				null,
+			);
+			expect(roles(svg)).toContain(role);
+			expect([...roles(svg)].some((r) => r.startsWith('wall-hedge'))).toBe(false);
+		},
+	);
 	it('lays a lagoon under a building on water', () => {
 		const on = (ground?: 'water') =>
 			roles(
@@ -361,13 +346,6 @@ describe('buildings (the Buildings tab)', () => {
 			);
 		expect(on()).not.toContain('water');
 		expect(on('water')).toContain('water');
-	});
-	it('never walls a caravel', () => {
-		const svg = generateSettlementSvg(
-			{ tier: 'stead', culture: 'default', seed: 3, building: 'caravel', walls: 'stone' },
-			null,
-		);
-		expect([...roles(svg)].some((r) => r.startsWith('wall-stone'))).toBe(false);
 	});
 	it('agrees with the app on which buildings are never walled', () => {
 		expect([...UNWALLED_BUILDINGS].sort()).toEqual([...APP_UNWALLED_BUILDINGS].sort());
@@ -393,6 +371,108 @@ describe('buildings (the Buildings tab)', () => {
 				null,
 			);
 		expect(tower(1)).not.toBe(tower(2));
+	});
+});
+
+describe('ground', () => {
+	const svgOf = (ground: string, extra: Record<string, unknown> = {}) =>
+		generateSettlementSvg(
+			{ tier: 'village', culture: 'default', seed: 3, ground, ...extra } as Parameters<
+				typeof generateSettlementSvg
+			>[0],
+			null,
+		);
+	const rolesOf = (svg: string) => [...svg.matchAll(/data-role="([\w-]+)"/g)].map((m) => m[1]);
+	it("draws no ground for 'none', and a lagoon on water", () => {
+		const roles = rolesOf(svgOf('none'));
+		expect(roles.some((r) => r.startsWith('ground-') || r === 'water')).toBe(false);
+		expect(rolesOf(svgOf('water'))).toContain('water');
+	});
+	it.each(GROUND_TYPES)('lays a %s plane, textured, under a settlement and a building', (g) => {
+		for (const svg of [svgOf(g), svgOf(g, { tier: 'stead', building: 'barn', walls: 'stone' })]) {
+			expect(rolesOf(svg)).toContain(`ground-${g}`);
+			expect(svg).toContain(`id="pat-ground-${g}-`);
+			expect(svg).toMatch(new RegExp(`data-role="ground-${g}"[^/]*fill="url\\(#pat-ground-${g}-`));
+		}
+	});
+	it.each(GROUND_TYPES)('draws a %s plane flat with Texture off', (g) => {
+		const svg = generateSettlementSvg(
+			{ tier: 'village', culture: 't', seed: 3, ground: g } as Parameters<
+				typeof generateSettlementSvg
+			>[0],
+			{ key: 't', name: 'T', design: { texture: false }, palette: PARCHMENT },
+		);
+		expect(svg).toContain(`data-role="ground-${g}" fill="${FLAT_WALLS[`ground-${g}`]}"`);
+	});
+	it('draws the hex ground as a dashed hex tile behind it — ovals for the rest', () => {
+		const D = { ...DEFAULT_DESIGN };
+		// A lone building's: free dashes only, no fill.
+		const tile = building('barn', { ...D, ground: 'hex' }, { seed: 2 })[0];
+		expect(tile.piece[0].solid).toHaveLength(0);
+		expect(tile.piece[0].free?.length).toBeGreaterThan(12);
+		// A walled building's and a settlement's draw no ground plane.
+		for (const r of [
+			{ tier: 'city', walls: 'stone' },
+			{ tier: 'stead', building: 'church', walls: 'hedge' },
+		] as const) {
+			const svg = generateSettlementSvg({ culture: 'default', seed: 3, ground: 'hex', ...r }, null);
+			expect(rolesOf(svg).some((x) => x.startsWith('ground-') || x === 'water')).toBe(false);
+			expect(svg).not.toBe(generateSettlementSvg({ culture: 'default', seed: 3, ...r }, null));
+		}
+		// Any other ground keeps its oval: a 48-point ellipse.
+		const grass = building('barn', { ...D, ground: 'grass' }, { seed: 2 })[0];
+		expect(grass.piece[0].solid[0]).toHaveLength(48);
+	});
+	it("sizes the hex tile's dashes to the icon, so every hex reads the same", () => {
+		const D = { ...DEFAULT_DESIGN, ground: 'hex' as const };
+		/** Dash weight ÷ the icon's span (its solids, banners aside, and the
+		 *  tile's dashes). */
+		const ratio = (items: ReturnType<typeof building>) => {
+			const tile = items[0].piece[0];
+			const pts = [
+				...items.flatMap((it) =>
+					it.piece
+						.filter((p) => p.role !== 'flag')
+						.flatMap((p) =>
+							p.solid
+								.flat()
+								.map(([x, y]) => [(it.x ?? 0) + x * (it.s ?? 1), (it.y ?? 0) + y * (it.s ?? 1)]),
+						),
+				),
+				...(tile.free ?? []).flatMap((l) =>
+					l.pts.map(([x, y]) => [(items[0].x ?? 0) + x, (items[0].y ?? 0) + y]),
+				),
+			];
+			const xs = pts.map(([x]) => x),
+				ys = pts.map(([, y]) => y);
+			const span = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+			return (tile.free?.[0].w ?? 0) / span;
+		};
+		const house = ratio(building('gable-house', D, { seed: 5 }));
+		for (const [label, items] of [
+			['tower', building('round-tower', D, { seed: 5 })],
+			['walled church', building('church', D, { seed: 5, walls: 'hedge' })],
+			['city', settlement('city', D, { seed: 5, walls: 'stone' })],
+		] as const)
+			expect(Math.abs(ratio(items) / house - 1), label).toBeLessThan(0.1);
+	});
+	it("centres a building's ground on the building, not on its banner", () => {
+		// A round tower stands at x = 0 with its banner streaming off to one
+		// side; its ground — an oval or a hex — still centres on the tower.
+		for (const ground of ['grass', 'hex'] as const) {
+			const [plane] = building('round-tower', { ...DEFAULT_DESIGN, ground }, { seed: 5 });
+			expect(Math.abs(plane.x ?? 0), ground).toBeLessThan(0.5);
+		}
+	});
+	it('keeps the ground pattern tiles compact', () => {
+		for (const g of GROUND_TYPES) {
+			const { defs } = patternDefs(
+				[`ground-${g}`],
+				(r) => paletteTone(r, '#000000', (a) => a),
+				't',
+			);
+			expect(defs.length, g).toBeLessThan(6_000);
+		}
 	});
 });
 
