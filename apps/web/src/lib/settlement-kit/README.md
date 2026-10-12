@@ -124,7 +124,7 @@ paints them in the material's own colour (`wall-hedge-cane`,
 `wall-earth-pebble`, `wall-bone-grain`) instead of ink. Stone courses,
 palisade seams and bone seams — like masonry courses and barn planks on
 buildings — stay ink but paint in a layer of their own, `ink-texture`.
-Flat walls (square enclosures, gatehouse wings) keep the full tiles.
+Flat walls (square enclosures, a standalone wall) keep the full tiles.
 
 All of that line-work is texture (`TEXTURE_ROLES` in `patterns.js`): a
 culture with `texture` off draws none of it, its walls in flat material
@@ -341,8 +341,7 @@ in five places") for the plumbing contract when adding a new one.
 puts a small ring or square wall of its own round it, fitted to its
 footprint the way a settlement's is (`enclosed()`), with up to two towers
 where the wall type carries them — never round the `UNWALLED_BUILDINGS`:
-the Wall, in its own stone. (The gatehouses, wall tower, palisade,
-caravel, dock and pier are reference pieces only, for the baked icons.)
+the Wall, in its own stone.
 A culture on water lays a lagoon under it. `seed` varies it as a settlement varies its
 buildings — `jitterDesign()` (pitch, sweep,
 ornament, now and then the windows or doors), a round tower's girth and
@@ -363,10 +362,10 @@ part the Buildings tab offers). Partial map, as a quick index:
   or round per `steeple`), `clocktower`, `lighthouse`, `windmill`.
 - Religious + civic: `church`, `cathedral`, `keep`, `market`, `well`,
   `witchHut`, `mine`.
-- Walls + gates: `ringWall`, `squareWall`, `wallSegment`, `gatehouse`,
-  `jawGate`.
+- Walls + gates: `ringWall`, `squareWall`, `wallSegment`, `jawGate`.
 - Terrain: `groundPlane` (a ground type's plane, or the lagoon), `lagoon`.
-- Encampment: `tent`, `pavilion`, `caravel`, `pier`, `dock`, `camp`.
+- Encampment: `tent`, `pavilion`, `camp`.
+- Harbour (a settlement's): `caravel`, `pier`.
 - Wrappers: `onStilts(parts, D)` lifts any piece onto a timber-post
   deck sized to its own extent (used by `recipe.stilts`); `stiltHut` is
   a thin wrapper over `onStilts(roundHut(...))`.
@@ -383,7 +382,7 @@ Nearly all the time goes into Clipper unions, so they're balanced: each
 part's strokes, and each layer's pieces, are unioned pairwise in a tree
 (`unionAll`) rather than folded one at a time. On a 2.8 GHz Xeon a village
 draws in ~0.1 s, a city in ~1.2 s and a freeport in 2–8 s (ornate cultures
-are the slow end); the icon baker runs all 77 core icons in ~16 s.
+are the slow end); the icon baker runs all 71 core icons in ~25 s.
 
 The caller (the main app's `mapLayered.ts`, the `build-settlement-icons.mjs`
 script, or `generateSettlementSvg()`) assigns colours per role, puts the

@@ -283,7 +283,7 @@ describe('buildings (the Buildings tab)', () => {
 	});
 	it('keeps the reference row of pieces the icon bake draws by name', () => {
 		const names = pieces(DEFAULT_DESIGN).map(([n]) => n);
-		expect(names).toHaveLength(33);
+		expect(names).toHaveLength(26);
 		expect(names).toContain('Camp'); // a Settlement-builder size, not a building
 		expect(BUILDINGS).toHaveLength(25);
 	});

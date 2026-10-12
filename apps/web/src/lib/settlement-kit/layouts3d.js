@@ -17,7 +17,6 @@ import {
 	church,
 	clocktower,
 	gableHouse,
-	gatehouse,
 	groundPlane,
 	keep,
 	lighthouse,
@@ -738,8 +737,7 @@ function normalized(items, k = normalScale(items)) {
  * Design; a Buildings-tab `seed` varies a house's details and a tower's
  * height, and the reference row passes none. A null key is a reference
  * piece (drawn for the baked icons) the Buildings tab doesn't offer — a
- * camp is a Settlement-builder size; the gatehouses, wall tower, palisade,
- * caravel, dock and pier were dropped from the tab.
+ * camp is a Settlement-builder size.
  * @type {[string | null, string, (D: Design, seed?: number) => Placed[]][]}
  */
 const PIECES = [
@@ -797,7 +795,6 @@ const PIECES = [
 	['mine', 'Mine', (D) => [{ piece: mine(D) }]],
 	['well', 'Well', (D) => [{ piece: well(D), s: 2.2 }]],
 	['lighthouse', 'Lighthouse', (D) => [{ piece: lighthouse(D) }]],
-	[null, 'Caravel', (D) => [{ piece: caravel(D) }]],
 	[
 		'warehouse',
 		'Warehouse',
@@ -808,14 +805,8 @@ const PIECES = [
 	['clock-tower', 'Clock tower', (D) => [{ piece: clocktower(D) }]],
 	['tent', 'Tent', (D) => [{ piece: tent(D) }]],
 	['pavilion', 'Pavilion', (D) => [{ piece: pavilion(D) }]],
-	[null, 'Gatehouse', (D) => [{ piece: gatehouse(D) }]],
-	[null, 'Wooden gate', (D) => [{ piece: gatehouse(D, { wood: true }) }]],
 	['witch-hut', 'Witch hut', (D) => [{ piece: witchHut(D) }]],
 	['wall', 'Wall', (D) => [{ piece: wallSegment(D) }]],
-	[null, 'Wall tower', (D) => [{ piece: wallSegment(D, { tower: true }) }]],
-	[null, 'Palisade', (D) => [{ piece: wallSegment(D, { wood: true }) }]],
-	[null, 'Dock', (D) => dock(D, { ship: true })],
-	[null, 'Pier', (D) => dock(D)],
 ];
 
 /** Single pieces for the reference row. @param {Design} D @returns {[string, Placed[]][]} */
@@ -1074,16 +1065,4 @@ function enclosureGround(kind, square, wrx, wry) {
 		x: dv[0] / 2,
 		y: dv[1] / 2,
 	};
-}
-
-/**
- * A harbour on its own: the round sea with a pier, and (with `ship`) the
- * caravel moored behind it.
- * @param {Design} D
- * @param {{ship?: boolean}} [o]
- * @returns {Placed[]}
- */
-export function dock(D, o = {}) {
-	const h = harbor(D, 34, 12, 0, 0);
-	return [...h.water, ...h.piers.filter((p) => o.ship || !('ship' in p))];
 }

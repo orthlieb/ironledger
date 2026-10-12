@@ -310,8 +310,8 @@ and every culture knob. It's used three ways:
   format above:
   - **Core icons** in `static/map/settlement/`, in the default culture and
     Parchment palette: single buildings (houses, towers, cathedral, clock
-    tower, mill, mine, lighthouse, tents, pavilion, gatehouses, walls,
-    docks…), settlements by size and wall, and ruins. Each replaces any old
+    tower, mill, mine, lighthouse, tents, pavilion, a stone wall…),
+    settlements by size and wall, and ruins. Each replaces any old
     icon of the same slug; `RETIRED` lists the old hand-drawn buildings
     the kit drops outright. `settlement/` holds nothing else: the
     hand-drawn props that used to share it now live in the categories

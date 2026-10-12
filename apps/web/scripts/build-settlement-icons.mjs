@@ -104,13 +104,7 @@ const CORE_ICONS = {
 	// Scaled like the standalone pieces so its lines match (see MIN_PIECE_SIZE).
 	'barracks-tent': ['settlement', () => [{ piece: tent(D, { w: 22 }), s: 1.15 }]],
 	'medieval-pavilion': ['settlement', () => piece(D, 'Pavilion')],
-	'medieval-gate': ['settlement', () => piece(D, 'Gatehouse')],
-	'wooden-gate': ['settlement', () => piece(D, 'Wooden gate')],
 	'stone-wall': ['settlement', () => piece(D, 'Wall')],
-	'defensive-wall': ['settlement', () => piece(D, 'Wall tower')],
-	palisade: ['settlement', () => piece(D, 'Palisade')],
-	'harbor-dock': ['settlement', () => piece(D, 'Dock')],
-	'wooden-pier': ['settlement', () => piece(D, 'Pier')],
 	// The Elves' castle, in the default palette: concave towers and walls.
 	'elven-castle': ['settlement', () => settlement('hold', ELVES, { walls: 'stone' })],
 	camp: ['settlement', () => settlement('camp', D)],
@@ -206,6 +200,13 @@ const RETIRED = [
 	'settlement/wooden-wall',
 	'site/castle-ruins',
 	'site/damaged-house',
+	// Wall, gate and harbour pieces the kit no longer draws as icons.
+	'settlement/medieval-gate',
+	'settlement/wooden-gate',
+	'settlement/defensive-wall',
+	'settlement/palisade',
+	'settlement/harbor-dock',
+	'settlement/wooden-pier',
 ];
 
 const t0 = Date.now();
