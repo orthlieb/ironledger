@@ -87,18 +87,21 @@ export const UNWALLED_BUILDINGS: ReadonlySet<string> = new Set([
 	'pier',
 ]);
 
-/** What a settlement or building stands on (Design.ground): 'land' draws no
- *  ground (the UI's "None"); the rest a plane under it in their own colour
- *  and texture; water a lagoon. */
+/** What a settlement or building stands on (Design.ground): 'none' draws no
+ *  ground; the rest a plane under it in their own colour and texture; water
+ *  a lagoon. ('land' is the old name for 'none': cleanSettlementRecipe()
+ *  turns it into 'none', and the generator draws it as none.) */
 export const SETTLEMENT_GROUNDS = [
-	'land',
+	'none',
 	'dirt',
 	'grass',
 	'farmland',
 	'sand',
 	'rock',
 	'snow',
+	'ice',
 	'marsh',
+	'lava',
 	'water',
 ] as const;
 export type SettlementGround = (typeof SETTLEMENT_GROUNDS)[number];
@@ -196,8 +199,9 @@ export function cleanSettlementRecipe(v: unknown): SettlementRecipe | undefined 
 	};
 	if (SETTLEMENT_WALLS.includes(o.walls as SettlementWalls)) out.walls = o.walls as SettlementWalls;
 	if (o.wallShape === 'round' || o.wallShape === 'square') out.wallShape = o.wallShape;
-	if (SETTLEMENT_GROUNDS.includes(o.ground as SettlementGround))
-		out.ground = o.ground as SettlementGround;
+	const ground = o.ground === 'land' ? 'none' : o.ground;
+	if (SETTLEMENT_GROUNDS.includes(ground as SettlementGround))
+		out.ground = ground as SettlementGround;
 	if (o.stilts === true) out.stilts = true;
 	if (o.harbor === true) out.harbor = true;
 	const ruin = o.ruin as { decay?: unknown; burned?: unknown } | undefined;

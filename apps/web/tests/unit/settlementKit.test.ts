@@ -454,10 +454,19 @@ describe('ground', () => {
 			null,
 		);
 	const rolesOf = (svg: string) => [...svg.matchAll(/data-role="([\w-]+)"/g)].map((m) => m[1]);
-	it('draws no ground on plain land, and a lagoon on water', () => {
-		const land = rolesOf(svgOf('land'));
-		expect(land.some((r) => r.startsWith('ground-') || r === 'water')).toBe(false);
+	it("draws no ground for 'none' (or 'land', its old name), and a lagoon on water", () => {
+		for (const none of ['none', 'land']) {
+			const roles = rolesOf(svgOf(none));
+			expect(
+				roles.some((r) => r.startsWith('ground-') || r === 'water'),
+				none,
+			).toBe(false);
+		}
 		expect(rolesOf(svgOf('water'))).toContain('water');
+	});
+	it("upgrades a culture's ground 'land' to 'none'", () => {
+		expect(upgradeDesign({ ground: 'land' as never }).ground).toBe('none');
+		expect(recipeDesign({ tier: 'village', culture: 'x', seed: 1 }, null).ground).toBe('none');
 	});
 	it.each(GROUND_TYPES)('lays a %s plane, textured, under a settlement and a building', (g) => {
 		for (const svg of [svgOf(g), svgOf(g, { tier: 'stead', building: 'barn', walls: 'stone' })]) {

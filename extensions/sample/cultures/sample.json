@@ -7,7 +7,7 @@
     "towerBow": -1,
     "wallBow": 0.6,
     "houseForm": "timber",
-    "ground": "land",
+    "ground": "none",
     "stature": 1,
     "scale": 1,
     "flourish": 1,

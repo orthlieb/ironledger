@@ -51,7 +51,19 @@ export interface MapMarker {
     seed: number;
     walls?: string;
     wallShape?: 'round' | 'square';
-    ground?: 'land' | 'dirt' | 'grass' | 'farmland' | 'sand' | 'rock' | 'snow' | 'marsh' | 'water';
+    ground?:
+      | 'none'
+      | 'land'
+      | 'dirt'
+      | 'grass'
+      | 'farmland'
+      | 'sand'
+      | 'rock'
+      | 'snow'
+      | 'ice'
+      | 'marsh'
+      | 'lava'
+      | 'water';
     stilts?: boolean;
     harbor?: boolean;
     ruin?: { decay: number; burned?: boolean };

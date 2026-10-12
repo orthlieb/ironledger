@@ -599,7 +599,8 @@ export function settlement(tier, D, o = {}) {
 	// for everything else, so it goes with port.water at the back of the
 	// stacking order — if it were in `ground` (drawn after `ring.back`) the
 	// back half of the ring wall would be painted over by it.
-	if (D.ground && D.ground !== 'land') port.water.push(enclosureGround(D.ground, square, wrx, wry));
+	const g = groundOf(D);
+	if (g) port.water.push(enclosureGround(g, square, wrx, wry));
 	/** @param {import('./ruins3d.js').RuinPlaced[]} list */
 	const finish = (list) => (o.ruin ? ruinPlaced(list, { ...o.ruin, seed: o.seed ?? 1 }) : list);
 	if (wall === 'none') return finish([...port.water, ...ground, ...inside, ...port.piers]);
@@ -849,12 +850,15 @@ export function building(key, D, o = {}) {
 	const make = (PIECES.find(([k]) => k === key) ?? PIECES[0])[2];
 	let items = make(own, 1 + Math.floor(r() * 999_999));
 	if (walls && !UNWALLED_BUILDINGS.has(key)) items = enclosed(D, items, walls);
-	else if (D.ground && D.ground !== 'land') {
+	else {
 		// A building stands on its ground — water-dwellers' in a lagoon — as
 		// a settlement does (an enclosure lays its own, under the whole of it).
-		const { x0, x1 } = placedExtent(items);
-		const rx = Math.max(16, (x1 - x0) / 2 + 8);
-		items = [{ piece: groundPlane(D.ground, rx, rx * 0.4), x: (x0 + x1) / 2 }, ...items];
+		const g = groundOf(D);
+		if (g) {
+			const { x0, x1 } = placedExtent(items);
+			const rx = Math.max(16, (x1 - x0) / 2 + 8);
+			items = [{ piece: groundPlane(g, rx, rx * 0.4), x: (x0 + x1) / 2 }, ...items];
+		}
 	}
 	if (o.ruin) items = ruinPlaced(items, { ...o.ruin, seed });
 	return normalized(items);
@@ -918,12 +922,26 @@ function enclosed(D, items, wall) {
 		shape: D.wallShape,
 		towers: Math.min(2, D.wallTowers),
 	});
+	const g = groundOf(D);
 	return [
-		...(D.ground && D.ground !== 'land' ? [enclosureGround(D.ground, square, wrx, wry)] : []),
+		...(g ? [enclosureGround(g, square, wrx, wry)] : []),
 		...ring.back,
 		...items.map((it) => ({ ...it, x: (it.x ?? 0) + ox, y: (it.y ?? 0) + oy })),
 		...ring.front,
 	];
+}
+
+/** @typedef {Exclude<Design['ground'], 'none'>} Ground */
+
+/**
+ * The ground a design stands on, or null for none — 'land', its old name,
+ * included, for a design that hasn't been through upgradeDesign().
+ * @param {Design} D
+ * @returns {Ground | null}
+ */
+function groundOf(D) {
+	const g = /** @type {string | undefined} */ (D.ground);
+	return g && g !== 'none' && g !== 'land' ? /** @type {Ground} */ (g) : null;
 }
 
 /**
@@ -932,7 +950,7 @@ function enclosed(D, items, wall) {
  * itself; a square enclosure — a parallelogram in this view, its sides
  * receding to the right — one wide and deep enough to take its front-left
  * and back-right corners too, so no wall stands off the ground.
- * @param {Exclude<Design['ground'], 'land'>} kind
+ * @param {Ground} kind
  * @param {boolean} square
  * @param {number} wrx
  * @param {number} wry

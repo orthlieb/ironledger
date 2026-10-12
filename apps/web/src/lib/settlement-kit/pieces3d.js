@@ -77,8 +77,9 @@ import { place } from './render.js';
  *   whale-jaw arch
  * @property {'timber' | 'round' | 'mound' | 'stilt'} houseForm framed houses, round huts,
  *   turf mounds, or huts on stilts
- * @property {'land' | 'dirt' | 'grass' | 'farmland' | 'sand' | 'rock' | 'snow' | 'marsh' | 'water'} ground
- *   what the settlement stands on: 'land' draws no ground; the others a plane
+ * @property {'none' | 'dirt' | 'grass' | 'farmland' | 'sand' | 'rock' | 'snow' | 'ice' | 'marsh' | 'lava' | 'water'} ground
+ *   what the settlement stands on: 'none' draws no ground (upgradeDesign()
+ *   turns the old name, 'land', into it); the others a plane
  *   under the whole of it in their own colour and texture (groundPlane());
  *   water a lagoon with waves
  * @property {number} stature building height factor (small folk < 1 < giants)
@@ -147,7 +148,7 @@ export const DEFAULT_DESIGN = {
 	keep: 'city',
 	market: 'town',
 	houseForm: 'timber',
-	ground: 'land',
+	ground: 'none',
 	stature: 1,
 	scale: 1,
 	variety: 0,
@@ -237,7 +238,7 @@ export function makeDesign(seed) {
 		keep: pick(['none', 'city', 'city', 'town', 'all']),
 		market: pick(['none', 'town', 'town', 'all']),
 		houseForm: pick(['timber', 'timber', 'timber', 'timber', 'round', 'round', 'mound', 'stilt']),
-		ground: r() < 0.12 ? 'water' : 'land',
+		ground: r() < 0.12 ? 'water' : 'none',
 		stature: 0.8 + avg() * 0.4,
 		scale: 0.85 + avg() * 0.35,
 		flourish: avg(),
@@ -273,13 +274,17 @@ export function makeDesign(seed) {
 /**
  * Bring a stored design (a culture plugin, an imported playground export)
  * up to date: the legacy `towerRoof: 'crenel'` becomes a bare crenellated
- * top (`towerRoof: 'none'`, `towerCrenel: true`).
+ * top (`towerRoof: 'none'`, `towerCrenel: true`), and the old name for no
+ * ground, `ground: 'land'`, becomes `'none'`.
  * @template {Partial<Design>} T
  * @param {T} D
  * @returns {T}
  */
 export function upgradeDesign(D) {
-	return D.towerRoof === 'crenel' ? { ...D, towerRoof: 'none', towerCrenel: true } : D;
+	let out = D;
+	if (out.towerRoof === 'crenel') out = { ...out, towerRoof: 'none', towerCrenel: true };
+	if (/** @type {string | undefined} */ (out.ground) === 'land') out = { ...out, ground: 'none' };
+	return out;
 }
 
 /**
@@ -3524,7 +3529,7 @@ export function onStilts(parts, D) {
  * (Design.ground): an ellipse rx × ry under the whole of it, in the type's
  * own colour and texture (the `ground-<type>` pattern role, patterns.js) —
  * or, for water, the lagoon. Terrain, so ruins never break it.
- * @param {Exclude<Design['ground'], 'land'>} kind
+ * @param {Exclude<Design['ground'], 'none'>} kind
  * @param {number} rx
  * @param {number} ry
  * @returns {Part[]}

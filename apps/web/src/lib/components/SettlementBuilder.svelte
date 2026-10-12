@@ -103,14 +103,16 @@
 	type Ground = 'culture' | SettlementGround;
 	const GROUNDS: { value: Ground; label: string }[] = [
 		{ value: 'culture', label: "Culture's own" },
-		{ value: 'land', label: 'None' },
+		{ value: 'none', label: 'None' },
 		{ value: 'dirt', label: 'Dirt' },
 		{ value: 'grass', label: 'Grass' },
 		{ value: 'farmland', label: 'Farmland' },
 		{ value: 'sand', label: 'Sand' },
 		{ value: 'rock', label: 'Rock' },
 		{ value: 'snow', label: 'Snow' },
+		{ value: 'ice', label: 'Ice' },
 		{ value: 'marsh', label: 'Marsh' },
+		{ value: 'lava', label: 'Lava' },
 		{ value: 'water', label: 'Water' },
 	];
 
@@ -137,7 +139,10 @@
 	let seed = $state(start?.seed ?? newSeed());
 	let walls = $state<SettlementWalls>(start?.walls ?? (isBuilding ? 'none' : 'auto'));
 	let shape = $state<Shape>(start?.wallShape ?? 'culture');
-	let ground = $state<Ground>(start?.ground ?? 'culture');
+	// A marker saved before 'none' was named stores 'land'.
+	let ground = $state<Ground>(
+		(start?.ground as string) === 'land' ? 'none' : (start?.ground ?? 'culture'),
+	);
 	let stilts = $state(!!start?.stilts);
 	let harbor = $state(!!start?.harbor);
 	let ruined = $state(!!start?.ruin);

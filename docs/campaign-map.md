@@ -340,8 +340,8 @@ and every culture knob. It's used three ways:
   fit the dialog (the preview takes whatever height the knobs leave, the
   knobs go two to a row on a phone), so "Use this" is always on screen.
   Ground (the culture's own, or None, Dirt, Grass, Farmland, Sand, Rock,
-  Snow, Marsh, Water: a plane under it in its own colour and texture, a
-  lagoon for water) and Ruined + decay (optionally burned) as below. The reroll varies
+  Snow, Ice, Marsh, Lava, Water: a plane under it in its own colour and
+  texture, a lagoon for water) and Ruined + decay (optionally burned) as below. The reroll varies
   the building as a settlement varies its own — pitch, sweep, ornament,
   now and then the windows or doors, a tower's height — and a mixed
   culture's builder; a few fixed pieces (tent, pavilion, mine, witch hut,

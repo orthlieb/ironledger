@@ -34,8 +34,9 @@ describe('mapMarkerSchema', () => {
     expect(mapMarkerSchema.parse({ ...base, settlement }).settlement).toEqual(settlement);
   });
 
-  it('keeps every ground type, and rejects one it does not know', () => {
+  it("keeps every ground type ('land' too, the old name for 'none'), and rejects one it doesn't know", () => {
     for (const ground of [
+      'none',
       'land',
       'dirt',
       'grass',
@@ -43,7 +44,9 @@ describe('mapMarkerSchema', () => {
       'sand',
       'rock',
       'snow',
+      'ice',
       'marsh',
+      'lava',
       'water',
     ]) {
       const settlement = { tier: 'village', culture: 'elves', seed: 7, ground };
@@ -52,7 +55,7 @@ describe('mapMarkerSchema', () => {
     expect(
       mapMarkerSchema.safeParse({
         ...base,
-        settlement: { tier: 'village', culture: 'elves', seed: 7, ground: 'lava' },
+        settlement: { tier: 'village', culture: 'elves', seed: 7, ground: 'magma' },
       }).success,
     ).toBe(false);
   });

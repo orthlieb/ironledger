@@ -548,7 +548,7 @@ export const TILE_ART = {
 // What a settlement or building stands on (Design.ground): a plane under the
 // whole of it (groundPlane() in pieces3d.js) in a fixed colour with its own
 // texture, as the wall materials have. Water is the lagoon (the `water`
-// role, with ink waves); 'land' draws no plane at all.
+// role, with ink waves); 'none' draws no plane at all.
 
 /** Ground colours, fixed like the wall materials'. */
 export const GROUND_COLOURS = {
@@ -566,6 +566,8 @@ export const GROUND_COLOURS = {
 	sand: { body: '#E6D3A1', grain: '#C9B07A', light: '#F2E5C4', ripple: '#CDB582' },
 	rock: { body: '#B2ABA0', crack: '#827C71', pebble: '#9A9387', light: '#CDC7BD' },
 	snow: { body: '#F2F5F7', drift: '#CCD7E1', speck: '#DCE4EB' },
+	ice: { body: '#D3E6EF', crack: '#97B9CB', sheen: '#F5FAFC', deep: '#BCD6E3' },
+	lava: { body: '#4B3B36', crust: '#3A2E2B', glow: '#D9542A', core: '#F5A03A' },
 	marsh: { body: '#8F9A69', pool: '#8EAAB2', rim: '#6F8A86', reed: '#56633A', mud: '#76704F' },
 };
 
@@ -733,9 +735,57 @@ const marshGround = {
 	},
 };
 
+/** Ice: pale blue sheet, hairline cracks and streaks of sheen. @type {PatternDef} */
+const iceGround = {
+	w: 12,
+	h: 12,
+	scale: 1.5,
+	body: ({ tone }) => {
+		const m = GROUND_COLOURS.ice;
+		return (
+			`<rect width="12" height="12" style="fill:${tone(m.body)}"/>` +
+			`<g style="fill:${tone(m.deep)}"><ellipse cx="8.6" cy="4.6" rx="2.2" ry="0.8"/><ellipse cx="3" cy="9.6" rx="1.6" ry="0.6"/></g>` +
+			`<path style="stroke:${tone(m.crack)};stroke-width:0.2;fill:none;stroke-linecap:round;stroke-linejoin:round" d="M1.2 2.6l1.8 1.1l1.2 -0.5l1.6 1.4M6.4 7.4l1.5 -0.6l1 0.9l1.6 -0.4M2.4 6.6l1.1 1.3l-0.4 0.9"/>` +
+			`<path style="stroke:${tone(m.sheen)};stroke-width:0.35;fill:none;stroke-linecap:round" d="M7.4 1.8l1.6 -0.9M8.3 2.7l1 -0.6M1.8 5.2l1.4 -0.8M6.6 10.6l1.4 -0.8"/>`
+		);
+	},
+};
+
+const LAVA_CRUST = speckles(12, 14, 79);
+/** Lava: dark basalt crust split by glowing fissures, with a pool or two of
+ *  molten rock. @type {PatternDef} */
+const lavaGround = {
+	w: 12,
+	h: 12,
+	scale: 1.5,
+	body: ({ tone }) => {
+		const m = GROUND_COLOURS.lava;
+		const veins =
+			'M1 3.2l2 0.7l1.4 -0.9l2.2 1.1l1.6 -0.6M5.2 8.6l1.8 -0.7l1.2 0.8l2 -0.5M1.6 9.8l1.3 -0.8';
+		return (
+			`<rect width="12" height="12" style="fill:${tone(m.body)}"/>` +
+			`<g style="fill:${tone(m.crust)}">${LAVA_CRUST.dark}${LAVA_CRUST.light}</g>` +
+			`<path style="stroke:${tone(m.glow)};stroke-width:0.6;fill:none;stroke-linecap:round;stroke-linejoin:round" d="${veins}"/>` +
+			`<path style="stroke:${tone(m.core)};stroke-width:0.2;fill:none;stroke-linecap:round;stroke-linejoin:round" d="${veins}"/>` +
+			`<ellipse cx="9" cy="2.6" rx="1.5" ry="0.6" style="fill:${tone(m.glow)}"/>` +
+			`<ellipse cx="9" cy="2.6" rx="0.8" ry="0.3" style="fill:${tone(m.core)}"/>`
+		);
+	},
+};
+
 /** The ground types that draw a textured plane, each its pattern role
- *  `ground-<type>` — 'land' draws none, and water is the lagoon. */
-export const GROUND_TYPES = ['dirt', 'grass', 'farmland', 'sand', 'rock', 'snow', 'marsh'];
+ *  `ground-<type>` — 'none' draws none, and water is the lagoon. */
+export const GROUND_TYPES = [
+	'dirt',
+	'grass',
+	'farmland',
+	'sand',
+	'rock',
+	'snow',
+	'ice',
+	'marsh',
+	'lava',
+];
 
 /** A flat tile in one fixed colour — for tinted lines (ringTextures.js),
  *  which paint in a material's own colour rather than ink.
@@ -794,6 +844,10 @@ export const PATTERNS = {
 	'ground-snow-shade': snowGround,
 	'ground-marsh': marshGround,
 	'ground-marsh-shade': marshGround,
+	'ground-ice': iceGround,
+	'ground-ice-shade': iceGround,
+	'ground-lava': lavaGround,
+	'ground-lava-shade': lavaGround,
 };
 
 /** How much of each colour a -shade tile keeps (the rest is ink) — the
@@ -842,6 +896,8 @@ export const FLAT_WALLS = {
 	'ground-rock': '#AAA398',
 	'ground-snow': '#EEF2F5',
 	'ground-marsh': '#8E9A6C',
+	'ground-ice': '#CFE2EB',
+	'ground-lava': '#6E3A2A',
 };
 
 /** Layers of line-work texture: the tinted lines laid round ring walls

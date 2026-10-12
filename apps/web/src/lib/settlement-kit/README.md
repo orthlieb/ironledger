@@ -173,7 +173,9 @@ The app needs no change: it draws whatever `patterns.js` defines.
 ## Ground
 
 `Design.ground` (or a recipe's `ground`) is what a settlement or building
-stands on. `'land'` draws nothing; every other type is a plane under the
+stands on. `'none'` draws nothing (`'land'`, its old name, still reads as
+none: `upgradeDesign()` and `cleanSettlementRecipe()` rename it, and the
+layouts treat it as none); every other type is a plane under the
 whole of it — `groundPlane(kind, rx, ry)` in `pieces3d.js`, an ellipse of
 `terrain` (never ruined) laid first, under everything:
 
@@ -185,7 +187,9 @@ whole of it — `groundPlane(kind, rx, ry)` in `pieces3d.js`, an ellipse of
 | `sand`     | `ground-sand`     | Pale desert, stippled, with wind ripples.                                                             |
 | `rock`     | `ground-rock`     | Grey stone ground, cracked, with pebbles.                                                             |
 | `snow`     | `ground-snow`     | Near-white, with soft blue-grey drifts.                                                               |
+| `ice`      | `ground-ice`      | A pale blue sheet with hairline cracks and streaks of sheen.                                          |
 | `marsh`    | `ground-marsh`    | Olive bog with pools and reeds.                                                                       |
+| `lava`     | `ground-lava`     | Dark basalt crust split by glowing fissures, with a molten pool.                                      |
 | `water`    | `water`           | The lagoon: the palette's water colour with ink waves.                                                |
 
 The land types are pattern tiles in `patterns.js` with fixed colours of
@@ -214,16 +218,16 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 
 **Build**
 
-| Knob        | Values (default)                                                        | What it drives                                                                                                                                                                                                                                                                  |
-| ----------- | ----------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `houseForm` | **timber** / round / mound / stilt                                      | Framed houses, round huts, turf mounds or huts on stilts.                                                                                                                                                                                                                       |
-| `ground`    | **land** / dirt / grass / farmland / sand / rock / snow / marsh / water | What it stands on: nothing drawn on land; a plane under the whole settlement in the type's own colour and texture (see Ground); water a lagoon with waves.                                                                                                                      |
-| `stature`   | 0.6–1.5 (**1**)                                                         | Building height (small folk < 1 < giants).                                                                                                                                                                                                                                      |
-| `scale`     | 0.7–1.8 (**1**)                                                         | Building size; bigger means fewer per layout.                                                                                                                                                                                                                                   |
-| `flourish`  | 0–1 (**0**)                                                             | Ornament: finials, eave knobs, ridge cresting, more flags.                                                                                                                                                                                                                      |
-| `masonry`   | on / **off**                                                            | Stone-built: stone courses on house and tower walls, stone barns (not plank), no timber framing on a townhouse's ground floor.                                                                                                                                                  |
-| `texture`   | **on** / off                                                            | Draw textures: wall patterns, the line-work round ring walls, masonry courses, barn planks. Off draws every wall in its flat material colour — what a small map icon draws anyway.                                                                                              |
-| `variety`   | 0–1 (**0**)                                                             | A mixed culture (a freeport): the chance each house, free-standing tower and landmark rolls its own house type (gable-front, side-on, townhouse, longhouse, round hut or domed), storeys, tower cap, crenellated top, corbel, steeple, roof pitch and sweep, windows and doors. |
+| Knob        | Values (default)                                                                     | What it drives                                                                                                                                                                                                                                                                  |
+| ----------- | ------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `houseForm` | **timber** / round / mound / stilt                                                   | Framed houses, round huts, turf mounds or huts on stilts.                                                                                                                                                                                                                       |
+| `ground`    | **none** / dirt / grass / farmland / sand / rock / snow / ice / marsh / lava / water | What it stands on: nothing drawn for none; a plane under the whole settlement in the type's own colour and texture (see Ground); water a lagoon with waves.                                                                                                                     |
+| `stature`   | 0.6–1.5 (**1**)                                                                      | Building height (small folk < 1 < giants).                                                                                                                                                                                                                                      |
+| `scale`     | 0.7–1.8 (**1**)                                                                      | Building size; bigger means fewer per layout.                                                                                                                                                                                                                                   |
+| `flourish`  | 0–1 (**0**)                                                                          | Ornament: finials, eave knobs, ridge cresting, more flags.                                                                                                                                                                                                                      |
+| `masonry`   | on / **off**                                                                         | Stone-built: stone courses on house and tower walls, stone barns (not plank), no timber framing on a townhouse's ground floor.                                                                                                                                                  |
+| `texture`   | **on** / off                                                                         | Draw textures: wall patterns, the line-work round ring walls, masonry courses, barn planks. Off draws every wall in its flat material colour — what a small map icon draws anyway.                                                                                              |
+| `variety`   | 0–1 (**0**)                                                                          | A mixed culture (a freeport): the chance each house, free-standing tower and landmark rolls its own house type (gable-front, side-on, townhouse, longhouse, round hut or domed), storeys, tower cap, crenellated top, corbel, steeple, roof pitch and sweep, windows and doors. |
 
 **Houses**
 
@@ -313,7 +317,7 @@ Seven recipe-only fields let a marker override the culture:
 | ------------ | ---------------------------------------------------------------------------------------------------------------------------- |
 | `walls`      | Override the culture's own ring-wall material (`'none'`, `'stone'`, `'palisade'`, …).                                        |
 | `wallShape`  | Force `'round'` or `'square'` regardless of what the culture rolls.                                                          |
-| `ground`     | Override `D.ground` (`'land'`, a ground type, or `'water'`) — the easy knob for "put this settlement on sand / in a lagoon." |
+| `ground`     | Override `D.ground` (`'none'`, a ground type, or `'water'`) — the easy knob for "put this settlement on sand / in a lagoon." |
 | `stilts`     | Wrap every inside-the-walls piece with `onStilts(...)` so the whole settlement sits on pilings.                              |
 | `harbor`     | `true` adds a side harbour with pier + caravel.                                                                              |
 | `ruin`       | `{ decay, burned? }` runs `ruinPlaced()` over the final list.                                                                |

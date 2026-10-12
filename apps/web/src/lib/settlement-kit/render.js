@@ -39,7 +39,7 @@ import { TEXTURE_ROLES } from './patterns.js';
 /** `role`: paint the line in that colour role instead of ink (a tinted
  *  texture line, e.g. a coral wall's grey grooves).
  *  @typedef {{pts: Poly, w?: number, round?: boolean, outline?: boolean, role?: Role}} Line */
-/** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'wall-wood' | 'wall-earth' | 'wall-bone' | 'wall-stone-ring' | 'wall-wood-ring' | 'wall-hedge-ring' | 'wall-reef-ring' | 'wall-hedge-cane' | 'wall-reef-groove' | 'wall-reef-vein' | 'wall-earth-ring' | 'wall-bone-ring' | 'wall-earth-grit' | 'wall-earth-pebble' | 'wall-bone-grain' | 'ink-texture' | 'ground-dirt' | 'ground-grass' | 'ground-farmland' | 'ground-sand' | 'ground-rock' | 'ground-snow' | 'ground-marsh' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
+/** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'wall-wood' | 'wall-earth' | 'wall-bone' | 'wall-stone-ring' | 'wall-wood-ring' | 'wall-hedge-ring' | 'wall-reef-ring' | 'wall-hedge-cane' | 'wall-reef-groove' | 'wall-reef-vein' | 'wall-earth-ring' | 'wall-bone-ring' | 'wall-earth-grit' | 'wall-earth-pebble' | 'wall-bone-grain' | 'ink-texture' | 'ground-dirt' | 'ground-grass' | 'ground-farmland' | 'ground-sand' | 'ground-rock' | 'ground-snow' | 'ground-ice' | 'ground-marsh' | 'ground-lava' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
 /** `sharp`: keep the part's corners crisp whatever the drawing's join (flag
  *  cloth — a soft join would melt a pennant's tip into a blob).
  *  @typedef {{solid: Poly[], lines?: Line[], shadeLines?: Line[], fills?: Poly[], cuts?: Line[], free?: Line[], mask?: Poly, role?: Role, shaded?: boolean, shadeArea?: Poly, terrain?: boolean, sharp?: boolean}} Part */
@@ -267,8 +267,12 @@ export const LAYERS = /** @type {const} */ ([
 	'ground-rock-shade',
 	'ground-snow',
 	'ground-snow-shade',
+	'ground-ice',
+	'ground-ice-shade',
 	'ground-marsh',
 	'ground-marsh-shade',
+	'ground-lava',
+	'ground-lava-shade',
 	'water',
 	'water-shade',
 	'wall',
