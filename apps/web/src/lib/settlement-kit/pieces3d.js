@@ -872,12 +872,7 @@ export function gableHouse(D, o = {}) {
 		rh = w * D.pitch,
 		ov = 1.5;
 	const dome = D.towerRoof === 'dome';
-	const P = boxProjector(
-		w * D.depth,
-		D.perspective ?? DEFAULT_DESIGN.perspective,
-		h,
-		dome ? 0 : h + rh,
-	);
+	const P = boxProjector(w * D.depth, D.perspective, h, dome ? 0 : h + rh);
 	const side = /** @type {Poly} */ ([
 		[w / 2, 0],
 		P.back([w / 2, 0]),
@@ -976,7 +971,7 @@ export function sideHouse(D, o = {}) {
 		rh = d * D.pitch * (kind === 'warehouse' ? 1.1 : long ? 1.9 : 1.5),
 		ov = 1.4;
 	const v = depthVec(d);
-	const P = boxProjector(d, D.perspective ?? DEFAULT_DESIGN.perspective, h);
+	const P = boxProjector(d, D.perspective, h);
 	// The ridge runs at mid-depth, so under perspective it comes out
 	// narrower than the front eave and the roof plane reads as a trapezoid.
 	/** @type {Pt} */ const gTop = P.at([w / 2, h + rh], 0.5);
@@ -1660,11 +1655,7 @@ export function squareTower(D, o = {}) {
 	// A crenellated top's corbel and band (see below).
 	const ctOv = Math.max(0.8, w * 0.12),
 		ctBand = Math.max(3, w * 0.5);
-	const P = boxProjector(
-		w * 0.8,
-		D.perspective ?? DEFAULT_DESIGN.perspective,
-		crenel ? h + ctOv + ctBand : h,
-	);
+	const P = boxProjector(w * 0.8, D.perspective, crenel ? h + ctOv + ctBand : h);
 	// Corbelled body: from the belt up, the walls widen by beltOv on every
 	// side via a 45° slope. `D.towerCorbel` is the share of the tower's
 	// height occupied by the corbel (measured down from the top) — 0 means
@@ -1896,7 +1887,7 @@ const GATE_W = 11,
  */
 function gateSeat(D, h, wallY) {
 	const midFoot = (/** @type {number} */ y0) => {
-		const P = boxProjector(GATE_D, D.perspective ?? DEFAULT_DESIGN.perspective, y0 + h);
+		const P = boxProjector(GATE_D, D.perspective, y0 + h);
 		const B = P.back([GATE_W / 2, y0]);
 		return /** @type {Pt} */ ([(GATE_W / 2 + B[0]) / 2, (y0 + B[1]) / 2]);
 	};
@@ -1923,7 +1914,7 @@ function gateSeat(D, h, wallY) {
  */
 function gateTower(D, y0, h, wood) {
 	const w = GATE_W;
-	const P = boxProjector(GATE_D, D.perspective ?? DEFAULT_DESIGN.perspective, y0 + h);
+	const P = boxProjector(GATE_D, D.perspective, y0 + h);
 	const side = /** @type {Poly} */ ([
 		[w / 2, y0],
 		P.back([w / 2, y0]),
@@ -2806,7 +2797,7 @@ export function church(D, o = {}) {
 export function keep(D, o = {}) {
 	const w = o.w ?? 22,
 		h = (o.h ?? 30) * D.stature;
-	const P = boxProjector(17, D.perspective ?? DEFAULT_DESIGN.perspective, h);
+	const P = boxProjector(17, D.perspective, h);
 	const sb = P.scale(1);
 	/** @type {Pt} */ const FR = [w / 2, 0];
 	const side = /** @type {Poly} */ ([FR, P.back(FR), P.back([w / 2, h]), [w / 2, h]]);
@@ -2894,12 +2885,7 @@ function stall(D, i) {
 		ph = 4.8;
 	const peaked = i % 2 === 0;
 	const rise = peaked ? 0 : 1.8; // a lean-to's back is higher than its front
-	const P = boxProjector(
-		3.2,
-		D.perspective ?? DEFAULT_DESIGN.perspective,
-		ph + rise,
-		peaked ? ph + 2.8 : 0,
-	);
+	const P = boxProjector(3.2, D.perspective, ph + rise, peaked ? ph + 2.8 : 0);
 	const hl = -w / 2,
 		hr = w / 2;
 	/** @param {Pt} p @param {number} [dy] @returns {Pt} */
@@ -3452,7 +3438,7 @@ export function townhouse(D, o = {}) {
 	const Wt = w + 2 * jet * (floors - 1),
 		H = fh * floors,
 		rh = Wt * D.pitch;
-	const P = boxProjector(w * D.depth, D.perspective ?? DEFAULT_DESIGN.perspective, H, H + rh);
+	const P = boxProjector(w * D.depth, D.perspective, H, H + rh);
 	/** @type {Part[]} */
 	const sides = [];
 	/** @type {Part[]} */
@@ -3527,7 +3513,7 @@ export function camp(D) {
  */
 function ridgeTent(/** @type {Design} */ D, /** @type {number} */ w, deep = 1.1) {
 	const h = w * 0.62 * D.stature;
-	const P = boxProjector(w * deep, D.perspective ?? DEFAULT_DESIGN.perspective, 0, h);
+	const P = boxProjector(w * deep, D.perspective, 0, h);
 	/** @type {Pt} */ const L = [-w / 2, 0];
 	/** @type {Pt} */ const R = [w / 2, 0];
 	/** @type {Pt} */ const A = [0, h];
@@ -4145,7 +4131,7 @@ export function cathedral(D) {
 		h = 20 * D.stature,
 		rh = w * 0.55 * Math.max(D.pitch, 0.7),
 		ov = 1;
-	const P = boxProjector(34, D.perspective ?? DEFAULT_DESIGN.perspective, h, h + rh);
+	const P = boxProjector(34, D.perspective, h, h + rh);
 	/** @type {Pt} */ const L = [-w / 2 - ov, h];
 	/** @type {Pt} */ const R = [w / 2 + ov, h];
 	/** @type {Pt} */ const A = [0, h + rh];

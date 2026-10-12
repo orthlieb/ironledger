@@ -708,6 +708,15 @@ function normalized(items, k = normalScale(items)) {
 }
 
 /**
+ * A side-on house of a kind (sideHouse()), as a PIECES maker: its own seed
+ * for the reference row, the caller's for a building.
+ * @param {NonNullable<Parameters<typeof sideHouse>[1]>['kind']} kind
+ * @param {number} seed0
+ * @returns {(D: Design, seed?: number) => Placed[]}
+ */
+const side = (kind, seed0) => (D, s) => [{ piece: sideHouse(D, { seed: s ?? seed0, kind }) }];
+
+/**
  * The single pieces, as [key, name, make]: the reference row (pieces()) and
  * the map's Buildings tab (building()). `make` draws the piece in a culture's
  * Design; a Buildings-tab `seed` varies a house's details and a tower's
@@ -718,7 +727,7 @@ function normalized(items, k = normalScale(items)) {
  */
 const PIECES = [
 	['gable-house', 'Gable house', (D, s) => [{ piece: gableHouse(D, { seed: s ?? 4 }) }]],
-	['side-house', 'Side house', (D, s) => [{ piece: sideHouse(D, { seed: s ?? 5 }) }]],
+	['side-house', 'Side house', side('house', 5)],
 	[
 		'round-tower',
 		'Round tower',
@@ -748,35 +757,19 @@ const PIECES = [
 			}));
 		},
 	],
-	[
-		'longhouse',
-		'Longhouse',
-		(D, s) => [{ piece: sideHouse(D, { seed: s ?? 8, kind: 'longhouse' }) }],
-	],
+	['longhouse', 'Longhouse', side('longhouse', 8)],
 	['windmill', 'Windmill', (D) => [{ piece: windmill(D) }]],
 	['townhouse', 'Townhouse', (D) => [{ piece: townhouse(D) }]],
-	['barn', 'Barn', (D, s) => [{ piece: sideHouse(D, { seed: s ?? 9, kind: 'barn' }) }]],
-	['tavern', 'Tavern', (D, s) => [{ piece: sideHouse(D, { seed: s ?? 10, kind: 'tavern' }) }]],
-	[
-		'barracks',
-		'Barracks',
-		(D, s) => [{ piece: sideHouse(D, { seed: s ?? 11, kind: 'barracks' }) }],
-	],
-	[
-		'water-mill',
-		'Water mill',
-		(D, s) => [{ piece: sideHouse(D, { seed: s ?? 12, kind: 'mill' }) }],
-	],
+	['barn', 'Barn', side('barn', 9)],
+	['tavern', 'Tavern', side('tavern', 10)],
+	['barracks', 'Barracks', side('barracks', 11)],
+	['water-mill', 'Water mill', side('mill', 12)],
 	[null, 'Camp', (D) => camp(D).items],
 	['mine', 'Mine', (D) => [{ piece: mine(D) }]],
 	['well', 'Well', (D) => [{ piece: well(D), s: 2.2 }]],
 	['lighthouse', 'Lighthouse', (D) => [{ piece: lighthouse(D) }]],
-	[
-		'warehouse',
-		'Warehouse',
-		(D, s) => [{ piece: sideHouse(D, { seed: s ?? 6, kind: 'warehouse' }) }],
-	],
-	['workshop', 'Workshop', (D, s) => [{ piece: sideHouse(D, { seed: s ?? 7, kind: 'workshop' }) }]],
+	['warehouse', 'Warehouse', side('warehouse', 6)],
+	['workshop', 'Workshop', side('workshop', 7)],
 	['cathedral', 'Cathedral', (D) => [{ piece: cathedral(D) }]],
 	['clock-tower', 'Clock tower', (D) => [{ piece: clocktower(D) }]],
 	['tent', 'Tent', (D) => [{ piece: tent(D) }]],
