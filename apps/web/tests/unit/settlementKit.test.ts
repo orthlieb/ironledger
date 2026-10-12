@@ -369,6 +369,54 @@ describe('buildings (the Buildings tab)', () => {
 		);
 		expect([...roles(svg)].some((r) => r.startsWith('wall-stone'))).toBe(false);
 	});
+	it.each([
+		['stone', 'square'],
+		['earth', 'square'],
+		['hedge', 'round'],
+	] as const)('stands a %s %s enclosure on water inside its lagoon', (walls, wallShape) => {
+		// Regression: the lagoon once sat where the building alone would, so a
+		// square enclosure's back walls (and the building) stood behind it.
+		const items = building(
+			'gable-house',
+			{ ...DEFAULT_DESIGN, ground: 'water', wallShape },
+			{ walls, seed: 4 },
+		);
+		const water = items.find((it) => it.piece.some((p) => p.role === 'water'));
+		if (!water) throw new Error('no lagoon');
+		const s0 = water.s ?? 1;
+		const xs = water.piece[0].solid[0].map(([x]) => (water.x ?? 0) + x * s0);
+		const ys = water.piece[0].solid[0].map(([, y]) => (water.y ?? 0) + y * s0);
+		const cx = (Math.min(...xs) + Math.max(...xs)) / 2,
+			cy = (Math.min(...ys) + Math.max(...ys)) / 2,
+			rx = (Math.max(...xs) - Math.min(...xs)) / 2,
+			ry = (Math.max(...ys) - Math.min(...ys)) / 2;
+		// The foot of every wall face: the vertices along its polygon's lower
+		// edge (slanted on the receding sides). Merlons, flags and the like
+		// stand on top of the wall, so only the faces themselves count.
+		/** Lowest y of the polygon's outline at x. */
+		const lowAt = (poly: [number, number][], x: number) => {
+			let low = Infinity;
+			poly.forEach(([ax, ay], i) => {
+				const [bx, by] = poly[(i + 1) % poly.length];
+				if ((x - ax) * (x - bx) > 0 || ax === bx) return;
+				low = Math.min(low, ay + ((by - ay) * (x - ax)) / (bx - ax));
+			});
+			return low;
+		};
+		for (const it of items.filter((i) => i.wall)) {
+			const s = it.s ?? 1;
+			for (const p of it.piece)
+				for (const poly of p.solid) {
+					const w = Math.max(...poly.map(([x]) => x)) - Math.min(...poly.map(([x]) => x));
+					if (!p.role?.startsWith('wall') || w < 6) continue;
+					for (const [x, y] of poly.filter(([x, y]) => y - lowAt(poly, x) < 0.5)) {
+						const dx = ((it.x ?? 0) + x * s - cx) / rx,
+							dy = ((it.y ?? 0) + y * s - cy) / ry;
+						expect(dx * dx + dy * dy, `${walls} ${wallShape} wall foot`).toBeLessThanOrEqual(1);
+					}
+				}
+		}
+	});
 	it('agrees with the app on which buildings are never walled', () => {
 		expect([...UNWALLED_BUILDINGS].sort()).toEqual([...APP_UNWALLED_BUILDINGS].sort());
 	});
