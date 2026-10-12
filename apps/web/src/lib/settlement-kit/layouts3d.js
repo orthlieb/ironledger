@@ -352,6 +352,10 @@ const EXTRAS = {
 	watchtower: (D) =>
 		roundTower(D, { r: 6, h: 34, roof: D.towerRoof === 'onion' ? 'onion' : 'none' }),
 };
+/** What the extras are built of where it doesn't depend on the culture
+ *  (the rest are stone if it builds in masonry, else timber).
+ *  @type {Record<string, 'stone' | 'timber'>} */
+const EXTRA_BUILT = { barracks: 'stone', windmill: 'stone', well: 'stone', watchtower: 'stone' };
 const EXTRA_SCALE = /** @type {Record<string, number>} */ ({
 	well: 1.6,
 	windmill: 0.9,
@@ -409,18 +413,31 @@ export function settlement(tier, D, o = {}) {
 	 * @type {Item[]}
 	 */
 	const items = [];
-	const add = (/** @type {import('./render.js').Part[]} */ piece, /** @type {number} */ s) => {
+	/** @param {import('./render.js').Part[]} piece @param {number} s
+	 *  @param {'stone' | 'timber'} built what it's built of (a ruin's stone outlasts its timber) */
+	const add = (piece, s, built) => {
 		const b = extent(piece);
-		items.push({ pieces: [{ piece, s }], x0: b.x0 * s, x1: b.x1 * s, h: b.y1 * s });
+		items.push({ pieces: [{ piece, s, built }], x0: b.x0 * s, x1: b.x1 * s, h: b.y1 * s });
 	};
+	/** A culture's everyday buildings: stone where it builds in masonry. */
+	const common = D.masonry ? 'stone' : 'timber';
 	// Bigger builders (giants) put up fewer, larger buildings.
 	const count = Math.max(1, Math.round(T.n / D.scale));
-	for (let i = 0; i < count; i++) add(house(D, r, 14 + r() * 8, rank >= 1), 0.85 * D.scale);
+	for (let i = 0; i < count; i++)
+		add(
+			house(D, r, 14 + r() * 8, rank >= 1),
+			0.85 * D.scale,
+			D.houseForm === 'timber' ? common : 'timber',
+		);
 	for (const key of T.extras) {
 		// Cultures without trade or industry (trolls, giants, elves…) build no
 		// warehouses or workshops, whatever the template's size calls for.
 		if (D.industry === 0 && (key === 'warehouse' || key === 'workshop')) continue;
-		add(EXTRAS[key](D), (EXTRA_SCALE[key] ?? 0.85) * (key === 'well' ? 1 : D.scale));
+		add(
+			EXTRAS[key](D),
+			(EXTRA_SCALE[key] ?? 0.85) * (key === 'well' ? 1 : D.scale),
+			EXTRA_BUILT[key] ?? common,
+		);
 	}
 	const towerH = 20 + 4 * Math.max(0, rank + 1);
 	// No church and no holy symbol: no bell tower either (trolls, giants).
@@ -429,24 +446,33 @@ export function settlement(tier, D, o = {}) {
 			add(
 				church(mixDesign(D, r), { w: rank > 0 ? 26 : 20, seed: 3 }),
 				rank >= 2 ? 0.9 : rank > 0 ? 0.8 : 0.72,
+				'stone',
 			);
-		else add(belfry(mixDesign(D, r), { finial: true, w: rank > 0 ? 9 : 8, h: towerH }), 0.9);
+		else
+			add(belfry(mixDesign(D, r), { finial: true, w: rank > 0 ? 9 : 8, h: towerH }), 0.9, 'stone');
 	}
-	if (hasKeep) add(keep(D), rank >= 3 ? 1.05 : rank === 2 ? 0.9 : 0.75);
+	if (hasKeep) add(keep(D), rank >= 3 ? 1.05 : rank === 2 ? 0.9 : 0.75, 'stone');
 	// Free-standing towers — towns (and holds) roll 1d2, cities and up 1d3,
 	// walled or not. Heights vary so a skyline of towers doesn't read as
 	// copies.
 	if (rank >= 1) {
 		const towers = 1 + Math.floor(r() * (rank >= 2 ? 3 : 2));
 		for (let i = 0; i < towers; i++)
-			add(roundTower(mixDesign(D, r), { r: 5 + r() * 1.5, h: 32 + r() * 14 }), 0.9);
+			add(roundTower(mixDesign(D, r), { r: 5 + r() * 1.5, h: 32 + r() * 14 }), 0.9, 'stone');
 	}
 	/** The market square is held back and set in the middle of town. @type {Item | null} */
 	let marketItem = null;
 	if (hasMarket) {
 		const mrx = rank >= 2 ? 17 : 14;
 		const m = market(D, { rx: mrx, ry: rank >= 2 ? 6.5 : 5.5 });
-		marketItem = { pieces: m.items, ground: { piece: m.ground }, x0: -mrx - 1, x1: mrx + 1, h: 7 };
+		marketItem = {
+			// Its stalls are timber.
+			pieces: m.items.map((it) => ({ ...it, built: /** @type {const} */ ('timber') })),
+			ground: { piece: m.ground },
+			x0: -mrx - 1,
+			x1: mrx + 1,
+			h: 7,
+		};
 	}
 
 	// Rows from back to front, each with its centre line and usable width
@@ -644,7 +670,7 @@ function harbor(D, wrx, wry, shoreX, shoreY) {
 		piers: [
 			// Moored on the far side of the pier, so the pier runs in front of her hull.
 			{ piece: caravel(D), x: sx, y: sy, s: ship, ship: true },
-			{ piece: pier(len), x: shoreX - 3, y: py },
+			{ piece: pier(len), x: shoreX - 3, y: py, built: 'timber' },
 		],
 	};
 }

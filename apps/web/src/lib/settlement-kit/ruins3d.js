@@ -10,8 +10,9 @@
 //   * then the walls break off along a seeded, stepped line (courses of
 //     masonry fallen away), lower and lower to foundations at 1;
 //   * in a settlement each building takes a decay of its own, a little
-//     either side, so they don't come down in step; one on its own (the
-//     Buildings tab, `single`) takes the slider's exactly;
+//     either side, so they don't come down in step — and stone outlasts
+//     timber (each item's `built`); one on its own (the Buildings tab,
+//     `single`) takes the slider's exactly;
 //   * enclosure walls (`wall: true` pieces) keep their height but are
 //     breached down to the ground, more and wider breaches as it rises;
 //   * rubble at every foot; when burned, charred beams, darker walls and
@@ -40,8 +41,14 @@ function bounds(parts) {
 	return { ...b, ok: Number.isFinite(b.x0) };
 }
 
+/** How much further gone, or less, a settlement's building is by what it's
+ *  built of: its stone outlasts its timber. */
+const STURDY = { stone: -0.15, timber: 0.15 };
+
 /**
- * Ruin a whole placed list. Ships sail away; everything else is broken.
+ * Ruin a whole placed list. Ships sail away; everything else is broken —
+ * in a settlement, stone a little less than the rest and timber a little
+ * more (each item's `built`), on top of each building's own spread.
  * @param {RuinPlaced[]} items
  * @param {RuinOptions} o
  * @returns {Placed[]}
@@ -53,7 +60,11 @@ export function ruinPlaced(items, o) {
 			...it,
 			piece: it.wall
 				? breach(it.piece, o, (o.seed ?? 1) * 101 + i, it.wallShare ?? 1)
-				: ruinPiece(it.piece, o, (o.seed ?? 1) * 101 + i),
+				: ruinPiece(
+						it.piece,
+						o.single || !it.built ? o : { ...o, decay: o.decay + STURDY[it.built] },
+						(o.seed ?? 1) * 101 + i,
+					),
 		}));
 }
 

@@ -364,7 +364,9 @@ and every culture knob. It's used three ways:
   shape, ground (as on the Buildings tab), on stilts, harbour, ruined +
   decay (optionally burned: scorch marks and sooty walls — the buildings
   come down by degrees as on the Buildings tab, each a little either side
-  of the slider, the walls breached more and wider as it rises), and a reroll
+  of the slider, and stone outlasting timber: the church, keep and towers
+  stand while the timber houses fall; the walls breached more and wider as
+  it rises), and a reroll
   for the layout seed, with a large preview in the marker's colour. "Use this" stores a **recipe** on the marker (see
   below). A Recent strip keeps the last 8 recipes per browser
   (`localStorage` `il:recentSettlements`, like the colour picker's
