@@ -16,7 +16,7 @@
 // Texture off adds data-texture="off": its walls draw flat, there too.
 // =============================================================================
 
-import { building, settlement, TEMPLATES } from './layouts3d.js';
+import { building, placedBox, settlement, TEMPLATES } from './layouts3d.js';
 import { DEFAULT_DESIGN, upgradeDesign } from './pieces3d.js';
 import { PATTERN_ROLES, flatWall, paletteTone, patternDefs } from './patterns.js';
 import { LAYERS, place, renderLayered } from './render.js';
@@ -108,9 +108,12 @@ function fills(p) {
  * @param {string} title
  * @param {Placed[]} items
  * @param {Palette} palette
- * @param {{join?: Design['join'], texture?: boolean}} [o] line joins (default:
- *   the default culture's); `texture: false` draws no textures — no line-work
- *   texture layers, and every wall in its flat material colour
+ * @param {{join?: Design['join'], texture?: boolean,
+ *   frame?: {x0: number, x1: number, y0: number, y1: number} | null}} [o]
+ *   line joins (default: the default culture's); `texture: false` draws no
+ *   textures — no line-work texture layers, and every wall in its flat
+ *   material colour; `frame` takes in that box too (placed units, y up —
+ *   placedBox()): a ruin framed as its building was
  * @returns {string}
  */
 export function toLayeredSvg(title, items, palette, o = {}) {
@@ -129,7 +132,20 @@ export function toLayeredSvg(title, items, palette, o = {}) {
 	});
 	const f = fills(palette);
 	const pad = 2;
-	const vb = [b.x - pad, b.y - pad, b.w + 2 * pad, b.h + 2 * pad]
+	let { x, y, w, h } = b;
+	// Taking in the frame too — outlined, as b is, and flipped to SVG's y
+	// down — so a marker shows it at that scale and standing there, not
+	// zoomed to fill.
+	if (o.frame) {
+		const e = OUTLINE / 2,
+			x0 = Math.min(x, o.frame.x0 * K - e),
+			y0 = Math.min(y, -o.frame.y1 * K - e);
+		w = Math.max(x + w, o.frame.x1 * K + e) - x0;
+		h = Math.max(y + h, -o.frame.y0 * K + e) - y0;
+		x = x0;
+		y = y0;
+	}
+	const vb = [x - pad, y - pad, w + 2 * pad, h + 2 * pad]
 		.map((n) => Number(n.toFixed(2)))
 		.join(' ');
 	const pal = Object.entries(palette)
@@ -217,6 +233,13 @@ export function generateSettlementSvg(recipe, culture) {
 				stilts: !!recipe.stilts,
 				ruin,
 			});
+	// A ruined building is framed as the building was, so a stump doesn't
+	// swell to fill the marker (its ink thickening) but stands where the
+	// building stood, at its scale.
+	const frame =
+		recipe.building && ruin
+			? placedBox(building(recipe.building, design, { walls: recipe.walls, seed: recipe.seed }))
+			: null;
 	return toLayeredSvg(
 		`${culture?.name ?? 'Default'} ${recipe.building ?? tier}`,
 		items,
@@ -224,6 +247,7 @@ export function generateSettlementSvg(recipe, culture) {
 		{
 			join: design.join,
 			texture: design.texture,
+			frame,
 		},
 	);
 }

@@ -690,15 +690,15 @@ const MIN_PIECE_SIZE = 26;
 
 /** The bounds of a placed group's solids, as placed (banners aside).
  *  @param {Placed[]} items */
-function placedBounds(items) {
+function placedBounds(items, flags = false) {
 	let x0 = Infinity,
 		x1 = -Infinity,
 		y0 = Infinity,
 		y1 = -Infinity;
 	for (const it of items)
 		for (const p of it.piece)
-			// Banners don't count (see extent()).
-			for (const poly of p.role === 'flag' ? [] : p.solid)
+			// Banners don't count (see extent()), unless asked.
+			for (const poly of p.role === 'flag' && !flags ? [] : p.solid)
 				for (const [x, y] of poly) {
 					const s = it.s ?? 1,
 						X = (it.x ?? 0) + x * s,
@@ -709,6 +709,13 @@ function placedBounds(items) {
 					y1 = Math.max(y1, Y);
 				}
 	return { x0, x1, y0, y1 };
+}
+
+/** A placed group's box as drawn, banners and all (y up) — what
+ *  toLayeredSvg()'s `frame` takes. @param {Placed[]} items */
+export function placedBox(items) {
+	const box = placedBounds(items, true);
+	return Number.isFinite(box.x0) ? box : null;
 }
 
 /** How much normalized() scales a placed group by (1: not at all).
@@ -857,10 +864,11 @@ export function building(key, D, o = {}) {
 		if (g && g !== 'hex')
 			items = [{ piece: groundPlane(g, hw, hw * 0.4), x: (x0 + x1) / 2 }, ...items];
 	}
-	if (o.ruin) items = ruinPlaced(items, { ...o.ruin, seed });
-	// A small building is scaled up to read with the rest; the hex tile
-	// goes in after, at that scale, framing the whole of it.
+	// A small building is scaled up to read with the rest — sized whole, so
+	// its ruin is drawn at the same scale, not blown up as it crumbles; the
+	// hex tile goes in after, at that scale, framing the whole of it.
 	const k = normalScale(items);
+	if (o.ruin) items = ruinPlaced(items, { ...o.ruin, seed, single: true });
 	items = normalized(items, k);
 	return g === 'hex' ? withHexTile(items, foot[0] * k, foot[1] * k, foot[2], k) : items;
 }

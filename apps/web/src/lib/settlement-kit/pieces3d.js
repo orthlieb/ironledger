@@ -3631,6 +3631,7 @@ export function windmill(D) {
 			solid: [[P(L * 0.25, 0.3), P(L, 0.3), P(L, 3.4), P(L * 0.25, 3.4)]],
 			lines: lattice,
 			free: [{ pts: [hub, P(L + 0.6, 0)], w: 0.9 }],
+			aloft: true,
 		});
 	}
 	parts.push({ solid: [circle(hub[0], hub[1], 1.1)], role: 'wood' });

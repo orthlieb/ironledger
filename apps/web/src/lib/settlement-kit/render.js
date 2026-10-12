@@ -41,8 +41,10 @@ import { TEXTURE_ROLES } from './patterns.js';
  *  @typedef {{pts: Poly, w?: number, round?: boolean, outline?: boolean, role?: Role}} Line */
 /** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'wall-wood' | 'wall-earth' | 'wall-bone' | 'wall-stone-ring' | 'wall-wood-ring' | 'wall-hedge-ring' | 'wall-reef-ring' | 'wall-hedge-cane' | 'wall-reef-groove' | 'wall-reef-vein' | 'wall-earth-ring' | 'wall-bone-ring' | 'wall-earth-grit' | 'wall-earth-pebble' | 'wall-bone-grain' | 'ink-texture' | 'ground-dirt' | 'ground-grass' | 'ground-farmland' | 'ground-sand' | 'ground-rock' | 'ground-snow' | 'ground-ice' | 'ground-marsh' | 'ground-lava' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
 /** `sharp`: keep the part's corners crisp whatever the drawing's join (flag
- *  cloth — a soft join would melt a pennant's tip into a blob).
- *  @typedef {{solid: Poly[], lines?: Line[], shadeLines?: Line[], fills?: Poly[], cuts?: Line[], free?: Line[], mask?: Poly, role?: Role, shaded?: boolean, shadeArea?: Poly, terrain?: boolean, sharp?: boolean}} Part */
+ *  cloth — a soft join would melt a pennant's tip into a blob). `aloft`:
+ *  hung from high up (a mill's sails) — a ruin drops it, however low it
+ *  reaches.
+ *  @typedef {{solid: Poly[], lines?: Line[], shadeLines?: Line[], fills?: Poly[], cuts?: Line[], free?: Line[], mask?: Poly, role?: Role, shaded?: boolean, shadeArea?: Poly, terrain?: boolean, sharp?: boolean, aloft?: boolean}} Part */
 /** @typedef {{X: number, Y: number}[][]} CPaths */
 
 /** Default outline stroke weight (world units). */

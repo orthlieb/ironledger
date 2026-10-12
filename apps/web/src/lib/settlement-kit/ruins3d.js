@@ -22,7 +22,10 @@ import { rect, rng } from './geom.js';
 /** @typedef {import('./render.js').Line} Line */
 /** @typedef {import('./geom.js').Poly} Poly */
 /** @typedef {import('./pieces3d.js').Placed} Placed */
-/** @typedef {{decay: number, overgrowth: number, burned: boolean, seed?: number}} RuinOptions */
+/** `single`: one building on its own (the Buildings tab), not one of many —
+ *  its ruin follows `decay` step by step rather than rolling, building by
+ *  building, whether the roof survives.
+ *  @typedef {{decay: number, overgrowth: number, burned: boolean, seed?: number, single?: boolean}} RuinOptions */
 /** @typedef {Placed} RuinPlaced */
 
 /** Bounds of the given parts' silhouettes. @param {Part[]} parts */
@@ -76,9 +79,10 @@ export function ruinPiece(parts, o, seed) {
 	// (Anything starting in the bottom 30% of the building counts as standing,
 	// so a low pickaxe or mill race doesn't make the walls look elevated.)
 	const ground = all.y0 + Math.max(0.6, (all.y1 - all.y0) * 0.3);
-	// Signs, flags and banners (role 'flag') never survive, however low they hang.
+	// Signs, flags and banners (role 'flag') never survive, however low they
+	// hang; nor do a mill's sails (aloft), though a blade reaches the ground.
 	const standing = built.filter(
-		(p) => bounds([p]).y0 <= ground && p.role !== 'roof' && p.role !== 'flag',
+		(p) => bounds([p]).y0 <= ground && p.role !== 'roof' && p.role !== 'flag' && !p.aloft,
 	);
 	// Line-only parts low down (rails, posts) stay; high ones (flags, crosses) fall.
 	const lowLines = parts.filter(
@@ -90,8 +94,13 @@ export function ruinPiece(parts, o, seed) {
 	const b = bounds(standing);
 	if (!b.ok) return [...terrain, rubble(all, r, 6)];
 	// Some buildings keep their roof — more often the less decayed the ruin,
-	// less often if it burned — about half of those with a hole in it.
-	if (r() < (1 - o.decay) * 0.35 * (o.burned ? 0.5 : 1)) return roofed(parts, terrain, all, o, r);
+	// less often if it burned — about half of those with a hole in it. One on
+	// its own keeps it only at the light end of the decay, holed, so the
+	// slider reads as a progression, not a coin toss that holds to halfway.
+	const roofKept = o.single
+		? o.decay < (o.burned ? 0.15 : 0.25)
+		: r() < (1 - o.decay) * 0.35 * (o.burned ? 0.5 : 1);
+	if (roofKept) return roofed(parts, terrain, all, o, r);
 	const hgt = b.y1 - b.y0;
 	// How much is left: decay 0 keeps most of the walls, 1 leaves foundations.
 	const keep = Math.max(0.08, 0.88 - o.decay * 0.75 + (r() - 0.5) * 0.22);
@@ -244,8 +253,9 @@ function maskTop(mask, x, base) {
 
 /**
  * A ruined building whose roof survived: everything stands except flags
- * and banners, the roof may have a jagged hole bitten out of it, and it
- * still gets rubble, overgrowth and (if burned) scorched walls.
+ * and banners, the roof may have a jagged hole bitten out of it (always,
+ * on its own), and it still gets rubble, overgrowth and (if burned)
+ * scorched walls.
  * @param {Part[]} parts
  * @param {Part[]} terrain
  * @param {{x0: number, x1: number, y0: number, y1: number}} all
@@ -256,7 +266,7 @@ function maskTop(mask, x, base) {
 function roofed(parts, terrain, all, o, r) {
 	/** @type {Poly | undefined} */
 	let hole;
-	if (r() < 0.5) {
+	if (o.single || r() < 0.5) {
 		// Keep-region with a ragged bite out of the roof, from above.
 		const w = (all.x1 - all.x0) * (0.18 + r() * 0.16),
 			cx = all.x0 + (all.x1 - all.x0) * (0.3 + r() * 0.4),
@@ -471,7 +481,11 @@ function ivy(walls, top, amount, r) {
 	const faces = walls
 		.filter((p) => !p.shaded && p.role !== 'water')
 		.map((p) => ({ p, b: bounds([p]) }));
-	const big = faces.filter(({ b }) => b.x1 - b.x0 > 4 && b.y1 - b.y0 > 3);
+	// Only on what's left of a wall — not one broken off below its foot (an
+	// upper storey), which would leave the ivy hanging in the air.
+	const big = faces.filter(
+		({ b }) => b.x1 - b.x0 > 4 && b.y1 - b.y0 > 3 && top((b.x0 + b.x1) / 2) - b.y0 > 2,
+	);
 	if (!big.length) return [];
 	/** @type {Poly[]} */
 	const patches = [];
@@ -505,7 +519,10 @@ function bushes(
 			x0 = b.x0 + r() * Math.max(1, b.x1 - b.x0 - w),
 			y = b.y0 - 0.6 - r() * 1.4,
 			h = 1.4 + r() * 1.3;
-		const height = (/** @type {number} */ x) => y + h * Math.sin(((x - x0) / w) * Math.PI) ** 0.6;
+		// (Clamped: at the far edge the sine can round a hair below zero,
+		// and a fractional power of that is NaN.)
+		const height = (/** @type {number} */ x) =>
+			y + h * Math.max(0, Math.sin(((x - x0) / w) * Math.PI)) ** 0.6;
 		out.push({
 			solid: [[[x0, y], [x0 + w, y], ...leafyEdge(x0, x0 + w, height, r)]],
 			role: 'roof',

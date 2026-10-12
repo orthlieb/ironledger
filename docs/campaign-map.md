@@ -339,7 +339,10 @@ and every culture knob. It's used three ways:
   Ground (the culture's own, or None, Hex — a dashed hex tile behind it, as
   a hex map's cell frames it — Dirt, Grass, Farmland, Sand, Rock, Snow,
   Ice, Marsh, Lava, Water: a plane under it in its own colour and
-  texture, a lagoon for water) and Ruined + decay (optionally burned) as below. The reroll varies
+  texture, a lagoon for water) and Ruined + decay (optionally burned) as below
+  — on its own a building comes down a step at a time as the decay rises
+  (its roof, holed, only at the light end; then ever-lower walls), drawn
+  at its scale and standing where it stood, not zoomed in. The reroll varies
   the building as a settlement varies its own — pitch, sweep, ornament,
   now and then the windows or doors, a tower's height — and a mixed
   culture's builder; a few fixed pieces (tent, pavilion, mine, witch hut,

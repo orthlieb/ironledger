@@ -372,6 +372,70 @@ describe('buildings (the Buildings tab)', () => {
 			);
 		expect(tower(1)).not.toBe(tower(2));
 	});
+	const ruin = (decay: number) => ({ decay, overgrowth: 0.4, burned: false });
+	it('ruins a building a step at a time as the decay rises', () => {
+		const height = (key: string, seed: number, decay: number) => {
+			const items = building(key, DEFAULT_DESIGN, { seed, ruin: ruin(decay) });
+			const parts = items.flatMap((it) =>
+				place(it.piece, { x: it.x ?? 0, y: it.y ?? 0, s: it.s ?? 1 }),
+			);
+			return renderLayered(parts, { outline: 1.4, join: DEFAULT_DESIGN.join }).bounds.h;
+		};
+		for (const key of ['gable-house', 'keep', 'church', 'windmill', 'townhouse'])
+			for (const seed of [1, 2, 3]) {
+				const hs = [0.1, 0.3, 0.5, 0.75, 1].map((d) => height(key, seed, d));
+				// Only the light end keeps its (holed) roof — not every decay
+				// up to halfway, then a fall straight to the shell.
+				expect(hs[1], `${key} seed ${seed}`).toBeLessThan(hs[0]! * 0.9);
+				for (let i = 2; i < hs.length; i++)
+					expect(hs[i], `${key} seed ${seed}, step ${i}`).toBeLessThan(hs[i - 1]!);
+			}
+	});
+	it('frames a ruin as its building was, not zoomed in on the stump', () => {
+		const box = (key: string, decay?: number) => {
+			const svg = generateSettlementSvg(
+				{
+					tier: 'stead',
+					culture: 'default',
+					seed: 4,
+					building: key,
+					...(decay ? { ruin: { decay } } : {}),
+				},
+				null,
+			);
+			return svg
+				.match(/viewBox="([^"]+)"/)![1]!
+				.split(' ')
+				.map(Number);
+		};
+		for (const key of ['round-tower', 'keep', 'windmill', 'gable-house'])
+			for (const decay of [0.3, 1]) {
+				const [, y, w, h] = box(key);
+				const [, ry, rw, rh] = box(key, decay);
+				// At least the building's box (rubble may spill past it), its top
+				// where the building's was. (A little slack: drawn sail spars
+				// reach past the solids the frame is measured from.)
+				expect(rw, `${key} @${decay}`).toBeGreaterThan(w! - 2);
+				expect(rh, `${key} @${decay}`).toBeGreaterThan(h! - 2);
+				expect(ry, `${key} @${decay}`).toBeLessThan(y! + 1);
+			}
+	});
+	it("drops a mill's sails, and grows no ivy in mid-air", () => {
+		for (const seed of [1, 2, 3, 4, 5, 6]) {
+			const mill = building('windmill', DEFAULT_DESIGN, { seed, ruin: ruin(0.5) });
+			expect(mill.some((it) => it.piece.some((p) => p.aloft))).toBe(false);
+			for (const key of ['townhouse', 'tavern', 'windmill', 'workshop']) {
+				// Ivy and bushes (in the marker colour) grow from the ground —
+				// not from where an upper storey stood before it fell.
+				const feet = building(key, DEFAULT_DESIGN, { seed, ruin: ruin(1) }).flatMap((it) =>
+					it.piece
+						.filter((p) => p.role === 'roof')
+						.flatMap((p) => p.solid.map((poly) => Math.min(...poly.map(([, y]) => y)))),
+				);
+				for (const foot of feet) expect(foot, `${key} seed ${seed}`).toBeLessThan(2);
+			}
+		}
+	});
 });
 
 describe('ground', () => {
