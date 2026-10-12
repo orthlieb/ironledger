@@ -3,9 +3,8 @@
 //
 // Settlement templates (stead → freeport, from the YRT settlement-type
 // oracle) laid out from the pieces3d.js pieces for one culture
-// (`Design`). `walls` picks the ring wall; 'auto' is each template's own
-// ("Usual for its size") — the culture has no say in it, nor in the
-// `ground` it stands on.
+// (`Design`). `walls` picks the ring wall (none unless asked) — the
+// culture has no say in it, nor in the `ground` it stands on.
 // =============================================================================
 
 import { polyBounds, rng } from './geom.js';
@@ -45,7 +44,7 @@ import {
 /** @typedef {import('./pieces3d.js').Placed} Placed */
 /** @typedef {import('./geom.js').Pt} Pt */
 /** @typedef {import('./geom.js').Poly} Poly */
-/** @typedef {'auto' | 'none' | 'stone' | 'palisade' | 'earth' | 'hedge' | 'bone' | 'reef'} Walls */
+/** @typedef {'none' | 'stone' | 'palisade' | 'earth' | 'hedge' | 'bone' | 'reef'} Walls */
 
 /**
  * Per-building Design jitter: each house re-rolls a few visual knobs
@@ -198,8 +197,6 @@ function extent(piece) {
  * @property {number} ry building area half-depth
  * @property {number} n ordinary dwellings, before the culture's scale
  * @property {number} rank -1 below village · 0 village · 1 town · 2 city · 3 capital
- * @property {'none' | 'palisade' | 'stone'} walls the wall it usually has —
- *   what "Usual for its size" (walls 'auto') draws
  * @property {'none' | 'tower' | 'full'} shrine
  * @property {boolean} [keep] always has a keep, whatever the culture says
  * @property {string[]} extras special buildings, see EXTRAS
@@ -221,7 +218,6 @@ export const TEMPLATES = {
 		ry: 9,
 		n: 2,
 		rank: -1,
-		walls: 'none',
 		shrine: 'none',
 		extras: ['barn', 'well'],
 	},
@@ -232,7 +228,6 @@ export const TEMPLATES = {
 		ry: 0,
 		n: 0,
 		rank: -1,
-		walls: 'none',
 		shrine: 'none',
 		extras: [],
 	},
@@ -243,7 +238,6 @@ export const TEMPLATES = {
 		ry: 8,
 		n: 1,
 		rank: -1,
-		walls: 'palisade',
 		shrine: 'none',
 		extras: ['watchtower', 'barracks'],
 		wallH: 0.9,
@@ -256,7 +250,6 @@ export const TEMPLATES = {
 		ry: 9,
 		n: 3,
 		rank: -1,
-		walls: 'none',
 		shrine: 'tower',
 		extras: ['well'],
 	},
@@ -267,7 +260,6 @@ export const TEMPLATES = {
 		ry: 11,
 		n: 4,
 		rank: 0,
-		walls: 'none',
 		shrine: 'full',
 		extras: ['well', 'tavern', 'windmill'],
 	},
@@ -278,7 +270,6 @@ export const TEMPLATES = {
 		ry: 12,
 		n: 4,
 		rank: 1,
-		walls: 'stone',
 		shrine: 'full',
 		keep: true,
 		extras: ['barracks', 'workshop', 'barn'],
@@ -292,7 +283,6 @@ export const TEMPLATES = {
 		ry: 13,
 		n: 5,
 		rank: 1,
-		walls: 'stone',
 		shrine: 'full',
 		extras: ['tavern', 'warehouse'],
 		towers: 0.5,
@@ -304,7 +294,6 @@ export const TEMPLATES = {
 		ry: 17,
 		n: 8,
 		rank: 2,
-		walls: 'stone',
 		shrine: 'full',
 		extras: ['tavern', 'warehouse', 'workshop'],
 		wallH: 1.2,
@@ -317,7 +306,6 @@ export const TEMPLATES = {
 		ry: 21,
 		n: 11,
 		rank: 3,
-		walls: 'stone',
 		shrine: 'full',
 		keep: true,
 		extras: ['barracks', 'tavern', 'warehouse', 'workshop'],
@@ -331,7 +319,6 @@ export const TEMPLATES = {
 		ry: 22,
 		n: 11,
 		rank: 3,
-		walls: 'stone',
 		shrine: 'full',
 		harbor: true,
 		extras: ['warehouse', 'warehouse', 'warehouse', 'tavern', 'workshop', 'workshop'],
@@ -363,18 +350,6 @@ const EXTRA_SCALE = /** @type {Record<string, number>} */ ({
 });
 
 /**
- * Which wall a template gets: the drawing's, or for 'auto' ("Usual for its
- * size") the template's own — a frontier post's palisade, a hold's or a
- * town's stone; the culture has no say.
- * @param {Template} T
- * @param {Walls} walls
- * @returns {Exclude<Walls, 'auto'>}
- */
-function wallFor(T, walls) {
-	return walls === 'auto' ? T.walls : walls;
-}
-
-/**
  * Lay out a settlement of the given tier, back → front.
  * @param {Tier} tier
  * @param {Design} D
@@ -392,7 +367,7 @@ export function settlement(tier, D, o = {}) {
 	const T = TEMPLATES[tier];
 	if (tier === 'camp') return camp(D).items;
 	const r = rng((o.seed ?? 1) * 7919 + Object.keys(TEMPLATES).indexOf(tier));
-	const wall = wallFor(T, o.walls ?? 'auto');
+	const wall = o.walls ?? 'none';
 	const { rx, ry, rank } = T;
 	// The wall encloses the building area with room to spare — grown below
 	// if the culture's buildings are too big for the template (trolls'
@@ -836,7 +811,7 @@ export function building(key, D, o = {}) {
 	const seed = o.seed ?? 1;
 	const r = rng(seed * 7919 + 4099);
 	const own = jitterDesign(mixDesign(D, r), r);
-	const walls = o.walls && o.walls !== 'auto' && o.walls !== 'none' ? o.walls : null;
+	const walls = o.walls && o.walls !== 'none' ? o.walls : null;
 	const make = (PIECES.find(([k]) => k === key) ?? PIECES[0])[2];
 	let items = make(own, 1 + Math.floor(r() * 999_999));
 	// On stilts: each part of it on a deck of its own, its terrain (a
@@ -887,7 +862,7 @@ function placedExtent(items) {
  * it.
  * @param {Design} D
  * @param {Placed[]} items
- * @param {Exclude<Walls, 'auto' | 'none'>} wall
+ * @param {Exclude<Walls, 'none'>} wall
  * @param {Exclude<Ground, 'none'> | null} g what it stands on
  * @returns {Placed[]}
  */

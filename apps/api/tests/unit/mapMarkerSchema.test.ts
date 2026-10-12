@@ -23,6 +23,19 @@ describe('mapMarkerSchema', () => {
     expect(mapMarkerSchema.parse({ ...base, settlement }).settlement).toEqual(settlement);
   });
 
+  it("keeps every wall material, and rejects 'auto' (no more 'usual for its size')", () => {
+    for (const walls of ['none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef']) {
+      const settlement = { tier: 'town', culture: 'elves', seed: 7, walls };
+      expect(mapMarkerSchema.parse({ ...base, settlement }).settlement).toEqual(settlement);
+    }
+    expect(
+      mapMarkerSchema.safeParse({
+        ...base,
+        settlement: { tier: 'town', culture: 'elves', seed: 7, walls: 'auto' },
+      }).success,
+    ).toBe(false);
+  });
+
   it('keeps a recipe on water and on stilts', () => {
     const settlement = {
       tier: 'village',

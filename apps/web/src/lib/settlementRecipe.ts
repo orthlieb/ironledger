@@ -27,8 +27,9 @@ export const SETTLEMENT_TIERS = [
 ] as const;
 export type SettlementTier = (typeof SETTLEMENT_TIERS)[number];
 
+/** A ring wall's material, or none (the default) — the recipe's choice,
+ *  never the culture's or the size's. */
 export const SETTLEMENT_WALLS = [
-	'auto',
 	'none',
 	'stone',
 	'palisade',
@@ -137,11 +138,7 @@ export function recipeLabel(
 	const state = recipe.ruin ? (recipe.ruin.burned ? 'Burned ' : 'Ruined ') : '';
 	const b = recipe.building;
 	if (b) {
-		const walled =
-			recipe.walls &&
-			recipe.walls !== 'none' &&
-			recipe.walls !== 'auto' &&
-			!UNWALLED_BUILDINGS.has(b);
+		const walled = recipe.walls && recipe.walls !== 'none' && !UNWALLED_BUILDINGS.has(b);
 		return `${state}${name} ${SETTLEMENT_BUILDINGS[b] ?? b}${walled ? ', walled' : ''}`;
 	}
 	return `${state}${name} ${TIER_LABEL[recipe.tier] ?? recipe.tier}`;

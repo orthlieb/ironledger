@@ -86,7 +86,6 @@
 		{ value: 'capital', label: 'Capital · 6,000–10,000' },
 	];
 	const WALLS: { value: SettlementWalls; label: string }[] = [
-		{ value: 'auto', label: 'Usual for its size' },
 		{ value: 'none', label: 'None' },
 		{ value: 'stone', label: 'Stone' },
 		{ value: 'palisade', label: 'Palisade' },
@@ -136,7 +135,7 @@
 	let building = $state<SettlementBuilding>(start?.building ?? 'gable-house');
 	let culture = $state(start?.culture ?? DEFAULT_CULTURE);
 	let seed = $state(start?.seed ?? newSeed());
-	let walls = $state<SettlementWalls>(start?.walls ?? (isBuilding ? 'none' : 'auto'));
+	let walls = $state<SettlementWalls>(start?.walls ?? 'none');
 	let shape = $state<Shape>(start?.wallShape ?? 'culture');
 	let ground = $state<SettlementGround>(start?.ground ?? 'none');
 	let stilts = $state(!!start?.stilts);
@@ -150,9 +149,6 @@
 	/** A wall building (in its own material) or a ship: never enclosed, so
 	 *  no Walls. */
 	const wallBuilding = $derived(isBuilding && UNWALLED_BUILDINGS.has(building));
-	/** A building's walls are an enclosure: none by default, and no "usual
-	 *  for its size". */
-	const wallOptions = isBuilding ? WALLS.filter((w) => w.value !== 'auto') : WALLS;
 	const showWalls = $derived(!wallBuilding);
 	const showShape = $derived(!isBuilding || (!wallBuilding && walls !== 'none'));
 	const ruin = $derived(
@@ -173,7 +169,7 @@
 					culture,
 					seed,
 					building,
-					...(showWalls && walls !== 'none' && walls !== 'auto' ? { walls } : {}),
+					...(showWalls && walls !== 'none' ? { walls } : {}),
 					...(showShape && shape !== 'culture' ? { wallShape: shape } : {}),
 					...(ground !== 'none' ? { ground } : {}),
 					...(stilts && !wallBuilding ? { stilts: true } : {}),
@@ -183,7 +179,7 @@
 					tier,
 					culture,
 					seed,
-					...(walls !== 'auto' ? { walls } : {}),
+					...(walls !== 'none' ? { walls } : {}),
 					...(shape !== 'culture' ? { wallShape: shape } : {}),
 					...(ground !== 'none' ? { ground } : {}),
 					...(stilts ? { stilts: true } : {}),
@@ -285,7 +281,7 @@
 			{#if showWalls}
 				<label class="sb-field">
 					<span class="sb-label">Walls</span>
-					<Select bind:value={walls} options={wallOptions} ariaLabel="Walls" />
+					<Select bind:value={walls} options={WALLS} ariaLabel="Walls" />
 				</label>
 			{/if}
 			{#if showShape}

@@ -185,7 +185,7 @@ export function generateSettlementSvg(recipe, culture) {
 					ruin: r,
 				})
 			: settlement(tier, design, {
-					walls: recipe.walls ?? 'auto',
+					walls: recipe.walls ?? 'none',
 					seed: recipe.seed,
 					ground: recipe.ground,
 					harbor: recipe.harbor ? 'side' : 'none',
