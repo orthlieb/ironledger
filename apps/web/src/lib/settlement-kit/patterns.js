@@ -545,7 +545,7 @@ export const TILE_ART = {
 };
 
 // ─── Ground planes ───────────────────────────────────────────────────────────
-// What a settlement or building stands on (Design.ground): a plane under the
+// What a settlement or building stands on (a recipe's `ground`): a plane under the
 // whole of it (groundPlane() in pieces3d.js) in a fixed colour with its own
 // texture, as the wall materials have. Water is the lagoon (the `water`
 // role, with ink waves); 'none' draws no plane at all.

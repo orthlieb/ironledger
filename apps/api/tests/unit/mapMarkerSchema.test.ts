@@ -37,7 +37,6 @@ describe('mapMarkerSchema', () => {
   it("keeps every ground type, and rejects one it doesn't know", () => {
     for (const ground of [
       'none',
-      'hex',
       'dirt',
       'grass',
       'farmland',
@@ -52,12 +51,14 @@ describe('mapMarkerSchema', () => {
       const settlement = { tier: 'village', culture: 'elves', seed: 7, ground };
       expect(mapMarkerSchema.parse({ ...base, settlement }).settlement).toEqual(settlement);
     }
-    expect(
-      mapMarkerSchema.safeParse({
-        ...base,
-        settlement: { tier: 'village', culture: 'elves', seed: 7, ground: 'magma' },
-      }).success,
-    ).toBe(false);
+    // 'hex' is gone, and never was 'magma'.
+    for (const ground of ['hex', 'magma'])
+      expect(
+        mapMarkerSchema.safeParse({
+          ...base,
+          settlement: { tier: 'village', culture: 'elves', seed: 7, ground },
+        }).success,
+      ).toBe(false);
   });
 
   it('keeps a building recipe', () => {

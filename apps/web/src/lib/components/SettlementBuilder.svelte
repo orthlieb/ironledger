@@ -4,7 +4,7 @@
 	 * "Buildings" tabs (`kind`).
 	 *
 	 * Just the essentials of the settlement kit: tier, culture, walls and
-	 * their shape, a harbour, ruined (with decay, and
+	 * their shape, ground, a harbour, ruined (with decay, and
 	 * optionally burned), and a reroll for the
 	 * layout. A large preview shows the result in the marker's colour; "Use this" hands the RECIPE back to the caller
 	 * (the marker stores the recipe, never the culture definition). The full
@@ -13,9 +13,9 @@
 	 *
 	 * The Buildings kind draws one building instead of a settlement: the
 	 * building in place of the size, walls that enclose it (none by default;
-	 * none at all for the wall buildings — Wall, Wall tower, Palisade,
-	 * Gatehouse, Wooden gate — each in its own material), ground, and no
-	 * stilts or harbour. Its reroll varies the building's details (and a
+	 * none at all for the Wall, in its own stone), ground, and no stilts or
+	 * harbour. Walls and ground are the recipe's alone — no culture sets
+	 * them (a culture's wall shape it keeps, as "Culture's own"). Its reroll varies the building's details (and a
 	 * mixed culture's builder).
 	 *
 	 * A Recent strip above the knobs keeps the last few recipes used, per
@@ -100,11 +100,8 @@
 		{ value: 'round', label: 'Round' },
 		{ value: 'square', label: 'Square' },
 	];
-	type Ground = 'culture' | SettlementGround;
-	const GROUNDS: { value: Ground; label: string }[] = [
-		{ value: 'culture', label: "Culture's own" },
+	const GROUNDS: { value: SettlementGround; label: string }[] = [
 		{ value: 'none', label: 'None' },
-		{ value: 'hex', label: 'Hex' },
 		{ value: 'dirt', label: 'Dirt' },
 		{ value: 'grass', label: 'Grass' },
 		{ value: 'farmland', label: 'Farmland' },
@@ -140,7 +137,7 @@
 	let seed = $state(start?.seed ?? newSeed());
 	let walls = $state<SettlementWalls>(start?.walls ?? (isBuilding ? 'none' : 'auto'));
 	let shape = $state<Shape>(start?.wallShape ?? 'culture');
-	let ground = $state<Ground>(start?.ground ?? 'culture');
+	let ground = $state<SettlementGround>(start?.ground ?? 'none');
 	let stilts = $state(!!start?.stilts);
 	let harbor = $state(!!start?.harbor);
 	let ruined = $state(!!start?.ruin);
@@ -177,7 +174,7 @@
 					building,
 					...(showWalls && walls !== 'none' && walls !== 'auto' ? { walls } : {}),
 					...(showShape && shape !== 'culture' ? { wallShape: shape } : {}),
-					...(ground !== 'culture' ? { ground } : {}),
+					...(ground !== 'none' ? { ground } : {}),
 					...ruin,
 				}
 			: {
@@ -186,7 +183,7 @@
 					seed,
 					...(walls !== 'auto' ? { walls } : {}),
 					...(shape !== 'culture' ? { wallShape: shape } : {}),
-					...(ground !== 'culture' ? { ground } : {}),
+					...(ground !== 'none' ? { ground } : {}),
 					...(stilts ? { stilts: true } : {}),
 					...(harbor ? { harbor: true } : {}),
 					...ruin,

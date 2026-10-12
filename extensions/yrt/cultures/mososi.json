@@ -16,7 +16,6 @@
     "flags": true,
     "flagFolds": 1,
     "flagLen": 11,
-    "wall": "stone",
     "merlons": false,
     "wallShape": "square",
     "gate": "tower",

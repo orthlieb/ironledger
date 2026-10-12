@@ -125,7 +125,10 @@ const CORE_ICONS = {
 		'settlement',
 		() => settlement('hold', { ...D, wallShape: 'square', gate: 'twin' }, { walls: 'stone' }),
 	],
-	'military-fort': ['settlement', () => settlement('outpost', { ...D, wallShape: 'square' })],
+	'military-fort': [
+		'settlement',
+		() => settlement('outpost', { ...D, wallShape: 'square' }, { walls: 'stone' }),
+	],
 	'hill-fort': ['settlement', () => settlement('hold', D, { walls: 'earth' })],
 	// Settlements, by size and wall.
 	village: ['settlement', () => settlement('village', D)],

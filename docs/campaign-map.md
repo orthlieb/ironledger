@@ -341,10 +341,10 @@ and every culture knob. It's used three ways:
   Walls or Wall shape. The tab lays itself out to
   fit the dialog (the preview takes whatever height the knobs leave, the
   knobs go two to a row on a phone), so "Use this" is always on screen.
-  Ground (the culture's own, or None, Hex — a dashed hex tile behind it, as
-  a hex map's cell frames it — Dirt, Grass, Farmland, Sand, Rock, Snow,
+  Ground (None by default, or Dirt, Grass, Farmland, Sand, Rock, Snow,
   Ice, Marsh, Lava, Water: a plane under it in its own colour and
-  texture, a lagoon for water) and Ruined + decay (optionally burned) as below
+  texture, a lagoon for water — the recipe's alone; no culture sets it, nor
+  its walls) and Ruined + decay (optionally burned) as below
   — a building comes down by degrees (`ruinPiece()`): its roof opens from
   a gap at 0.1 and is gone by 0.4, then the walls break off lower and
   lower to foundations at 1, so it stays recognisable well past halfway;
@@ -405,8 +405,9 @@ Towers are body + crenellated top + cap: `towerCorbel` widens the top of
 the body on a 45° slope, `towerCrenel` adds a parapet band with its own
 corbel, and `towerRoof` caps it (cone, onion, dome, lancet, or none — a
 bare crenellated top). `steeple` makes the church, cathedral, clock and
-bell towers square or round; either takes the same cap and top. A
-culture's `wall` picks the material, and every material draws in its own
+bell towers square or round; either takes the same cap and top. The
+recipe's walls pick the material — a culture never does ("Usual for its
+size" is an outpost's palisade, stone from a hold up) — and every material draws in its own
 colours whatever the palette: stone grey, hedges green and brown (a
 bramble pattern), coral and bone white and grey (coral as a brain-coral
 maze), palisades and earth banks brown (planks, speckled dirt).

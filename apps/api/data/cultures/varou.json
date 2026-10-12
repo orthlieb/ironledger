@@ -16,7 +16,6 @@
     "flags": true,
     "flagFolds": 1,
     "flagLen": 15,
-    "wall": "palisade",
     "wallShape": "round",
     "gate": "tower",
     "church": false,

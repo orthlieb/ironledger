@@ -53,7 +53,6 @@ export interface MapMarker {
     wallShape?: 'round' | 'square';
     ground?:
       | 'none'
-      | 'hex'
       | 'dirt'
       | 'grass'
       | 'farmland'

@@ -102,7 +102,7 @@ A `SettlementRecipe` field that overrides a `Design` or a layout option
    `SettlementRecipe` JSDoc typedef; merge the field into the resolved
    `Design` via `recipeDesign()` (for Design-level overrides) or pass
    it to `settlement(...)` as an option in `generateSettlementSvg()`
-   (for layout-level options like `stilts`).
+   (for layout-level options like `stilts` and `ground`).
 3. **`apps/web/src/lib/components/SettlementBuilder.svelte`** — add a
    control (Select, Checkbox, etc.), carry its state via `$state(...)`,
    seed it from `initial?.<field>`, and spread it into the `$derived`

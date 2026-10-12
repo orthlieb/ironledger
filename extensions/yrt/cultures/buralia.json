@@ -12,7 +12,6 @@
     "flags": true,
     "flagFolds": 4,
     "flagLen": 13,
-    "wall": "earth",
     "wallShape": "round",
     "gate": "tower",
     "church": true,

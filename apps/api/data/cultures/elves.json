@@ -19,7 +19,6 @@
     "flags": true,
     "flagFolds": 4,
     "flagLen": 15,
-    "wall": "hedge",
     "wallShape": "round",
     "church": true,
     "symbol": "wheel",

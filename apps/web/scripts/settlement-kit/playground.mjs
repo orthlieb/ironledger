@@ -64,27 +64,6 @@ const KNOBS = [
 	},
 	{
 		group: 'Build',
-		key: 'ground',
-		label: 'Ground',
-		type: 'select',
-		options: [
-			'none',
-			'hex',
-			'dirt',
-			'grass',
-			'farmland',
-			'sand',
-			'rock',
-			'snow',
-			'ice',
-			'marsh',
-			'lava',
-			'water',
-		],
-		design: true,
-	},
-	{
-		group: 'Build',
 		key: 'stature',
 		label: 'Stature',
 		type: 'range',
@@ -341,14 +320,6 @@ const KNOBS = [
 	},
 	{
 		group: 'Walls',
-		key: 'wall',
-		label: 'Culture wall',
-		type: 'select',
-		options: ['none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef'],
-		design: true,
-	},
-	{
-		group: 'Walls',
 		key: 'wallShape',
 		label: 'Wall shape',
 		type: 'select',
@@ -439,6 +410,26 @@ const KNOBS = [
 	},
 	{ group: 'Drawing', key: 'stilts', label: 'On stilts', type: 'check' },
 	{
+		// What it stands on — the drawing's, not the culture's.
+		group: 'Drawing',
+		key: 'ground',
+		label: 'Ground',
+		type: 'select',
+		options: [
+			'none',
+			'dirt',
+			'grass',
+			'farmland',
+			'sand',
+			'rock',
+			'snow',
+			'ice',
+			'marsh',
+			'lava',
+			'water',
+		],
+	},
+	{
 		// The map's Buildings tab: pieces drawn as buildings, each in a wall of
 		// its own (the wall pieces never are) — see building().
 		group: 'Drawing',
@@ -511,6 +502,7 @@ const DRAWING = {
 	harbor: 'none',
 	walls: 'auto',
 	stilts: false,
+	ground: 'none',
 	buildingWalls: 'pieces',
 	softRadius: 0.9,
 	outline: 1.4,
@@ -681,6 +673,7 @@ function render() {
 		seed: drawing.layout,
 		harbor: drawing.harbor,
 		stilts: !!drawing.stilts,
+		ground: drawing.ground,
 		ruin,
 	};
 	/** @type {[string, string][]} */
@@ -704,7 +697,14 @@ function render() {
 					([key, t]) =>
 						/** @type {[string, string]} */ ([
 							t,
-							svg(building(key, design, { walls: bw, seed: drawing.layout, ruin })),
+							svg(
+								building(key, design, {
+									walls: bw,
+									seed: drawing.layout,
+									ground: drawing.ground,
+									ruin,
+								}),
+							),
 						]),
 				);
 	const card = (/** @type {[string, string]} */ [t, s], cls = '') =>

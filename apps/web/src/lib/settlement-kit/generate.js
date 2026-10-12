@@ -42,8 +42,10 @@ export { fallbackIcon } from './fallback.js';
  * `building` (a key of layouts3d.js BUILDINGS) draws that one building
  * instead of a settlement — the Buildings tab: `walls` then encloses it
  * (never a wall building), and `tier`, `stilts` and `harbor` don't apply.
+ * `walls` and `ground` are the recipe's alone — a culture has no say in
+ * either (its wall *style* — height, merlons, towers, gate, shape — it has).
  * @typedef {{tier: Tier, culture: string, seed: number, walls?: Walls,
- *   wallShape?: 'round' | 'square', ground?: Design['ground'],
+ *   wallShape?: 'round' | 'square', ground?: import('./pieces3d.js').Ground,
  *   stilts?: boolean, harbor?: boolean, building?: string,
  *   ruin?: {decay: number, burned?: boolean}}} SettlementRecipe
  */
@@ -202,7 +204,6 @@ export function recipeDesign(recipe, culture) {
 		...DEFAULT_DESIGN,
 		...upgradeDesign(culture?.design ?? {}),
 		...(recipe.wallShape ? { wallShape: recipe.wallShape } : {}),
-		...(recipe.ground ? { ground: recipe.ground } : {}),
 	};
 }
 
@@ -227,10 +228,16 @@ export function generateSettlementSvg(recipe, culture) {
 	/** @param {typeof ruin} r the ruin, or none for the whole thing */
 	const draw = (r) =>
 		recipe.building
-			? building(recipe.building, design, { walls: recipe.walls, seed: recipe.seed, ruin: r })
+			? building(recipe.building, design, {
+					walls: recipe.walls,
+					seed: recipe.seed,
+					ground: recipe.ground,
+					ruin: r,
+				})
 			: settlement(tier, design, {
 					walls: recipe.walls ?? 'auto',
 					seed: recipe.seed,
+					ground: recipe.ground,
 					harbor: recipe.harbor ? 'side' : 'none',
 					stilts: !!recipe.stilts,
 					ruin: r,
