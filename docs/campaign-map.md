@@ -440,8 +440,12 @@ once lost on save that way).
 #### Picker lightbox
 
 Hovering a tile on the Icons tab shows the icon enlarged beside it
-(tiles are ~48 px, too small to judge a detailed settlement). Mouse and
-pen only; touch keeps tap-to-pick.
+(tiles are ~48 px, too small to judge a detailed settlement). A mouse on
+a device that can hover (`(hover: hover) and (pointer: fine)`) only:
+iOS can fire a mouse-type enter on a tap, or on the tile that lands
+under the finger as the dialog opens, and with no hover to end it the
+lightbox stuck over the grid. Touch keeps tap-to-pick
+(`tests/e2e/map-icon-lightbox.spec.ts`).
 
 ### Data compatibility
 
