@@ -87,6 +87,22 @@ export const UNWALLED_BUILDINGS: ReadonlySet<string> = new Set([
 	'pier',
 ]);
 
+/** What a settlement or building stands on (Design.ground): 'land' draws no
+ *  ground (the UI's "None"); the rest a plane under it in their own colour
+ *  and texture; water a lagoon. */
+export const SETTLEMENT_GROUNDS = [
+	'land',
+	'dirt',
+	'grass',
+	'farmland',
+	'sand',
+	'rock',
+	'snow',
+	'marsh',
+	'water',
+] as const;
+export type SettlementGround = (typeof SETTLEMENT_GROUNDS)[number];
+
 export interface SettlementRecipe {
 	tier: SettlementTier;
 	/** Culture plugin key, e.g. "elves" or "nysis". */
@@ -95,8 +111,8 @@ export interface SettlementRecipe {
 	seed: number;
 	walls?: SettlementWalls;
 	wallShape?: 'round' | 'square';
-	/** Override the culture's own `ground`: a lagoon under the whole icon. */
-	ground?: 'land' | 'water';
+	/** Override the culture's own `ground`: what the whole icon stands on. */
+	ground?: SettlementGround;
 	/** Lift every building onto a timber-post deck (over water or sand). */
 	stilts?: boolean;
 	harbor?: boolean;
@@ -180,7 +196,8 @@ export function cleanSettlementRecipe(v: unknown): SettlementRecipe | undefined 
 	};
 	if (SETTLEMENT_WALLS.includes(o.walls as SettlementWalls)) out.walls = o.walls as SettlementWalls;
 	if (o.wallShape === 'round' || o.wallShape === 'square') out.wallShape = o.wallShape;
-	if (o.ground === 'land' || o.ground === 'water') out.ground = o.ground;
+	if (SETTLEMENT_GROUNDS.includes(o.ground as SettlementGround))
+		out.ground = o.ground as SettlementGround;
 	if (o.stilts === true) out.stilts = true;
 	if (o.harbor === true) out.harbor = true;
 	const ruin = o.ruin as { decay?: unknown; burned?: unknown } | undefined;

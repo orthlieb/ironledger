@@ -66,7 +66,7 @@ const KNOBS = [
 		key: 'ground',
 		label: 'Ground',
 		type: 'select',
-		options: ['land', 'water'],
+		options: ['land', 'dirt', 'grass', 'farmland', 'sand', 'rock', 'snow', 'marsh', 'water'],
 		design: true,
 	},
 	{

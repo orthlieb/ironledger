@@ -44,6 +44,7 @@
 		cleanSettlementRecipe,
 		sameRecipe,
 		type SettlementBuilding,
+		type SettlementGround,
 		type SettlementRecipe,
 		type SettlementTier,
 		type SettlementWalls,
@@ -99,10 +100,17 @@
 		{ value: 'round', label: 'Round' },
 		{ value: 'square', label: 'Square' },
 	];
-	type Ground = 'culture' | 'land' | 'water';
+	type Ground = 'culture' | SettlementGround;
 	const GROUNDS: { value: Ground; label: string }[] = [
 		{ value: 'culture', label: "Culture's own" },
-		{ value: 'land', label: 'Land' },
+		{ value: 'land', label: 'None' },
+		{ value: 'dirt', label: 'Dirt' },
+		{ value: 'grass', label: 'Grass' },
+		{ value: 'farmland', label: 'Farmland' },
+		{ value: 'sand', label: 'Sand' },
+		{ value: 'rock', label: 'Rock' },
+		{ value: 'snow', label: 'Snow' },
+		{ value: 'marsh', label: 'Marsh' },
 		{ value: 'water', label: 'Water' },
 	];
 

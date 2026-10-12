@@ -34,6 +34,29 @@ describe('mapMarkerSchema', () => {
     expect(mapMarkerSchema.parse({ ...base, settlement }).settlement).toEqual(settlement);
   });
 
+  it('keeps every ground type, and rejects one it does not know', () => {
+    for (const ground of [
+      'land',
+      'dirt',
+      'grass',
+      'farmland',
+      'sand',
+      'rock',
+      'snow',
+      'marsh',
+      'water',
+    ]) {
+      const settlement = { tier: 'village', culture: 'elves', seed: 7, ground };
+      expect(mapMarkerSchema.parse({ ...base, settlement }).settlement).toEqual(settlement);
+    }
+    expect(
+      mapMarkerSchema.safeParse({
+        ...base,
+        settlement: { tier: 'village', culture: 'elves', seed: 7, ground: 'lava' },
+      }).success,
+    ).toBe(false);
+  });
+
   it('keeps a building recipe', () => {
     const settlement = {
       tier: 'stead',

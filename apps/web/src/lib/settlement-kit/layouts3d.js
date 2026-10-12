@@ -18,8 +18,8 @@ import {
 	clocktower,
 	gableHouse,
 	gatehouse,
+	groundPlane,
 	keep,
-	lagoon,
 	lighthouse,
 	market,
 	mine,
@@ -594,11 +594,12 @@ export function settlement(tier, D, o = {}) {
 		T.harbor || (o.harbor === 'side' && rank >= 0)
 			? harbor(D, wrx, wry, square ? W / 2 + dv[0] * 0.4 : wrx, square ? dv[1] * 0.4 : 0)
 			: { water: [], piers: [] };
-	// Water-dwellers (merrow) build in a lagoon. The lagoon is the base
-	// plane for everything else, so it goes with port.water at the back of
-	// the stacking order — if it were in `ground` (drawn after `ring.back`)
-	// the back half of the ring wall would be painted over by it.
-	if (D.ground === 'water') port.water.push(enclosureLagoon(square, wrx, wry));
+	// The ground it stands on — dirt, grass, farmland, sand, rock, snow,
+	// marsh, or (water-dwellers, the merrow) a lagoon. It's the base plane
+	// for everything else, so it goes with port.water at the back of the
+	// stacking order — if it were in `ground` (drawn after `ring.back`) the
+	// back half of the ring wall would be painted over by it.
+	if (D.ground && D.ground !== 'land') port.water.push(enclosureGround(D.ground, square, wrx, wry));
 	/** @param {import('./ruins3d.js').RuinPlaced[]} list */
 	const finish = (list) => (o.ruin ? ruinPlaced(list, { ...o.ruin, seed: o.seed ?? 1 }) : list);
 	if (wall === 'none') return finish([...port.water, ...ground, ...inside, ...port.piers]);
@@ -848,12 +849,12 @@ export function building(key, D, o = {}) {
 	const make = (PIECES.find(([k]) => k === key) ?? PIECES[0])[2];
 	let items = make(own, 1 + Math.floor(r() * 999_999));
 	if (walls && !UNWALLED_BUILDINGS.has(key)) items = enclosed(D, items, walls);
-	else if (D.ground === 'water') {
-		// Water-dwellers' buildings stand in a lagoon, as their settlements
-		// do (an enclosure lays its own, under the whole of it).
+	else if (D.ground && D.ground !== 'land') {
+		// A building stands on its ground — water-dwellers' in a lagoon — as
+		// a settlement does (an enclosure lays its own, under the whole of it).
 		const { x0, x1 } = placedExtent(items);
 		const rx = Math.max(16, (x1 - x0) / 2 + 8);
-		items = [{ piece: lagoon(rx, rx * 0.4), x: (x0 + x1) / 2 }, ...items];
+		items = [{ piece: groundPlane(D.ground, rx, rx * 0.4), x: (x0 + x1) / 2 }, ...items];
 	}
 	if (o.ruin) items = ruinPlaced(items, { ...o.ruin, seed });
 	return normalized(items);
@@ -918,7 +919,7 @@ function enclosed(D, items, wall) {
 		towers: Math.min(2, D.wallTowers),
 	});
 	return [
-		...(D.ground === 'water' ? [enclosureLagoon(square, wrx, wry)] : []),
+		...(D.ground && D.ground !== 'land' ? [enclosureGround(D.ground, square, wrx, wry)] : []),
 		...ring.back,
 		...items.map((it) => ({ ...it, x: (it.x ?? 0) + ox, y: (it.y ?? 0) + oy })),
 		...ring.front,
@@ -926,24 +927,26 @@ function enclosed(D, items, wall) {
 }
 
 /**
- * The lagoon a walled layout stands in. A ring gets an ellipse a little
- * larger than itself; a square enclosure — a parallelogram in this view,
- * its sides receding to the right — one wide and deep enough to take its
- * front-left and back-right corners too, so no wall stands out of the water.
+ * The ground a walled layout stands on — a lagoon, or a plane of another
+ * ground type (groundPlane()). A ring gets an ellipse a little larger than
+ * itself; a square enclosure — a parallelogram in this view, its sides
+ * receding to the right — one wide and deep enough to take its front-left
+ * and back-right corners too, so no wall stands off the ground.
+ * @param {Exclude<Design['ground'], 'land'>} kind
  * @param {boolean} square
  * @param {number} wrx
  * @param {number} wry
  * @returns {Placed}
  */
-function enclosureLagoon(square, wrx, wry) {
-	if (!square) return { piece: lagoon(wrx * 1.15, wry * 1.25) };
+function enclosureGround(kind, square, wrx, wry) {
+	if (!square) return { piece: groundPlane(kind, wrx * 1.15, wry * 1.25) };
 	const { W, dv } = squareFootprint(wrx, wry);
 	// An ellipse k× the parallelogram's half-width takes its far corners
 	// (±half-width, ±half-depth) once its half-depth is ≥ that half-depth
 	// ÷ √(1 − 1/k²) — 0.83 × the depth at k = 1.25; plus a margin, so the
 	// corners stand in the water rather than on its edge.
 	return {
-		piece: lagoon(1.25 * (W / 2 + dv[0] / 2) + 5, 0.9 * dv[1] + 5),
+		piece: groundPlane(kind, 1.25 * (W / 2 + dv[0] / 2) + 5, 0.9 * dv[1] + 5),
 		x: dv[0] / 2,
 		y: dv[1] / 2,
 	};

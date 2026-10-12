@@ -77,8 +77,10 @@ import { place } from './render.js';
  *   whale-jaw arch
  * @property {'timber' | 'round' | 'mound' | 'stilt'} houseForm framed houses, round huts,
  *   turf mounds, or huts on stilts
- * @property {'land' | 'water'} ground what the settlement stands on (water: a lagoon with
- *   waves)
+ * @property {'land' | 'dirt' | 'grass' | 'farmland' | 'sand' | 'rock' | 'snow' | 'marsh' | 'water'} ground
+ *   what the settlement stands on: 'land' draws no ground; the others a plane
+ *   under the whole of it in their own colour and texture (groundPlane());
+ *   water a lagoon with waves
  * @property {number} stature building height factor (small folk < 1 < giants)
  * @property {number} scale building size factor; bigger means fewer of them
  * @property {number} variety 0..1: a mixed culture (a freeport) — the chance
@@ -3515,6 +3517,23 @@ export function onStilts(parts, D) {
 		{ solid: [deck], role: 'wood', shadeArea: rect(cx + R * 0.3, lift - R, R * 2, R * 2) },
 		...place(parts, { y: lift - depthDraw / 2 }),
 	];
+}
+
+/**
+ * The ground plane a settlement or building stands on, of a ground type
+ * (Design.ground): an ellipse rx × ry under the whole of it, in the type's
+ * own colour and texture (the `ground-<type>` pattern role, patterns.js) —
+ * or, for water, the lagoon. Terrain, so ruins never break it.
+ * @param {Exclude<Design['ground'], 'land'>} kind
+ * @param {number} rx
+ * @param {number} ry
+ * @returns {Part[]}
+ */
+export function groundPlane(kind, rx, ry) {
+	if (kind === 'water') return lagoon(rx, ry);
+	/** @type {Poly} */
+	const plane = ell(0, 0, rx, ry, 0, 360, 48).slice(0, -1);
+	return [{ solid: [plane], role: /** @type {Part['role']} */ (`ground-${kind}`), terrain: true }];
 }
 
 /**

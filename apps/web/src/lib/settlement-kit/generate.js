@@ -43,7 +43,7 @@ export { fallbackIcon } from './fallback.js';
  * instead of a settlement — the Buildings tab: `walls` then encloses it
  * (never a wall building), and `tier`, `stilts` and `harbor` don't apply.
  * @typedef {{tier: Tier, culture: string, seed: number, walls?: Walls,
- *   wallShape?: 'round' | 'square', ground?: 'land' | 'water',
+ *   wallShape?: 'round' | 'square', ground?: Design['ground'],
  *   stilts?: boolean, harbor?: boolean, building?: string,
  *   ruin?: {decay: number, burned?: boolean}}} SettlementRecipe
  */

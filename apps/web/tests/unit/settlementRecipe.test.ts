@@ -27,6 +27,21 @@ describe('building recipes', () => {
 		expect(cleanSettlementRecipe({ ...tower, building: 'skyscraper' })).toBeUndefined();
 		expect(cleanSettlementRecipe({ ...tower, building: 'toString' })).toBeUndefined();
 	});
+	it('accept every ground type, and drop one they do not know', () => {
+		for (const ground of [
+			'land',
+			'dirt',
+			'grass',
+			'farmland',
+			'sand',
+			'rock',
+			'snow',
+			'marsh',
+			'water',
+		])
+			expect(cleanSettlementRecipe({ ...tower, ground })?.ground).toBe(ground);
+		expect(cleanSettlementRecipe({ ...tower, ground: 'lava' })).not.toHaveProperty('ground');
+	});
 	it('key apart from the settlement with the same knobs', () => {
 		const { building: _, ...plain } = tower;
 		expect(recipeKey(tower)).not.toBe(recipeKey(plain));

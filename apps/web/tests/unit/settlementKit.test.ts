@@ -56,6 +56,7 @@ import {
 } from '../../src/lib/settlement-kit/pieces3d.js';
 import {
 	FLAT_WALLS,
+	GROUND_TYPES,
 	TEXTURE_ROLES,
 	paletteTone,
 	patternDefs,
@@ -441,6 +442,48 @@ describe('buildings (the Buildings tab)', () => {
 				null,
 			);
 		expect(tower(1)).not.toBe(tower(2));
+	});
+});
+
+describe('ground', () => {
+	const svgOf = (ground: string, extra: Record<string, unknown> = {}) =>
+		generateSettlementSvg(
+			{ tier: 'village', culture: 'default', seed: 3, ground, ...extra } as Parameters<
+				typeof generateSettlementSvg
+			>[0],
+			null,
+		);
+	const rolesOf = (svg: string) => [...svg.matchAll(/data-role="([\w-]+)"/g)].map((m) => m[1]);
+	it('draws no ground on plain land, and a lagoon on water', () => {
+		const land = rolesOf(svgOf('land'));
+		expect(land.some((r) => r.startsWith('ground-') || r === 'water')).toBe(false);
+		expect(rolesOf(svgOf('water'))).toContain('water');
+	});
+	it.each(GROUND_TYPES)('lays a %s plane, textured, under a settlement and a building', (g) => {
+		for (const svg of [svgOf(g), svgOf(g, { tier: 'stead', building: 'barn', walls: 'stone' })]) {
+			expect(rolesOf(svg)).toContain(`ground-${g}`);
+			expect(svg).toContain(`id="pat-ground-${g}-`);
+			expect(svg).toMatch(new RegExp(`data-role="ground-${g}"[^/]*fill="url\\(#pat-ground-${g}-`));
+		}
+	});
+	it.each(GROUND_TYPES)('draws a %s plane flat with Texture off', (g) => {
+		const svg = generateSettlementSvg(
+			{ tier: 'village', culture: 't', seed: 3, ground: g } as Parameters<
+				typeof generateSettlementSvg
+			>[0],
+			{ key: 't', name: 'T', design: { texture: false }, palette: PARCHMENT },
+		);
+		expect(svg).toContain(`data-role="ground-${g}" fill="${FLAT_WALLS[`ground-${g}`]}"`);
+	});
+	it('keeps the ground pattern tiles compact', () => {
+		for (const g of GROUND_TYPES) {
+			const { defs } = patternDefs(
+				[`ground-${g}`],
+				(r) => paletteTone(r, '#000000', (a) => a),
+				't',
+			);
+			expect(defs.length, g).toBeLessThan(6_000);
+		}
 	});
 });
 
