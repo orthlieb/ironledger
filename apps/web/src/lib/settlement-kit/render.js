@@ -32,7 +32,7 @@
 // =============================================================================
 
 import ClipperLib from 'clipper-lib';
-import { TEXTURE_ROLES } from './patterns.js';
+import { GROUND_TYPES, TEXTURE_ROLES } from './patterns.js';
 
 /** @typedef {import('./geom.js').Pt} Pt */
 /** @typedef {import('./geom.js').Poly} Poly */
@@ -250,73 +250,30 @@ export function place(parts, at) {
 	}));
 }
 
+/** Each role with its -shade twin after it. @param {string[]} roles */
+const withShade = (roles) => roles.flatMap((r) => [r, `${r}-shade`]);
+
 /** Face layers, in paint order. The `wall-*` material roles (stone /
  *  hedge / reef / wood / earth / bone) take an SVG `<pattern>` fill in place
  *  of a flat colour — see settlement-kit/patterns.js — each with its own
  *  -shade tile. */
-const FACE_LAYERS = /** @type {const} */ ([
+const FACE_LAYERS = [
 	// The ground plane under everything (groundPlane() in pieces3d.js);
 	// never shaded, but every part gets a -shade layer.
-	'ground-dirt',
-	'ground-dirt-shade',
-	'ground-grass',
-	'ground-grass-shade',
-	'ground-farmland',
-	'ground-farmland-shade',
-	'ground-sand',
-	'ground-sand-shade',
-	'ground-rock',
-	'ground-rock-shade',
-	'ground-snow',
-	'ground-snow-shade',
-	'ground-ice',
-	'ground-ice-shade',
-	'ground-marsh',
-	'ground-marsh-shade',
-	'ground-lava',
-	'ground-lava-shade',
-	'water',
-	'water-shade',
-	'wall',
-	'wall-shade',
-	'wall-stone',
-	'wall-stone-shade',
-	'wall-hedge',
-	'wall-hedge-shade',
-	'wall-reef',
-	'wall-reef-shade',
-	'wall-wood',
-	'wall-wood-shade',
-	'wall-earth',
-	'wall-earth-shade',
-	'wall-bone',
-	'wall-bone-shade',
-	'wall-stone-ring',
-	'wall-stone-ring-shade',
-	'wall-wood-ring',
-	'wall-wood-ring-shade',
-	'wall-hedge-ring',
-	'wall-hedge-ring-shade',
-	'wall-reef-ring',
-	'wall-reef-ring-shade',
-	'wall-earth-ring',
-	'wall-earth-ring-shade',
-	'wall-bone-ring',
-	'wall-bone-ring-shade',
+	...withShade(GROUND_TYPES.map((g) => `ground-${g}`)),
+	...withShade(['water', 'wall']),
+	...withShade(['stone', 'hedge', 'reef', 'wood', 'earth', 'bone'].map((m) => `wall-${m}`)),
+	...withShade(['stone', 'wood', 'hedge', 'reef', 'earth', 'bone'].map((m) => `wall-${m}-ring`)),
+	// Ring walls' tinted line-work, painted inside their faces.
 	'wall-hedge-cane',
 	'wall-reef-groove',
 	'wall-reef-vein',
 	'wall-earth-grit',
 	'wall-earth-pebble',
 	'wall-bone-grain',
-	'wood',
-	'wood-shade',
-	'earth',
-	'earth-shade',
-	'roof',
-	'roof-shade',
+	...withShade(['wood', 'earth', 'roof']),
 	'flag',
-]);
+];
 
 /** One outline layer per role a part can be drawn in (its face roles, bar
  *  the -shade and line-work texture ones): each part's outline is drawn in a

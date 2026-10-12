@@ -798,56 +798,48 @@ function flat(colour) {
 	};
 }
 
+/** Face tiles, each serving its -shade twin too (toned darker by
+ *  paletteTone()). @param {Record<string, PatternDef>} tiles */
+const withShade = (tiles) =>
+	Object.fromEntries(
+		Object.entries(tiles).flatMap(([r, t]) => [
+			[r, t],
+			[`${r}-shade`, t],
+		]),
+	);
+
 /** @type {Record<string, PatternDef>} */
 const PATTERNS = {
-	'wall-stone': stone,
-	'wall-stone-shade': stone,
-	'wall-hedge': hedge,
-	'wall-hedge-shade': hedge,
-	'wall-reef': reef,
-	'wall-reef-shade': reef,
-	'wall-wood': wood,
-	'wall-wood-shade': wood,
-	'wall-earth': earth,
-	'wall-earth-shade': earth,
-	'wall-bone': bone,
-	'wall-bone-shade': bone,
-	'wall-stone-ring': stoneRing,
-	'wall-stone-ring-shade': stoneRing,
-	'wall-wood-ring': woodRing,
-	'wall-wood-ring-shade': woodRing,
-	'wall-hedge-ring': hedgeRing,
-	'wall-hedge-ring-shade': hedgeRing,
-	'wall-reef-ring': reefRing,
-	'wall-reef-ring-shade': reefRing,
+	...withShade({
+		'wall-stone': stone,
+		'wall-hedge': hedge,
+		'wall-reef': reef,
+		'wall-wood': wood,
+		'wall-earth': earth,
+		'wall-bone': bone,
+		'wall-stone-ring': stoneRing,
+		'wall-wood-ring': woodRing,
+		'wall-hedge-ring': hedgeRing,
+		'wall-reef-ring': reefRing,
+		'wall-earth-ring': flat(MATERIALS.earth.body),
+		'wall-bone-ring': flat(MATERIALS.bone.body),
+		'ground-dirt': dirtGround,
+		'ground-grass': grassGround,
+		'ground-farmland': farmGround,
+		'ground-sand': sandGround,
+		'ground-rock': rockGround,
+		'ground-snow': snowGround,
+		'ground-marsh': marshGround,
+		'ground-ice': iceGround,
+		'ground-lava': lavaGround,
+	}),
+	// Tinted line-work round a ring wall: never shaded.
 	'wall-hedge-cane': flat(MATERIALS.hedge.cane),
 	'wall-reef-groove': flat(MATERIALS.coral.wall),
 	'wall-reef-vein': flat(MATERIALS.coral.groove),
-	'wall-earth-ring': flat(MATERIALS.earth.body),
-	'wall-earth-ring-shade': flat(MATERIALS.earth.body),
-	'wall-bone-ring': flat(MATERIALS.bone.body),
-	'wall-bone-ring-shade': flat(MATERIALS.bone.body),
 	'wall-earth-grit': flat(MATERIALS.earth.dark),
 	'wall-earth-pebble': flat(MATERIALS.earth.light),
 	'wall-bone-grain': flat(MATERIALS.bone.grain),
-	'ground-dirt': dirtGround,
-	'ground-dirt-shade': dirtGround,
-	'ground-grass': grassGround,
-	'ground-grass-shade': grassGround,
-	'ground-farmland': farmGround,
-	'ground-farmland-shade': farmGround,
-	'ground-sand': sandGround,
-	'ground-sand-shade': sandGround,
-	'ground-rock': rockGround,
-	'ground-rock-shade': rockGround,
-	'ground-snow': snowGround,
-	'ground-snow-shade': snowGround,
-	'ground-marsh': marshGround,
-	'ground-marsh-shade': marshGround,
-	'ground-ice': iceGround,
-	'ground-ice-shade': iceGround,
-	'ground-lava': lavaGround,
-	'ground-lava-shade': lavaGround,
 };
 
 /** How much of each colour a -shade tile keeps (the rest is ink) — the
@@ -872,22 +864,27 @@ export function paletteTone(role, ink, mix) {
  *  to paint at all). */
 export const PATTERN_MIN_PX = 0.35;
 
+/** Each wall material's flat colour, a straight wall's and a ring's. */
+const WALL_FLAT = {
+	stone: '#BEBCB6',
+	hedge: '#6A8749',
+	reef: '#DEDCD6',
+	wood: '#9A6B42',
+	earth: '#8A6843',
+	bone: '#E9E5DB',
+};
+
 /** Flat colour of each patterned wall (and ground plane) — its material at
  *  a glance, for an icon drawn too small for the pattern to resolve.
  *  @type {Record<string, string>} */
 export const FLAT_WALLS = {
-	'wall-stone': '#BEBCB6',
-	'wall-hedge': '#6A8749',
-	'wall-reef': '#DEDCD6',
-	'wall-wood': '#9A6B42',
-	'wall-earth': '#8A6843',
-	'wall-bone': '#E9E5DB',
-	'wall-stone-ring': '#BEBCB6',
-	'wall-wood-ring': '#9A6B42',
-	'wall-hedge-ring': '#6A8749',
-	'wall-reef-ring': '#DEDCD6',
-	'wall-earth-ring': '#8A6843',
-	'wall-bone-ring': '#E9E5DB',
+	...Object.fromEntries(
+		Object.entries(WALL_FLAT).flatMap(([m, c]) => [
+			[`wall-${m}`, c],
+			// A ring wall in the same material reads the same flat.
+			[`wall-${m}-ring`, c],
+		]),
+	),
 	// The ground planes, too.
 	'ground-dirt': '#AE9370',
 	'ground-grass': '#A2B476',
