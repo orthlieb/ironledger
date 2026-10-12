@@ -43,8 +43,8 @@ import { TEXTURE_ROLES } from './patterns.js';
 /** `sharp`: keep the part's corners crisp whatever the drawing's join (flag
  *  cloth — a soft join would melt a pennant's tip into a blob). `aloft`:
  *  hung from high up (a mill's sails) — a ruin drops it, however low it
- *  reaches.
- *  @typedef {{solid: Poly[], lines?: Line[], shadeLines?: Line[], fills?: Poly[], cuts?: Line[], free?: Line[], mask?: Poly, role?: Role, shaded?: boolean, shadeArea?: Poly, terrain?: boolean, sharp?: boolean, aloft?: boolean}} Part */
+ *  reaches. `smoke`: a chimney's plume — a ruin never smokes.
+ *  @typedef {{solid: Poly[], lines?: Line[], shadeLines?: Line[], fills?: Poly[], cuts?: Line[], free?: Line[], mask?: Poly, role?: Role, shaded?: boolean, shadeArea?: Poly, terrain?: boolean, sharp?: boolean, aloft?: boolean, smoke?: boolean}} Part */
 /** @typedef {{X: number, Y: number}[][]} CPaths */
 
 /** Default outline stroke weight (world units). */

@@ -188,4 +188,14 @@ describe('mapGlyphInner — layered icons', () => {
 		primeLayered(icon.src!, SVG);
 		expect(mapGlyphInner(icon, '#000000', 'u3')).toContain('fill="#aa0000"');
 	});
+	it('gives a preview a thin fixed-px halo, however big the icon', () => {
+		const big = { ...icon, src: '/map/settlement/test-big.svg', viewBox: '0 0 400 400' };
+		primeLayered(big.src, SVG.replace('viewBox="0 0 10 10"', 'viewBox="0 0 400 400"'));
+		// Not a glow sized to the icon's box (that read as a fat white band in
+		// the builders' big preview): the same few screen px at any size.
+		for (const ic of [icon, big]) {
+			const out = mapGlyphInner(ic, '#ff0000', `p-${ic.viewBox}`, 'proportional');
+			expect(out).toMatch(/stroke-width="3"[^>]*vector-effect="non-scaling-stroke"/);
+		}
+	});
 });

@@ -14,6 +14,8 @@
 //     bushes and a tree in the bigger shells — in the MARKER colour (role
 //     'roof'), so ruins stay colour-coded on the map once the roofs are gone.
 // Terrain parts (`terrain: true`: sea, rock, mountains, plazas) are never cut.
+// A building on its own (the Buildings tab, `single`) comes down by degrees
+// instead — see crumble().
 // =============================================================================
 
 import { rect, rng } from './geom.js';
@@ -23,8 +25,8 @@ import { rect, rng } from './geom.js';
 /** @typedef {import('./geom.js').Poly} Poly */
 /** @typedef {import('./pieces3d.js').Placed} Placed */
 /** `single`: one building on its own (the Buildings tab), not one of many —
- *  its ruin follows `decay` step by step rather than rolling, building by
- *  building, whether the roof survives.
+ *  ruined by crumble(), a step at a time as `decay` rises, rather than
+ *  rolling building by building whether the roof survives.
  *  @typedef {{decay: number, overgrowth: number, burned: boolean, seed?: number, single?: boolean}} RuinOptions */
 /** @typedef {Placed} RuinPlaced */
 
@@ -70,6 +72,7 @@ export function ruinPlaced(items, o) {
  * @returns {Part[]}
  */
 export function ruinPiece(parts, o, seed) {
+	if (o.single) return crumble(parts, o, seed);
 	const r = rng(seed);
 	const terrain = parts.filter((p) => p.terrain);
 	const built = parts.filter((p) => !p.terrain && p.solid.length);
@@ -94,13 +97,8 @@ export function ruinPiece(parts, o, seed) {
 	const b = bounds(standing);
 	if (!b.ok) return [...terrain, rubble(all, r, 6)];
 	// Some buildings keep their roof — more often the less decayed the ruin,
-	// less often if it burned — about half of those with a hole in it. One on
-	// its own keeps it only at the light end of the decay, holed, so the
-	// slider reads as a progression, not a coin toss that holds to halfway.
-	const roofKept = o.single
-		? o.decay < (o.burned ? 0.15 : 0.25)
-		: r() < (1 - o.decay) * 0.35 * (o.burned ? 0.5 : 1);
-	if (roofKept) return roofed(parts, terrain, all, o, r);
+	// less often if it burned — about half of those with a hole in it.
+	if (r() < (1 - o.decay) * 0.35 * (o.burned ? 0.5 : 1)) return roofed(parts, terrain, all, o, r);
 	const hgt = b.y1 - b.y0;
 	// How much is left: decay 0 keeps most of the walls, 1 leaves foundations.
 	const keep = Math.max(0.08, 0.88 - o.decay * 0.75 + (r() - 0.5) * 0.22);
@@ -119,6 +117,195 @@ export function ruinPiece(parts, o, seed) {
 	if (o.overgrowth > 0)
 		out.push(...ivy(standing, top, o.overgrowth, r), ...bushes(b, o.overgrowth, r));
 	return out;
+}
+
+/**
+ * Ruin one building on its own a step at a time as `decay` rises — the
+ * Buildings tab's Decay slider. Where ruinPiece() rolls building by building
+ * (roof kept or fallen in, walls cut to a height) and so jumps, this one
+ * comes down by degrees and stays recognisable a long way down:
+ *   * at once: flags, banners, smoke, a lamp's rays and the high line-work
+ *     (rails, poles); a mill's sails come off one by one by 0.3;
+ *   * the roofs (role 'roof': roofs, cones, spires, domes) open from a gap
+ *     at 0.1 to a ragged hole, each roof on its own — the parts that overlap
+ *     across, as its lit and shaded sides do — and are gone by 0.4 (sooner,
+ *     burned);
+ *   * the walls stand roofless at full height there, then break off along
+ *     a stepped line down to the foundations at 1 — at each point a share
+ *     of the height that stands there, so a tower and the nave beside it
+ *     come down together, and nothing is left hanging;
+ *   * rubble, ivy and bushes grow with it; burned, the walls are sooted and
+ *     charred beams fall once the roof is in.
+ * @param {Part[]} parts
+ * @param {RuinOptions} o
+ * @param {number} seed
+ * @returns {Part[]}
+ */
+function crumble(parts, o, seed) {
+	const r = rng(seed);
+	const d = o.decay;
+	const built = parts.filter((p) => !p.terrain && p.solid.length);
+	const all = bounds(built);
+	if (!all.ok) return parts.filter((p) => p.terrain);
+	// How far the roofs are gone (0–1), and how much of the walls stands.
+	const gone = ((d - 0.04) / 0.32) * (o.burned ? 1.4 : 1);
+	const keep = d <= 0.4 ? 1 : 1 - ((d - 0.4) / 0.6) * 0.9;
+	/** @type {Set<Part>} */
+	const drop = new Set();
+	for (const p of parts) {
+		if (p.terrain) continue;
+		if (p.role === 'flag' || p.smoke) drop.add(p);
+		// Sails: each holds on to a decay of its own, 0.1–0.3.
+		else if (p.aloft && d >= 0.1 + r() * 0.2) drop.add(p);
+	}
+	const boxes = new Map(parts.map((p) => [p, bounds([p])]));
+	const box = (/** @type {Part} */ p) => /** @type {ReturnType<typeof bounds>} */ (boxes.get(p));
+	const walled = built.filter((p) => p.role !== 'roof');
+	// Roof-coloured paint on a wall (a lighthouse's bands) is the wall's.
+	const paint = (/** @type {Part} */ p) =>
+		walled.some((w) => {
+			const a = box(p),
+				b = box(w);
+			return a.x0 >= b.x0 && a.x1 <= b.x1 && a.y0 >= b.y0 && a.y1 <= b.y1;
+		});
+	const roofParts = built.filter((p) => p.role === 'roof' && !drop.has(p) && !paint(p));
+	/** @type {Map<Part, Poly>} the ragged hole each surviving roof has */
+	const holes = new Map();
+	for (const roof of roofGroups(roofParts)) {
+		const rb = bounds(roof);
+		// What rides on this roof — a chimney through it, a cross or poles on
+		// it — comes down with it.
+		const riders = parts.filter((p) => {
+			if (p.terrain || p.role === 'roof' || drop.has(p)) return false;
+			const b = box(p),
+				lo = p.solid.length
+					? b.y0
+					: Math.min(...(p.free ?? []).flatMap((l) => l.pts.map(([, y]) => y)));
+			const x0 = p.solid.length
+					? b.x0
+					: Math.min(...(p.free ?? []).flatMap((l) => l.pts.map(([x]) => x))),
+				x1 = p.solid.length
+					? b.x1
+					: Math.max(...(p.free ?? []).flatMap((l) => l.pts.map(([x]) => x)));
+			return lo > rb.y0 + 0.5 && lo < rb.y1 && x1 > rb.x0 && x0 < rb.x1;
+		});
+		const g = gone * (0.85 + r() * 0.3);
+		if (keep < 1 || g >= 1) for (const p of [...roof, ...riders]) drop.add(p);
+		else {
+			const hole = roofHole(rb, g, r);
+			for (const p of [...roof, ...riders]) holes.set(p, hole);
+		}
+	}
+	const walls = built.filter((p) => !drop.has(p) && !holes.has(p));
+	const b = bounds(walls);
+	if (!b.ok) return [...parts.filter((p) => p.terrain), rubble(all, r, 6)];
+	const mask = keep < 1 ? fallingTop(walls, b, keep, r) : undefined;
+	const top = (/** @type {number} */ x) => (mask ? maskTop(mask, x, b.y1) : b.y1);
+	/** @type {Part[]} */
+	const out = [];
+	for (const p of parts) {
+		if (drop.has(p)) continue;
+		if (p.terrain) out.push(p);
+		else if (holes.has(p)) out.push({ ...p, mask: holes.get(p) });
+		else {
+			// Line-work on the walls (rays, ropes, spars) goes with the rest.
+			const q = { ...p, ...(mask ? { mask } : {}), ...(p.solid.length ? { free: [] } : {}) };
+			out.push(o.burned && p.solid.length ? scorch(q, top) : q);
+		}
+	}
+	// Rubble and bushes sized to the building, so a well isn't buried.
+	const size = Math.max(0.45, Math.min(1, (b.x1 - b.x0) / 14));
+	if (o.burned && gone >= 0.6) out.push(beams(b, top, r));
+	out.push(rubble(b, r, Math.round(1 + d * 7), size));
+	if (o.overgrowth > 0)
+		out.push(
+			...ivy(walls, top, o.overgrowth * (0.4 + d * 0.6), r),
+			...bushes(b, o.overgrowth * (0.5 + d * 0.5), r, size),
+		);
+	return out;
+}
+
+/**
+ * Roof parts grouped into roofs: those overlapping well across (a roof's
+ * lit and shaded sides, a spire and its finial) are one.
+ * @param {Part[]} roofs
+ * @returns {Part[][]}
+ */
+function roofGroups(roofs) {
+	/** @type {{parts: Part[], b: ReturnType<typeof bounds>}[]} */
+	const groups = [];
+	for (const p of roofs) {
+		const pb = bounds([p]);
+		const g = groups.find(
+			({ b }) =>
+				Math.min(b.x1, pb.x1) - Math.max(b.x0, pb.x0) > 0.3 * Math.min(b.x1 - b.x0, pb.x1 - pb.x0),
+		);
+		if (g) {
+			g.parts.push(p);
+			g.b = bounds(g.parts);
+		} else groups.push({ parts: [p], b: pb });
+	}
+	return groups.map((g) => g.parts);
+}
+
+/**
+ * Keep-region with a ragged hole bitten into a roof from above, `g` (0–1)
+ * of the way to gone: wider and deeper as it goes.
+ * @param {{x0: number, x1: number, y0: number, y1: number}} b the roof's bounds
+ * @param {number} g
+ * @param {() => number} r
+ * @returns {Poly}
+ */
+function roofHole(b, g, r) {
+	const w = (b.x1 - b.x0) * (0.1 + g * 0.95),
+		cx = b.x0 + (b.x1 - b.x0) * (0.3 + r() * 0.4),
+		deep = b.y1 - (b.y1 - b.y0) * (0.15 + g * 0.85),
+		hi = b.y1 + 20;
+	return [
+		[b.x0 - 20, b.y0 - 20],
+		[b.x1 + 20, b.y0 - 20],
+		[b.x1 + 20, hi],
+		[cx + w / 2, hi],
+		[cx + w * 0.42, deep + 1.4],
+		[cx + w * 0.15, deep + 0.4],
+		[cx - w * 0.05, deep + 1.6],
+		[cx - w * 0.3, deep],
+		[cx - w / 2, hi],
+		[b.x0 - 20, hi],
+	];
+}
+
+/**
+ * Keep-region under the stepped broken top of a building coming down: at
+ * each run across, `keep` of the height standing there (what's tallest
+ * over that run), give or take — rougher the further it's fallen.
+ * @param {Part[]} walls
+ * @param {{x0: number, x1: number, y0: number, y1: number}} b their bounds
+ * @param {number} keep
+ * @param {() => number} r
+ * @returns {Poly}
+ */
+function fallingTop(walls, b, keep, r) {
+	const boxes = walls.map((p) => bounds([p]));
+	const slope = (r() < 0.5 ? -1 : 1) * 0.24 * (1 - keep);
+	/** @type {Poly} */
+	const mask = [
+		[b.x1 + 6, b.y0 - 8],
+		[b.x0 - 6, b.y0 - 8],
+	];
+	let x = b.x0 - 6;
+	while (x < b.x1 + 6) {
+		const x1 = Math.min(x + 2.5 + r() * 4, b.x1 + 6);
+		let t = -Infinity;
+		for (const q of boxes) if (q.x1 > x && q.x0 < x1) t = Math.max(t, q.y1);
+		if (!Number.isFinite(t)) t = b.y1;
+		const across = (x - b.x0) / Math.max(1, b.x1 - b.x0) - 0.5;
+		const share = keep + slope * across + (r() - 0.5) * (0.08 + 0.3 * (1 - keep));
+		const y = Math.max(b.y0 + 1.2, Math.min(t, b.y0 + (t - b.y0) * share));
+		mask.push([x, y], [x1, y]);
+		x = x1;
+	}
+	return mask;
 }
 
 /**
@@ -220,17 +407,23 @@ function stone(
 	return pts;
 }
 
-/** Rubble strewn along the foot. @returns {Part} */
+/** Rubble strewn along the foot, its stones `size` times the usual. @returns {Part} */
 function rubble(
 	/** @type {{x0: number, x1: number, y0: number}} */ b,
 	/** @type {() => number} */ r,
 	/** @type {number} */ n,
+	size = 1,
 ) {
 	/** @type {Poly[]} */
 	const stones = [];
 	for (let i = 0; i < n; i++)
 		stones.push(
-			stone(b.x0 + 1 + r() * (b.x1 - b.x0 - 2), b.y0 - 0.6 - r() * 1.8, 1.1 + r() * 1.3, r),
+			stone(
+				b.x0 + 1 + r() * (b.x1 - b.x0 - 2),
+				b.y0 - (0.6 + r() * 1.8) * size,
+				(1.1 + r() * 1.3) * size,
+				r,
+			),
 		);
 	return { solid: stones, shadeArea: rect((b.x0 + b.x1) / 2, b.y0 - 8, (b.x1 - b.x0) * 2, 12) };
 }
@@ -252,10 +445,9 @@ function maskTop(mask, x, base) {
 }
 
 /**
- * A ruined building whose roof survived: everything stands except flags
- * and banners, the roof may have a jagged hole bitten out of it (always,
- * on its own), and it still gets rubble, overgrowth and (if burned)
- * scorched walls.
+ * A ruined building whose roof survived: everything stands except flags,
+ * banners and smoke, the roof may have a jagged hole bitten out of it, and
+ * it still gets rubble, overgrowth and (if burned) scorched walls.
  * @param {Part[]} parts
  * @param {Part[]} terrain
  * @param {{x0: number, x1: number, y0: number, y1: number}} all
@@ -266,7 +458,7 @@ function maskTop(mask, x, base) {
 function roofed(parts, terrain, all, o, r) {
 	/** @type {Poly | undefined} */
 	let hole;
-	if (o.single || r() < 0.5) {
+	if (r() < 0.5) {
 		// Keep-region with a ragged bite out of the roof, from above.
 		const w = (all.x1 - all.x0) * (0.18 + r() * 0.16),
 			cx = all.x0 + (all.x1 - all.x0) * (0.3 + r() * 0.4),
@@ -288,7 +480,7 @@ function roofed(parts, terrain, all, o, r) {
 	const top = () => all.y1;
 	/** @type {Part[]} */
 	const kept = parts
-		.filter((p) => !p.terrain && p.role !== 'flag')
+		.filter((p) => !p.terrain && p.role !== 'flag' && !p.smoke)
 		.map((p) => {
 			const q = p.role === 'roof' && hole ? { ...p, mask: hole } : p;
 			return o.burned && p.role !== 'roof' ? scorch(q, top) : q;
@@ -505,20 +697,22 @@ function ivy(walls, top, amount, r) {
 	return [{ solid: patches, role: 'roof' }];
 }
 
-/** Low, ragged bushes on the ground at the foot (marker colour). @returns {Part[]} */
+/** Low, ragged bushes on the ground at the foot (marker colour), `size`
+ *  times the usual. @returns {Part[]} */
 function bushes(
 	/** @type {{x0: number, x1: number, y0: number}} */ b,
 	/** @type {number} */ amount,
 	/** @type {() => number} */ r,
+	size = 1,
 ) {
 	const n = Math.round(amount * 3);
 	/** @type {Part[]} */
 	const out = [];
 	for (let i = 0; i < n; i++) {
-		const w = 3.5 + r() * 3,
+		const w = (3.5 + r() * 3) * size,
 			x0 = b.x0 + r() * Math.max(1, b.x1 - b.x0 - w),
-			y = b.y0 - 0.6 - r() * 1.4,
-			h = 1.4 + r() * 1.3;
+			y = b.y0 - (0.6 + r() * 1.4) * size,
+			h = (1.4 + r() * 1.3) * size;
 		// (Clamped: at the far edge the sine can round a hair below zero,
 		// and a fractional power of that is NaN.)
 		const height = (/** @type {number} */ x) =>

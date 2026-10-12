@@ -193,6 +193,13 @@ export function haloColor(color: string | undefined | null): string {
  *  backing's `maxDim * 0.06` outward growth. */
 const VECTOR_HALO_STROKE_RATIO = 0.16;
 
+/** A layered (settlement-kit) icon's halo in an off-map preview, in screen
+ *  px. The icon carries its own ink outline, so the halo only has to lift it
+ *  off the background — a thin fixed edge, as on the map, not a glow that
+ *  grows with the preview (in the builders' big preview that was a fat
+ *  white band round every building). */
+const LAYERED_PREVIEW_HALO_PX = 3;
+
 /**
  * Build the inner SVG markup for a map-icon glyph coloured to `color`,
  * for dropping inside `<svg viewBox={ic.viewBox}>…</svg>` via `{@html}`.
@@ -218,7 +225,9 @@ const VECTOR_HALO_STROKE_RATIO = 0.16;
  * - **Layered** icons (the generated settlement kit): drawn in their own
  *   palette, one path per colour role; only the roofs take `color` (the
  *   default black marker keeps the icon's own roof colour). The halo goes on
- *   the silhouette layer alone. Returns '' until the file has loaded.
+ *   the silhouette layer alone, a thin fixed-px edge either way (2 px on the
+ *   map, LAYERED_PREVIEW_HALO_PX for `'proportional'`): the icon has its own
+ *   ink outline. Returns '' until the file has loaded.
  *
  * `uid` MUST be unique per rendered instance (marker id, manifest key, …)
  * so the generated `<filter>` / `<pattern>` ids don't collide across the
@@ -244,11 +253,9 @@ export function mapGlyphInner(
 		const colours = roleColours(palette, c === DEFAULT_MARKER_COLOR ? undefined : c);
 		const [, , vbW, vbH] = ic.viewBox.split(/\s+/).map(Number);
 		let haloAttrs: string | null = null;
-		if (halo === 'proportional') {
-			const sw = Math.max(1, Math.max(vbW || 0, vbH || 0) * VECTOR_HALO_STROKE_RATIO * 0.5);
-			haloAttrs = ` stroke="${colours.sil}" stroke-width="${sw}" stroke-linejoin="round"`;
-		} else if (halo) {
-			haloAttrs = ` stroke="${colours.sil}" stroke-width="2" stroke-linejoin="round" vector-effect="non-scaling-stroke"`;
+		if (halo) {
+			const sw = halo === 'proportional' ? LAYERED_PREVIEW_HALO_PX : 2;
+			haloAttrs = ` stroke="${colours.sil}" stroke-width="${sw}" stroke-linejoin="round" vector-effect="non-scaling-stroke"`;
 		}
 		const detail = px === undefined || px / Math.max(vbW || 1, vbH || 1) >= PATTERN_MIN_PX;
 		return layeredMarkup(paths, colours, haloAttrs, uid.replace(/[^\w-]/g, '_'), detail);
@@ -310,7 +317,8 @@ export function mapGlyphInner(
  * viewBox for an off-map preview `<svg>` that renders a `'proportional'` halo,
  * expanded so the glow — which extends outside the icon outline — isn't clipped
  * by the tight icon viewBox. Pad each side by the halo's outward reach: half the
- * proportional stroke for vectors, the backing's dilate growth for rasters. The
+ * proportional stroke for vectors, the backing's dilate growth for rasters, a
+ * sliver for layered icons (whose preview halo is a thin fixed-px edge). The
  * icon renders a touch smaller inside the same box, with the whole glow visible.
  *
  * Map markers keep the raw `ic.viewBox`: their fixed 2px non-scaling stroke
@@ -322,7 +330,12 @@ export function haloPaddedViewBox(ic: MapIcon): string {
 	// Vector: the proportional stroke is centred, so it reaches maxDim·RATIO/2
 	// outside the outline; +2% keeps the anti-aliased edge clear of the viewport.
 	// Raster: the silhouette backing grows by up to the dilate radius (maxDim·6%).
-	const pad = ic.raster ? maxDim * 0.06 : maxDim * (VECTOR_HALO_STROKE_RATIO / 2 + 0.02);
+	// Layered: a thin fixed-px edge (LAYERED_PREVIEW_HALO_PX) needs only a sliver.
+	const pad = ic.raster
+		? maxDim * 0.06
+		: ic.layered
+			? maxDim * 0.03
+			: maxDim * (VECTOR_HALO_STROKE_RATIO / 2 + 0.02);
 	return `${x - pad} ${y - pad} ${w + 2 * pad} ${h + 2 * pad}`;
 }
 

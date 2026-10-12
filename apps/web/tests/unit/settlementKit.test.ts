@@ -373,23 +373,63 @@ describe('buildings (the Buildings tab)', () => {
 		expect(tower(1)).not.toBe(tower(2));
 	});
 	const ruin = (decay: number) => ({ decay, overgrowth: 0.4, burned: false });
-	it('ruins a building a step at a time as the decay rises', () => {
-		const height = (key: string, seed: number, decay: number) => {
-			const items = building(key, DEFAULT_DESIGN, { seed, ruin: ruin(decay) });
-			const parts = items.flatMap((it) =>
-				place(it.piece, { x: it.x ?? 0, y: it.y ?? 0, s: it.s ?? 1 }),
-			);
-			return renderLayered(parts, { outline: 1.4, join: DEFAULT_DESIGN.join }).bounds.h;
-		};
-		for (const key of ['gable-house', 'keep', 'church', 'windmill', 'townhouse'])
-			for (const seed of [1, 2, 3]) {
-				const hs = [0.1, 0.3, 0.5, 0.75, 1].map((d) => height(key, seed, d));
-				// Only the light end keeps its (holed) roof — not every decay
-				// up to halfway, then a fall straight to the shell.
-				expect(hs[1], `${key} seed ${seed}`).toBeLessThan(hs[0]! * 0.9);
-				for (let i = 2; i < hs.length; i++)
-					expect(hs[i], `${key} seed ${seed}, step ${i}`).toBeLessThan(hs[i - 1]!);
+	/** Area a placed group covers as drawn (its silhouette path, holes out). */
+	const drawnArea = (items: ReturnType<typeof building>) => {
+		const parts = items.flatMap((it) =>
+			place(it.piece, { x: it.x ?? 0, y: it.y ?? 0, s: it.s ?? 1 }),
+		);
+		const { silhouette } = renderLayered(parts, { outline: 1.4, join: DEFAULT_DESIGN.join });
+		let total = 0;
+		for (const sub of silhouette.split('M').slice(1)) {
+			const n = sub.replace(/[LZ]/g, ' ').trim().split(/\s+/).map(Number);
+			for (let i = 0; i < n.length; i += 2) {
+				const j = (i + 2) % n.length;
+				total += (n[i]! * n[j + 1]! - n[j]! * n[i + 1]!) / 2;
 			}
+		}
+		return Math.abs(total);
+	};
+	it('ruins a building on its own by degrees, recognisable well past halfway', () => {
+		const steps = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];
+		for (const key of ['gable-house', 'church', 'keep', 'lighthouse'])
+			for (const seed of [1, 2]) {
+				const whole = drawnArea(building(key, DEFAULT_DESIGN, { seed }));
+				const left = steps.map(
+					(d) => drawnArea(building(key, DEFAULT_DESIGN, { seed, ruin: ruin(d) })) / whole,
+				);
+				const at = (d: number) => left[steps.indexOf(d)]!;
+				const what = `${key} seed ${seed}: ${left.map((a) => a.toFixed(2)).join(' ')}`;
+				// Barely touched at the light end, still half there at 0.5, all
+				// but foundations at 1 —
+				expect(at(0.1), what).toBeGreaterThan(0.8);
+				expect(at(0.5), what).toBeGreaterThan(0.45);
+				expect(at(1), what).toBeLessThan(0.4);
+				// — and no cliff on the way: each step takes a little more (give
+				// or take a stone), never a third of the building at once.
+				for (let i = 1; i < steps.length; i++) {
+					expect(left[i], what).toBeLessThan(left[i - 1]! * 1.08);
+					expect(left[i - 1]! - left[i]!, what).toBeLessThan(0.35);
+				}
+			}
+	});
+	it('keeps paint on a wall, and drops what rides on a roof, and smoke', () => {
+		const at = (key: string, decay: number) =>
+			building(key, DEFAULT_DESIGN, { seed: 1, ruin: ruin(decay) }).flatMap((it) => it.piece);
+		const top = (p: { solid: [number, number][][] }) =>
+			Math.max(...p.solid.flat().map(([, y]) => y));
+		const foot = (p: { solid: [number, number][][] }) =>
+			Math.min(...p.solid.flat().map(([, y]) => y));
+		// A lighthouse's red bands are roof-coloured paint on the tower, not a
+		// roof: they stand with it once the cap has gone.
+		expect(at('lighthouse', 0.6).some((p) => p.role === 'roof' && foot(p) > 4)).toBe(true);
+		// The witch hut's chimney comes through its roof (its foot is above
+		// the hut's walls, below the eaves): it falls with the roof.
+		const hut = at('witch-hut', 0.5).filter(
+			(p) => !p.terrain && p.role !== 'roof' && p.solid.length,
+		);
+		expect(Math.max(...hut.map(top))).toBeLessThan(17);
+		// A ruin never smokes, even at the light end.
+		expect(at('tavern', 0.1).some((p) => p.smoke)).toBe(false);
 	});
 	it('frames a ruin as its building was, not zoomed in on the stump', () => {
 		const box = (key: string, decay?: number) => {

@@ -252,7 +252,9 @@ marker path:
   until then). `mapGlyphInner()` recolours by role via `mapLayered.ts`:
   everything keeps the icon's palette except the **roofs, which take the
   marker colour** (the default black marker keeps the icon's own roof
-  colour); the halo goes on the `sil` layer only. Material walls draw
+  colour); the halo goes on the `sil` layer only — a thin fixed-px edge (2
+  px on the map, 3 px in the previews), since the icon has its own ink
+  outline. Material walls draw
   through the kit's own `<pattern>` tiles (`settlement-kit/patterns.js`,
   ids scoped per rendered icon) in fixed material colours; an icon drawn
   too small for a texture to resolve — every ordinary map marker; callers
@@ -340,9 +342,11 @@ and every culture knob. It's used three ways:
   a hex map's cell frames it — Dirt, Grass, Farmland, Sand, Rock, Snow,
   Ice, Marsh, Lava, Water: a plane under it in its own colour and
   texture, a lagoon for water) and Ruined + decay (optionally burned) as below
-  — on its own a building comes down a step at a time as the decay rises
-  (its roof, holed, only at the light end; then ever-lower walls), drawn
-  at its scale and standing where it stood, not zoomed in. The reroll varies
+  — on its own a building comes down by degrees (`crumble()`): its roof
+  opens from a gap at 0.1 and is gone by 0.4, then the walls break off
+  lower and lower to foundations at 1, so it stays recognisable well past
+  halfway; drawn at its scale and standing where it stood, not zoomed in.
+  The reroll varies
   the building as a settlement varies its own — pitch, sweep, ornament,
   now and then the windows or doors, a tower's height — and a mixed
   culture's builder; a few fixed pieces (tent, pavilion, mine, witch hut,

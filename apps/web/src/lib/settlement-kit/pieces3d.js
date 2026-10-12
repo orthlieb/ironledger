@@ -1520,6 +1520,7 @@ function chimneys(
 					circle(cx + 4.6, top + 5.6, 3),
 					circle(cx + 8.6, top + 7.2, 2.4),
 				],
+				smoke: true,
 			},
 		);
 	}
