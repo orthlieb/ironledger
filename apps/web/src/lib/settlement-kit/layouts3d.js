@@ -172,15 +172,19 @@ function house(D, r, w, trade) {
 
 /**
  * Horizontal extent and height of a piece (from its silhouettes), so a
- * layout can pack buildings by their real footprint.
+ * layout can pack buildings by their real footprint. `banners: false`
+ * leaves the flags out — for the ground under a building, which a tower's
+ * streaming banner mustn't widen or pull off-centre. (A settlement still
+ * packs by the whole piece, banners and all, so its layouts stay put.)
  * @param {import('./render.js').Part[]} piece
+ * @param {boolean} [banners]
  */
-function extent(piece) {
+function extent(piece, banners = true) {
 	let x0 = Infinity,
 		x1 = -Infinity,
 		y1 = 0;
 	for (const p of piece)
-		for (const poly of p.solid)
+		for (const poly of banners || p.role !== 'flag' ? p.solid : [])
 			for (const [x, y] of poly) {
 				x0 = Math.min(x0, x);
 				x1 = Math.max(x1, x);
@@ -687,7 +691,8 @@ function harbor(D, wrx, wry, shoreX, shoreY) {
  */
 const MIN_PIECE_SIZE = 26;
 
-/** The bounds of a placed group's solids, as placed. @param {Placed[]} items */
+/** The bounds of a placed group's solids, as placed (banners aside).
+ *  @param {Placed[]} items */
 function placedBounds(items) {
 	let x0 = Infinity,
 		x1 = -Infinity,
@@ -695,7 +700,8 @@ function placedBounds(items) {
 		y1 = -Infinity;
 	for (const it of items)
 		for (const p of it.piece)
-			for (const poly of p.solid)
+			// Banners don't count (see extent()).
+			for (const poly of p.role === 'flag' ? [] : p.solid)
 				for (const [x, y] of poly) {
 					const s = it.s ?? 1,
 						X = (it.x ?? 0) + x * s,
@@ -891,12 +897,12 @@ export function building(key, D, o = {}) {
 	return g === 'hex' ? withHexTile(items, foot[0] * k, foot[1] * k, foot[2], k) : items;
 }
 
-/** Horizontal extent of a placed group. @param {Placed[]} items */
+/** Horizontal extent of a placed group, banners aside (see extent()). @param {Placed[]} items */
 function placedExtent(items) {
 	let x0 = Infinity,
 		x1 = -Infinity;
 	for (const it of items) {
-		const e = extent(it.piece),
+		const e = extent(it.piece, false),
 			s = it.s ?? 1;
 		x0 = Math.min(x0, (it.x ?? 0) + e.x0 * s);
 		x1 = Math.max(x1, (it.x ?? 0) + e.x1 * s);

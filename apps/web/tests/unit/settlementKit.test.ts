@@ -505,16 +505,19 @@ describe('ground', () => {
 	});
 	it("sizes the hex tile's dashes to the icon, so every hex reads the same", () => {
 		const D = { ...DEFAULT_DESIGN, ground: 'hex' as const };
-		/** Dash weight ÷ the icon's span (its solids and the tile's dashes). */
+		/** Dash weight ÷ the icon's span (its solids, banners aside, and the
+		 *  tile's dashes). */
 		const ratio = (items: ReturnType<typeof building>) => {
 			const tile = items[0].piece[0];
 			const pts = [
 				...items.flatMap((it) =>
-					it.piece.flatMap((p) =>
-						p.solid
-							.flat()
-							.map(([x, y]) => [(it.x ?? 0) + x * (it.s ?? 1), (it.y ?? 0) + y * (it.s ?? 1)]),
-					),
+					it.piece
+						.filter((p) => p.role !== 'flag')
+						.flatMap((p) =>
+							p.solid
+								.flat()
+								.map(([x, y]) => [(it.x ?? 0) + x * (it.s ?? 1), (it.y ?? 0) + y * (it.s ?? 1)]),
+						),
 				),
 				...(tile.free ?? []).flatMap((l) =>
 					l.pts.map(([x, y]) => [(items[0].x ?? 0) + x, (items[0].y ?? 0) + y]),
@@ -532,6 +535,14 @@ describe('ground', () => {
 			['city', settlement('city', D, { seed: 5, walls: 'stone' })],
 		] as const)
 			expect(Math.abs(ratio(items) / house - 1), label).toBeLessThan(0.1);
+	});
+	it("centres a building's ground on the building, not on its banner", () => {
+		// A round tower stands at x = 0 with its banner streaming off to one
+		// side; its ground — an oval or a hex — still centres on the tower.
+		for (const ground of ['grass', 'hex'] as const) {
+			const [plane] = building('round-tower', { ...DEFAULT_DESIGN, ground }, { seed: 5 });
+			expect(Math.abs(plane.x ?? 0), ground).toBeLessThan(0.5);
+		}
 	});
 	it('keeps the ground pattern tiles compact', () => {
 		for (const g of GROUND_TYPES) {
