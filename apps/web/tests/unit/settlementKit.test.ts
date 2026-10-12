@@ -62,6 +62,7 @@ import {
 	patternDefs,
 } from '../../src/lib/settlement-kit/patterns.js';
 import { LAYERS, LINE_ROLES, renderLayered, place } from '../../src/lib/settlement-kit/render.js';
+import { ruinPlaced } from '../../src/lib/settlement-kit/ruins3d.js';
 import { mixHex } from '../../src/lib/mapLayered.js';
 
 type Design = typeof DEFAULT_DESIGN;
@@ -534,6 +535,33 @@ describe('buildings (the Buildings tab)', () => {
 });
 
 describe('ruined settlements', () => {
+	it('tag what each building is built of: stone for the landmarks, timber or masonry for homes', () => {
+		const built = (D: Design) =>
+			settlement('town', D, { seed: 1 })
+				.filter((it) => !it.wall && it.piece.some((p) => !p.terrain))
+				.map((it) => it.built);
+		const timber = built(DEFAULT_DESIGN);
+		expect(timber).toContain('stone'); // church, keep, towers
+		expect(timber).toContain('timber'); // houses
+		// A culture that builds in masonry has stone houses too.
+		const masonry = built({ ...DEFAULT_DESIGN, masonry: true });
+		expect(masonry.filter((b) => b === 'timber').length).toBeLessThan(
+			timber.filter((b) => b === 'timber').length,
+		);
+	});
+	it('let stone outlast timber at the same decay — but not a building on its own', () => {
+		const ruin = { decay: 0.5, overgrowth: 0.4, burned: false, seed: 3 };
+		const tower = roundTower(DEFAULT_DESIGN);
+		const as = (built: 'stone' | 'timber', o: typeof ruin & { single?: boolean } = ruin) =>
+			ruinPlaced([{ piece: tower, built }], o);
+		// Same piece, same seed: only what it's built of differs.
+		expect(drawnArea(as('stone'))).toBeGreaterThan(drawnArea(as('timber')) * 1.1);
+		// The Buildings tab draws exactly its slider's decay.
+		const single = { ...ruin, single: true };
+		expect(as('stone', single)).toEqual(
+			as('timber', single).map((it) => ({ ...it, built: 'stone' })),
+		);
+	});
 	it('come down by degrees, each building at a decay of its own', () => {
 		const ruin = (decay: number) => ({ decay, overgrowth: 0.4, burned: false });
 		const steps = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1];

@@ -1980,8 +1980,10 @@ function gateTower(D, y0, h, wood) {
 
 /**
  * @typedef {{piece: Part[], x?: number, y?: number, s?: number, flip?: boolean, ship?: boolean,
- *   wall?: boolean, wallShare?: number}} Placed  `ship`: the harbour's caravel; `wall`: an
- *   enclosure-wall face (ruins breach it rather than crumble it), `wallShare` its share of the run
+ *   wall?: boolean, wallShare?: number, built?: 'stone' | 'timber'}} Placed  `ship`: the
+ *   harbour's caravel; `wall`: an enclosure-wall face (ruins breach it rather than crumble it),
+ *   `wallShare` its share of the run; `built`: what a settlement's building is built of — in a
+ *   ruin its stone outlasts its timber
  */
 
 /**

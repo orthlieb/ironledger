@@ -342,7 +342,13 @@ height, a house's details — and lets a mixed culture's builder roll its
 own style (`mixDesign()`); the reference row (`pieces()`) passes no seed,
 so it and the baked icons stay fixed. `ruin` ruins it at exactly the
 slider's decay (`RuinOptions.single`; in a settlement each building takes
-its own, up to 0.25 either side, so they don't come down in step). Every
+its own, up to 0.25 either side, so they don't come down in step — and
+stone outlasts timber: each settlement building is tagged with what it's
+built of (`Placed.built`: churches, bell towers, keeps, towers, barracks,
+the well and the windmill stone; houses, taverns, barns, warehouses and
+workshops stone only where the culture builds in masonry; huts, market
+stalls and piers timber), and a ruin takes stone 0.15 less far gone,
+timber 0.15 further). Every
 building comes down by degrees (`ruinPiece()` in `ruins3d.js`), so the
 Decay slider reads as a progression:
 
