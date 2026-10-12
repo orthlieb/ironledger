@@ -823,7 +823,9 @@ export const UNWALLED_BUILDINGS = new Set(['wall']);
  * tower's height — and a mixed culture's builder rolls its own style.
  * @param {string} key one of BUILDINGS (unknown → a gable house)
  * @param {Design} D
- * @param {{walls?: Walls, seed?: number, ground?: Ground,
+ * `stilts` sets it on a timber-post deck, as a stilt settlement's
+ * buildings are (never the Wall).
+ * @param {{walls?: Walls, seed?: number, ground?: Ground, stilts?: boolean,
  *   ruin?: import('./ruins3d.js').RuinOptions | null}} [o]
  * @returns {Placed[]}
  */
@@ -834,6 +836,15 @@ export function building(key, D, o = {}) {
 	const walls = o.walls && o.walls !== 'auto' && o.walls !== 'none' ? o.walls : null;
 	const make = (PIECES.find(([k]) => k === key) ?? PIECES[0])[2];
 	let items = make(own, 1 + Math.floor(r() * 999_999));
+	// On stilts: each part of it on a deck of its own, its terrain (a
+	// market's square, a mine's mountain) left on the ground.
+	if (o.stilts && !UNWALLED_BUILDINGS.has(key))
+		items = items.map((it) => {
+			const built = it.piece.filter((p) => !p.terrain);
+			return built.length
+				? { ...it, piece: [...it.piece.filter((p) => p.terrain), ...onStilts(built, own)] }
+				: it;
+		});
 	const g = groundOf(o.ground);
 	if (walls && !UNWALLED_BUILDINGS.has(key)) items = enclosed(D, items, walls, g);
 	else if (g) {

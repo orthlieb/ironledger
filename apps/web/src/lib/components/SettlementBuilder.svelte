@@ -13,9 +13,10 @@
 	 *
 	 * The Buildings kind draws one building instead of a settlement: the
 	 * building in place of the size, walls that enclose it (none by default;
-	 * none at all for the Wall, in its own stone), ground, and no stilts or
-	 * harbour. Walls and ground are the recipe's alone — no culture sets
-	 * them (a culture's wall shape it keeps, as "Culture's own"). Its reroll varies the building's details (and a
+	 * none at all for the Wall, in its own stone), ground, on stilts (not
+	 * the Wall either), and no harbour. Walls and ground are the recipe's
+	 * alone — no culture sets them (a culture's wall shape it keeps, as
+	 * "Culture's own"). Its reroll varies the building's details (and a
 	 * mixed culture's builder).
 	 *
 	 * A Recent strip above the knobs keeps the last few recipes used, per
@@ -175,6 +176,7 @@
 					...(showWalls && walls !== 'none' && walls !== 'auto' ? { walls } : {}),
 					...(showShape && shape !== 'culture' ? { wallShape: shape } : {}),
 					...(ground !== 'none' ? { ground } : {}),
+					...(stilts && !wallBuilding ? { stilts: true } : {}),
 					...ruin,
 				}
 			: {
@@ -298,8 +300,10 @@
 			</label>
 			<!-- Side by side, wrapping, so the switches don't each take a row. -->
 			<div class="sb-checks">
-				{#if !isBuilding}
+				{#if !wallBuilding}
 					<Checkbox bind:checked={stilts}><span class="sb-check">On stilts</span></Checkbox>
+				{/if}
+				{#if !isBuilding}
 					<Checkbox bind:checked={harbor}><span class="sb-check">Harbour</span></Checkbox>
 				{/if}
 				<Checkbox bind:checked={ruined}><span class="sb-check">Ruined</span></Checkbox>

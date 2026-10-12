@@ -41,7 +41,8 @@ export { fallbackIcon } from './fallback.js';
  * What a marker stores: a REFERENCE to a culture, never the culture itself.
  * `building` (a key of layouts3d.js BUILDINGS) draws that one building
  * instead of a settlement — the Buildings tab: `walls` then encloses it
- * (never a wall building), and `tier`, `stilts` and `harbor` don't apply.
+ * (never a wall building), `stilts` sets it on a deck, and `tier` and
+ * `harbor` don't apply.
  * `walls` and `ground` are the recipe's alone — a culture has no say in
  * either (its wall *style* — height, merlons, towers, gate, shape — it has).
  * @typedef {{tier: Tier, culture: string, seed: number, walls?: Walls,
@@ -232,6 +233,7 @@ export function generateSettlementSvg(recipe, culture) {
 					walls: recipe.walls,
 					seed: recipe.seed,
 					ground: recipe.ground,
+					stilts: !!recipe.stilts,
 					ruin: r,
 				})
 			: settlement(tier, design, {

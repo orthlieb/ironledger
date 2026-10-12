@@ -337,8 +337,9 @@ and every culture knob. It's used three ways:
   pieces (`SETTLEMENT_BUILDINGS`, from houses and towers to the
   cathedral, a market and a stone wall) — in any culture. Walls (None by
   default) puts a small ring or square wall of that type round it (in
-  the chosen wall shape); the Wall comes in its own stone and has no
-  Walls or Wall shape. The tab lays itself out to
+  the chosen wall shape); On stilts sets it on a timber-post deck (its
+  terrain — a market's square — stays on the ground); the Wall comes in
+  its own stone and has no Walls, Wall shape or stilts. The tab lays itself out to
   fit the dialog (the preview takes whatever height the knobs leave, the
   knobs go two to a row on a phone), so "Use this" is always on screen.
   Ground (None by default, or Dirt, Grass, Farmland, Sand, Rock, Snow,

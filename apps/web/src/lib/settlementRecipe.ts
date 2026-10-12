@@ -109,8 +109,8 @@ export interface SettlementRecipe {
 	/** A ruin: how far gone (0–1), and whether it burned (scorch, soot). */
 	ruin?: { decay: number; burned?: boolean };
 	/** One building instead of a settlement (the Buildings tab). `walls` then
-	 *  puts a wall of its own round it (never round UNWALLED_BUILDINGS), and
-	 *  `tier`, `stilts` and `harbor` don't apply. */
+	 *  puts a wall of its own round it and `stilts` sets it on a deck (neither
+	 *  for UNWALLED_BUILDINGS), and `tier` and `harbor` don't apply. */
 	building?: SettlementBuilding;
 }
 

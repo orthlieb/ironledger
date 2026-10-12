@@ -384,6 +384,40 @@ describe('buildings (the Buildings tab)', () => {
 		expect(on()).not.toContain('water');
 		expect(on('water')).toContain('water');
 	});
+	it('sets a building on stilts — never the Wall, and never its terrain', () => {
+		const deck = (items: ReturnType<typeof building>) =>
+			items.some((it) => it.piece.some((p) => p.role === 'wood' && !p.terrain));
+		const lowest = (items: ReturnType<typeof building>) =>
+			Math.min(
+				...items.flatMap((it) =>
+					it.piece
+						.filter((p) => p.role !== 'wood' && !p.terrain)
+						.flatMap((p) => p.solid.flat().map(([, y]) => (it.y ?? 0) + y * (it.s ?? 1))),
+				),
+			);
+		const house = building('gable-house', DEFAULT_DESIGN, { seed: 1 });
+		const raised = building('gable-house', DEFAULT_DESIGN, { seed: 1, stilts: true });
+		expect(deck(house)).toBe(false);
+		expect(deck(raised)).toBe(true);
+		expect(lowest(raised)).toBeGreaterThan(lowest(house) + 1);
+		// The Wall stays on the ground.
+		expect(building('wall', DEFAULT_DESIGN, { seed: 1, stilts: true })).toEqual(
+			building('wall', DEFAULT_DESIGN, { seed: 1 }),
+		);
+		// A market's square stays on the ground; its stalls go up.
+		const terrain = (items: ReturnType<typeof building>) =>
+			items.flatMap((it) => it.piece.filter((p) => p.terrain).map((p) => p.solid));
+		expect(terrain(building('market', DEFAULT_DESIGN, { seed: 1, stilts: true }))).toEqual(
+			terrain(building('market', DEFAULT_DESIGN, { seed: 1 })),
+		);
+		// And the recipe carries it through to the drawing.
+		const svg = (stilts?: boolean) =>
+			generateSettlementSvg(
+				{ tier: 'stead', culture: 'default', seed: 1, building: 'gable-house', stilts },
+				null,
+			);
+		expect(svg(true)).not.toBe(svg());
+	});
 	it('agrees with the app on which buildings are never walled', () => {
 		expect([...UNWALLED_BUILDINGS].sort()).toEqual([...APP_UNWALLED_BUILDINGS].sort());
 	});

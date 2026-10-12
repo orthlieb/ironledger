@@ -702,6 +702,7 @@ function render() {
 									walls: bw,
 									seed: drawing.layout,
 									ground: drawing.ground,
+									stilts: !!drawing.stilts,
 									ruin,
 								}),
 							),

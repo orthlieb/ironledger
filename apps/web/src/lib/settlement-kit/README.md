@@ -320,7 +320,7 @@ Seven recipe-only fields let a marker override the culture:
 | `walls`      | The ring-wall material (`'none'`, `'stone'`, `'palisade'`, …), or `'auto'`: usual for its size (`TEMPLATES` — an outpost's palisade, stone from a hold up). Never the culture's. |
 | `wallShape`  | Force `'round'` or `'square'` regardless of what the culture rolls.                                                                                                              |
 | `ground`     | What it stands on (`'none'`, a ground type, or `'water'`) — passed to `settlement()` / `building()`, never the culture's.                                                        |
-| `stilts`     | Wrap every inside-the-walls piece with `onStilts(...)` so the whole settlement sits on pilings.                                                                                  |
+| `stilts`     | Wrap every inside-the-walls piece with `onStilts(...)` so the whole settlement sits on pilings — or, for a `building`, the building (bar its terrain; never the Wall).           |
 | `harbor`     | `true` adds a side harbour with pier + caravel.                                                                                                                                  |
 | `ruin`       | `{ decay, burned? }` runs `ruinPlaced()` over the final list.                                                                                                                    |
 | `building`   | A `BUILDINGS` key: `building()` draws that one piece instead of the settlement (the Buildings tab).                                                                              |
@@ -328,12 +328,13 @@ Seven recipe-only fields let a marker override the culture:
 See CLAUDE.md ("Standing order — settlement-recipe override fields live
 in five places") for the plumbing contract when adding a new one.
 
-**Buildings.** `building(key, D, {walls, seed, ruin})` draws one of the
+**Buildings.** `building(key, D, {walls, seed, ground, stilts, ruin})` draws one of the
 `BUILDINGS` (the keyed entries of the `PIECES` table) on its own. `walls`
 puts a small ring or square wall of its own round it, fitted to its
 footprint the way a settlement's is (`enclosed()`), with up to two towers
 where the wall type carries them — never round the `UNWALLED_BUILDINGS`:
-the Wall, in its own stone.
+the Wall, in its own stone. `stilts` sets it on a deck (`onStilts()`), its
+terrain left on the ground — the Wall, again, never.
 On water a lagoon goes under it. `seed` varies it as a settlement varies its
 buildings — `jitterDesign()` (pitch, sweep,
 ornament, now and then the windows or doors), a round tower's girth and
