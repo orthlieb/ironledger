@@ -503,6 +503,36 @@ describe('ground', () => {
 		const grass = building('barn', { ...D, ground: 'grass' }, { seed: 2 })[0];
 		expect(grass.piece[0].solid[0]).toHaveLength(48);
 	});
+	it("sizes the hex tile's dashes to the icon, so every hex reads the same", () => {
+		const D = { ...DEFAULT_DESIGN, ground: 'hex' as const };
+		/** Dash weight ÷ the icon's span (its solids and the tile's dashes). */
+		const ratio = (items: ReturnType<typeof building>) => {
+			const tile = items[0].piece[0];
+			const pts = [
+				...items.flatMap((it) =>
+					it.piece.flatMap((p) =>
+						p.solid
+							.flat()
+							.map(([x, y]) => [(it.x ?? 0) + x * (it.s ?? 1), (it.y ?? 0) + y * (it.s ?? 1)]),
+					),
+				),
+				...(tile.free ?? []).flatMap((l) =>
+					l.pts.map(([x, y]) => [(items[0].x ?? 0) + x, (items[0].y ?? 0) + y]),
+				),
+			];
+			const xs = pts.map(([x]) => x),
+				ys = pts.map(([, y]) => y);
+			const span = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...ys) - Math.min(...ys));
+			return (tile.free?.[0].w ?? 0) / span;
+		};
+		const house = ratio(building('gable-house', D, { seed: 5 }));
+		for (const [label, items] of [
+			['tower', building('round-tower', D, { seed: 5 })],
+			['walled church', building('church', D, { seed: 5, walls: 'hedge' })],
+			['city', settlement('city', D, { seed: 5, walls: 'stone' })],
+		] as const)
+			expect(Math.abs(ratio(items) / house - 1), label).toBeLessThan(0.1);
+	});
 	it('keeps the ground pattern tiles compact', () => {
 		for (const g of GROUND_TYPES) {
 			const { defs } = patternDefs(

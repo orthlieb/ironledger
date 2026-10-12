@@ -202,12 +202,15 @@ square enclosure's parallelogram); under a lone building, an ellipse round
 its footprint.
 
 **Hex.** The `hex` ground is a frame, not a plane: a hex tile behind the
-layout (`hexTile()` in `layouts3d.js`), as a hex map's cell would frame it —
-a regular flat-topped hexagon upright in the picture (not lying on the
-ground, as Watabou's generator draws it), round the ground footprint and set
-a little high so the buildings rising from it stay inside, drawn as a dashed
-outline with a dash centred on each corner. Every other ground keeps its
-ellipse.
+layout, laid last (`withHexTile()` in `layouts3d.js`), as a hex map's cell
+would frame it — a regular flat-topped hexagon upright in the picture (not
+lying on the ground, as Watabou's generator draws it), round the ground
+footprint and set a little high so the buildings rising from it stay
+inside, drawn as a dashed outline with a dash centred on each corner. Its
+dashes are sized to the whole icon it frames — a house's are the yardstick
+(`HEX_SPAN0`, `HEX_W`, `HEX_PERIOD`) — so every hex reads the same at the
+size its icon is drawn, a capital's or a tower standing out of its tile.
+Every other ground keeps its ellipse.
 
 ## Cultures: one culture = one Design + palette
 
