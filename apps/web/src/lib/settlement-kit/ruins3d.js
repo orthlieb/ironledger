@@ -22,7 +22,7 @@
 // Terrain parts (`terrain: true`: sea, rock, mountains, plazas) are never cut.
 // =============================================================================
 
-import { rect, rng } from './geom.js';
+import { polyBounds, rect, rng, seg } from './geom.js';
 
 /** @typedef {import('./render.js').Part} Part */
 /** @typedef {import('./render.js').Line} Line */
@@ -36,19 +36,8 @@ import { rect, rng } from './geom.js';
 
 /** Bounds of the given parts' silhouettes. @param {Part[]} parts */
 function bounds(parts) {
-	let x0 = Infinity,
-		x1 = -Infinity,
-		y0 = Infinity,
-		y1 = -Infinity;
-	for (const p of parts)
-		for (const poly of p.solid)
-			for (const [x, y] of poly) {
-				x0 = Math.min(x0, x);
-				x1 = Math.max(x1, x);
-				y0 = Math.min(y0, y);
-				y1 = Math.max(y1, y);
-			}
-	return { x0, x1, y0, y1, ok: Number.isFinite(x0) };
+	const b = polyBounds(parts.flatMap((p) => p.solid));
+	return { ...b, ok: Number.isFinite(b.x0) };
 }
 
 /**
@@ -92,7 +81,7 @@ export function ruinPlaced(items, o) {
  * @param {number} seed
  * @returns {Part[]}
  */
-export function ruinPiece(parts, o, seed) {
+function ruinPiece(parts, o, seed) {
 	const r = rng(seed);
 	const d = o.single ? o.decay : Math.max(0.05, Math.min(1, o.decay + (r() - 0.5) * 0.5));
 	const built = parts.filter((p) => !p.terrain && p.solid.length);
@@ -408,13 +397,7 @@ function scorch(p, top) {
 	// Smoke-blackened band just under the broken top.
 	for (let x = b.x0 + 0.4; x < b.x1; x += 0.8) {
 		const t = Math.min(top(x), b.y1);
-		soot.push({
-			pts: [
-				[x, t - 1.6 - ((x * 7.3) % 1) * 0.8],
-				[x, t + 0.5],
-			],
-			w: 0.55,
-		});
+		soot.push(seg([x, t - 1.6 - ((x * 7.3) % 1) * 0.8], [x, t + 0.5], 0.55));
 	}
 	return { ...p, shaded: true, lines: [...(p.lines ?? []), ...soot] };
 }
@@ -438,14 +421,7 @@ function scanlines(poly, step) {
 			if ((ay <= y && by > y) || (by <= y && ay > y))
 				xs.push(ax + ((y - ay) / (by - ay)) * (bx - ax));
 		}
-		if (xs.length >= 2)
-			out.push({
-				pts: [
-					[Math.min(...xs), y],
-					[Math.max(...xs), y],
-				],
-				w: 0.55,
-			});
+		if (xs.length >= 2) out.push(seg([Math.min(...xs), y], [Math.max(...xs), y], 0.55));
 	}
 	return out;
 }
@@ -471,14 +447,14 @@ function beams(
 		const x = b.x0 + span * (0.2 + r() * 0.6);
 		const side = r() < 0.5 ? -1 : 1;
 		const foot = 2.5 + r() * 5.5; // closer foot = steeper lean
-		free.push({
-			pts: [
+		free.push(
+			seg(
 				[x + side * foot, b.y0 - 0.4 - r() * 1.2],
 				[x, top(x) - 0.4 - r() * 0.8],
-			],
-			w: 0.9 + r() * 0.5,
-			round: true,
-		});
+				0.9 + r() * 0.5,
+				{ round: true },
+			),
+		);
 	}
 	const fallen = 1 + Math.floor(r() * 3);
 	for (let i = 0; i < fallen; i++) {
@@ -493,24 +469,12 @@ function beams(
 			cy = b.y0 - 0.6 - r() * 1.8;
 		const dx = (Math.cos(t) * len) / 2,
 			dy = ((Math.sin(t) * len) / 2) * 0.6;
-		free.push({
-			pts: [
-				[cx - dx, cy - dy],
-				[cx + dx, cy + dy],
-			],
-			w: 0.9 + r() * 0.5,
-			round: true,
-		});
+		free.push(seg([cx - dx, cy - dy], [cx + dx, cy + dy], 0.9 + r() * 0.5, { round: true }));
 		// The odd timber lands across another.
 		if (r() < 0.2)
-			free.push({
-				pts: [
-					[cx - dy * 2, cy - dx * 0.25],
-					[cx + dy * 2, cy + dx * 0.25],
-				],
-				w: 0.9,
-				round: true,
-			});
+			free.push(
+				seg([cx - dy * 2, cy - dx * 0.25], [cx + dy * 2, cy + dx * 0.25], 0.9, { round: true }),
+			);
 	}
 	return { solid: [], free };
 }
@@ -625,15 +589,7 @@ function growTree(
 	return [
 		{
 			solid: [],
-			free: [
-				{
-					pts: [
-						[x, b.y0 + 1],
-						[x + 0.3, cy - R * 0.6],
-					],
-					w: 1.1,
-				},
-			],
+			free: [seg([x, b.y0 + 1], [x + 0.3, cy - R * 0.6], 1.1)],
 		},
 		{ solid: [canopy], role: 'roof', shadeArea: rect(x + R * 0.2, cy - R * 2, R * 3, R * 4) },
 	];

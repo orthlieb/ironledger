@@ -32,7 +32,7 @@
 // =============================================================================
 
 import ClipperLib from 'clipper-lib';
-import { TEXTURE_ROLES } from './patterns.js';
+import { GROUND_TYPES, TEXTURE_ROLES } from './patterns.js';
 
 /** @typedef {import('./geom.js').Pt} Pt */
 /** @typedef {import('./geom.js').Poly} Poly */
@@ -48,9 +48,9 @@ import { TEXTURE_ROLES } from './patterns.js';
 /** @typedef {{X: number, Y: number}[][]} CPaths */
 
 /** Default outline stroke weight (world units). */
-export const OUTLINE = 3;
+const OUTLINE = 3;
 /** Default detail stroke weight. */
-export const DETAIL = 1.7;
+const DETAIL = 1.7;
 
 const S = 1000; // Clipper works in integers
 
@@ -250,73 +250,30 @@ export function place(parts, at) {
 	}));
 }
 
+/** Each role with its -shade twin after it. @param {string[]} roles */
+const withShade = (roles) => roles.flatMap((r) => [r, `${r}-shade`]);
+
 /** Face layers, in paint order. The `wall-*` material roles (stone /
  *  hedge / reef / wood / earth / bone) take an SVG `<pattern>` fill in place
  *  of a flat colour — see settlement-kit/patterns.js — each with its own
  *  -shade tile. */
-const FACE_LAYERS = /** @type {const} */ ([
+const FACE_LAYERS = [
 	// The ground plane under everything (groundPlane() in pieces3d.js);
 	// never shaded, but every part gets a -shade layer.
-	'ground-dirt',
-	'ground-dirt-shade',
-	'ground-grass',
-	'ground-grass-shade',
-	'ground-farmland',
-	'ground-farmland-shade',
-	'ground-sand',
-	'ground-sand-shade',
-	'ground-rock',
-	'ground-rock-shade',
-	'ground-snow',
-	'ground-snow-shade',
-	'ground-ice',
-	'ground-ice-shade',
-	'ground-marsh',
-	'ground-marsh-shade',
-	'ground-lava',
-	'ground-lava-shade',
-	'water',
-	'water-shade',
-	'wall',
-	'wall-shade',
-	'wall-stone',
-	'wall-stone-shade',
-	'wall-hedge',
-	'wall-hedge-shade',
-	'wall-reef',
-	'wall-reef-shade',
-	'wall-wood',
-	'wall-wood-shade',
-	'wall-earth',
-	'wall-earth-shade',
-	'wall-bone',
-	'wall-bone-shade',
-	'wall-stone-ring',
-	'wall-stone-ring-shade',
-	'wall-wood-ring',
-	'wall-wood-ring-shade',
-	'wall-hedge-ring',
-	'wall-hedge-ring-shade',
-	'wall-reef-ring',
-	'wall-reef-ring-shade',
-	'wall-earth-ring',
-	'wall-earth-ring-shade',
-	'wall-bone-ring',
-	'wall-bone-ring-shade',
+	...withShade(GROUND_TYPES.map((g) => `ground-${g}`)),
+	...withShade(['water', 'wall']),
+	...withShade(['stone', 'hedge', 'reef', 'wood', 'earth', 'bone'].map((m) => `wall-${m}`)),
+	...withShade(['stone', 'wood', 'hedge', 'reef', 'earth', 'bone'].map((m) => `wall-${m}-ring`)),
+	// Ring walls' tinted line-work, painted inside their faces.
 	'wall-hedge-cane',
 	'wall-reef-groove',
 	'wall-reef-vein',
 	'wall-earth-grit',
 	'wall-earth-pebble',
 	'wall-bone-grain',
-	'wood',
-	'wood-shade',
-	'earth',
-	'earth-shade',
-	'roof',
-	'roof-shade',
+	...withShade(['wood', 'earth', 'roof']),
 	'flag',
-]);
+];
 
 /** One outline layer per role a part can be drawn in (its face roles, bar
  *  the -shade and line-work texture ones): each part's outline is drawn in a
@@ -350,10 +307,28 @@ export function renderLayered(parts, opts = {}) {
 	const round = opts.join === 'round' || opts.join === 'soft';
 	const soft = opts.join === 'soft' ? (opts.softRadius ?? 0.9) : 0;
 	const texture = opts.texture ?? true;
-	/** Visible pieces per layer, unioned once at the end. @type {Record<string, CPaths[]>} */
+	/** Visible pieces per layer, merged once at the end. @type {Record<string, CPaths[]>} */
 	const acc = Object.fromEntries(LAYERS.map((l) => [l, []]));
+	/** What's drawn so far (in front), one entry per part with its box: a
+	 *  part is clipped only against those that overlap it, not against the
+	 *  whole growing silhouette — every piece it draws lies inside its own
+	 *  outline and free lines, so nothing beyond that box can cover it.
+	 *  @type {{rings: CPaths, box: Box}[]} */
+	const drawn = [];
+	// When most of what's drawn is near a part (a small walled layout, where
+	// the ring overlaps everything), one running union of it all serves
+	// better than unioning the near ones afresh — and covers the same, since
+	// the rest lies clear of the part's box.
 	/** @type {CPaths} */
-	let occ = [];
+	let folded = [];
+	let nFolded = 0;
+	/** Everything drawn so far that could cover what lies in `box`. @param {Box} box */
+	const cover = (box) => {
+		const near = drawn.filter((d) => overlaps(d.box, box));
+		if (near.length * 2 <= drawn.length) return unionAll(near.map((d) => d.rings));
+		for (; nFolded < drawn.length; nFolded++) folded = union(folded, drawn[nFolded].rings);
+		return folded;
+	};
 	for (let i = parts.length - 1; i >= 0; i--) {
 		const p = parts[i];
 		let solid = rawUnion(p.solid);
@@ -368,6 +343,11 @@ export function renderLayered(parts, opts = {}) {
 		const miter = sharp ? 4 : 1.6;
 		const outer = offset(solid, half, round && !sharp, miter);
 		const inner = offset(solid, -half, round && !sharp, miter);
+		let free = p.free?.length ? stroke(p.free) : [];
+		if (mask) free = intersect(free, mask);
+		const mine = union(outer, free);
+		const box = boxOf(mine);
+		const occ = cover(box);
 		// The outline, in a darker shade of the part's own colour; the ink
 		// is the line-work inside it.
 		const outline = minus(outer, inner);
@@ -393,8 +373,6 @@ export function renderLayered(parts, opts = {}) {
 				minus(intersect(stroke(p.shadeLines, false, half * 2), shadeClip), offset(fillInk, 0.6)),
 			);
 		if (fillInk.length) ink = union(ink, p.cuts?.length ? minus(fillInk, stroke(p.cuts)) : fillInk);
-		let free = p.free?.length ? stroke(p.free) : [];
-		if (mask) free = intersect(free, mask);
 		ink = union(ink, free);
 		const role = p.role ?? 'wall';
 		acc[`${role}-line`]?.push(minus(outline, occ));
@@ -410,12 +388,58 @@ export function renderLayered(parts, opts = {}) {
 			acc[role].push(minus(face, shade));
 			acc[`${role}-shade`].push(shade);
 		}
-		occ = union(occ, union(outer, free));
+		if (mine.length) drawn.push({ rings: mine, box });
 	}
+	const all = unionAll(drawn.map((d) => d.rings));
 	const clean = (/** @type {CPaths} */ c) => ClipperLib.Clipper.CleanPolygons(c, 0.02 * S);
 	return {
-		layers: Object.fromEntries(LAYERS.map((l) => [l, toPathData(clean(unionAll(acc[l])))])),
-		silhouette: toPathData(clean(occ)),
-		bounds: boundsOf(occ),
+		layers: Object.fromEntries(LAYERS.map((l) => [l, toPathData(clean(merge(acc[l])))])),
+		silhouette: toPathData(clean(all)),
+		bounds: boundsOf(all),
 	};
 }
+
+/**
+ * One layer's pieces in one Clipper pass. Each was clipped clear of
+ * everything drawn in front of it, so none overlap and even-odd (as bool())
+ * merges them as a union would — without unioning them pairwise.
+ * @param {CPaths[]} sets
+ * @returns {CPaths}
+ */
+function merge(sets) {
+	const all = sets.flat();
+	if (!all.length) return [];
+	const c = new ClipperLib.Clipper();
+	c.AddPaths(all, ClipperLib.PolyType.ptSubject, true);
+	/** @type {CPaths} */
+	const out = [];
+	c.Execute(
+		ClipperLib.ClipType.ctUnion,
+		out,
+		ClipperLib.PolyFillType.pftEvenOdd,
+		ClipperLib.PolyFillType.pftEvenOdd,
+	);
+	return out;
+}
+
+/** @typedef {{x0: number, y0: number, x1: number, y1: number}} Box */
+
+/** A ring set's box, in Clipper's integer units. @param {CPaths} paths @returns {Box} */
+function boxOf(paths) {
+	let x0 = Infinity,
+		y0 = Infinity,
+		x1 = -Infinity,
+		y1 = -Infinity;
+	for (const p of paths)
+		for (const q of p) {
+			if (q.X < x0) x0 = q.X;
+			if (q.X > x1) x1 = q.X;
+			if (q.Y < y0) y0 = q.Y;
+			if (q.Y > y1) y1 = q.Y;
+		}
+	return { x0, y0, x1, y1 };
+}
+
+/** Whether two boxes touch or overlap — edges count, so a part abutting
+ *  another is still clipped against it. @param {Box} a @param {Box} b */
+const overlaps = (a, b) => a.x0 <= b.x1 && b.x0 <= a.x1 && a.y0 <= b.y1 && b.y0 <= a.y1;

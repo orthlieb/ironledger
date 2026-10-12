@@ -8,7 +8,7 @@
 // `ground` it stands on.
 // =============================================================================
 
-import { rng } from './geom.js';
+import { polyBounds, rng } from './geom.js';
 import { ruinPlaced } from './ruins3d.js';
 import {
 	belfry,
@@ -178,17 +178,12 @@ function house(D, r, w, trade) {
  * @param {import('./render.js').Part[]} piece
  */
 function extent(piece) {
-	let x0 = Infinity,
-		x1 = -Infinity,
-		y1 = 0;
-	for (const p of piece)
-		for (const poly of p.role === 'flag' ? [] : p.solid)
-			for (const [x, y] of poly) {
-				x0 = Math.min(x0, x);
-				x1 = Math.max(x1, x);
-				y1 = Math.max(y1, y);
-			}
-	return { x0: Number.isFinite(x0) ? x0 : 0, x1: Number.isFinite(x1) ? x1 : 0, y1 };
+	const b = polyBounds(piece.flatMap((p) => (p.role === 'flag' ? [] : p.solid)));
+	return {
+		x0: Number.isFinite(b.x0) ? b.x0 : 0,
+		x1: Number.isFinite(b.x1) ? b.x1 : 0,
+		y1: Math.max(0, b.y1),
+	};
 }
 
 /**
@@ -199,7 +194,6 @@ function extent(piece) {
  * @typedef {object} Template
  * @property {string} label
  * @property {string} pop
- * @property {string} note
  * @property {number} rx building area half-width (the wall sits ~20–30% outside it)
  * @property {number} ry building area half-depth
  * @property {number} n ordinary dwellings, before the culture's scale
@@ -223,7 +217,6 @@ export const TEMPLATES = {
 	stead: {
 		label: 'Stead',
 		pop: '~5–20',
-		note: 'Tiny, self-sustaining: a few family dwellings',
 		rx: 28,
 		ry: 9,
 		n: 2,
@@ -235,7 +228,6 @@ export const TEMPLATES = {
 	camp: {
 		label: 'Camp',
 		pop: '~20–200 (transient)',
-		note: 'Temporary: nomads, soldiers or seasonal workers',
 		rx: 0,
 		ry: 0,
 		n: 0,
@@ -247,7 +239,6 @@ export const TEMPLATES = {
 	outpost: {
 		label: 'Outpost',
 		pop: '20–100',
-		note: 'Border or frontier post for defence, trade or exploration',
 		rx: 22,
 		ry: 8,
 		n: 1,
@@ -261,7 +252,6 @@ export const TEMPLATES = {
 	hamlet: {
 		label: 'Hamlet',
 		pop: '20–100',
-		note: 'A few homes, limited services, informal leadership',
 		rx: 24,
 		ry: 9,
 		n: 3,
@@ -273,7 +263,6 @@ export const TEMPLATES = {
 	village: {
 		label: 'Village',
 		pop: '100–600',
-		note: 'Communal buildings and recognised leadership',
 		rx: 30,
 		ry: 11,
 		n: 4,
@@ -285,7 +274,6 @@ export const TEMPLATES = {
 	hold: {
 		label: 'Hold',
 		pop: '600–2,500',
-		note: 'Large and fortified, with diverse trades',
 		rx: 34,
 		ry: 12,
 		n: 4,
@@ -300,7 +288,6 @@ export const TEMPLATES = {
 	town: {
 		label: 'Town',
 		pop: '600–2,500',
-		note: 'Established market town (Termin, Sveba)',
 		rx: 38,
 		ry: 13,
 		n: 5,
@@ -313,7 +300,6 @@ export const TEMPLATES = {
 	city: {
 		label: 'City',
 		pop: '2,500–6,000',
-		note: 'Ostrea, Piscis, Fluenti, Materton, Mons',
 		rx: 48,
 		ry: 17,
 		n: 8,
@@ -327,7 +313,6 @@ export const TEMPLATES = {
 	capital: {
 		label: 'Capital',
 		pop: '6,000–10,000',
-		note: 'Seat of a country (Typpe)',
 		rx: 58,
 		ry: 21,
 		n: 11,
@@ -342,7 +327,6 @@ export const TEMPLATES = {
 	freeport: {
 		label: 'Freeport',
 		pop: '~15,900',
-		note: 'Sui generis: bigger than everything, and fed by ship (always has a harbour)',
 		rx: 62,
 		ry: 22,
 		n: 11,
@@ -724,6 +708,15 @@ function normalized(items, k = normalScale(items)) {
 }
 
 /**
+ * A side-on house of a kind (sideHouse()), as a PIECES maker: its own seed
+ * for the reference row, the caller's for a building.
+ * @param {NonNullable<Parameters<typeof sideHouse>[1]>['kind']} kind
+ * @param {number} seed0
+ * @returns {(D: Design, seed?: number) => Placed[]}
+ */
+const side = (kind, seed0) => (D, s) => [{ piece: sideHouse(D, { seed: s ?? seed0, kind }) }];
+
+/**
  * The single pieces, as [key, name, make]: the reference row (pieces()) and
  * the map's Buildings tab (building()). `make` draws the piece in a culture's
  * Design; a Buildings-tab `seed` varies a house's details and a tower's
@@ -734,7 +727,7 @@ function normalized(items, k = normalScale(items)) {
  */
 const PIECES = [
 	['gable-house', 'Gable house', (D, s) => [{ piece: gableHouse(D, { seed: s ?? 4 }) }]],
-	['side-house', 'Side house', (D, s) => [{ piece: sideHouse(D, { seed: s ?? 5 }) }]],
+	['side-house', 'Side house', side('house', 5)],
 	[
 		'round-tower',
 		'Round tower',
@@ -764,35 +757,19 @@ const PIECES = [
 			}));
 		},
 	],
-	[
-		'longhouse',
-		'Longhouse',
-		(D, s) => [{ piece: sideHouse(D, { seed: s ?? 8, kind: 'longhouse' }) }],
-	],
+	['longhouse', 'Longhouse', side('longhouse', 8)],
 	['windmill', 'Windmill', (D) => [{ piece: windmill(D) }]],
 	['townhouse', 'Townhouse', (D) => [{ piece: townhouse(D) }]],
-	['barn', 'Barn', (D, s) => [{ piece: sideHouse(D, { seed: s ?? 9, kind: 'barn' }) }]],
-	['tavern', 'Tavern', (D, s) => [{ piece: sideHouse(D, { seed: s ?? 10, kind: 'tavern' }) }]],
-	[
-		'barracks',
-		'Barracks',
-		(D, s) => [{ piece: sideHouse(D, { seed: s ?? 11, kind: 'barracks' }) }],
-	],
-	[
-		'water-mill',
-		'Water mill',
-		(D, s) => [{ piece: sideHouse(D, { seed: s ?? 12, kind: 'mill' }) }],
-	],
+	['barn', 'Barn', side('barn', 9)],
+	['tavern', 'Tavern', side('tavern', 10)],
+	['barracks', 'Barracks', side('barracks', 11)],
+	['water-mill', 'Water mill', side('mill', 12)],
 	[null, 'Camp', (D) => camp(D).items],
 	['mine', 'Mine', (D) => [{ piece: mine(D) }]],
 	['well', 'Well', (D) => [{ piece: well(D), s: 2.2 }]],
 	['lighthouse', 'Lighthouse', (D) => [{ piece: lighthouse(D) }]],
-	[
-		'warehouse',
-		'Warehouse',
-		(D, s) => [{ piece: sideHouse(D, { seed: s ?? 6, kind: 'warehouse' }) }],
-	],
-	['workshop', 'Workshop', (D, s) => [{ piece: sideHouse(D, { seed: s ?? 7, kind: 'workshop' }) }]],
+	['warehouse', 'Warehouse', side('warehouse', 6)],
+	['workshop', 'Workshop', side('workshop', 7)],
 	['cathedral', 'Cathedral', (D) => [{ piece: cathedral(D) }]],
 	['clock-tower', 'Clock tower', (D) => [{ piece: clocktower(D) }]],
 	['tent', 'Tent', (D) => [{ piece: tent(D) }]],

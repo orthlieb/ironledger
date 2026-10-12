@@ -12,7 +12,18 @@
 // middle, flags are weighted coin-flips, and a few rules tie them together.
 // =============================================================================
 
-import { archOpening, circle, crenellated, lancet, rect, rng } from './geom.js';
+import {
+	archOpening,
+	circle,
+	clipSegment,
+	crenellated,
+	ell,
+	lancet,
+	polyBounds,
+	rect,
+	rng,
+	seg,
+} from './geom.js';
 import { RING_TEXTURES } from './ringTextures.js';
 import { place } from './render.js';
 
@@ -275,14 +286,14 @@ export function upgradeDesign(D) {
  * A tower's top, factored into a crenellated top (on / off) and the cap on
  * it. No cap means a bare crenellated top, so a tower never ends flat.
  * @param {Design} D
- * @param {{roof?: Design['towerRoof'], crenel?: boolean}} o per-tower overrides
+ * @param {Design['towerRoof']} [cap] this tower's cap, if not the culture's
  */
-function towerTop(D, o) {
-	const want = o.roof ?? D.towerRoof;
+function towerTop(D, cap) {
+	const want = cap ?? D.towerRoof;
 	const roof = want === 'crenel' ? 'none' : want;
 	return {
 		roof,
-		crenel: roof === 'none' || want === 'crenel' || (o.crenel ?? D.towerCrenel ?? false),
+		crenel: roof === 'none' || want === 'crenel' || (D.towerCrenel ?? false),
 	};
 }
 
@@ -291,7 +302,7 @@ function towerTop(D, o) {
 const STAKE = 1.6;
 
 /** Hatch/detail stroke weight (world units). */
-export const THIN = 0.6;
+const THIN = 0.6;
 
 /** The role of line-work texture drawn in ink — masonry courses, barn
  *  planks, wall seams — so the Texture switch and small map icons can leave
@@ -440,25 +451,6 @@ function bulwark(D, feet, body, look) {
 	];
 }
 
-/** Ellipse arc points (degrees). */
-function ell(
-	/** @type {number} */ cx,
-	/** @type {number} */ cy,
-	/** @type {number} */ rx,
-	/** @type {number} */ ry,
-	/** @type {number} */ a0,
-	/** @type {number} */ a1,
-	n = 24,
-) {
-	/** @type {Poly} */
-	const out = [];
-	for (let i = 0; i <= n; i++) {
-		const a = ((a0 + ((a1 - a0) * i) / n) * Math.PI) / 180;
-		out.push([cx + rx * Math.cos(a), cy + ry * Math.sin(a)]);
-	}
-	return out;
-}
-
 /**
  * The part of segment ab inside the box [x0, x1] × [y0, y1], or null —
  * Liang–Barsky, so the piece stays on the original line.
@@ -471,29 +463,11 @@ function ell(
  */
 function clipToBox(ab, x0, y0, x1, y1) {
 	const [a, b] = ab;
-	const dx = b[0] - a[0],
+	const t = clipSegment(a, b, x0, y0, x1, y1);
+	if (!t) return null;
+	const [t0, t1] = t,
+		dx = b[0] - a[0],
 		dy = b[1] - a[1];
-	let t0 = 0,
-		t1 = 1;
-	for (const [p, q] of [
-		[-dx, a[0] - x0],
-		[dx, x1 - a[0]],
-		[-dy, a[1] - y0],
-		[dy, y1 - a[1]],
-	]) {
-		if (p === 0) {
-			if (q < 0) return null;
-			continue;
-		}
-		const r = q / p;
-		if (p < 0) {
-			if (r > t1) return null;
-			t0 = Math.max(t0, r);
-		} else {
-			if (r < t0) return null;
-			t1 = Math.min(t1, r);
-		}
-	}
 	return [
 		[a[0] + t0 * dx, a[1] + t0 * dy],
 		[a[0] + t1 * dx, a[1] + t1 * dy],
@@ -728,15 +702,7 @@ function onionDome(D, cx, y, r) {
 			{ solid: [circle(cx, top + 1.4, 0.9)], role: 'roof' },
 			{
 				solid: [],
-				free: [
-					{
-						pts: [
-							[cx, top - 0.5],
-							[cx, top + 4.5],
-						],
-						w: 1,
-					},
-				],
+				free: [seg([cx, top - 0.5], [cx, top + 4.5], 1)],
 			},
 		],
 		tip: [cx, top + 4.5],
@@ -895,23 +861,18 @@ function boxProjector(d, k, h = 0, ridge = 0) {
 /**
  * House with its gable facing the viewer.
  * @param {Design} D
- * @param {{w?: number, h?: number, seed?: number}} [o]
+ * @param {{w?: number, seed?: number}} [o]
  * @returns {Part[]}
  */
 export function gableHouse(D, o = {}) {
 	const r = rng(o.seed ?? 1);
 	const two = r() < D.storeys;
 	const w = o.w ?? 16,
-		h = (o.h ?? 10) * (two ? 1.65 : 1) * D.stature,
+		h = 10 * (two ? 1.65 : 1) * D.stature,
 		rh = w * D.pitch,
 		ov = 1.5;
 	const dome = D.towerRoof === 'dome';
-	const P = boxProjector(
-		w * D.depth,
-		D.perspective ?? DEFAULT_DESIGN.perspective,
-		h,
-		dome ? 0 : h + rh,
-	);
+	const P = boxProjector(w * D.depth, D.perspective, h, dome ? 0 : h + rh);
 	const side = /** @type {Poly} */ ([
 		[w / 2, 0],
 		P.back([w / 2, 0]),
@@ -994,7 +955,7 @@ export function gableHouse(D, o = {}) {
  *   'barracks'  — long stone hall, a row of slit windows, a banner;
  *   'mill'      — a waterwheel at the front, standing in a mill race.
  * @param {Design} D
- * @param {{w?: number, h?: number, seed?: number, kind?: 'house' | 'warehouse' | 'workshop' | 'church' | 'longhouse' | 'barn' | 'tavern' | 'barracks' | 'mill'}} [o]
+ * @param {{w?: number, seed?: number, kind?: 'house' | 'warehouse' | 'workshop' | 'church' | 'longhouse' | 'barn' | 'tavern' | 'barracks' | 'mill'}} [o]
  * @returns {Part[]}
  */
 export function sideHouse(D, o = {}) {
@@ -1005,12 +966,12 @@ export function sideHouse(D, o = {}) {
 	const W0 = { house: 22, longhouse: 34, barn: 26, tavern: 24, barracks: 38, mill: 22 };
 	const H0 = { church: 13, longhouse: 6.5, barn: 11, barracks: 8 };
 	const w = o.w ?? W0[/** @type {keyof typeof W0} */ (kind)] ?? 30,
-		h = (o.h ?? H0[/** @type {keyof typeof H0} */ (kind)] ?? 9) * (two ? 1.65 : 1) * D.stature,
+		h = (H0[/** @type {keyof typeof H0} */ (kind)] ?? 9) * (two ? 1.65 : 1) * D.stature,
 		d = 12 * D.depth * (kind === 'house' ? 1 : kind === 'church' ? 1.35 : long ? 1.15 : 1.2),
 		rh = d * D.pitch * (kind === 'warehouse' ? 1.1 : long ? 1.9 : 1.5),
 		ov = 1.4;
 	const v = depthVec(d);
-	const P = boxProjector(d, D.perspective ?? DEFAULT_DESIGN.perspective, h);
+	const P = boxProjector(d, D.perspective, h);
 	// The ridge runs at mid-depth, so under perspective it comes out
 	// narrower than the front eave and the roof plane reads as a trapezoid.
 	/** @type {Pt} */ const gTop = P.at([w / 2, h + rh], 0.5);
@@ -1038,13 +999,7 @@ export function sideHouse(D, o = {}) {
 	const courses = [];
 	for (let f = 0.25; f < 1; f += 0.25) {
 		const y = h + (gTop[1] - h) * f;
-		courses.push({
-			pts: [
-				[-w, y],
-				[w + 10, y + 0.0001],
-			],
-			w: THIN,
-		});
+		courses.push(seg([-w, y], [w + 10, y + 0.0001], THIN));
 	}
 	const fills =
 		kind === 'warehouse'
@@ -1066,14 +1021,7 @@ export function sideHouse(D, o = {}) {
 		/** @type {Line[]} */
 		const out = [];
 		for (let x = x0 + 2.2; x < x1; x += 2.2)
-			out.push({
-				pts: [
-					[x, y0 - 1],
-					[x + v[0], y1 + v[1]],
-				],
-				w: 0.45,
-				role: TEXTURE,
-			});
+			out.push(seg([x, y0 - 1], [x + v[0], y1 + v[1]], 0.45, { role: TEXTURE }));
 		return out;
 	};
 	const rose = P.at([w / 2, h + rh * 0.3], 0.5);
@@ -1095,27 +1043,9 @@ export function sideHouse(D, o = {}) {
 			role: 'flag',
 			fills: [circle(x - 4.7, y - 5.4, 1.4)],
 			free: [
-				{
-					pts: [
-						[x + 0.5, y],
-						[x - 8.6, y],
-					],
-					w: 1.1,
-				},
-				{
-					pts: [
-						[x - 7.4, y],
-						[x - 7.4, y - 2.6],
-					],
-					w: 0.5,
-				},
-				{
-					pts: [
-						[x - 2, y],
-						[x - 2, y - 2.6],
-					],
-					w: 0.5,
-				},
+				seg([x + 0.5, y], [x - 8.6, y], 1.1),
+				seg([x - 7.4, y], [x - 7.4, y - 2.6], 0.5),
+				seg([x - 2, y], [x - 2, y - 2.6], 0.5),
 			],
 		});
 	}
@@ -1274,41 +1204,11 @@ function barnDoorCuts(/** @type {number} */ h) {
 	const t = h * 0.82;
 	/** @type {Line[]} */
 	return [
-		{
-			pts: [
-				[0, -1],
-				[0, t + 1],
-			],
-			w: 0.7,
-		},
-		{
-			pts: [
-				[-4.2, 0.4],
-				[0, t - 0.4],
-			],
-			w: 0.6,
-		},
-		{
-			pts: [
-				[-4.2, t - 0.4],
-				[0, 0.4],
-			],
-			w: 0.6,
-		},
-		{
-			pts: [
-				[0, 0.4],
-				[4.2, t - 0.4],
-			],
-			w: 0.6,
-		},
-		{
-			pts: [
-				[0, t - 0.4],
-				[4.2, 0.4],
-			],
-			w: 0.6,
-		},
+		seg([0, -1], [0, t + 1], 0.7),
+		seg([-4.2, 0.4], [0, t - 0.4], 0.6),
+		seg([-4.2, t - 0.4], [0, 0.4], 0.6),
+		seg([0, 0.4], [4.2, t - 0.4], 0.6),
+		seg([0, t - 0.4], [4.2, 0.4], 0.6),
 	];
 }
 
@@ -1351,23 +1251,9 @@ function stoneCourses(
 	const out = [];
 	let row = 0;
 	for (let y = y0 + 2.4; y < y1; y += 2.4, row++) {
-		out.push({
-			pts: [
-				[x0 - 2, y],
-				[x1 + 2, y],
-			],
-			w: 0.45,
-			role: TEXTURE,
-		});
+		out.push(seg([x0 - 2, y], [x1 + 2, y], 0.45, { role: TEXTURE }));
 		for (let x = x0 + (row % 2 ? 2.2 : 0); x < x1; x += 4.4)
-			out.push({
-				pts: [
-					[x, y - 2.4],
-					[x, y],
-				],
-				w: 0.45,
-				role: TEXTURE,
-			});
+			out.push(seg([x, y - 2.4], [x, y], 0.45, { role: TEXTURE }));
 	}
 	return out;
 }
@@ -1393,14 +1279,7 @@ function roundCourses(r, ry, y0, y1) {
 		for (let a = Math.PI + (row % 2 ? step / 2 : 0); a < 2 * Math.PI; a += step) {
 			const x = r * Math.cos(a),
 				dy = ry * Math.sin(a);
-			out.push({
-				pts: [
-					[x, y - 2.4 + dy],
-					[x, y + dy],
-				],
-				w: 0.45,
-				role: TEXTURE,
-			});
+			out.push(seg([x, y - 2.4 + dy], [x, y + dy], 0.45, { role: TEXTURE }));
 		}
 	}
 	return out;
@@ -1423,13 +1302,13 @@ function roseCuts(c) {
 	const out = [];
 	for (let a = 0; a < 180; a += 45) {
 		const t = (a * Math.PI) / 180;
-		out.push({
-			pts: [
+		out.push(
+			seg(
 				[c[0] - Math.cos(t) * 3, c[1] - Math.sin(t) * 3],
 				[c[0] + Math.cos(t) * 3, c[1] + Math.sin(t) * 3],
-			],
-			w: 0.6,
-		});
+				0.6,
+			),
+		);
 	}
 	return out;
 }
@@ -1454,20 +1333,8 @@ function doorCuts(/** @type {number} */ w, /** @type {number} */ h) {
 	return bayXs(w).flatMap(
 		(x) =>
 			/** @type {Line[]} */ ([
-				{
-					pts: [
-						[x, -1],
-						[x, fh + 1],
-					],
-					w: 0.7,
-				},
-				{
-					pts: [
-						[x - 3, 0.5],
-						[x + 3, fh - 0.5],
-					],
-					w: 0.7,
-				},
+				seg([x, -1], [x, fh + 1], 0.7),
+				seg([x - 3, 0.5], [x + 3, fh - 0.5], 0.7),
 			]),
 	);
 }
@@ -1567,15 +1434,7 @@ function flag(D, x, y, dir = 1) {
 		{ solid: [cloth], role: 'flag', sharp: true },
 		{
 			solid: [],
-			free: [
-				{
-					pts: [
-						[x, y],
-						[x, y + 10.5],
-					],
-					w: 1.2,
-				},
-			],
+			free: [seg([x, y], [x, y + 10.5], 1.2)],
 		},
 	];
 	return parts;
@@ -1585,7 +1444,7 @@ function flag(D, x, y, dir = 1) {
  * Round tower: shaded cylinder, optionally crenellated at the top, capped
  * per the culture — cone, onion, dome, lancet or nothing.
  * @param {Design} D
- * @param {{r?: number, h?: number, roof?: Design['towerRoof'], crenel?: boolean, flags?: boolean, corbel?: number, belfry?: boolean, clock?: boolean, finial?: boolean}} [o]
+ * @param {{r?: number, h?: number, roof?: Design['towerRoof'], flags?: boolean, belfry?: boolean, clock?: boolean, finial?: boolean}} [o]
  *   `belfry`: a church bell tower — door, and an arched bell chamber with its
  *   bell in place of the window; `clock`: a clock face up top instead;
  *   `finial`: the culture's holy symbol on the top instead of a flag.
@@ -1598,14 +1457,14 @@ export function roundTower(D, o = {}) {
 		b = bowAmt(D.towerBow),
 		// Concave (elven) towers flare at the foot and narrow as they rise.
 		top = r * (1 - (b > 0 ? Math.max(D.taper, 0.42 * Math.min(1, D.towerBow)) : D.taper));
-	const { roof, crenel } = towerTop(D, o);
+	const { roof, crenel } = towerTop(D, o.roof);
 	/** @type {Pt} */ const mid = [0, h / 2];
 	// Corbelled body: from the belt up to the parapet, the walls widen via
 	// a 45° slope and then stay flared. `D.towerCorbel` is the share of the
 	// tower's height occupied by the corbel, measured down from the top —
 	// 0 means no corbel, 1 means the whole tower is the slope. Orthogonal
 	// to roof style: any cap can sit on a corbelled or straight body.
-	const corbelAmount = Math.max(0, Math.min(1, o.corbel ?? D.towerCorbel ?? 0));
+	const corbelAmount = Math.max(0, Math.min(1, D.towerCorbel ?? 0));
 	const corbelOvMax = Math.max(1.6, r * 0.26);
 	const corbelBelt = (1 - corbelAmount) * h;
 	// Project outward by the fixed max, clamped to the room available above
@@ -1784,29 +1643,25 @@ export function roundTower(D, o = {}) {
  * capped per the culture — a pyramid spire for cone, or onion, dome, lancet,
  * or nothing.
  * @param {Design} D
- * @param {{w?: number, h?: number, finial?: boolean, clock?: boolean, corbel?: number, roof?: Design['towerRoof'], crenel?: boolean}} [o]
+ * @param {{w?: number, h?: number, finial?: boolean, clock?: boolean}} [o]
  *   `finial`: top it with the culture's symbol; `clock`: a clock face instead
- *   of the belfry; `corbel`: override `D.towerCorbel` (0..1).
+ *   of the belfry.
  * @returns {Part[]}
  */
 export function squareTower(D, o = {}) {
 	const w = o.w ?? 10,
 		h = (o.h ?? 28) * D.stature;
-	const { roof, crenel } = towerTop(D, o);
+	const { roof, crenel } = towerTop(D);
 	// A crenellated top's corbel and band (see below).
 	const ctOv = Math.max(0.8, w * 0.12),
 		ctBand = Math.max(3, w * 0.5);
-	const P = boxProjector(
-		w * 0.8,
-		D.perspective ?? DEFAULT_DESIGN.perspective,
-		crenel ? h + ctOv + ctBand : h,
-	);
+	const P = boxProjector(w * 0.8, D.perspective, crenel ? h + ctOv + ctBand : h);
 	// Corbelled body: from the belt up, the walls widen by beltOv on every
 	// side via a 45° slope. `D.towerCorbel` is the share of the tower's
 	// height occupied by the corbel (measured down from the top) — 0 means
 	// no corbel, 1 means the whole tower is the slope. Pyramid / onion /
 	// dome above rises from the wider top.
-	const corbelAmount = Math.max(0, Math.min(1, o.corbel ?? D.towerCorbel ?? 0));
+	const corbelAmount = Math.max(0, Math.min(1, D.towerCorbel ?? 0));
 	const beltOvMax = Math.max(1.4, w * 0.14);
 	const beltY = (1 - corbelAmount) * h;
 	const beltOv = Math.min(beltOvMax, Math.max(0, h - beltY));
@@ -1930,15 +1785,7 @@ export function squareTower(D, o = {}) {
 				solid: [ctFront],
 				fills: slots,
 				// The break where the 45° slope meets the upright band.
-				lines: [
-					{
-						pts: [
-							[-w3, y1],
-							[w3, y1],
-						],
-						w: THIN,
-					},
-				],
+				lines: [seg([-w3, y1], [w3, y1], THIN)],
 			},
 		);
 		if (!capped) {
@@ -2040,7 +1887,7 @@ const GATE_W = 11,
  */
 function gateSeat(D, h, wallY) {
 	const midFoot = (/** @type {number} */ y0) => {
-		const P = boxProjector(GATE_D, D.perspective ?? DEFAULT_DESIGN.perspective, y0 + h);
+		const P = boxProjector(GATE_D, D.perspective, y0 + h);
 		const B = P.back([GATE_W / 2, y0]);
 		return /** @type {Pt} */ ([(GATE_W / 2 + B[0]) / 2, (y0 + B[1]) / 2]);
 	};
@@ -2067,7 +1914,7 @@ function gateSeat(D, h, wallY) {
  */
 function gateTower(D, y0, h, wood) {
 	const w = GATE_W;
-	const P = boxProjector(GATE_D, D.perspective ?? DEFAULT_DESIGN.perspective, y0 + h);
+	const P = boxProjector(GATE_D, D.perspective, y0 + h);
 	const side = /** @type {Poly} */ ([
 		[w / 2, y0],
 		P.back([w / 2, y0]),
@@ -2590,13 +2437,13 @@ function symbolShape(kind, p) {
 			spokes.push({ pts: [...ring, ring[0]], w: 0.8 });
 			for (let a = 0; a < 180; a += 30) {
 				const t = (a * Math.PI) / 180;
-				spokes.push({
-					pts: [
+				spokes.push(
+					seg(
 						[x - Math.cos(t) * 2.8, y + 5.2 - Math.sin(t) * 2.8],
 						[x + Math.cos(t) * 2.8, y + 5.2 + Math.sin(t) * 2.8],
-					],
-					w: 0.5,
-				});
+						0.5,
+					),
+				);
 			}
 			return [{ solid: [circle(x, y + 5.2, 0.8)], role: 'roof', free: spokes }];
 		}
@@ -2605,14 +2452,7 @@ function symbolShape(kind, p) {
 			/** @type {Line[]} */
 			const marks = [{ pts: [p, [x, y + 2]], w: 1 }];
 			for (const dx of [-1.6, 0, 1.6])
-				marks.push({
-					pts: [
-						[x + dx - 1.1, y + 2.4],
-						[x + dx + 1.1, y + 7.4],
-					],
-					w: 0.9,
-					round: true,
-				});
+				marks.push(seg([x + dx - 1.1, y + 2.4], [x + dx + 1.1, y + 7.4], 0.9, { round: true }));
 			return [{ solid: [], free: marks }];
 		}
 		case 'trident':
@@ -2709,13 +2549,7 @@ function bellCuts(/** @type {number} */ cx, /** @type {number} */ y) {
 			],
 			w: 0.7,
 		},
-		{
-			pts: [
-				[cx, y + 3.1],
-				[cx, y + 4.6],
-			],
-			w: 0.6,
-		},
+		seg([cx, y + 3.1], [cx, y + 4.6], 0.6),
 	];
 }
 
@@ -2963,7 +2797,7 @@ export function church(D, o = {}) {
 export function keep(D, o = {}) {
 	const w = o.w ?? 22,
 		h = (o.h ?? 30) * D.stature;
-	const P = boxProjector(17, D.perspective ?? DEFAULT_DESIGN.perspective, h);
+	const P = boxProjector(17, D.perspective, h);
 	const sb = P.scale(1);
 	/** @type {Pt} */ const FR = [w / 2, 0];
 	const side = /** @type {Poly} */ ([FR, P.back(FR), P.back([w / 2, h]), [w / 2, h]]);
@@ -3051,12 +2885,7 @@ function stall(D, i) {
 		ph = 4.8;
 	const peaked = i % 2 === 0;
 	const rise = peaked ? 0 : 1.8; // a lean-to's back is higher than its front
-	const P = boxProjector(
-		3.2,
-		D.perspective ?? DEFAULT_DESIGN.perspective,
-		ph + rise,
-		peaked ? ph + 2.8 : 0,
-	);
+	const P = boxProjector(3.2, D.perspective, ph + rise, peaked ? ph + 2.8 : 0);
 	const hl = -w / 2,
 		hr = w / 2;
 	/** @param {Pt} p @param {number} [dy] @returns {Pt} */
@@ -3091,15 +2920,7 @@ function stall(D, i) {
 		{
 			solid: [rect(hl, 0, w, ch)],
 			role: wood,
-			lines: [
-				{
-					pts: [
-						[hl - 1, ch * 0.5],
-						[hr + 1, ch * 0.5],
-					],
-					w: 0.4,
-				},
-			],
+			lines: [seg([hl - 1, ch * 0.5], [hr + 1, ch * 0.5], 0.4)],
 		},
 		{ solid: [rect(hl, ch, 0.7, ph - ch), rect(hr - 0.7, ch, 0.7, ph - ch)], role: wood },
 	];
@@ -3172,20 +2993,8 @@ export function well(/** @type {Design} */ D) {
 		{
 			solid: [],
 			free: [
-				{
-					pts: [
-						[-r + 0.5, ch],
-						[-r + 0.5, ch + 4.5],
-					],
-					w: 0.9,
-				},
-				{
-					pts: [
-						[r - 0.5, ch],
-						[r - 0.5, ch + 4.5],
-					],
-					w: 0.9,
-				},
+				seg([-r + 0.5, ch], [-r + 0.5, ch + 4.5], 0.9),
+				seg([r - 0.5, ch], [r - 0.5, ch + 4.5], 0.9),
 			],
 		},
 		D.towerRoof === 'dome'
@@ -3337,13 +3146,7 @@ function jawGate(y0, h) {
 	/** @type {Line[]} */
 	const bands = [];
 	for (const f of [0.3, 0.55, 0.78])
-		bands.push({
-			pts: [
-				[-12, y0 + (top - y0) * f],
-				[12, y0 + (top - y0) * f],
-			],
-			w: 0.45,
-		});
+		bands.push(seg([-12, y0 + (top - y0) * f], [12, y0 + (top - y0) * f], 0.45));
 	return [
 		{ solid: [jaw(1)], lines: bands },
 		{
@@ -3456,14 +3259,7 @@ export function stiltHut(D, o = {}) {
  * @returns {Part[]}
  */
 export function onStilts(parts, D) {
-	let x0 = Infinity,
-		x1 = -Infinity;
-	for (const p of parts)
-		for (const poly of p.solid)
-			for (const [x] of poly) {
-				if (x < x0) x0 = x;
-				if (x > x1) x1 = x;
-			}
+	const { x0, x1 } = polyBounds(parts.flatMap((p) => p.solid));
 	if (!Number.isFinite(x0)) return parts;
 	const cx = (x0 + x1) / 2;
 	const xHalf = (x1 - x0) / 2;
@@ -3642,7 +3438,7 @@ export function townhouse(D, o = {}) {
 	const Wt = w + 2 * jet * (floors - 1),
 		H = fh * floors,
 		rh = Wt * D.pitch;
-	const P = boxProjector(w * D.depth, D.perspective ?? DEFAULT_DESIGN.perspective, H, H + rh);
+	const P = boxProjector(w * D.depth, D.perspective, H, H + rh);
 	/** @type {Part[]} */
 	const sides = [];
 	/** @type {Part[]} */
@@ -3661,34 +3457,10 @@ export function townhouse(D, o = {}) {
 		const frame = [];
 		if (i > 0 || !D.masonry)
 			frame.push(
-				{
-					pts: [
-						[-half, y0 + 0.4],
-						[-half * 0.45, y0 + fh],
-					],
-					w: 0.8,
-				},
-				{
-					pts: [
-						[half, y0 + 0.4],
-						[half * 0.45, y0 + fh],
-					],
-					w: 0.8,
-				},
-				{
-					pts: [
-						[-half * 0.45, y0 - 1],
-						[-half * 0.45, y0 + fh + 1],
-					],
-					w: 0.8,
-				},
-				{
-					pts: [
-						[half * 0.45, y0 - 1],
-						[half * 0.45, y0 + fh + 1],
-					],
-					w: 0.8,
-				},
+				seg([-half, y0 + 0.4], [-half * 0.45, y0 + fh], 0.8),
+				seg([half, y0 + 0.4], [half * 0.45, y0 + fh], 0.8),
+				seg([-half * 0.45, y0 - 1], [-half * 0.45, y0 + fh + 1], 0.8),
+				seg([half * 0.45, y0 - 1], [half * 0.45, y0 + fh + 1], 0.8),
 			);
 		else frame.push(...stoneCourses(-half, half, y0, y0 + fh));
 		const fills =
@@ -3741,7 +3513,7 @@ export function camp(D) {
  */
 function ridgeTent(/** @type {Design} */ D, /** @type {number} */ w, deep = 1.1) {
 	const h = w * 0.62 * D.stature;
-	const P = boxProjector(w * deep, D.perspective ?? DEFAULT_DESIGN.perspective, 0, h);
+	const P = boxProjector(w * deep, D.perspective, 0, h);
 	/** @type {Pt} */ const L = [-w / 2, 0];
 	/** @type {Pt} */ const R = [w / 2, 0];
 	/** @type {Pt} */ const A = [0, h];
@@ -3794,22 +3566,7 @@ function coneTent(/** @type {Design} */ D, /** @type {number} */ w) {
 		},
 		{
 			solid: [],
-			free: [
-				{
-					pts: [
-						[-1.8, h + 2.6],
-						[0.6, h - 1],
-					],
-					w: 0.7,
-				},
-				{
-					pts: [
-						[1.8, h + 2.6],
-						[-0.6, h - 1],
-					],
-					w: 0.7,
-				},
-			],
+			free: [seg([-1.8, h + 2.6], [0.6, h - 1], 0.7), seg([1.8, h + 2.6], [-0.6, h - 1], 0.7)],
 		},
 	];
 }
@@ -3823,22 +3580,8 @@ function campfire() {
 		{
 			solid: [],
 			free: [
-				{
-					pts: [
-						[-3, -0.6],
-						[3, 1.4],
-					],
-					w: 1.2,
-					round: true,
-				},
-				{
-					pts: [
-						[-3, 1.4],
-						[3, -0.6],
-					],
-					w: 1.2,
-					round: true,
-				},
+				seg([-3, -0.6], [3, 1.4], 1.2, { round: true }),
+				seg([-3, 1.4], [3, -0.6], 1.2, { round: true }),
 			],
 		},
 		{
@@ -3907,30 +3650,12 @@ export function mine(D) {
 	]);
 	/** @type {Line[]} */
 	const track = [
-		{
-			pts: [
-				[ax - 1.5, y0],
-				[ax - 3.8, y0 - 7.5],
-			],
-			w: 1,
-		},
-		{
-			pts: [
-				[ax + 1.5, y0],
-				[ax + 3.4, y0 - 7.5],
-			],
-			w: 1,
-		},
+		seg([ax - 1.5, y0], [ax - 3.8, y0 - 7.5], 1),
+		seg([ax + 1.5, y0], [ax + 3.4, y0 - 7.5], 1),
 	];
 	for (const f of [0.18, 0.42, 0.66, 0.9]) {
 		const y = y0 - 7.5 * f;
-		track.push({
-			pts: [
-				[ax - 1.9 - 2.6 * f, y],
-				[ax + 1.9 + 2.2 * f, y],
-			],
-			w: 1,
-		});
+		track.push(seg([ax - 1.9 - 2.6 * f, y], [ax + 1.9 + 2.2 * f, y], 1));
 	}
 	return [
 		{ solid: [lit], lines: crags, terrain: true },
@@ -4071,13 +3796,13 @@ export function lighthouse(D) {
 	const rail = [{ pts: ell(0, h + 2.4, g, g * k, 180, 360, 20), w: 0.6 }];
 	for (let a = 190; a <= 350; a += 20) {
 		const t = (a * Math.PI) / 180;
-		rail.push({
-			pts: [
+		rail.push(
+			seg(
 				[g * Math.cos(t), h + g * k * Math.sin(t)],
 				[g * Math.cos(t), h + 2.4 + g * k * Math.sin(t)],
-			],
-			w: 0.5,
-		});
+				0.5,
+			),
+		);
 	}
 	parts.push({
 		solid: [[...ell(0, h - 0.8, g, g * k, 180, 360, 20), ...ell(0, h, g, g * k, 0, 180, 20)]],
@@ -4093,14 +3818,11 @@ export function lighthouse(D) {
 	for (const side of [-1, 1])
 		for (const dy of [-1.6, 0, 1.6]) {
 			const y = h + lh / 2 + dy;
-			rays.push({
-				pts: [
-					[side * (lr + 1.6), y + dy * 0.4],
-					[side * (lr + 7.5), y + dy * 1.6],
-				],
-				w: 0.6,
-				round: true,
-			});
+			rays.push(
+				seg([side * (lr + 1.6), y + dy * 0.4], [side * (lr + 7.5), y + dy * 1.6], 0.6, {
+					round: true,
+				}),
+			);
 		}
 	parts.push(
 		{
@@ -4194,58 +3916,16 @@ export function caravel(D) {
 	}));
 	/** @type {Line[]} */
 	const masts = [
-		{
-			pts: [
-				[1, 3.8],
-				[1, 25],
-			],
-			w: 0.9,
-		},
-		{
-			pts: [
-				[8, 4.2],
-				[8, 19.5],
-			],
-			w: 0.8,
-		},
-		{
-			pts: [
-				[-8.5, 6.6],
-				[-8.5, 18],
-			],
-			w: 0.7,
-		},
-		{
-			pts: [
-				[12.6, 4.6],
-				[17, 7],
-			],
-			w: 0.8,
-		},
+		seg([1, 3.8], [1, 25], 0.9),
+		seg([8, 4.2], [8, 19.5], 0.8),
+		seg([-8.5, 6.6], [-8.5, 18], 0.7),
+		seg([12.6, 4.6], [17, 7], 0.8),
 	];
 	/** @type {Line[]} */
 	const rigging = [
-		{
-			pts: [
-				[1, 24.5],
-				[16.5, 6.8],
-			],
-			w: 0.35,
-		},
-		{
-			pts: [
-				[1, 24.5],
-				[-12, 7.4],
-			],
-			w: 0.35,
-		},
-		{
-			pts: [
-				[8, 19],
-				[17, 7],
-			],
-			w: 0.35,
-		},
+		seg([1, 24.5], [16.5, 6.8], 0.35),
+		seg([1, 24.5], [-12, 7.4], 0.35),
+		seg([8, 19], [17, 7], 0.35),
 	];
 	/** Square sail between two yards, bellying slightly forward. */
 	const square = (
@@ -4269,34 +3949,10 @@ export function caravel(D) {
 	];
 	/** @type {Line[]} */
 	const yards = [
-		{
-			pts: [
-				[-4.4, 21],
-				[6.4, 21],
-			],
-			w: 0.7,
-		},
-		{
-			pts: [
-				[-4, 9.5],
-				[6, 9.5],
-			],
-			w: 0.6,
-		},
-		{
-			pts: [
-				[4.4, 17.6],
-				[11.6, 17.6],
-			],
-			w: 0.6,
-		},
-		{
-			pts: [
-				[-13, 7.6],
-				[-4, 20.4],
-			],
-			w: 0.6,
-		},
+		seg([-4.4, 21], [6.4, 21], 0.7),
+		seg([-4, 9.5], [6, 9.5], 0.6),
+		seg([4.4, 17.6], [11.6, 17.6], 0.6),
+		seg([-13, 7.6], [-4, 20.4], 0.6),
 	];
 	// The flag flies at the masthead, its lower edge just above the main yard
 	// (y = 21; the cloth is drawn 10 above the pole's foot), streaming aft —
@@ -4337,24 +3993,10 @@ export function pier(len) {
 	];
 	/** @type {Line[]} */
 	const planks = [];
-	for (let x = 1.6; x < len; x += 1.6)
-		planks.push({
-			pts: [
-				[x, -0.5],
-				[x + dp[0], dp[1] + 0.5],
-			],
-			w: 0.35,
-		});
+	for (let x = 1.6; x < len; x += 1.6) planks.push(seg([x, -0.5], [x + dp[0], dp[1] + 0.5], 0.35));
 	/** @type {Line[]} */
 	const posts = [];
-	for (let x = 1.5; x <= len; x += 5)
-		posts.push({
-			pts: [
-				[x, -1],
-				[x, -4.2],
-			],
-			w: 1,
-		});
+	for (let x = 1.5; x <= len; x += 5) posts.push(seg([x, -1], [x, -4.2], 1));
 	return [
 		{ solid: [], free: posts },
 		{ solid: [deck], role: 'wood', lines: planks },
@@ -4368,13 +4010,13 @@ function clockFace(/** @type {number} */ cx, /** @type {number} */ cy, /** @type
 	const ticks = [];
 	for (let a = 0; a < 360; a += 30) {
 		const t = (a * Math.PI) / 180;
-		ticks.push({
-			pts: [
+		ticks.push(
+			seg(
 				[cx + Math.cos(t) * r * 0.72, cy + Math.sin(t) * r * 0.72],
 				[cx + Math.cos(t) * r * 0.95, cy + Math.sin(t) * r * 0.95],
-			],
-			w: 0.4,
-		});
+				0.4,
+			),
+		);
 	}
 	/** @type {Part[]} */
 	const parts = [
@@ -4382,20 +4024,8 @@ function clockFace(/** @type {number} */ cx, /** @type {number} */ cy, /** @type
 			solid: [circle(cx, cy, r)],
 			lines: [
 				...ticks,
-				{
-					pts: [
-						[cx, cy],
-						[cx, cy + r * 0.62],
-					],
-					w: 0.7,
-				},
-				{
-					pts: [
-						[cx, cy],
-						[cx + r * 0.45, cy - r * 0.2],
-					],
-					w: 0.7,
-				},
+				seg([cx, cy], [cx, cy + r * 0.62], 0.7),
+				seg([cx, cy], [cx + r * 0.45, cy - r * 0.2], 0.7),
 			],
 		},
 	];
@@ -4501,7 +4131,7 @@ export function cathedral(D) {
 		h = 20 * D.stature,
 		rh = w * 0.55 * Math.max(D.pitch, 0.7),
 		ov = 1;
-	const P = boxProjector(34, D.perspective ?? DEFAULT_DESIGN.perspective, h, h + rh);
+	const P = boxProjector(34, D.perspective, h, h + rh);
 	/** @type {Pt} */ const L = [-w / 2 - ov, h];
 	/** @type {Pt} */ const R = [w / 2 + ov, h];
 	/** @type {Pt} */ const A = [0, h + rh];
@@ -4539,20 +4169,6 @@ export function cathedral(D) {
 	];
 }
 
-/** Sharpened-stake top edge from x1 back to x0 at height y. */
-function stakes(/** @type {number} */ x0, /** @type {number} */ x1, /** @type {number} */ y) {
-	const n = Math.max(2, Math.round((x1 - x0) / STAKE));
-	/** @type {Poly} */
-	const out = [];
-	for (let i = n; i > 0; i--) {
-		const b = x0 + ((x1 - x0) * i) / n,
-			a = b - (x1 - x0) / n;
-		out.push([b, y - 1.6], [(a + b) / 2, y]);
-	}
-	out.push([x0, y - 1.6]);
-	return out;
-}
-
 /**
  * Witch's hut: a crooked round hut with a steep, shaggy thatch, perched on
  * leaning stilts over the bog, a smoking chimney pot through the roof.
@@ -4574,40 +4190,22 @@ export function witchHut(D) {
 		const t = (a * Math.PI) / 180;
 		const x = R * 0.78 * Math.cos(t),
 			y = R * 0.78 * 0.34 * Math.sin(t);
-		posts.push({
-			pts: [
-				[x, y - 2],
-				[x, y + lift - 1.2],
-			],
-			w: 1,
-		});
+		posts.push(seg([x, y - 2], [x, y + lift - 1.2], 1));
 	}
 	/** @type {Line[]} */
 	const ladder = [
-		{
-			pts: [
-				[-R - 2.4, -2.6],
-				[-R + 0.2, lift - 1],
-			],
-			w: 0.6,
-		},
-		{
-			pts: [
-				[-R - 0.4, -2.6],
-				[-R + 1.8, lift - 1],
-			],
-			w: 0.6,
-		},
+		seg([-R - 2.4, -2.6], [-R + 0.2, lift - 1], 0.6),
+		seg([-R - 0.4, -2.6], [-R + 1.8, lift - 1], 0.6),
 	];
 	for (let i = 1; i < 4; i++) {
 		const t = i / 4;
-		ladder.push({
-			pts: [
+		ladder.push(
+			seg(
 				[-R - 2.4 + 2.6 * t, -2.6 + (lift + 1.6) * t],
 				[-R - 0.4 + 2.2 * t, -2.6 + (lift + 1.6) * t],
-			],
-			w: 0.5,
-		});
+				0.5,
+			),
+		);
 	}
 	const hut = roundHut(d, { r });
 	// Dome culture: the hut stands bare on its deck (there is no thatch for
@@ -4638,48 +4236,21 @@ export function witchHut(D) {
 }
 
 /**
- * A straight run of wall from x0 to x1, `wh` high, seen square-on with a
- * shaded end face: crenellated stone, or sharpened palisade stakes.
+ * Standalone wall segment: a straight run of crenellated stone, 36 long,
+ * seen square-on with a shaded end face (the Wall building).
  * @param {Design} D
- * @param {number} x0
- * @param {number} x1
- * @param {number} wh
- * @param {boolean} wood
  * @returns {Part[]}
  */
-function wallRun(D, x0, x1, wh, wood) {
+export function wallSegment(D) {
+	const x0 = -18,
+		x1 = 18,
+		wh = 9 * D.stature;
 	const v = depthVec(4);
-	const front = /** @type {Poly} */ (
-		wood
-			? [[x0, 0], [x1, 0], ...stakes(x0, x1, wh)]
-			: crenellated(x0, x1, 0, wh, { merlon: 2.2, notch: 2 })
-	);
-	const role = wood ? /** @type {const} */ ('wall-wood') : /** @type {const} */ ('wall-stone');
+	const front = crenellated(x0, x1, 0, wh, { merlon: 2.2, notch: 2 });
 	const sideFace = /** @type {Poly} */ ([[x1, 0], add([x1, 0], v), add([x1, wh], v), [x1, wh]]);
-	/** @type {Part[]} */
-	const parts = [
-		{ solid: [sideFace], role, shaded: true, lines: hatch(sideFace, 65, D.hatch) },
-		// Both bodies take their texture from the pattern fill: running-bond
-		// courses for stone, plank stripes for a palisade.
-		{ solid: [front], role },
-	];
-	return parts;
-}
-
-/**
- * Standalone wall segment: a run of stone (optionally with a tower at its
- * middle) or of palisade.
- * @param {Design} D
- * @param {{wood?: boolean, len?: number, tower?: boolean, h?: number}} [o]
- * @returns {Part[]}
- */
-export function wallSegment(D, o = {}) {
-	const wood = !!o.wood,
-		len = o.len ?? 36,
-		wh = (o.h ?? (wood ? 8 : 9)) * D.stature;
-	if (!o.tower) return wallRun(D, -len / 2, len / 2, wh, wood);
+	// Both bodies take their texture from the stone pattern fill.
 	return [
-		...wallRun(D, -len / 2, len / 2, wh, wood),
-		...place(roundTower(D, { r: 5, h: wh + 10, flags: D.flags }), { y: -0.4 }),
+		{ solid: [sideFace], role: 'wall-stone', shaded: true, lines: hatch(sideFace, 65, D.hatch) },
+		{ solid: [front], role: 'wall-stone' },
 	];
 }
