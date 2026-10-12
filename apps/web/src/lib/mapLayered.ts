@@ -4,7 +4,8 @@
 // The settlement-kit icons (apps/web/scripts/build-settlement-icons.mjs) are
 // drawn as one <path> per COLOUR ROLE — walls, shaded walls, roofs, wood,
 // earth, water, flags, ink — plus a `sil` silhouette for the halo, each
-// tagged `data-role="…"`. Instead of tinting the whole glyph to the marker
+// tagged `data-role="…"` — and each colour's outline (`<role>-line`, a
+// darker shade of it). Instead of tinting the whole glyph to the marker
 // colour (as plain vector icons do), a layered icon keeps its culture's
 // palette (carried on the root as `data-palette`) and only its ROOFS take
 // the marker colour, so a red marker still reads as "a town with red roofs".
@@ -22,6 +23,7 @@ import {
 	PATTERN_ROLES,
 	TEXTURE_ROLES,
 	flatWall,
+	lineColour,
 	paletteTone,
 	patternDefs,
 } from './settlement-kit/patterns.js';
@@ -196,7 +198,9 @@ export function layeredMarkup(
 			s += `<path fill="${fill}" d="${d}"/>`;
 			continue;
 		}
-		const fill = colours[role];
+		// An outline takes a darker shade of what it edges — a roof's follows
+		// the marker colour, as the roof does.
+		const fill = role.endsWith('-line') ? lineColour(role, colours, mixHex) : colours[role];
 		if (fill) s += `<path fill="${fill}" d="${d}"/>`;
 	}
 	return s;

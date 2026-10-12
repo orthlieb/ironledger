@@ -56,11 +56,13 @@ import {
 import {
 	FLAT_WALLS,
 	GROUND_TYPES,
+	LINE_MIX,
 	TEXTURE_ROLES,
 	paletteTone,
 	patternDefs,
 } from '../../src/lib/settlement-kit/patterns.js';
-import { renderLayered, place } from '../../src/lib/settlement-kit/render.js';
+import { LAYERS, LINE_ROLES, renderLayered, place } from '../../src/lib/settlement-kit/render.js';
+import { mixHex } from '../../src/lib/mapLayered.js';
 
 type Design = typeof DEFAULT_DESIGN;
 
@@ -748,7 +750,11 @@ describe('render robustness', () => {
 		// the ink covered the whole front and roof (ratio ≈ 0.88).
 		const placed = place(gableHouse(makeDesign(42), { w: 18 }), { s: 3 });
 		const { layers, silhouette } = renderLayered(placed, { outline: 0.4, join: 'soft' });
-		expect(netArea(layers.ink) / netArea(silhouette)).toBeLessThan(0.5);
+		// All the line-work: the ink and every part's (tinted) outline.
+		const lines = Object.entries(layers)
+			.filter(([l, d]) => d && (l === 'ink' || l.endsWith('-line')))
+			.reduce((a, [, d]) => a + netArea(d), 0);
+		expect(lines / netArea(silhouette)).toBeLessThan(0.5);
 	});
 	it('a square spire roof is one part, so its apex rounds once and closes', () => {
 		const roofs = squareTower(DEFAULT_DESIGN, {}).filter((p) => p.role === 'roof');
@@ -798,6 +804,53 @@ describe('onStilts', () => {
 		const a = stiltHut(DEFAULT_DESIGN, { r: 6 });
 		const b = onStilts(roundHut(DEFAULT_DESIGN, { r: 6 }), DEFAULT_DESIGN);
 		expect(a.length).toBe(b.length);
+	});
+});
+
+describe('tinted outlines', () => {
+	const square = (role?: 'roof') =>
+		place(
+			[
+				{
+					solid: [
+						[
+							[0, 0],
+							[10, 0],
+							[10, 10],
+							[0, 10],
+						],
+					],
+					...(role ? { role } : {}),
+				},
+			],
+			{ s: 2 },
+		);
+	it("draws a part's outline in its own layer, not in ink", () => {
+		const { layers } = renderLayered(square(), { outline: 1.4 });
+		expect(layers['wall-line']).toContain('M');
+		expect(layers.ink).toBe('');
+		expect(renderLayered(square('roof'), { outline: 1.4 }).layers['roof-line']).toContain('M');
+	});
+	it('colours each outline a darker shade of what it edges', () => {
+		const svg = generateSettlementSvg(
+			{ tier: 'stead', culture: 'default', seed: 4, building: 'gable-house' },
+			null,
+		);
+		const fill = (role: string) => svg.match(new RegExp(`data-role="${role}" fill="(#\\w+)"`))?.[1];
+		expect(fill('wall-line')).toBe(mixHex(PARCHMENT.wall, PARCHMENT.ink, LINE_MIX));
+		expect(fill('roof-line')).toBe(mixHex(PARCHMENT.roof, PARCHMENT.ink, LINE_MIX));
+		// The windows, doors and hatching stay ink.
+		expect(fill('ink')).toBe(PARCHMENT.ink);
+	});
+	it('has an outline layer for every role a part is drawn in', () => {
+		const items = [
+			...pieces(DEFAULT_DESIGN).flatMap(([, it]) => it),
+			...settlement('town', { ...DEFAULT_DESIGN, ground: 'grass' }, { seed: 1, walls: 'stone' }),
+			...settlement('village', { ...DEFAULT_DESIGN, ground: 'water' }, { seed: 1, walls: 'hedge' }),
+		];
+		const roles = new Set(items.flatMap((it) => it.piece.map((p) => p.role ?? 'wall')));
+		for (const role of roles) expect(LINE_ROLES, role).toContain(`${role}-line`);
+		expect(LAYERS.indexOf('ink')).toBeGreaterThan(LAYERS.indexOf('roof-line'));
 	});
 });
 

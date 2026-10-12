@@ -18,7 +18,7 @@
 
 import { building, placedBox, settlement, TEMPLATES } from './layouts3d.js';
 import { DEFAULT_DESIGN, upgradeDesign } from './pieces3d.js';
-import { PATTERN_ROLES, flatWall, paletteTone, patternDefs } from './patterns.js';
+import { PATTERN_ROLES, flatWall, lineColour, paletteTone, patternDefs } from './patterns.js';
 import { LAYERS, place, renderLayered } from './render.js';
 
 export { fallbackIcon } from './fallback.js';
@@ -167,7 +167,7 @@ export function toLayeredSvg(title, items, palette, o = {}) {
 		`  <path data-role="sil" fill="${palette.halo}" stroke="${palette.halo}" stroke-width="3" stroke-linejoin="round" d="${silhouette}"/>`,
 		...used.map(
 			(l) =>
-				`  <path data-role="${l}" fill="${PATTERN_ROLES.has(l) ? wallFill(l) : f[l]}" d="${layers[l]}"/>`,
+				`  <path data-role="${l}" fill="${l.endsWith('-line') ? lineColour(l, f, mix) : PATTERN_ROLES.has(l) ? wallFill(l) : f[l]}" d="${layers[l]}"/>`,
 		),
 	];
 	const safeTitle = title.replace(/[<>&"-]/g, ' ');

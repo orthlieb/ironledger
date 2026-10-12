@@ -308,7 +308,11 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 **Palette** — `wall`, `roof`, `wood`, `earth`, `water`, `flag`, `ink`,
 `halo` (`#rrggbb`). Roofs take the marker colour on the map (the default
 black marker keeps the culture's own); walls use their material colours
-above, not `wall`.
+above, not `wall`. Outlines are tinted, not ink: each part's outline is
+its own colour mixed toward `ink` (`LINE_MIX` = 0.45 of the colour,
+`lineColour()` in `patterns.js` — a roof's follows the marker colour, a
+patterned wall's comes from its flat material colour). The line-work
+inside — windows, doors, hatching, spars — stays `ink`.
 
 **Random cultures.** `makeDesign(seed)` (the playground's Culture ⟳) rolls
 every knob, then applies linked rules so a culture hangs together:
@@ -397,8 +401,10 @@ part the Buildings tab offers). Partial map, as a quick index:
 `render.js` → `renderLayered(parts, opts)` collapses a back-to-front list
 of `Part`s into one SVG path per colour role (`wall`, `wall-shade`, the
 `wall-<material>` pattern roles, `wood`, `wood-shade`, …, `roof`,
-`roof-shade`, `flag`, `ink`). Each path is a filled polygon — no
-`<stroke>` on the server-rendered output.
+`roof-shade`, `flag`), one outline layer per face role (`LINE_ROLES`:
+`wall-line`, `roof-line`, `wall-stone-line`, …), then `ink-texture` and
+`ink` on top. Each path is a filled polygon — no `<stroke>` on the
+server-rendered output.
 
 Nearly all the time goes into Clipper unions, so they're balanced: each
 part's strokes, and each layer's pieces, are unioned pairwise in a tree

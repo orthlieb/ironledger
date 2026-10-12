@@ -16,7 +16,12 @@ import {
 	roleColours,
 } from '../../src/lib/mapLayered.js';
 import { primeLayered } from '../../src/lib/mapIconCache.js';
-import { FLAT_WALLS, MATERIALS, flatWall } from '../../src/lib/settlement-kit/patterns.js';
+import {
+	FLAT_WALLS,
+	LINE_MIX,
+	MATERIALS,
+	flatWall,
+} from '../../src/lib/settlement-kit/patterns.js';
 import { mapGlyphInner } from '../../src/lib/mapConstants.js';
 import type { MapIcon } from '../../src/lib/generated/mapIconManifest.js';
 
@@ -92,6 +97,25 @@ describe('layeredMarkup — patterned walls', () => {
 		expect(a).toBe(b);
 		expect(a).not.toContain('#112233');
 		expect(a).toContain(MATERIALS.stone.body);
+	});
+});
+
+describe('layeredMarkup — tinted outlines', () => {
+	it("draws each outline a darker shade of what it edges; a roof's follows the marker", () => {
+		const colours = roleColours(DEFAULT_LAYERED_PALETTE, '#3b82f6');
+		const out = layeredMarkup(
+			[
+				{ role: 'wall-line', d: 'M0 0L1 0L1 1Z' },
+				{ role: 'roof-line', d: 'M2 0L3 0L3 1Z' },
+				{ role: 'wall-stone-line', d: 'M4 0L5 0L5 1Z' },
+			],
+			colours,
+			null,
+		);
+		const ink = DEFAULT_LAYERED_PALETTE.ink;
+		expect(out).toContain(`fill="${mixHex(DEFAULT_LAYERED_PALETTE.wall, ink, LINE_MIX)}" d="M0 0`);
+		expect(out).toContain(`fill="${mixHex('#3b82f6', ink, LINE_MIX)}" d="M2 0`);
+		expect(out).toContain(`fill="${mixHex(FLAT_WALLS['wall-stone'], ink, LINE_MIX)}" d="M4 0`);
 	});
 });
 

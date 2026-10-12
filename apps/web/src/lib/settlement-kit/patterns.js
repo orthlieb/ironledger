@@ -931,6 +931,28 @@ export function flatWall(role, ink, mix) {
 /** Role names of walls that use a pattern fill (both base and -shade). */
 export const PATTERN_ROLES = new Set(Object.keys(PATTERNS));
 
+/** How much of a part's own colour its outline keeps, the rest ink: an
+ *  outline is a darker shade of what it edges, not near-black. */
+export const LINE_MIX = 0.45;
+
+/**
+ * Colour of a `<role>-line` layer (render.js LINE_ROLES): the outline of
+ * the parts drawn in `role`, a darker shade of that role's colour — of its
+ * flat material colour for a patterned wall or ground.
+ * @param {string} lineRole
+ * @param {Record<string, string>} colours flat colour per role, as drawn
+ *   (roof following the marker), with `ink`
+ * @param {(a: string, b: string, t: number) => string} mix `t` of a, the rest b
+ * @returns {string}
+ */
+export function lineColour(lineRole, colours, mix) {
+	const role = lineRole.replace(/-line$/, '');
+	const base = PATTERN_ROLES.has(role)
+		? flatWall(role, colours.ink, mix)
+		: (colours[role] ?? colours.ink);
+	return mix(base, colours.ink, LINE_MIX);
+}
+
 /**
  * Build a `<defs>` fragment with the patterns the icon needs. `scope` is
  * suffixed on each pattern id so two icons in the same document don't

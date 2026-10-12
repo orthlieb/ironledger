@@ -243,7 +243,10 @@ marker path:
   `wall-shade`, `wood`, `earth`, `water`, `roof`, `roof-shade`, `flag`,
   `ink`, plus the material-wall roles `wall-stone`, `wall-hedge`,
   `wall-reef`, `wall-wood`, `wall-earth`, `wall-bone` and their `-shade`
-  variants) and the culture's palette on the root
+  variants, and a `<role>-line` outline layer per face role — `wall-line`,
+  `roof-line`, … — drawn in a darker shade of that colour rather than ink;
+  a roof's outline follows the marker colour as the roof does) and the
+  culture's palette on the root
   (`data-palette="wall:#…;roof:#…;…"`). Detected by its `data-role`
   paths. These run to tens of KB each, so they are **not inlined**: the
   manifest keeps a tight `viewBox`, the `palette` and a `src` URL, and

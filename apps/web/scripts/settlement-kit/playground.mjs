@@ -23,6 +23,7 @@ import {
 import {
 	PATTERN_ROLES,
 	FLAT_WALLS,
+	LINE_MIX,
 	PATTERN_SHADE,
 	TEXTURE_ROLES,
 	patternDefs,
@@ -622,6 +623,17 @@ function flatFill(role) {
 		: hex;
 }
 
+/** An outline's colour (patterns.js lineColour()), mixed live toward the
+ *  page's --ink: a darker shade of its role's picker colour, or of a
+ *  patterned wall's flat material colour. @param {string} lineRole */
+function lineFill(lineRole) {
+	const role = lineRole.replace(/-line$/, '');
+	const base = PATTERN_ROLES.has(role)
+		? (FLAT_WALLS[role] ?? FLAT_WALLS['wall-stone'])
+		: `var(--${role})`;
+	return `color-mix(in srgb,${base} ${LINE_MIX * 100}%,var(--ink))`;
+}
+
 /** @param {Placed[]} items */
 function svg(items) {
 	const parts = items.flatMap((it) =>
@@ -642,9 +654,11 @@ function svg(items) {
 	// Texture off: every wall in its flat material colour, as the map draws it.
 	const { defs, url } = wallPatterns(design.texture ? used : []);
 	const paths = used.map((l) =>
-		PATTERN_ROLES.has(l)
-			? `<path data-role="${l}" style="fill:${design.texture ? url(l) : flatFill(l)}" d="${layers[l]}"/>`
-			: `<path data-role="${l}" d="${layers[l]}"/>`,
+		l.endsWith('-line')
+			? `<path data-role="${l}" style="fill:${lineFill(l)}" d="${layers[l]}"/>`
+			: PATTERN_ROLES.has(l)
+				? `<path data-role="${l}" style="fill:${design.texture ? url(l) : flatFill(l)}" d="${layers[l]}"/>`
+				: `<path data-role="${l}" d="${layers[l]}"/>`,
 	);
 	return `<svg class="ic" xmlns="http://www.w3.org/2000/svg" viewBox="${vb}">${defs}<path class="sil" d="${silhouette}"/>${paths.join('')}</svg>`;
 }
