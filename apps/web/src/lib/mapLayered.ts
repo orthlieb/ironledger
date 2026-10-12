@@ -27,30 +27,13 @@ import {
 	paletteTone,
 	patternDefs,
 } from './settlement-kit/patterns.js';
+import { PARCHMENT, mix, roleColours, type Palette } from './settlement-kit/palette.js';
 
 /** Base colours of a layered icon; shaded variants are derived. */
-export interface LayeredPalette {
-	wall: string;
-	roof: string;
-	wood: string;
-	earth: string;
-	water: string;
-	flag: string;
-	ink: string;
-	halo: string;
-}
+export type LayeredPalette = Palette;
 
 /** Parchment — the generator's default palette. */
-export const DEFAULT_LAYERED_PALETTE: LayeredPalette = {
-	wall: '#EFEADF',
-	roof: '#D9776B',
-	wood: '#C9A97C',
-	earth: '#94744F',
-	water: '#8FB0B8',
-	flag: '#4A3B32',
-	ink: '#3B2F28',
-	halo: '#F4EFE4',
-};
+export const DEFAULT_LAYERED_PALETTE: LayeredPalette = PARCHMENT;
 
 /** One drawable layer of a layered icon. `flat`: a wall drawn in its flat
  *  material colour, never a pattern (its culture has Texture off). */
@@ -59,16 +42,6 @@ export interface LayeredPath {
 	d: string;
 	flat?: boolean;
 }
-
-/** How much of the base colour each shaded role keeps (the rest is ink).
- *  Patterned wall roles shade inside their pattern tiles instead. */
-const SHADE_MIX: Record<string, number> = {
-	'wall-shade': 0.8,
-	'wood-shade': 0.75,
-	'earth-shade': 0.75,
-	'water-shade': 0.8,
-	'roof-shade': 0.7,
-};
 
 /** Material-specific wall roles that take an SVG `<pattern>` fill
  *  (settlement-kit/patterns.js) in place of a flat colour, plus their
@@ -91,51 +64,13 @@ export function parsePalette(attr: string | undefined | null): LayeredPalette {
 	return out;
 }
 
-/** Mix two `#rrggbb` colours: `t` of `a`, the rest `b`. */
-export function mixHex(a: string, b: string, t: number): string {
-	const ch = (h: string, i: number) => parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
-	const parts = [0, 1, 2].map((i) => Math.round(ch(a, i) * t + ch(b, i) * (1 - t)));
-	return '#' + parts.map((v) => v.toString(16).padStart(2, '0')).join('');
-}
+/** Mix two `#rrggbb` colours: `t` of `a`, the rest `b` (palette.js). */
+export const mixHex = mix;
 
-/** Normalise `#rgb` / `#rrggbb[aa]` to `#rrggbb`; anything else → undefined. */
-function toHex6(c: string): string | undefined {
-	if (/^#[0-9a-fA-F]{3}$/.test(c))
-		return (
-			'#' +
-			c
-				.slice(1)
-				.split('')
-				.map((x) => x + x)
-				.join('')
-		);
-	if (/^#[0-9a-fA-F]{6}([0-9a-fA-F]{2})?$/.test(c)) return c.slice(0, 7);
-	return undefined;
-}
-
-/**
- * Fill colour for every role, with `roof` replaced by the marker colour
- * (shaded roofs follow it). Non-hex marker colours keep the palette roof.
- */
-export function roleColours(p: LayeredPalette, roof?: string): Record<string, string> {
-	const r = (roof && toHex6(roof)) ?? p.roof;
-	const base: Record<string, string> = {
-		wall: p.wall,
-		roof: r,
-		wood: p.wood,
-		earth: p.earth,
-		water: p.water,
-		flag: p.flag,
-		ink: p.ink,
-		'ink-texture': p.ink,
-		sil: p.halo,
-	};
-	for (const [role, keep] of Object.entries(SHADE_MIX)) {
-		const from = base[role.replace('-shade', '')];
-		base[role] = mixHex(from, p.ink, keep);
-	}
-	return base;
-}
+/** Fill colour for every role, with `roof` replaced by the marker colour
+ *  (shaded roofs follow it); non-hex marker colours keep the palette roof.
+ *  The generator's own table (palette.js), so file and marker agree. */
+export { roleColours };
 
 /** Path data the parser accepts: numbers and path commands only. */
 const SAFE_D = /^[MLHVCSQTAZmlhvcsqtaz0-9eE.,\s-]+$/;

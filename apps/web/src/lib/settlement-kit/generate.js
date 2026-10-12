@@ -17,20 +17,19 @@
 // =============================================================================
 
 import { building, placedBox, settlement, TEMPLATES } from './layouts3d.js';
+import { PARCHMENT, mix, roleColours } from './palette.js';
 import { DEFAULT_DESIGN, upgradeDesign } from './pieces3d.js';
 import { PATTERN_ROLES, flatWall, lineColour, paletteTone, patternDefs } from './patterns.js';
 import { LAYERS, place, renderLayered } from './render.js';
 
 export { fallbackIcon } from './fallback.js';
+export { PARCHMENT };
 
 /** @typedef {import('./pieces3d.js').Design} Design */
 /** @typedef {import('./pieces3d.js').Placed} Placed */
 /** @typedef {import('./layouts3d.js').Tier} Tier */
 /** @typedef {import('./layouts3d.js').Walls} Walls */
-/**
- * @typedef {{wall: string, roof: string, wood: string, earth: string,
- *   water: string, ink: string, flag: string, halo: string}} Palette
- */
+/** @typedef {import('./palette.js').Palette} Palette */
 /**
  * A culture as an extension ships it (extensions/<id>/cultures/<key>.json);
  * `source` is added by the catalogue.
@@ -54,57 +53,6 @@ export { fallbackIcon } from './fallback.js';
 /** Geometry at 2× while line weights stay put → finer hatching. */
 const K = 2;
 const OUTLINE = 1.4;
-
-/** Parchment — the default culture's palette. @type {Palette} */
-export const PARCHMENT = {
-	wall: '#EFEADF',
-	roof: '#D9776B',
-	wood: '#C9A97C',
-	earth: '#94744F',
-	water: '#8FB0B8',
-	flag: '#4A3B32',
-	ink: '#3B2F28',
-	halo: '#F4EFE4',
-};
-
-/** @param {string} a @param {string} b @param {number} t `t` of a, the rest b */
-function mix(a, b, t) {
-	const ch = (/** @type {string} */ h, /** @type {number} */ i) =>
-		parseInt(h.slice(1 + i * 2, 3 + i * 2), 16);
-	return (
-		'#' +
-		[0, 1, 2]
-			.map((i) =>
-				Math.round(ch(a, i) * t + ch(b, i) * (1 - t))
-					.toString(16)
-					.padStart(2, '0'),
-			)
-			.join('')
-	);
-}
-
-/** Fill per role (mirrors src/lib/mapLayered.ts roleColours). @param {Palette} p */
-function fills(p) {
-	/** @type {Record<string, string>} */
-	const f = {
-		wall: p.wall,
-		roof: p.roof,
-		wood: p.wood,
-		earth: p.earth,
-		water: p.water,
-		flag: p.flag,
-		ink: p.ink,
-		'ink-texture': p.ink,
-	};
-	f['wall-shade'] = mix(p.wall, p.ink, 0.8);
-	f['wood-shade'] = mix(p.wood, p.ink, 0.75);
-	f['earth-shade'] = mix(p.earth, p.ink, 0.75);
-	f['water-shade'] = mix(p.water, p.ink, 0.8);
-	f['roof-shade'] = mix(p.roof, p.ink, 0.7);
-	// Pattern-filled wall roles (stone, hedge, reef, palisade, earth, bone)
-	// draw through their <pattern> — see patterns.js.
-	return f;
-}
 
 /**
  * Render placed pieces to a layered SVG document.
@@ -133,7 +81,7 @@ export function toLayeredSvg(title, items, palette, o = {}) {
 		join: o.join ?? DEFAULT_DESIGN.join,
 		texture,
 	});
-	const f = fills(palette);
+	const f = roleColours(palette);
 	const pad = 2;
 	let { x, y, w, h } = b;
 	// Taking in the frame too — outlined, as b is, and flipped to SVG's y
