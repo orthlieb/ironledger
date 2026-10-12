@@ -440,5 +440,6 @@ function boxOf(paths) {
 	return { x0, y0, x1, y1 };
 }
 
-/** @param {Box} a @param {Box} b */
+/** Whether two boxes touch or overlap — edges count, so a part abutting
+ *  another is still clipped against it. @param {Box} a @param {Box} b */
 const overlaps = (a, b) => a.x0 <= b.x1 && b.x0 <= a.x1 && a.y0 <= b.y1 && b.y0 <= a.y1;
