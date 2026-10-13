@@ -104,6 +104,8 @@ import { place } from './render.js';
  * @property {boolean} texture draw textures — wall patterns, the line-work
  *   round ring walls, masonry courses, barn planks; off draws every wall in
  *   its flat material colour. On by default.
+ * @property {boolean} hatching hatch the shaded flanks; off shades them by
+ *   colour alone. On by default.
  * @property {number} longhouse share of timber dwellings that are Norse longhouses (0..1)
  * @property {number} huts share of timber dwellings that are round huts (0..1)
  * @property {number} industry share of town/city buildings that are warehouses or
@@ -160,6 +162,7 @@ export const DEFAULT_DESIGN = {
 	flourish: 0,
 	masonry: false,
 	texture: true,
+	hatching: true,
 	longhouse: 0,
 	huts: 0,
 	join: 'soft',
@@ -238,6 +241,7 @@ export function makeDesign(seed) {
 		variety: 0, // rolled below, after the draws it must not shift
 		masonry: r() < 0.3,
 		texture: true,
+		hatching: true,
 		longhouse: r() < 0.3 ? avg() : 0,
 		huts: r() < 0.25 ? avg() * 0.6 : 0,
 		join: r() < 0.15 ? 'sharp' : r() < 0.7 ? 'round' : 'soft',
@@ -481,7 +485,8 @@ function clipToBox(ab, x0, y0, x1, y1) {
  * Parallel hatch lines covering a polygon's bounding box; the renderer
  * clips them to the face. They're drawn at the shading weight by default,
  * so every shaded face — house and gate walls, roofs, keeps, the ring's
- * back — reads as dark as the towers.
+ * back — reads as dark as the towers. Flagged `shade`, so a culture with
+ * `hatching` off leaves them out.
  * @param {Poly} poly
  * @param {number} angle degrees
  * @param {number} spacing
@@ -505,6 +510,7 @@ function hatch(poly, angle, spacing, w = SHADE_W) {
 				[cx + nx * t + dx * R, cy + ny * t + dy * R],
 			],
 			w,
+			shade: true,
 		});
 	return out;
 }
@@ -516,14 +522,19 @@ const SHADE_W = 1.1;
 /**
  * Diagonal hatching for a round body's shaded flank (tower, well, mill).
  * Pass it as the part's `shadeLines` so its `shadeArea` clips it to the flank.
+ * A slim body (a well, a chimney) is hatched closer and finer than the
+ * culture's spacing, or its narrow flank would catch only a line.
  * @param {number} r body radius
  * @param {number} y0
  * @param {number} y1
  * @param {number} spacing
+ * @param {number} [cx] the body's axis
  * @returns {Line[]}
  */
-function cylinderHatch(r, y0, y1, spacing) {
-	return hatch(rect(-r, y0, 2 * r, y1 - y0), 55, spacing, SHADE_W);
+function cylinderHatch(r, y0, y1, spacing, cx = 0) {
+	const s = Math.min(spacing, r * 0.4);
+	const w = s < spacing ? Math.min(SHADE_W, s * 0.8) : SHADE_W;
+	return hatch(rect(cx - r, y0, 2 * r, y1 - y0), 55, s, w);
 }
 
 /**
@@ -990,13 +1001,22 @@ export function sideHouse(D, o = {}) {
 	/** @type {Pt} */ const rR = add(gTop, [ov * 0.6, 0]);
 	/** @type {Pt} */ const rL = add(P.at([-w / 2, h + rh], 0.5), [-ov * 0.6, 0]);
 	const below = /** @type {Pt} */ ([0, h - rh]);
+	// A longhouse ridge dips in the middle like an upturned boat.
+	const ridge = long ? sag(rR, rL, [(rR[0] + rL[0]) / 2, h], 0.06) : [rR, rL];
 	const slope = /** @type {Poly} */ ([
 		eL,
 		eR,
 		...sag(eR, rR, below, D.concave * 0.5).slice(1),
-		// A longhouse ridge dips in the middle like an upturned boat.
-		...(long ? sag(rR, rL, [(rR[0] + rL[0]) / 2, h], 0.06).slice(1) : [rL]),
+		...ridge.slice(1),
 		...sag(rL, eL, below, D.concave * 0.5).slice(1, -1),
+	]);
+	// The back slope, from the ridge down to the back eave. The front slope
+	// and the gable hide all of it but its verge: the sliver it overhangs the
+	// gable end by, past the gable's back edge.
+	const backSlope = /** @type {Poly} */ ([
+		P.back([-w / 2 - ov, h - 0.4]),
+		P.back([w / 2 + ov, h - 0.4]),
+		...ridge,
 	]);
 	/** @type {Line[]} */
 	const courses = [];
@@ -1143,6 +1163,7 @@ export function sideHouse(D, o = {}) {
 	}
 	return [
 		...race,
+		{ solid: [backSlope], role: 'roof', shaded: true },
 		...back,
 		{
 			solid: [gableEnd],
@@ -1342,7 +1363,8 @@ function doorCuts(/** @type {number} */ w, /** @type {number} */ h) {
 	);
 }
 
-/** Tall brick stacks behind a workshop roof, each with a smoke plume. */
+/** Tall round stacks behind a workshop or tavern roof — a drum with a wider
+ *  lip and a dark flue — each with a smoke plume. */
 function chimneys(
 	/** @type {Design} */ D,
 	/** @type {number} */ w,
@@ -1355,22 +1377,29 @@ function chimneys(
 	for (const x of w > 26 ? [-w * 0.22, w * 0.18] : [w * 0.1]) {
 		// Stacks stand 30% of the way back; their tops clear the ridge.
 		const cx = P.at([x, h], 0.3)[0],
-			sw = 3.6,
+			r = 1.8,
+			lip = r + 0.6,
 			top = P.at([0, h + rh], 0.5)[1] + 9;
-		const v = depthVec(2.5);
-		const side = /** @type {Poly} */ ([
-			[cx + sw / 2, h],
-			add([cx + sw / 2, h], v),
-			add([cx + sw / 2, top], v),
-			[cx + sw / 2, top],
-		]);
-		out.push(
-			{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
-			{
-				solid: [
-					rect(cx - sw / 2, h, sw, top - h),
-					rect(cx - sw / 2 - 0.6, top - 1.6, sw + 1.2, 1.6),
+		/** A drum of radius `rr` from y0 up to y1, its right flank shaded.
+		 *  @param {number} rr @param {number} y0 @param {number} y1 @returns {Part} */
+		const drum = (rr, y0, y1) => ({
+			solid: [
+				[
+					...ell(cx, y0, rr, rr * 0.34, 180, 360),
+					[cx + rr, y1],
+					...ell(cx, y1, rr, rr * 0.34, 0, 180),
 				],
+			],
+			shadeArea: rect(cx + rr * 0.3, y0 - rr - 2, rr * 2, y1 - y0 + rr + 4),
+			shadeLines: cylinderHatch(rr, y0 - rr * 0.34 - 1, y1 + 1, D.hatch, cx),
+		});
+		out.push(
+			drum(r, h, top - 1.6),
+			drum(lip, top - 1.6, top),
+			// The lip's top seen from above, the dark flue inside it.
+			{
+				solid: [ell(cx, top, lip, lip * 0.34, 0, 360, 28).slice(0, -1)],
+				fills: [ell(cx, top, r * 0.6, r * 0.6 * 0.34, 0, 360, 20).slice(0, -1)],
 			},
 			{
 				solid: [
@@ -1554,7 +1583,8 @@ export function roundTower(D, o = {}) {
 	const flies = D.flags && o.flags !== false && !o.finial;
 	/** Flag or finial on the uppermost point `tip` of the top. */
 	const crown = (/** @type {Pt} */ tip, /** @type {number} */ drop, socket = 0) => {
-		if (o.finial) parts.push(...symbolAt(D.symbol, tip, socket));
+		if (o.finial && socket) seat(parts, D.symbol, tip, socket);
+		else if (o.finial) parts.push(...symbolAt(D.symbol, tip));
 		else if (flies) parts.unshift(...flag(D, tip[0], tip[1] - drop));
 	};
 	if (crenel) {
@@ -1658,7 +1688,8 @@ export function squareTower(D, o = {}) {
 	// A crenellated top's corbel and band (see below).
 	const ctOv = Math.max(0.8, w * 0.12),
 		ctBand = Math.max(3, w * 0.5);
-	const P = boxProjector(w * 0.8, D.perspective, crenel ? h + ctOv + ctBand : h);
+	const depth = w * 0.8;
+	const P = boxProjector(depth, D.perspective, crenel ? h + ctOv + ctBand : h);
 	// Corbelled body: from the belt up, the walls widen by beltOv on every
 	// side via a 45° slope. `D.towerCorbel` is the share of the tower's
 	// height occupied by the corbel (measured down from the top) — 0 means
@@ -1725,8 +1756,10 @@ export function squareTower(D, o = {}) {
 	];
 	// Crenellated top: a parapet band corbelled out on its own 45° slope, as
 	// on round towers. A cap then sits on it, its crenels showing as dark
-	// slots under the eave; bare, it shows a platform with merlons round the
-	// rim and a back parapet. Caps sit at `topY` on half-width `topW`.
+	// slots under the eave. Bare, it's a parapet ring round a walk set below
+	// its crenels: the front and right walls' outer faces crenellated, the
+	// back and left walls' inner faces (in shadow) rising from the walk with
+	// merlons of their own. Caps sit at `topY` on half-width `topW`.
 	let topY = h,
 		topW = w2;
 	if (crenel) {
@@ -1749,41 +1782,46 @@ export function squareTower(D, o = {}) {
 				: crenellated(-w3, w3, y1, y2, { merlon: 2.2, notch }).slice(1)),
 			[-w3, y1],
 		];
+		/** A side wall from `yBase` up, crenellated, at x = `fx`, front to
+		 *  back (crenellated() run along the depth). @param {number} fx
+		 *  @param {number} yBase */
+		const sideWall = (fx, yBase) =>
+			P.face(crenellated(0, depth, yBase, y2, { merlon: 1.8, notch }), fx, 0, 0);
 		/** @type {Poly} */
-		const ctSide = [
-			[w2, h],
-			P.back([w2, h]),
-			P.back([w3, y1]),
-			P.back([w3, y2]),
-			[w3, y2],
-			[w3, y1],
-		];
+		const ctSide = capped
+			? [[w2, h], P.back([w2, h]), P.back([w3, y1]), P.back([w3, y2]), [w3, y2], [w3, y1]]
+			: // The band's crenellated top runs back → front from its back corner.
+				[[w2, h], P.back([w2, h]), ...sideWall(w3, y1).slice(1), [w3, y1]];
+		/** @type {Part[]} */
+		const walk = [];
 		if (!capped) {
-			// Back parapet (its inner face, in shadow), then the platform.
-			const BL = P.back([-w3, y2]),
-				BR = P.back([w3, y2]),
+			// The walk, below the crenels, then the inner faces rising from it
+			// (in shadow): the back wall's, and the left's. The symbol stands
+			// on the walk, behind the front wall.
+			const yd = y2 - notch * 1.6,
 				sb = P.scale(1);
-			const back = crenellated(BL[0], BR[0], BL[1], BL[1] + band * 0.6 * sb, {
+			const BL = P.back([-w3, yd]),
+				BR = P.back([w3, yd]);
+			const back = crenellated(BL[0], BR[0], BL[1], P.back([0, y2])[1], {
 				merlon: 2.2 * sb,
 				notch: notch * sb,
 			});
+			const left = sideWall(-w3, yd);
 			parts.push(
 				{ solid: [back], shaded: true, lines: hatch(back, 65, D.hatch) },
-				{ solid: [[[-w3, y2], [w3, y2], BR, BL]] },
+				{ solid: [[[-w3, yd], [w3, yd], BR, BL]] },
 			);
+			if (o.finial) parts.push(...symbolAt(D.symbol, P.at([0, yd], 0.5)));
+			walk.push({ solid: [left], shaded: true, lines: hatch(left, 65, D.hatch) });
 		}
-		/** @type {Poly[]} */
-		const sideMerlons = [];
-		if (!capped)
-			for (let i = 0; i < 3; i++)
-				sideMerlons.push(P.face(rect(-0.9, 0, 1.8, notch), w3, y2 - 0.3, (i + 0.5) / 3));
 		/** @type {Poly[]} */
 		const slots = [];
 		if (capped)
 			for (let x = -w3 + 1.5; x < w3 - 0.9; x += 2.4)
 				slots.push(rect(x - 0.5, y2 - band * 0.42, 1, band * 0.42 + 0.6));
 		parts.push(
-			{ solid: [ctSide, ...sideMerlons], shaded: true, lines: hatch(ctSide, 65, D.hatch) },
+			...walk,
+			{ solid: [ctSide], shaded: true, lines: hatch(ctSide, 65, D.hatch) },
 			{
 				solid: [ctFront],
 				fills: slots,
@@ -1791,10 +1829,7 @@ export function squareTower(D, o = {}) {
 				lines: [seg([-w3, y1], [w3, y1], THIN)],
 			},
 		);
-		if (!capped) {
-			if (o.finial) parts.push(...symbolAt(D.symbol, P.at([0, y2], 0.5)));
-			return parts;
-		}
+		if (!capped) return parts;
 		topY = y2;
 		topW = w3;
 	}
@@ -1842,7 +1877,7 @@ export function squareTower(D, o = {}) {
 		if (deck) parts.push({ solid: [flatTop] });
 		const cap = lancetCap(D, top[0], top[1], topW * 1.04 * cs);
 		parts.push(cap.part);
-		if (o.finial) parts.push(...symbolAt(D.symbol, cap.tip, 3));
+		if (o.finial) seat(parts, D.symbol, cap.tip, 3);
 		return parts;
 	}
 	// Pyramid (the cone cap on a square tower), one part so the apex closes.
@@ -1850,7 +1885,7 @@ export function squareTower(D, o = {}) {
 	/** @type {Poly} */
 	const frontFace = [fl, ...ridge, ...sag(apex, fl, c, D.concave).slice(1, -1)];
 	parts.push(pyramid(frontFace, sideFace, ridge, 'roof', D.hatch));
-	if (o.finial) parts.push(...symbolAt(D.symbol, apex, 3));
+	if (o.finial) seat(parts, D.symbol, apex, 3);
 	return parts;
 }
 
@@ -2373,7 +2408,8 @@ export function ringWall(D, o = {}) {
  * Deliberately not always a cross — Ironsworn's faiths are the table's own.
  * `socket` carries the post that far down into the point: softening rounds
  * (and so lowers) a sharp spire apex, which would otherwise leave the symbol
- * floating above it. The socket sits inside the tip's outline ink.
+ * floating above it. A socketed symbol goes behind its cap (seat()), which
+ * hides the post inside it.
  * @param {Design['symbol']} kind
  * @param {Pt} p
  * @param {number} [socket]
@@ -2385,6 +2421,20 @@ function symbolAt(kind, p, socket = 0) {
 	/** @type {Line} */
 	const post = { pts: [[p[0], p[1] - socket], p], w: 1.1 };
 	return [{ ...parts[0], free: [...(parts[0].free ?? []), post] }, ...parts.slice(1)];
+}
+
+/**
+ * Seat the holy symbol on the sharp tip of the cap just pushed (`parts`'
+ * last part), its post `socket` deep, BEHIND the cap: the cap hides the
+ * post inside it, so the post meets the tip as drawn — however far
+ * softening rounds it down — and never shows as a line down the cap.
+ * @param {Part[]} parts
+ * @param {Design['symbol']} kind
+ * @param {Pt} tip
+ * @param {number} socket
+ */
+function seat(parts, kind, tip, socket) {
+	parts.splice(parts.length - 1, 0, ...symbolAt(kind, tip, socket));
 }
 
 /**
@@ -2813,11 +2863,17 @@ export function keep(D, o = {}) {
 		merlon: 2.4 * sb,
 		notch: 2 * sb,
 	});
-	/** Merlons along the slanted top of the right face. */
-	/** @type {Poly[]} */
-	const sideMerlons = [];
-	for (let i = 0; i < 4; i++)
-		sideMerlons.push(P.face(rect(-1.1, 0, 2.2, 2.6), w / 2, h - 0.4, (i + 0.5) / 4));
+	/** Merlons along the slanted top of the right face, and along the left
+	 *  rim — seen from inside the parapet, so in shadow like its back.
+	 *  @type {Poly[]} */
+	const sideMerlons = [],
+		leftMerlons = [];
+	for (let i = 0; i < 4; i++) {
+		const m = rect(-1.1, 0, 2.2, 2.6),
+			t = (i + 0.5) / 4;
+		sideMerlons.push(P.face(m, w / 2, h - 0.4, t));
+		leftMerlons.push(P.face(m, -w / 2, h - 0.4, t));
+	}
 	/** @type {Poly[]} */
 	const slits = [];
 	for (const x of [-w * 0.3, w * 0.3])
@@ -2834,6 +2890,7 @@ export function keep(D, o = {}) {
 		...turret(BR, sb, D.flags),
 		{ solid: [parapet], shaded: true, lines: hatch(parapet, 65, D.hatch) },
 		{ solid: [platform] },
+		{ solid: leftMerlons, shaded: true },
 		{
 			solid: [side],
 			shaded: true,
@@ -2988,7 +3045,8 @@ export function well(/** @type {Design} */ D) {
 		{
 			solid: [curb],
 			shadeArea: rect(r * 0.3, -2, r * 2, 6),
-			shadeLines: cylinderHatch(r, -ry - 1, ch + 1, D.hatch),
+			// The low curb's flank, under its rim, is short: closer lines still.
+			shadeLines: cylinderHatch(r, -ry - 1, ch + 1, D.hatch * 0.5),
 		},
 		// Stone rim seen from above, with the dark shaft inside it.
 		{

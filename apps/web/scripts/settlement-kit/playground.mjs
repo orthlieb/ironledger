@@ -88,6 +88,7 @@ const KNOBS = [
 	range('Build', 'flourish', 'Flourish', 0, 1, 0.01),
 	check('Build', 'masonry', 'Masonry'),
 	check('Build', 'texture', 'Texture'),
+	check('Build', 'hatching', 'Hatching'),
 	range('Build', 'variety', 'Variety (mixed builders)', 0, 1, 0.05),
 	range('Houses', 'longhouse', 'Longhouse share', 0, 1, 0.01),
 	range('Houses', 'huts', 'Hut share', 0, 1, 0.01),
@@ -147,7 +148,8 @@ const KNOBS = [
 	// The walls' shape — the drawing's, not the culture's.
 	select('Drawing', 'wallShape', 'Wall shape', ['round', 'square'], false),
 	check('Drawing', 'stilts', 'On stilts', false),
-	// What it stands on — the drawing's, not the culture's.
+	// What it stands on — the drawing's, not the culture's: settlements and
+	// buildings alike.
 	select(
 		'Drawing',
 		'ground',
@@ -327,6 +329,7 @@ function svg(items) {
 		join: design.join,
 		softRadius: drawing.softRadius,
 		texture: design.texture,
+		hatching: design.hatching,
 	});
 	const vb = [b.x - 3, b.y - 3, b.w + 6, b.h + 6].map((n) => n.toFixed(1)).join(' ');
 	const used = LAYERS.filter((l) => layers[l]);
@@ -377,7 +380,7 @@ function render() {
 	const bw = drawing.buildingWalls;
 	const bits =
 		bw === 'pieces'
-			? pieces(design).map(
+			? pieces(design, { ground: drawing.ground }).map(
 					([t, items]) =>
 						/** @type {[string, string]} */ ([t, svg(ruin ? ruinPlaced(items, ruin) : items)]),
 				)

@@ -333,13 +333,14 @@ and every culture knob. It's used three ways:
 
 - **The Buildings tab** — the Choose Icon dialog's second tab, between
   Icons and Settlement builder (`SettlementBuilder.svelte` with
-  `kind="building"`). One building — any of 25 of the kit's single
+  `kind="building"`). One building — any of 24 of the kit's single
   pieces (`SETTLEMENT_BUILDINGS`, from houses and towers to the
-  cathedral, a market and a stone wall) — in any culture. Walls (None by
+  cathedral and a market) — in any culture. Walls (None by
   default) puts a small ring or square wall of that type round it (in
   the chosen wall shape); On stilts sets it on a timber-post deck (its
-  terrain — a market's square — stays on the ground); the Wall comes in
-  its own stone and has no Walls, Wall shape or stilts. The tab lays itself out to
+  terrain — a market's square — stays on the ground). (The Wall is no
+  longer a building: a marker that was one keeps its plain icon, the
+  baked Stone wall, which the Icons tab still offers.) The tab lays itself out to
   fit the dialog (the preview takes whatever height the knobs leave, the
   knobs go two to a row on a phone), so "Use this" is always on screen.
   Ground (None by default, or Dirt, Grass, Farmland, Sand, Rock, Snow,
@@ -353,8 +354,8 @@ and every culture knob. It's used three ways:
   The reroll varies
   the building as a settlement varies its own — pitch, sweep, ornament,
   now and then the windows or doors, a tower's height — and a mixed
-  culture's builder; a few fixed pieces (tent, pavilion, mine, witch hut,
-  the wall) only change when ruined.
+  culture's builder; a few fixed pieces (tent, pavilion, mine, witch hut)
+  only change when ruined.
   Recents are kept apart (`il:recentBuildings`); opening Change Icon on a
   marker with a building recipe lands here.
 - **The Settlement builder** — the Choose Icon dialog's third tab

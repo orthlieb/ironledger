@@ -37,8 +37,9 @@ import { GROUND_TYPES, TEXTURE_ROLES } from './patterns.js';
 /** @typedef {import('./geom.js').Pt} Pt */
 /** @typedef {import('./geom.js').Poly} Poly */
 /** `role`: paint the line in that colour role instead of ink (a tinted
- *  texture line, e.g. a coral wall's grey grooves).
- *  @typedef {{pts: Poly, w?: number, round?: boolean, outline?: boolean, role?: Role}} Line */
+ *  texture line, e.g. a coral wall's grey grooves). `shade`: a shading
+ *  hatch line, left out when hatching is off.
+ *  @typedef {{pts: Poly, w?: number, round?: boolean, outline?: boolean, role?: Role, shade?: boolean}} Line */
 /** @typedef {'wall' | 'wall-stone' | 'wall-hedge' | 'wall-reef' | 'wall-wood' | 'wall-earth' | 'wall-bone' | 'wall-stone-ring' | 'wall-wood-ring' | 'wall-hedge-ring' | 'wall-reef-ring' | 'wall-hedge-cane' | 'wall-reef-groove' | 'wall-reef-vein' | 'wall-earth-ring' | 'wall-bone-ring' | 'wall-earth-grit' | 'wall-earth-pebble' | 'wall-bone-grain' | 'ink-texture' | 'ground-dirt' | 'ground-grass' | 'ground-farmland' | 'ground-sand' | 'ground-rock' | 'ground-snow' | 'ground-ice' | 'ground-marsh' | 'ground-lava' | 'roof' | 'wood' | 'earth' | 'water' | 'flag'} Role */
 /** `sharp`: keep the part's corners crisp whatever the drawing's join (flag
  *  cloth — a soft join would melt a pennant's tip into a blob). `aloft`:
@@ -298,8 +299,10 @@ export const LAYERS = [...FACE_LAYERS, ...LINE_ROLES, 'ink-texture', 'ink'];
  * 'soft' also rounds the shapes' own convex corners (roof peaks, eaves,
  * merlons) by `softRadius`. `texture: false` leaves out every line-work
  * texture layer (TEXTURE_ROLES): masonry, planks, ring-wall line-work.
+ * `hatching: false` leaves out the shading hatch (`shadeLines`, and lines
+ * flagged `shade`): shaded faces keep their shade colour alone.
  * @param {Part[]} parts back → front
- * @param {{outline?: number, join?: 'sharp' | 'round' | 'soft', softRadius?: number, texture?: boolean}} [opts]
+ * @param {{outline?: number, join?: 'sharp' | 'round' | 'soft', softRadius?: number, texture?: boolean, hatching?: boolean}} [opts]
  * @returns {{layers: Record<string, string>, silhouette: string, bounds: {x: number, y: number, w: number, h: number}}}
  */
 export function renderLayered(parts, opts = {}) {
@@ -307,6 +310,7 @@ export function renderLayered(parts, opts = {}) {
 	const round = opts.join === 'round' || opts.join === 'soft';
 	const soft = opts.join === 'soft' ? (opts.softRadius ?? 0.9) : 0;
 	const texture = opts.texture ?? true;
+	const hatching = opts.hatching ?? true;
 	/** Visible pieces per layer, merged once at the end. @type {Record<string, CPaths[]>} */
 	const acc = Object.fromEntries(LAYERS.map((l) => [l, []]));
 	/** What's drawn so far (in front), one entry per part with its box: a
@@ -354,7 +358,7 @@ export function renderLayered(parts, opts = {}) {
 		/** @type {CPaths} */
 		let ink = [];
 		const fillInk = p.fills?.length ? intersect(rawUnion(p.fills), outer) : [];
-		const inkLines = p.lines?.filter((l) => !l.role);
+		const inkLines = p.lines?.filter((l) => !l.role && (hatching || !l.shade));
 		if (inkLines?.length)
 			ink = union(
 				ink,
@@ -367,7 +371,7 @@ export function renderLayered(parts, opts = {}) {
 			if (l.role && (texture || !TEXTURE_ROLES.has(l.role)))
 				tints.set(l.role, [...(tints.get(l.role) ?? []), l]);
 		const shadeClip = p.shaded ? inner : p.shadeArea ? intersect(inner, [toC(p.shadeArea)]) : [];
-		if (p.shadeLines?.length && shadeClip.length)
+		if (hatching && p.shadeLines?.length && shadeClip.length)
 			ink = union(
 				ink,
 				minus(intersect(stroke(p.shadeLines, false, half * 2), shadeClip), offset(fillInk, 0.6)),

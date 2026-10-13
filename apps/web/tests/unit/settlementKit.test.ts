@@ -29,15 +29,11 @@ import {
 import {
 	BUILDINGS,
 	TEMPLATES,
-	UNWALLED_BUILDINGS,
 	building,
 	pieces,
 	settlement,
 } from '../../src/lib/settlement-kit/layouts3d.js';
-import {
-	SETTLEMENT_BUILDINGS,
-	UNWALLED_BUILDINGS as APP_UNWALLED_BUILDINGS,
-} from '../../src/lib/settlementRecipe.js';
+import { SETTLEMENT_BUILDINGS } from '../../src/lib/settlementRecipe.js';
 import {
 	DEFAULT_DESIGN,
 	church,
@@ -49,6 +45,7 @@ import {
 	ringWall,
 	roundHut,
 	roundTower,
+	sideHouse,
 	squareTower,
 	stiltHut,
 	upgradeDesign,
@@ -325,6 +322,62 @@ const drawnArea = (items: ReturnType<typeof building>) => {
 	return Math.abs(total);
 };
 
+describe('piece details', () => {
+	const xs = (p: { solid: [number, number][][] }) => p.solid.flat().map(([x]) => x);
+	const ys = (p: { solid: [number, number][][] }) => p.solid.flat().map(([, y]) => y);
+	it("seats a spire's holy symbol behind its cap, so the post never shows down it", () => {
+		const parts = squareTower(
+			{ ...DEFAULT_DESIGN, towerRoof: 'cone', towerCrenel: false },
+			{ finial: true },
+		);
+		const cap = parts.findIndex((p) => p.role === 'roof' && p.shadeLines?.length);
+		const symbol = parts.findIndex((p) => p.free?.length);
+		expect(symbol).toBeGreaterThanOrEqual(0);
+		expect(symbol).toBeLessThan(cap);
+	});
+	it('crenellates a bare square top all round, its walk below the crenels', () => {
+		const parts = squareTower({ ...DEFAULT_DESIGN, towerRoof: 'none', towerCrenel: true });
+		const front = parts.at(-1)!;
+		const walk = parts.find(
+			(p) =>
+				!p.shaded && p.solid.length === 1 && p.solid[0].length === 4 && Math.min(...ys(p)) > 28,
+		)!;
+		expect(walk, 'the walk').toBeDefined();
+		// The front edge of the walk sits below the front merlons' notches.
+		expect(Math.min(...ys(walk))).toBeLessThan(Math.max(...ys(front)) - 2);
+		// The left wall's inner face, in shadow, runs along the walk's left rim.
+		const left = parts.find((p) => p.shaded && Math.min(...xs(p)) <= Math.min(...xs(walk)) + 0.01);
+		expect(left, 'a left wall').toBeDefined();
+		expect(Math.max(...xs(left!))).toBeLessThan(Math.max(...xs(walk)) / 2);
+	});
+	it("shows a side-on roof's back slope where it overhangs the gable end", () => {
+		const parts = sideHouse(DEFAULT_DESIGN);
+		const back = parts[0];
+		const gable = parts.find((p) => p.shaded && p.role !== 'roof')!;
+		expect(back.role).toBe('roof');
+		expect(Math.max(...xs(back))).toBeGreaterThan(Math.max(...xs(gable)));
+	});
+	it.each(['workshop', 'tavern'] as const)('gives a %s round chimneys', (kind) => {
+		const parts = sideHouse(DEFAULT_DESIGN, { kind });
+		const stacks = parts.slice(
+			1,
+			parts.findIndex((p) => p.shaded && p.role !== 'roof'),
+		);
+		expect(stacks.length).toBeGreaterThan(0);
+		for (const p of stacks.filter((q) => !q.smoke))
+			for (const poly of p.solid) expect(poly.length, 'a drum, not a box').toBeGreaterThan(8);
+	});
+	it('stands the reference pieces on a ground when asked, as buildings are', () => {
+		const row = pieces(DEFAULT_DESIGN, { ground: 'grass' });
+		expect(row).toHaveLength(pieces(DEFAULT_DESIGN).length);
+		for (const [name, items] of row)
+			expect(
+				items[0].piece.map((p) => p.role),
+				name,
+			).toEqual(['ground-grass']);
+	});
+});
+
 describe('buildings (the Buildings tab)', () => {
 	const roles = (svg: string) =>
 		new Set([...svg.matchAll(/data-role="([\w-]+)"/g)].map((m) => m[1]));
@@ -335,7 +388,9 @@ describe('buildings (the Buildings tab)', () => {
 		const names = pieces(DEFAULT_DESIGN).map(([n]) => n);
 		expect(names).toHaveLength(26);
 		expect(names).toContain('Camp'); // a Settlement-builder size, not a building
-		expect(BUILDINGS).toHaveLength(25);
+		expect(names).toContain('Wall'); // the Stone wall icons, not a building
+		expect(BUILDINGS).toHaveLength(24);
+		expect(BUILDINGS.map(([key]) => key)).not.toContain('wall');
 	});
 	it.each(BUILDINGS.map(([key]) => key))('draws %s on its own', (key) => {
 		const svg = generateSettlementSvg(
@@ -369,17 +424,6 @@ describe('buildings (the Buildings tab)', () => {
 		);
 		expect(roles(square)).toContain('wall-wood');
 	});
-	it.each([['wall', 'wall-stone']] as const)(
-		'draws %s in its own material, never enclosed',
-		(key, role) => {
-			const svg = generateSettlementSvg(
-				{ tier: 'stead', culture: 'default', seed: 3, building: key, walls: 'hedge' },
-				null,
-			);
-			expect(roles(svg)).toContain(role);
-			expect([...roles(svg)].some((r) => r.startsWith('wall-hedge'))).toBe(false);
-		},
-	);
 	it('lays a lagoon under a building on water', () => {
 		const on = (ground?: 'water') =>
 			roles(
@@ -397,7 +441,7 @@ describe('buildings (the Buildings tab)', () => {
 		expect(on()).not.toContain('water');
 		expect(on('water')).toContain('water');
 	});
-	it('sets a building on stilts — never the Wall, and never its terrain', () => {
+	it('sets a building on stilts — never its terrain', () => {
 		const deck = (items: ReturnType<typeof building>) =>
 			items.some((it) => it.piece.some((p) => p.role === 'wood' && !p.terrain));
 		const lowest = (items: ReturnType<typeof building>) =>
@@ -413,10 +457,6 @@ describe('buildings (the Buildings tab)', () => {
 		expect(deck(house)).toBe(false);
 		expect(deck(raised)).toBe(true);
 		expect(lowest(raised)).toBeGreaterThan(lowest(house) + 1);
-		// The Wall stays on the ground.
-		expect(building('wall', DEFAULT_DESIGN, { seed: 1, stilts: true })).toEqual(
-			building('wall', DEFAULT_DESIGN, { seed: 1 }),
-		);
 		// A market's square stays on the ground; its stalls go up.
 		const terrain = (items: ReturnType<typeof building>) =>
 			items.flatMap((it) => it.piece.filter((p) => p.terrain).map((p) => p.solid));
@@ -430,9 +470,6 @@ describe('buildings (the Buildings tab)', () => {
 				null,
 			);
 		expect(svg(true)).not.toBe(svg());
-	});
-	it('agrees with the app on which buildings are never walled', () => {
-		expect([...UNWALLED_BUILDINGS].sort()).toEqual([...APP_UNWALLED_BUILDINGS].sort());
 	});
 	it('ruins a building, and a reroll changes a house', () => {
 		const at = (seed: number, ruin?: { decay: number }) =>
@@ -705,6 +742,31 @@ describe('texture', () => {
 			pieces({ ...DEFAULT_DESIGN, masonry: true, texture }).find(([n]) => n === 'Barn')?.[1][0]
 				.piece ?? [];
 		expect(barn(false).some((p) => p.role === 'wood')).toBe(false);
+	});
+});
+
+describe('hatching', () => {
+	const town = (hatching?: boolean) =>
+		generateSettlementSvg(
+			{ tier: 'town', culture: 't', seed: 3, walls: 'stone' },
+			{
+				key: 't',
+				name: 'Hatching test',
+				design: hatching === undefined ? {} : { hatching },
+				palette: PARCHMENT,
+			},
+		);
+	const layer = (svg: string, role: string) =>
+		svg.match(new RegExp(`data-role="${role}"[^>]* d="([^"]*)"`))?.[1] ?? '';
+	it('is on by default; off, the shaded faces keep their shade colour alone', () => {
+		expect(DEFAULT_DESIGN.hatching).toBe(true);
+		const on = town(),
+			off = town(false);
+		expect(on).toBe(town(true));
+		// Fewer ink strokes: the hatch is gone…
+		expect(layer(off, 'ink').length).toBeLessThan(layer(on, 'ink').length * 0.8);
+		// …but not the shading.
+		for (const role of ['wall-shade', 'roof-shade']) expect(layer(off, role), role).not.toBe('');
 	});
 });
 

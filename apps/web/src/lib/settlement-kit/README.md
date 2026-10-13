@@ -70,14 +70,19 @@ cap** — read from the culture with `towerTop(D, o)`:
   Windows and other openings stay wholly above or below the bend.
 - **Crenellated top** (`towerCrenel`): a short parapet band corbelled out
   on its own 45° slope. With a cap, its crenels show as dark slots under
-  the eave; bare, its merlons stand free (square towers add a platform and
-  back parapet).
+  the eave; bare, its merlons stand free. A bare square top is a parapet
+  ring round a walk set below its crenels: the front and right walls'
+  outer faces crenellated, the back and left walls' inner faces rising
+  from the walk in shadow, with merlons of their own.
 - **Cap** (`towerRoof`): `cone` (a pyramid spire on square towers),
   `onion`, `dome`, `lancet`, or `none` — a bare crenellated top. A tower
   with no cap always gets the crenellated top, so it never ends flat.
 - The **flag** flies from whichever is uppermost; landmark towers carry the
-  culture's holy-symbol finial instead. Flag cloth is a `sharp` part, so
-  its corners and points stay crisp whatever the culture's `join`.
+  culture's holy-symbol finial instead. On a sharp tip (a spire, a lancet)
+  the symbol's post runs down into the cap and the symbol is drawn behind
+  it (`seat()`), so the post meets the tip as drawn, however far softening
+  rounds it down. Flag cloth is a `sharp` part, so its corners and points
+  stay crisp whatever the culture's `join`.
 
 **Landmark towers** — church and cathedral towers, the clock tower, a
 village bell tower — go through `belfry(D, o)`, which builds them square
@@ -206,8 +211,8 @@ A culture plugin (`cultures/<key>.json` in an extension, or
 `apps/api/data/cultures/` for the base game) is
 `{key, name, note, design, palette}`. `design` is any subset of the
 `Design` knobs below, laid over `DEFAULT_DESIGN`; `palette` gives the eight
-colour roles. A culture is therefore up to **41 knobs** — 23 numbers, 11
-choices and 7 on/off switches — **plus 8 colours**. The shipped cultures
+colour roles. A culture is therefore up to **42 knobs** — 23 numbers, 11
+choices and 8 on/off switches — **plus 8 colours**. The shipped cultures
 set 14–24 knobs each (the Sample culture 33; Ironlanders is the default,
 with none). A culture is style alone: what a settlement stands on, its
 walls and their shape are the recipe's (see Recipe overrides).
@@ -228,6 +233,7 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 | `flourish`  | 0–1 (**0**)                        | Ornament: finials, eave knobs, ridge cresting, more flags.                                                                                                                                                                                                                      |
 | `masonry`   | on / **off**                       | Stone-built: stone courses on house and tower walls, stone barns (not plank), no timber framing on a townhouse's ground floor.                                                                                                                                                  |
 | `texture`   | **on** / off                       | Draw textures: wall patterns, the line-work round ring walls, masonry courses, barn planks. Off draws every wall in its flat material colour — what a small map icon draws anyway.                                                                                              |
+| `hatching`  | **on** / off                       | Hatch the shaded flanks — house sides, round bodies, cones and domes. Off shades them by colour alone.                                                                                                                                                                          |
 | `variety`   | 0–1 (**0**)                        | A mixed culture (a freeport): the chance each house, free-standing tower and landmark rolls its own house type (gable-front, side-on, townhouse, longhouse, round hut or domed), storeys, tower cap, crenellated top, corbel, steeple, roof pitch and sweep, windows and doors. |
 
 **Houses**
@@ -333,9 +339,8 @@ in five places") for the plumbing contract when adding a new one.
 `BUILDINGS` (the keyed entries of the `PIECES` table) on its own. `walls`
 puts a small ring or square wall of its own round it, fitted to its
 footprint the way a settlement's is (`enclosed()`), with up to two towers
-where the wall type carries them — never round the `UNWALLED_BUILDINGS`:
-the Wall, in its own stone. `stilts` sets it on a deck (`onStilts()`), its
-terrain left on the ground — the Wall, again, never.
+where the wall type carries them. `stilts` sets it on a deck (`onStilts()`), its
+terrain left on the ground.
 On water a lagoon goes under it. `seed` varies it as a settlement varies its
 buildings — `jitterDesign()` (pitch, sweep,
 ornament, now and then the windows or doors), a round tower's girth and
@@ -431,9 +436,7 @@ marker colour on the `roof` layer, and inlines the SVG.
    offer it on the map's Buildings tab too, give it a key (else `null`),
    add the same key and name to `SETTLEMENT_BUILDINGS` in
    `src/lib/settlementRecipe.ts` and its nearest baked icon to
-   `BUILDING_ICONS` in `fallback.js` (tests hold all three in step); a
-   wall piece (or anything else that never gets walls) also goes in both
-   `UNWALLED_BUILDINGS` sets.
+   `BUILDING_ICONS` in `fallback.js` (tests hold all three in step).
 3. If it's a dwelling, route it through the `house()` picker there. If
    it's an inside-the-walls extra, add it to `EXTRAS` so templates can
    call for it.

@@ -34,7 +34,6 @@ const BUILDING_ICONS = /** @type {Record<string, string>} */ ({
 	tent: 'camping-tent',
 	pavilion: 'medieval-pavilion',
 	'witch-hut': 'witches-hut',
-	wall: 'stone-wall',
 });
 
 /** Ruins of the buildings that have one baked. @type {Record<string, string>} */
@@ -47,7 +46,6 @@ const BUILDING_RUINS = {
 	keep: 'castle-ruin',
 	mine: 'mine-ruin',
 	'round-tower': 'fortified-tower-ruin',
-	wall: 'broken-wall',
 };
 
 /**

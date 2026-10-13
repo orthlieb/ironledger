@@ -12,9 +12,8 @@
 	 * also exports new culture plugins.
 	 *
 	 * The Buildings kind draws one building instead of a settlement: the
-	 * building in place of the size, walls that enclose it (none by default;
-	 * none at all for the Wall, in its own stone), ground, on stilts (not
-	 * the Wall either), and no harbour. Walls, their shape (round unless
+	 * building in place of the size, walls that enclose it (none by default),
+	 * ground, on stilts, and no harbour. Walls, their shape (round unless
 	 * square) and ground are the recipe's alone — no culture sets them. Its
 	 * reroll varies the building's details (and a mixed culture's builder).
 	 *
@@ -40,7 +39,6 @@
 	import { recipeLabel, settlementIcon } from '$lib/settlementIcons.svelte.js';
 	import {
 		SETTLEMENT_BUILDINGS,
-		UNWALLED_BUILDINGS,
 		cleanSettlementRecipe,
 		sameRecipe,
 		type SettlementBuilding,
@@ -144,11 +142,8 @@
 
 	void loadCultures();
 
-	/** A wall building (in its own material) or a ship: never enclosed, so
-	 *  no Walls. */
-	const wallBuilding = $derived(isBuilding && UNWALLED_BUILDINGS.has(building));
-	const showWalls = $derived(!wallBuilding);
-	const showShape = $derived(!isBuilding || (!wallBuilding && walls !== 'none'));
+	/** A building's wall shape only matters once it has walls. */
+	const showShape = $derived(!isBuilding || walls !== 'none');
 	const ruin = $derived(
 		ruined
 			? {
@@ -167,10 +162,10 @@
 					culture,
 					seed,
 					building,
-					...(showWalls && walls !== 'none' ? { walls } : {}),
+					...(walls !== 'none' ? { walls } : {}),
 					...(showShape && shape === 'square' ? { wallShape: shape } : {}),
 					...(ground !== 'none' ? { ground } : {}),
-					...(stilts && !wallBuilding ? { stilts: true } : {}),
+					...(stilts ? { stilts: true } : {}),
 					...ruin,
 				}
 			: {
@@ -276,12 +271,10 @@
 				<Select bind:value={culture} options={cultureOptions} ariaLabel="Culture" />
 			</label>
 			{#if note}<p class="sb-note">{note}</p>{/if}
-			{#if showWalls}
-				<label class="sb-field">
-					<span class="sb-label">Walls</span>
-					<Select bind:value={walls} options={WALLS} ariaLabel="Walls" />
-				</label>
-			{/if}
+			<label class="sb-field">
+				<span class="sb-label">Walls</span>
+				<Select bind:value={walls} options={WALLS} ariaLabel="Walls" />
+			</label>
 			{#if showShape}
 				<label class="sb-field">
 					<span class="sb-label">Wall shape</span>
@@ -294,9 +287,7 @@
 			</label>
 			<!-- Side by side, wrapping, so the switches don't each take a row. -->
 			<div class="sb-checks">
-				{#if !wallBuilding}
-					<Checkbox bind:checked={stilts}><span class="sb-check">On stilts</span></Checkbox>
-				{/if}
+				<Checkbox bind:checked={stilts}><span class="sb-check">On stilts</span></Checkbox>
 				{#if !isBuilding}
 					<Checkbox bind:checked={harbor}><span class="sb-check">Harbour</span></Checkbox>
 				{/if}

@@ -725,7 +725,7 @@ const side = (kind, seed0) => (D, s) => [{ piece: sideHouse(D, { seed: s ?? seed
  * Design; a Buildings-tab `seed` varies a house's details and a tower's
  * height, and the reference row passes none. A null key is a reference
  * piece (drawn for the baked icons) the Buildings tab doesn't offer — a
- * camp is a Settlement-builder size.
+ * camp is a Settlement-builder size, and a stretch of wall no building.
  * @type {[string | null, string, (D: Design, seed?: number) => Placed[]][]}
  */
 const PIECES = [
@@ -778,12 +778,22 @@ const PIECES = [
 	['tent', 'Tent', (D) => [{ piece: tent(D) }]],
 	['pavilion', 'Pavilion', (D) => [{ piece: pavilion(D) }]],
 	['witch-hut', 'Witch hut', (D) => [{ piece: witchHut(D) }]],
-	['wall', 'Wall', (D) => [{ piece: wallSegment(D) }]],
+	[null, 'Wall', (D) => [{ piece: wallSegment(D) }]],
 ];
 
-/** Single pieces for the reference row. @param {Design} D @returns {[string, Placed[]][]} */
-export function pieces(D) {
-	return PIECES.map(([, name, make]) => [name, normalized(make(D))]);
+/**
+ * Single pieces for the reference row, each on `ground` as a building is
+ * (default none).
+ * @param {Design} D
+ * @param {{ground?: Ground}} [o]
+ * @returns {[string, Placed[]][]}
+ */
+export function pieces(D, o = {}) {
+	const g = groundOf(o.ground);
+	return PIECES.map(([, name, make]) => {
+		const items = make(D);
+		return [name, normalized(g ? grounded(items, g) : items)];
+	});
 }
 
 /** The Buildings tab's buildings, as [key, name], in menu order. */
@@ -791,20 +801,16 @@ export const BUILDINGS = /** @type {[string, string][]} */ (
 	PIECES.flatMap(([key, name]) => (key ? [[key, name]] : []))
 );
 
-/** Buildings never given a wall of their own: the wall, in its own stone. */
-export const UNWALLED_BUILDINGS = new Set(['wall']);
-
 /**
  * One building as a map icon — the Buildings tab: a single piece in the
  * culture's style, inside an optional wall of its own (`walls`, round or
- * `wallShape` square; never round UNWALLED_BUILDINGS), and optionally
- * ruined. `seed` rerolls it as a settlement varies its buildings: pitch,
+ * `wallShape` square), and optionally ruined. `seed` rerolls it as a settlement varies its buildings: pitch,
  * sweep and ornament jittered, now and then other windows or doors, a
  * tower's height — and a mixed culture's builder rolls its own style.
  * @param {string} key one of BUILDINGS (unknown → a gable house)
  * @param {Design} D
  * `stilts` sets it on a timber-post deck, as a stilt settlement's
- * buildings are (never the Wall).
+ * buildings are.
  * @param {{walls?: Walls, wallShape?: WallShape, seed?: number, ground?: Ground,
  *   stilts?: boolean, ruin?: import('./ruins3d.js').RuinOptions | null}} [o]
  * @returns {Placed[]}
@@ -818,7 +824,7 @@ export function building(key, D, o = {}) {
 	let items = make(own, 1 + Math.floor(r() * 999_999));
 	// On stilts: each part of it on a deck of its own, its terrain (a
 	// market's square, a mine's mountain) left on the ground.
-	if (o.stilts && !UNWALLED_BUILDINGS.has(key))
+	if (o.stilts)
 		items = items.map((it) => {
 			const built = it.piece.filter((p) => !p.terrain);
 			return built.length
@@ -826,21 +832,27 @@ export function building(key, D, o = {}) {
 				: it;
 		});
 	const g = groundOf(o.ground);
-	if (walls && !UNWALLED_BUILDINGS.has(key))
-		items = enclosed(D, items, walls, o.wallShape === 'square', g);
-	else if (g) {
-		// A building stands on its ground — in a lagoon, on water — as a
-		// settlement does (an enclosure lays its own, under the whole of it).
-		const { x0, x1 } = placedExtent(items);
-		// A narrow building (a tower) still gets a plane a fair width.
-		const hw = Math.max(16, (x1 - x0) / 2 + 8);
-		items = [{ piece: groundPlane(g, hw, hw * 0.4), x: (x0 + x1) / 2 }, ...items];
-	}
+	if (walls) items = enclosed(D, items, walls, o.wallShape === 'square', g);
+	else if (g) items = grounded(items, g);
 	// A small building is scaled up to read with the rest — sized whole, so
 	// its ruin is drawn at the same scale, not blown up as it crumbles.
 	const k = normalScale(items);
 	if (o.ruin) items = ruinPlaced(items, { ...o.ruin, seed, single: true });
 	return normalized(items, k);
+}
+
+/**
+ * A building on its ground — in a lagoon, on water — as a settlement stands
+ * (an enclosure lays its own, under the whole of it). A narrow building (a
+ * tower) still gets a plane a fair width.
+ * @param {Placed[]} items
+ * @param {NonNullable<ReturnType<typeof groundOf>>} g
+ * @returns {Placed[]}
+ */
+function grounded(items, g) {
+	const { x0, x1 } = placedExtent(items);
+	const hw = Math.max(16, (x1 - x0) / 2 + 8);
+	return [{ piece: groundPlane(g, hw, hw * 0.4), x: (x0 + x1) / 2 }, ...items];
 }
 
 /** Horizontal extent of a placed group, banners aside (see extent()). @param {Placed[]} items */
