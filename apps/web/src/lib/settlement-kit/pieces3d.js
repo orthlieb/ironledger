@@ -1038,6 +1038,9 @@ export function sideHouse(D, o = {}) {
 	// Barns are plank-walled — unless the culture builds in masonry, when
 	// they're stone barns (still with their braced doors and hayloft).
 	const woodBarn = barn && !D.masonry;
+	// Stone-built — a masonry culture's, and a barracks always: courses on
+	// the front and, run back along it, on the gable end.
+	const stone = D.masonry || kind === 'barracks';
 	const wallRole = woodBarn ? /** @type {const} */ ('wood') : undefined;
 	/** Vertical plank seams on a barn. @param {number} x0 @param {number} x1 */
 	const planks = (x0, x1, y0 = 0, y1 = h + rh + 10) => {
@@ -1172,6 +1175,7 @@ export function sideHouse(D, o = {}) {
 			lines: [
 				...hatch(gableEnd, 65, D.hatch),
 				...(woodBarn ? planks(w / 2, w / 2 + v[0], 0, h + rh + v[1]) : []),
+				...(stone ? faceCourses(P, d, w / 2, 0, h + rh) : []),
 			],
 			fills:
 				kind === 'warehouse'
@@ -1188,18 +1192,17 @@ export function sideHouse(D, o = {}) {
 			role: wallRole,
 			fills,
 			cuts: kind === 'warehouse' ? doorCuts(w, h) : barn ? barnDoorCuts(h) : [],
-			lines:
-				D.masonry || kind === 'barracks'
-					? stoneCourses(-w / 2, w / 2, 0, h)
-					: barn
-						? planks(-w / 2, w / 2, 0, h).map((l) => ({
-								...l,
-								pts: [
-									[l.pts[0][0], -1],
-									[l.pts[0][0], h + 1],
-								],
-							}))
-						: [],
+			lines: stone
+				? stoneCourses(-w / 2, w / 2, 0, h)
+				: barn
+					? planks(-w / 2, w / 2, 0, h).map((l) => ({
+							...l,
+							pts: [
+								[l.pts[0][0], -1],
+								[l.pts[0][0], h + 1],
+							],
+						}))
+					: [],
 		},
 		{ solid: [slope], role: 'roof', lines: courses, free: hoist },
 		...(D.flourish > 0.45 ? cresting(add(rL, [ov * 0.6, 0]), add(rR, [-ov * 0.6, 0])) : []),
@@ -1278,6 +1281,34 @@ function stoneCourses(
 		out.push(seg([x0 - 2, y], [x1 + 2, y], 0.45, { role: TEXTURE }));
 		for (let x = x0 + (row % 2 ? 2.2 : 0); x < x1; x += 4.4)
 			out.push(seg([x, y - 2.4], [x, y], 0.45, { role: TEXTURE }));
+	}
+	return out;
+}
+
+/**
+ * Stone courses on a receding face at x = `fx` (a gable end), from y0 up to
+ * y1, clipped to the face by the renderer: each course runs back along the
+ * face through the piece's projector, as the front's run across it, its
+ * joints staggered every stone's length of depth.
+ * @param {ReturnType<typeof boxProjector>} P
+ * @param {number} d the projector's depth
+ * @param {number} fx
+ * @param {number} y0
+ * @param {number} y1
+ * @returns {Line[]}
+ */
+function faceCourses(P, d, fx, y0, y1) {
+	/** @type {Line[]} */
+	const out = [];
+	// Overrun both ends, as stoneCourses() does, so the clip is clean; a
+	// few points apiece, as perspective bends a run.
+	const run = (/** @type {number} */ y) =>
+		Array.from({ length: 9 }, (_, i) => P.at([fx, y], -0.05 + (1.1 * i) / 8));
+	let row = 0;
+	for (let y = y0 + 2.4; y < y1; y += 2.4, row++) {
+		out.push({ pts: run(y), w: 0.45, role: TEXTURE });
+		for (let z = row % 2 ? 2.2 : 0; z < d; z += 4.4)
+			out.push(seg(P.at([fx, y - 2.4], z / d), P.at([fx, y], z / d), 0.45, { role: TEXTURE }));
 	}
 	return out;
 }

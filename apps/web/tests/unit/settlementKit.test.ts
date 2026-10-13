@@ -357,6 +357,16 @@ describe('piece details', () => {
 		expect(back.role).toBe('roof');
 		expect(Math.max(...xs(back))).toBeGreaterThan(Math.max(...xs(gable)));
 	});
+	it.each([
+		['a barracks', { ...DEFAULT_DESIGN }, 'barracks'],
+		["a masonry culture's house", { ...DEFAULT_DESIGN, masonry: true }, 'house'],
+	] as const)('runs stone courses back along the gable end of %s', (_, D, kind) => {
+		const parts = sideHouse(D, { kind });
+		const gable = parts.find((p) => p.shaded && p.role !== 'roof')!;
+		expect(gable.lines?.some((l) => l.role === 'ink-texture')).toBe(true);
+		const plain = sideHouse(DEFAULT_DESIGN).find((p) => p.shaded && p.role !== 'roof')!;
+		expect(plain.lines?.some((l) => l.role === 'ink-texture')).toBe(false);
+	});
 	it.each(['workshop', 'tavern'] as const)('gives a %s round chimneys', (kind) => {
 		const parts = sideHouse(DEFAULT_DESIGN, { kind });
 		const stacks = parts.slice(
