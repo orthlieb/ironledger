@@ -607,7 +607,11 @@ shows its label and its icon's name.
 
 The card is a bits-ui Popover anchored to the marker's on-screen icon
 (`customAnchor`, re-positioned every frame so it follows panning, zooming
-and nudges). It takes no focus and ignores outside clicks and Escape: the
+and nudges). It hangs beside the marker (right, flipping left) when it
+fits to one side, and below it (flipping above) when neither side has
+room — a mid-screen marker on a phone — so it stays on screen; its
+height is held to the room on that side and it scrolls past that
+(`map-marker-card.spec.ts`). It takes no focus and ignores outside clicks and Escape: the
 map owns selection, and the card shows whenever a marker is selected and
 the editor isn't open, it isn't being dragged, and no placement or
 measuring is armed.
