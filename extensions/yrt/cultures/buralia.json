@@ -22,12 +22,12 @@
   },
   "palette": {
     "wall": "#EFE3C6",
-    "roof": "#C9A55C",
+    "roof": "#DBBE1D",
     "wood": "#9C7A4C",
     "earth": "#9A6E44",
     "water": "#8FB0B8",
     "ink": "#3A2D1E",
-    "flag": "#B3312A",
+    "flag": "#A32A13",
     "halo": "#F6EEDC"
   }
 }

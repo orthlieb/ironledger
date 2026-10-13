@@ -481,7 +481,8 @@ function clipToBox(ab, x0, y0, x1, y1) {
  * Parallel hatch lines covering a polygon's bounding box; the renderer
  * clips them to the face. They're drawn at the shading weight by default,
  * so every shaded face — house and gate walls, roofs, keeps, the ring's
- * back — reads as dark as the towers.
+ * back — reads as dark as the towers. Flagged `shade`, so a drawing
+ * without hatching (IronLedger's) leaves them out.
  * @param {Poly} poly
  * @param {number} angle degrees
  * @param {number} spacing
@@ -505,6 +506,7 @@ function hatch(poly, angle, spacing, w = SHADE_W) {
 				[cx + nx * t + dx * R, cy + ny * t + dy * R],
 			],
 			w,
+			shade: true,
 		});
 	return out;
 }
@@ -516,14 +518,19 @@ const SHADE_W = 1.1;
 /**
  * Diagonal hatching for a round body's shaded flank (tower, well, mill).
  * Pass it as the part's `shadeLines` so its `shadeArea` clips it to the flank.
+ * A slim body (a well, a chimney) is hatched closer and finer than the
+ * culture's spacing, or its narrow flank would catch only a line.
  * @param {number} r body radius
  * @param {number} y0
  * @param {number} y1
  * @param {number} spacing
+ * @param {number} [cx] the body's axis
  * @returns {Line[]}
  */
-function cylinderHatch(r, y0, y1, spacing) {
-	return hatch(rect(-r, y0, 2 * r, y1 - y0), 55, spacing, SHADE_W);
+function cylinderHatch(r, y0, y1, spacing, cx = 0) {
+	const s = Math.min(spacing, r * 0.4);
+	const w = s < spacing ? Math.min(SHADE_W, s * 0.8) : SHADE_W;
+	return hatch(rect(cx - r, y0, 2 * r, y1 - y0), 55, s, w);
 }
 
 /**
@@ -844,6 +851,7 @@ function boxProjector(d, k, h = 0, ridge = 0) {
 		return [p[0] * s + v[0], p[1] * s + v[1]];
 	};
 	return {
+		d,
 		at,
 		scale,
 		/** @param {Pt} p @returns {Pt} */
@@ -882,6 +890,12 @@ export function gableHouse(D, o = {}) {
 		P.back([w / 2, h]),
 		[w / 2, h],
 	]);
+	/** The side wall's shading — and its stone, run back along it, where
+	 *  the front is stone. */
+	const sideLines = [
+		...hatch(side, 65, D.hatch),
+		...(D.masonry ? faceCourses(P, w / 2, 0, h) : []),
+	];
 	// Dome-culture houses: a stone half-sphere cap sits on the box top in
 	// place of a gable. The flat top of the box is drawn first so the
 	// dome's near-rim ellipse reads as a seam, not a floating arc.
@@ -900,7 +914,7 @@ export function gableHouse(D, o = {}) {
 		const [dcx, dcy] = P.at([0, h], 0.5);
 		const { part } = hemiDome(dcx, dcy, w * 0.42 * P.scale(0.5), D.hatch);
 		return [
-			{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
+			{ solid: [side], shaded: true, lines: sideLines },
 			{ solid: [topCap] },
 			part,
 			{
@@ -924,7 +938,7 @@ export function gableHouse(D, o = {}) {
 	// shaded right slope must draw over it — on steep roofs it's correctly
 	// hidden entirely.
 	return [
-		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
+		{ solid: [side], shaded: true, lines: sideLines },
 		{ solid: [left], role: 'roof' },
 		{ solid: [right], role: 'roof', shaded: true, lines: hatch(right, -28, D.hatch) },
 		{
@@ -990,13 +1004,22 @@ export function sideHouse(D, o = {}) {
 	/** @type {Pt} */ const rR = add(gTop, [ov * 0.6, 0]);
 	/** @type {Pt} */ const rL = add(P.at([-w / 2, h + rh], 0.5), [-ov * 0.6, 0]);
 	const below = /** @type {Pt} */ ([0, h - rh]);
+	// A longhouse ridge dips in the middle like an upturned boat.
+	const ridge = long ? sag(rR, rL, [(rR[0] + rL[0]) / 2, h], 0.06) : [rR, rL];
 	const slope = /** @type {Poly} */ ([
 		eL,
 		eR,
 		...sag(eR, rR, below, D.concave * 0.5).slice(1),
-		// A longhouse ridge dips in the middle like an upturned boat.
-		...(long ? sag(rR, rL, [(rR[0] + rL[0]) / 2, h], 0.06).slice(1) : [rL]),
+		...ridge.slice(1),
 		...sag(rL, eL, below, D.concave * 0.5).slice(1, -1),
+	]);
+	// The back slope, from the ridge down to the back eave. The front slope
+	// and the gable hide all of it but its verge: the sliver it overhangs the
+	// gable end by, past the gable's back edge.
+	const backSlope = /** @type {Poly} */ ([
+		P.back([-w / 2 - ov, h - 0.4]),
+		P.back([w / 2 + ov, h - 0.4]),
+		...ridge,
 	]);
 	/** @type {Line[]} */
 	const courses = [];
@@ -1018,6 +1041,9 @@ export function sideHouse(D, o = {}) {
 	// Barns are plank-walled — unless the culture builds in masonry, when
 	// they're stone barns (still with their braced doors and hayloft).
 	const woodBarn = barn && !D.masonry;
+	// Stone-built — a masonry culture's, and a barracks always: courses on
+	// the front and, run back along it, on the gable end.
+	const stone = D.masonry || kind === 'barracks';
 	const wallRole = woodBarn ? /** @type {const} */ ('wood') : undefined;
 	/** Vertical plank seams on a barn. @param {number} x0 @param {number} x1 */
 	const planks = (x0, x1, y0 = 0, y1 = h + rh + 10) => {
@@ -1143,6 +1169,7 @@ export function sideHouse(D, o = {}) {
 	}
 	return [
 		...race,
+		{ solid: [backSlope], role: 'roof', shaded: true },
 		...back,
 		{
 			solid: [gableEnd],
@@ -1151,6 +1178,7 @@ export function sideHouse(D, o = {}) {
 			lines: [
 				...hatch(gableEnd, 65, D.hatch),
 				...(woodBarn ? planks(w / 2, w / 2 + v[0], 0, h + rh + v[1]) : []),
+				...(stone ? faceCourses(P, w / 2, 0, h + rh) : []),
 			],
 			fills:
 				kind === 'warehouse'
@@ -1167,18 +1195,17 @@ export function sideHouse(D, o = {}) {
 			role: wallRole,
 			fills,
 			cuts: kind === 'warehouse' ? doorCuts(w, h) : barn ? barnDoorCuts(h) : [],
-			lines:
-				D.masonry || kind === 'barracks'
-					? stoneCourses(-w / 2, w / 2, 0, h)
-					: barn
-						? planks(-w / 2, w / 2, 0, h).map((l) => ({
-								...l,
-								pts: [
-									[l.pts[0][0], -1],
-									[l.pts[0][0], h + 1],
-								],
-							}))
-						: [],
+			lines: stone
+				? stoneCourses(-w / 2, w / 2, 0, h)
+				: barn
+					? planks(-w / 2, w / 2, 0, h).map((l) => ({
+							...l,
+							pts: [
+								[l.pts[0][0], -1],
+								[l.pts[0][0], h + 1],
+							],
+						}))
+					: [],
 		},
 		{ solid: [slope], role: 'roof', lines: courses, free: hoist },
 		...(D.flourish > 0.45 ? cresting(add(rL, [ov * 0.6, 0]), add(rR, [-ov * 0.6, 0])) : []),
@@ -1262,27 +1289,58 @@ function stoneCourses(
 }
 
 /**
- * Stone courses wrapped round a cylinder (a round tower's masonry): each
- * course is the front half of an ellipse, and the staggered joints sit at
- * even steps round the circumference, so they bunch toward the sides the
- * way a curved wall foreshortens.
- * @param {number} r radius the courses follow (the renderer clips to the body)
- * @param {number} ry the ellipse's half-height (the tower's)
+ * Stone courses on a receding face at x = `fx` (a side wall, a gable end),
+ * from y0 up to
+ * y1, clipped to the face by the renderer: each course runs back along the
+ * face through the piece's projector, as the front's run across it, its
+ * joints staggered every stone's length of depth.
+ * @param {ReturnType<typeof boxProjector>} P
+ * @param {number} fx
  * @param {number} y0
  * @param {number} y1
  * @returns {Line[]}
  */
-function roundCourses(r, ry, y0, y1) {
+function faceCourses(P, fx, y0, y1) {
 	/** @type {Line[]} */
 	const out = [];
-	const step = 4.4 / r; // radians between joints: a 4.4-unit stone
+	// Overrun both ends, as stoneCourses() does, so the clip is clean; a
+	// few points apiece, as perspective bends a run.
+	const run = (/** @type {number} */ y) =>
+		Array.from({ length: 9 }, (_, i) => P.at([fx, y], -0.05 + (1.1 * i) / 8));
 	let row = 0;
-	for (let y = y0 + 2.4; y < y1 + 2.4; y += 2.4, row++) {
+	for (let y = y0 + 2.4; y < y1; y += 2.4, row++) {
+		out.push({ pts: run(y), w: 0.45, role: TEXTURE });
+		for (let z = row % 2 ? 2.2 : 0; z < P.d; z += 4.4)
+			out.push(seg(P.at([fx, y - 2.4], z / P.d), P.at([fx, y], z / P.d), 0.45, { role: TEXTURE }));
+	}
+	return out;
+}
+
+/**
+ * Stone courses wrapped round a cylinder (a round tower's masonry): each
+ * course is the front half of an ellipse, and the staggered joints sit at
+ * even steps round the circumference, so they bunch toward the sides the
+ * way a curved wall foreshortens. A small body (a well's curb) takes
+ * smaller stones: `course` high and `stone` long.
+ * @param {number} r radius the courses follow (the renderer clips to the body)
+ * @param {number} ry the ellipse's half-height (the tower's)
+ * @param {number} y0
+ * @param {number} y1
+ * @param {number} [course]
+ * @param {number} [stone]
+ * @returns {Line[]}
+ */
+function roundCourses(r, ry, y0, y1, course = 2.4, stone = 4.4) {
+	/** @type {Line[]} */
+	const out = [];
+	const step = stone / r; // radians between joints: a stone's length
+	let row = 0;
+	for (let y = y0 + course; y < y1 + course; y += course, row++) {
 		if (y < y1) out.push({ pts: ell(0, y, r, ry, 180, 360), w: 0.45, role: TEXTURE });
 		for (let a = Math.PI + (row % 2 ? step / 2 : 0); a < 2 * Math.PI; a += step) {
 			const x = r * Math.cos(a),
 				dy = ry * Math.sin(a);
-			out.push(seg([x, y - 2.4 + dy], [x, y + dy], 0.45, { role: TEXTURE }));
+			out.push(seg([x, y - course + dy], [x, y + dy], 0.45, { role: TEXTURE }));
 		}
 	}
 	return out;
@@ -1342,7 +1400,8 @@ function doorCuts(/** @type {number} */ w, /** @type {number} */ h) {
 	);
 }
 
-/** Tall brick stacks behind a workshop roof, each with a smoke plume. */
+/** Tall round stacks behind a workshop or tavern roof — a drum with a wider
+ *  lip and a dark flue — each with a smoke plume. */
 function chimneys(
 	/** @type {Design} */ D,
 	/** @type {number} */ w,
@@ -1355,22 +1414,29 @@ function chimneys(
 	for (const x of w > 26 ? [-w * 0.22, w * 0.18] : [w * 0.1]) {
 		// Stacks stand 30% of the way back; their tops clear the ridge.
 		const cx = P.at([x, h], 0.3)[0],
-			sw = 3.6,
+			r = 1.8,
+			lip = r + 0.6,
 			top = P.at([0, h + rh], 0.5)[1] + 9;
-		const v = depthVec(2.5);
-		const side = /** @type {Poly} */ ([
-			[cx + sw / 2, h],
-			add([cx + sw / 2, h], v),
-			add([cx + sw / 2, top], v),
-			[cx + sw / 2, top],
-		]);
-		out.push(
-			{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
-			{
-				solid: [
-					rect(cx - sw / 2, h, sw, top - h),
-					rect(cx - sw / 2 - 0.6, top - 1.6, sw + 1.2, 1.6),
+		/** A drum of radius `rr` from y0 up to y1, its right flank shaded.
+		 *  @param {number} rr @param {number} y0 @param {number} y1 @returns {Part} */
+		const drum = (rr, y0, y1) => ({
+			solid: [
+				[
+					...ell(cx, y0, rr, rr * 0.34, 180, 360),
+					[cx + rr, y1],
+					...ell(cx, y1, rr, rr * 0.34, 0, 180),
 				],
+			],
+			shadeArea: rect(cx + rr * 0.3, y0 - rr - 2, rr * 2, y1 - y0 + rr + 4),
+			shadeLines: cylinderHatch(rr, y0 - rr * 0.34 - 1, y1 + 1, D.hatch, cx),
+		});
+		out.push(
+			drum(r, h, top - 1.6),
+			drum(lip, top - 1.6, top),
+			// The lip's top seen from above, the dark flue inside it.
+			{
+				solid: [ell(cx, top, lip, lip * 0.34, 0, 360, 28).slice(0, -1)],
+				fills: [ell(cx, top, r * 0.6, r * 0.6 * 0.34, 0, 360, 20).slice(0, -1)],
 			},
 			{
 				solid: [
@@ -1388,7 +1454,8 @@ function chimneys(
 /**
  * A flag on a pole whose foot is at (x, y), folded `D.flagFolds` times; the
  * cloth streams out from the pole's head to the right, or to the left with
- * `dir` −1.
+ * `dir` −1. The pole is the flag's too (role 'flag', though only a line), so
+ * a ruin strikes them together and leaves no bare rod on a tower.
  * @param {Design} D
  * @param {number} x
  * @param {number} y
@@ -1437,6 +1504,7 @@ function flag(D, x, y, dir = 1) {
 		{ solid: [cloth], role: 'flag', sharp: true },
 		{
 			solid: [],
+			role: 'flag',
 			free: [seg([x, y], [x, y + 10.5], 1.2)],
 		},
 	];
@@ -1554,7 +1622,8 @@ export function roundTower(D, o = {}) {
 	const flies = D.flags && o.flags !== false && !o.finial;
 	/** Flag or finial on the uppermost point `tip` of the top. */
 	const crown = (/** @type {Pt} */ tip, /** @type {number} */ drop, socket = 0) => {
-		if (o.finial) parts.push(...symbolAt(D.symbol, tip, socket));
+		if (o.finial && socket) seat(parts, D.symbol, tip, socket);
+		else if (o.finial) parts.push(...symbolAt(D.symbol, tip));
 		else if (flies) parts.unshift(...flag(D, tip[0], tip[1] - drop));
 	};
 	if (crenel) {
@@ -1658,7 +1727,8 @@ export function squareTower(D, o = {}) {
 	// A crenellated top's corbel and band (see below).
 	const ctOv = Math.max(0.8, w * 0.12),
 		ctBand = Math.max(3, w * 0.5);
-	const P = boxProjector(w * 0.8, D.perspective, crenel ? h + ctOv + ctBand : h);
+	const depth = w * 0.8;
+	const P = boxProjector(depth, D.perspective, crenel ? h + ctOv + ctBand : h);
 	// Corbelled body: from the belt up, the walls widen by beltOv on every
 	// side via a 45° slope. `D.towerCorbel` is the share of the tower's
 	// height occupied by the corbel (measured down from the top) — 0 means
@@ -1712,7 +1782,20 @@ export function squareTower(D, o = {}) {
 	const clockWinY = clearCorbel(h * 0.45, clockWinH, beltY, beltOv);
 	/** @type {Part[]} */
 	const parts = [
-		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
+		{
+			solid: [side],
+			shaded: true,
+			lines: [
+				...hatch(side, 65, D.hatch),
+				// Its stone, where the front is: below the corbel, and on
+				// the widened top above it.
+				...(D.masonry
+					? corbel
+						? [...faceCourses(P, w / 2, 0, beltY), ...faceCourses(P, w2, beltY + beltOv, h)]
+						: faceCourses(P, w / 2, 0, h)
+					: []),
+			],
+		},
 		{
 			solid: [frontSolid],
 			fills: o.clock
@@ -1725,8 +1808,10 @@ export function squareTower(D, o = {}) {
 	];
 	// Crenellated top: a parapet band corbelled out on its own 45° slope, as
 	// on round towers. A cap then sits on it, its crenels showing as dark
-	// slots under the eave; bare, it shows a platform with merlons round the
-	// rim and a back parapet. Caps sit at `topY` on half-width `topW`.
+	// slots under the eave. Bare, it's a parapet ring round a walk set below
+	// its crenels: the front and right walls' outer faces crenellated, the
+	// back and left walls' inner faces (in shadow) rising from the walk with
+	// merlons of their own. Caps sit at `topY` on half-width `topW`.
 	let topY = h,
 		topW = w2;
 	if (crenel) {
@@ -1749,41 +1834,46 @@ export function squareTower(D, o = {}) {
 				: crenellated(-w3, w3, y1, y2, { merlon: 2.2, notch }).slice(1)),
 			[-w3, y1],
 		];
+		/** A side wall from `yBase` up, crenellated, at x = `fx`, front to
+		 *  back (crenellated() run along the depth). @param {number} fx
+		 *  @param {number} yBase */
+		const sideWall = (fx, yBase) =>
+			P.face(crenellated(0, depth, yBase, y2, { merlon: 1.8, notch }), fx, 0, 0);
 		/** @type {Poly} */
-		const ctSide = [
-			[w2, h],
-			P.back([w2, h]),
-			P.back([w3, y1]),
-			P.back([w3, y2]),
-			[w3, y2],
-			[w3, y1],
-		];
+		const ctSide = capped
+			? [[w2, h], P.back([w2, h]), P.back([w3, y1]), P.back([w3, y2]), [w3, y2], [w3, y1]]
+			: // The band's crenellated top runs back → front from its back corner.
+				[[w2, h], P.back([w2, h]), ...sideWall(w3, y1).slice(1), [w3, y1]];
+		/** @type {Part[]} */
+		const walk = [];
 		if (!capped) {
-			// Back parapet (its inner face, in shadow), then the platform.
-			const BL = P.back([-w3, y2]),
-				BR = P.back([w3, y2]),
+			// The walk, below the crenels, then the inner faces rising from it
+			// (in shadow): the back wall's, and the left's. The symbol stands
+			// on the walk, behind the front wall.
+			const yd = y2 - notch * 1.6,
 				sb = P.scale(1);
-			const back = crenellated(BL[0], BR[0], BL[1], BL[1] + band * 0.6 * sb, {
+			const BL = P.back([-w3, yd]),
+				BR = P.back([w3, yd]);
+			const back = crenellated(BL[0], BR[0], BL[1], P.back([0, y2])[1], {
 				merlon: 2.2 * sb,
 				notch: notch * sb,
 			});
+			const left = sideWall(-w3, yd);
 			parts.push(
 				{ solid: [back], shaded: true, lines: hatch(back, 65, D.hatch) },
-				{ solid: [[[-w3, y2], [w3, y2], BR, BL]] },
+				{ solid: [[[-w3, yd], [w3, yd], BR, BL]] },
 			);
+			if (o.finial) parts.push(...symbolAt(D.symbol, P.at([0, yd], 0.5)));
+			walk.push({ solid: [left], shaded: true, lines: hatch(left, 65, D.hatch) });
 		}
-		/** @type {Poly[]} */
-		const sideMerlons = [];
-		if (!capped)
-			for (let i = 0; i < 3; i++)
-				sideMerlons.push(P.face(rect(-0.9, 0, 1.8, notch), w3, y2 - 0.3, (i + 0.5) / 3));
 		/** @type {Poly[]} */
 		const slots = [];
 		if (capped)
 			for (let x = -w3 + 1.5; x < w3 - 0.9; x += 2.4)
 				slots.push(rect(x - 0.5, y2 - band * 0.42, 1, band * 0.42 + 0.6));
 		parts.push(
-			{ solid: [ctSide, ...sideMerlons], shaded: true, lines: hatch(ctSide, 65, D.hatch) },
+			...walk,
+			{ solid: [ctSide], shaded: true, lines: hatch(ctSide, 65, D.hatch) },
 			{
 				solid: [ctFront],
 				fills: slots,
@@ -1791,10 +1881,7 @@ export function squareTower(D, o = {}) {
 				lines: [seg([-w3, y1], [w3, y1], THIN)],
 			},
 		);
-		if (!capped) {
-			if (o.finial) parts.push(...symbolAt(D.symbol, P.at([0, y2], 0.5)));
-			return parts;
-		}
+		if (!capped) return parts;
 		topY = y2;
 		topW = w3;
 	}
@@ -1842,7 +1929,7 @@ export function squareTower(D, o = {}) {
 		if (deck) parts.push({ solid: [flatTop] });
 		const cap = lancetCap(D, top[0], top[1], topW * 1.04 * cs);
 		parts.push(cap.part);
-		if (o.finial) parts.push(...symbolAt(D.symbol, cap.tip, 3));
+		if (o.finial) seat(parts, D.symbol, cap.tip, 3);
 		return parts;
 	}
 	// Pyramid (the cone cap on a square tower), one part so the apex closes.
@@ -1850,7 +1937,7 @@ export function squareTower(D, o = {}) {
 	/** @type {Poly} */
 	const frontFace = [fl, ...ridge, ...sag(apex, fl, c, D.concave).slice(1, -1)];
 	parts.push(pyramid(frontFace, sideFace, ridge, 'roof', D.hatch));
-	if (o.finial) parts.push(...symbolAt(D.symbol, apex, 3));
+	if (o.finial) seat(parts, D.symbol, apex, 3);
 	return parts;
 }
 
@@ -1940,7 +2027,15 @@ function gateTower(D, y0, h, wood) {
 	let flagAt = /** @type {Pt} */ ([0.6, y0 + h - 0.5]);
 	/** @type {Part[]} */
 	const parts = [
-		{ solid: [side], role, shaded: true, lines: hatch(side, 65, D.hatch) },
+		{
+			solid: [side],
+			role,
+			shaded: true,
+			lines: [
+				...hatch(side, 65, D.hatch),
+				...(D.masonry && !wood ? faceCourses(P, w / 2, y0, y0 + h) : []),
+			],
+		},
 		{
 			solid: [front],
 			role,
@@ -2373,7 +2468,8 @@ export function ringWall(D, o = {}) {
  * Deliberately not always a cross — Ironsworn's faiths are the table's own.
  * `socket` carries the post that far down into the point: softening rounds
  * (and so lowers) a sharp spire apex, which would otherwise leave the symbol
- * floating above it. The socket sits inside the tip's outline ink.
+ * floating above it. A socketed symbol goes behind its cap (seat()), which
+ * hides the post inside it.
  * @param {Design['symbol']} kind
  * @param {Pt} p
  * @param {number} [socket]
@@ -2385,6 +2481,20 @@ function symbolAt(kind, p, socket = 0) {
 	/** @type {Line} */
 	const post = { pts: [[p[0], p[1] - socket], p], w: 1.1 };
 	return [{ ...parts[0], free: [...(parts[0].free ?? []), post] }, ...parts.slice(1)];
+}
+
+/**
+ * Seat the holy symbol on the sharp tip of the cap just pushed (`parts`'
+ * last part), its post `socket` deep, BEHIND the cap: the cap hides the
+ * post inside it, so the post meets the tip as drawn — however far
+ * softening rounds it down — and never shows as a line down the cap.
+ * @param {Part[]} parts
+ * @param {Design['symbol']} kind
+ * @param {Pt} tip
+ * @param {number} socket
+ */
+function seat(parts, kind, tip, socket) {
+	parts.splice(parts.length - 1, 0, ...symbolAt(kind, tip, socket));
 }
 
 /**
@@ -2813,11 +2923,17 @@ export function keep(D, o = {}) {
 		merlon: 2.4 * sb,
 		notch: 2 * sb,
 	});
-	/** Merlons along the slanted top of the right face. */
-	/** @type {Poly[]} */
-	const sideMerlons = [];
-	for (let i = 0; i < 4; i++)
-		sideMerlons.push(P.face(rect(-1.1, 0, 2.2, 2.6), w / 2, h - 0.4, (i + 0.5) / 4));
+	/** Merlons along the slanted top of the right face, and along the left
+	 *  rim — seen from inside the parapet, so in shadow like its back.
+	 *  @type {Poly[]} */
+	const sideMerlons = [],
+		leftMerlons = [];
+	for (let i = 0; i < 4; i++) {
+		const m = rect(-1.1, 0, 2.2, 2.6),
+			t = (i + 0.5) / 4;
+		sideMerlons.push(P.face(m, w / 2, h - 0.4, t));
+		leftMerlons.push(P.face(m, -w / 2, h - 0.4, t));
+	}
 	/** @type {Poly[]} */
 	const slits = [];
 	for (const x of [-w * 0.3, w * 0.3])
@@ -2834,10 +2950,11 @@ export function keep(D, o = {}) {
 		...turret(BR, sb, D.flags),
 		{ solid: [parapet], shaded: true, lines: hatch(parapet, 65, D.hatch) },
 		{ solid: [platform] },
+		{ solid: leftMerlons, shaded: true },
 		{
 			solid: [side],
 			shaded: true,
-			lines: hatch(side, 65, D.hatch),
+			lines: [...hatch(side, 65, D.hatch), ...(D.masonry ? faceCourses(P, w / 2, 0, h) : [])],
 			fills: [P.face(rect(-0.6, 0, 1.2, 4.5), w / 2, h * 0.5, 0.5)],
 		},
 		{ solid: sideMerlons, shaded: true },
@@ -2988,7 +3105,10 @@ export function well(/** @type {Design} */ D) {
 		{
 			solid: [curb],
 			shadeArea: rect(r * 0.3, -2, r * 2, 6),
-			shadeLines: cylinderHatch(r, -ry - 1, ch + 1, D.hatch),
+			// The low curb's flank, under its rim, is short: closer lines still.
+			shadeLines: cylinderHatch(r, -ry - 1, ch + 1, D.hatch * 0.5),
+			// A masonry culture's curb in small stones: two courses.
+			lines: D.masonry ? roundCourses(r, ry, 0, ch, ch / 2, 2.2) : [],
 		},
 		// Stone rim seen from above, with the dark shaft inside it.
 		{
@@ -3457,10 +3577,16 @@ export function townhouse(D, o = {}) {
 			P.back([half, y0 + fh]),
 			[half, y0 + fh],
 		]);
-		sides.push({ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) });
+		// A masonry culture's stone ground floor is stone round the side too.
+		const stone = i === 0 && D.masonry;
+		sides.push({
+			solid: [side],
+			shaded: true,
+			lines: [...hatch(side, 65, D.hatch), ...(stone ? faceCourses(P, half, y0, y0 + fh) : [])],
+		});
 		/** @type {Line[]} */
 		const frame = [];
-		if (i > 0 || !D.masonry)
+		if (!stone)
 			frame.push(
 				seg([-half, y0 + 0.4], [-half * 0.45, y0 + fh], 0.8),
 				seg([half, y0 + 0.4], [half * 0.45, y0 + fh], 0.8),
@@ -4161,7 +4287,12 @@ export function cathedral(D) {
 		place(belfry(D, { w: tw, h: th / D.stature, finial: true }), { x });
 	return [
 		...towerAt(-w / 2 - tw / 2 + 1),
-		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch), fills: sideWindows },
+		{
+			solid: [side],
+			shaded: true,
+			lines: [...hatch(side, 65, D.hatch), ...(D.masonry ? faceCourses(P, w / 2, 0, h) : [])],
+			fills: sideWindows,
+		},
 		{ solid: [right], role: 'roof', shaded: true, lines: hatch(right, -28, D.hatch) },
 		{
 			solid: [rect(-w / 2, 0, w, h), [...la, ...ar.slice(1)]],

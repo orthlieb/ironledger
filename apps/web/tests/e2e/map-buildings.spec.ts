@@ -9,9 +9,8 @@
  *
  *   • Tabs — the three tabs, in order.
  *   • Controls — a building's own knobs (Building, Culture, Walls, Ground,
- *     On stilts, Ruined); Wall shape only once there are walls; none of the
- *     settlement-only ones (Size, Harbour); and no Walls or On stilts at
- *     all for the Wall, which comes in its own material.
+ *     On stilts, Ruined); Wall shape only once there are walls; and none of
+ *     the settlement-only ones (Size, Harbour).
  *   • Persist — the recipe the tab makes reaches the server intact
  *     (asserted via the API: the marker schema once stripped `ground` and
  *     `stilts`), the marker survives a full reload, and re-opening the
@@ -134,7 +133,7 @@ test.describe('Map markers — Buildings tab', () => {
 		await expect(tabs.nth(2)).toHaveAccessibleName('Settlement builder');
 	});
 
-	test('a building has its own knobs, and a wall building has no walls', async ({ page }) => {
+	test('a building has its own knobs', async ({ page }) => {
 		await openBuildings(page);
 		const dlg = picker(page);
 
@@ -152,15 +151,6 @@ test.describe('Map markers — Buildings tab', () => {
 		await expect(select(page, 'Wall shape')).toHaveCount(0);
 		await choose(page, 'Walls', 'hedge');
 		await expect(select(page, 'Wall shape')).toBeVisible();
-
-		// A wall building comes in its own material: no Walls, no Wall shape,
-		// and it stays on the ground.
-		await choose(page, 'Building', 'wall');
-		await expect(select(page, 'Walls')).toHaveCount(0);
-		await expect(select(page, 'Wall shape')).toHaveCount(0);
-		await expect(dlg.getByRole('checkbox', { name: 'On stilts' })).toHaveCount(0);
-		await expect(select(page, 'Ground')).toBeVisible();
-		await drawn(page);
 
 		// Ruined shows the ruin's own knobs.
 		await dlg.getByRole('checkbox', { name: 'Ruined' }).click();

@@ -27,6 +27,9 @@ describe('building recipes', () => {
 		expect(cleanSettlementRecipe(tower)).toEqual(tower);
 		expect(cleanSettlementRecipe({ ...tower, building: 'skyscraper' })).toBeUndefined();
 		expect(cleanSettlementRecipe({ ...tower, building: 'toString' })).toBeUndefined();
+		// The retired Wall building: the recipe goes, and the marker shows
+		// its plain icon (the baked Stone wall).
+		expect(cleanSettlementRecipe({ ...tower, building: 'wall' })).toBeUndefined();
 	});
 	it("accept every ground type, and drop one they don't know", () => {
 		for (const ground of SETTLEMENT_GROUNDS)
@@ -55,9 +58,8 @@ describe('building recipes', () => {
 		const elves = { name: 'Elves' };
 		expect(recipeLabel(tower, elves)).toBe('Elves Round tower, walled');
 		expect(recipeLabel({ ...tower, walls: undefined }, elves)).toBe('Elves Round tower');
-		// A wall building is never enclosed, whatever `walls` says.
-		expect(recipeLabel({ ...tower, building: 'wall', ruin: { decay: 0.5 } }, elves)).toBe(
-			'Ruined Elves Wall',
+		expect(recipeLabel({ ...tower, ruin: { decay: 0.5 } }, elves)).toBe(
+			'Ruined Elves Round tower, walled',
 		);
 		expect(
 			recipeLabel({ tier: 'town', culture: 'x', seed: 1, ruin: { decay: 1, burned: true } }, null),

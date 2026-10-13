@@ -29,9 +29,10 @@ marker size (32–48 px) without any shading beyond flat-tinted faces.
 - **Depth runs up-and-right** along `depthVec(d)` = `(0.75 d, 0.5 d)`.
 - **Light comes from the upper left**, so every right-facing face (side
   walls, right roof slopes, right flanks of cylinders and cones) is
-  shaded: a darker role colour plus hatching — diagonal (55°) on
-  cylinders and the ring wall's front flank, horizontal on cones and domes, thinner diagonal strokes on
-  house and tower walls.
+  shaded: a darker role colour — plus, where the drawing hatches (the
+  playground's Hatching; IronLedger's map icons don't), hatching:
+  diagonal (55°) on cylinders and the ring wall's front flank, horizontal
+  on cones and domes, thinner diagonal strokes on house and tower walls.
 - Line widths are in world units and **do not scale** with a placed
   piece, so every icon shares one stroke weight no matter how big its
   pieces are. Scaling a piece makes it bigger; its outlines stay the
@@ -70,14 +71,19 @@ cap** — read from the culture with `towerTop(D, o)`:
   Windows and other openings stay wholly above or below the bend.
 - **Crenellated top** (`towerCrenel`): a short parapet band corbelled out
   on its own 45° slope. With a cap, its crenels show as dark slots under
-  the eave; bare, its merlons stand free (square towers add a platform and
-  back parapet).
+  the eave; bare, its merlons stand free. A bare square top is a parapet
+  ring round a walk set below its crenels: the front and right walls'
+  outer faces crenellated, the back and left walls' inner faces rising
+  from the walk in shadow, with merlons of their own.
 - **Cap** (`towerRoof`): `cone` (a pyramid spire on square towers),
   `onion`, `dome`, `lancet`, or `none` — a bare crenellated top. A tower
   with no cap always gets the crenellated top, so it never ends flat.
 - The **flag** flies from whichever is uppermost; landmark towers carry the
-  culture's holy-symbol finial instead. Flag cloth is a `sharp` part, so
-  its corners and points stay crisp whatever the culture's `join`.
+  culture's holy-symbol finial instead. On a sharp tip (a spire, a lancet)
+  the symbol's post runs down into the cap and the symbol is drawn behind
+  it (`seat()`), so the post meets the tip as drawn, however far softening
+  rounds it down. Flag cloth is a `sharp` part, so its corners and points
+  stay crisp whatever the culture's `join`.
 
 **Landmark towers** — church and cathedral towers, the clock tower, a
 village bell tower — go through `belfry(D, o)`, which builds them square
@@ -226,7 +232,7 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 | `stature`   | 0.6–1.5 (**1**)                    | Building height (small folk < 1 < giants).                                                                                                                                                                                                                                      |
 | `scale`     | 0.7–1.8 (**1**)                    | Building size; bigger means fewer per layout.                                                                                                                                                                                                                                   |
 | `flourish`  | 0–1 (**0**)                        | Ornament: finials, eave knobs, ridge cresting, more flags.                                                                                                                                                                                                                      |
-| `masonry`   | on / **off**                       | Stone-built: stone courses on house and tower walls, stone barns (not plank), no timber framing on a townhouse's ground floor.                                                                                                                                                  |
+| `masonry`   | on / **off**                       | Stone-built: stone courses on house and tower walls — round the side walls and gable ends too — and a well's curb, stone barns (not plank), no timber framing on a townhouse's ground floor.                                                                                    |
 | `texture`   | **on** / off                       | Draw textures: wall patterns, the line-work round ring walls, masonry courses, barn planks. Off draws every wall in its flat material colour — what a small map icon draws anyway.                                                                                              |
 | `variety`   | 0–1 (**0**)                        | A mixed culture (a freeport): the chance each house, free-standing tower and landmark rolls its own house type (gable-front, side-on, townhouse, longhouse, round hut or domed), storeys, tower cap, crenellated top, corbel, steeple, roof pitch and sweep, windows and doors. |
 
@@ -292,7 +298,7 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 | Knob    | Values (default)         | What it drives                                                                 |
 | ------- | ------------------------ | ------------------------------------------------------------------------------ |
 | `join`  | sharp / round / **soft** | Line joins: mitred, rounded, or rounded + softened corners (flags stay crisp). |
-| `hatch` | 0.9–2.6 (**1.4**)        | Hatch spacing — smaller is a darker shade.                                     |
+| `hatch` | 0.9–2.6 (**1.4**)        | Hatch spacing, where the drawing hatches — smaller is a darker shade.          |
 
 **Palette** — `wall`, `roof`, `wood`, `earth`, `water`, `flag`, `ink`,
 `halo` (`#rrggbb`). Roofs take the marker colour on the map (the default
@@ -333,9 +339,8 @@ in five places") for the plumbing contract when adding a new one.
 `BUILDINGS` (the keyed entries of the `PIECES` table) on its own. `walls`
 puts a small ring or square wall of its own round it, fitted to its
 footprint the way a settlement's is (`enclosed()`), with up to two towers
-where the wall type carries them — never round the `UNWALLED_BUILDINGS`:
-the Wall, in its own stone. `stilts` sets it on a deck (`onStilts()`), its
-terrain left on the ground — the Wall, again, never.
+where the wall type carries them. `stilts` sets it on a deck (`onStilts()`), its
+terrain left on the ground.
 On water a lagoon goes under it. `seed` varies it as a settlement varies its
 buildings — `jitterDesign()` (pitch, sweep,
 ornament, now and then the windows or doors), a round tower's girth and
@@ -431,9 +436,7 @@ marker colour on the `roof` layer, and inlines the SVG.
    offer it on the map's Buildings tab too, give it a key (else `null`),
    add the same key and name to `SETTLEMENT_BUILDINGS` in
    `src/lib/settlementRecipe.ts` and its nearest baked icon to
-   `BUILDING_ICONS` in `fallback.js` (tests hold all three in step); a
-   wall piece (or anything else that never gets walls) also goes in both
-   `UNWALLED_BUILDINGS` sets.
+   `BUILDING_ICONS` in `fallback.js` (tests hold all three in step).
 3. If it's a dwelling, route it through the `house()` picker there. If
    it's an inside-the-walls extra, add it to `EXTRAS` so templates can
    call for it.

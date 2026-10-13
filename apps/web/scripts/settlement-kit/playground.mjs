@@ -147,7 +147,11 @@ const KNOBS = [
 	// The walls' shape — the drawing's, not the culture's.
 	select('Drawing', 'wallShape', 'Wall shape', ['round', 'square'], false),
 	check('Drawing', 'stilts', 'On stilts', false),
-	// What it stands on — the drawing's, not the culture's.
+	// Hatched shading — the drawing's, not a culture's. Off by default, as
+	// IronLedger draws every map icon: shaded faces by colour alone.
+	check('Drawing', 'hatching', 'Hatching', false),
+	// What it stands on — the drawing's, not the culture's: settlements and
+	// buildings alike.
 	select(
 		'Drawing',
 		'ground',
@@ -189,6 +193,7 @@ const DRAWING = {
 	walls: 'none',
 	wallShape: 'round',
 	stilts: false,
+	hatching: false,
 	ground: 'none',
 	buildingWalls: 'pieces',
 	softRadius: 0.9,
@@ -327,6 +332,7 @@ function svg(items) {
 		join: design.join,
 		softRadius: drawing.softRadius,
 		texture: design.texture,
+		hatching: drawing.hatching,
 	});
 	const vb = [b.x - 3, b.y - 3, b.w + 6, b.h + 6].map((n) => n.toFixed(1)).join(' ');
 	const used = LAYERS.filter((l) => layers[l]);
@@ -377,7 +383,7 @@ function render() {
 	const bw = drawing.buildingWalls;
 	const bits =
 		bw === 'pieces'
-			? pieces(design).map(
+			? pieces(design, { ground: drawing.ground }).map(
 					([t, items]) =>
 						/** @type {[string, string]} */ ([t, svg(ruin ? ruinPlaced(items, ruin) : items)]),
 				)

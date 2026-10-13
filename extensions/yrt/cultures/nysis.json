@@ -30,12 +30,12 @@
   },
   "palette": {
     "wall": "#F3EBDD",
-    "roof": "#3F6FA8",
+    "roof": "#3E5C70",
     "wood": "#B08A5A",
     "earth": "#957650",
     "water": "#8FB0B8",
     "ink": "#2B2633",
-    "flag": "#D9A92B",
+    "flag": "#E1B34B",
     "halo": "#F8F3EA"
   }
 }

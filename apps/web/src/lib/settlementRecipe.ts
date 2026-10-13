@@ -67,14 +67,8 @@ export const SETTLEMENT_BUILDINGS = {
 	tent: 'Tent',
 	pavilion: 'Pavilion',
 	'witch-hut': 'Witch hut',
-	wall: 'Wall',
 } as const;
 export type SettlementBuilding = keyof typeof SETTLEMENT_BUILDINGS;
-
-/** Buildings never given a wall of their own, so no Walls or Wall shape:
- *  the wall, in its own stone (settlement-kit layouts3d.js
- *  UNWALLED_BUILDINGS; a test holds them in step). */
-export const UNWALLED_BUILDINGS: ReadonlySet<string> = new Set(['wall']);
 
 /** What a settlement or building stands on — the recipe's alone, not the
  *  culture's: 'none' (the default) draws no ground; the rest a plane under
@@ -111,8 +105,8 @@ export interface SettlementRecipe {
 	/** A ruin: how far gone (0–1), and whether it burned (scorch, soot). */
 	ruin?: { decay: number; burned?: boolean };
 	/** One building instead of a settlement (the Buildings tab). `walls` then
-	 *  puts a wall of its own round it and `stilts` sets it on a deck (neither
-	 *  for UNWALLED_BUILDINGS), and `tier` and `harbor` don't apply. */
+	 *  puts a wall of its own round it and `stilts` sets it on a deck, and
+	 *  `tier` and `harbor` don't apply. */
 	building?: SettlementBuilding;
 }
 
@@ -139,7 +133,7 @@ export function recipeLabel(
 	const state = recipe.ruin ? (recipe.ruin.burned ? 'Burned ' : 'Ruined ') : '';
 	const b = recipe.building;
 	if (b) {
-		const walled = recipe.walls && recipe.walls !== 'none' && !UNWALLED_BUILDINGS.has(b);
+		const walled = recipe.walls && recipe.walls !== 'none';
 		return `${state}${name} ${SETTLEMENT_BUILDINGS[b] ?? b}${walled ? ', walled' : ''}`;
 	}
 	return `${state}${name} ${TIER_LABEL[recipe.tier] ?? recipe.tier}`;
@@ -193,7 +187,8 @@ export function cleanSettlementRecipe(v: unknown): SettlementRecipe | undefined 
 		out.ruin = ruin.burned === true ? { decay: ruin.decay, burned: true } : { decay: ruin.decay };
 	if (o.building !== undefined) {
 		// An unknown building can't fall back to a settlement — that would
-		// draw something else entirely — so the recipe goes.
+		// draw something else entirely — so the recipe goes, and the marker
+		// shows its plain icon (a retired Wall: the baked Stone wall).
 		if (typeof o.building !== 'string' || !Object.hasOwn(SETTLEMENT_BUILDINGS, o.building))
 			return undefined;
 		out.building = o.building as SettlementBuilding;
