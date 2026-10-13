@@ -36,6 +36,7 @@ import {
 import { SETTLEMENT_BUILDINGS } from '../../src/lib/settlementRecipe.js';
 import {
 	DEFAULT_DESIGN,
+	cathedral,
 	church,
 	clocktower,
 	gableHouse,
@@ -48,7 +49,9 @@ import {
 	sideHouse,
 	squareTower,
 	stiltHut,
+	townhouse,
 	upgradeDesign,
+	well,
 } from '../../src/lib/settlement-kit/pieces3d.js';
 import {
 	FLAT_WALLS,
@@ -366,6 +369,25 @@ describe('piece details', () => {
 		expect(gable.lines?.some((l) => l.role === 'ink-texture')).toBe(true);
 		const plain = sideHouse(DEFAULT_DESIGN).find((p) => p.shaded && p.role !== 'roof')!;
 		expect(plain.lines?.some((l) => l.role === 'ink-texture')).toBe(false);
+	});
+	it.each([
+		['gable house', gableHouse],
+		['keep', keep],
+		['square tower', squareTower],
+		['cathedral', cathedral],
+		['townhouse', townhouse],
+	] as const)("carries a masonry culture's stone round the %s's side wall", (_, make) => {
+		const stoned = (masonry: boolean) =>
+			make({ ...DEFAULT_DESIGN, masonry }).some(
+				(p) => p.shaded && p.role !== 'roof' && p.lines?.some((l) => l.role === 'ink-texture'),
+			);
+		expect(stoned(true)).toBe(true);
+		expect(stoned(false)).toBe(false);
+	});
+	it("lays a masonry culture's well curb in small stones", () => {
+		const curb = (masonry: boolean) => well({ ...DEFAULT_DESIGN, masonry })[0];
+		expect(curb(true).lines?.some((l) => l.role === 'ink-texture')).toBe(true);
+		expect(curb(false).lines ?? []).toEqual([]);
 	});
 	it.each(['workshop', 'tavern'] as const)('gives a %s round chimneys', (kind) => {
 		const parts = sideHouse(DEFAULT_DESIGN, { kind });

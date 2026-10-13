@@ -855,6 +855,7 @@ function boxProjector(d, k, h = 0, ridge = 0) {
 		return [p[0] * s + v[0], p[1] * s + v[1]];
 	};
 	return {
+		d,
 		at,
 		scale,
 		/** @param {Pt} p @returns {Pt} */
@@ -893,6 +894,12 @@ export function gableHouse(D, o = {}) {
 		P.back([w / 2, h]),
 		[w / 2, h],
 	]);
+	/** The side wall's shading — and its stone, run back along it, where
+	 *  the front is stone. */
+	const sideLines = [
+		...hatch(side, 65, D.hatch),
+		...(D.masonry ? faceCourses(P, w / 2, 0, h) : []),
+	];
 	// Dome-culture houses: a stone half-sphere cap sits on the box top in
 	// place of a gable. The flat top of the box is drawn first so the
 	// dome's near-rim ellipse reads as a seam, not a floating arc.
@@ -911,7 +918,7 @@ export function gableHouse(D, o = {}) {
 		const [dcx, dcy] = P.at([0, h], 0.5);
 		const { part } = hemiDome(dcx, dcy, w * 0.42 * P.scale(0.5), D.hatch);
 		return [
-			{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
+			{ solid: [side], shaded: true, lines: sideLines },
 			{ solid: [topCap] },
 			part,
 			{
@@ -935,7 +942,7 @@ export function gableHouse(D, o = {}) {
 	// shaded right slope must draw over it — on steep roofs it's correctly
 	// hidden entirely.
 	return [
-		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
+		{ solid: [side], shaded: true, lines: sideLines },
 		{ solid: [left], role: 'roof' },
 		{ solid: [right], role: 'roof', shaded: true, lines: hatch(right, -28, D.hatch) },
 		{
@@ -1175,7 +1182,7 @@ export function sideHouse(D, o = {}) {
 			lines: [
 				...hatch(gableEnd, 65, D.hatch),
 				...(woodBarn ? planks(w / 2, w / 2 + v[0], 0, h + rh + v[1]) : []),
-				...(stone ? faceCourses(P, d, w / 2, 0, h + rh) : []),
+				...(stone ? faceCourses(P, w / 2, 0, h + rh) : []),
 			],
 			fills:
 				kind === 'warehouse'
@@ -1286,18 +1293,18 @@ function stoneCourses(
 }
 
 /**
- * Stone courses on a receding face at x = `fx` (a gable end), from y0 up to
+ * Stone courses on a receding face at x = `fx` (a side wall, a gable end),
+ * from y0 up to
  * y1, clipped to the face by the renderer: each course runs back along the
  * face through the piece's projector, as the front's run across it, its
  * joints staggered every stone's length of depth.
  * @param {ReturnType<typeof boxProjector>} P
- * @param {number} d the projector's depth
  * @param {number} fx
  * @param {number} y0
  * @param {number} y1
  * @returns {Line[]}
  */
-function faceCourses(P, d, fx, y0, y1) {
+function faceCourses(P, fx, y0, y1) {
 	/** @type {Line[]} */
 	const out = [];
 	// Overrun both ends, as stoneCourses() does, so the clip is clean; a
@@ -1307,8 +1314,8 @@ function faceCourses(P, d, fx, y0, y1) {
 	let row = 0;
 	for (let y = y0 + 2.4; y < y1; y += 2.4, row++) {
 		out.push({ pts: run(y), w: 0.45, role: TEXTURE });
-		for (let z = row % 2 ? 2.2 : 0; z < d; z += 4.4)
-			out.push(seg(P.at([fx, y - 2.4], z / d), P.at([fx, y], z / d), 0.45, { role: TEXTURE }));
+		for (let z = row % 2 ? 2.2 : 0; z < P.d; z += 4.4)
+			out.push(seg(P.at([fx, y - 2.4], z / P.d), P.at([fx, y], z / P.d), 0.45, { role: TEXTURE }));
 	}
 	return out;
 }
@@ -1317,24 +1324,27 @@ function faceCourses(P, d, fx, y0, y1) {
  * Stone courses wrapped round a cylinder (a round tower's masonry): each
  * course is the front half of an ellipse, and the staggered joints sit at
  * even steps round the circumference, so they bunch toward the sides the
- * way a curved wall foreshortens.
+ * way a curved wall foreshortens. A small body (a well's curb) takes
+ * smaller stones: `course` high and `stone` long.
  * @param {number} r radius the courses follow (the renderer clips to the body)
  * @param {number} ry the ellipse's half-height (the tower's)
  * @param {number} y0
  * @param {number} y1
+ * @param {number} [course]
+ * @param {number} [stone]
  * @returns {Line[]}
  */
-function roundCourses(r, ry, y0, y1) {
+function roundCourses(r, ry, y0, y1, course = 2.4, stone = 4.4) {
 	/** @type {Line[]} */
 	const out = [];
-	const step = 4.4 / r; // radians between joints: a 4.4-unit stone
+	const step = stone / r; // radians between joints: a stone's length
 	let row = 0;
-	for (let y = y0 + 2.4; y < y1 + 2.4; y += 2.4, row++) {
+	for (let y = y0 + course; y < y1 + course; y += course, row++) {
 		if (y < y1) out.push({ pts: ell(0, y, r, ry, 180, 360), w: 0.45, role: TEXTURE });
 		for (let a = Math.PI + (row % 2 ? step / 2 : 0); a < 2 * Math.PI; a += step) {
 			const x = r * Math.cos(a),
 				dy = ry * Math.sin(a);
-			out.push(seg([x, y - 2.4 + dy], [x, y + dy], 0.45, { role: TEXTURE }));
+			out.push(seg([x, y - course + dy], [x, y + dy], 0.45, { role: TEXTURE }));
 		}
 	}
 	return out;
@@ -1774,7 +1784,20 @@ export function squareTower(D, o = {}) {
 	const clockWinY = clearCorbel(h * 0.45, clockWinH, beltY, beltOv);
 	/** @type {Part[]} */
 	const parts = [
-		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
+		{
+			solid: [side],
+			shaded: true,
+			lines: [
+				...hatch(side, 65, D.hatch),
+				// Its stone, where the front is: below the corbel, and on
+				// the widened top above it.
+				...(D.masonry
+					? corbel
+						? [...faceCourses(P, w / 2, 0, beltY), ...faceCourses(P, w2, beltY + beltOv, h)]
+						: faceCourses(P, w / 2, 0, h)
+					: []),
+			],
+		},
 		{
 			solid: [frontSolid],
 			fills: o.clock
@@ -2006,7 +2029,15 @@ function gateTower(D, y0, h, wood) {
 	let flagAt = /** @type {Pt} */ ([0.6, y0 + h - 0.5]);
 	/** @type {Part[]} */
 	const parts = [
-		{ solid: [side], role, shaded: true, lines: hatch(side, 65, D.hatch) },
+		{
+			solid: [side],
+			role,
+			shaded: true,
+			lines: [
+				...hatch(side, 65, D.hatch),
+				...(D.masonry && !wood ? faceCourses(P, w / 2, y0, y0 + h) : []),
+			],
+		},
 		{
 			solid: [front],
 			role,
@@ -2925,7 +2956,7 @@ export function keep(D, o = {}) {
 		{
 			solid: [side],
 			shaded: true,
-			lines: hatch(side, 65, D.hatch),
+			lines: [...hatch(side, 65, D.hatch), ...(D.masonry ? faceCourses(P, w / 2, 0, h) : [])],
 			fills: [P.face(rect(-0.6, 0, 1.2, 4.5), w / 2, h * 0.5, 0.5)],
 		},
 		{ solid: sideMerlons, shaded: true },
@@ -3078,6 +3109,8 @@ export function well(/** @type {Design} */ D) {
 			shadeArea: rect(r * 0.3, -2, r * 2, 6),
 			// The low curb's flank, under its rim, is short: closer lines still.
 			shadeLines: cylinderHatch(r, -ry - 1, ch + 1, D.hatch * 0.5),
+			// A masonry culture's curb in small stones: two courses.
+			lines: D.masonry ? roundCourses(r, ry, 0, ch, ch / 2, 2.2) : [],
 		},
 		// Stone rim seen from above, with the dark shaft inside it.
 		{
@@ -3546,10 +3579,16 @@ export function townhouse(D, o = {}) {
 			P.back([half, y0 + fh]),
 			[half, y0 + fh],
 		]);
-		sides.push({ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) });
+		// A masonry culture's stone ground floor is stone round the side too.
+		const stone = i === 0 && D.masonry;
+		sides.push({
+			solid: [side],
+			shaded: true,
+			lines: [...hatch(side, 65, D.hatch), ...(stone ? faceCourses(P, half, y0, y0 + fh) : [])],
+		});
 		/** @type {Line[]} */
 		const frame = [];
-		if (i > 0 || !D.masonry)
+		if (!stone)
 			frame.push(
 				seg([-half, y0 + 0.4], [-half * 0.45, y0 + fh], 0.8),
 				seg([half, y0 + 0.4], [half * 0.45, y0 + fh], 0.8),
@@ -4250,7 +4289,12 @@ export function cathedral(D) {
 		place(belfry(D, { w: tw, h: th / D.stature, finial: true }), { x });
 	return [
 		...towerAt(-w / 2 - tw / 2 + 1),
-		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch), fills: sideWindows },
+		{
+			solid: [side],
+			shaded: true,
+			lines: [...hatch(side, 65, D.hatch), ...(D.masonry ? faceCourses(P, w / 2, 0, h) : [])],
+			fills: sideWindows,
+		},
 		{ solid: [right], role: 'roof', shaded: true, lines: hatch(right, -28, D.hatch) },
 		{
 			solid: [rect(-w / 2, 0, w, h), [...la, ...ar.slice(1)]],
