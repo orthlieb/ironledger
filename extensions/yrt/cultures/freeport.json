@@ -15,7 +15,6 @@
     "flags": true,
     "flagShape": "pennant",
     "flagLen": 13,
-    "wallShape": "round",
     "wallTowers": 6,
     "gate": "twin"
   },

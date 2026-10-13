@@ -345,7 +345,7 @@ and every culture knob. It's used three ways:
   Ground (None by default, or Dirt, Grass, Farmland, Sand, Rock, Snow,
   Ice, Marsh, Lava, Water: a plane under it in its own colour and
   texture, a lagoon for water — the recipe's alone; no culture sets it, nor
-  its walls) and Ruined + decay (optionally burned) as below
+  its walls or their shape) and Ruined + decay (optionally burned) as below
   — a building comes down by degrees (`ruinPiece()`): its roof opens from
   a gap at 0.1 and is gone by 0.4, then the walls break off lower and
   lower to foundations at 1, so it stays recognisable well past halfway;
@@ -362,7 +362,7 @@ and every culture knob. It's used three ways:
   with its population; Freeport isn't offered — a culture with a high
   `variety` makes a freeport's mix of builders), culture, walls (None by
   default) and wall
-  shape, ground (as on the Buildings tab), on stilts, harbour, ruined +
+  shape (Round by default, or Square), ground (as on the Buildings tab), on stilts, harbour, ruined +
   decay (optionally burned: scorch marks and sooty walls — the buildings
   come down by degrees as on the Buildings tab, each a little either side
   of the slider, and stone outlasting timber: the church, keep and towers

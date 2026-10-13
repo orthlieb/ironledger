@@ -106,7 +106,6 @@ import { place } from './render.js';
  *   its flat material colour. On by default.
  * @property {number} longhouse share of timber dwellings that are Norse longhouses (0..1)
  * @property {number} huts share of timber dwellings that are round huts (0..1)
- * @property {'round' | 'square'} wallShape
  * @property {number} industry share of town/city buildings that are warehouses or
  *   workshops
  * @property {boolean} church a full church (nave + bell tower) rather than a lone bell
@@ -149,7 +148,6 @@ export const DEFAULT_DESIGN = {
 	merlons: true,
 	wallTowers: 4,
 	gate: 'tower',
-	wallShape: 'round',
 	industry: 0.2,
 	church: true,
 	symbol: 'orb',
@@ -215,8 +213,8 @@ export function makeDesign(seed) {
 		merlons: r() < 0.75,
 		wallTowers: 2 + Math.floor(avg() * 5),
 		gate: pick(['tower', 'tower', 'twin', 'twin', 'jawbone']),
-		wallShape: r() < 0.5 ? 'round' : 'square',
-		industry: avg() * 0.45,
+		// The retired wall-shape roll, still drawn so older seeds keep their looks.
+		industry: (r(), avg() * 0.45),
 		church: r() < 0.85,
 		symbol: pick([
 			'none',
@@ -270,14 +268,19 @@ export function makeDesign(seed) {
  * Bring a stored design (a culture plugin, an imported playground export)
  * up to date: the legacy `towerRoof: 'crenel'` becomes a bare crenellated
  * top (`towerRoof: 'none'`, `towerCrenel: true`), and an older file's
- * `ground` and `wall` are dropped — what it stands on and its wall's
- * material are the recipe's now, not the culture's.
+ * `ground`, `wall` and `wallShape` are dropped — what it stands on and its
+ * wall's material and shape are the recipe's now, not the culture's.
  * @template {Partial<Design>} T
  * @param {T} D
  * @returns {T}
  */
 export function upgradeDesign(D) {
-	const { ground: _ground, wall: _wall, ...rest } = /** @type {Record<string, unknown>} */ (D);
+	const {
+		ground: _ground,
+		wall: _wall,
+		wallShape: _wallShape,
+		...rest
+	} = /** @type {Record<string, unknown>} */ (D);
 	const out = /** @type {T} */ (rest);
 	return out.towerRoof === 'crenel' ? { ...out, towerRoof: 'none', towerCrenel: true } : out;
 }
@@ -1992,14 +1995,14 @@ function gateTower(D, y0, h, wood) {
  * BEHIND the buildings (the wall's far half and the towers on it), `front`
  * goes IN FRONT (near half, gate, near towers) — already depth-sorted.
  * @param {Design} D
- * `shape` (default: the culture's `wallShape`) switches to a square
- * enclosure — see squareWall().
+ * `shape` 'square' (the recipe's `wallShape`; round by default) switches
+ * to a square enclosure — see squareWall().
  * @param {Design} D
  * @param {{rx?: number, ry?: number, h?: number, type?: WallType, towers?: number, shape?: 'round' | 'square'}} [o]
  * @returns {{back: Placed[], front: Placed[]}}
  */
 export function ringWall(D, o = {}) {
-	if ((o.shape ?? D.wallShape) === 'square') return squareWall(D, o);
+	if (o.shape === 'square') return squareWall(D, o);
 	const type = o.type ?? 'stone';
 	const mat = material(type);
 	const wood = mat.soft;

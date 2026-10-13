@@ -130,14 +130,15 @@ describe('recipe overrides', () => {
 	it('renders stilts + water together', () => {
 		expect(() => generateSettlementSvg(r({ ground: 'water', stilts: true }), null)).not.toThrow();
 	});
-	it("takes ground and walls from the recipe alone, never the culture's", () => {
+	it("takes ground, walls and their shape from the recipe alone, never the culture's", () => {
 		// A culture file that still says where it stands, and what wall it
-		// builds, has no say: no ground and no wall unless the recipe asks —
-		// whatever the settlement's size.
+		// builds in what shape, has no say: no ground and no wall unless the
+		// recipe asks — whatever the settlement's size — and a round one
+		// unless the recipe says square.
 		const old = {
 			key: 'old',
 			name: 'Old',
-			design: { ground: 'water', wall: 'reef' } as Partial<Design>,
+			design: { ground: 'water', wall: 'reef', wallShape: 'square' } as Partial<Design>,
 			palette: PARCHMENT,
 		};
 		const roles = (svg: string) => [...svg.matchAll(/data-role="([\w-]+)"/g)].map((m) => m[1]);
@@ -150,7 +151,16 @@ describe('recipe overrides', () => {
 		expect(
 			roles(generateSettlementSvg({ tier: 'town', culture: 'old', seed: 3, ground: 'water' }, old)),
 		).toContain('water');
+		expect(
+			roles(
+				generateSettlementSvg(
+					{ tier: 'town', culture: 'old', seed: 3, walls: 'stone', wallShape: 'square' },
+					old,
+				),
+			),
+		).toContain('wall-stone');
 		expect(recipeDesign(r({ ground: 'water' }), old)).not.toHaveProperty('ground', 'water');
+		expect(recipeDesign(r({}), old)).not.toHaveProperty('wallShape');
 	});
 });
 
@@ -338,7 +348,7 @@ describe('buildings (the Buildings tab)', () => {
 	it('puts a wall of its own round a building, in the chosen shape', () => {
 		const D = { ...DEFAULT_DESIGN };
 		const walled = (walls: 'hedge' | 'none', wallShape: 'round' | 'square' = 'round') =>
-			building('round-tower', { ...D, wallShape }, { walls, seed: 3 });
+			building('round-tower', D, { walls, wallShape, seed: 3 });
 		expect(walled('none').some((it) => it.wall)).toBe(false);
 		expect(walled('hedge').some((it) => it.wall)).toBe(true);
 		const ring = generateSettlementSvg(
@@ -660,7 +670,7 @@ describe('texture', () => {
 	const culture = (design: Partial<Design>) => ({
 		key: 't',
 		name: 'Texture test',
-		design: { masonry: true, wallShape: 'round' as const, ...design },
+		design: { masonry: true, ...design },
 		palette: PARCHMENT,
 	});
 	const town = (wall: WallType, texture?: boolean) =>

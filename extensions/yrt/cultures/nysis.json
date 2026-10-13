@@ -22,7 +22,6 @@
     "merlons": true,
     "wallTowers": 6,
     "gate": "twin",
-    "wallShape": "round",
     "industry": 0.25,
     "church": true,
     "symbol": "sun",

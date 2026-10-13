@@ -14,7 +14,6 @@
     "flags": true,
     "flagFolds": 3,
     "gate": "jawbone",
-    "wallShape": "round",
     "industry": 0.5,
     "church": true,
     "symbol": "horns",

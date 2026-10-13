@@ -14,10 +14,9 @@
 	 * The Buildings kind draws one building instead of a settlement: the
 	 * building in place of the size, walls that enclose it (none by default;
 	 * none at all for the Wall, in its own stone), ground, on stilts (not
-	 * the Wall either), and no harbour. Walls and ground are the recipe's
-	 * alone — no culture sets them (a culture's wall shape it keeps, as
-	 * "Culture's own"). Its reroll varies the building's details (and a
-	 * mixed culture's builder).
+	 * the Wall either), and no harbour. Walls, their shape (round unless
+	 * square) and ground are the recipe's alone — no culture sets them. Its
+	 * reroll varies the building's details (and a mixed culture's builder).
 	 *
 	 * A Recent strip above the knobs keeps the last few recipes used, per
 	 * kind (per browser, like the colour picker's swatches); clicking one
@@ -94,9 +93,8 @@
 		{ value: 'bone', label: 'Whalebone' },
 		{ value: 'reef', label: 'Reef' },
 	];
-	type Shape = 'culture' | 'round' | 'square';
+	type Shape = 'round' | 'square';
 	const SHAPES: { value: Shape; label: string }[] = [
-		{ value: 'culture', label: "Culture's own" },
 		{ value: 'round', label: 'Round' },
 		{ value: 'square', label: 'Square' },
 	];
@@ -136,7 +134,7 @@
 	let culture = $state(start?.culture ?? DEFAULT_CULTURE);
 	let seed = $state(start?.seed ?? newSeed());
 	let walls = $state<SettlementWalls>(start?.walls ?? 'none');
-	let shape = $state<Shape>(start?.wallShape ?? 'culture');
+	let shape = $state<Shape>(start?.wallShape ?? 'round');
 	let ground = $state<SettlementGround>(start?.ground ?? 'none');
 	let stilts = $state(!!start?.stilts);
 	let harbor = $state(!!start?.harbor);
@@ -170,7 +168,7 @@
 					seed,
 					building,
 					...(showWalls && walls !== 'none' ? { walls } : {}),
-					...(showShape && shape !== 'culture' ? { wallShape: shape } : {}),
+					...(showShape && shape === 'square' ? { wallShape: shape } : {}),
 					...(ground !== 'none' ? { ground } : {}),
 					...(stilts && !wallBuilding ? { stilts: true } : {}),
 					...ruin,
@@ -180,7 +178,7 @@
 					culture,
 					seed,
 					...(walls !== 'none' ? { walls } : {}),
-					...(shape !== 'culture' ? { wallShape: shape } : {}),
+					...(shape === 'square' ? { wallShape: shape } : {}),
 					...(ground !== 'none' ? { ground } : {}),
 					...(stilts ? { stilts: true } : {}),
 					...(harbor ? { harbor: true } : {}),
