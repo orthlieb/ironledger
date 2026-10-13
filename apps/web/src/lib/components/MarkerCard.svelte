@@ -11,9 +11,13 @@
 	 *
 	 * A bits-ui Popover anchored to the marker's on-screen icon (customAnchor
 	 * plus updatePositionStrategy 'always', so it follows panning, zooming
-	 * and arrow-key nudges). It doesn't take focus or dismiss itself on
-	 * outside clicks or Escape — the map owns selection, and the card simply
-	 * follows it.
+	 * and arrow-key nudges). It hangs beside the marker when the card fits
+	 * to one side of it, and below (or above) it when it doesn't — on a
+	 * phone neither side has room, and the popover's flip only tries the
+	 * other side, so the card ran off the screen. Its height is held to the
+	 * room on that side (it scrolls past that). It doesn't take focus or
+	 * dismiss itself on outside clicks or Escape — the map owns selection,
+	 * and the card simply follows it.
 	 */
 	import { Popover } from 'bits-ui';
 	import type { MapMarker } from '$lib/mapStore.svelte.js';
@@ -59,6 +63,29 @@
 	} = $props();
 
 	const info = $derived(marker ? markerSummary(marker, icon) : null);
+
+	/** The card's width and its gap to the marker and to the screen's edge
+	 *  (sideOffset, collisionPadding) — as in the .mk-card styles. */
+	const CARD_W = 300;
+	const GAP = 12;
+	/** Beside the marker (right, or left when right has no room) if the card
+	 *  fits on either side of it, else below it (or above). */
+	let side = $state<'right' | 'bottom'>('right');
+	// Re-checked every frame while open, as the popover re-positions: a pan
+	// or zoom moves the marker.
+	$effect(() => {
+		if (!open) return;
+		let frame = 0;
+		const check = () => {
+			const r = anchor.getBoundingClientRect();
+			const w = Math.min(CARD_W, window.innerWidth - 2 * GAP);
+			const room = Math.max(r.left, window.innerWidth - r.right) - 2 * GAP;
+			side = room >= w ? 'right' : 'bottom';
+			frame = requestAnimationFrame(check);
+		};
+		check();
+		return () => cancelAnimationFrame(frame);
+	});
 </script>
 
 <Popover.Root {open}>
@@ -67,10 +94,10 @@
 			<Popover.Content
 				class="mk-card"
 				customAnchor={anchor}
-				side="right"
+				{side}
 				align="center"
-				sideOffset={12}
-				collisionPadding={12}
+				sideOffset={GAP}
+				collisionPadding={GAP}
 				updatePositionStrategy="always"
 				trapFocus={false}
 				interactOutsideBehavior="ignore"
@@ -125,7 +152,8 @@
 	:global(.mk-card) {
 		position: relative;
 		width: min(300px, calc(100vw - 24px));
-		max-height: min(70vh, 460px);
+		/* No taller than the room on the side it hangs. */
+		max-height: min(70vh, 460px, var(--bits-floating-available-height, 460px));
 		overflow-y: auto;
 		overscroll-behavior: contain;
 		padding: 12px 14px;
