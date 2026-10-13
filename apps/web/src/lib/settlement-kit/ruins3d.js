@@ -41,6 +41,20 @@ function bounds(parts) {
 	return { ...b, ok: Number.isFinite(b.x0) };
 }
 
+/**
+ * A part's reach: its solids' box, or, with none, its lines' (a pole, a
+ * spike).
+ * @param {Part} p
+ * @returns {{x0: number, x1: number, y0: number, y1: number}}
+ */
+function reach(p) {
+	if (p.solid.length) return bounds([p]);
+	const pts = (p.free ?? []).flatMap((l) => l.pts);
+	const xs = pts.map(([x]) => x),
+		ys = pts.map(([, y]) => y);
+	return { x0: Math.min(...xs), x1: Math.max(...xs), y0: Math.min(...ys), y1: Math.max(...ys) };
+}
+
 /** How much further gone, or less, a settlement's building is by what it's
  *  built of: its stone outlasts its timber. */
 const STURDY = { stone: -0.15, timber: 0.15 };
@@ -125,21 +139,24 @@ function ruinPiece(parts, o, seed) {
 	for (const roof of roofGroups(roofParts)) {
 		const rb = bounds(roof);
 		// What rides on this roof — a chimney through it, a cross or poles on
-		// it — comes down with it.
-		const riders = parts.filter((p) => {
-			if (p.terrain || p.role === 'roof' || drop.has(p)) return false;
-			const b = box(p),
-				lo = p.solid.length
-					? b.y0
-					: Math.min(...(p.free ?? []).flatMap((l) => l.pts.map(([, y]) => y)));
-			const x0 = p.solid.length
-					? b.x0
-					: Math.min(...(p.free ?? []).flatMap((l) => l.pts.map(([x]) => x))),
-				x1 = p.solid.length
-					? b.x1
-					: Math.max(...(p.free ?? []).flatMap((l) => l.pts.map(([x]) => x)));
-			return lo > rb.y0 + 0.5 && lo < rb.y1 && x1 > rb.x0 && x0 < rb.x1;
-		});
+		// it — comes down with it; and so does what stands on a rider, up the
+		// chain (a dome's spike, the flagpole on the spike), so nothing is
+		// left hanging over a fallen cap.
+		/** @type {Part[]} */
+		const riders = [];
+		let top = rb.y1;
+		for (let more = true; more; ) {
+			more = false;
+			for (const p of parts) {
+				if (p.terrain || p.role === 'roof' || drop.has(p) || riders.includes(p)) continue;
+				const e = reach(p);
+				if (e.y0 > rb.y0 + 0.5 && e.y0 < top + 0.5 && e.x1 > rb.x0 && e.x0 < rb.x1) {
+					riders.push(p);
+					top = Math.max(top, e.y1);
+					more = true;
+				}
+			}
+		}
 		const g = gone * (0.85 + r() * 0.3);
 		if (keep < 1 || g >= 1) for (const p of [...roof, ...riders]) drop.add(p);
 		else {

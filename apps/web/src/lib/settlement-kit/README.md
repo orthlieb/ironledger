@@ -29,9 +29,10 @@ marker size (32–48 px) without any shading beyond flat-tinted faces.
 - **Depth runs up-and-right** along `depthVec(d)` = `(0.75 d, 0.5 d)`.
 - **Light comes from the upper left**, so every right-facing face (side
   walls, right roof slopes, right flanks of cylinders and cones) is
-  shaded: a darker role colour plus hatching — diagonal (55°) on
-  cylinders and the ring wall's front flank, horizontal on cones and domes, thinner diagonal strokes on
-  house and tower walls.
+  shaded: a darker role colour — plus, where the drawing hatches (the
+  playground's Hatching; IronLedger's map icons don't), hatching:
+  diagonal (55°) on cylinders and the ring wall's front flank, horizontal
+  on cones and domes, thinner diagonal strokes on house and tower walls.
 - Line widths are in world units and **do not scale** with a placed
   piece, so every icon shares one stroke weight no matter how big its
   pieces are. Scaling a piece makes it bigger; its outlines stay the
@@ -211,8 +212,8 @@ A culture plugin (`cultures/<key>.json` in an extension, or
 `apps/api/data/cultures/` for the base game) is
 `{key, name, note, design, palette}`. `design` is any subset of the
 `Design` knobs below, laid over `DEFAULT_DESIGN`; `palette` gives the eight
-colour roles. A culture is therefore up to **42 knobs** — 23 numbers, 11
-choices and 8 on/off switches — **plus 8 colours**. The shipped cultures
+colour roles. A culture is therefore up to **41 knobs** — 23 numbers, 11
+choices and 7 on/off switches — **plus 8 colours**. The shipped cultures
 set 14–24 knobs each (the Sample culture 33; Ironlanders is the default,
 with none). A culture is style alone: what a settlement stands on, its
 walls and their shape are the recipe's (see Recipe overrides).
@@ -233,7 +234,6 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 | `flourish`  | 0–1 (**0**)                        | Ornament: finials, eave knobs, ridge cresting, more flags.                                                                                                                                                                                                                      |
 | `masonry`   | on / **off**                       | Stone-built: stone courses on house and tower walls — round the side walls and gable ends too — and a well's curb, stone barns (not plank), no timber framing on a townhouse's ground floor.                                                                                    |
 | `texture`   | **on** / off                       | Draw textures: wall patterns, the line-work round ring walls, masonry courses, barn planks. Off draws every wall in its flat material colour — what a small map icon draws anyway.                                                                                              |
-| `hatching`  | **on** / off                       | Hatch the shaded flanks — house sides, round bodies, cones and domes. Off shades them by colour alone.                                                                                                                                                                          |
 | `variety`   | 0–1 (**0**)                        | A mixed culture (a freeport): the chance each house, free-standing tower and landmark rolls its own house type (gable-front, side-on, townhouse, longhouse, round hut or domed), storeys, tower cap, crenellated top, corbel, steeple, roof pitch and sweep, windows and doors. |
 
 **Houses**
@@ -298,7 +298,7 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 | Knob    | Values (default)         | What it drives                                                                 |
 | ------- | ------------------------ | ------------------------------------------------------------------------------ |
 | `join`  | sharp / round / **soft** | Line joins: mitred, rounded, or rounded + softened corners (flags stay crisp). |
-| `hatch` | 0.9–2.6 (**1.4**)        | Hatch spacing — smaller is a darker shade.                                     |
+| `hatch` | 0.9–2.6 (**1.4**)        | Hatch spacing, where the drawing hatches — smaller is a darker shade.          |
 
 **Palette** — `wall`, `roof`, `wood`, `earth`, `water`, `flag`, `ink`,
 `halo` (`#rrggbb`). Roofs take the marker colour on the map (the default

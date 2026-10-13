@@ -104,8 +104,6 @@ import { place } from './render.js';
  * @property {boolean} texture draw textures — wall patterns, the line-work
  *   round ring walls, masonry courses, barn planks; off draws every wall in
  *   its flat material colour. On by default.
- * @property {boolean} hatching hatch the shaded flanks; off shades them by
- *   colour alone. On by default.
  * @property {number} longhouse share of timber dwellings that are Norse longhouses (0..1)
  * @property {number} huts share of timber dwellings that are round huts (0..1)
  * @property {number} industry share of town/city buildings that are warehouses or
@@ -162,7 +160,6 @@ export const DEFAULT_DESIGN = {
 	flourish: 0,
 	masonry: false,
 	texture: true,
-	hatching: true,
 	longhouse: 0,
 	huts: 0,
 	join: 'soft',
@@ -241,7 +238,6 @@ export function makeDesign(seed) {
 		variety: 0, // rolled below, after the draws it must not shift
 		masonry: r() < 0.3,
 		texture: true,
-		hatching: true,
 		longhouse: r() < 0.3 ? avg() : 0,
 		huts: r() < 0.25 ? avg() * 0.6 : 0,
 		join: r() < 0.15 ? 'sharp' : r() < 0.7 ? 'round' : 'soft',
@@ -485,8 +481,8 @@ function clipToBox(ab, x0, y0, x1, y1) {
  * Parallel hatch lines covering a polygon's bounding box; the renderer
  * clips them to the face. They're drawn at the shading weight by default,
  * so every shaded face — house and gate walls, roofs, keeps, the ring's
- * back — reads as dark as the towers. Flagged `shade`, so a culture with
- * `hatching` off leaves them out.
+ * back — reads as dark as the towers. Flagged `shade`, so a drawing
+ * without hatching (IronLedger's) leaves them out.
  * @param {Poly} poly
  * @param {number} angle degrees
  * @param {number} spacing
@@ -1458,7 +1454,8 @@ function chimneys(
 /**
  * A flag on a pole whose foot is at (x, y), folded `D.flagFolds` times; the
  * cloth streams out from the pole's head to the right, or to the left with
- * `dir` −1.
+ * `dir` −1. The pole is the flag's too (role 'flag', though only a line), so
+ * a ruin strikes them together and leaves no bare rod on a tower.
  * @param {Design} D
  * @param {number} x
  * @param {number} y
@@ -1507,6 +1504,7 @@ function flag(D, x, y, dir = 1) {
 		{ solid: [cloth], role: 'flag', sharp: true },
 		{
 			solid: [],
+			role: 'flag',
 			free: [seg([x, y], [x, y + 10.5], 1.2)],
 		},
 	];

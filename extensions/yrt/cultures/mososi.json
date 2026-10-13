@@ -1,7 +1,7 @@
 {
   "key": "mososi",
   "name": "Mososi",
-  "note": "Optime and plain — a plain sentence in answer to a flourish: straight roofs, square windows, masonry, and only the plain green flag of Mososi.",
+  "note": "Optime and plain — a plain sentence in answer to a flourish: straight green roofs, square windows, masonry, and only the plain gold flag of Mososi.",
   "design": {
     "join": "sharp",
     "flourish": 0,
@@ -28,12 +28,12 @@
   },
   "palette": {
     "wall": "#ECE7DD",
-    "roof": "#A0523D",
+    "roof": "#197106",
     "wood": "#9A7B57",
     "earth": "#8C7050",
     "water": "#8FB0B8",
     "ink": "#33302C",
-    "flag": "#3E7A44",
+    "flag": "#BDB523",
     "halo": "#F6F2EA"
   }
 }

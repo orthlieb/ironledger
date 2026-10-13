@@ -63,9 +63,10 @@ const OUTLINE = 1.4;
  *   frame?: {x0: number, x1: number, y0: number, y1: number} | null}} [o]
  *   line joins (default: the default culture's); `texture: false` draws no
  *   textures — no line-work texture layers, and every wall in its flat
- *   material colour; `hatching: false` shades by colour alone, no hatch;
- *   `frame` takes in that box too (placed units, y up — placedBox()): a
- *   ruin framed as its building was
+ *   material colour; `hatching` hatches the shaded faces (off — IronLedger's
+ *   look, every map icon's — shades them by colour alone); `frame` takes in
+ *   that box too (placed units, y up — placedBox()): a ruin framed as its
+ *   building was
  * @returns {string}
  */
 export function toLayeredSvg(title, items, palette, o = {}) {
@@ -81,7 +82,7 @@ export function toLayeredSvg(title, items, palette, o = {}) {
 		outline: OUTLINE,
 		join: o.join ?? DEFAULT_DESIGN.join,
 		texture,
-		hatching: o.hatching ?? true,
+		hatching: o.hatching ?? false,
 	});
 	const f = roleColours(palette);
 	const pad = 2;
@@ -207,7 +208,6 @@ export function generateSettlementSvg(recipe, culture) {
 		{
 			join: design.join,
 			texture: design.texture,
-			hatching: design.hatching,
 			frame,
 		},
 	);

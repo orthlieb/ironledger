@@ -88,7 +88,6 @@ const KNOBS = [
 	range('Build', 'flourish', 'Flourish', 0, 1, 0.01),
 	check('Build', 'masonry', 'Masonry'),
 	check('Build', 'texture', 'Texture'),
-	check('Build', 'hatching', 'Hatching'),
 	range('Build', 'variety', 'Variety (mixed builders)', 0, 1, 0.05),
 	range('Houses', 'longhouse', 'Longhouse share', 0, 1, 0.01),
 	range('Houses', 'huts', 'Hut share', 0, 1, 0.01),
@@ -148,6 +147,9 @@ const KNOBS = [
 	// The walls' shape — the drawing's, not the culture's.
 	select('Drawing', 'wallShape', 'Wall shape', ['round', 'square'], false),
 	check('Drawing', 'stilts', 'On stilts', false),
+	// Hatched shading — the drawing's, not a culture's. Off by default, as
+	// IronLedger draws every map icon: shaded faces by colour alone.
+	check('Drawing', 'hatching', 'Hatching', false),
 	// What it stands on — the drawing's, not the culture's: settlements and
 	// buildings alike.
 	select(
@@ -191,6 +193,7 @@ const DRAWING = {
 	walls: 'none',
 	wallShape: 'round',
 	stilts: false,
+	hatching: false,
 	ground: 'none',
 	buildingWalls: 'pieces',
 	softRadius: 0.9,
@@ -329,7 +332,7 @@ function svg(items) {
 		join: design.join,
 		softRadius: drawing.softRadius,
 		texture: design.texture,
-		hatching: design.hatching,
+		hatching: drawing.hatching,
 	});
 	const vb = [b.x - 3, b.y - 3, b.w + 6, b.h + 6].map((n) => n.toFixed(1)).join(' ');
 	const used = LAYERS.filter((l) => layers[l]);

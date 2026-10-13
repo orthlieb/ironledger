@@ -25,6 +25,7 @@ import {
 	PARCHMENT,
 	generateSettlementSvg,
 	recipeDesign,
+	toLayeredSvg,
 } from '../../src/lib/settlement-kit/generate.js';
 import {
 	BUILDINGS,
@@ -389,6 +390,24 @@ describe('piece details', () => {
 		expect(curb(true).lines?.some((l) => l.role === 'ink-texture')).toBe(true);
 		expect(curb(false).lines ?? []).toEqual([]);
 	});
+	it.each([0.2, 0.35, 0.5, 0.8])(
+		'leaves no bare flagpole on a ruined tower (decay %s)',
+		(decay) => {
+			const tower = roundTower({ ...DEFAULT_DESIGN, towerRoof: 'onion', flags: true });
+			expect(tower.some((p) => p.role === 'flag' && !p.solid.length)).toBe(true);
+			const [ruin] = ruinPlaced([{ piece: tower }], {
+				decay,
+				overgrowth: 0,
+				burned: false,
+				single: true,
+				seed: 1,
+			});
+			expect(ruin.piece.some((p) => p.role === 'flag')).toBe(false);
+			// Nor a line left standing clear of everything: a dome's spike
+			// goes with its dome.
+			expect(ruin.piece.filter((p) => !p.solid.length && p.free?.length && !p.mask)).toEqual([]);
+		},
+	);
 	it.each(['workshop', 'tavern'] as const)('gives a %s round chimneys', (kind) => {
 		const parts = sideHouse(DEFAULT_DESIGN, { kind });
 		const stacks = parts.slice(
@@ -778,27 +797,21 @@ describe('texture', () => {
 });
 
 describe('hatching', () => {
-	const town = (hatching?: boolean) =>
-		generateSettlementSvg(
-			{ tier: 'town', culture: 't', seed: 3, walls: 'stone' },
-			{
-				key: 't',
-				name: 'Hatching test',
-				design: hatching === undefined ? {} : { hatching },
-				palette: PARCHMENT,
-			},
-		);
+	const items = settlement('town', DEFAULT_DESIGN, { walls: 'stone', seed: 3 });
+	const svg = (hatching?: boolean) =>
+		toLayeredSvg('t', items, PARCHMENT, hatching === undefined ? {} : { hatching });
 	const layer = (svg: string, role: string) =>
 		svg.match(new RegExp(`data-role="${role}"[^>]* d="([^"]*)"`))?.[1] ?? '';
-	it('is on by default; off, the shaded faces keep their shade colour alone', () => {
-		expect(DEFAULT_DESIGN.hatching).toBe(true);
-		const on = town(),
-			off = town(false);
-		expect(on).toBe(town(true));
-		// Fewer ink strokes: the hatch is gone…
-		expect(layer(off, 'ink').length).toBeLessThan(layer(on, 'ink').length * 0.8);
+	it("is off for IronLedger's icons: shaded faces by colour alone", () => {
+		const off = svg();
+		expect(off).toBe(svg(false));
+		// Fewer ink strokes than hatched: the hatch is gone…
+		expect(layer(off, 'ink').length).toBeLessThan(layer(svg(true), 'ink').length * 0.8);
 		// …but not the shading.
 		for (const role of ['wall-shade', 'roof-shade']) expect(layer(off, role), role).not.toBe('');
+	});
+	it("is the drawing's, not a culture's", () => {
+		expect(DEFAULT_DESIGN).not.toHaveProperty('hatching');
 	});
 });
 
@@ -869,7 +882,8 @@ describe('sharp parts', () => {
 		expect(renderLayered(tri(false), { join: 'soft' }).layers.flag).not.toBe(crisp.flag);
 	});
 	it('flag cloth is sharp', () => {
-		const cloth = roundTower(DEFAULT_DESIGN).filter((p) => p.role === 'flag');
+		// The cloth: the flag's part with a shape (its pole is only a line).
+		const cloth = roundTower(DEFAULT_DESIGN).filter((p) => p.role === 'flag' && p.solid.length);
 		expect(cloth.length).toBeGreaterThan(0);
 		expect(cloth.every((p) => p.sharp)).toBe(true);
 	});
