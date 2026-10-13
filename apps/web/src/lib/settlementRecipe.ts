@@ -101,6 +101,7 @@ export interface SettlementRecipe {
 	/** Layout seed — the same recipe always draws the same icon. */
 	seed: number;
 	walls?: SettlementWalls;
+	/** The walls' shape (default round) — not a culture setting. */
 	wallShape?: 'round' | 'square';
 	/** What the whole icon stands on (default none) — not a culture setting. */
 	ground?: SettlementGround;

@@ -117,17 +117,14 @@ const CORE_ICONS = {
 	'desert-camp': ['settlement', () => settlement('camp', { ...D, houseForm: 'round', pitch: 0.6 })],
 	// Fortifications.
 	castle: ['settlement', () => settlement('hold', D, { walls: 'stone' })],
-	fortress: [
-		'settlement',
-		() => settlement('hold', { ...D, wallShape: 'square' }, { walls: 'stone' }),
-	],
+	fortress: ['settlement', () => settlement('hold', D, { walls: 'stone', wallShape: 'square' })],
 	'locked-fortress': [
 		'settlement',
-		() => settlement('hold', { ...D, wallShape: 'square', gate: 'twin' }, { walls: 'stone' }),
+		() => settlement('hold', { ...D, gate: 'twin' }, { walls: 'stone', wallShape: 'square' }),
 	],
 	'military-fort': [
 		'settlement',
-		() => settlement('outpost', { ...D, wallShape: 'square' }, { walls: 'stone' }),
+		() => settlement('outpost', D, { walls: 'stone', wallShape: 'square' }),
 	],
 	'hill-fort': ['settlement', () => settlement('hold', D, { walls: 'earth' })],
 	// Settlements, by size and wall.
@@ -171,7 +168,7 @@ const CORE_ICONS = {
 	],
 	'fortress-ruin': [
 		'settlement',
-		() => ruined(settlement('hold', { ...D, wallShape: 'square' }, { walls: 'stone' })),
+		() => ruined(settlement('hold', D, { walls: 'stone', wallShape: 'square' })),
 	],
 	'house-ruin': ['settlement', () => ruinedPiece(piece(D, 'Gable house'), 0.5)],
 	'broken-wall': ['settlement', () => ruinedPiece(piece(D, 'Wall'), 0.6)],

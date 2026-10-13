@@ -125,7 +125,6 @@ const KNOBS = [
 	range('Flags', 'flagLen', 'Flag length', 5, 20, 0.5),
 	range('Flags', 'flagFolds', 'Flag folds', 1, 5, 1),
 	select('Flags', 'flagShape', 'Flag shape', ['banner', 'pennant', 'swallowtail']),
-	select('Walls', 'wallShape', 'Wall shape', ['round', 'square']),
 	range('Walls', 'wallH', 'Wall height', 0.6, 1.6, 0.01),
 	check('Walls', 'merlons', 'Merlons'),
 	range('Towers', 'towerBow', 'Tower bow', -1, 1, 0.05),
@@ -145,6 +144,8 @@ const KNOBS = [
 		['none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef'],
 		false,
 	),
+	// The walls' shape — the drawing's, not the culture's.
+	select('Drawing', 'wallShape', 'Wall shape', ['round', 'square'], false),
 	check('Drawing', 'stilts', 'On stilts', false),
 	// What it stands on — the drawing's, not the culture's.
 	select(
@@ -186,6 +187,7 @@ const DRAWING = {
 	tiers: 'main',
 	harbor: 'none',
 	walls: 'none',
+	wallShape: 'round',
 	stilts: false,
 	ground: 'none',
 	buildingWalls: 'pieces',
@@ -355,6 +357,7 @@ function render() {
 		: null;
 	const opts = {
 		walls: drawing.walls,
+		wallShape: drawing.wallShape,
 		seed: drawing.layout,
 		harbor: drawing.harbor,
 		stilts: !!drawing.stilts,
@@ -385,6 +388,7 @@ function render() {
 							svg(
 								building(key, design, {
 									walls: bw,
+									wallShape: drawing.wallShape,
 									seed: drawing.layout,
 									ground: drawing.ground,
 									stilts: !!drawing.stilts,

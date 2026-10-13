@@ -206,14 +206,16 @@ A culture plugin (`cultures/<key>.json` in an extension, or
 `apps/api/data/cultures/` for the base game) is
 `{key, name, note, design, palette}`. `design` is any subset of the
 `Design` knobs below, laid over `DEFAULT_DESIGN`; `palette` gives the eight
-colour roles. A culture is therefore up to **44 knobs** — 23 numbers, 14
+colour roles. A culture is therefore up to **41 knobs** — 23 numbers, 11
 choices and 7 on/off switches — **plus 8 colours**. The shipped cultures
-set 15–26 knobs each (the Sample culture 36; Ironlanders is the default,
-with none).
+set 14–24 knobs each (the Sample culture 33; Ironlanders is the default,
+with none). A culture is style alone: what a settlement stands on, its
+walls and their shape are the recipe's (see Recipe overrides).
 
 `recipeDesign()` runs every culture through `upgradeDesign()`, which
-migrates retired spellings — today the legacy `towerRoof: "crenel"`
-becomes `towerRoof: "none"` + `towerCrenel: true`. Defaults and ranges
+migrates retired spellings — the legacy `towerRoof: "crenel"` becomes
+`towerRoof: "none"` + `towerCrenel: true` — and drops the keys a culture
+no longer owns (`ground`, `wall`, `wallShape`). Defaults and ranges
 below are `DEFAULT_DESIGN` and the playground's sliders.
 
 **Build**
@@ -279,7 +281,6 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 
 | Knob         | Values (default)           | What it drives                                                  |
 | ------------ | -------------------------- | --------------------------------------------------------------- |
-| `wallShape`  | **round** / square         | Ring or square enclosure.                                       |
 | `wallH`      | 0.6–1.6 (**1**)            | Wall height factor.                                             |
 | `merlons`    | **on** / off               | Crenellated parapet on stone walls.                             |
 | `wallBow`    | −1–1 (**0**)               | Concave (> 0) dips the tops between towers; convex crests them. |
@@ -318,7 +319,7 @@ Seven recipe-only fields let a marker override the culture:
 | Recipe field | Effect                                                                                                                                                                      |
 | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `walls`      | The ring-wall material (`'none'` — the default — `'stone'`, `'palisade'`, …). Never the culture's or the size's: a settlement has walls only when the recipe gives it them. |
-| `wallShape`  | Force `'round'` or `'square'` regardless of what the culture rolls.                                                                                                         |
+| `wallShape`  | `'round'` (the default) or `'square'` — a ring or square enclosure, and the layout packed to fit it. Never the culture's.                                                   |
 | `ground`     | What it stands on (`'none'`, a ground type, or `'water'`) — passed to `settlement()` / `building()`, never the culture's.                                                   |
 | `stilts`     | Wrap every inside-the-walls piece with `onStilts(...)` so the whole settlement sits on pilings — or, for a `building`, the building (bar its terrain; never the Wall).      |
 | `harbor`     | `true` adds a side harbour with pier + caravel.                                                                                                                             |
@@ -328,7 +329,7 @@ Seven recipe-only fields let a marker override the culture:
 See CLAUDE.md ("Standing order — settlement-recipe override fields live
 in five places") for the plumbing contract when adding a new one.
 
-**Buildings.** `building(key, D, {walls, seed, ground, stilts, ruin})` draws one of the
+**Buildings.** `building(key, D, {walls, wallShape, seed, ground, stilts, ruin})` draws one of the
 `BUILDINGS` (the keyed entries of the `PIECES` table) on its own. `walls`
 puts a small ring or square wall of its own round it, fitted to its
 footprint the way a settlement's is (`enclosed()`), with up to two towers

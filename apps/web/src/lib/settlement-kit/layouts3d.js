@@ -45,6 +45,7 @@ import {
 /** @typedef {import('./geom.js').Pt} Pt */
 /** @typedef {import('./geom.js').Poly} Poly */
 /** @typedef {'none' | 'stone' | 'palisade' | 'earth' | 'hedge' | 'bone' | 'reef'} Walls */
+/** A wall's shape — the recipe's, never the culture's. @typedef {'round' | 'square'} WallShape */
 
 /**
  * Per-building Design jitter: each house re-rolls a few visual knobs
@@ -359,8 +360,9 @@ const EXTRA_SCALE = /** @type {Record<string, number>} */ ({
  * `stilts` lifts every inside-the-walls piece onto a timber-post deck —
  * think a lagoon settlement over water or dune boardwalks over sand. The
  * ring wall and the ground stay on the ground.
- * `ground` is what it stands on (default none).
- * @param {{walls?: Walls, seed?: number, harbor?: 'none' | 'side', ruin?: import('./ruins3d.js').RuinOptions | null, stilts?: boolean, ground?: Ground}} [o]
+ * `ground` is what it stands on (default none), `wallShape` its wall's
+ * (round by default).
+ * @param {{walls?: Walls, wallShape?: WallShape, seed?: number, harbor?: 'none' | 'side', ruin?: import('./ruins3d.js').RuinOptions | null, stilts?: boolean, ground?: Ground}} [o]
  * @returns {Placed[]}
  */
 export function settlement(tier, D, o = {}) {
@@ -374,7 +376,7 @@ export function settlement(tier, D, o = {}) {
 	// scale-1.7 barracks would otherwise burst out of an outpost's ring).
 	let wrx = rx * 1.2,
 		wry = ry * 1.3;
-	const square = D.wallShape === 'square';
+	const square = o.wallShape === 'square';
 	let { W, dv } = squareFootprint(wrx, wry);
 	const hasMarket = rank >= 0 && (D.market === 'all' || (D.market === 'town' && rank >= 1));
 	const hasKeep =
@@ -587,7 +589,7 @@ export function settlement(tier, D, o = {}) {
 		ry: wry,
 		h: 9 * (T.wallH ?? 1),
 		type: wall,
-		shape: D.wallShape,
+		shape: o.wallShape,
 		towers: Math.round(D.wallTowers * (T.towers ?? 0.5)),
 	});
 	return finish([...port.water, ...ring.back, ...ground, ...inside, ...ring.front, ...port.piers]);
@@ -794,8 +796,8 @@ export const UNWALLED_BUILDINGS = new Set(['wall']);
 
 /**
  * One building as a map icon — the Buildings tab: a single piece in the
- * culture's style, inside an optional wall of its own (`walls`, in the
- * culture's wall shape; never round UNWALLED_BUILDINGS), and optionally
+ * culture's style, inside an optional wall of its own (`walls`, round or
+ * `wallShape` square; never round UNWALLED_BUILDINGS), and optionally
  * ruined. `seed` rerolls it as a settlement varies its buildings: pitch,
  * sweep and ornament jittered, now and then other windows or doors, a
  * tower's height — and a mixed culture's builder rolls its own style.
@@ -803,8 +805,8 @@ export const UNWALLED_BUILDINGS = new Set(['wall']);
  * @param {Design} D
  * `stilts` sets it on a timber-post deck, as a stilt settlement's
  * buildings are (never the Wall).
- * @param {{walls?: Walls, seed?: number, ground?: Ground, stilts?: boolean,
- *   ruin?: import('./ruins3d.js').RuinOptions | null}} [o]
+ * @param {{walls?: Walls, wallShape?: WallShape, seed?: number, ground?: Ground,
+ *   stilts?: boolean, ruin?: import('./ruins3d.js').RuinOptions | null}} [o]
  * @returns {Placed[]}
  */
 export function building(key, D, o = {}) {
@@ -824,7 +826,8 @@ export function building(key, D, o = {}) {
 				: it;
 		});
 	const g = groundOf(o.ground);
-	if (walls && !UNWALLED_BUILDINGS.has(key)) items = enclosed(D, items, walls, g);
+	if (walls && !UNWALLED_BUILDINGS.has(key))
+		items = enclosed(D, items, walls, o.wallShape === 'square', g);
 	else if (g) {
 		// A building stands on its ground — in a lagoon, on water — as a
 		// settlement does (an enclosure lays its own, under the whole of it).
@@ -854,8 +857,8 @@ function placedExtent(items) {
 }
 
 /**
- * A building inside a small wall of its own: a ring — or a square, by the
- * culture's wall shape — fitted round its footprint as a settlement's is,
+ * A building inside a small wall of its own: a ring — or a square — fitted
+ * round its footprint as a settlement's is,
  * with two towers where the wall type carries them. On water the lagoon is
  * a settlement's too: centred on the enclosure and sized to it, so a square
  * one's back walls and the building inside stand in the water, not behind
@@ -863,11 +866,11 @@ function placedExtent(items) {
  * @param {Design} D
  * @param {Placed[]} items
  * @param {Exclude<Walls, 'none'>} wall
+ * @param {boolean} square a square enclosure, not a ring
  * @param {Exclude<Ground, 'none'> | null} g what it stands on
  * @returns {Placed[]}
  */
-function enclosed(D, items, wall, g) {
-	const square = D.wallShape === 'square';
+function enclosed(D, items, wall, square, g) {
 	const { x0, x1 } = placedExtent(items);
 	const w = x1 - x0;
 	let wrx = Math.max(16, w / 2 + 6),
@@ -896,7 +899,7 @@ function enclosed(D, items, wall, g) {
 		ry: wry,
 		h: 9,
 		type: wall,
-		shape: D.wallShape,
+		shape: square ? 'square' : 'round',
 		towers: Math.min(2, D.wallTowers),
 	});
 	return [

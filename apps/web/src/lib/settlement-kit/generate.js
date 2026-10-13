@@ -42,8 +42,8 @@ export { PARCHMENT };
  * instead of a settlement — the Buildings tab: `walls` then encloses it
  * (never a wall building), `stilts` sets it on a deck, and `tier` and
  * `harbor` don't apply.
- * `walls` and `ground` are the recipe's alone — a culture has no say in
- * either (its wall *style* — height, merlons, towers, gate, shape — it has).
+ * `walls`, `wallShape` and `ground` are the recipe's alone — a culture has no
+ * say in them (its wall *style* — height, merlons, towers, gate — it has).
  * @typedef {{tier: Tier, culture: string, seed: number, walls?: Walls,
  *   wallShape?: 'round' | 'square', ground?: import('./pieces3d.js').Ground,
  *   stilts?: boolean, harbor?: boolean, building?: string,
@@ -152,7 +152,6 @@ export function recipeDesign(recipe, culture) {
 	return {
 		...DEFAULT_DESIGN,
 		...upgradeDesign(culture?.design ?? {}),
-		...(recipe.wallShape ? { wallShape: recipe.wallShape } : {}),
 	};
 }
 
@@ -179,6 +178,7 @@ export function generateSettlementSvg(recipe, culture) {
 		recipe.building
 			? building(recipe.building, design, {
 					walls: recipe.walls,
+					wallShape: recipe.wallShape,
 					seed: recipe.seed,
 					ground: recipe.ground,
 					stilts: !!recipe.stilts,
@@ -186,6 +186,7 @@ export function generateSettlementSvg(recipe, culture) {
 				})
 			: settlement(tier, design, {
 					walls: recipe.walls ?? 'none',
+					wallShape: recipe.wallShape,
 					seed: recipe.seed,
 					ground: recipe.ground,
 					harbor: recipe.harbor ? 'side' : 'none',

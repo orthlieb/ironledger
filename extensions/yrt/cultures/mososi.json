@@ -17,7 +17,6 @@
     "flagFolds": 1,
     "flagLen": 11,
     "merlons": false,
-    "wallShape": "square",
     "gate": "tower",
     "wallTowers": 4,
     "church": true,
