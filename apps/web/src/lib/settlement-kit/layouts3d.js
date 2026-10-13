@@ -725,7 +725,7 @@ const side = (kind, seed0) => (D, s) => [{ piece: sideHouse(D, { seed: s ?? seed
  * Design; a Buildings-tab `seed` varies a house's details and a tower's
  * height, and the reference row passes none. A null key is a reference
  * piece (drawn for the baked icons) the Buildings tab doesn't offer — a
- * camp is a Settlement-builder size, and a stretch of wall no building.
+ * camp is a Settlement-builder size.
  * @type {[string | null, string, (D: Design, seed?: number) => Placed[]][]}
  */
 const PIECES = [
@@ -778,7 +778,6 @@ const PIECES = [
 	['tent', 'Tent', (D) => [{ piece: tent(D) }]],
 	['pavilion', 'Pavilion', (D) => [{ piece: pavilion(D) }]],
 	['witch-hut', 'Witch hut', (D) => [{ piece: witchHut(D) }]],
-	[null, 'Wall', (D) => [{ piece: wallSegment(D) }]],
 ];
 
 /**
@@ -794,6 +793,16 @@ export function pieces(D, o = {}) {
 		const items = make(D);
 		return [name, normalized(g ? grounded(items, g) : items)];
 	});
+}
+
+/**
+ * The stretch of stone wall the baked Stone wall icons draw — neither a
+ * building nor one of the reference row, but sized as they are.
+ * @param {Design} D
+ * @returns {Placed[]}
+ */
+export function wallRun(D) {
+	return normalized([{ piece: wallSegment(D) }]);
 }
 
 /** The Buildings tab's buildings, as [key, name], in menu order. */

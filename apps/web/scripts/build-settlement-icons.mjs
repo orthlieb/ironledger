@@ -25,7 +25,7 @@ import { existsSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { PARCHMENT, toLayeredSvg } from '../src/lib/settlement-kit/generate.js';
-import { pieces, settlement } from '../src/lib/settlement-kit/layouts3d.js';
+import { pieces, settlement, wallRun } from '../src/lib/settlement-kit/layouts3d.js';
 import { DEFAULT_DESIGN, keep, roundHut, tent } from '../src/lib/settlement-kit/pieces3d.js';
 import { ruinPlaced } from '../src/lib/settlement-kit/ruins3d.js';
 import { loadCultures } from './settlement-kit/loadCultures.mjs';
@@ -109,7 +109,7 @@ const CORE_ICONS = {
 	// Scaled like the standalone pieces so its lines match (see MIN_PIECE_SIZE).
 	'barracks-tent': ['settlement', () => [{ piece: tent(D, { w: 22 }), s: 1.15 }]],
 	'medieval-pavilion': ['settlement', () => piece(D, 'Pavilion')],
-	'stone-wall': ['settlement', () => piece(D, 'Wall')],
+	'stone-wall': ['settlement', () => wallRun(D)],
 	// The Elves' castle, in the default palette: concave towers and walls.
 	'elven-castle': ['settlement', () => settlement('hold', ELVES, { walls: 'stone' })],
 	camp: ['settlement', () => settlement('camp', D)],
@@ -171,7 +171,7 @@ const CORE_ICONS = {
 		() => ruined(settlement('hold', D, { walls: 'stone', wallShape: 'square' })),
 	],
 	'house-ruin': ['settlement', () => ruinedPiece(piece(D, 'Gable house'), 0.5)],
-	'broken-wall': ['settlement', () => ruinedPiece(piece(D, 'Wall'), 0.6)],
+	'broken-wall': ['settlement', () => ruinedPiece(wallRun(D), 0.6)],
 };
 
 /** Delete any existing icon (svg or png) for a slug in a category folder. */

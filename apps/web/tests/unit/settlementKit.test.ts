@@ -418,9 +418,9 @@ describe('buildings (the Buildings tab)', () => {
 	});
 	it('keeps the reference row of pieces the icon bake draws by name', () => {
 		const names = pieces(DEFAULT_DESIGN).map(([n]) => n);
-		expect(names).toHaveLength(26);
+		expect(names).toHaveLength(25);
 		expect(names).toContain('Camp'); // a Settlement-builder size, not a building
-		expect(names).toContain('Wall'); // the Stone wall icons, not a building
+		expect(names).not.toContain('Wall'); // retired: the Stone wall icons draw wallRun()
 		expect(BUILDINGS).toHaveLength(24);
 		expect(BUILDINGS.map(([key]) => key)).not.toContain('wall');
 	});
