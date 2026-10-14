@@ -45,6 +45,7 @@ proportions (a very slight uniform stretch on the image is invisible).
 | `static/map/<category>/<slug>.{svg,png}`                | Icon source files. First subfolder = category; kebab-case filename = slug + display label. See "Icon formats" below.                                                  |
 | `lib/components/MapDialog.svelte`                       | Map picker + file toolbar + selection toolbar + icon-picker dialog + SVG canvas.                                                                                      |
 | `lib/components/MapOptionsDialog.svelte`                | Name / display prefs / scale bar / danger-zone (clear + delete).                                                                                                      |
+| `lib/components/MapLayersMenu.svelte`                   | The toolbar's Layers popover: show / hide, add, rename, delete marker layers, and pick the one new markers go on.                                                     |
 | `lib/components/MapOwnerConflictDialog.svelte`          | Everything-import prompt: Replace vs Skip when a bundled map's owner already has a map.                                                                               |
 | `routes/api/session/maps/+server.ts`                    | BFF: GET (list) / POST (create).                                                                                                                                      |
 | `routes/api/session/maps/entity-markers/+server.ts`     | BFF: GET cross-map `{entityId → refs}` index for entity-card back-references.                                                                                         |
@@ -616,6 +617,40 @@ height is held to the room on that side and it scrolls past that
 map owns selection, and the card shows whenever a marker is selected and
 the editor isn't open, it isn't being dragged, and no placement or
 measuring is armed.
+
+### Marker layers
+
+Markers sit on **layers**, so a group of them shows or hides together —
+roads, dungeons, the GM's secrets. A map's layers live in its settings
+(`settings.layers: {id, name, hidden?}[]`, plus `settings.activeLayer`,
+the one new markers go on), so the list and what's shown are the same on
+every device and come along in a zip export; each marker carries its
+layer's id (`marker.layer`, listed in the server's `mapMarkerSchema`).
+There's always a **default layer** (`DEFAULT_LAYER_ID`, "Default" until
+renamed): markers with no layer — every marker from before layers — or
+with a deleted one are on it, and it can't be deleted. Read the list
+through `mapLayers()`, which cleans it and puts the default first.
+
+- The toolbar's **Layers** button (`MapLayersMenu.svelte`) opens a
+  popover listing them, each with an eye to show or hide it, its marker
+  count, a pen to rename it (or double-click the name) and, but for the
+  default, a bin to delete it. The highlighted row is where new markers
+  go — click a name to choose it; **New layer** adds one, names it
+  straight away and makes it the one. The button reads as filtered while
+  any layer is hidden.
+- A hidden layer's markers aren't drawn and can't be picked
+  (`markersAt()` skips them, so clicks, drags and the pile-up picker all
+  do); a selected marker whose layer is hidden is dropped from the
+  selection. The PNG snapshot shows what's on screen, so hidden layers
+  stay out of it.
+- The marker editor's **Layer** field moves a marker to another layer.
+  Moving it to a hidden layer, placing a marker on one, pasting one onto
+  one, or being sent to one from an entity's "on map" chip shows that
+  layer (`revealMarkerLayer()`), so a marker never vanishes in hand.
+- Deleting a layer moves its markers to the default layer — nothing is
+  lost — and new markers go there if they went on it.
+
+Covered end to end by `map-layers.spec.ts`.
 
 ## Entity ↔ map integration (Phase 2)
 

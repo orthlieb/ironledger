@@ -103,6 +103,12 @@ export function cleanLabelPosition(v: unknown): MapMarker['labelPosition'] {
  *  a zero or Infinity into the render math. */
 const MIN_IMPORT_SCALE = 0.5;
 const MAX_IMPORT_SCALE = 3;
+/** A marker's layer id from an imported file: a short non-empty string,
+ *  else none (the default layer). */
+export function cleanLayerId(v: unknown): string | undefined {
+	return typeof v === 'string' && v.length > 0 && v.length <= 64 ? v : undefined;
+}
+
 export function cleanMarkerScale(v: unknown): number | undefined {
 	if (typeof v !== 'number' || !Number.isFinite(v)) return undefined;
 	if (v < MIN_IMPORT_SCALE || v > MAX_IMPORT_SCALE) return undefined;
@@ -350,6 +356,9 @@ export async function populateMap(
 			labelPosition: cleanLabelPosition((m as { labelPosition?: unknown }).labelPosition),
 			scale: cleanMarkerScale((m as { scale?: unknown }).scale),
 			settlement: cleanSettlementRecipe((m as { settlement?: unknown }).settlement),
+			// Its layer — an id in the imported settings.layers, which come
+			// across with the rest of the settings below.
+			layer: cleanLayerId((m as { layer?: unknown }).layer),
 		}));
 	await replaceMarkers(cleanMarkers);
 

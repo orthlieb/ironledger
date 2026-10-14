@@ -82,6 +82,11 @@
 		mapListState,
 		markersAt,
 		markerScale,
+		markerShown,
+		isMarkerVisible,
+		revealMarkerLayer,
+		activeLayerId,
+		DEFAULT_LAYER_ID,
 		addMarker,
 		updateMarker,
 		removeMarker,
@@ -96,6 +101,7 @@
 	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
 	import { exportMapPng, exportMapZip } from '$lib/mapExport.js';
 	import { resolveEntity } from '$lib/mapEntityLinks.js';
+	import MapLayersMenu from './MapLayersMenu.svelte';
 
 	// Module-level guard so only one <MapDialog /> instance in the page
 	// registers the `ironledger:export-map` listener at a time — matters
@@ -176,6 +182,16 @@
 	 *  clears the selection outright. */
 	let markerPropsOpen = $state(false);
 
+	/** The markers drawn: those whose layer is shown (MapLayersMenu). */
+	const shownMarkers = $derived.by(() => mapState.markers.filter(markerShown()));
+	// A selected marker whose layer is hidden goes out of the selection —
+	// its card and outline with it. (The editor reveals a layer it moves a
+	// marker to, so this never pulls a marker out from under it.)
+	$effect(() => {
+		if (selectedMarker && !markerPropsOpen && !isMarkerVisible(selectedMarker))
+			selectedMarkerId = null;
+	});
+
 	/** Open the dialog. Optional `target` lets callers jump directly to a
 	 *  specific map + marker — used by back-reference chips on entity
 	 *  cards and by the "Open Map" button on entity-owned maps. If
@@ -205,6 +221,9 @@
 				await switchMap(target.mapId);
 			}
 			if (target?.markerId) {
+				// Sent to a marker on a hidden layer: show the layer.
+				const m = mapState.markers.find((mk) => mk.id === target.markerId);
+				if (m) revealMarkerLayer(m);
 				selectedMarkerId = target.markerId;
 				markerPropsOpen = true;
 			}
@@ -839,13 +858,18 @@
 	}
 
 	function placeAt(x: number, y: number) {
+		// On the layer new markers go on — shown, if it was hidden, so the
+		// new marker doesn't vanish as it's placed.
+		const layer = activeLayerId();
 		const id = addMarker({
 			x,
 			y,
 			label: '',
 			icon: DEFAULT_MARKER_ICON,
 			color: DEFAULT_MARKER_COLOR,
+			...(layer === DEFAULT_LAYER_ID ? {} : { layer }),
 		});
+		revealMarkerLayer({ layer });
 		selectedMarkerId = id;
 		markerPropsOpen = true;
 	}
@@ -1374,6 +1398,8 @@
 		const offset = ICON_SIZE / 4;
 		const target = clampToBounds({ x: sourceX + offset, y: sourceY + offset });
 		const id = addMarker({ x: target.x, y: target.y, ...rest });
+		// Its layer may have been hidden since the copy.
+		revealMarkerLayer(rest);
 		selectedMarkerId = id;
 	}
 
@@ -1401,6 +1427,10 @@
 	$effect(() => {
 		const handler = (ev: KeyboardEvent) => {
 			if (!dialogOpen) return;
+			// Keys in a popover over the map (the Layers menu, a colour
+			// picker) are the popover's: Escape closes it, and nothing else —
+			// it mustn't also drop the selection or the placement.
+			if ((ev.target as Element | null)?.closest?.('[data-popover-content]')) return;
 			if (ev.key === 'Escape' && pilePicker) {
 				ev.preventDefault();
 				ev.stopPropagation();
@@ -1882,6 +1912,7 @@
 							aria-label="Fit to view">{@html iconExpandSvg}</button
 						>
 					</div>
+					<MapLayersMenu />
 					<button
 						class="mp-btn mp-btn-icon mp-btn-gear"
 						onclick={() => optionsDialogRef?.open()}
@@ -2072,7 +2103,7 @@
 						     uses). Rendered before markers so any marker placed
 						     at the same spot draws on top. -->
 
-						{#each mapState.markers as m (m.id)}
+						{#each shownMarkers as m (m.id)}
 							{@const ic = resolveMarkerIcon(m)}
 							{@const color = m.color || DEFAULT_MARKER_COLOR}
 							{@const halo = haloColor(color)}
