@@ -34,6 +34,7 @@ import {
 	cleanLabelStyle,
 	cleanLabelPosition,
 	cleanMarkerScale,
+	cleanLayerId,
 } from '../../src/lib/mapExport.js';
 import type { MapMarker, MapServerSettings } from '../../src/lib/mapStore.svelte.js';
 
@@ -307,5 +308,18 @@ describe('buildMapZipEntries — fflate round-trip', () => {
 		const body = JSON.parse(strFromU8(back['map.json']));
 		expect(body.markers).toEqual([MARKER]);
 		expect(body.settings).toEqual(SETTINGS);
+	});
+});
+
+describe('cleanLayerId', () => {
+	it("keeps a marker's layer id from an imported file", () => {
+		expect(cleanLayerId('roads')).toBe('roads');
+		expect(cleanLayerId('6f1c2b3a-0000-4000-8000-000000000000')).toBe(
+			'6f1c2b3a-0000-4000-8000-000000000000',
+		);
+	});
+	it('drops a malformed one, which puts the marker on the default layer', () => {
+		for (const bad of ['', 'x'.repeat(65), 42, null, undefined, { id: 'roads' }])
+			expect(cleanLayerId(bad)).toBeUndefined();
 	});
 });

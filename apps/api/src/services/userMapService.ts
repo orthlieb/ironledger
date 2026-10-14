@@ -34,6 +34,8 @@ export interface MapMarker {
     case?: 'small-caps' | 'uppercase';
     size?: 'sm' | 'md' | 'lg' | 'xl';
   };
+  /** The marker's layer: an id in the map's settings.layers. */
+  layer?: string;
   /** Compass position of the label relative to the icon. */
   labelPosition?:
     | 'top'

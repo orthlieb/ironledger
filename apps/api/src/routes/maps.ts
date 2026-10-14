@@ -81,6 +81,10 @@ export const mapMarkerSchema = z.object({
   // [0.5, 3] range the UI slider offers so a hand-edited row can't shrink
   // a marker to zero or balloon it off-canvas.
   scale: z.number().finite().min(0.5).max(3).optional(),
+  // The marker's layer — an id in the map's settings.layers (the client
+  // owns the list; an id it no longer has puts the marker on the default
+  // layer). Listed so Zod doesn't strip it on save.
+  layer: z.string().min(1).max(64).optional(),
   // A generated settlement icon's recipe — a culture REFERENCE plus the
   // builder's knobs, never the culture itself. The client draws it; `icon`
   // still carries the plain fallback icon.

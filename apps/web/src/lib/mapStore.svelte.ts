@@ -107,7 +107,25 @@ export interface MapMarker {
 	 *  to grab as a small one. Clamped to [MIN_MARKER_SCALE, MAX_MARKER_SCALE]
 	 *  at every entry point (schema, importer, dialog). */
 	scale?: number;
+	/** The layer the marker is on (a `MapLayer.id` in the map's settings).
+	 *  Absent — or a layer that's since been deleted — puts it on the
+	 *  map's default layer. */
+	layer?: string;
 }
+
+/** A layer markers can be put on, to show or hide them together. The
+ *  map's list lives in its settings (`MapServerSettings.layers`); the
+ *  default layer, DEFAULT_LAYER_ID, is always there. */
+export interface MapLayer {
+	id: string;
+	name: string;
+	/** Hidden: its markers aren't drawn, and can't be picked. */
+	hidden?: boolean;
+}
+
+/** The layer every marker without one (or with a deleted one) is on. */
+export const DEFAULT_LAYER_ID = 'default';
+const DEFAULT_LAYER: MapLayer = { id: DEFAULT_LAYER_ID, name: 'Default' };
 
 /** Allowed per-marker icon scale range. Mirrors the zod bounds in
  *  `apps/api/src/routes/maps.ts` so the server never rejects a value the
@@ -167,6 +185,12 @@ export interface MapServerSettings {
 	 *  map view fits the image without letterbox. Defaults to
 	 *  DEFAULT_MAP_ASPECT (16:9) for fresh maps. */
 	aspect?: number;
+	/** The map's marker layers, in order, with whether each is shown —
+	 *  part of the map, so they look the same on every device. Read them
+	 *  through mapLayers(), which always puts the default layer first. */
+	layers?: MapLayer[];
+	/** The layer new markers go on (a layer id; absent → the default). */
+	activeLayer?: string;
 }
 
 /** Ownership metadata — Phase 3 attaches maps to first-class entities
@@ -611,12 +635,124 @@ export async function unlinkEntityFromMaps(entityId: string): Promise<void> {
  *  the effective icon half-size (world units) so mobile's 2× glyphs and
  *  desktop's 1× glyphs both get a hit target sized to what's on screen. */
 export function markersAt(x: number, y: number, tolerance: number): MapMarker[] {
+	const shown = markerShown();
 	return mapState.markers.filter((m) => {
+		// A hidden layer's markers can't be picked.
+		if (!shown(m)) return false;
 		const dx = m.x - x;
 		const dy = m.y - y;
 		const r = tolerance * markerScale(m);
 		return dx * dx + dy * dy <= r * r;
 	});
+}
+
+// ---------------------------------------------------------------------------
+// Marker layers — the list in the active map's settings, the default
+// layer always first; a layer's markers show and hide together.
+// ---------------------------------------------------------------------------
+
+/** The active map's layers, in order: the default layer first (always
+ *  there, renamable, never deleted), then the map's own. A hand-edited
+ *  or imported list is cleaned — bad rows and repeated ids dropped. */
+export function mapLayers(): MapLayer[] {
+	const raw = Array.isArray(mapState.settings.layers) ? mapState.settings.layers : [];
+	const seen = new Set<string>();
+	const out: MapLayer[] = [];
+	for (const l of raw) {
+		if (!l || typeof l.id !== 'string' || !l.id || seen.has(l.id)) continue;
+		seen.add(l.id);
+		const name = typeof l.name === 'string' && l.name.trim() ? l.name.trim() : 'Layer';
+		out.push({ id: l.id, name, ...(l.hidden === true ? { hidden: true } : {}) });
+	}
+	const def = out.findIndex((l) => l.id === DEFAULT_LAYER_ID);
+	if (def < 0) return [{ ...DEFAULT_LAYER }, ...out];
+	return [out[def], ...out.filter((_, i) => i !== def)];
+}
+
+/** The layer a marker is on: its own, if the map still has it, else the
+ *  default. */
+export function markerLayerId(m: Pick<MapMarker, 'layer'>): string {
+	return m.layer && mapLayers().some((l) => l.id === m.layer) ? m.layer : DEFAULT_LAYER_ID;
+}
+
+/** A test for whether a marker's layer is shown, for the layers as they
+ *  stand — built once for a pass over many markers. */
+export function markerShown(): (m: Pick<MapMarker, 'layer'>) => boolean {
+	const layers = mapLayers();
+	const ids = new Set(layers.map((l) => l.id));
+	const hidden = new Set(layers.filter((l) => l.hidden).map((l) => l.id));
+	return (m) => !hidden.has(m.layer && ids.has(m.layer) ? m.layer : DEFAULT_LAYER_ID);
+}
+
+/** Whether a marker's layer is shown. */
+export function isMarkerVisible(m: Pick<MapMarker, 'layer'>): boolean {
+	return markerShown()(m);
+}
+
+/** The layer new markers go on: the map's choice, if it still has it. */
+export function activeLayerId(): string {
+	const id = mapState.settings.activeLayer;
+	return id && mapLayers().some((l) => l.id === id) ? id : DEFAULT_LAYER_ID;
+}
+
+/** Write the layer list back to the map's settings and save it. */
+function saveLayers(layers: MapLayer[]): void {
+	mapState.settings.layers = layers;
+	void persistSettings();
+}
+
+/** Add a layer (shown) at the end of the list and make it the one new
+ *  markers go on. Returns its id. */
+export function addLayer(name: string): string {
+	const id = crypto.randomUUID();
+	mapState.settings.activeLayer = id;
+	saveLayers([...mapLayers(), { id, name: name.trim() || 'New layer' }]);
+	return id;
+}
+
+/** Rename a layer (a blank name is ignored). */
+export function renameLayer(id: string, name: string): void {
+	const n = name.trim();
+	if (!n) return;
+	saveLayers(mapLayers().map((l) => (l.id === id ? { ...l, name: n } : l)));
+}
+
+/** Show or hide a layer. */
+export function setLayerHidden(id: string, hidden: boolean): void {
+	saveLayers(
+		mapLayers().map((l) =>
+			l.id !== id ? l : hidden ? { ...l, hidden: true } : { id: l.id, name: l.name },
+		),
+	);
+}
+
+/** Choose the layer new markers go on. */
+export function setActiveLayer(id: string): void {
+	mapState.settings.activeLayer = id === DEFAULT_LAYER_ID ? undefined : id;
+	void persistSettings();
+}
+
+/** Delete a layer (never the default): its markers move to the default
+ *  layer, and new markers go there if they went on it. */
+export function deleteLayer(id: string): void {
+	if (id === DEFAULT_LAYER_ID) return;
+	const moved = mapState.markers.some((m) => m.layer === id);
+	if (moved)
+		mapState.markers = mapState.markers.map((m) => {
+			if (m.layer !== id) return m;
+			const { layer: _layer, ...rest } = m;
+			void _layer;
+			return rest;
+		});
+	if (mapState.settings.activeLayer === id) mapState.settings.activeLayer = undefined;
+	saveLayers(mapLayers().filter((l) => l.id !== id));
+	if (moved) void persistMarkers();
+}
+
+/** Show the layer a marker is on, if it's hidden — so a marker the user is
+ *  sent to (an entity's "on map" chip) or puts there can be seen. */
+export function revealMarkerLayer(m: Pick<MapMarker, 'layer'>): void {
+	if (!isMarkerVisible(m)) setLayerHidden(markerLayerId(m), false);
 }
 
 export function hasAnyContent(): boolean {
@@ -661,6 +797,7 @@ export function addMarker(input: {
 	labelStyle?: MapMarker['labelStyle'];
 	labelPosition?: MapMarkerLabelPosition;
 	settlement?: SettlementRecipe;
+	layer?: string;
 }): string {
 	const id = crypto.randomUUID();
 	mapState.markers.push({ id, ...input });

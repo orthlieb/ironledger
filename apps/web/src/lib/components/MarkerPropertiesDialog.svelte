@@ -35,6 +35,10 @@
 		updateMarker,
 		removeMarker,
 		markerScale,
+		markerLayerId,
+		mapLayers,
+		revealMarkerLayer,
+		DEFAULT_LAYER_ID,
 		MIN_MARKER_SCALE,
 		MAX_MARKER_SCALE,
 		type MapMarker,
@@ -275,6 +279,8 @@
 		/** Label size tier — H4 → H1. 'md' is the absent-field default;
 		 *  serialised as `labelStyle.size` when != 'md'. */
 		size: LabelSize;
+		/** The marker's layer id — the default layer is stored as absent. */
+		layer: string;
 	};
 	let draft = $state<MarkerDraft | null>(null);
 	let originalMarker = $state<MarkerDraft | null>(null);
@@ -309,6 +315,7 @@
 			case: m.labelStyle?.case ?? 'regular',
 			labelPosition: m.labelPosition ?? 'bottom',
 			size: m.labelStyle?.size ?? 'md',
+			layer: markerLayerId(m),
 		};
 		originalMarker = snap;
 		draft = { ...snap };
@@ -356,6 +363,7 @@
 			entityId: draft.entityId || undefined,
 			labelStyle,
 			labelPosition: draft.labelPosition === 'bottom' ? undefined : draft.labelPosition,
+			layer: draft.layer === DEFAULT_LAYER_ID ? undefined : draft.layer,
 		});
 	}
 
@@ -408,6 +416,16 @@
 	function pickCase(next: 'regular' | 'small-caps' | 'uppercase') {
 		if (!draft || draft.case === next) return;
 		draft.case = next;
+		applyDraftLive();
+	}
+	/** The map's layers, for the Layer field. */
+	const layerOptions = $derived(mapLayers().map((l) => ({ value: l.id, label: l.name })));
+	/** Move the marker to a layer — shown, if it was hidden, so the marker
+	 *  doesn't vanish as it's moved. */
+	function pickLayer(id: string) {
+		if (!draft || draft.layer === id) return;
+		draft.layer = id;
+		revealMarkerLayer({ layer: id });
 		applyDraftLive();
 	}
 	function pickLabelPosition(pos: MapMarkerLabelPosition) {
@@ -516,6 +534,7 @@
 					: undefined,
 				labelPosition:
 					originalMarker.labelPosition === 'bottom' ? undefined : originalMarker.labelPosition,
+				layer: originalMarker.layer === DEFAULT_LAYER_ID ? undefined : originalMarker.layer,
 			});
 		}
 		open = false;
@@ -817,6 +836,17 @@
 					</div>
 
 					<hr class="mp-props-divider" />
+
+					<!-- The marker's layer (MapLayersMenu lists and toggles them). -->
+					<label class="mp-props-field mp-props-field--layer">
+						<span class="mp-props-label">Layer</span>
+						<Select
+							value={draft.layer}
+							options={layerOptions}
+							ariaLabel="Layer"
+							onchange={pickLayer}
+						/>
+					</label>
 
 					<!-- Not a <label>: a <label> forwards clicks to its first
 					     labelable descendant, which would hijack the "Go to" button. -->

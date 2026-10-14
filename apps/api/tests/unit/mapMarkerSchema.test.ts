@@ -10,6 +10,11 @@ import { mapMarkerSchema } from '../../src/routes/maps.js';
 const base = { id: 'm1', x: 1, y: 2, label: 'Elfhold', icon: 'settlement/town' };
 
 describe('mapMarkerSchema', () => {
+  it("keeps a marker's layer, and rejects an empty one", () => {
+    expect(mapMarkerSchema.parse({ ...base, layer: 'roads' }).layer).toBe('roads');
+    expect(mapMarkerSchema.safeParse({ ...base, layer: '' }).success).toBe(false);
+  });
+
   it('keeps a settlement recipe', () => {
     const settlement = {
       tier: 'city',
