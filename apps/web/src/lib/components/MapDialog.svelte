@@ -2566,6 +2566,22 @@
 		align-items: center;
 		flex-wrap: wrap;
 	}
+	/* On desktop the map-name field (left) and the active-layer field
+	   (right) split the toolbar's free space evenly instead of hugging the
+	   two ends with dead space in the middle. Both groups grow by the same
+	   factor, but the actions group starts from its content width (basis
+	   auto, since it is mostly fixed buttons) while the map group starts
+	   from zero — so the shared free space is added equally to the map name
+	   and to the layer name, leaving the two name fields the same width.
+	   The mobile rule below overrides this to stack them full-width. */
+	:global(.mp-tools-map) {
+		flex: 1 1 0;
+		min-width: 0;
+	}
+	:global(.mp-tools-actions) {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
 	/* Thin vertical rule separating the toolbar's groups (add / edit /
 	   zoom / layers / settings). */
 	:global(.mp-tool-divider) {
@@ -2576,10 +2592,15 @@
 		background: var(--border-mid);
 	}
 	/* The active layer's name beside the Layers button (desktop only). Grows
-	   to absorb the toolbar's spare width, with the name hugging the Layers
-	   button on its right; truncates with an ellipsis when it runs out. */
+	   to fill the right group's share of the toolbar (it splits the free
+	   space with the map name on the left), hugging the Layers button on
+	   its right; truncates with an ellipsis when it runs out. width:0 (not
+	   just flex-basis:0) keeps the layer name out of the actions group's
+	   intrinsic width, so the map/layer split — and the map picker's width
+	   — stay put no matter how long the active layer's name is. */
 	:global(.mp-active-layer) {
 		flex: 1 1 0;
+		width: 0;
 		min-width: 0;
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
@@ -2622,15 +2643,18 @@
 	/* Marker-properties footer OK/Cancel use the app-wide `.btn` +
 	   `.btn.btn-primary` (see app.css) so every dialog's affirmative
 	   button stays visually identical. No .mp-btn-primary variant. */
+	/* Map picker fills its group, which shares the toolbar's free space
+	   with the actions group (see .mp-tools-map / .mp-tools-actions), so
+	   the map name and the active-layer name split the bar evenly and the
+	   trigger's width doesn't jump about as you switch maps. */
 	:global(.mp-picker-btn) {
-		max-width: 240px;
+		flex: 1 1 0;
+		min-width: 0;
 	}
 	@media (max-width: 640px) {
 		/* Row 1 already spans the toolbar on mobile via `.mp-tools-map
-		   { flex: 1 1 100% }`; drop the desktop 240 px cap so the map
-		   picker fills that row instead of hugging the left edge. */
+		   { flex: 1 1 100% }`; the picker fills that row on its own. */
 		:global(.mp-picker-btn) {
-			max-width: none;
 			width: 100%;
 		}
 	}
