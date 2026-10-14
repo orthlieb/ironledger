@@ -29,6 +29,7 @@
 	import { contentZ } from '$lib/dialogStack.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import gotoSvg from '$icons/arrow-up-right-from-square-solid.svg?raw';
+	import editSvg from '$icons/pen-to-square-solid.svg?raw';
 	import closeSvg from '$icons/xmark-solid.svg?raw';
 
 	let {
@@ -128,7 +129,13 @@
 					<div class="mk-summary">{@html renderNote(info.summary)}</div>
 				{/if}
 				<div class="mk-actions">
-					<button type="button" class="btn" onclick={onedit}>Edit</button>
+					<button
+						type="button"
+						class="btn mk-edit"
+						onclick={onedit}
+						use:tooltip={'Edit'}
+						aria-label="Edit marker">{@html editSvg}</button
+					>
 					{#if info.linked}
 						{@const linked = info.linked}
 						<button
@@ -247,6 +254,18 @@
 	:global(.mk-jump-icon svg) {
 		width: 11px;
 		height: 11px;
+		fill: currentColor;
+	}
+	/* Edit is an icon button (the pen used everywhere for edit), sitting
+	   next to the text Go To action. */
+	:global(.mk-edit) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+	:global(.mk-edit svg) {
+		width: 14px;
+		height: 14px;
 		fill: currentColor;
 	}
 </style>

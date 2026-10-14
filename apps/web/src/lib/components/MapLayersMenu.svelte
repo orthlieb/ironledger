@@ -19,6 +19,7 @@
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
 		DEFAULT_LAYER_ID,
+		type MapLayer,
 		activeLayerId,
 		addLayer,
 		deleteLayer,
@@ -34,6 +35,7 @@
 	import eyeSlashSvg from '$icons/eye-slash-solid.svg?raw';
 	import penSvg from '$icons/pen-to-square-solid.svg?raw';
 	import trashSvg from '$icons/trash-solid.svg?raw';
+	import ConfirmDialog from './ConfirmDialog.svelte';
 
 	let open = $state(false);
 	const layers = $derived(mapLayers());
@@ -52,6 +54,18 @@
 	/** The layer being renamed, and its name field. */
 	let renaming = $state<string | null>(null);
 	let nameInput = $state<HTMLInputElement | null>(null);
+
+	/** The non-default layer awaiting a delete confirmation. */
+	let pendingDelete = $state<MapLayer | null>(null);
+	let deleteConfirmRef = $state<{ open(): void; close(): void } | null>(null);
+	function askDelete(l: MapLayer) {
+		pendingDelete = l;
+		deleteConfirmRef?.open();
+	}
+	function confirmDelete() {
+		if (pendingDelete) deleteLayer(pendingDelete.id);
+		pendingDelete = null;
+	}
 
 	async function startRename(id: string) {
 		renaming = id;
@@ -106,6 +120,7 @@
 			align="end"
 			sideOffset={6}
 			collisionPadding={8}
+			onOpenAutoFocus={(e) => e.preventDefault()}
 		>
 			<div class="ml-head">Layers</div>
 			<ul class="ml-list">
@@ -147,13 +162,10 @@
 								>
 							</button>
 						{/if}
-						<button
-							type="button"
-							class="ml-icon"
-							aria-label={`Rename ${l.name}`}
-							use:tooltip={'Rename'}
-							onclick={() => startRename(l.id)}>{@html penSvg}</button
-						>
+						<!-- Delete (non-default only) sits inboard; the rename pen is
+						     always the rightmost icon, so every row's edit button lines
+						     up in the same column and the Default row (no delete) still
+						     reads right-aligned. -->
 						{#if l.id === DEFAULT_LAYER_ID}
 							<span class="ml-icon-spacer" aria-hidden="true"></span>
 						{:else}
@@ -162,9 +174,16 @@
 								class="ml-icon ml-delete"
 								aria-label={`Delete ${l.name}`}
 								use:tooltip={`Delete — its markers move to ${layers[0].name}`}
-								onclick={() => deleteLayer(l.id)}>{@html trashSvg}</button
+								onclick={() => askDelete(l)}>{@html trashSvg}</button
 							>
 						{/if}
+						<button
+							type="button"
+							class="ml-icon"
+							aria-label={`Rename ${l.name}`}
+							use:tooltip={'Rename'}
+							onclick={() => startRename(l.id)}>{@html penSvg}</button
+						>
 					</li>
 				{/each}
 			</ul>
@@ -172,6 +191,22 @@
 		</Popover.Content>
 	</Popover.Portal>
 </Popover.Root>
+
+<ConfirmDialog
+	bind:this={deleteConfirmRef}
+	title="Delete layer"
+	confirmLabel="DELETE"
+	onconfirm={confirmDelete}
+	ondismiss={() => (pendingDelete = null)}
+>
+	<p class="ml-confirm-text">
+		Delete <strong>{pendingDelete?.name}</strong>?
+		{#if pendingDelete && (counts[pendingDelete.id] ?? 0) > 0}
+			Its {counts[pendingDelete.id]} marker{(counts[pendingDelete.id] ?? 0) === 1 ? '' : 's'}
+			move to <strong>{layers[0].name}</strong>.
+		{/if}
+	</p>
+</ConfirmDialog>
 
 <style>
 	/* Portalled by bits-ui, so every selector is :global(); .ml-* is owned
@@ -306,5 +341,12 @@
 	}
 	:global(.ml-add) {
 		align-self: flex-start;
+	}
+	/* Delete-confirm body (ConfirmDialog is portalled → :global). */
+	:global(.ml-confirm-text) {
+		margin: 0;
+		font-size: 0.82rem;
+		line-height: 1.5;
+		color: var(--text-muted);
 	}
 </style>

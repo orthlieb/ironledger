@@ -57,7 +57,7 @@
 		{
 			icon: mapSvg,
 			title: 'Campaign Maps',
-			body: 'Drop your world on a grid, pin the places your saga touches, and never again wave vaguely at "somewhere north of the barrow." Multiple maps per campaign — regional, city, dungeon, the lot. Markers snap to the grid, rotate to face where the road turns, and link straight to the community, NPC, place, journey, or site they represent. Zoom, drag, colour, label. Export the whole atlas as a zip and bring your Ironlands with you.',
+			body: 'Drop your world on a grid, pin the places your saga touches, and never again wave vaguely at "somewhere north of the barrow." Multiple maps per campaign — regional, city, dungeon, the lot. Markers snap to the grid, rotate to face where the road turns, and link straight to the community, NPC, place, journey, or site they represent. Zoom, drag, colour, label. Sort markers onto layers you can show or hide — roads on one, the dangers you are not ready to reveal on another. Export the whole atlas as a zip and bring your Ironlands with you.',
 			color: 'var(--color-touched)',
 			image: '/about/maps.webp',
 			alt: 'A hand-drawn campaign map with pinned locations',

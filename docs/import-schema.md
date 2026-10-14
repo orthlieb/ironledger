@@ -95,7 +95,11 @@ out of scope here.
 > optional `background.jpg`), so a full backup captures them. `map.json` also
 > records the map's owner **by name** (`ownerKind` + `ownerName`) so import can
 > re-link it to the owning community / place / journey / site after entities
-> land (ids regenerate, names don't). On a merge import where that owner
+> land (ids regenerate, names don't). A map's **layers** travel too — the
+> layer list (`settings.layers`) and every marker's `layer` id are in
+> `map.json`, so a round-tripped map keeps its layers and which marker sits on
+> each (a marker whose layer id no longer resolves falls back to Default). On a
+> merge import where that owner
 > already has a map, the user is prompted **Replace** (overwrite it) or
 > **Skip** (import the incoming map standalone); an owner that can't be matched
 > also imports standalone. The Export dialog also offers a standalone
