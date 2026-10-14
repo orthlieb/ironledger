@@ -1901,13 +1901,15 @@
 							use:tooltip={`Zoom in (Ctrl/Cmd + wheel) — currently ${Math.round(zoom * 100)}%`}
 							aria-label="Zoom in">{@html iconZoomInSvg}</button
 						>
-						<button
-							class="mp-btn mp-btn-icon"
-							onclick={zoomFit}
-							disabled={zoom === 1}
-							use:tooltip={'Fit map to view (100%)'}
-							aria-label="Fit to view">{@html iconExpandSvg}</button
-						>
+						{#if !isMobileViewport}
+							<button
+								class="mp-btn mp-btn-icon"
+								onclick={zoomFit}
+								disabled={zoom === 1}
+								use:tooltip={'Fit map to view (100%)'}
+								aria-label="Fit to view">{@html iconExpandSvg}</button
+							>
+						{/if}
 					</div>
 					<MapLayersMenu />
 					<button
