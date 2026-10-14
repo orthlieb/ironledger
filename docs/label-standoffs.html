@@ -3,7 +3,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
 <link
   rel="stylesheet"
-  href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,700;0,800;1,400;1,700;1,800&family=Fira+Sans:wght@400&family=Roboto:wght@400;500;600&display=swap"
+  href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,400;0,700;0,800;1,400;1,700;1,800&family=Roboto:wght@400;500;600&display=swap"
 />
 <style>
   :root {
@@ -69,7 +69,7 @@
     margin-bottom: 32px;
   }
   h1 {
-    font-family: 'EB Garamond', 'Palatino Linotype', Georgia, serif;
+    font-family: 'Fira Sans', 'Segoe UI', system-ui, sans-serif;
     font-weight: 800;
     font-size: clamp(1.9rem, 4vw, 2.7rem);
     letter-spacing: -0.005em;
@@ -116,7 +116,7 @@
     flex-wrap: wrap;
   }
   .panel-head h2 {
-    font-family: 'EB Garamond', 'Palatino Linotype', Georgia, serif;
+    font-family: 'Fira Sans', 'Segoe UI', system-ui, sans-serif;
     font-weight: 800;
     font-size: 1.5rem;
     margin: 0;
@@ -193,7 +193,7 @@
     background: color-mix(in srgb, var(--rule) 40%, transparent);
   }
   .data td.pos {
-    font-family: 'EB Garamond', 'Palatino Linotype', Georgia, serif;
+    font-family: 'Fira Sans', 'Segoe UI', system-ui, sans-serif;
     font-weight: 800;
     color: var(--amber);
   }
@@ -217,7 +217,7 @@
     color: var(--ink-2);
   }
   .legend h3 {
-    font-family: 'EB Garamond', 'Palatino Linotype', Georgia, serif;
+    font-family: 'Fira Sans', 'Segoe UI', system-ui, sans-serif;
     font-weight: 800;
     font-size: 1.15rem;
     margin: 0 0 8px;
@@ -245,7 +245,7 @@
   }
 
   /* Style / size samples above the anchor panels. Each chip shows the
-     labelStyle option applied to a placeholder word in EB Garamond, so
+     labelStyle option applied to a placeholder word in Fira Sans, so
      the whole surface of a marker label's typography is browsable in
      one place. */
   .samples {
@@ -256,7 +256,7 @@
     margin-bottom: 24px;
   }
   .samples h2 {
-    font-family: 'EB Garamond', 'Palatino Linotype', Georgia, serif;
+    font-family: 'Fira Sans', 'Segoe UI', system-ui, sans-serif;
     font-weight: 800;
     font-size: 1.5rem;
     margin: 0 0 4px;
@@ -305,7 +305,7 @@
     font-family: ui-monospace, 'Roboto Mono', monospace;
   }
   .samples .sample {
-    font-family: 'EB Garamond', 'Palatino Linotype', Georgia, serif;
+    font-family: 'Fira Sans', 'Segoe UI', system-ui, sans-serif;
     font-weight: 400;
     font-size: 20px;
     line-height: 1;
@@ -320,8 +320,8 @@
   .samples .sample.underline {
     text-decoration: underline;
   }
-  /* Small caps: same story as the app — Google Fonts strips EB
-     Garamond's smcp OpenType feature, so `font-variant: small-caps`
+  /* Small caps: same story as the app — Google Fonts omits a Fira
+     Sans smcp OpenType feature, so `font-variant: small-caps`
      is the workable choice (real smcp when present, synthesised
      from full caps otherwise). */
   .samples .sample.smcp {
@@ -363,8 +363,8 @@
   <section class="samples" aria-labelledby="samples-heading">
     <h2 id="samples-heading">Style samples</h2>
     <p class="samples-note">
-      Every labelStyle option applied to a placeholder in EB Garamond — the marker editor's B / I /
-      U toggles, the case picker (Aa · SC · AA), and the size ramp (sm / md / lg / xl).
+      Every labelStyle option applied to a placeholder in Fira Sans — the marker editor's B / I / U
+      toggles, the case picker (Aa · SC · AA), and the size ramp (sm / md / lg / xl).
     </p>
     <div class="samples-row">
       <span class="row-label">Weight / decoration</span>
@@ -421,7 +421,7 @@
     <article class="panel">
       <div class="panel-head">
         <h2>Mobile</h2>
-        <span class="meta">ICON_SIZE 0.84375 · LABEL_GAP 0.125 · font 0.48 · capHeight 0.312</span>
+        <span class="meta">ICON_SIZE 0.84375 · LABEL_GAP 0.125 · font 0.48 · capHeight 0.331</span>
       </div>
       <svg
         class="diagram"
@@ -438,7 +438,7 @@
         <circle cx="0" cy="0" r="0.12" fill="#f0e6cc" />
 
         <!-- straight = extent + gap = 0.421875 + 0.125 = 0.546875
-				     capHeight = 0.48 × 0.65 = 0.312
+				     capHeight = 0.48 × 0.69 = 0.331
 				     Top: baseline at y = -straight → visible bottom of caps at the boundary.
 				     Bottom: baseline at y = +straight + capHeight → cap top at the boundary. -->
 
@@ -462,7 +462,7 @@
         <text
           class="label"
           x="0"
-          y="0.858875"
+          y="0.878075"
           font-size="0.48"
           text-anchor="middle"
           dominant-baseline="alphabetic"
@@ -476,7 +476,7 @@
         <text
           class="label"
           x="-0.576875"
-          y="0.156"
+          y="0.1656"
           font-size="0.48"
           text-anchor="end"
           dominant-baseline="alphabetic"
@@ -490,7 +490,7 @@
         <text
           class="label"
           x="0.576875"
-          y="0.156"
+          y="0.1656"
           font-size="0.48"
           text-anchor="start"
           dominant-baseline="alphabetic"
@@ -532,7 +532,7 @@
         <text
           class="label"
           x="-0.546875"
-          y="0.858875"
+          y="0.878075"
           font-size="0.48"
           text-anchor="end"
           dominant-baseline="alphabetic"
@@ -546,7 +546,7 @@
         <text
           class="label"
           x="0.546875"
-          y="0.858875"
+          y="0.878075"
           font-size="0.48"
           text-anchor="start"
           dominant-baseline="alphabetic"
@@ -582,21 +582,21 @@
           <tr>
             <td class="pos">Bottom</td>
             <td class="num">0</td>
-            <td class="num">0.859</td>
+            <td class="num">0.878</td>
             <td class="kw">middle</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
             <td class="pos">Left</td>
             <td class="num">−0.577</td>
-            <td class="num">0.156</td>
+            <td class="num">0.166</td>
             <td class="kw">end</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
             <td class="pos">Right</td>
             <td class="num">0.577</td>
-            <td class="num">0.156</td>
+            <td class="num">0.166</td>
             <td class="kw">start</td>
             <td class="kw">alphabetic</td>
           </tr>
@@ -617,14 +617,14 @@
           <tr>
             <td class="pos">Bottom-Left</td>
             <td class="num">−0.547</td>
-            <td class="num">0.859</td>
+            <td class="num">0.878</td>
             <td class="kw">end</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
             <td class="pos">Bottom-Right</td>
             <td class="num">0.547</td>
-            <td class="num">0.859</td>
+            <td class="num">0.878</td>
             <td class="kw">start</td>
             <td class="kw">alphabetic</td>
           </tr>
@@ -636,7 +636,7 @@
     <article class="panel">
       <div class="panel-head">
         <h2>Desktop</h2>
-        <span class="meta">ICON_SIZE 0.421875 · LABEL_GAP 0.075 · font 0.24 · capHeight 0.156</span>
+        <span class="meta">ICON_SIZE 0.421875 · LABEL_GAP 0.075 · font 0.24 · capHeight 0.166</span>
       </div>
       <svg
         class="diagram"
@@ -657,7 +657,7 @@
         <circle cx="0" cy="0" r="0.06" fill="#f0e6cc" />
 
         <!-- straight = 0.210937 + 0.075 = 0.285937
-				     capHeight = 0.24 × 0.65 = 0.156 -->
+				     capHeight = 0.24 × 0.69 = 0.166 -->
 
         <!-- TOP -->
         <line class="standoff" x1="0" y1="-0.210937" x2="0" y2="-0.285937" />
@@ -679,7 +679,7 @@
         <text
           class="label"
           x="0"
-          y="0.441937"
+          y="0.451537"
           font-size="0.24"
           text-anchor="middle"
           dominant-baseline="alphabetic"
@@ -693,7 +693,7 @@
         <text
           class="label"
           x="-0.315937"
-          y="0.078"
+          y="0.0828"
           font-size="0.24"
           text-anchor="end"
           dominant-baseline="alphabetic"
@@ -707,7 +707,7 @@
         <text
           class="label"
           x="0.315937"
-          y="0.078"
+          y="0.0828"
           font-size="0.24"
           text-anchor="start"
           dominant-baseline="alphabetic"
@@ -749,7 +749,7 @@
         <text
           class="label"
           x="-0.285937"
-          y="0.441937"
+          y="0.451537"
           font-size="0.24"
           text-anchor="end"
           dominant-baseline="alphabetic"
@@ -763,7 +763,7 @@
         <text
           class="label"
           x="0.285937"
-          y="0.441937"
+          y="0.451537"
           font-size="0.24"
           text-anchor="start"
           dominant-baseline="alphabetic"
@@ -799,21 +799,21 @@
           <tr>
             <td class="pos">Bottom</td>
             <td class="num">0</td>
-            <td class="num">0.442</td>
+            <td class="num">0.452</td>
             <td class="kw">middle</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
             <td class="pos">Left</td>
             <td class="num">−0.316</td>
-            <td class="num">0.078</td>
+            <td class="num">0.083</td>
             <td class="kw">end</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
             <td class="pos">Right</td>
             <td class="num">0.316</td>
-            <td class="num">0.078</td>
+            <td class="num">0.083</td>
             <td class="kw">start</td>
             <td class="kw">alphabetic</td>
           </tr>
@@ -834,14 +834,14 @@
           <tr>
             <td class="pos">Bottom-Left</td>
             <td class="num">−0.286</td>
-            <td class="num">0.442</td>
+            <td class="num">0.452</td>
             <td class="kw">end</td>
             <td class="kw">alphabetic</td>
           </tr>
           <tr>
             <td class="pos">Bottom-Right</td>
             <td class="num">0.286</td>
-            <td class="num">0.442</td>
+            <td class="num">0.452</td>
             <td class="kw">start</td>
             <td class="kw">alphabetic</td>
           </tr>
@@ -874,9 +874,9 @@
         half as many pixels wide because there's twice as much content in the same panel."
       </li>
       <li>
-        <strong>Cap-height constant</strong> is EB Garamond's
-        <code>sCapHeight / unitsPerEm = 650 / 1000 = 0.65</code>. Change the label font and this
-        constant needs to change with it — the app's <code>EB_GARAMOND_CAP_HEIGHT</code> is where it
+        <strong>Cap-height constant</strong> is Fira Sans's
+        <code>sCapHeight / unitsPerEm = 689 / 1000 ≈ 0.69</code>. Change the label font and this
+        constant needs to change with it — the app's <code>LABEL_CAP_HEIGHT</code> is where it
         lives.
       </li>
     </ul>
