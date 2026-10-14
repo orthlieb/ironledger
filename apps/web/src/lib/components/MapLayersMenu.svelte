@@ -161,26 +161,13 @@
 								>
 							</button>
 						{/if}
+						<!-- Delete (non-default only) sits inboard; the rename pen is
+						     always the rightmost icon, so every row's edit button lines
+						     up in the same column and the Default row (no delete) still
+						     reads right-aligned. -->
 						{#if l.id === DEFAULT_LAYER_ID}
-							<!-- Default can't be deleted; right-align its single action
-							     (rename) into the delete column so every row's trailing
-							     icon lines up on the right edge. -->
 							<span class="ml-icon-spacer" aria-hidden="true"></span>
-							<button
-								type="button"
-								class="ml-icon"
-								aria-label={`Rename ${l.name}`}
-								use:tooltip={'Rename'}
-								onclick={() => startRename(l.id)}>{@html penSvg}</button
-							>
 						{:else}
-							<button
-								type="button"
-								class="ml-icon"
-								aria-label={`Rename ${l.name}`}
-								use:tooltip={'Rename'}
-								onclick={() => startRename(l.id)}>{@html penSvg}</button
-							>
 							<button
 								type="button"
 								class="ml-icon ml-delete"
@@ -189,6 +176,13 @@
 								onclick={() => askDelete(l)}>{@html trashSvg}</button
 							>
 						{/if}
+						<button
+							type="button"
+							class="ml-icon"
+							aria-label={`Rename ${l.name}`}
+							use:tooltip={'Rename'}
+							onclick={() => startRename(l.id)}>{@html penSvg}</button
+						>
 					</li>
 				{/each}
 			</ul>

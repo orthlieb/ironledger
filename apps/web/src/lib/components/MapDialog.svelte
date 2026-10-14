@@ -86,6 +86,7 @@
 		isMarkerVisible,
 		revealMarkerLayer,
 		activeLayerId,
+		mapLayers,
 		DEFAULT_LAYER_ID,
 		addMarker,
 		updateMarker,
@@ -1635,6 +1636,13 @@
 	}
 	let fullscreen = $state(readSavedFullscreen());
 	const effectiveFullscreen = $derived(isMobileViewport || fullscreen);
+	/** Name of the layer new markers go on — shown beside the Layers
+	 *  button when the toolbar has room (desktop width). */
+	const activeLayerName = $derived.by(() => {
+		const id = activeLayerId();
+		const ls = mapLayers();
+		return (ls.find((l) => l.id === id) ?? ls[0])?.name ?? '';
+	});
 	function toggleFullscreen() {
 		fullscreen = !fullscreen;
 		try {
@@ -1855,6 +1863,7 @@
 						><span class="mp-btn-add-plus" aria-hidden="true">+</span
 						>{@html iconLocationDotSvg}</button
 					>
+					<span class="mp-tool-divider" aria-hidden="true"></span>
 					<!-- Edit selected marker — double-click and Ctrl/Cmd+E do the
 					     same thing; the button surfaces the affordance for touch
 					     users. Cut / copy / paste stay keyboard-only (Ctrl+X /
@@ -1886,6 +1895,7 @@
 							: 'Turn on Scale in Map options to measure distances'}
 						aria-label="Measure distance">{@html iconRulerSvg}</button
 					>
+					<span class="mp-tool-divider" aria-hidden="true"></span>
 					<div class="mp-zoom" role="group" aria-label="Zoom controls">
 						<button
 							class="mp-btn mp-btn-icon"
@@ -1911,7 +1921,14 @@
 							>
 						{/if}
 					</div>
+					<span class="mp-tool-divider" aria-hidden="true"></span>
+					{#if !isMobileViewport}
+						<span class="mp-active-layer" use:tooltip={'New markers go on this layer'}
+							>{activeLayerName}</span
+						>
+					{/if}
 					<MapLayersMenu />
+					<span class="mp-tool-divider" aria-hidden="true"></span>
 					<button
 						class="mp-btn mp-btn-icon mp-btn-gear"
 						onclick={() => optionsDialogRef?.open()}
@@ -2548,6 +2565,25 @@
 		gap: 8px;
 		align-items: center;
 		flex-wrap: wrap;
+	}
+	/* Thin vertical rule separating the toolbar's groups (add / edit /
+	   zoom / layers / settings). */
+	:global(.mp-tool-divider) {
+		flex: none;
+		align-self: stretch;
+		width: 1px;
+		min-height: 20px;
+		background: var(--border-mid);
+	}
+	/* The active layer's name beside the Layers button (desktop only). */
+	:global(.mp-active-layer) {
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		color: var(--text-muted);
+		max-width: 12ch;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
 	}
 	@media (max-width: 640px) {
 		/* Row 1: map picker only. Row 2: + Marker + zoom cluster + gear. */
