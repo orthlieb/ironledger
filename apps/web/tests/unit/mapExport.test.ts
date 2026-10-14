@@ -149,6 +149,31 @@ describe('buildMapZipEntries — envelope', () => {
 		expect(body.settings).toEqual(SETTINGS);
 	});
 
+	it('map.json carries marker layers and the layer list (round-trip)', async () => {
+		const files = await buildMapZipEntries({
+			name: 'Layered',
+			markers: [{ ...MARKER, layer: 'roads' }],
+			settings: {
+				...SETTINGS,
+				activeLayer: 'roads',
+				layers: [
+					{ id: 'roads', name: 'Roads' },
+					{ id: 'secret', name: 'GM', hidden: true },
+				],
+			},
+			backgroundUrl: '',
+		});
+		const body = JSON.parse(strFromU8(files['map.json']));
+		// The marker keeps its layer id, and the layer list + active layer
+		// survive verbatim — so an imported map reopens with its layers intact.
+		expect(body.markers[0].layer).toBe('roads');
+		expect(body.settings.layers).toEqual([
+			{ id: 'roads', name: 'Roads' },
+			{ id: 'secret', name: 'GM', hidden: true },
+		]);
+		expect(body.settings.activeLayer).toBe('roads');
+	});
+
 	it('applyMapImport allowlist keeps labelStyle + labelPosition (drift guard)', () => {
 		// The 2026-09 infoLink regression was a mapper that silently dropped a
 		// new field. `applyMapImport`'s `cleanMarkers.map(...)` is the same
