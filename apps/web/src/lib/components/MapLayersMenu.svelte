@@ -31,6 +31,7 @@
 		setLayerHidden,
 	} from '$lib/mapStore.svelte.js';
 	import layersSvg from '$icons/layer-group.svg?raw';
+	import newLayerSvg from '$icons/new-layer.svg?raw';
 	import eyeSvg from '$icons/eye-solid.svg?raw';
 	import eyeSlashSvg from '$icons/eye-slash-solid.svg?raw';
 	import penSvg from '$icons/pen-to-square-solid.svg?raw';
@@ -67,6 +68,27 @@
 		pendingDelete = null;
 	}
 
+	// Picking a layer as the active one closes the popover — a plain menu
+	// choice. Hide/show, rename and delete all leave it open. A double-
+	// click on the name renames instead, so the close is deferred a beat
+	// and the dblclick handler cancels it (an instant close would unmount
+	// the row before the second click could land).
+	let selectCloseTimer = $state<ReturnType<typeof setTimeout> | null>(null);
+	function selectLayer(id: string) {
+		setActiveLayer(id);
+		if (selectCloseTimer) clearTimeout(selectCloseTimer);
+		selectCloseTimer = setTimeout(() => {
+			open = false;
+			selectCloseTimer = null;
+		}, 220);
+	}
+	function renameFromName(id: string) {
+		if (selectCloseTimer) {
+			clearTimeout(selectCloseTimer);
+			selectCloseTimer = null;
+		}
+		void startRename(id);
+	}
 	async function startRename(id: string) {
 		renaming = id;
 		await tick();
@@ -122,7 +144,17 @@
 			collisionPadding={8}
 			onOpenAutoFocus={(e) => e.preventDefault()}
 		>
-			<div class="ml-head">Layers</div>
+			<div class="ml-head-row">
+				<span class="ml-head">Layers</span>
+				<button
+					type="button"
+					class="mp-btn mp-btn-icon ml-add"
+					onclick={newLayer}
+					use:tooltip={'New layer'}
+					aria-label="New layer"
+					><span class="mp-btn-add-plus" aria-hidden="true">+</span>{@html newLayerSvg}</button
+				>
+			</div>
 			<ul class="ml-list">
 				{#each layers as l (l.id)}
 					<li class="ml-row" class:ml-row--hidden={l.hidden} class:ml-row--active={active === l.id}>
@@ -153,8 +185,8 @@
 								use:tooltip={active === l.id
 									? 'New markers go on this layer'
 									: 'Put new markers on this layer'}
-								onclick={() => setActiveLayer(l.id)}
-								ondblclick={() => startRename(l.id)}
+								onclick={() => selectLayer(l.id)}
+								ondblclick={() => renameFromName(l.id)}
 							>
 								<span class="ml-label">{l.name}</span>
 								<span class="ml-count" aria-label="{counts[l.id] ?? 0} markers"
@@ -187,7 +219,6 @@
 					</li>
 				{/each}
 			</ul>
-			<button type="button" class="btn ml-add" onclick={newLayer}>+ New layer</button>
 		</Popover.Content>
 	</Popover.Portal>
 </Popover.Root>
@@ -230,6 +261,13 @@
 		font-family: var(--font-ui);
 		z-index: 200;
 		outline: none;
+	}
+	/* Title + New-layer button share one line. */
+	:global(.ml-head-row) {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: 8px;
 	}
 	:global(.ml-head) {
 		font-size: 0.72rem;
@@ -299,7 +337,10 @@
 		flex: 1;
 		min-width: 0;
 		display: flex;
-		align-items: center;
+		/* The marker count sits on the layer name's text baseline (they are
+		   different sizes), rather than being centre-aligned, so the number
+		   reads as part of the same line. */
+		align-items: baseline;
 		gap: 6px;
 		padding: 4px 6px;
 		border-radius: 4px;
@@ -312,9 +353,10 @@
 	:global(.ml-row--active .ml-name) {
 		font-weight: 700;
 	}
+	/* A hidden layer is already signalled by the dimmed row and the
+	   eye-slash icon, so the name just dims — no strikethrough. */
 	:global(.ml-row--hidden .ml-label) {
 		color: var(--text-dimmer);
-		text-decoration: line-through;
 	}
 	:global(.ml-label) {
 		flex: 1;
@@ -339,8 +381,11 @@
 		border: 1px solid var(--text-accent);
 		border-radius: 4px;
 	}
+	/* Same chrome as the toolbar's add-marker button (.mp-btn .mp-btn-icon,
+	   global from MapDialog): a "+" beside the layer glyph. Only the + /
+	   icon gap is ours. */
 	:global(.ml-add) {
-		align-self: flex-start;
+		gap: 3px;
 	}
 	/* Delete-confirm body (ConfirmDialog is portalled → :global). */
 	:global(.ml-confirm-text) {
