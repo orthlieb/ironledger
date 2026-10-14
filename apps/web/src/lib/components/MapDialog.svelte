@@ -1697,11 +1697,11 @@
 	//     the label extending outward). Vertically centered on the
 	//     CAP height (baseline at y = capHeight/2) so the caps'
 	//     vertical center lands on the icon's y-axis.
-	//     `dominant-baseline: central` would center the em box, but
-	//     EB Garamond's em is asymmetric around its caps
-	//     (sTypoAscender 1.007, sTypoDescender 0.298) — em center
-	//     sits ~0.03·fontSize above cap center, so `central` would
-	//     drift the visible caps below y=0.
+	//     `dominant-baseline: central` would center the em box, which
+	//     isn't the caps' center: the em's ascent and descent aren't the
+	//     caps' (Fira Sans: 0.94 and 0.27 of the size, caps 0.69), so
+	//     `central` drifts the visible caps off y=0 — and by however
+	//     much the font's metrics say, not by a measured constant.
 	//
 	// The cap-height constant is a fraction of the *actual rendered*
 	// font-size (base × labelStyle.size multiplier), so xl labels don't
@@ -1713,9 +1713,9 @@
 		anchor: 'start' | 'middle' | 'end';
 		baseline: 'alphabetic';
 	}
-	// EB Garamond cap-height = 650 / 1000 units. Swap this if the
-	// label font family changes.
-	const EB_GARAMOND_CAP_HEIGHT = 0.65;
+	// Fira Sans cap-height = 689 / 1000 units (the label font — see
+	// .mp-marker-label). Swap this if the label font family changes.
+	const LABEL_CAP_HEIGHT = 0.69;
 	function labelPlacement(
 		pos: LabelPos,
 		extent: number,
@@ -1723,7 +1723,7 @@
 		fontSize: number,
 	): LabelPlacement {
 		const straight = extent + gap;
-		const capHeight = fontSize * EB_GARAMOND_CAP_HEIGHT;
+		const capHeight = fontSize * LABEL_CAP_HEIGHT;
 		const yTop = -straight;
 		const yBottom = straight + capHeight;
 		const yCapCenter = capHeight / 2;
@@ -1772,7 +1772,7 @@
 	function labelStyleCss(ls: MapMarker['labelStyle']): string {
 		if (!ls) return '';
 		const parts: string[] = [];
-		// EB Garamond loads real 400 / 700 / 800 (roman + italic — see
+		// Fira Sans loads real 400 / 700 / 800 (roman + italic — see
 		// app.html); bold uses 800 for maximum weight contrast against
 		// the 400 base while still keeping a real italic face when
 		// bold and italic combine.
@@ -1781,14 +1781,11 @@
 		if (ls.underline) parts.push('text-decoration:underline');
 		// Small caps via `font-variant: small-caps`. The font's real
 		// `smcp` OpenType feature is used when present; otherwise the
-		// browser synthesises small caps by scaling full caps. Google
-		// Fonts strips advanced OpenType features (smcp / c2sc) when it
-		// subsets EB Garamond for the css2 endpoint — its served TTF
-		// carries only `dnom frac liga locl numr pnum rlig tnum` — so
-		// in practice this always synthesises today. Using
+		// browser synthesises small caps by scaling full caps — as it
+		// does for Fira Sans as Google Fonts serves it. Using
 		// `font-feature-settings: "smcp"` here would silently render as
-		// lowercase (no fallback path), so the variant form is the
-		// right choice until we self-host a full-feature EB Garamond.
+		// lowercase where the feature is missing (no fallback path), so
+		// the variant form is the right choice.
 		if (ls.case === 'small-caps') parts.push('font-variant:small-caps');
 		else if (ls.case === 'uppercase') parts.push('text-transform:uppercase');
 		// Only emit a size override for non-default tiers so labels that
@@ -3148,16 +3145,14 @@
 		   centered on their anchor point instead of aligning to the far
 		   side of it — so a `left` label overlapped the icon by half its
 		   width.
-		   Font: EB Garamond — classic Garamond revival with real bold
-		   (loaded at 400/700/800) and true italics for every roman
-		   weight (400/700/800 italic loaded). Small-caps go through
-		   `font-variant: small-caps` (see labelStyleCss) and are
-		   browser-synthesised today: Google Fonts strips the `smcp` /
-		   `c2sc` OpenType features when it subsets EB Garamond, so
-		   there is no real designed set to use. Self-hosting the
-		   upstream TTF would restore real small caps. Falls back
-		   through the UI stack when EB Garamond isn't available. */
-		font-family: 'EB Garamond', var(--font-ui);
+		   Font: Fira Sans — a humanist sans that stays legible at label
+		   size under the halo (the serif it replaced, EB Garamond, broke
+		   up there: thin strokes, small x-height), with real bold (loaded
+		   at 400/700/800) and true italics for each (see app.html).
+		   Small caps go through `font-variant: small-caps` (see
+		   labelStyleCss), browser-synthesised from its caps. Falls back
+		   through the UI stack when Fira Sans isn't available. */
+		font-family: 'Fira Sans', var(--font-ui);
 		font-size: calc(0.24px * var(--label-size-mult, 1));
 		font-weight: 400;
 		paint-order: stroke fill;
@@ -3576,10 +3571,10 @@
 		min-width: 32px;
 		height: 32px;
 		padding: 0 8px;
-		/* EB Garamond so the B / I / U / Aa / small-caps / AA glyphs
+		/* Fira Sans so the B / I / U / Aa / small-caps / AA glyphs
 		   preview in the same font the marker label renders in. Falls
 		   back through the UI stack. */
-		font-family: 'EB Garamond', var(--font-ui);
+		font-family: 'Fira Sans', var(--font-ui);
 		font-size: 0.95rem;
 		color: var(--text);
 		background: var(--bg-control);
