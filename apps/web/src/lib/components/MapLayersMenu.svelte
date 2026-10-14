@@ -120,6 +120,7 @@
 			align="end"
 			sideOffset={6}
 			collisionPadding={8}
+			onOpenAutoFocus={(e) => e.preventDefault()}
 		>
 			<div class="ml-head">Layers</div>
 			<ul class="ml-list">

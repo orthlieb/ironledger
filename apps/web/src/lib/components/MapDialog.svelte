@@ -2575,12 +2575,16 @@
 		min-height: 20px;
 		background: var(--border-mid);
 	}
-	/* The active layer's name beside the Layers button (desktop only). */
+	/* The active layer's name beside the Layers button (desktop only). Grows
+	   to absorb the toolbar's spare width, with the name hugging the Layers
+	   button on its right; truncates with an ellipsis when it runs out. */
 	:global(.mp-active-layer) {
+		flex: 1 1 0;
+		min-width: 0;
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
 		color: var(--text-muted);
-		max-width: 12ch;
+		text-align: right;
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
