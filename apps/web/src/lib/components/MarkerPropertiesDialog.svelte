@@ -662,6 +662,48 @@
 						</label>
 					</div>
 
+					<!-- Layer + Link to — marker-wide knobs like type/colour/angle,
+					     so they share a 50/50 row directly below it. -->
+					<div class="mp-props-row">
+						<label class="mp-props-field mp-props-field--layer mp-props-field--half">
+							<span class="mp-props-label">Layer</span>
+							<Select
+								value={draft.layer}
+								options={layerOptions}
+								ariaLabel="Layer"
+								onchange={pickLayer}
+							/>
+						</label>
+						<div class="mp-props-field mp-props-field--half">
+							<span class="mp-props-label">Link to</span>
+							<div class="mp-link-row">
+								<Combobox
+									bind:open={entityPickerOpen}
+									items={sortedLinkableEntities}
+									getKey={(e) => `${e.kind}:${e.id}`}
+									getLabel={(e) => e.name}
+									getIcon={(e) => KIND_META[e.kind].icon}
+									getColor={(e) => KIND_META[e.kind].color}
+									activeKey={draft.entityId}
+									onselect={(e) => pickDraftEntity(`${e.kind}:${e.id}`)}
+									triggerValue={draftLinkedEntity ? draftLinkedEntity.name : ''}
+									triggerIcon={draftLinkedEntity
+										? ENTITY_KIND_META[draftLinkedEntity.kind].icon
+										: undefined}
+									triggerColor={draftLinkedEntity
+										? ENTITY_KIND_META[draftLinkedEntity.kind].color
+										: undefined}
+									placeholder={draft.entityId && !draftLinkedEntity ? 'Broken link' : '— No link —'}
+									searchPlaceholder="Search connections…"
+									emptyText="No matching connections."
+									ariaLabel="Link marker to a connection"
+									class="mp-sel-entity-btn"
+									clearItem={{ label: '— No link —', onselect: () => pickDraftEntity('') }}
+								/>
+							</div>
+						</div>
+					</div>
+
 					<hr class="mp-props-divider" />
 
 					<!-- Label input + label position share the first row. Position
@@ -833,50 +875,6 @@
 								aria-label="Icon size multiplier"
 							/>
 						</label>
-					</div>
-
-					<hr class="mp-props-divider" />
-
-					<!-- The marker's layer (MapLayersMenu lists and toggles them). -->
-					<label class="mp-props-field mp-props-field--layer">
-						<span class="mp-props-label">Layer</span>
-						<Select
-							value={draft.layer}
-							options={layerOptions}
-							ariaLabel="Layer"
-							onchange={pickLayer}
-						/>
-					</label>
-
-					<!-- Not a <label>: a <label> forwards clicks to its first
-					     labelable descendant, which would hijack the "Go to" button. -->
-					<div class="mp-props-field">
-						<span class="mp-props-label">Link to</span>
-						<div class="mp-link-row">
-							<Combobox
-								bind:open={entityPickerOpen}
-								items={sortedLinkableEntities}
-								getKey={(e) => `${e.kind}:${e.id}`}
-								getLabel={(e) => e.name}
-								getIcon={(e) => KIND_META[e.kind].icon}
-								getColor={(e) => KIND_META[e.kind].color}
-								activeKey={draft.entityId}
-								onselect={(e) => pickDraftEntity(`${e.kind}:${e.id}`)}
-								triggerValue={draftLinkedEntity ? draftLinkedEntity.name : ''}
-								triggerIcon={draftLinkedEntity
-									? ENTITY_KIND_META[draftLinkedEntity.kind].icon
-									: undefined}
-								triggerColor={draftLinkedEntity
-									? ENTITY_KIND_META[draftLinkedEntity.kind].color
-									: undefined}
-								placeholder={draft.entityId && !draftLinkedEntity ? 'Broken link' : '— No link —'}
-								searchPlaceholder="Search connections…"
-								emptyText="No matching connections."
-								ariaLabel="Link marker to a connection"
-								class="mp-sel-entity-btn"
-								clearItem={{ label: '— No link —', onselect: () => pickDraftEntity('') }}
-							/>
-						</div>
 					</div>
 				</div>
 				<div class="mp-props-footer">

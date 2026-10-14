@@ -3380,6 +3380,11 @@
 		flex-wrap: wrap;
 		align-items: flex-end;
 	}
+	/* Two fields splitting a row evenly (Layer + Link to). */
+	:global(.mp-props-field--half) {
+		flex: 1 1 0;
+		min-width: 0;
+	}
 	/* Visual separator between the dialog's control groups (above Label,
 	   Icon, and Link to). Sits in the body's vertical flex so the group's
 	   own gap gives it breathing room; a hair-line border keeps it quiet
