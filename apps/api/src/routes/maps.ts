@@ -85,6 +85,10 @@ export const mapMarkerSchema = z.object({
   // owns the list; an id it no longer has puts the marker on the default
   // layer). Listed so Zod doesn't strip it on save.
   layer: z.string().min(1).max(64).optional(),
+  // What the marker shows: both halves, the label only, or the icon only.
+  // Absent is the implicit 'both' (show each half that has content), which
+  // is how pre-`type` rows persist. Listed so Zod doesn't strip it on save.
+  type: z.enum(['both', 'label', 'icon']).optional(),
   // A generated settlement icon's recipe — a culture REFERENCE plus the
   // builder's knobs, never the culture itself. The client draws it; `icon`
   // still carries the plain fallback icon.

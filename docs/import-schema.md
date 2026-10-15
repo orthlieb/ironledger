@@ -98,7 +98,11 @@ out of scope here.
 > land (ids regenerate, names don't). A map's **layers** travel too — the
 > layer list (`settings.layers`) and every marker's `layer` id are in
 > `map.json`, so a round-tripped map keeps its layers and which marker sits on
-> each (a marker whose layer id no longer resolves falls back to Default). On a
+> each (a marker whose layer id no longer resolves falls back to Default). Each
+> marker's **display `type`** (`both` / `label` / `icon`) travels as well;
+> export always writes one, and import backfills a derived `type` on any older
+> marker that predates the field, so imported markers are never ambiguous about
+> whether they show their icon, their label, or both. On a
 > merge import where that owner
 > already has a map, the user is prompted **Replace** (overwrite it) or
 > **Skip** (import the incoming map standalone); an owner that can't be matched

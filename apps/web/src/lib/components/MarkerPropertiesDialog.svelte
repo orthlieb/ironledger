@@ -38,6 +38,7 @@
 		markerLayerId,
 		mapLayers,
 		revealMarkerLayer,
+		deriveMarkerType,
 		DEFAULT_LAYER_ID,
 		MIN_MARKER_SCALE,
 		MAX_MARKER_SCALE,
@@ -281,6 +282,9 @@
 		size: LabelSize;
 		/** The marker's layer id — the default layer is stored as absent. */
 		layer: string;
+		/** What the marker shows — the Both / Label / Icon radios. Snapshotted
+		 *  from the marker's `type` (or derived for a pre-`type` marker). */
+		type: NonNullable<MapMarker['type']>;
 	};
 	let draft = $state<MarkerDraft | null>(null);
 	let originalMarker = $state<MarkerDraft | null>(null);
@@ -316,13 +320,13 @@
 			labelPosition: m.labelPosition ?? 'bottom',
 			size: m.labelStyle?.size ?? 'md',
 			layer: markerLayerId(m),
+			// Explicit `type` wins; a pre-`type` marker is read from what it has.
+			type: m.type ?? deriveMarkerType(m),
 		};
 		originalMarker = snap;
 		draft = { ...snap };
-		// Each fresh selection re-opens the editor with both halves live;
-		// the mode is dialog-local, so a previous Label/Icon pick never
-		// carries into editing a different marker.
-		editMode = 'both';
+		// Open in the mode the marker is already in.
+		editMode = snap.type;
 	});
 
 	/** Push the draft's current values straight through to the live
@@ -350,10 +354,14 @@
 					size: draft.size === 'md' ? undefined : draft.size,
 				}
 			: undefined;
+		// `type` (the Both / Label / Icon radios) decides what the marker
+		// shows; both halves are kept either way, so flipping modes never
+		// loses the icon or the text. We always write an explicit type.
 		updateMarker(selectedMarker.id, {
 			label: draft.label,
-			icon: draft.icon ?? undefined,
+			icon: draft.icon ?? '',
 			settlement: draft.settlement,
+			type: editMode,
 			color: draft.color,
 			angle: draft.angle,
 			// Store absent when it round-trips to 1 so default-scale
@@ -388,7 +396,6 @@
 	// invisible on the canvas, so we won't let the user commit that.
 	const hasIcon = $derived(!!draft?.icon);
 	const hasLabel = $derived(!!draft?.label.trim());
-	const canSave = $derived(hasIcon || hasLabel);
 
 	/** Which column of the editor is active. Both = default = everything live;
 	 *  Label = only label text / position / style / size editable; Icon =
@@ -398,6 +405,12 @@
 	let editMode = $state<'both' | 'label' | 'icon'>('both');
 	const labelActive = $derived(editMode !== 'icon');
 	const iconActive = $derived(editMode !== 'label');
+	// Gate the OK button on what the chosen mode will actually show: Label
+	// needs text, Icon needs an icon, Both needs at least one — a marker
+	// that would render nothing can't be committed.
+	const canSave = $derived(
+		editMode === 'label' ? hasLabel : editMode === 'icon' ? hasIcon : hasIcon || hasLabel,
+	);
 
 	function onDraftLabelInput(e: Event) {
 		if (!draft) return;
@@ -517,8 +530,9 @@
 				originalMarker.size !== 'md';
 			updateMarker(selectedMarker.id, {
 				label: originalMarker.label,
-				icon: originalMarker.icon ?? undefined,
+				icon: originalMarker.icon ?? '',
 				settlement: originalMarker.settlement,
+				type: originalMarker.type,
 				color: originalMarker.color,
 				angle: originalMarker.angle,
 				scale: Math.abs(originalMarker.scale - 1) < 0.005 ? undefined : originalMarker.scale,
@@ -572,7 +586,11 @@
 							<span class="mp-props-label">Type</span>
 							<RadioGroup.Root
 								value={editMode}
-								onValueChange={(v) => (editMode = v as 'both' | 'label' | 'icon')}
+								onValueChange={(v) => {
+									editMode = v as 'both' | 'label' | 'icon';
+									// The mode drives what the marker shows, so push it live.
+									applyDraftLive();
+								}}
 								class="mp-mode-radios"
 								aria-label="Marker type"
 							>

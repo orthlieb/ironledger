@@ -83,6 +83,8 @@
 		markersAt,
 		markerScale,
 		markerShown,
+		markerShowsIcon,
+		markerShowsLabel,
 		isMarkerVisible,
 		revealMarkerLayer,
 		activeLayerId,
@@ -868,6 +870,9 @@
 			label: '',
 			icon: DEFAULT_MARKER_ICON,
 			color: DEFAULT_MARKER_COLOR,
+			// A fresh marker shows both halves so the editor opens with the
+			// icon placed and the label ready to type.
+			type: 'both',
 			...(layer === DEFAULT_LAYER_ID ? {} : { layer }),
 		});
 		revealMarkerLayer({ layer });
@@ -2127,16 +2132,17 @@
 								dragState?.id === m.id && dragState.moved && dragPreview !== null}
 							{@const mx = isDragging && dragPreview ? dragPreview.x : m.x}
 							{@const my = isDragging && dragPreview ? dragPreview.y : m.y}
-							{@const hasIcon = m.icon !== ''}
+							{@const showIcon = markerShowsIcon(m)}
+							{@const showLabel = markerShowsLabel(m)}
 							{@const isSelected = m.id === selectedMarkerId}
 							{@const rot = normalizeAngle(m.angle)}
 							<!--
 						`scale(1/zoom)` keeps the whole marker (icon + label +
 						strokes) a constant on-screen size regardless of zoom —
 						children keep their world-unit sizes; the scale absorbs
-						the zoom. When no icon is chosen (`m.icon === ''`) the
-						label centres both axes on the point instead of hanging
-						below where the icon would be.
+						the zoom. When the marker shows no icon (a label-only
+						`type`, or no icon chosen) the label centres both axes on
+						the point instead of hanging below where the icon would be.
 					-->
 							<g
 								class="mp-marker"
@@ -2145,7 +2151,7 @@
 								class:mp-marker-dragging={isDragging}
 								transform="translate({mx} {my}) scale({1 / zoom}) rotate({rot})"
 							>
-								{#if hasIcon && ic}
+								{#if showIcon && ic}
 									{@const iconExtent =
 										ICON_SIZE * (ic.raster || ic.layered ? RASTER_ICON_SCALE : 1) * markerScale(m)}
 									<svg
@@ -2174,7 +2180,7 @@
 											iconExtent * markerPxPerUnit,
 										)}
 									</svg>
-								{:else if hasIcon}
+								{:else if showIcon}
 									<!-- Legacy/broken slug: fall back to a plain dot so
 							     the marker doesn't vanish. Non-scaling stroke +
 							     stroke-width 2 for the same halo weight everywhere. -->
@@ -2211,9 +2217,9 @@
 										vector-effect="non-scaling-stroke"
 									/>
 								{/if}
-								{#if m.label}
+								{#if showLabel}
 									{@const labelCss = labelStyleCss(m.labelStyle)}
-									{#if hasIcon}
+									{#if showIcon}
 										<!-- Label placement intentionally ignores `markerScale(m)`:
 										     only the icon scales, the label stays anchored where
 										     the default-sized icon's edge would be. A marker set
@@ -2443,7 +2449,9 @@
 <MarkerCard
 	open={cardOpen}
 	marker={selectedMarker}
-	icon={selectedMarker ? resolveMarkerIcon(selectedMarker) : undefined}
+	icon={selectedMarker && markerShowsIcon(selectedMarker)
+		? resolveMarkerIcon(selectedMarker)
+		: undefined}
 	color={selectedMarker?.color || DEFAULT_MARKER_COLOR}
 	anchor={cardAnchor}
 	baseDepth={stackDepth}
@@ -3266,20 +3274,6 @@
 		background: var(--bg-inset);
 		border: 1px dashed var(--border-mid);
 		border-radius: 4px;
-	}
-
-	/* Icon-picker "No icon" tile — same footprint as a regular tile but
-	   shows the "Aa" placeholder glyph so the choice is obvious in the
-	   grid. */
-	:global(.mp-icon-tile--none) {
-		background: var(--bg-inset);
-		border-style: dashed;
-	}
-	:global(.mp-icon-none-glyph) {
-		font-family: var(--font-ui);
-		font-size: 0.95rem;
-		font-weight: 700;
-		color: var(--text-muted);
 	}
 
 	/* Pile-up picker — fixed-positioned floating menu that appears when a
