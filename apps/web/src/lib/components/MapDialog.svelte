@@ -2713,8 +2713,14 @@
 		cursor: pointer;
 		color: var(--text);
 	}
-	:global(.mp-sel-icon-btn:hover) {
+	:global(.mp-sel-icon-btn:hover:not(:disabled)) {
 		border-color: var(--text-accent);
+	}
+	/* Dimmed + inert when the marker is in Label mode (iconActive false),
+	   matching .mp-btn / .mp-style-btn so the row reads as off. */
+	:global(.mp-sel-icon-btn:disabled) {
+		opacity: 0.4;
+		cursor: default;
 	}
 	:global(.mp-sel-icon-btn svg) {
 		width: 22px;
@@ -3434,6 +3440,14 @@
 		outline: none;
 		border-color: var(--text-accent);
 	}
+	/* Dimmed + inert when the marker is in Icon mode (labelActive false),
+	   matching the icon button / style toggles so the label half reads off.
+	   The app's own bg/color override the native disabled look, so without
+	   this the field stayed bright. */
+	:global(.mp-props-input:disabled) {
+		opacity: 0.4;
+		cursor: default;
+	}
 	:global(.mp-props-row) {
 		display: flex;
 		gap: 12px;
@@ -3596,6 +3610,11 @@
 		   consistent across browsers. */
 		height: 32px;
 		margin: 0;
+	}
+	/* Dimmed in Label mode alongside the icon button (same row, same gate). */
+	:global(.mp-sel-scale-range:disabled) {
+		opacity: 0.4;
+		cursor: default;
 	}
 
 	/* Label text-style toggles (Bold / Italic / Small caps / Underline) —
