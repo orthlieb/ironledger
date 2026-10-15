@@ -110,6 +110,15 @@ describe('mapMarkerSchema', () => {
     expect(mapMarkerSchema.parse({ ...base, icon }).icon).toBe(icon);
   });
 
+  it("keeps a marker's display type, and rejects an unknown one", () => {
+    for (const type of ['both', 'label', 'icon']) {
+      expect(mapMarkerSchema.parse({ ...base, type }).type).toBe(type);
+    }
+    expect(mapMarkerSchema.safeParse({ ...base, type: 'none' }).success).toBe(false);
+    // Absent is legal — the implicit 'both'.
+    expect(mapMarkerSchema.parse(base).type).toBeUndefined();
+  });
+
   it('keeps a per-marker scale when it is in range', () => {
     expect(mapMarkerSchema.parse({ ...base, scale: 1.75 }).scale).toBe(1.75);
     expect(mapMarkerSchema.parse({ ...base, scale: 0.5 }).scale).toBe(0.5);

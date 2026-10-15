@@ -111,6 +111,13 @@ export interface MapMarker {
 	 *  Absent — or a layer that's since been deleted — puts it on the
 	 *  map's default layer. */
 	layer?: string;
+	/** What the marker shows: both the icon and the label, the label only,
+	 *  or the icon only. The marker keeps whichever halves it has either
+	 *  way — this just gates what renders — so switching never loses the
+	 *  icon or the text. Absent is the implicit 'both': show each half that
+	 *  is present (an empty `icon` or blank `label` simply doesn't draw),
+	 *  which is how every pre-`type` marker keeps behaving. */
+	type?: 'both' | 'label' | 'icon';
 }
 
 /** A layer markers can be put on, to show or hide them together. The
@@ -689,6 +696,37 @@ export function isMarkerVisible(m: Pick<MapMarker, 'layer'>): boolean {
 	return markerShown()(m);
 }
 
+// ── What a marker shows ─────────────────────────────────────────────────
+// `type` is authoritative; a marker without one (a pre-`type` row) shows
+// whichever halves it has content for. markerShowsIcon/Label fold the two
+// together so the render, the card and the editor all agree — and they
+// stay correct for an explicit 'both' whose icon or label happens to be
+// empty (that half simply doesn't draw).
+
+/** Does this marker draw its icon? False for a label-only marker and for
+ *  one with no icon key. */
+export function markerShowsIcon(m: Pick<MapMarker, 'type' | 'icon'>): boolean {
+	return m.type !== 'label' && (m.icon ?? '') !== '';
+}
+/** Does this marker draw its label? False for an icon-only marker and for
+ *  one with blank text. */
+export function markerShowsLabel(m: Pick<MapMarker, 'type' | 'label'>): boolean {
+	return m.type !== 'icon' && !!m.label?.trim();
+}
+/** The explicit `type` a typeless marker stands for, from what it has: both
+ *  an icon and a label → 'both', else the single half it carries (an empty
+ *  marker defaults to 'both'). Import and export stamp this on every marker
+ *  so round-tripped data always carries an explicit type. */
+export function deriveMarkerType(
+	m: Pick<MapMarker, 'icon' | 'label'>,
+): NonNullable<MapMarker['type']> {
+	const hasIcon = (m.icon ?? '') !== '';
+	const hasLabel = !!m.label?.trim();
+	if (hasIcon && !hasLabel) return 'icon';
+	if (hasLabel && !hasIcon) return 'label';
+	return 'both';
+}
+
 /** The layer new markers go on: the map's choice, if it still has it. */
 export function activeLayerId(): string {
 	const id = mapState.settings.activeLayer;
@@ -798,6 +836,7 @@ export function addMarker(input: {
 	labelPosition?: MapMarkerLabelPosition;
 	settlement?: SettlementRecipe;
 	layer?: string;
+	type?: MapMarker['type'];
 }): string {
 	const id = crypto.randomUUID();
 	mapState.markers.push({ id, ...input });

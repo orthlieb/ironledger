@@ -27,6 +27,14 @@ vi.mock('../../src/lib/mapStore.svelte.js', () => ({
 	replaceMarkers: vi.fn(),
 	setBackground: vi.fn(),
 	switchMap: vi.fn(),
+	// Pure helper — real logic so the import/export type-stamping is exercised.
+	deriveMarkerType: (m: { icon?: string; label?: string }) => {
+		const hasIcon = (m.icon ?? '') !== '';
+		const hasLabel = !!m.label?.trim();
+		if (hasIcon && !hasLabel) return 'icon';
+		if (hasLabel && !hasIcon) return 'label';
+		return 'both';
+	},
 }));
 
 import {
@@ -35,6 +43,7 @@ import {
 	cleanLabelPosition,
 	cleanMarkerScale,
 	cleanLayerId,
+	cleanMarkerType,
 } from '../../src/lib/mapExport.js';
 import type { MapMarker, MapServerSettings } from '../../src/lib/mapStore.svelte.js';
 
@@ -145,7 +154,9 @@ describe('buildMapZipEntries — envelope', () => {
 		});
 		const body = JSON.parse(strFromU8(files['map.json']));
 		expect(body.name).toBe('Regional');
-		expect(body.markers).toEqual([MARKER]);
+		// Export stamps an explicit `type` (MARKER predates the field; it has
+		// both an icon and a label, so it comes out 'both').
+		expect(body.markers).toEqual([{ ...MARKER, type: 'both' }]);
 		expect(body.settings).toEqual(SETTINGS);
 	});
 
@@ -254,7 +265,7 @@ describe('buildMapZipEntries — envelope', () => {
 			backgroundUrl: '',
 		});
 		const body = JSON.parse(strFromU8(files['map.json']));
-		expect(body.markers).toEqual([STYLED_MARKER]);
+		expect(body.markers).toEqual([{ ...STYLED_MARKER, type: 'both' }]);
 		expect(body.markers[0].labelStyle).toEqual({
 			bold: true,
 			italic: true,
@@ -331,8 +342,59 @@ describe('buildMapZipEntries — fflate round-trip', () => {
 		);
 		expect(back['background.jpg']).toEqual(FAKE_BG_BYTES);
 		const body = JSON.parse(strFromU8(back['map.json']));
-		expect(body.markers).toEqual([MARKER]);
+		expect(body.markers).toEqual([{ ...MARKER, type: 'both' }]);
 		expect(body.settings).toEqual(SETTINGS);
+	});
+});
+
+describe('marker display type', () => {
+	it('export stamps an explicit type on markers that lack one', async () => {
+		const labelOnly: MapMarker = { id: 'a', x: 1, y: 1, label: 'Ford', icon: '' };
+		const iconOnly: MapMarker = { id: 'b', x: 2, y: 2, label: '', icon: 'danger/fire' };
+		const both: MapMarker = { id: 'c', x: 3, y: 3, label: 'Keep', icon: 'site/tower' };
+		const files = await buildMapZipEntries({
+			name: 'Types',
+			markers: [labelOnly, iconOnly, both],
+			settings: {},
+			backgroundUrl: '',
+		});
+		const body = JSON.parse(strFromU8(files['map.json']));
+		expect(body.markers.map((m: MapMarker) => m.type)).toEqual(['label', 'icon', 'both']);
+	});
+
+	it('export leaves an explicit type untouched', async () => {
+		// A 'label' marker keeps its stored icon but exports type 'label'.
+		const explicit: MapMarker = {
+			id: 'd',
+			x: 1,
+			y: 1,
+			label: 'Hidden Keep',
+			icon: 'site/tower',
+			type: 'label',
+		};
+		const files = await buildMapZipEntries({
+			name: 'Types',
+			markers: [explicit],
+			settings: {},
+			backgroundUrl: '',
+		});
+		const body = JSON.parse(strFromU8(files['map.json']));
+		expect(body.markers[0].type).toBe('label');
+		expect(body.markers[0].icon).toBe('site/tower');
+	});
+});
+
+describe('cleanMarkerType', () => {
+	it('keeps a valid explicit type', () => {
+		for (const t of ['both', 'label', 'icon'] as const) {
+			expect(cleanMarkerType(t, { icon: 'x/y', label: 'L' })).toBe(t);
+		}
+	});
+	it('derives a type when the imported value is missing or invalid', () => {
+		expect(cleanMarkerType(undefined, { icon: 'x/y', label: 'L' })).toBe('both');
+		expect(cleanMarkerType('nonsense', { icon: 'x/y', label: 'L' })).toBe('both');
+		expect(cleanMarkerType(undefined, { icon: '', label: 'L' })).toBe('label');
+		expect(cleanMarkerType(undefined, { icon: 'x/y', label: '' })).toBe('icon');
 	});
 });
 

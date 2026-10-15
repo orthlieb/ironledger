@@ -29,6 +29,7 @@ import { cleanSettlementRecipe } from './settlementRecipe';
 import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
 import {
 	createMap,
+	deriveMarkerType,
 	mapState,
 	persistSettings,
 	replaceMarkers,
@@ -113,6 +114,16 @@ export function cleanMarkerScale(v: unknown): number | undefined {
 	if (typeof v !== 'number' || !Number.isFinite(v)) return undefined;
 	if (v < MIN_IMPORT_SCALE || v > MAX_IMPORT_SCALE) return undefined;
 	return v;
+}
+
+/** A marker's display type from an imported file: an explicit valid value,
+ *  else one derived from what the marker has — so older exports that predate
+ *  the field come across with a `type` assigned rather than none. */
+export function cleanMarkerType(
+	v: unknown,
+	m: Pick<MapMarker, 'icon' | 'label'>,
+): NonNullable<MapMarker['type']> {
+	return v === 'both' || v === 'label' || v === 'icon' ? v : deriveMarkerType(m);
 }
 
 /** Suggested filename stamp: 'YYYY-MM-DD_HHmm'. */
@@ -208,7 +219,9 @@ export async function buildMapZipEntries(input: {
 	};
 	const body: MapZipBody = {
 		name: input.name,
-		markers: input.markers,
+		// Every exported marker carries an explicit `type`; one that predates
+		// the field gets it derived from what it has, so no export is ambiguous.
+		markers: input.markers.map((m) => (m.type ? m : { ...m, type: deriveMarkerType(m) })),
 		settings: input.settings,
 	};
 	// Record the owner by name so import can re-link across id regeneration.
@@ -341,25 +354,32 @@ export async function populateMap(
 	// re-import against the same account doesn't collide).
 	const cleanMarkers = markers
 		.filter((m) => m && typeof m.x === 'number' && typeof m.y === 'number')
-		.map((m) => ({
-			x: m.x,
-			y: m.y,
-			label: typeof m.label === 'string' ? m.label : '',
-			icon: typeof m.icon === 'string' ? m.icon : '',
-			color: typeof m.color === 'string' ? m.color : undefined,
-			entityId: typeof m.entityId === 'string' ? m.entityId : undefined,
-			angle: typeof m.angle === 'number' && Number.isFinite(m.angle) ? m.angle : undefined,
-			// Typography — validated + normalised so a hand-edited or older
-			// manifest can't inject arbitrary CSS-adjacent strings into the
-			// runtime marker.
-			labelStyle: cleanLabelStyle((m as { labelStyle?: unknown }).labelStyle),
-			labelPosition: cleanLabelPosition((m as { labelPosition?: unknown }).labelPosition),
-			scale: cleanMarkerScale((m as { scale?: unknown }).scale),
-			settlement: cleanSettlementRecipe((m as { settlement?: unknown }).settlement),
-			// Its layer — an id in the imported settings.layers, which come
-			// across with the rest of the settings below.
-			layer: cleanLayerId((m as { layer?: unknown }).layer),
-		}));
+		.map((m) => {
+			const label = typeof m.label === 'string' ? m.label : '';
+			const icon = typeof m.icon === 'string' ? m.icon : '';
+			return {
+				x: m.x,
+				y: m.y,
+				label,
+				icon,
+				color: typeof m.color === 'string' ? m.color : undefined,
+				entityId: typeof m.entityId === 'string' ? m.entityId : undefined,
+				angle: typeof m.angle === 'number' && Number.isFinite(m.angle) ? m.angle : undefined,
+				// Typography — validated + normalised so a hand-edited or older
+				// manifest can't inject arbitrary CSS-adjacent strings into the
+				// runtime marker.
+				labelStyle: cleanLabelStyle((m as { labelStyle?: unknown }).labelStyle),
+				labelPosition: cleanLabelPosition((m as { labelPosition?: unknown }).labelPosition),
+				scale: cleanMarkerScale((m as { scale?: unknown }).scale),
+				settlement: cleanSettlementRecipe((m as { settlement?: unknown }).settlement),
+				// Its layer — an id in the imported settings.layers, which come
+				// across with the rest of the settings below.
+				layer: cleanLayerId((m as { layer?: unknown }).layer),
+				// Older exports have no `type`; derive one so every imported
+				// marker carries it explicitly.
+				type: cleanMarkerType((m as { type?: unknown }).type, { icon, label }),
+			};
+		});
 	await replaceMarkers(cleanMarkers);
 
 	// Merge settings (aspect / scale / view) so the imported map opens

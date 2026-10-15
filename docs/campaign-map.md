@@ -116,7 +116,8 @@ Client shape (fetched from `GET /api/session/maps/:mapId`):
       "y": 2,
       "label": "Driftwood",
       "icon": "settlement/village",
-      "color": "#22c55e"
+      "color": "#22c55e",
+      "type": "both"
     },
     {
       "id": "b115…",
@@ -125,7 +126,8 @@ Client shape (fetched from `GET /api/session/maps/:mapId`):
       "label": "Blood Thorn",
       "icon": "danger/skull-crossbones",
       "color": "#ef4444",
-      "entityId": "place:abc123"
+      "entityId": "place:abc123",
+      "type": "icon"
     }
   ],
   "backgroundHash": "9c1a…",
@@ -144,6 +146,17 @@ Client shape (fetched from `GET /api/session/maps/:mapId`):
   entry (see below). Legacy bare-slug values (`"settlement"`) still
   resolve via `resolveMapIcon` — first exact match, then any category
   containing that slug.
+- **`type`** — `"both"` | `"label"` | `"icon"`: what the marker draws. The
+  marker keeps **both** its `icon` and `label` regardless — `type` only
+  gates which renders — so toggling in the editor (the Both / Label / Icon
+  radios) never loses the icon or the text. Absent is the implicit
+  `"both"`: show each half that has content (an empty `icon` or blank
+  `label` simply doesn't draw), which is how every pre-`type` marker keeps
+  behaving. `markerShowsIcon` / `markerShowsLabel` fold `type` and content
+  together, and are the one source the canvas, the marker card and the
+  editor share. **Import backfills a `type`** (derived from what the marker
+  has) on any older marker that lacks one, and **export always writes an
+  explicit `type`** — so round-tripped data is never ambiguous.
 - **`color`** — optional CSS color for the icon fill. Absent = fall back
   to `DEFAULT_MARKER_COLOR`.
 - **`backgroundHash`** — content hash for cache-busting. Empty string

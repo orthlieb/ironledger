@@ -2,16 +2,19 @@
 	/**
 	 * MapIconPicker — the icon-chooser modal extracted out of MapDialog. Lists
 	 * every manifest icon grouped by category (bar the settlement kit's baked
-	 * Settlement icons, which the builder tabs make) with a live search filter and a
-	 * "No icon" (label-only) tile; each tile previews in the marker's current
-	 * colour. Purely presentational: it owns its own search state and reports
-	 * the picked icon key back to MapDialog via `onpick`.
+	 * Settlement icons, which the builder tabs make) with a live search filter;
+	 * each tile previews in the marker's current colour. Purely presentational:
+	 * it owns its own search state and reports the picked icon key back to
+	 * MapDialog via `onpick`. (Whether a marker shows an icon at all is the
+	 * editor's Both / Label / Icon mode, not this picker — so there is no
+	 * "no icon" tile.)
 	 *
 	 * Three tabs (bits-ui Tabs): Icons — the manifest grid, where hovering a
 	 * tile lightboxes it at a readable size — then Buildings and Settlement
 	 * builder, which generate an icon from a recipe (SettlementBuilder, one
-	 * building or a whole settlement) in any culture. Opening on a marker
-	 * that already has a recipe lands on the tab that made it.
+	 * building or a whole settlement) in any culture. The picker opens on the
+	 * tab matching the marker's current icon (its recipe, or a bare
+	 * settlement-kit icon → Settlement builder).
 	 *
 	 * The `.mp-icon-*` styles live (as `:global`) in MapDialog's <style> — this
 	 * component is only ever rendered by MapDialog, so those rules are always
@@ -25,7 +28,6 @@
 	import DialogHeader from '$lib/components/DialogHeader.svelte';
 	import { headingText } from '$lib/fontStore.svelte.js';
 	import { untrack } from 'svelte';
-	import { tooltip } from '$lib/actions/tooltip.js';
 	import {
 		MAP_ICON_CATEGORIES,
 		MAP_ICON_LIST,
@@ -52,7 +54,7 @@
 		currentIcon: string | null | undefined;
 		/** The marker's settlement recipe, if its icon is generated. */
 		currentSettlement?: SettlementRecipe;
-		/** Called with the chosen icon manifest key ('' for the No-icon tile). */
+		/** Called with the chosen icon manifest key. */
 		onpick: (key: string) => void;
 		/** Called with the recipe a builder tab's "Use this" made. */
 		onpicksettlement: (recipe: SettlementRecipe) => void;
@@ -118,14 +120,24 @@
 	});
 
 	// Reset the search + category filters each time the picker opens, and
-	// land on the tab that made the marker's icon when it's generated.
+	// land on the tab that matches the marker's current icon: a building
+	// recipe → Buildings, a settlement recipe → Settlement builder, a bare
+	// settlement-kit icon (e.g. an imported marker's "settlement/town") →
+	// Settlement builder too, and anything else → Icons.
 	$effect(() => {
 		if (open) {
 			iconSearch = '';
 			activeCategories = new Set();
 			filtersOpen = false;
 			const made = untrack(() => currentSettlement);
-			tab = made ? (made.building ? 'buildings' : 'builder') : 'icons';
+			const icon = untrack(() => currentIcon) ?? '';
+			tab = made
+				? made.building
+					? 'buildings'
+					: 'builder'
+				: icon.startsWith('settlement/')
+					? 'builder'
+					: 'icons';
 			lightbox = null;
 		}
 	});
@@ -245,22 +257,8 @@
 						/>
 					</div>
 					<div class="mp-icon-body" onscroll={hideLightbox}>
-						<!-- "No icon" tile always at the top — clicking it clears the
-					     marker's icon so only the label renders (centred on the point).
-					     Rendered outside the filtered loop with no --cat-color, so it
-					     stays neutral and is always shown regardless of the filters. -->
-						<div class="mp-icon-cat-label">Label only</div>
-						<div class="mp-icon-grid">
-							<button
-								class="mp-icon-tile mp-icon-tile--none"
-								class:mp-icon-tile-selected={currentIcon === '' || currentIcon == null}
-								onclick={() => onpick('')}
-								use:tooltip={'Show only the label — no icon, centred on the point'}
-								aria-label="No icon"
-							>
-								<span class="mp-icon-none-glyph" aria-hidden="true">Aa</span>
-							</button>
-						</div>
+						<!-- No "No icon" tile: whether a marker shows its icon is set by
+						     the editor's Both / Label / Icon mode radios, not here. -->
 						{#each Object.keys(filteredIcons) as cat (cat)}
 							<div class="mp-icon-cat-label" style:--cat-color={CATEGORY_COLORS[cat]}>
 								{filteredIcons[cat][0].categoryLabel}

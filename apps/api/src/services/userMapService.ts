@@ -36,6 +36,9 @@ export interface MapMarker {
   };
   /** The marker's layer: an id in the map's settings.layers. */
   layer?: string;
+  /** What the marker shows — both halves, label only, or icon only. Absent
+   *  is the implicit 'both'. */
+  type?: 'both' | 'label' | 'icon';
   /** Compass position of the label relative to the icon. */
   labelPosition?:
     | 'top'
