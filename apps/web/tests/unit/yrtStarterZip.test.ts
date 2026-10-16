@@ -71,6 +71,23 @@ describe('YRT starter zip', () => {
 		expect(JSON.parse(readFileSync(culture, 'utf8')).key).toBe('freeport');
 	});
 
+	// Every bundled marker must carry an explicit display `type` (both /
+	// label / icon). A refresh of the starter (yrt-vault) that reverts to
+	// pre-`type` markers would ship ambiguous data; the app derives a type
+	// on import, but the shipped bundle should already be explicit.
+	it('gives every bundled marker an explicit type', () => {
+		type MapBody = { markers?: { label?: string; type?: string }[] };
+		const maps = Object.entries(unzipSync(bytes()))
+			.filter(([path]) => /^maps\/[^/]+\/map\.json$/.test(path))
+			.map(([, b]) => JSON.parse(new TextDecoder().decode(b)) as MapBody);
+		expect(maps.length).toBeGreaterThan(0);
+		for (const m of maps) {
+			for (const marker of m.markers ?? []) {
+				expect(['both', 'label', 'icon'], marker.label).toContain(marker.type);
+			}
+		}
+	});
+
 	it('includes Providence Mine among the Pinna Mtns places', () => {
 		const providence = body().places.find((p) => p.name === 'Providence Mine');
 		expect(providence, 'Providence Mine missing from the starter zip').toBeDefined();
