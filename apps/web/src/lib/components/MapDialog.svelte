@@ -2396,7 +2396,9 @@
 					onclick={() => choosePileMarker(m)}
 					aria-label={m.label || '(no name)'}
 				>
-					{#if ic}
+					<!-- Respect the marker's type: a label-only marker shows the
+					     colour dot, not its (hidden) icon — same as the canvas. -->
+					{#if markerShowsIcon(m) && ic}
 						<svg class="mp-pile-icon" viewBox={haloPaddedViewBox(ic)} aria-hidden="true">
 							<!-- 'proportional' halo: same contrast glow as the map, sized
 							     to the icon so it isn't a faint hairline at the pile menu's
