@@ -39,7 +39,6 @@ import {
 	DEFAULT_DESIGN,
 	cathedral,
 	church,
-	church3d,
 	clocktower,
 	gableHouse,
 	keep,
@@ -56,7 +55,6 @@ import {
 	upgradeDesign,
 	well,
 } from '../../src/lib/settlement-kit/pieces3d.js';
-import { depthVec, frame } from '../../src/lib/settlement-kit/frame3d.js';
 import {
 	FLAT_WALLS,
 	GROUND_TYPES,
@@ -487,114 +485,6 @@ const PROTOTYPES = [
 	'Tiered tower',
 ];
 
-describe('3D frame (frame3d.js)', () => {
-	it('draws the front plane as is, and runs depth up and to the right', () => {
-		const F = frame(0);
-		expect(F.pt([3, 4, 0])).toEqual([3, 4]);
-		expect(F.pt([3, 4, 10])).toEqual([3 + depthVec(10)[0], 4 + depthVec(10)[1]]);
-	});
-	it('shrinks what stands further back toward the front ground line', () => {
-		const F = frame(0.5);
-		const [x, y] = F.pt([10, 10, 8]);
-		expect(x - depthVec(8)[0]).toBeLessThan(10);
-		expect(y - depthVec(8)[1]).toBeLessThan(10);
-		expect(F.pt([0, 0, 8])).toEqual(depthVec(8)); // the ground line's own point stays
-	});
-	it("caps the perspective once for the frame's tallest top", () => {
-		const free = frame(0.5),
-			capped = frame(0.5, { tops: [[40, 10]] });
-		// A 40-high top 10 deep still climbs at least half as in parallel.
-		const climb = (F: ReturnType<typeof frame>) => F.pt([0, 40, 10])[1] - 40;
-		expect(climb(capped)).toBeGreaterThanOrEqual(depthVec(10)[1] / 2 - 1e-9);
-		expect(climb(free)).toBeLessThan(climb(capped));
-	});
-	it("hands helpers a box projector in the frame's coordinates", () => {
-		const F = frame(0.5),
-			P = F.box(-6, 2, 8);
-		expect(P.at([1, 5], 0.5)).toEqual(F.pt([-5, 5, 6]));
-		expect(P.back([1, 5])).toEqual(F.pt([-5, 5, 10]));
-		expect(P.d).toBe(8);
-	});
-});
-
-describe('church built in a 3D frame (prototype)', () => {
-	const designs = [DEFAULT_DESIGN, makeDesign(7), makeDesign(42), makeDesign(99)];
-	it('draws in any culture, as the church does', () => {
-		for (const D of designs) {
-			const { layers } = renderLayered(church3d(D), { join: D.join });
-			expect(layers.wall || layers['wall-shade']).toBeTruthy();
-			expect(layers.roof).toBeTruthy();
-		}
-	});
-	it("stops the nave's roof at the tower's wall", () => {
-		// The nave's roof: roof-coloured parts below the tower's top (not its
-		// cap or holy symbol).
-		const roofs = (parts: ReturnType<typeof church3d>) =>
-			parts
-				.filter((p) => p.role === 'roof')
-				.map((p) => p.solid.flat())
-				.filter((pts) => Math.max(...pts.map(([, y]) => y)) < 35)
-				.flat();
-		// The tower's right wall stands at -w/2 + 0.5 = -13.5 (w = 28).
-		const D = { ...DEFAULT_DESIGN, towerRoof: 'none' as const };
-		expect(Math.min(...roofs(church3d(D)).map(([x]) => x))).toBeGreaterThanOrEqual(-13.5 - 1e-6);
-		expect(Math.min(...roofs(church(D)).map(([x]) => x))).toBeLessThan(-13.5);
-	});
-	it('puts the rose window on the gable wall, foreshortened with it', () => {
-		const gable = church3d(DEFAULT_DESIGN).find((p) => p.cuts?.length && p.shaded)!;
-		const [rose] = gable.fills!;
-		const xs = rose.map(([x]) => x),
-			ys = rose.map(([, y]) => y);
-		const width = Math.max(...xs) - Math.min(...xs),
-			height = Math.max(...ys) - Math.min(...ys);
-		expect(width).toBeLessThan(height * 0.95); // a circle seen edge-on-ish, not face-on
-	});
-	it.each(['square', 'round'] as const)(
-		'builds a %s steeple with every cap, crenellated or not, cleanly ruined',
-		(steeple) => {
-			for (const towerRoof of ['cone', 'onion', 'dome', 'lancet', 'none'] as const)
-				for (const towerCrenel of [false, true]) {
-					const D = { ...DEFAULT_DESIGN, steeple, towerRoof, towerCrenel };
-					const piece = church3d(D);
-					expect(renderLayered(piece, { join: D.join }).layers.wall).toBeTruthy();
-					const [ruin] = ruinPlaced([{ piece }], {
-						decay: 0.6,
-						overgrowth: 0,
-						burned: false,
-						single: true,
-						seed: 1,
-					});
-					expect(ruin.piece.filter((p) => !p.solid.length && p.free?.length && !p.mask)).toEqual(
-						[],
-					);
-				}
-		},
-	);
-	it.each(['square', 'round'] as const)('corbels a %s steeple out from its belt', (steeple) => {
-		// How far left the tower reaches (nothing else stands left of it):
-		// corbelled from 0.65 of its height, its top is wider all round.
-		const left = (towerCorbel: number) =>
-			Math.min(
-				...church3d({ ...DEFAULT_DESIGN, steeple, towerCorbel })
-					.flatMap((p) => p.solid.flat())
-					.map(([x]) => x),
-			);
-		expect(left(0.35)).toBeLessThan(left(0) - 1.5);
-	});
-	it('stands a round steeple on the front, its door on the curved wall', () => {
-		const D = { ...DEFAULT_DESIGN, steeple: 'round' as const };
-		const [body] = church3d(D).filter((p) => !p.role && p.fills?.length === 2);
-		const [door] = body.fills!;
-		// The door's foot follows the drum round: its corners, round the
-		// curve and further back, stand higher than on a flat front (y = 0).
-		const foot = door.filter(([, y]) => y < 1);
-		expect(foot.length).toBe(2);
-		for (const [, y] of foot) expect(y).toBeGreaterThan(0.1);
-		// The drum's own front stands on the ground line.
-		expect(Math.min(...body.solid[0].map(([, y]) => y))).toBeCloseTo(0, 1);
-	});
-});
-
 describe('newer pieces', () => {
 	it.each(PROTOTYPES)('draws a %s, in any culture', (name) => {
 		for (const D of [DEFAULT_DESIGN, makeDesign(7), makeDesign(42)]) {
@@ -714,8 +604,7 @@ describe('buildings (the Buildings tab)', () => {
 	});
 	it('keeps the reference row of pieces the icon bake draws by name', () => {
 		const names = pieces(DEFAULT_DESIGN).map(([n]) => n);
-		// 31 buildings, the Camp size, and the 3D-frame church prototype.
-		expect(names).toHaveLength(33);
+		expect(names).toHaveLength(32);
 		expect(names).toContain('Camp'); // a Settlement-builder size, not a building
 		// The newer pieces, on the Buildings tab too.
 		expect(BUILDINGS.map(([, n]) => n)).toEqual(expect.arrayContaining(PROTOTYPES));

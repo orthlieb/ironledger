@@ -11,7 +11,6 @@ into one layered SVG per piece or per settlement.
 | File           | Responsibility                                                                                                                                   |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `geom.js`      | Primitive shapes (`rect`, `arc`, `circle`, `archOpening`, `lancet`, `crenellated`) and the PRNG.                                                 |
-| `frame3d.js`   | `depthVec()` and `frame()`: a piece's 3D frame and its one camera (prototype — the 3D-frame church).                                             |
 | `pieces3d.js`  | Every drawable piece (house, tower, keep, well, …) and the `Design` typedef with the culture knobs.                                              |
 | `layouts3d.js` | Templates (stead → freeport) that lay pieces out into a settlement, including the ring wall; `building()` draws one piece for the Buildings tab. |
 | `ruins3d.js`   | Decay / overgrowth / scorch transformation applied over any `Placed[]` list.                                                                     |
@@ -61,46 +60,6 @@ parallel oblique).
   and top edges follow the face's slope so it reads as painted on the
   wall, not floating over it.
 - Round pieces, walls and the pier stay parallel.
-
-### 3D frame (prototype)
-
-A box projector serves one box: a piece of several boxes (a church's tower
-and nave) draws each through a projector of its own and shifts it into
-place in 2D, so its parts converge toward different points and anything
-that joins them (a roof meeting a wall, a cap on a top) has to be fitted by
-hand. `frame3d.js` is the alternative being tried: lay the whole piece out
-in 3D — x across, y up, z back — and send every point through the frame's
-one camera, `F.pt([x, y, z])` (the same oblique view and perspective as
-`boxProjector`, capped once for the frame's tallest top and ridge). Faces
-are still 2D polygons for the unchanged renderer: build one on its own
-plane with `F.front(poly, z)`, `F.side(poly, x)` or `F.level(poly, y)`, or
-point by point; `F.box(x, z0, d)` hands helpers written against a box
-projector (`boxCap()`, `faceCourses()`) one for a box standing in the
-frame. Building the geometry is a small share of an icon's time (the
-renderer's clipping is the rest), so the frame costs nothing measurable.
-
-`church3d()` — the playground's **Church (3D frame)**, beside the Church —
-is the first piece built this way: tower and nave in one frame, the nave's
-roof running up to the tower's wall and stopping there, the rose window a
-circle on the gable wall foreshortened with it, the cap built on the
-tower's top. The tower is square or round per the culture's `steeple`,
-with its corbel, crenellated band and cap:
-
-- **Corbels** built in 3D reach forward as well as out, which the oblique
-  view draws down and to the left: at 45° in 3D a square corbel's front
-  shows as a sliver and the band it carries seems to float. So a square
-  corbel rises `CORBEL_RISE` (2.25) for each unit it reaches out, which
-  reads 45° on screen, and its underside is in shadow.
-- **Round bodies** are solids of revolution (`revolve()`, `drum()`): each
-  level a ring through the camera, the outline traced up the rings' ends.
-  Their plan stands 0.8 as deep as wide, as square towers do, which is
-  exactly what draws their rims the 0.34-high ellipses of `roundTower()`
-  — tilted now with the top they stand on. The door and belfry are laid
-  on the drum's curved front (`onFront`), the stone courses follow its
-  rings, and a bare top is a walk inside a crenellated ring, the back
-  wall's inner face rising from it.
-
-The map's church is still `church()`.
 
 ## Towers
 

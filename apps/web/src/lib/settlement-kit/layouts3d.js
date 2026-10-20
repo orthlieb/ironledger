@@ -15,7 +15,6 @@ import {
 	caravel,
 	cathedral,
 	church,
-	church3d,
 	clocktower,
 	crossHouse,
 	gableHouse,
@@ -755,9 +754,6 @@ const PIECES = [
 	['lookout-tower', 'Lookout tower', (D) => [{ piece: lookoutTower(D) }]],
 	['bell-tower', 'Bell tower', (D) => [{ piece: belfry(D, { finial: true }) }]],
 	['church', 'Church', (D, s) => [{ piece: church(D, { seed: s }) }]],
-	// A prototype: the church built in one 3D frame (frame3d.js), to set
-	// beside the Church above — the playground's only, not the map's.
-	[null, 'Church (3D frame)', (D) => [{ piece: church3d(D) }]],
 	['keep', 'Keep', (D) => [{ piece: keep(D) }]],
 	[
 		'market',
