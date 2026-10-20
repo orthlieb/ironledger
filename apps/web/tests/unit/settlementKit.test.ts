@@ -510,6 +510,20 @@ describe('newer pieces', () => {
 		expect(caps).not.toContain(JSON.stringify(cone));
 		expect(new Set(caps).size, 'each cap its own').toBe(3);
 	});
+	it.each(['dome', 'onion', 'lancet'] as const)(
+		'lays a %s-capped square top behind its walls, run on down them',
+		(towerRoof) => {
+			const parts = squareTower({ ...DEFAULT_DESIGN, towerRoof });
+			// Drawn first, so the walls hide where it runs on under them —
+			// and with them its front-left and back-right corners, which
+			// softening would otherwise round short of the walls', notched.
+			const [top] = parts;
+			const front = parts.find((p) => !p.shaded && p.fills?.length)!;
+			const ys = (poly: [number, number][]) => poly.map(([, y]) => y);
+			expect(top.role).toBeUndefined();
+			expect(Math.min(...ys(top.solid[0]))).toBeLessThan(Math.max(...ys(front.solid[0])));
+		},
+	);
 	it('keeps the lookout tower its pyramid roof, whatever the cap', () => {
 		const cone = drawn({ ...DEFAULT_DESIGN, towerRoof: 'cone' }, 'Lookout tower');
 		for (const towerRoof of ['onion', 'dome', 'lancet', 'none'] as const)

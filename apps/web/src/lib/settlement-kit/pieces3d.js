@@ -793,20 +793,19 @@ function lancetCap(D, cx, y, R) {
 }
 
 /**
- * The culture's round cap — onion, dome or lancet — on a flat top: `deck`
- * (if any) over the top, then the cap at its centre `c`, of base radius `r`
- * on screen. Null for a cone or none: the piece draws its own pyramid or
+ * The culture's round cap — onion, dome or lancet — on a flat top, at its
+ * centre `c`, of base radius `r` on screen (the piece lays the top itself,
+ * tuckedTop()). Null for a cone or none: the piece draws its own pyramid or
  * parapet. `socket` is how deep a finial seats in the tip (see seat()).
  * @param {Design} D
  * @param {Design['towerRoof']} roof
- * @param {Part | null} deck
  * @param {Pt} c
  * @param {number} r
  * @returns {{parts: Part[], tip: Pt, socket: number} | null}
  */
-function roundCap(D, roof, deck, c, r) {
+function roundCap(D, roof, c, r) {
 	/** @type {Part[]} */
-	const parts = deck ? [deck] : [];
+	const parts = [];
 	if (roof === 'onion') {
 		const dome = onionDome(D, c[0], c[1] - 0.6, r);
 		parts.push(...dome.parts);
@@ -823,6 +822,37 @@ function roundCap(D, roof, deck, c, r) {
 		return { parts, tip: cap.tip, socket: 3 };
 	}
 	return null;
+}
+
+/**
+ * A box's flat top — its front-left, front-right, back-right and back-left
+ * corners — to go BEHIND the walls. Seen obliquely the top's front-left and
+ * back-right corners are sharp, and softening rounds a sharp corner off
+ * short of the walls' own, leaving a notch at each. So the top runs on
+ * `drop` down the front and the right side: blunt there, and hidden, the
+ * walls' edges make the joins. Over a crenellated front, whose gaps would
+ * show it, it runs down only at those two corners, for `k` along the edge
+ * (its end merlon's width: softening wears away anything much narrower).
+ * @param {Pt} fl
+ * @param {Pt} fr
+ * @param {Pt} br
+ * @param {Pt} bl
+ * @param {{drop?: number, k?: number}} [o]
+ * @returns {Poly}
+ */
+function tuckedTop(fl, fr, br, bl, o = {}) {
+	const drop = o.drop ?? 2,
+		k = o.k;
+	const down = (/** @type {Pt} */ p) => /** @type {Pt} */ ([p[0], p[1] - drop]);
+	if (!k) return [down(fl), down(fr), down(br), br, bl, fl];
+	/** The point `k` from p toward q. @param {Pt} p @param {Pt} q @returns {Pt} */
+	const toward = (p, q) => {
+		const l = Math.hypot(q[0] - p[0], q[1] - p[1]) || 1;
+		return [p[0] + ((q[0] - p[0]) * k) / l, p[1] + ((q[1] - p[1]) * k) / l];
+	};
+	const a = toward(fl, fr),
+		d = toward(br, fr);
+	return [down(fl), down(a), a, fr, d, down(d), down(br), br, bl, fl];
 }
 
 /**
@@ -1316,10 +1346,17 @@ function ridgeTurret(D, P, d, h, rh) {
 		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
 		{ solid: [front], fills: [win] },
 	];
-	/** @type {Poly} */
-	const deck = [P.at([-tw, yt], tf), P.at([tw, yt], tf), P.at([tw, yt], tb), P.at([-tw, yt], tb)];
-	const cap = roundCap(D, D.towerRoof, { solid: [deck] }, P.at([0, yt], 0.5), tw * P.scale(0.5));
-	if (cap) return [...parts, ...cap.parts];
+	const cap = roundCap(D, D.towerRoof, P.at([0, yt], 0.5), tw * P.scale(0.5));
+	if (cap) {
+		// Its top, under the cap, tucked behind its front and side.
+		const top = tuckedTop(
+			P.at([-tw, yt], tf),
+			P.at([tw, yt], tf),
+			P.at([tw, yt], tb),
+			P.at([-tw, yt], tb),
+		);
+		return [{ solid: [top] }, ...parts, ...cap.parts];
+	}
 	const ef = tf - ov / d,
 		eb = tb + ov / d;
 	/** @type {Pt} */ const fl = P.at([-tw - ov, yt], ef);
@@ -2020,7 +2057,12 @@ export function squareTower(D, o = {}) {
 		cs = P.scale(0.5);
 	const c = /** @type {Pt} */ ([top[0], topY]);
 	/** @type {Poly} */
-	const flatTop = [[-topW, topY], [topW, topY], P.back([topW, topY]), P.back([-topW, topY])];
+	const flatTop = tuckedTop(
+		[-topW, topY],
+		[topW, topY],
+		P.back([topW, topY]),
+		P.back([-topW, topY]),
+	);
 	/** @type {Poly} */
 	const sideFace = [
 		fr,
@@ -2029,11 +2071,13 @@ export function squareTower(D, o = {}) {
 		...sag(apex, fr, c, D.concave).slice(1, -1),
 	];
 	// Deck at the top — fills the oblique top so the softened corners where
-	// front, side and roof meet don't leave a sliver of background showing.
-	if (corbel && !crenel) parts.push({ solid: [[fl, fr, br, bl]], role: 'roof' });
+	// front, side and roof meet don't leave a sliver of background showing;
+	// tucked behind the walls, as a capped top is.
+	if (corbel && !crenel) parts.unshift({ solid: [tuckedTop(fl, fr, br, bl)], role: 'roof' });
 	const deck = !corbel || crenel;
-	const cap = roundCap(D, roof, deck ? { solid: [flatTop] } : null, top, topW * cs);
+	const cap = roundCap(D, roof, top, topW * cs);
 	if (cap) {
+		if (deck) parts.unshift({ solid: [flatTop] });
 		parts.push(...cap.parts);
 		if (o.finial && cap.socket) seat(parts, D.symbol, cap.tip, cap.socket);
 		else if (o.finial) parts.push(...symbolAt(D.symbol, cap.tip));
@@ -2157,8 +2201,14 @@ function gateTower(D, y0, h, wood) {
 	// role is the palisade's plank pattern on wooden gates, 'roof' on stone gates (so the stone
 	// gatehouse's cap takes the marker colour, matching every other roof).
 	const yTop = y0 + h;
-	parts.push({
-		solid: [[[-w / 2, yTop], [w / 2, yTop], P.back([w / 2, yTop]), P.back([-w / 2, yTop])]],
+	parts.unshift({
+		// Its front is crenellated (merlons GATE_W / 5 wide): tucked at the
+		// corners only.
+		solid: [
+			tuckedTop([-w / 2, yTop], [w / 2, yTop], P.back([w / 2, yTop]), P.back([-w / 2, yTop]), {
+				k: w / 5,
+			}),
+		],
 	});
 	if (D.towerRoof === 'dome') {
 		const [dx, dy] = P.at([0, yTop], 0.5);
@@ -3430,9 +3480,10 @@ export function octTower(D, o = {}) {
 		capY = y2;
 		capR = R;
 	}
-	const cap = roundCap(D, roof, { solid: [ring(capR, capY)] }, [0, capY], capR * 0.96);
+	const cap = roundCap(D, roof, [0, capY], capR * 0.96);
 	if (cap) {
-		parts.push(...cap.parts);
+		// The top under it; an octagon's corners are blunt, so it lies on.
+		parts.push({ solid: [ring(capR, capY)] }, ...cap.parts);
 		crown([cap.tip[0], cap.tip[1] - 2]);
 		return parts;
 	}
@@ -3556,18 +3607,13 @@ export function tieredTower(D) {
 		} else {
 			// The culture's onion, dome or lancet on the top storey; else (a
 			// cone or none) a pyramid.
-			/** @type {Poly} */
-			const deck = [[-w / 2, h], [w / 2, h], P.back([w / 2, h]), P.back([-w / 2, h])];
-			const cap = roundCap(
-				D,
-				D.towerRoof,
-				{ solid: [deck] },
-				P.at([0, h], 0.5),
-				(w / 2) * P.scale(0.5),
-			);
+			const cap = roundCap(D, D.towerRoof, P.at([0, h], 0.5), (w / 2) * P.scale(0.5));
 			/** @type {Pt} */
 			let tip;
 			if (cap) {
+				// The storey's top, under the cap, tucked behind its walls.
+				const top = tuckedTop([-w / 2, h], [w / 2, h], P.back([w / 2, h]), P.back([-w / 2, h]));
+				tier.unshift({ solid: [top] });
 				tier.push(...cap.parts);
 				tip = [cap.tip[0], cap.tip[1] - 2];
 			} else {

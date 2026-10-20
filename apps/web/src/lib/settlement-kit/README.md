@@ -79,8 +79,11 @@ cap** — read from the culture with `towerTop(D, o)`:
   eight-sided one on the octagonal tower), `onion`, `dome`, `lancet`, or
   `none` — a bare crenellated top. A tower with no cap always gets the
   crenellated top, so it never ends flat. On a flat top — a square
-  tower's, the tiered tower's top storey, the town hall's turret —
-  `roundCap()` lays a deck and sets the onion, dome or lancet on it; the
+  tower's, the tiered tower's top storey, the town hall's turret — the
+  piece lays the top behind its walls, run on a little way down them
+  (`tuckedTop()`: seen obliquely its front-left and back-right corners are
+  sharp, and softening would round them short of the walls', leaving a
+  notch), and `roundCap()` sets the onion, dome or lancet on it; the
   roofed ones keep their pyramid for a cone or none.
 - The **flag** flies from whichever is uppermost; landmark towers carry the
   culture's holy-symbol finial instead. On a sharp tip (a spire, a lancet)
