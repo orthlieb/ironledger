@@ -63,6 +63,8 @@ legend{font-weight:600;font-size:13px;padding:0 4px}
 .row input[type=checkbox],.row input[type=color]{justify-self:start}
 .row input[type=color]{width:40px;height:24px;border:1px solid var(--line);border-radius:5px;padding:0;background:none}
 .row input[type=range]{width:100%}
+.row.sw{grid-template-columns:110px auto 1fr 36px}
+.row input[type=range]:disabled,.row output.off{opacity:.4}
 output{font-size:11.5px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums}
 .grid{display:flex;flex-wrap:wrap;gap:12px;margin-bottom:12px}
 figure{margin:0;background:var(--card);border:1px solid var(--line);border-radius:8px;padding:8px;text-align:center;width:170px}
