@@ -783,11 +783,14 @@ function lancetCap(D, cx, y, R) {
 }
 
 /**
- * The culture's round cap — onion, dome or lancet — on a round top (the
- * octagonal tower's), its rim level as a round tower's, at the top's centre
- * `c`, of base radius `r` on screen. (A box's square top takes boxCap()
- * instead.) Null for a cone or none: the piece draws its own pyramid or
- * parapet. `socket` is how deep a finial seats in the tip (see seat()).
+ * The culture's round cap — onion, dome or lancet — drawn level, as on a
+ * round tower, at a flat top's centre `c`, of base radius `r` on screen.
+ * On a round top (the octagonal tower's) its rim lies on the top's own. On
+ * a box's square top, which slants, the piece draws it BEHIND its walls
+ * (after the top): their top edges trim its base to the top, so it rises
+ * from behind the parapet and never hangs out over the edge. Null for a
+ * cone or none: the piece draws its own pyramid or parapet. `socket` is
+ * how deep a finial seats in the tip (see seat()).
  * @param {Design} D
  * @param {Design['towerRoof']} roof
  * @param {Pt} c
@@ -825,6 +828,7 @@ function roundCap(D, roof, c, r) {
  * centred on it, and its height is its own. Its outline runs up the rings'
  * right ends and down their left ends from the front of its base ring.
  * Null for a cone or none: the piece draws its own pyramid or parapet.
+ * (The 3D-frame church's; the kit's own square tops take roundCap().)
  * @param {Design} D
  * @param {Design['towerRoof']} roof
  * @param {ReturnType<typeof boxProjector>} P
@@ -1409,16 +1413,17 @@ function ridgeTurret(D, P, d, h, rh) {
 		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
 		{ solid: [front], fills: [win] },
 	];
-	const cap = boxCap(D, D.towerRoof, P, tw, yt, tf, tb);
+	const cap = roundCap(D, D.towerRoof, P.at([0, yt], 0.5), tw * P.scale(0.5));
 	if (cap) {
-		// Its top, under the cap, tucked behind its front and side.
+		// Its top, under the cap, tucked behind its front and side; the cap
+		// level and behind them too, their top edges trimming its base.
 		const top = tuckedTop(
 			P.at([-tw, yt], tf),
 			P.at([tw, yt], tf),
 			P.at([tw, yt], tb),
 			P.at([-tw, yt], tb),
 		);
-		return [{ solid: [top] }, ...parts, ...cap.parts];
+		return [{ solid: [top] }, ...cap.parts, ...parts];
 	}
 	const ef = tf - ov / d,
 		eb = tb + ov / d;
@@ -2136,12 +2141,20 @@ export function squareTower(D, o = {}) {
 	// tucked behind the walls, as a capped top is.
 	if (corbel && !crenel) parts.unshift({ solid: [tuckedTop(fl, fr, br, bl)], role: 'roof' });
 	const deck = !corbel || crenel;
-	const cap = boxCap(D, roof, P, topW, topY);
+	const cap = roundCap(D, roof, P.at([0, topY], 0.5), topW * P.scale(0.5));
 	if (cap) {
-		if (deck) parts.unshift({ solid: [flatTop] });
-		parts.push(...cap.parts);
-		if (o.finial && cap.socket) seat(parts, D.symbol, cap.tip, cap.socket);
-		else if (o.finial) parts.push(...symbolAt(D.symbol, cap.tip));
+		// Drawn level, as on a round tower, and BEHIND the walls: their top
+		// edges trim its base to the top, so it sits on it, not over its edge.
+		const capParts = [...cap.parts];
+		if (o.finial && cap.socket) seat(capParts, D.symbol, cap.tip, cap.socket);
+		else if (o.finial) capParts.push(...symbolAt(D.symbol, cap.tip));
+		// After a corbelled top's deck (parts[0]), which it stands on.
+		parts.splice(
+			corbel && !crenel ? 1 : 0,
+			0,
+			...(deck ? [{ solid: [flatTop] }] : []),
+			...capParts,
+		);
 		return parts;
 	}
 	// Pyramid (the cone cap on a square tower), one part so the apex closes.
@@ -2272,10 +2285,11 @@ function gateTower(D, y0, h, wood) {
 		],
 	});
 	if (D.towerRoof === 'dome') {
-		const dome = /** @type {NonNullable<ReturnType<typeof boxCap>>} */ (
-			boxCap(D, 'dome', P, w * 0.42, yTop)
-		);
-		parts.push(...dome.parts);
+		// Level, behind the walls (after the top), their top edges trimming
+		// its base.
+		const [dx, dy] = P.at([0, yTop], 0.5);
+		const dome = hemiDome(dx, dy, w * 0.42 * P.scale(0.5), D.hatch);
+		parts.splice(1, 0, dome.part);
 		flagAt = [dome.tip[0], dome.tip[1] - 1.5];
 	} else {
 		const ov = 1.2,
@@ -3669,14 +3683,14 @@ export function tieredTower(D) {
 		} else {
 			// The culture's onion, dome or lancet on the top storey; else (a
 			// cone or none) a pyramid.
-			const cap = boxCap(D, D.towerRoof, P, w / 2, h);
+			const cap = roundCap(D, D.towerRoof, P.at([0, h], 0.5), (w / 2) * P.scale(0.5));
 			/** @type {Pt} */
 			let tip;
 			if (cap) {
-				// The storey's top, under the cap, tucked behind its walls.
+				// The storey's top, under the cap, tucked behind its walls; the
+				// cap level and behind them too, their top edges trimming its base.
 				const top = tuckedTop([-w / 2, h], [w / 2, h], P.back([w / 2, h]), P.back([-w / 2, h]));
-				tier.unshift({ solid: [top] });
-				tier.push(...cap.parts);
+				tier.unshift({ solid: [top] }, ...cap.parts);
 				tip = [cap.tip[0], cap.tip[1] - 2];
 			} else {
 				/** @type {Pt} */ const fl = P.at([-w / 2 - ov, he], -ov / d);
