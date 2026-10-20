@@ -49,7 +49,9 @@ const K = 2; // geometry at 2× while line weights stay put → finer hatching
 /**
  * @typedef {{key: string, label: string, group: string,
  *   type: 'range' | 'select' | 'check', min?: number, max?: number, step?: number,
- *   options?: string[], design?: boolean}} Knob
+ *   options?: string[], design?: boolean, toggle?: Knob}} Knob `toggle`: a switch
+ *   drawn in a slider's row, before it, that turns what the slider sets on and
+ *   off — the slider greys out while it's off
  */
 
 /** A slider. @param {string} group @param {string} key @param {string} label
@@ -147,9 +149,6 @@ const KNOBS = [
 	// The walls' shape — the drawing's, not the culture's.
 	select('Drawing', 'wallShape', 'Wall shape', ['round', 'square'], false),
 	check('Drawing', 'stilts', 'On stilts', false),
-	// Hatched shading — the drawing's, not a culture's. Off by default, as
-	// IronLedger draws every map icon: shaded faces by colour alone.
-	check('Drawing', 'hatching', 'Hatching', false),
 	// What it stands on — the drawing's, not the culture's: settlements and
 	// buildings alike.
 	select(
@@ -171,9 +170,18 @@ const KNOBS = [
 	select('Drawing', 'join', 'Joins', ['sharp', 'round', 'soft']),
 	range('Drawing', 'softRadius', 'Soft radius', 0.2, 2.5, 0.05, false),
 	range('Drawing', 'outline', 'Outline', 0.6, 3, 0.05, false),
-	range('Drawing', 'hatch', 'Hatch spacing', 0.9, 2.6, 0.05),
+	// The culture's hatch spacing, and beside it the switch for hatched
+	// shading at all — the drawing's, not a culture's: off by default, as
+	// IronLedger draws every map icon, shaded faces by colour alone.
+	{
+		...range('Drawing', 'hatch', 'Hatch spacing', 0.9, 2.6, 0.05),
+		toggle: check('Drawing', 'hatching', 'Hatching', false),
+	},
 	range('Drawing', 'layout', 'Layout seed', 1, 50, 1, false),
 ];
+
+/** Every knob, a slider's switch included. */
+const ALL_KNOBS = KNOBS.flatMap((k) => (k.toggle ? [k, k.toggle] : [k]));
 
 /** Which settlement templates to show. */
 const TIER_SETS = /** @type {Record<string, (keyof typeof TEMPLATES)[]>} */ ({
@@ -431,12 +439,15 @@ function buildPanel() {
 				.map((k) => {
 					const id = `k-${k.key}`;
 					let input;
+					const sw = k.toggle
+						? `<input type="checkbox" autocomplete="off" id="k-${k.toggle.key}" aria-label="${k.toggle.label}">`
+						: '';
 					if (k.type === 'range')
-						input = `<input type="range" autocomplete="off" id="${id}" min="${k.min}" max="${k.max}" step="${k.step}"><output id="${id}-o"></output>`;
+						input = `${sw}<input type="range" autocomplete="off" id="${id}" min="${k.min}" max="${k.max}" step="${k.step}"><output id="${id}-o"></output>`;
 					else if (k.type === 'select')
 						input = `<select autocomplete="off" id="${id}">${(k.options ?? []).map((o) => `<option>${o}</option>`).join('')}</select>`;
 					else input = `<input type="checkbox" autocomplete="off" id="${id}">`;
-					return `<label class="row" for="${id}"><span>${k.label}</span>${input}</label>`;
+					return `<label class="row${sw ? ' sw' : ''}" for="${id}"><span>${k.label}</span>${input}</label>`;
 				})
 				.join('');
 			return `<fieldset><legend>${g}</legend>${rows}</fieldset>`;
@@ -456,12 +467,13 @@ function buildPanel() {
 			.join('')}</select></label>${colours}
 		<label class="row" for="flagFollow"><span>Flags follow marker</span><input type="checkbox" autocomplete="off" id="flagFollow"></label></fieldset>`;
 
-	for (const k of KNOBS) {
+	for (const k of ALL_KNOBS) {
 		const el = /** @type {HTMLInputElement} */ ($(`k-${k.key}`));
 		el.addEventListener('input', () => {
 			const v = k.type === 'check' ? el.checked : k.type === 'range' ? Number(el.value) : el.value;
 			(k.design ? design : drawing)[k.key] = v;
 			if (k.type === 'range') $(`k-${k.key}-o`).textContent = String(v);
+			syncToggles();
 			schedule();
 		});
 	}
@@ -472,8 +484,18 @@ function buildPanel() {
 	);
 }
 
+/** Grey each slider whose switch is off. */
+function syncToggles() {
+	for (const k of KNOBS)
+		if (k.toggle) {
+			const off = !knobValue(k.toggle);
+			/** @type {HTMLInputElement} */ ($(`k-${k.key}`)).disabled = off;
+			$(`k-${k.key}-o`).classList.toggle('off', off);
+		}
+}
+
 function syncPanel() {
-	for (const k of KNOBS) {
+	for (const k of ALL_KNOBS) {
 		const el = /** @type {HTMLInputElement} */ ($(`k-${k.key}`));
 		const v = knobValue(k);
 		if (k.type === 'check') el.checked = !!v;
@@ -481,6 +503,7 @@ function syncPanel() {
 			el.value = String(typeof v === 'number' && k.step && k.step < 1 ? Number(v.toFixed(2)) : v);
 		if (k.type === 'range') $(`k-${k.key}-o`).textContent = el.value;
 	}
+	syncToggles();
 }
 
 /** @param {Record<string, string>} p */
