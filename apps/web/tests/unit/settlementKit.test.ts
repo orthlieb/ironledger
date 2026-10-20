@@ -549,25 +549,49 @@ describe('church built in a 3D frame (prototype)', () => {
 			height = Math.max(...ys) - Math.min(...ys);
 		expect(width).toBeLessThan(height * 0.95); // a circle seen edge-on-ish, not face-on
 	});
-	it.each(['cone', 'onion', 'dome', 'lancet', 'none'] as const)(
-		'tops its tower with a %s cap and leaves nothing hanging when ruined',
-		(towerRoof) => {
-			for (const towerCrenel of [false, true]) {
-				const piece = church3d({ ...DEFAULT_DESIGN, towerRoof, towerCrenel });
-				const [ruin] = ruinPlaced([{ piece }], {
-					decay: 0.6,
-					overgrowth: 0,
-					burned: false,
-					single: true,
-					seed: 1,
-				});
-				expect(ruin.piece.filter((p) => !p.solid.length && p.free?.length && !p.mask)).toEqual([]);
-			}
+	it.each(['square', 'round'] as const)(
+		'builds a %s steeple with every cap, crenellated or not, cleanly ruined',
+		(steeple) => {
+			for (const towerRoof of ['cone', 'onion', 'dome', 'lancet', 'none'] as const)
+				for (const towerCrenel of [false, true]) {
+					const D = { ...DEFAULT_DESIGN, steeple, towerRoof, towerCrenel };
+					const piece = church3d(D);
+					expect(renderLayered(piece, { join: D.join }).layers.wall).toBeTruthy();
+					const [ruin] = ruinPlaced([{ piece }], {
+						decay: 0.6,
+						overgrowth: 0,
+						burned: false,
+						single: true,
+						seed: 1,
+					});
+					expect(ruin.piece.filter((p) => !p.solid.length && p.free?.length && !p.mask)).toEqual(
+						[],
+					);
+				}
 		},
 	);
-	it('falls back to the church for a round steeple', () => {
+	it.each(['square', 'round'] as const)('corbels a %s steeple out from its belt', (steeple) => {
+		// How far left the tower reaches (nothing else stands left of it):
+		// corbelled from 0.65 of its height, its top is wider all round.
+		const left = (towerCorbel: number) =>
+			Math.min(
+				...church3d({ ...DEFAULT_DESIGN, steeple, towerCorbel })
+					.flatMap((p) => p.solid.flat())
+					.map(([x]) => x),
+			);
+		expect(left(0.35)).toBeLessThan(left(0) - 1.5);
+	});
+	it('stands a round steeple on the front, its door on the curved wall', () => {
 		const D = { ...DEFAULT_DESIGN, steeple: 'round' as const };
-		expect(church3d(D)).toEqual(church(D));
+		const [body] = church3d(D).filter((p) => !p.role && p.fills?.length === 2);
+		const [door] = body.fills!;
+		// The door's foot follows the drum round: its corners, round the
+		// curve and further back, stand higher than on a flat front (y = 0).
+		const foot = door.filter(([, y]) => y < 1);
+		expect(foot.length).toBe(2);
+		for (const [, y] of foot) expect(y).toBeGreaterThan(0.1);
+		// The drum's own front stands on the ground line.
+		expect(Math.min(...body.solid[0].map(([, y]) => y))).toBeCloseTo(0, 1);
 	});
 });
 

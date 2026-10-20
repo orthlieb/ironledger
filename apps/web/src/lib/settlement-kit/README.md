@@ -82,11 +82,25 @@ renderer's clipping is the rest), so the frame costs nothing measurable.
 `church3d()` — the playground's **Church (3D frame)**, beside the Church —
 is the first piece built this way: tower and nave in one frame, the nave's
 roof running up to the tower's wall and stopping there, the rose window a
-circle on the gable wall foreshortened with it, the crenellated band
-corbelled out on all four sides with its sloped underside showing, and the
-cap built on the band's top. Square steeple only (a round one falls back to
-`church()`), and no corbelled tower body yet. The map's church is still
-`church()`.
+circle on the gable wall foreshortened with it, the cap built on the
+tower's top. The tower is square or round per the culture's `steeple`,
+with its corbel, crenellated band and cap:
+
+- **Corbels** built in 3D reach forward as well as out, which the oblique
+  view draws down and to the left: at 45° in 3D a square corbel's front
+  shows as a sliver and the band it carries seems to float. So a square
+  corbel rises `CORBEL_RISE` (2.25) for each unit it reaches out, which
+  reads 45° on screen, and its underside is in shadow.
+- **Round bodies** are solids of revolution (`revolve()`, `drum()`): each
+  level a ring through the camera, the outline traced up the rings' ends.
+  Their plan stands 0.8 as deep as wide, as square towers do, which is
+  exactly what draws their rims the 0.34-high ellipses of `roundTower()`
+  — tilted now with the top they stand on. The door and belfry are laid
+  on the drum's curved front (`onFront`), the stone courses follow its
+  rings, and a bare top is a walk inside a crenellated ring, the back
+  wall's inner face rising from it.
+
+The map's church is still `church()`.
 
 ## Towers
 

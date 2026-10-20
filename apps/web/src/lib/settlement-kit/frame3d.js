@@ -31,6 +31,83 @@
 export const depthVec = (d) => [d * 0.75, d * 0.5];
 
 /**
+ * A solid of revolution — a round tower, a band, a dome — through `at`,
+ * which takes a point given from its base's centre (across, up, back) to
+ * the screen. Its level section at a share `u` of its rise `H` is an
+ * ellipse `a·k(u)` across and `b·k(u)` deep. Seen from above-front its
+ * outline is the front of its base section, up the sections' right ends,
+ * over the back of its top one (where it has a top, not a point) and down
+ * their left ends.
+ * @param {(p: [number, number, number]) => Pt} at
+ * @param {number} a
+ * @param {number} b
+ * @param {number} H
+ * @param {(u: number) => number} k
+ * @param {number} [levels] sections the sides are traced through
+ */
+export function revolve(at, a, b, H, k, levels = 40) {
+	const N = 72;
+	/** The section at `u`, round from the right (+x) through the back. */
+	const ring = (/** @type {number} */ u) => {
+		const s = k(u);
+		return Array.from({ length: N }, (_, i) => {
+			const f = (2 * Math.PI * i) / N;
+			return at([a * s * Math.cos(f), u * H, b * s * Math.sin(f)]);
+		});
+	};
+	/** A section's leftmost and rightmost points' indices. @param {Poly} R */
+	const ends = (R) => {
+		let l = 0,
+			r = 0;
+		R.forEach(([x], i) => {
+			if (x < R[l][0]) l = i;
+			if (x > R[r][0]) r = i;
+		});
+		return [l, r];
+	};
+	/** Section R from index i round to j. @param {Poly} R @param {number} i @param {number} j */
+	const span = (R, i, j) => {
+		/** @type {Poly} */
+		const out = [];
+		for (let n = i; ; n = (n + 1) % N) {
+			out.push(R[n]);
+			if (n === j) return out;
+		}
+	};
+	/** The front half of the section at `u`, its left end to its right. */
+	const front = (/** @type {number} */ u) => {
+		const R = ring(u),
+			[l, r] = ends(R);
+		return span(R, l, r);
+	};
+	/** Its back half, from its right end round to its left. */
+	const back = (/** @type {number} */ u) => {
+		const R = ring(u),
+			[l, r] = ends(R);
+		return span(R, r, l);
+	};
+	/** @type {Pt[]} */
+	const lefts = [],
+		/** @type {Pt[]} */
+		rights = [];
+	for (let i = 1; i <= levels; i++) {
+		const R = ring(i / levels),
+			[l, r] = ends(R);
+		lefts.push(R[l]);
+		rights.push(R[r]);
+	}
+	const topped = k(1) > 1e-3;
+	/** @type {Poly} */
+	const outline = [
+		...front(0),
+		...rights,
+		...(topped ? back(1).slice(1, -1) : []),
+		...(topped ? lefts : lefts.slice(0, -1)).reverse(),
+	];
+	return { outline, ring, front, back };
+}
+
+/**
  * A 3D frame and its camera. `k` is the perspective strength (the
  * culture's `perspective`; 0 = parallel). It's capped, as boxProjector()
  * caps it, for each of the piece's flat `tops` and back-running `ridges`
@@ -62,6 +139,17 @@ export function frame(k, o = {}) {
 		side: (poly, x) => poly.map(([z, y]) => pt([x, y, z])),
 		/** A face on the level plane at height `y`, its points (x, z). @param {Poly} poly @param {number} y */
 		level: (poly, y) => poly.map(([x, z]) => pt([x, y, z])),
+		/**
+		 * A solid of revolution (revolve()) standing in the frame, its base's
+		 * centre at `base`.
+		 * @param {[number, number, number]} base
+		 * @param {number} a
+		 * @param {number} b
+		 * @param {number} H
+		 * @param {(u: number) => number} k
+		 */
+		revolve: (base, a, b, H, k) =>
+			revolve(([x, y, z]) => pt([base[0] + x, base[1] + y, base[2] + z]), a, b, H, k),
 		/**
 		 * A projector shaped as boxProjector()'s, for a box standing in the
 		 * frame: centred across on `x`, from depth `z0` back `d`. Its points

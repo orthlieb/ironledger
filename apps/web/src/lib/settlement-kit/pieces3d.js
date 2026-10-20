@@ -24,7 +24,7 @@ import {
 	rng,
 	seg,
 } from './geom.js';
-import { depthVec, frame } from './frame3d.js';
+import { depthVec, frame, revolve } from './frame3d.js';
 import { RING_TEXTURES } from './ringTextures.js';
 import { place } from './render.js';
 
@@ -857,44 +857,13 @@ function boxCap(D, roof, P, a, y0, t0 = 0, t1 = 1) {
 	// An onion's bulge stands out past its base: a little narrower than
 	// the top, so it doesn't swamp it.
 	const r = roof === 'onion' ? a * 0.9 : a;
-	/** The ring at a share `u` of the rise, through the box's projector. */
-	const ring = (/** @type {number} */ u) => {
-		const k = radius(u) * (r / a);
-		return Array.from({ length: 72 }, (_, i) => {
-			const f = (2 * Math.PI * i) / 72;
-			return P.at([a * k * Math.cos(f), y0 + u * H], tc + (b * k * Math.sin(f)) / P.d);
-		});
-	};
-	/** A ring's leftmost and rightmost points' indices. @param {Poly} R */
-	const ends = (R) => {
-		let l = 0,
-			rt = 0;
-		R.forEach(([x], i) => {
-			if (x < R[l][0]) l = i;
-			if (x > R[rt][0]) rt = i;
-		});
-		return [l, rt];
-	};
-	const base = ring(0);
-	const [iL, iR] = ends(base);
-	/** @type {Poly} */
-	const front = []; // the base ring's front, left end to right
-	for (let i = iL; ; i = (i + 1) % base.length) {
-		front.push(base[i]);
-		if (i === iR) break;
-	}
-	/** @type {Pt[]} */
-	const lefts = [],
-		/** @type {Pt[]} */
-		rights = [];
-	for (let i = 1; i <= 40; i++) {
-		const R = ring(i / 40),
-			[l, rt] = ends(R);
-		lefts.push(R[l]);
-		rights.push(R[rt]);
-	}
-	/** @type {Poly} */
-	const outline = [...front, ...rights, ...lefts.slice(0, -1).reverse()];
+	const { outline } = revolve(
+		([x, y, z]) => P.at([x, y0 + y], tc + z / P.d),
+		r,
+		b * (r / a),
+		H,
+		radius,
+	);
 	const axis = P.at([0, y0], tc)[0],
 		top = P.at([0, y0 + H], tc);
 	const E = Math.max(...outline.map(([x]) => x)) - axis,
@@ -3741,131 +3710,271 @@ export function church(D, o = {}) {
 }
 
 /**
- * Church, built in one 3D frame (frame3d.js) — the prototype of laying a
- * piece out in 3D and drawing it through one camera. The bell tower and
- * the nave stand in the same space, so they converge together; the nave's
- * roof runs up to the tower's wall and stops there; every face, opening
- * and cap is placed on its own plane — the rose window on the gable end is
- * a circle on that wall, foreshortened with it, and the crenellated band
- * is corbelled out on all four sides, its sloped underside showing. The
- * culture's tower top as on a square tower (no corbelled body yet); a
- * round steeple falls back to church().
- * @param {Design} D
- * @param {{w?: number}} [o]
- * @returns {Part[]}
+ * How far a square corbel rises for each unit it reaches out. Built in 3D
+ * it reaches forward as well as out, which the oblique view draws down and
+ * to the left: at 45° in 3D its front would show as a sliver and what it
+ * carries would seem to float. At this rise its edges read 45° on screen.
  */
-export function church3d(D, o = {}) {
-	if (D.steeple === 'round') return church(D, o);
-	// The nave, side-on, in sideHouse()'s church proportions…
-	const w = o.w ?? 28,
-		h = 13 * D.stature,
-		d = 12 * D.depth * 1.35,
-		rh = d * D.pitch * 1.5,
-		ov = 1.4;
-	// …and the bell tower at its west end, its front in line with the nave's.
-	const tw = 10,
-		td = tw * 0.8,
-		th = 34 * D.stature,
-		tx = -w / 2 - tw / 2 + 0.5, // its centre
+const CORBEL_RISE = 2.25;
+
+/** How much wider a round section shows than its half-width across: the
+ *  kit's round things stand 0.8 as deep as wide, as its square towers do,
+ *  which draws their rims the 0.34-high ellipses round towers have. */
+const ROUND_SHOW = Math.hypot(1, 0.75 * 0.8);
+
+/**
+ * A round body standing in a frame: its axis at (x, z), from height y0 up
+ * `H`, `rho(y)` its radius as seen at height y (the half-width a round
+ * tower is drawn at). Its outline and sections (revolve()), its axis and
+ * reach on screen, and `onFront`, which lays a shape drawn as on a flat
+ * front at the axis onto the drum's curved front.
+ * @param {ReturnType<typeof frame>} F
+ * @param {number} x
+ * @param {number} z
+ * @param {number} y0
+ * @param {number} H
+ * @param {(y: number) => number} rho
+ */
+function drum(F, x, z, y0, H, rho) {
+	const a = 1 / ROUND_SHOW,
+		b = 0.8 * a;
+	const solid = F.revolve([x, y0, z], a, b, H, (u) => rho(y0 + u * H));
+	const axis = F.pt([x, y0, z])[0];
+	const reach = Math.max(...solid.outline.map(([px]) => px)) - axis;
+	/** @param {Poly} poly @returns {Poly} */
+	const onFront = (poly) =>
+		poly.map(([px, py]) => {
+			const A = rho(py) * a,
+				q = Math.max(-A, Math.min(A, px));
+			return F.pt([x + q, py, z - rho(py) * b * Math.sqrt(Math.max(0, 1 - (q / A) ** 2))]);
+		});
+	/** The front of the section at height y, its left end to its right. @param {number} y */
+	const rim = (y) => solid.front((y - y0) / H);
+	/** Stone courses round its front from y0 to y1, staggered joints bunching to the sides. */
+	const courses = (/** @type {number} */ c0, /** @type {number} */ c1) => {
+		/** @type {Line[]} */
+		const out = [];
+		let row = 0;
+		for (let y = c0 + 2.4; y < c1; y += 2.4, row++) {
+			out.push({ pts: rim(y), w: 0.45, role: TEXTURE });
+			const A = rho(y) * a,
+				dt = 4.4 / A;
+			for (let t = Math.PI + (row % 2 ? dt / 2 : dt); t < 2 * Math.PI; t += dt) {
+				const [p, q] = onFront([
+					[A * Math.cos(t), y - 2.4],
+					[A * Math.cos(t), y],
+				]);
+				out.push(seg(p, q, 0.45, { role: TEXTURE }));
+			}
+		}
+		return out;
+	};
+	return { ...solid, axis, reach, onFront, rim, courses, a, b };
+}
+
+/**
+ * A crenellated run round a section: from angle `t0` to `t1` (radians, in
+ * the plan's (x, z), from +x toward the back), `n` stretches alternating
+ * merlon and gap, starting with a merlon — its points at height y, or
+ * `notch` lower in the gaps.
+ * @param {ReturnType<typeof frame>} F
+ * @param {[number, number]} c the section's centre (x, z)
+ * @param {number} A half-width across
+ * @param {number} B half-depth
+ * @param {number} y
+ * @param {number} t0
+ * @param {number} t1
+ * @param {number} n
+ * @param {number} notch
+ * @returns {Poly}
+ */
+function crenelRun(F, c, A, B, y, t0, t1, n, notch) {
+	/** @type {Poly} */
+	const out = [];
+	for (let j = 0; j < n; j++) {
+		const yy = j % 2 === 0 ? y : y - notch;
+		for (let i = 0; i <= 3; i++) {
+			const t = t0 + ((t1 - t0) * (j + i / 3)) / n;
+			out.push(F.pt([c[0] + A * Math.cos(t), yy, c[1] + B * Math.sin(t)]));
+		}
+	}
+	return out;
+}
+
+/**
+ * The church's square bell tower, laid out for a frame: its top's height
+ * and depth (for the frame's perspective cap) and `draw`, which builds it
+ * in the frame — the culture's corbelled body (from the belt up, wider all
+ * round, the corbel's underside in shadow), crenellated band and cap.
+ * @param {Design} D
+ * @param {number} tx its centre across
+ * @param {number} tw its width
+ * @param {number} th its height
+ */
+function squareSteeple3d(D, tx, tw, th) {
+	const td = tw * 0.8,
 		x0 = tx - tw / 2,
-		x1 = tx + tw / 2; // its right wall, where the nave starts
+		x1 = tx + tw / 2;
 	const { roof, crenel } = towerTop(D);
-	// The crenellated band, corbelled out `cOv` all round, and the top the
-	// cap stands on: the band's, or the tower's own.
+	// The corbelled body: from the belt up, `bOv` wider all round.
+	const amount = Math.max(0, Math.min(1, D.towerCorbel ?? 0));
+	const beltY = (1 - amount) * th;
+	const bOv = Math.min(Math.max(1.4, tw * 0.14), Math.max(0, (th - beltY) / CORBEL_RISE));
+	const corbel = bOv > 0.01,
+		bTop = beltY + bOv * CORBEL_RISE;
+	const [u0, u1, v0, v1] = corbel ? [x0 - bOv, x1 + bOv, -bOv, td + bOv] : [x0, x1, 0, td];
+	// The crenellated band, corbelled out `cOv` round the body's top.
 	const cOv = Math.max(0.8, tw * 0.12),
 		band = Math.max(3, tw * 0.5),
 		notch = Math.min(2, band * 0.45);
-	const [X0, X1, Z0, Z1] = crenel ? [x0 - cOv, x1 + cOv, -cOv, td + cOv] : [x0, x1, 0, td];
-	const y1 = th + cOv,
+	const [X0, X1, Z0, Z1] = crenel ? [u0 - cOv, u1 + cOv, v0 - cOv, v1 + cOv] : [u0, u1, v0, v1];
+	const y1 = th + cOv * CORBEL_RISE,
 		topY = crenel ? y1 + band : th;
-	const F = frame(D.perspective, { tops: [[topY, Z1 - Z0]], ridges: [[h + rh, d]] });
-	const { pt } = F;
-
-	/** @type {Part[]} */
-	const tower = [];
-	/** @type {Poly} */
-	const tSide = F.side(
-		[
-			[0, 0],
-			[td, 0],
-			[td, th],
-			[0, th],
-		],
-		x1,
-	);
-	const belfryY = th - 9.5;
-	tower.push(
-		{
-			solid: [tSide],
-			shaded: true,
-			lines: [
-				...hatch(tSide, 65, D.hatch),
-				...(D.masonry ? faceCourses(F.box(tx, 0, td), tw / 2, 0, th) : []),
-			],
-		},
-		{
-			solid: [rect(x0, 0, tw, th)],
-			fills: [archOpening(tx, 0, 4, 7), archOpening(tx, belfryY, 4.4, 7.5)],
-			cuts: bellCuts(tx, belfryY + 1.9),
-			lines: D.masonry ? stoneCourses(x0, x1, 0, th) : [],
-		},
-	);
-	const capped = roof !== 'none';
-	if (crenel) {
-		// The corbel: the tower's top edges sloping out 45° to the band — its
-		// front and right slopes, seen from above-front.
-		/** @type {Poly} */
-		const cFront = [pt([x0, th, 0]), pt([x1, th, 0]), pt([X1, y1, Z0]), pt([X0, y1, Z0])];
-		/** @type {Poly} */
-		const cSide = [pt([x1, th, 0]), pt([x1, th, td]), pt([X1, y1, Z1]), pt([X1, y1, Z0])];
-		// The band: plain under a cap (its crenels dark slots under the
-		// eave), else crenellated round a walk below its merlons.
-		const bFront = F.front(
-			capped ? rect(X0, y1, X1 - X0, band) : crenellated(X0, X1, y1, topY, { merlon: 2.2, notch }),
-			Z0,
-		);
-		const bSide = F.side(
-			capped ? rect(Z0, y1, Z1 - Z0, band) : crenellated(Z0, Z1, y1, topY, { merlon: 1.8, notch }),
-			X1,
-		);
-		if (!capped) {
-			// The walk, and the back and left walls' inner faces rising from
-			// it in shadow; the symbol stands on the walk.
-			const yd = topY - notch * 1.6;
-			const back = F.front(crenellated(X0, X1, yd, topY, { merlon: 2.2, notch }), Z1);
-			const left = F.side(crenellated(Z0, Z1, yd, topY, { merlon: 1.8, notch }), X0);
-			tower.push(
-				{ solid: [back], shaded: true, lines: hatch(back, 65, D.hatch) },
-				{ solid: [F.level(rect(X0, Z0, X1 - X0, Z1 - Z0), yd)] },
-				...symbolAt(D.symbol, pt([tx, yd, (Z0 + Z1) / 2])),
-				{ solid: [left], shaded: true, lines: hatch(left, 65, D.hatch) },
+	return {
+		top: /** @type {[number, number]} */ ([topY, Z1 - Z0]),
+		join: x1,
+		/** @param {ReturnType<typeof frame>} F @returns {Part[]} */
+		draw(F) {
+			const { pt } = F;
+			/** @type {Part[]} */
+			const parts = [];
+			/** Line-work drawn as on the front, laid on the plane at depth z. @param {Line[]} ls @param {number} z */
+			const onPlane = (ls, z) => ls.map((l) => ({ ...l, pts: F.front(l.pts, z) }));
+			// The belfry, wholly below the belt or wholly above it.
+			const belfryY = clearCorbel(th - 9.5, 7.5, beltY, corbel ? bTop - beltY : 0);
+			const upper = corbel && belfryY >= beltY;
+			const lowTop = corbel ? beltY : th;
+			/** @type {Poly} */
+			const side = F.side(
+				[
+					[0, 0],
+					[td, 0],
+					[td, lowTop],
+					[0, lowTop],
+				],
+				x1,
 			);
-		}
-		/** @type {Poly[]} */
-		const slots = [];
-		if (capped)
-			for (let x = X0 + 1.5; x < X1 - 0.9; x += 2.4)
-				slots.push(F.front(rect(x - 0.5, topY - band * 0.42, 1, band * 0.42 + 0.6), Z0));
-		tower.push(
-			{ solid: [cSide], shaded: true, lines: hatch(cSide, 65, D.hatch) },
-			{ solid: [cFront] },
-			{ solid: [bSide], shaded: true, lines: hatch(bSide, 65, D.hatch) },
-			{ solid: [bFront], fills: slots },
-		);
-	}
-	if (capped) {
-		// The top it stands on, tucked behind the walls; then the cap.
-		tower.unshift({
-			solid: [
-				tuckedTop(pt([X0, topY, Z0]), pt([X1, topY, Z0]), pt([X1, topY, Z1]), pt([X0, topY, Z1])),
-			],
-		});
-		const cap = boxCap(D, roof, F.box(tx, Z0, Z1 - Z0), (X1 - X0) / 2, topY);
-		if (cap) {
-			tower.push(...cap.parts);
-			if (cap.socket) seat(tower, D.symbol, cap.tip, cap.socket);
-			else tower.push(...symbolAt(D.symbol, cap.tip));
-		} else {
+			parts.push(
+				{
+					solid: [side],
+					shaded: true,
+					lines: [
+						...hatch(side, 65, D.hatch),
+						...(D.masonry ? faceCourses(F.box(tx, 0, td), tw / 2, 0, lowTop) : []),
+					],
+				},
+				{
+					solid: [rect(x0, 0, tw, lowTop)],
+					fills: [archOpening(tx, 0, 4, 7), ...(upper ? [] : [archOpening(tx, belfryY, 4.4, 7.5)])],
+					cuts: upper ? [] : bellCuts(tx, belfryY + 1.9),
+					lines: D.masonry ? stoneCourses(x0, x1, 0, lowTop) : [],
+				},
+			);
+			if (corbel) {
+				// The corbel's slopes, their undersides in shadow; then the wider top.
+				/** @type {Poly} */
+				const cSide = [
+					pt([x1, beltY, 0]),
+					pt([x1, beltY, td]),
+					pt([u1, bTop, v1]),
+					pt([u1, bTop, v0]),
+				];
+				/** @type {Poly} */
+				const cFront = [
+					pt([x0, beltY, 0]),
+					pt([x1, beltY, 0]),
+					pt([u1, bTop, v0]),
+					pt([u0, bTop, v0]),
+				];
+				/** @type {Poly} */
+				const uSide = F.side(
+					[
+						[v0, bTop],
+						[v1, bTop],
+						[v1, th],
+						[v0, th],
+					],
+					u1,
+				);
+				parts.push(
+					{ solid: [cSide], shaded: true },
+					{ solid: [cFront], shaded: true },
+					{
+						solid: [uSide],
+						shaded: true,
+						lines: [
+							...hatch(uSide, 65, D.hatch),
+							...(D.masonry ? faceCourses(F.box(tx, v0, v1 - v0), (u1 - u0) / 2, bTop, th) : []),
+						],
+					},
+					{
+						solid: [F.front(rect(u0, bTop, u1 - u0, th - bTop), v0)],
+						fills: upper ? [F.front(archOpening(tx, belfryY, 4.4, 7.5), v0)] : [],
+						cuts: upper ? onPlane(bellCuts(tx, belfryY + 1.9), v0) : [],
+						lines: D.masonry ? onPlane(stoneCourses(u0, u1, bTop, th), v0) : [],
+					},
+				);
+			}
+			const capped = roof !== 'none';
+			if (crenel) {
+				// The band's corbel, its underside in shadow…
+				/** @type {Poly} */
+				const kSide = [pt([u1, th, v0]), pt([u1, th, v1]), pt([X1, y1, Z1]), pt([X1, y1, Z0])];
+				/** @type {Poly} */
+				const kFront = [pt([u0, th, v0]), pt([u1, th, v0]), pt([X1, y1, Z0]), pt([X0, y1, Z0])];
+				// …and the band: plain under a cap (its crenels dark slots under
+				// the eave), else crenellated round a walk below its merlons.
+				const bFront = F.front(
+					capped
+						? rect(X0, y1, X1 - X0, band)
+						: crenellated(X0, X1, y1, topY, { merlon: 2.2, notch }),
+					Z0,
+				);
+				const bSide = F.side(
+					capped
+						? rect(Z0, y1, Z1 - Z0, band)
+						: crenellated(Z0, Z1, y1, topY, { merlon: 1.8, notch }),
+					X1,
+				);
+				if (!capped) {
+					// The walk, and the back and left walls' inner faces rising from
+					// it in shadow; the symbol stands on the walk.
+					const yd = topY - notch * 1.6;
+					const back = F.front(crenellated(X0, X1, yd, topY, { merlon: 2.2, notch }), Z1);
+					const left = F.side(crenellated(Z0, Z1, yd, topY, { merlon: 1.8, notch }), X0);
+					parts.push(
+						{ solid: [back], shaded: true, lines: hatch(back, 65, D.hatch) },
+						{ solid: [F.level(rect(X0, Z0, X1 - X0, Z1 - Z0), yd)] },
+						...symbolAt(D.symbol, pt([tx, yd, (Z0 + Z1) / 2])),
+						{ solid: [left], shaded: true, lines: hatch(left, 65, D.hatch) },
+					);
+				}
+				/** @type {Poly[]} */
+				const slots = [];
+				if (capped)
+					for (let x = X0 + 1.5; x < X1 - 0.9; x += 2.4)
+						slots.push(F.front(rect(x - 0.5, topY - band * 0.42, 1, band * 0.42 + 0.6), Z0));
+				parts.push(
+					{ solid: [kSide], shaded: true },
+					{ solid: [kFront], shaded: true },
+					{ solid: [bSide], shaded: true, lines: hatch(bSide, 65, D.hatch) },
+					{ solid: [bFront], fills: slots },
+				);
+			}
+			if (!capped) return parts;
+			// The top it stands on, tucked behind the walls; then the cap.
+			parts.unshift({
+				solid: [
+					tuckedTop(pt([X0, topY, Z0]), pt([X1, topY, Z0]), pt([X1, topY, Z1]), pt([X0, topY, Z1])),
+				],
+			});
+			const cap = boxCap(D, roof, F.box(tx, Z0, Z1 - Z0), (X1 - X0) / 2, topY);
+			if (cap) {
+				parts.push(...cap.parts);
+				if (cap.socket) seat(parts, D.symbol, cap.tip, cap.socket);
+				else parts.push(...symbolAt(D.symbol, cap.tip));
+				return parts;
+			}
 			// The cone: a pyramid spire, its eaves out over an uncrenellated top.
 			const e = crenel ? 0 : 1;
 			/** @type {Pt} */ const fl = pt([X0 - e, topY, Z0 - e]);
@@ -3877,20 +3986,219 @@ export function church3d(D, o = {}) {
 			/** @type {Poly} */
 			const front = [fl, ...ridge, ...sag(apex, fl, c, D.concave).slice(1, -1)];
 			/** @type {Poly} */
-			const side = [
+			const flank = [
 				fr,
 				br,
 				...sag(br, apex, c, D.concave).slice(1),
 				...sag(apex, fr, c, D.concave).slice(1, -1),
 			];
-			tower.push(pyramid(front, side, ridge, 'roof', D.hatch));
-			seat(tower, D.symbol, apex, 3);
-		}
-	}
+			parts.push(pyramid(front, flank, ridge, 'roof', D.hatch));
+			seat(parts, D.symbol, apex, 3);
+			return parts;
+		},
+	};
+}
 
-	// The nave, from the tower's right wall to its east gable; its roof's
-	// ridge at mid-depth, over the gable end by `ov`, stopping at the tower.
-	const xr = w / 2,
+/**
+ * The church's round bell tower, laid out for a frame (as squareSteeple3d):
+ * a drum — tapering, or flaring at the foot in a concave culture — with
+ * the culture's corbel, its door and belfry on its curved front, then the
+ * crenellated band (bare round a walk, or under a cap) and the cap, all of
+ * them solids of revolution through the frame's camera.
+ * @param {Design} D
+ * @param {number} tx its axis across
+ * @param {number} tw its width
+ * @param {number} th its height
+ */
+function roundSteeple3d(D, tx, tw, th) {
+	const r = tw / 2,
+		bw = bowAmt(D.towerBow),
+		top = r * (1 - (bw > 0 ? Math.max(D.taper, 0.42 * Math.min(1, D.towerBow)) : D.taper));
+	const { roof, crenel } = towerTop(D);
+	// The corbel: from the belt up the drum widens 45° to `topC`.
+	const amount = Math.max(0, Math.min(1, D.towerCorbel ?? 0));
+	const belt = (1 - amount) * th;
+	const cOv = Math.min(Math.max(1.6, r * 0.26), Math.max(0, th - belt));
+	const corbel = cOv > 0.01,
+		topC = top + cOv;
+	// The band, corbelled out `ov` more, and the top the cap stands on.
+	const ov = Math.max(0.8, r * 0.2),
+		band = Math.max(3, r),
+		notch = Math.min(2, band * 0.45);
+	const R = topC + ov,
+		y1 = th + ov,
+		y2 = y1 + band;
+	const topY = crenel ? y2 : th,
+		capR = crenel ? R : topC;
+	// The axis stands back so the foot's front is on the frame's front.
+	const z = (0.8 * r) / ROUND_SHOW;
+	/** The drum's radius at height y. @param {number} y */
+	const rho = (y) => {
+		if (corbel && y >= belt) return Math.min(topC, top + (y - belt));
+		const t = Math.max(0, Math.min(1, y / (corbel ? belt : th)));
+		return r + (top - r) * t - 2 * t * (1 - t) * bw * (r + top);
+	};
+	return {
+		top: /** @type {[number, number]} */ ([topY, (2 * 0.8 * capR) / ROUND_SHOW]),
+		join: tx + (r / ROUND_SHOW) * 0.9,
+		/** @param {ReturnType<typeof frame>} F @returns {Part[]} */
+		draw(F) {
+			const body = drum(F, tx, z, 0, th, rho);
+			const belfryY = clearCorbel(th - 9.5, 7.5, belt, corbel ? cOv : 0);
+			const on = (/** @type {Line[]} */ ls) => ls.map((l) => ({ ...l, pts: body.onFront(l.pts) }));
+			const shade = (
+				/** @type {typeof body} */ dr,
+				/** @type {number} */ yLo,
+				/** @type {number} */ yHi,
+			) => ({
+				shadeArea: rect(dr.axis + dr.reach * 0.3, yLo - 2, dr.reach * 2, yHi - yLo + 4),
+				shadeLines: cylinderHatch(dr.reach, yLo - 1, yHi + 1, D.hatch, dr.axis),
+			});
+			const yBase = Math.min(...body.outline.map(([, y]) => y));
+			/** @type {Part[]} */
+			const parts = [
+				{
+					solid: [body.outline],
+					...shade(body, yBase, th + 4),
+					fills: [archOpening(0, 0, 4, 7), archOpening(0, belfryY, 4.4, 7.5)].map((p) =>
+						body.onFront(p.map(([px, py]) => /** @type {Pt} */ ([px, py]))),
+					),
+					cuts: on(bellCuts(0, belfryY + 1.9)),
+					lines: [
+						...(corbel ? [belt, belt + cOv].map((y) => ({ pts: body.rim(y), w: THIN })) : []),
+						{ pts: body.rim(th), w: THIN },
+						...(D.masonry ? body.courses(0, th) : []),
+					],
+				},
+			];
+			const capped = roof !== 'none';
+			const A = R / ROUND_SHOW,
+				B = 0.8 * A;
+			if (crenel) {
+				// The band's corbel, 45° out from the drum's top, and the band.
+				const bandRho = (/** @type {number} */ y) => Math.min(R, topC + (y - th));
+				if (capped) {
+					const bd = drum(F, tx, z, th, y2 - th, bandRho);
+					/** @type {Poly[]} */
+					const slots = [];
+					for (let t = Math.PI * 1.08; t < Math.PI * 1.95; t += Math.PI / 7) {
+						const px = A * Math.cos(t);
+						slots.push(bd.onFront(rect(px - 0.55, y2 - band * 0.42, 1.1, band * 0.42 + 0.6)));
+					}
+					parts.push({
+						solid: [bd.outline],
+						...shade(bd, th, y2),
+						fills: slots,
+						lines: [
+							{ pts: bd.rim(y1), w: THIN },
+							{ pts: bd.rim(y2), w: THIN },
+							...(D.masonry ? bd.courses(y1, y2) : []),
+						],
+					});
+				} else {
+					// Bare: the walk, the back wall's inner face rising from it in
+					// shadow, the symbol on the walk, then the front with its merlons.
+					const yd = y2 - notch * 1.6,
+						Ai = A - 0.5,
+						Bi = B - 0.5;
+					const phi = Math.atan2(0.75 * B, A); // where a section's ends are
+					const arc = Math.round((Math.PI * A) / 2.4) | 1;
+					/** @type {Poly} */
+					const walk = Array.from({ length: 48 }, (_, i) => {
+						const t = (2 * Math.PI * i) / 48;
+						return F.pt([tx + Ai * Math.cos(t), yd, z + Bi * Math.sin(t)]);
+					});
+					/** @type {Poly} */
+					const backWall = [
+						...crenelRun(F, [tx, z], Ai, Bi, yd, phi, phi + Math.PI, 1, 0),
+						...crenelRun(F, [tx, z], Ai, Bi, y2, phi + Math.PI, phi, arc, notch),
+					];
+					const bd = drum(F, tx, z, th, y1 - th, bandRho);
+					/** @type {Poly} */
+					const frontBand = [
+						...bd.rim(th),
+						F.pt([tx + A * Math.cos(phi), y1, z + B * Math.sin(phi)]),
+						...crenelRun(F, [tx, z], A, B, y2, phi + 2 * Math.PI, phi + Math.PI, arc, notch),
+						F.pt([tx + A * Math.cos(phi + Math.PI), y1, z + B * Math.sin(phi + Math.PI)]),
+					];
+					parts.push(
+						{ solid: [walk] },
+						{ solid: [backWall], shaded: true, lines: hatch(backWall, 65, D.hatch) },
+						...symbolAt(D.symbol, F.pt([tx, yd, z])),
+						{
+							solid: [frontBand],
+							...shade(bd, th, y2),
+							lines: [{ pts: bd.rim(y1), w: THIN }, ...(D.masonry ? bd.courses(y1, y2) : [])],
+						},
+					);
+					return parts;
+				}
+			}
+			if (!capped) return parts;
+			const Ac = capR / ROUND_SHOW,
+				Bc = 0.8 * Ac;
+			const cap = boxCap(D, roof, F.box(tx, z - Bc, 2 * Bc), Ac, topY);
+			if (cap) {
+				parts.push(...cap.parts);
+				if (cap.socket) seat(parts, D.symbol, cap.tip, cap.socket);
+				else parts.push(...symbolAt(D.symbol, cap.tip));
+				return parts;
+			}
+			// The cone, its eaves out past what it sits on; a concave culture's
+			// sides sweep in.
+			const Rc = capR + 1.8,
+				rise = top * 2 * D.spire * 0.75,
+				sweep = D.concave * 1.6;
+			const cone = drum(F, tx, z, topY, rise, (y) => {
+				const u = (y - topY) / rise;
+				return Rc * (1 - u) * (1 - sweep * u);
+			});
+			parts.push({
+				solid: [cone.outline],
+				role: 'roof',
+				shadeArea: rect(cone.axis + cone.reach * 0.25, topY - 4, cone.reach * 2, rise + 8),
+				shadeLines: capHatch(cone.axis, cone.reach, topY - 4, topY + rise + 2, D.hatch),
+			});
+			seat(parts, D.symbol, F.pt([tx, topY + rise, z]), 3);
+			return parts;
+		},
+	};
+}
+
+/**
+ * Church, built in one 3D frame (frame3d.js) — the prototype of laying a
+ * piece out in 3D and drawing it through one camera. The bell tower —
+ * square or round per the culture's steeple, with its corbel, band and cap
+ * — and the nave stand in the same space, so they converge together; the
+ * nave's roof runs up to the tower's wall and stops there; every face,
+ * opening and cap is placed on its own plane or surface — the rose window
+ * on the gable end is a circle on that wall, foreshortened with it.
+ * @param {Design} D
+ * @param {{w?: number}} [o]
+ * @returns {Part[]}
+ */
+export function church3d(D, o = {}) {
+	// The nave, side-on (sideHouse()'s church proportions)…
+	const w = o.w ?? 28,
+		h = 13 * D.stature,
+		d = 12 * D.depth * 1.35,
+		rh = d * D.pitch * 1.5,
+		ov = 1.4;
+	// …and the bell tower at its west end, its front in line with the nave's.
+	const tw = 10,
+		tx = -w / 2 - tw / 2 + 0.5;
+	const steeple = (D.steeple === 'round' ? roundSteeple3d : squareSteeple3d)(
+		D,
+		tx,
+		tw,
+		34 * D.stature,
+	);
+	const F = frame(D.perspective, { tops: [steeple.top], ridges: [[h + rh, d]] });
+	const { pt } = F;
+	// The nave, from the tower's wall to its east gable; its roof's ridge at
+	// mid-depth, over the gable end by `ov`, stopping at the tower.
+	const x1 = steeple.join,
+		xr = w / 2,
 		eave = h - 0.4;
 	/** @type {Poly} */
 	const gable = F.side(
@@ -3942,8 +4250,8 @@ export function church3d(D, o = {}) {
 			z = (d / 2) * f;
 		return seg(pt([x1 - 2, y, z]), pt([xr + ov + 2, y, z]), THIN);
 	});
-	/** @type {Part[]} */
-	const nave = [
+	return [
+		...steeple.draw(F),
 		{ solid: [backSlope], role: 'roof', shaded: true },
 		{
 			solid: [gable],
@@ -3964,7 +4272,6 @@ export function church3d(D, o = {}) {
 		...(D.flourish > 0.45 ? cresting(rL, add(rR, [-ov * 0.6, 0])) : []),
 		...(D.flourish > 0.25 ? finial(pt([xr, h + rh, d / 2])) : []),
 	];
-	return [...tower, ...nave];
 }
 
 /**
