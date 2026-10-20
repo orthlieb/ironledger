@@ -786,14 +786,16 @@ const PIECES = [
 /**
  * A farmstead: a barn and a farmhouse at the back of a fenced field — the
  * field ploughed farmland inside a post-and-rail fence, its gate at the
- * front; the barn back left, the house back right, the field before them.
+ * front; the barn back left, the house back right, the field before them
+ * — the buildings drawn small (`S`), so the land reads as the most of it.
  * @param {Design} D
  * @param {number} seed varies the barn and the house
  * @returns {Placed[]}
  */
 function farmstead(D, seed) {
 	const wrx = 30,
-		wry = wrx * 0.42;
+		wry = wrx * 0.42,
+		S = 0.68;
 	const { W, dv } = squareFootprint(wrx, wry);
 	const fence = ringWall(D, { rx: wrx, ry: wry, type: 'fence', shape: 'square' });
 	/** A point `u` across the field (−1 left … 1 right) and `t` back (0
@@ -809,8 +811,8 @@ function farmstead(D, seed) {
 	return [
 		{ piece: [{ solid: [field], role: 'ground-farmland', terrain: true }] },
 		...fence.back,
-		{ piece: sideHouse(D, { seed, kind: 'barn', w: 20 }), ...at(-0.5, 0.74) },
-		{ piece: gableHouse(D, { seed: seed + 1, w: 13 }), ...at(0.5, 0.7) },
+		{ piece: sideHouse(D, { seed, kind: 'barn', w: 20 }), s: S, ...at(-0.52, 0.8) },
+		{ piece: gableHouse(D, { seed: seed + 1, w: 13 }), s: S, ...at(0.55, 0.76) },
 		...fence.front,
 	];
 }
