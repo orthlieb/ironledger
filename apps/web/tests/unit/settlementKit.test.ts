@@ -424,11 +424,11 @@ describe('piece details', () => {
 			true,
 		);
 	});
-	it('lays a farmstead: a fenced farmland field, a barn and a house', () => {
+	it('lays a farmstead: a barn and a house in a fence, on no floor of its own', () => {
 		const [, items] = pieces(DEFAULT_DESIGN).find(([n]) => n === 'Farmstead')!;
-		expect(items[0].piece[0]).toMatchObject({ role: 'ground-farmland', terrain: true });
+		expect(items.some((it) => it.piece.some((p) => p.terrain))).toBe(false);
 		expect(items.filter((it) => it.wall).length).toBe(4); // the fence's four runs
-		expect(items.filter((it) => !it.wall).length).toBe(3); // the field, the barn, the house
+		expect(items.filter((it) => !it.wall).length).toBe(2); // the barn, the house
 	});
 	it("lays a masonry culture's well curb in small stones", () => {
 		const curb = (masonry: boolean) => well({ ...DEFAULT_DESIGN, masonry })[0];

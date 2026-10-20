@@ -146,7 +146,7 @@ on the Buildings tab yet): the **Lookout tower** (`lookoutTower()` — a
 timber watch-post on four splayed, braced legs, a ladder up to a plank
 deck and a lookout cabin under a pyramid roof) and the **Farmstead**
 (`farmstead()` in `layouts3d.js` — a barn and a farmhouse at the back of
-a farmland field inside a square fence).
+a square fenced plot, on whatever ground it's given).
 
 All of that line-work is texture (`TEXTURE_ROLES` in `patterns.js`): a
 culture with `texture` off draws none of it, its walls in flat material

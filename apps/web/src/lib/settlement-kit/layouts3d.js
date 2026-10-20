@@ -784,10 +784,11 @@ const PIECES = [
 ];
 
 /**
- * A farmstead: a barn and a farmhouse at the back of a fenced field — the
- * field ploughed farmland inside a post-and-rail fence, its gate at the
- * front; the barn back left, the house back right, the field before them
- * — the buildings drawn small (`S`), so the land reads as the most of it.
+ * A farmstead: a barn and a farmhouse at the back of a fenced plot — a
+ * post-and-rail fence, its gate at the front; the barn back left, the
+ * house back right, open land before them — the buildings drawn small
+ * (`S`), so the land reads as the most of it. No floor of its own: it
+ * stands on whatever ground it's given, as any building does.
  * @param {Design} D
  * @param {number} seed varies the barn and the house
  * @returns {Placed[]}
@@ -798,18 +799,10 @@ function farmstead(D, seed) {
 		S = 0.68;
 	const { W, dv } = squareFootprint(wrx, wry);
 	const fence = ringWall(D, { rx: wrx, ry: wry, type: 'fence', shape: 'square' });
-	/** A point `u` across the field (−1 left … 1 right) and `t` back (0
+	/** A point `u` across the plot (−1 left … 1 right) and `t` back (0
 	 *  the front fence … 1 the back). @param {number} u @param {number} t */
 	const at = (u, t) => ({ x: (u * W) / 2 + t * dv[0], y: t * dv[1] });
-	/** @type {Poly} */
-	const field = [
-		[-W / 2, 0],
-		[W / 2, 0],
-		[W / 2 + dv[0], dv[1]],
-		[-W / 2 + dv[0], dv[1]],
-	];
 	return [
-		{ piece: [{ solid: [field], role: 'ground-farmland', terrain: true }] },
 		...fence.back,
 		{ piece: sideHouse(D, { seed, kind: 'barn', w: 20 }), s: S, ...at(-0.52, 0.8) },
 		{ piece: gableHouse(D, { seed: seed + 1, w: 13 }), s: S, ...at(0.55, 0.76) },
@@ -890,13 +883,34 @@ export function building(key, D, o = {}) {
 /**
  * A building on its ground — in a lagoon, on water — as a settlement stands
  * (an enclosure lays its own, under the whole of it). A narrow building (a
- * tower) still gets a plane a fair width.
+ * tower) still gets a plane a fair width. A group with a fence or walls of
+ * its own (a farmstead's plot) gets one under the whole enclosure, front to
+ * back, sized as enclosureGround() sizes a square one's.
  * @param {Placed[]} items
  * @param {NonNullable<ReturnType<typeof groundOf>>} g
  * @returns {Placed[]}
  */
 function grounded(items, g) {
 	const { x0, x1 } = placedExtent(items);
+	const walls = items.filter((it) => it.wall);
+	if (walls.length) {
+		// The enclosure's depth: from its front run's foot to its back's.
+		const feet = walls.map(
+			(it) =>
+				(it.y ?? 0) +
+				Math.min(...it.piece.flatMap((p) => p.solid.flat().map(([, y]) => y))) * (it.s ?? 1),
+		);
+		const y0 = Math.min(...feet),
+			depth = Math.max(...feet) - y0;
+		return [
+			{
+				piece: groundPlane(g, 1.25 * ((x1 - x0) / 2) + 5, 0.9 * depth + 5),
+				x: (x0 + x1) / 2,
+				y: y0 + depth / 2,
+			},
+			...items,
+		];
+	}
 	const hw = Math.max(16, (x1 - x0) / 2 + 8);
 	return [{ piece: groundPlane(g, hw, hw * 0.4), x: (x0 + x1) / 2 }, ...items];
 }
