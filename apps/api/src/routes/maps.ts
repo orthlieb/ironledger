@@ -108,7 +108,9 @@ export const mapMarkerSchema = z.object({
       ]),
       culture: z.string().max(64),
       seed: z.number().int().min(0).max(1_000_000),
-      walls: z.enum(['none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef']).optional(),
+      walls: z
+        .enum(['none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef', 'fence'])
+        .optional(),
       wallShape: z.enum(['round', 'square']).optional(),
       ground: z
         .enum([

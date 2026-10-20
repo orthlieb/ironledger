@@ -44,12 +44,14 @@ import {
 	keep,
 	makeDesign,
 	onStilts,
+	lookoutTower,
 	ringWall,
 	roundHut,
 	roundTower,
 	sideHouse,
 	squareTower,
 	stiltHut,
+	tieredTower,
 	townhouse,
 	upgradeDesign,
 	well,
@@ -385,6 +387,50 @@ describe('piece details', () => {
 		expect(stoned(true)).toBe(true);
 		expect(stoned(false)).toBe(false);
 	});
+	it.each(['round', 'square'] as const)(
+		'fences a %s enclosure with posts and rails — open, crisp, no towers',
+		(shape) => {
+			const { back, front } = ringWall(DEFAULT_DESIGN, { type: 'fence', shape, rx: 30, ry: 12 });
+			expect(back.length).toBeGreaterThan(0);
+			expect(front.length).toBeGreaterThan(0);
+			const parts = [...back, ...front].flatMap((it) => it.piece);
+			// Timber, kept crisp so the thin rails survive the soft join.
+			expect(parts.every((p) => p.role === 'wood' && p.sharp)).toBe(true);
+			// Every item is the fence's own: no ring towers or gate tower.
+			expect([...back, ...front].every((it) => it.wall)).toBe(true);
+			// And it's low: nothing much above the rails.
+			const top = Math.max(...parts.flatMap((p) => p.solid.flat().map(([, y]) => y)));
+			expect(top).toBeLessThan(shape === 'square' ? 40 : 20);
+		},
+	);
+	it('draws a fenced settlement and a fenced building', () => {
+		const roles = (svg: string) => [...svg.matchAll(/data-role="([\w-]+)"/g)].map((m) => m[1]);
+		const town = generateSettlementSvg(
+			{ tier: 'hamlet', culture: 'default', seed: 3, walls: 'fence' },
+			null,
+		);
+		expect(roles(town)).toContain('wood');
+		// No wall material: a fence is timber, not a ring of stone or stakes.
+		expect(roles(town).some((r) => /^wall-(stone|wood|hedge|reef|earth|bone)/.test(r))).toBe(false);
+		const barn = building('barn', DEFAULT_DESIGN, { walls: 'fence', seed: 2 });
+		expect(barn.some((it) => it.wall)).toBe(true);
+	});
+	it('stands a lookout tower on four legs, a roof over its cabin', () => {
+		const parts = lookoutTower({ ...DEFAULT_DESIGN, flags: false });
+		const legs = parts.filter((p) => p.role === 'wood' && p.solid.length === 2);
+		expect(legs.length).toBeGreaterThanOrEqual(2); // the back pair, the front pair
+		expect(parts.at(-1)?.role).toBe('roof');
+		expect(parts.some((p) => p.free?.length)).toBe(true); // the ladder
+		expect(lookoutTower({ ...DEFAULT_DESIGN, flags: true }).some((p) => p.role === 'flag')).toBe(
+			true,
+		);
+	});
+	it('lays a farmstead: a barn and a house in a fence, on no floor of its own', () => {
+		const [, items] = pieces(DEFAULT_DESIGN).find(([n]) => n === 'Farmstead')!;
+		expect(items.some((it) => it.piece.some((p) => p.terrain))).toBe(false);
+		expect(items.filter((it) => it.wall).length).toBe(4); // the fence's four runs
+		expect(items.filter((it) => !it.wall).length).toBe(2); // the barn, the house
+	});
 	it("lays a masonry culture's well curb in small stones", () => {
 		const curb = (masonry: boolean) => well({ ...DEFAULT_DESIGN, masonry })[0];
 		expect(curb(true).lines?.some((l) => l.role === 'ink-texture')).toBe(true);
@@ -429,6 +475,148 @@ describe('piece details', () => {
 	});
 });
 
+/** The pieces added from the reference list (and the Buildings tab's). */
+const PROTOTYPES = [
+	'Lookout tower',
+	'Farmstead',
+	'L-plan house',
+	'Town hall',
+	'Octagonal tower',
+	'Tower house',
+	'Tiered tower',
+];
+
+describe('newer pieces', () => {
+	it.each(PROTOTYPES)('draws a %s, in any culture', (name) => {
+		for (const D of [DEFAULT_DESIGN, makeDesign(7), makeDesign(42)]) {
+			const [, items] = pieces(D).find(([n]) => n === name)!;
+			const parts = items.flatMap((it) =>
+				place(it.piece, { x: it.x ?? 0, y: it.y ?? 0, s: it.s ?? 1 }),
+			);
+			const { layers } = renderLayered(parts, { join: D.join });
+			expect(layers.wall || layers.wood, `${name} has walls or timber`).toBeTruthy();
+		}
+	});
+
+	const TOWERS = ['Octagonal tower', 'Tower house', 'Tiered tower', 'Town hall'];
+	const drawn = (D: typeof DEFAULT_DESIGN, name: string) => {
+		const [, items] = pieces(D).find(([n]) => n === name)!;
+		return items.flatMap((it) => place(it.piece, { x: it.x ?? 0, y: it.y ?? 0, s: it.s ?? 1 }));
+	};
+	it.each(TOWERS)("tops a %s with the culture's tower cap", (name) => {
+		const cone = drawn({ ...DEFAULT_DESIGN, towerRoof: 'cone' }, name);
+		const caps = (['onion', 'dome', 'lancet'] as const).map((towerRoof) =>
+			JSON.stringify(drawn({ ...DEFAULT_DESIGN, towerRoof }, name)),
+		);
+		expect(caps).not.toContain(JSON.stringify(cone));
+		expect(new Set(caps).size, 'each cap its own').toBe(3);
+	});
+	it.each(['dome', 'onion', 'lancet'] as const)(
+		'lays a %s-capped square top behind its walls, run on down them',
+		(towerRoof) => {
+			const parts = squareTower({ ...DEFAULT_DESIGN, towerRoof });
+			// Drawn first, so the walls hide where it runs on under them —
+			// and with them its front-left and back-right corners, which
+			// softening would otherwise round short of the walls', notched.
+			const [top] = parts;
+			const front = parts.find((p) => !p.shaded && p.fills?.length)!;
+			const ys = (poly: [number, number][]) => poly.map(([, y]) => y);
+			expect(top.role).toBeUndefined();
+			expect(Math.min(...ys(top.solid[0]))).toBeLessThan(Math.max(...ys(front.solid[0])));
+		},
+	);
+	it.each([
+		['dome', 0.5],
+		['dome', 0],
+		['lancet', 0.5],
+		['lancet', 0],
+	] as const)(
+		'sets a %s level on a square top, behind its walls (perspective %s)',
+		(towerRoof, perspective) => {
+			const parts = squareTower({ ...DEFAULT_DESIGN, towerRoof, perspective });
+			// The tucked top: [fl↓, fr↓, br↓, br, bl, fl].
+			const t = parts[0].solid[0];
+			const [fl, br] = [t[5], t[3]];
+			const i = parts.findIndex((p) => p.role === 'roof');
+			const cap = parts[i].solid[0];
+			const xs = cap.map(([x]) => x),
+				ys = cap.map(([, y]) => y);
+			// Centred on the top (its diagonal's middle), its rim level: its
+			// left and right ends at one height.
+			expect((Math.min(...xs) + Math.max(...xs)) / 2).toBeCloseTo((fl[0] + br[0]) / 2, 0);
+			const yAt = (x: number) => ys[xs.indexOf(x)];
+			expect(yAt(Math.min(...xs))).toBeCloseTo(yAt(Math.max(...xs)), 1);
+			// Drawn after the top, before the walls, whose top edges trim its
+			// base to the top so it never hangs over the edge.
+			const front = parts.findIndex((p) => !p.shaded && p.fills?.length);
+			expect(i).toBeGreaterThan(0);
+			expect(i).toBeLessThan(front);
+		},
+	);
+	it.each([0.5, 0])(
+		"stands each of the tiered tower's storeys on the skirt below (perspective %s)",
+		(perspective) => {
+			const parts = tieredTower({ ...DEFAULT_DESIGN, perspective, flags: false });
+			const sides = parts.filter((p) => p.shaded && !p.role).map((p) => p.solid[0]);
+			const skirts = parts
+				.filter((p) => p.role === 'roof' && p.shaded && p.solid[0].length === 4)
+				.map((p) => p.solid[0]);
+			expect(skirts).toHaveLength(2);
+			skirts.forEach((skirt, k) => {
+				// The skirt's inner edge, front-right [3] → back-right [2], is the
+				// next storey's side's foot, front [0] → back [1]: no gap at the back.
+				const [foot0, foot1] = sides[k + 1];
+				expect(skirt[3][0]).toBeCloseTo(foot0[0], 6);
+				expect(skirt[3][1]).toBeCloseTo(foot0[1], 6);
+				expect(skirt[2][0]).toBeCloseTo(foot1[0], 6);
+				expect(skirt[2][1]).toBeCloseTo(foot1[1], 6);
+			});
+		},
+	);
+	it('keeps the lookout tower its pyramid roof, whatever the cap', () => {
+		const cone = drawn({ ...DEFAULT_DESIGN, towerRoof: 'cone' }, 'Lookout tower');
+		for (const towerRoof of ['onion', 'dome', 'lancet', 'none'] as const)
+			expect(drawn({ ...DEFAULT_DESIGN, towerRoof }, 'Lookout tower'), towerRoof).toEqual(cone);
+	});
+	it('crenellates the octagonal tower as a round tower: bare, or under a cap', () => {
+		const oct = (towerRoof: 'none' | 'dome', towerCrenel: boolean) =>
+			drawn({ ...DEFAULT_DESIGN, towerRoof, towerCrenel }, 'Octagonal tower');
+		expect(oct('none', false).some((p) => p.role === 'roof')).toBe(false); // a bare walk
+		expect(oct('none', false)).toEqual(oct('none', true)); // no cap: always crenellated
+		const banded = oct('dome', true),
+			plain = oct('dome', false);
+		expect(banded.some((p) => p.role === 'roof')).toBe(true);
+		// The parapet band under the dome, its crenels slots in it.
+		expect(banded.length).toBeGreaterThan(plain.length);
+		expect(banded.flatMap((p) => p.fills ?? []).length).toBeGreaterThan(
+			plain.flatMap((p) => p.fills ?? []).length,
+		);
+	});
+	it.each(['onion', 'dome', 'lancet', 'cone'] as const)(
+		'leaves no %s cap or flag hanging in the air over a ruined new tower',
+		(towerRoof) => {
+			for (const name of [...TOWERS, 'Lookout tower']) {
+				const piece = drawn({ ...DEFAULT_DESIGN, towerRoof, flags: true }, name);
+				const [ruin] = ruinPlaced([{ piece }], {
+					decay: 0.6,
+					overgrowth: 0,
+					burned: false,
+					single: true,
+					seed: 1,
+				});
+				expect(
+					ruin.piece.some((p) => p.role === 'flag'),
+					name,
+				).toBe(false);
+				expect(
+					ruin.piece.filter((p) => !p.solid.length && p.free?.length && !p.mask),
+					name,
+				).toEqual([]);
+			}
+		},
+	);
+});
+
 describe('buildings (the Buildings tab)', () => {
 	const roles = (svg: string) =>
 		new Set([...svg.matchAll(/data-role="([\w-]+)"/g)].map((m) => m[1]));
@@ -437,10 +625,12 @@ describe('buildings (the Buildings tab)', () => {
 	});
 	it('keeps the reference row of pieces the icon bake draws by name', () => {
 		const names = pieces(DEFAULT_DESIGN).map(([n]) => n);
-		expect(names).toHaveLength(25);
+		expect(names).toHaveLength(32);
 		expect(names).toContain('Camp'); // a Settlement-builder size, not a building
+		// The newer pieces, on the Buildings tab too.
+		expect(BUILDINGS.map(([, n]) => n)).toEqual(expect.arrayContaining(PROTOTYPES));
 		expect(names).not.toContain('Wall'); // retired: the Stone wall icons draw wallRun()
-		expect(BUILDINGS).toHaveLength(24);
+		expect(BUILDINGS).toHaveLength(31);
 		expect(BUILDINGS.map(([key]) => key)).not.toContain('wall');
 	});
 	it.each(BUILDINGS.map(([key]) => key))('draws %s on its own', (key) => {

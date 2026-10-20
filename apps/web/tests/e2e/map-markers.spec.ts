@@ -142,17 +142,19 @@ test.describe('Map markers — lifecycle', () => {
 		await page.locator('#mp-props-name').fill('Ancient Ruins');
 		await expect(markerLabel(page)).toHaveText('Ancient Ruins');
 
-		// ── Icon: drop the glyph (label-only), then restore a real icon ────────
-		await page.locator('[aria-label="Change icon"]').click();
-		await expect(page.locator('.mp-icon-dialog')).toBeVisible();
-		await page.locator('.mp-icon-tile--none').click();
-		await expect(page.locator('.mp-icon-dialog')).not.toBeVisible();
+		// ── Icon: the Type radios drop the glyph (Label — label-only, centred)
+		//    and bring it back (Both); the picker swaps it ────────────────────
+		const type = (name: string) =>
+			page.locator('.mp-props-dialog .mp-mode-option', { hasText: name });
+		await type('Label').click();
 		await expect(m.locator('.mp-marker-icon')).toHaveCount(0);
 		await expect(page.locator('.mp-marker-label--centered')).toHaveText('Ancient Ruins');
+		await type('Both').click();
+		await expect(m.locator('.mp-marker-icon')).toHaveCount(1);
 
 		await page.locator('[aria-label="Change icon"]').click();
 		await expect(page.locator('.mp-icon-dialog')).toBeVisible();
-		await page.locator('.mp-icon-tile:not(.mp-icon-tile--none)').first().click();
+		await page.locator('.mp-icon-tile').first().click();
 		await expect(page.locator('.mp-icon-dialog')).not.toBeVisible();
 		await expect(m.locator('.mp-marker-icon')).toHaveCount(1);
 
@@ -237,7 +239,7 @@ test.describe('Map markers — lifecycle', () => {
 	test('Edit button and Ctrl+E open the properties dialog on a selected marker', async ({
 		page,
 	}) => {
-		const editBtn = page.locator('[aria-label="Edit marker"]');
+		const editBtn = page.locator('.mp-toolbar [aria-label="Edit marker"]');
 
 		// With no marker selected the button is disabled — nothing to edit.
 		await expect(editBtn).toBeDisabled();

@@ -210,7 +210,7 @@ test.describe('Map markers — Buildings tab', () => {
 		if (!b) throw new Error('marker icon has no bounding box');
 		// Markers are hit-tested through .mp-grid-capture: click the icon's centre.
 		await page.mouse.click(b.x + b.width / 2, b.y + b.height / 2);
-		await page.locator('[aria-label="Edit marker"]').click();
+		await page.locator('.mp-toolbar [aria-label="Edit marker"]').click();
 		await expect(page.locator('.mp-props-dialog')).toBeVisible();
 		await page.locator('[aria-label="Change icon"]').click();
 		await expect(picker(page)).toBeVisible();

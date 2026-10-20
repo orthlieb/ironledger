@@ -29,7 +29,7 @@ describe('mapMarkerSchema', () => {
   });
 
   it("keeps every wall material, and rejects 'auto' (no more 'usual for its size')", () => {
-    for (const walls of ['none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef']) {
+    for (const walls of ['none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef', 'fence']) {
       const settlement = { tier: 'town', culture: 'elves', seed: 7, walls };
       expect(mapMarkerSchema.parse({ ...base, settlement }).settlement).toEqual(settlement);
     }

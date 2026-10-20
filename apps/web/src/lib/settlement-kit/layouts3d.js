@@ -16,13 +16,16 @@ import {
 	cathedral,
 	church,
 	clocktower,
+	crossHouse,
 	gableHouse,
 	groundPlane,
 	keep,
 	lighthouse,
+	lookoutTower,
 	market,
 	mine,
 	moundHut,
+	octTower,
 	onStilts,
 	pavilion,
 	pier,
@@ -33,6 +36,9 @@ import {
 	squareFootprint,
 	stiltHut,
 	tent,
+	tieredTower,
+	townHall,
+	towerHouse,
 	townhouse,
 	wallSegment,
 	well,
@@ -44,7 +50,7 @@ import {
 /** @typedef {import('./pieces3d.js').Placed} Placed */
 /** @typedef {import('./geom.js').Pt} Pt */
 /** @typedef {import('./geom.js').Poly} Poly */
-/** @typedef {'none' | 'stone' | 'palisade' | 'earth' | 'hedge' | 'bone' | 'reef'} Walls */
+/** @typedef {'none' | 'stone' | 'palisade' | 'earth' | 'hedge' | 'bone' | 'reef' | 'fence'} Walls */
 /** A wall's shape — the recipe's, never the culture's. @typedef {'round' | 'square'} WallShape */
 
 /**
@@ -731,6 +737,7 @@ const side = (kind, seed0) => (D, s) => [{ piece: sideHouse(D, { seed: s ?? seed
 const PIECES = [
 	['gable-house', 'Gable house', (D, s) => [{ piece: gableHouse(D, { seed: s ?? 4 }) }]],
 	['side-house', 'Side house', side('house', 5)],
+	['l-plan-house', 'L-plan house', (D, s) => [{ piece: crossHouse(D, { seed: s }) }]],
 	[
 		'round-tower',
 		'Round tower',
@@ -741,6 +748,10 @@ const PIECES = [
 			return [{ piece: roundTower(D, { r: 5 + r() * 1.5, h: 32 + r() * 14 }) }];
 		},
 	],
+	['octagonal-tower', 'Octagonal tower', (D) => [{ piece: octTower(D) }]],
+	['tower-house', 'Tower house', (D) => [{ piece: towerHouse(D) }]],
+	['tiered-tower', 'Tiered tower', (D) => [{ piece: tieredTower(D) }]],
+	['lookout-tower', 'Lookout tower', (D) => [{ piece: lookoutTower(D) }]],
 	['bell-tower', 'Bell tower', (D) => [{ piece: belfry(D, { finial: true }) }]],
 	['church', 'Church', (D, s) => [{ piece: church(D, { seed: s }) }]],
 	['keep', 'Keep', (D) => [{ piece: keep(D) }]],
@@ -763,7 +774,9 @@ const PIECES = [
 	['longhouse', 'Longhouse', side('longhouse', 8)],
 	['windmill', 'Windmill', (D) => [{ piece: windmill(D) }]],
 	['townhouse', 'Townhouse', (D) => [{ piece: townhouse(D) }]],
+	['town-hall', 'Town hall', (D, s) => [{ piece: townHall(D, { seed: s }) }]],
 	['barn', 'Barn', side('barn', 9)],
+	['farmstead', 'Farmstead', (D, s) => farmstead(D, s ?? 13)],
 	['tavern', 'Tavern', side('tavern', 10)],
 	['barracks', 'Barracks', side('barracks', 11)],
 	['water-mill', 'Water mill', side('mill', 12)],
@@ -779,6 +792,33 @@ const PIECES = [
 	['pavilion', 'Pavilion', (D) => [{ piece: pavilion(D) }]],
 	['witch-hut', 'Witch hut', (D) => [{ piece: witchHut(D) }]],
 ];
+
+/**
+ * A farmstead: a barn and a farmhouse at the back of a fenced plot — a
+ * post-and-rail fence, its gate at the front; the barn back left, the
+ * house back right, open land before them — the buildings drawn small
+ * (`S`), so the land reads as the most of it. No floor of its own: it
+ * stands on whatever ground it's given, as any building does.
+ * @param {Design} D
+ * @param {number} seed varies the barn and the house
+ * @returns {Placed[]}
+ */
+function farmstead(D, seed) {
+	const wrx = 30,
+		wry = wrx * 0.42,
+		S = 0.68;
+	const { W, dv } = squareFootprint(wrx, wry);
+	const fence = ringWall(D, { rx: wrx, ry: wry, type: 'fence', shape: 'square' });
+	/** A point `u` across the plot (−1 left … 1 right) and `t` back (0
+	 *  the front fence … 1 the back). @param {number} u @param {number} t */
+	const at = (u, t) => ({ x: (u * W) / 2 + t * dv[0], y: t * dv[1] });
+	return [
+		...fence.back,
+		{ piece: sideHouse(D, { seed, kind: 'barn', w: 20 }), s: S, ...at(-0.52, 0.8) },
+		{ piece: gableHouse(D, { seed: seed + 1, w: 13 }), s: S, ...at(0.55, 0.76) },
+		...fence.front,
+	];
+}
 
 /**
  * Single pieces for the reference row, each on `ground` as a building is
@@ -835,6 +875,8 @@ export function building(key, D, o = {}) {
 	// market's square, a mine's mountain) left on the ground.
 	if (o.stilts)
 		items = items.map((it) => {
+			// A fence or wall of its own (a farmstead's) stays on the ground.
+			if (it.wall) return it;
 			const built = it.piece.filter((p) => !p.terrain);
 			return built.length
 				? { ...it, piece: [...it.piece.filter((p) => p.terrain), ...onStilts(built, own)] }
@@ -853,13 +895,34 @@ export function building(key, D, o = {}) {
 /**
  * A building on its ground — in a lagoon, on water — as a settlement stands
  * (an enclosure lays its own, under the whole of it). A narrow building (a
- * tower) still gets a plane a fair width.
+ * tower) still gets a plane a fair width. A group with a fence or walls of
+ * its own (a farmstead's plot) gets one under the whole enclosure, front to
+ * back, sized as enclosureGround() sizes a square one's.
  * @param {Placed[]} items
  * @param {NonNullable<ReturnType<typeof groundOf>>} g
  * @returns {Placed[]}
  */
 function grounded(items, g) {
 	const { x0, x1 } = placedExtent(items);
+	const walls = items.filter((it) => it.wall);
+	if (walls.length) {
+		// The enclosure's depth: from its front run's foot to its back's.
+		const feet = walls.map(
+			(it) =>
+				(it.y ?? 0) +
+				Math.min(...it.piece.flatMap((p) => p.solid.flat().map(([, y]) => y))) * (it.s ?? 1),
+		);
+		const y0 = Math.min(...feet),
+			depth = Math.max(...feet) - y0;
+		return [
+			{
+				piece: groundPlane(g, 1.25 * ((x1 - x0) / 2) + 5, 0.9 * depth + 5),
+				x: (x0 + x1) / 2,
+				y: y0 + depth / 2,
+			},
+			...items,
+		];
+	}
 	const hw = Math.max(16, (x1 - x0) / 2 + 8);
 	return [{ piece: groundPlane(g, hw, hw * 0.4), x: (x0 + x1) / 2 }, ...items];
 }

@@ -75,9 +75,20 @@ cap** — read from the culture with `towerTop(D, o)`:
   ring round a walk set below its crenels: the front and right walls'
   outer faces crenellated, the back and left walls' inner faces rising
   from the walk in shadow, with merlons of their own.
-- **Cap** (`towerRoof`): `cone` (a pyramid spire on square towers),
-  `onion`, `dome`, `lancet`, or `none` — a bare crenellated top. A tower
-  with no cap always gets the crenellated top, so it never ends flat.
+- **Cap** (`towerRoof`): `cone` (a pyramid spire on square towers, an
+  eight-sided one on the octagonal tower), `onion`, `dome`, `lancet`, or
+  `none` — a bare crenellated top. A tower with no cap always gets the
+  crenellated top, so it never ends flat. On a box's flat top — a square
+  tower's, the tiered tower's top storey, the town hall's turret, a gate
+  tower's dome — the piece lays the top behind its walls, run on a little
+  way down them (`tuckedTop()`: seen obliquely its front-left and
+  back-right corners are sharp, and softening would round them short of
+  the walls', leaving a notch), then the cap (`roundCap()`), drawn level as
+  on a round tower and behind the walls too: their top edges trim its base
+  to the top, so it rises from behind the parapet, centred, and never
+  hangs out over the edge (the slanting top would otherwise leave a level
+  rim hanging over its right side). The roofed ones keep their pyramid for
+  a cone or none.
 - The **flag** flies from whichever is uppermost; landmark towers carry the
   culture's holy-symbol finial instead. On a sharp tip (a spire, a lancet)
   the symbol's post runs down into the cap and the symbol is drawn behind
@@ -175,6 +186,15 @@ To add a material:
 4. Add a row to the `wall patterns` table in `settlementKit.test.ts`.
 
 The app needs no change: it draws whatever `patterns.js` defines.
+
+**Fence** (`walls: 'fence'`, `fenceWall()`) isn't a wall at all: a
+post-and-rail fence — a timber post every few units, two rails between —
+low and open, so what's inside shows through, with a gap at the front
+between two taller gateposts; round or square like the rest, split
+back / front as theirs are, never towered, never raised by the culture's
+wall height. Plain `wood`, no pattern, and `sharp` so the soft join
+doesn't round its thin rails away. The map's Walls offers it, for a
+settlement or a single building.
 
 ## Ground
 
@@ -357,6 +377,26 @@ stalls and piers timber), and a ruin takes stone 0.15 less far gone,
 timber 0.15 further). Every
 building comes down by degrees (`ruinPiece()` in `ruins3d.js`), so the
 Decay slider reads as a progression:
+
+**The newer pieces** (from a reference list, drawn the kit's own way):
+the **L-plan house** (`crossHouse()` — a side-on house with a gabled wing
+standing out from its front; sideHouse's `hide` leaves out the openings
+the wing would half-cover), the **Octagonal tower** (`octTower()` — three
+faces showing, under the culture's top as a round tower's: a crenellated
+parapet corbelled out, bare round a walk or under a cap), the **Tower
+house** (`towerHouse()` — a plain square tower, squareTower's `plain`
+windows for a belfry, with a lean-to against its side), the **Tiered
+tower** (`tieredTower()` — three storeys, each set back under a skirt of
+roof, a pyramid over the last), the **Lookout tower** (`lookoutTower()` —
+a timber watch-post on four splayed, braced legs, a ladder to a plank deck
+and a lookout cabin under a pyramid roof), the **Town hall** (`townHall()`
+— a two-storey side-on house with a lookout turret on its ridge,
+sideHouse's `lantern`) and the **Farmstead**
+(`farmstead()` — a barn and a farmhouse at the back of a square fenced
+plot, on whatever ground it's given; its fence never goes up on stilts).
+The towers among them take the culture's tower cap (see Towers): the
+pyramids above are what a cone or none draws. Not the lookout tower: a
+timber watch-post, it keeps its pyramid roof in every culture.
 
 | Decay   | What's left                                                                                                                                       |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |

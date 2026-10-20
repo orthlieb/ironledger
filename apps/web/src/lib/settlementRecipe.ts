@@ -37,6 +37,7 @@ export const SETTLEMENT_WALLS = [
 	'hedge',
 	'bone',
 	'reef',
+	'fence',
 ] as const;
 export type SettlementWalls = (typeof SETTLEMENT_WALLS)[number];
 
@@ -45,7 +46,12 @@ export type SettlementWalls = (typeof SETTLEMENT_WALLS)[number];
 export const SETTLEMENT_BUILDINGS = {
 	'gable-house': 'Gable house',
 	'side-house': 'Side house',
+	'l-plan-house': 'L-plan house',
 	'round-tower': 'Round tower',
+	'octagonal-tower': 'Octagonal tower',
+	'tower-house': 'Tower house',
+	'tiered-tower': 'Tiered tower',
+	'lookout-tower': 'Lookout tower',
 	'bell-tower': 'Bell tower',
 	church: 'Church',
 	keep: 'Keep',
@@ -53,7 +59,9 @@ export const SETTLEMENT_BUILDINGS = {
 	longhouse: 'Longhouse',
 	windmill: 'Windmill',
 	townhouse: 'Townhouse',
+	'town-hall': 'Town hall',
 	barn: 'Barn',
+	farmstead: 'Farmstead',
 	tavern: 'Tavern',
 	barracks: 'Barracks',
 	'water-mill': 'Water mill',
