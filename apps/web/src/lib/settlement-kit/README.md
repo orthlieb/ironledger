@@ -146,7 +146,16 @@ on the Buildings tab yet): the **Lookout tower** (`lookoutTower()` — a
 timber watch-post on four splayed, braced legs, a ladder up to a plank
 deck and a lookout cabin under a pyramid roof) and the **Farmstead**
 (`farmstead()` in `layouts3d.js` — a barn and a farmhouse at the back of
-a square fenced plot, on whatever ground it's given).
+a square fenced plot, on whatever ground it's given). And, from the same
+list: the **L-plan house** (`crossHouse()` — a side-on house with a
+gabled wing standing out from its front), the **Town hall** (`townHall()`
+— a two-storey side-on house with a lookout turret on its ridge,
+sideHouse's `lantern`), the **Octagonal tower** (`octTower()` — three
+faces showing, a crenellated parapet corbelled out round a walk), the
+**Tower house** (`towerHouse()` — a plain square tower, `plain` windows
+for a belfry, with a lean-to against its side) and the **Tiered tower**
+(`tieredTower()` — three storeys, each set back under a skirt of roof, a
+pyramid over the last).
 
 All of that line-work is texture (`TEXTURE_ROLES` in `patterns.js`): a
 culture with `texture` off draws none of it, its walls in flat material

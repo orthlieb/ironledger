@@ -870,14 +870,15 @@ function boxProjector(d, k, h = 0, ridge = 0) {
 }
 
 /**
- * House with its gable facing the viewer.
+ * House with its gable facing the viewer. `two` sets its storeys (else
+ * rolled from the culture's share).
  * @param {Design} D
- * @param {{w?: number, seed?: number}} [o]
+ * @param {{w?: number, seed?: number, two?: boolean}} [o]
  * @returns {Part[]}
  */
 export function gableHouse(D, o = {}) {
 	const r = rng(o.seed ?? 1);
-	const two = r() < D.storeys;
+	const two = o.two ?? r() < D.storeys;
 	const w = o.w ?? 16,
 		h = 10 * (two ? 1.65 : 1) * D.stature,
 		rh = w * D.pitch,
@@ -972,13 +973,17 @@ export function gableHouse(D, o = {}) {
  *   'barracks'  — long stone hall, a row of slit windows, a banner;
  *   'mill'      — a waterwheel at the front, standing in a mill race.
  * @param {Design} D
- * @param {{w?: number, seed?: number, kind?: 'house' | 'warehouse' | 'workshop' | 'church' | 'longhouse' | 'barn' | 'tavern' | 'barracks' | 'mill'}} [o]
+ * `two` sets a house's storeys (else rolled from the culture's share);
+ * `lantern` puts a lookout turret on the ridge, its own little roof over it.
+ * @param {Design} D
+ * @param {{w?: number, seed?: number, two?: boolean, lantern?: boolean, kind?: 'house' | 'warehouse' | 'workshop' | 'church' | 'longhouse' | 'barn' | 'tavern' | 'barracks' | 'mill'}} [o]
  * @returns {Part[]}
  */
 export function sideHouse(D, o = {}) {
 	const r = rng(o.seed ?? 2);
 	const kind = o.kind ?? 'house';
-	const two = kind === 'warehouse' || kind === 'tavern' || (kind === 'house' && r() < D.storeys);
+	const two =
+		o.two ?? (kind === 'warehouse' || kind === 'tavern' || (kind === 'house' && r() < D.storeys));
 	const long = kind === 'longhouse';
 	const W0 = { house: 22, longhouse: 34, barn: 26, tavern: 24, barracks: 38, mill: 22 };
 	const H0 = { church: 13, longhouse: 6.5, barn: 11, barracks: 8 };
@@ -1146,6 +1151,7 @@ export function sideHouse(D, o = {}) {
 			{ solid: [circle(C[0], C[1], 1.3)], role: 'wood' },
 		);
 	}
+	if (o.lantern) extras.push(...ridgeTurret(D, P, d, h, rh));
 	/** @type {Line[]} */
 	const hoist = [];
 	/** @type {Part[]} */
@@ -1212,6 +1218,64 @@ export function sideHouse(D, o = {}) {
 		...(D.flourish > 0.25 ? finial(gTop) : []),
 		...crate,
 		...extras,
+	];
+}
+
+/**
+ * A lookout turret straddling a side-on roof's ridge: a small box rising
+ * from the roof slopes, a window in front, under a pyramid roof of its own
+ * — a town hall's, a guildhall's. In the house's own frame (its projector
+ * `P`, depth `d`, eave height `h`, roof rise `rh`).
+ * @param {Design} D
+ * @param {ReturnType<typeof boxProjector>} P
+ * @param {number} d
+ * @param {number} h
+ * @param {number} rh
+ * @returns {Part[]}
+ */
+function ridgeTurret(D, P, d, h, rh) {
+	const tw = 2.6,
+		dt = Math.min(4, d * 0.5),
+		th = 4.6 * D.stature,
+		ov = 0.8;
+	// Its front stands at the depth where the front slope has dropped
+	// to `yf`; it rises `th` over the ridge.
+	const tf = 0.5 - dt / (2 * d),
+		tb = 0.5 + dt / (2 * d);
+	const yf = h + rh * (1 - dt / d),
+		yr = h + rh,
+		yt = yr + th;
+	/** @type {Poly} */
+	const front = [P.at([-tw, yf], tf), P.at([tw, yf], tf), P.at([tw, yt], tf), P.at([-tw, yt], tf)];
+	// Its side up from the front slope to the ridge; behind the ridge the
+	// roof hides its foot, so it runs on back at the ridge's height.
+	/** @type {Poly} */
+	const side = [
+		P.at([tw, yf], tf),
+		P.at([tw, yr], 0.5),
+		P.at([tw, yr], tb),
+		P.at([tw, yt], tb),
+		P.at([tw, yt], tf),
+	];
+	const wy = yf + (yt - yf) * 0.45,
+		wh = (yt - yf) * 0.32;
+	/** @type {Poly} */
+	const win = [
+		P.at([-1, wy], tf),
+		P.at([1, wy], tf),
+		P.at([1, wy + wh], tf),
+		P.at([-1, wy + wh], tf),
+	];
+	const ef = tf - ov / d,
+		eb = tb + ov / d;
+	/** @type {Pt} */ const fl = P.at([-tw - ov, yt], ef);
+	/** @type {Pt} */ const fr = P.at([tw + ov, yt], ef);
+	/** @type {Pt} */ const br = P.at([tw + ov, yt], eb);
+	/** @type {Pt} */ const apex = P.at([0, yt + (tw + ov) * 1.4 * D.pitch], 0.5);
+	return [
+		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
+		{ solid: [front], fills: [win] },
+		pyramid([fl, fr, apex], [fr, br, apex], [fr, apex], 'roof', D.hatch),
 	];
 }
 
@@ -1715,9 +1779,10 @@ export function roundTower(D, o = {}) {
  * capped per the culture — a pyramid spire for cone, or onion, dome, lancet,
  * or nothing.
  * @param {Design} D
- * @param {{w?: number, h?: number, finial?: boolean, clock?: boolean}} [o]
+ * @param {{w?: number, h?: number, finial?: boolean, clock?: boolean, plain?: boolean}} [o]
  *   `finial`: top it with the culture's symbol; `clock`: a clock face instead
- *   of the belfry.
+ *   of the belfry; `plain`: a dwelling's windows up the front instead (a
+ *   tower house's).
  * @returns {Part[]}
  */
 export function squareTower(D, o = {}) {
@@ -1798,10 +1863,16 @@ export function squareTower(D, o = {}) {
 		},
 		{
 			solid: [frontSolid],
-			fills: o.clock
-				? [archOpening(0, 0, 4, 7), opening(D, 0, clockWinY, clockWinS)]
-				: [archOpening(0, 0, 4, 7), archOpening(0, belfryY, 4.4, 7.5)],
-			cuts: o.clock ? [] : bellCuts(0, belfryY + 1.9),
+			fills: o.plain
+				? [
+						archOpening(0, 0, 4, 7),
+						opening(D, 0, clearCorbel(h * 0.42, 3.4, beltY, beltOv), 2.6),
+						opening(D, 0, clearCorbel(h * 0.7, 3.4, beltY, beltOv), 2.6),
+					]
+				: o.clock
+					? [archOpening(0, 0, 4, 7), opening(D, 0, clockWinY, clockWinS)]
+					: [archOpening(0, 0, 4, 7), archOpening(0, belfryY, 4.4, 7.5)],
+			cuts: o.clock || o.plain ? [] : bellCuts(0, belfryY + 1.9),
 			lines: D.masonry ? stoneCourses(-w / 2, w / 2, 0, h) : [],
 		},
 		...(o.clock ? clockFace(0, h - w * 0.42, w * 0.3) : []),
@@ -3142,6 +3213,251 @@ export function lookoutTower(D, o = {}) {
 		pyramid(roofFront, roofSide, ridge, 'roof', D.hatch),
 	];
 	if (D.flags) parts.unshift(...flag(D, apex[0], apex[1] - 1));
+	return parts;
+}
+
+/**
+ * An L-plan house: a side-on house with a gabled wing standing out from
+ * its front, to the left — the wing's back against the house's front
+ * wall, its gable to the viewer. Both one storey, or both two.
+ * @param {Design} D
+ * @param {{seed?: number}} [o]
+ * @returns {Part[]}
+ */
+export function crossHouse(D, o = {}) {
+	const seed = o.seed ?? 21;
+	const two = rng(seed)() < D.storeys;
+	const ww = 10;
+	const v = depthVec(ww * D.depth);
+	return [
+		...sideHouse(D, { seed, kind: 'house', w: 22, two }),
+		...place(gableHouse(D, { seed: seed + 3, w: ww, two }), { x: -4.5 - v[0], y: -v[1] }),
+	];
+}
+
+/**
+ * A town hall: a two-storey side-on house with a lookout turret on its
+ * ridge (sideHouse's `lantern`).
+ * @param {Design} D
+ * @param {{seed?: number}} [o]
+ * @returns {Part[]}
+ */
+export function townHall(D, o = {}) {
+	return sideHouse(D, { seed: o.seed ?? 27, kind: 'house', w: 24, two: true, lantern: true });
+}
+
+/**
+ * Octagonal tower: an eight-sided body — its three front faces showing,
+ * the right one in shadow, edges between them — with a door and slits,
+ * under a crenellated parapet corbelled out round a walk.
+ * @param {Design} D
+ * @param {{r?: number, h?: number}} [o]
+ * @returns {Part[]}
+ */
+export function octTower(D, o = {}) {
+	const r = o.r ?? 5.6,
+		h = (o.h ?? 26) * D.stature,
+		k = 0.34, // the ellipse's squash, as round towers'
+		R = r + 0.7, // the parapet's
+		band = 3.2,
+		notch = 1.4;
+	/** The octagon's vertex `i` (0…7, from 22.5°) at radius `rr`, height `y`. */
+	const vx = (/** @type {number} */ i, /** @type {number} */ rr, /** @type {number} */ y) => {
+		const a = ((22.5 + 45 * i) * Math.PI) / 180;
+		return /** @type {Pt} */ ([rr * Math.cos(a), rr * k * Math.sin(a) + y]);
+	};
+	/** A face between vertices i and i+1 from y0 up to y1. */
+	const face = (
+		/** @type {number} */ i,
+		/** @type {number} */ rr,
+		/** @type {number} */ y0,
+		/** @type {number} */ y1,
+	) => /** @type {Poly} */ ([vx(i, rr, y0), vx(i + 1, rr, y0), vx(i + 1, rr, y1), vx(i, rr, y1)]);
+	/** A crenellated face: its top edge notched, `n` merlons. */
+	const crenFace = (
+		/** @type {number} */ i,
+		/** @type {number} */ y0,
+		/** @type {number} */ y1,
+	) => {
+		const a = vx(i, R, 0),
+			b = vx(i + 1, R, 0);
+		const n = 2,
+			m = 2 * n - 1;
+		/** @type {Poly} */
+		const top = [];
+		for (let j = m; j >= 0; j--) {
+			const t0 = j / m,
+				t1 = (j + 1) / m;
+			const merlon = j % 2 === 0;
+			const y = merlon ? y1 : y1 - notch;
+			const at = (/** @type {number} */ t) =>
+				/** @type {Pt} */ ([a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t + y]);
+			top.push(at(t1), at(t0));
+		}
+		return /** @type {Poly} */ ([[a[0], a[1] + y0], [b[0], b[1] + y0], ...top]);
+	};
+	// Faces 4, 5 and 6 (202.5°…337.5°) face the viewer; 6 is the shaded one.
+	const lit = [face(4, r, 0, h), face(5, r, 0, h)];
+	const dark = face(6, r, 0, h);
+	/** @type {Line[]} */
+	const edges = [5, 6].map((i) => ({ pts: [vx(i, r, -0.5), vx(i, r, h + 0.5)], w: THIN }));
+	const y1 = h + 0.8,
+		y2 = y1 + band;
+	// The walk, below the crenels, and the back half's inner faces.
+	const yd = y2 - notch * 1.6;
+	/** @type {Poly} */
+	const walk = Array.from({ length: 8 }, (_, i) => vx(i, R, yd));
+	/** @type {Poly[]} */
+	const backFaces = [0, 1, 2, 3].map((i) => crenFace(i, yd, y2));
+	/** The corbel: the body's top widening to the parapet. */
+	/** @type {Poly} */
+	const corbel = [
+		vx(4, r, h),
+		vx(5, r, h),
+		vx(6, r, h),
+		vx(7, r, h),
+		vx(7, R, y1),
+		vx(6, R, y1),
+		vx(5, R, y1),
+		vx(4, R, y1),
+	];
+	return [
+		{
+			solid: [...lit, dark],
+			lines: edges,
+			shadeArea: dark,
+			shadeLines: hatch(dark, 65, D.hatch),
+			fills: [
+				archOpening(
+					vx(5, r, 0)[0] / 2 + vx(4, r, 0)[0] / 2 + 0.6,
+					(vx(4, r, 0)[1] + vx(5, r, 0)[1]) / 2,
+					3.6,
+					6,
+				),
+				rect(-0.6, h * 0.5, 1.2, 3.6),
+				rect(-0.6, h * 0.78, 1.2, 3),
+			],
+		},
+		{
+			solid: [corbel],
+			lines: [{ pts: [vx(4, R, y1), vx(5, R, y1), vx(6, R, y1), vx(7, R, y1)], w: THIN }],
+		},
+		{ solid: [walk] },
+		{ solid: backFaces, shaded: true },
+		{ solid: [crenFace(4, y1, y2), crenFace(5, y1, y2)] },
+		{ solid: [crenFace(6, y1, y2)], shaded: true },
+	];
+}
+
+/**
+ * A tower house: a tall square tower (the culture's top) with a lean-to
+ * built against its right side — a low wing under a one-way roof falling
+ * away from the tower, a door and a window in front.
+ * @param {Design} D
+ * @returns {Part[]}
+ */
+export function towerHouse(D) {
+	const w = 9;
+	const tower = squareTower(D, { w, h: 32, plain: true });
+	const xl = w / 2,
+		xr = xl + 8,
+		ha = 6.5 * D.stature,
+		rise = 3,
+		ov = 0.9;
+	const P = boxProjector(w * 0.8, D.perspective, ha + rise);
+	/** @type {Poly} */
+	const side = [[xr, 0], P.back([xr, 0]), P.back([xr, ha]), [xr, ha]];
+	/** @type {Poly} */
+	const roof = [
+		[xl - 0.3, ha + rise + 0.4],
+		[xr + ov, ha - 0.3],
+		P.back([xr + ov, ha - 0.3]),
+		P.back([xl - 0.3, ha + rise + 0.4]),
+	];
+	return [
+		...tower,
+		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
+		{
+			solid: [
+				[
+					[xl, 0],
+					[xr, 0],
+					[xr, ha],
+					[xl, ha + rise],
+				],
+			],
+			fills: [archOpening(xl + 2.6, 0, 3, 5), opening(D, xl + 6, ha * 0.45, 2)],
+			lines: D.masonry ? stoneCourses(xl, xr, 0, ha + rise) : [],
+		},
+		{ solid: [roof], role: 'roof', shaded: true, lines: hatch(roof, -28, D.hatch) },
+	];
+}
+
+/**
+ * Tiered tower: three storeys, each narrower and set back on the one
+ * below, a skirt of roof round the top of each and a pyramid over the
+ * last, a flag on it where the culture flies them.
+ * @param {Design} D
+ * @returns {Part[]}
+ */
+export function tieredTower(D) {
+	/** @type {Part[]} */
+	const parts = [];
+	let w = 11,
+		h = 9 * D.stature;
+	/** @type {Pt} */
+	let at = [0, 0];
+	for (let i = 0; i < 3; i++) {
+		const d = w * 0.8,
+			last = i === 2;
+		const P = boxProjector(d, D.perspective, h + 3, h + 6);
+		/** @type {Poly} */
+		const side = [[w / 2, 0], P.back([w / 2, 0]), P.back([w / 2, h]), [w / 2, h]];
+		/** @type {Part[]} */
+		const tier = [
+			{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
+			{
+				solid: [rect(-w / 2, 0, w, h)],
+				fills:
+					i === 0
+						? [archOpening(0, 0, 3.6, 6.2)]
+						: [opening(D, -w * 0.22, h * 0.35, 2), opening(D, w * 0.22, h * 0.35, 2)],
+				lines: D.masonry ? stoneCourses(-w / 2, w / 2, 0, h) : [],
+			},
+		];
+		const ov = 1.6,
+			he = h - 0.5;
+		if (!last) {
+			const wn = w * 0.74,
+				dn = wn * 0.8,
+				rise = 2.2;
+			const ts = (d - dn) / 2 / d;
+			/** @type {Pt} */ const FLo = P.at([-w / 2 - ov, he], -ov / d);
+			/** @type {Pt} */ const FRo = P.at([w / 2 + ov, he], -ov / d);
+			/** @type {Pt} */ const BRo = P.at([w / 2 + ov, he], 1 + ov / d);
+			/** @type {Pt} */ const FLi = P.at([-wn / 2, h + rise], ts);
+			/** @type {Pt} */ const FRi = P.at([wn / 2, h + rise], ts);
+			/** @type {Pt} */ const BRi = P.at([wn / 2, h + rise], ts + dn / d);
+			/** @type {Poly} */
+			const skirtSide = [FRo, BRo, BRi, FRi];
+			tier.push(
+				{ solid: [skirtSide], role: 'roof', shaded: true, lines: hatch(skirtSide, -28, D.hatch) },
+				{ solid: [[FLo, FRo, FRi, FLi]], role: 'roof' },
+			);
+			parts.push(...place(tier, { x: at[0], y: at[1] }));
+			at = add(at, P.at([0, h + rise], ts));
+			w = wn;
+			h *= 0.82;
+		} else {
+			/** @type {Pt} */ const fl = P.at([-w / 2 - ov, he], -ov / d);
+			/** @type {Pt} */ const fr = P.at([w / 2 + ov, he], -ov / d);
+			/** @type {Pt} */ const br = P.at([w / 2 + ov, he], 1 + ov / d);
+			/** @type {Pt} */ const apex = P.at([0, he + (w / 2 + ov) * 1.7 * D.pitch], 0.5);
+			tier.push(pyramid([fl, fr, apex], [fr, br, apex], [fr, apex], 'roof', D.hatch));
+			parts.push(...place(tier, { x: at[0], y: at[1] }));
+			if (D.flags) parts.unshift(...flag(D, at[0] + apex[0], at[1] + apex[1] - 1));
+		}
+	}
 	return parts;
 }
 

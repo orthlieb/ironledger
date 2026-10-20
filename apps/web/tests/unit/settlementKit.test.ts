@@ -474,6 +474,31 @@ describe('piece details', () => {
 	});
 });
 
+/** Pieces drawn in the playground's reference row but not (yet) offered on
+ *  the map's Buildings tab. */
+const PROTOTYPES = [
+	'Lookout tower',
+	'Farmstead',
+	'L-plan house',
+	'Town hall',
+	'Octagonal tower',
+	'Tower house',
+	'Tiered tower',
+];
+
+describe('prototype pieces', () => {
+	it.each(PROTOTYPES)('draws a %s, in any culture', (name) => {
+		for (const D of [DEFAULT_DESIGN, makeDesign(7), makeDesign(42)]) {
+			const [, items] = pieces(D).find(([n]) => n === name)!;
+			const parts = items.flatMap((it) =>
+				place(it.piece, { x: it.x ?? 0, y: it.y ?? 0, s: it.s ?? 1 }),
+			);
+			const { layers } = renderLayered(parts, { join: D.join });
+			expect(layers.wall || layers.wood, `${name} has walls or timber`).toBeTruthy();
+		}
+	});
+});
+
 describe('buildings (the Buildings tab)', () => {
 	const roles = (svg: string) =>
 		new Set([...svg.matchAll(/data-role="([\w-]+)"/g)].map((m) => m[1]));
@@ -482,10 +507,10 @@ describe('buildings (the Buildings tab)', () => {
 	});
 	it('keeps the reference row of pieces the icon bake draws by name', () => {
 		const names = pieces(DEFAULT_DESIGN).map(([n]) => n);
-		expect(names).toHaveLength(27);
+		expect(names).toHaveLength(32);
 		expect(names).toContain('Camp'); // a Settlement-builder size, not a building
 		// Prototypes in the playground, not (yet) on the Buildings tab.
-		expect(names).toEqual(expect.arrayContaining(['Lookout tower', 'Farmstead']));
+		expect(names).toEqual(expect.arrayContaining(PROTOTYPES));
 		expect(names).not.toContain('Wall'); // retired: the Stone wall icons draw wallRun()
 		expect(BUILDINGS).toHaveLength(24);
 		expect(BUILDINGS.map(([key]) => key)).not.toContain('wall');

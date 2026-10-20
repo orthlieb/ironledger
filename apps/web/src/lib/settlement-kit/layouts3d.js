@@ -16,6 +16,7 @@ import {
 	cathedral,
 	church,
 	clocktower,
+	crossHouse,
 	gableHouse,
 	groundPlane,
 	keep,
@@ -24,6 +25,7 @@ import {
 	market,
 	mine,
 	moundHut,
+	octTower,
 	onStilts,
 	pavilion,
 	pier,
@@ -34,6 +36,9 @@ import {
 	squareFootprint,
 	stiltHut,
 	tent,
+	tieredTower,
+	townHall,
+	towerHouse,
 	townhouse,
 	wallSegment,
 	well,
@@ -781,6 +786,11 @@ const PIECES = [
 	['witch-hut', 'Witch hut', (D) => [{ piece: witchHut(D) }]],
 	[null, 'Lookout tower', (D) => [{ piece: lookoutTower(D) }]],
 	[null, 'Farmstead', (D, s) => farmstead(D, s ?? 13)],
+	[null, 'L-plan house', (D, s) => [{ piece: crossHouse(D, { seed: s }) }]],
+	[null, 'Town hall', (D, s) => [{ piece: townHall(D, { seed: s }) }]],
+	[null, 'Octagonal tower', (D) => [{ piece: octTower(D) }]],
+	[null, 'Tower house', (D) => [{ piece: towerHouse(D) }]],
+	[null, 'Tiered tower', (D) => [{ piece: tieredTower(D) }]],
 ];
 
 /**
