@@ -91,6 +91,7 @@ const KNOBS = [
 	range('Build', 'variety', 'Variety (mixed builders)', 0, 1, 0.05),
 	range('Houses', 'longhouse', 'Longhouse share', 0, 1, 0.01),
 	range('Houses', 'huts', 'Hut share', 0, 1, 0.01),
+	select('Houses', 'houseRoof', 'Roof type', ['gable', 'hip', 'gambrel', 'mansard', 'flat']),
 	range('Houses', 'pitch', 'Roof pitch', 0.3, 1.4, 0.01),
 	range('Houses', 'concave', 'Roof sweep', 0, 0.3, 0.01),
 	range('Houses', 'depth', 'House depth', 0.4, 1.2, 0.01),

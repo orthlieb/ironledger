@@ -237,7 +237,7 @@ A culture plugin (`cultures/<key>.json` in an extension, or
 `apps/api/data/cultures/` for the base game) is
 `{key, name, note, design, palette}`. `design` is any subset of the
 `Design` knobs below, laid over `DEFAULT_DESIGN`; `palette` gives the eight
-colour roles. A culture is therefore up to **41 knobs** — 23 numbers, 11
+colour roles. A culture is therefore up to **42 knobs** — 23 numbers, 12
 choices and 7 on/off switches — **plus 8 colours**. The shipped cultures
 set 14–24 knobs each (the Sample culture 33; Ironlanders is the default,
 with none). A culture is style alone: what a settlement stands on, its
@@ -263,20 +263,21 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 
 **Houses**
 
-| Knob          | Values (default)                            | What it drives                                                 |
-| ------------- | ------------------------------------------- | -------------------------------------------------------------- |
-| `pitch`       | 0.3–1.4 (**0.75**)                          | Roof height ÷ house width.                                     |
-| `concave`     | 0–0.3 (**0**)                               | Roof sweep: how far roof edges sag inward.                     |
-| `depth`       | 0.4–1.2 (**0.8**)                           | House depth ÷ width.                                           |
-| `gable`       | 0–1 (**0.5**)                               | Share of houses with the gable to the front.                   |
-| `storeys`     | 0–1 (**0.3**)                               | Chance a house has a second storey.                            |
-| `window`      | **square** / arched / slit / round / lancet | Window shape.                                                  |
-| `door`        | **arched** / square / lancet                | House door shape (keep, cathedral, pavilion keep their own).   |
-| `manyDoors`   | on / **off**                                | A door in every other ground-floor slot.                       |
-| `perspective` | 0–1 (**0.5**)                               | How strongly receding faces converge (see Perspective).        |
-| `industry`    | 0–1 (**0.2**)                               | Share of town/city buildings that are warehouses or workshops. |
-| `longhouse`   | 0–1 (**0**)                                 | Share of timber dwellings that are longhouses.                 |
-| `huts`        | 0–1 (**0**)                                 | Share of timber dwellings that are round huts.                 |
+| Knob          | Values (default)                            | What it drives                                                                                                                                                                                                                                                                                    |
+| ------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `houseRoof`   | **gable** / hip / gambrel / mansard / flat  | The houses' roofs (gable-front and side-on, taverns): two slopes and a gable end; sloped every side; a barn's steep-then-shallow; steep slopes all round with dormers, a low top; a deck in a parapet. Trade buildings, the church and the longhouse keep gables; a dome culture keeps its domes. |
+| `pitch`       | 0.3–1.4 (**0.75**)                          | Roof height ÷ house width.                                                                                                                                                                                                                                                                        |
+| `concave`     | 0–0.3 (**0**)                               | Roof sweep: how far roof edges sag inward.                                                                                                                                                                                                                                                        |
+| `depth`       | 0.4–1.2 (**0.8**)                           | House depth ÷ width.                                                                                                                                                                                                                                                                              |
+| `gable`       | 0–1 (**0.5**)                               | Share of houses with the gable to the front.                                                                                                                                                                                                                                                      |
+| `storeys`     | 0–1 (**0.3**)                               | Chance a house has a second storey.                                                                                                                                                                                                                                                               |
+| `window`      | **square** / arched / slit / round / lancet | Window shape.                                                                                                                                                                                                                                                                                     |
+| `door`        | **arched** / square / lancet                | House door shape (keep, cathedral, pavilion keep their own).                                                                                                                                                                                                                                      |
+| `manyDoors`   | on / **off**                                | A door in every other ground-floor slot.                                                                                                                                                                                                                                                          |
+| `perspective` | 0–1 (**0.5**)                               | How strongly receding faces converge (see Perspective).                                                                                                                                                                                                                                           |
+| `industry`    | 0–1 (**0.2**)                               | Share of town/city buildings that are warehouses or workshops.                                                                                                                                                                                                                                    |
+| `longhouse`   | 0–1 (**0**)                                 | Share of timber dwellings that are longhouses.                                                                                                                                                                                                                                                    |
+| `huts`        | 0–1 (**0**)                                 | Share of timber dwellings that are round huts.                                                                                                                                                                                                                                                    |
 
 **Towers**
 
@@ -339,9 +340,10 @@ every knob, then applies linked rules so a culture hangs together:
 low-pitched builders leave towers roofless (crenellated); onion domes
 bring swept roofs; steep roofs bring tall spires; towers and walls usually
 bow alike; crenellated towers bring merlons on the walls. About a third of
-capped cultures get crenellated tops, a quarter round steeples and one in
-ten some `variety` — those are rolled after every other draw, so older
-seeds keep their looks.
+capped cultures get crenellated tops, a quarter round steeples, one in
+ten some `variety` and nearly half a roof other than a gable (hip,
+gambrel, mansard or flat) — those are rolled after every other draw, so
+older seeds keep their looks (bar the roof).
 
 ## Recipe overrides
 
