@@ -44,6 +44,7 @@ import {
 	keep,
 	makeDesign,
 	onStilts,
+	lookoutTower,
 	ringWall,
 	roundHut,
 	roundTower,
@@ -385,6 +386,50 @@ describe('piece details', () => {
 		expect(stoned(true)).toBe(true);
 		expect(stoned(false)).toBe(false);
 	});
+	it.each(['round', 'square'] as const)(
+		'fences a %s enclosure with posts and rails — open, crisp, no towers',
+		(shape) => {
+			const { back, front } = ringWall(DEFAULT_DESIGN, { type: 'fence', shape, rx: 30, ry: 12 });
+			expect(back.length).toBeGreaterThan(0);
+			expect(front.length).toBeGreaterThan(0);
+			const parts = [...back, ...front].flatMap((it) => it.piece);
+			// Timber, kept crisp so the thin rails survive the soft join.
+			expect(parts.every((p) => p.role === 'wood' && p.sharp)).toBe(true);
+			// Every item is the fence's own: no ring towers or gate tower.
+			expect([...back, ...front].every((it) => it.wall)).toBe(true);
+			// And it's low: nothing much above the rails.
+			const top = Math.max(...parts.flatMap((p) => p.solid.flat().map(([, y]) => y)));
+			expect(top).toBeLessThan(shape === 'square' ? 40 : 20);
+		},
+	);
+	it('draws a fenced settlement and a fenced building', () => {
+		const roles = (svg: string) => [...svg.matchAll(/data-role="([\w-]+)"/g)].map((m) => m[1]);
+		const town = generateSettlementSvg(
+			{ tier: 'hamlet', culture: 'default', seed: 3, walls: 'fence' as never },
+			null,
+		);
+		expect(roles(town)).toContain('wood');
+		// No wall material: a fence is timber, not a ring of stone or stakes.
+		expect(roles(town).some((r) => /^wall-(stone|wood|hedge|reef|earth|bone)/.test(r))).toBe(false);
+		const barn = building('barn', DEFAULT_DESIGN, { walls: 'fence', seed: 2 });
+		expect(barn.some((it) => it.wall)).toBe(true);
+	});
+	it('stands a lookout tower on four legs, a roof over its cabin', () => {
+		const parts = lookoutTower({ ...DEFAULT_DESIGN, flags: false });
+		const legs = parts.filter((p) => p.role === 'wood' && p.solid.length === 2);
+		expect(legs.length).toBeGreaterThanOrEqual(2); // the back pair, the front pair
+		expect(parts.at(-1)?.role).toBe('roof');
+		expect(parts.some((p) => p.free?.length)).toBe(true); // the ladder
+		expect(lookoutTower({ ...DEFAULT_DESIGN, flags: true }).some((p) => p.role === 'flag')).toBe(
+			true,
+		);
+	});
+	it('lays a farmstead: a fenced farmland field, a barn and a house', () => {
+		const [, items] = pieces(DEFAULT_DESIGN).find(([n]) => n === 'Farmstead')!;
+		expect(items[0].piece[0]).toMatchObject({ role: 'ground-farmland', terrain: true });
+		expect(items.filter((it) => it.wall).length).toBe(4); // the fence's four runs
+		expect(items.filter((it) => !it.wall).length).toBe(3); // the field, the barn, the house
+	});
 	it("lays a masonry culture's well curb in small stones", () => {
 		const curb = (masonry: boolean) => well({ ...DEFAULT_DESIGN, masonry })[0];
 		expect(curb(true).lines?.some((l) => l.role === 'ink-texture')).toBe(true);
@@ -437,8 +482,10 @@ describe('buildings (the Buildings tab)', () => {
 	});
 	it('keeps the reference row of pieces the icon bake draws by name', () => {
 		const names = pieces(DEFAULT_DESIGN).map(([n]) => n);
-		expect(names).toHaveLength(25);
+		expect(names).toHaveLength(27);
 		expect(names).toContain('Camp'); // a Settlement-builder size, not a building
+		// Prototypes in the playground, not (yet) on the Buildings tab.
+		expect(names).toEqual(expect.arrayContaining(['Lookout tower', 'Farmstead']));
 		expect(names).not.toContain('Wall'); // retired: the Stone wall icons draw wallRun()
 		expect(BUILDINGS).toHaveLength(24);
 		expect(BUILDINGS.map(([key]) => key)).not.toContain('wall');

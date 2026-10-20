@@ -141,7 +141,7 @@ const KNOBS = [
 		'Drawing',
 		'walls',
 		'Walls',
-		['none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef'],
+		['none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef', 'fence'],
 		false,
 	),
 	// The walls' shape — the drawing's, not the culture's.
@@ -165,7 +165,7 @@ const KNOBS = [
 		'Drawing',
 		'buildingWalls',
 		'Building walls',
-		['pieces', 'none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef'],
+		['pieces', 'none', 'stone', 'palisade', 'earth', 'hedge', 'bone', 'reef', 'fence'],
 		false,
 	),
 	select('Drawing', 'join', 'Joins', ['sharp', 'round', 'soft']),

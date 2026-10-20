@@ -35,7 +35,7 @@ import { place } from './render.js';
  *  culture: nothing, a plane of a ground type (groundPlane()), or water (a
  *  lagoon). @typedef {'none' | 'dirt' | 'grass' | 'farmland' | 'sand' | 'rock' | 'snow' | 'ice' | 'marsh' | 'lava' | 'water'} Ground */
 /** A wall's material — set by the recipe (or the settlement's size), not
- *  the culture. @typedef {'none' | 'stone' | 'palisade' | 'hedge' | 'bone' | 'earth' | 'reef'} WallType */
+ *  the culture. @typedef {'none' | 'stone' | 'palisade' | 'hedge' | 'bone' | 'earth' | 'reef' | 'fence'} WallType */
 
 /** Bow of a line, -1 … 1: positive swoops inward (concave), negative bulges
  *  outward (convex), 0 is straight. @typedef {number} Bow */
@@ -2097,6 +2097,8 @@ function gateTower(D, y0, h, wood) {
  * @returns {{back: Placed[], front: Placed[]}}
  */
 export function ringWall(D, o = {}) {
+	// A post-and-rail fence isn't a wall at all: open, low, no towers.
+	if (o.type === 'fence') return fenceWall(D, o);
 	if (o.shape === 'square') return squareWall(D, o);
 	const type = o.type ?? 'stone';
 	const mat = material(type);
@@ -2883,6 +2885,264 @@ function squareWall(D, o) {
 			});
 	towers.sort((p, q) => (q.y ?? 0) - (p.y ?? 0));
 	return { back, front: [...frontItems, ...towers] };
+}
+
+/**
+ * A post-and-rail fence round an enclosure — a farm's field, a paddock,
+ * a stead's yard: a timber post every few units with two rails between,
+ * low and open, so what's inside shows through it; a gap at the front
+ * between two taller gateposts. Round, on the ring a ringWall() would
+ * take, or square (`shape`), on squareWall()'s footprint — and split as
+ * theirs are, `back` (the far side, seen from inside) behind what's in the
+ * enclosure and `front` before it. Never towers; the culture's wall
+ * height doesn't raise a fence.
+ * @param {Design} D
+ * @param {{rx?: number, ry?: number, shape?: 'round' | 'square'}} o
+ * @returns {{back: Placed[], front: Placed[]}}
+ */
+function fenceWall(D, o) {
+	const rx = o.rx ?? 40,
+		ry = o.ry ?? 14;
+	const h = 4.2 * D.stature,
+		gap = 3.4,
+		every = 4.6;
+	/** A post standing at ground point `p`. @param {Pt} p @param {number} [ph] */
+	const post = (p, ph = h) => rect(p[0] - 0.55, p[1] - 0.3, 1.1, ph + 0.3);
+	/** The two rails along a run of ground points, as bands. @param {Pt[]} run */
+	const rails = (run) =>
+		[1.5, h - 0.8].map(
+			(y) =>
+				/** @type {Poly} */ ([
+					...run.map(([x, yy]) => /** @type {Pt} */ ([x, yy + y - 0.4])),
+					...run
+						.slice()
+						.reverse()
+						.map(([x, yy]) => /** @type {Pt} */ ([x, yy + y + 0.4])),
+				]),
+		);
+	/** A stretch of fence along `run` (ground points), posts at its ends
+	 *  and every `every` units between. @param {Pt[]} run @returns {Part[]} */
+	const stretch = (run) => {
+		/** @type {Poly[]} */
+		const posts = [];
+		let since = Infinity;
+		for (let i = 0; i < run.length; i++) {
+			if (i > 0) since += Math.hypot(run[i][0] - run[i - 1][0], run[i][1] - run[i - 1][1]);
+			if (since >= every || i === run.length - 1) {
+				posts.push(post(run[i]));
+				since = 0;
+			}
+		}
+		// Crisp, whatever the culture's join: softening would round the
+		// thin rails away.
+		return [{ solid: [...rails(run), ...posts], role: 'wood', sharp: true }];
+	};
+	/** Points every unit or so from a to b. @param {Pt} a @param {Pt} b */
+	const line = (a, b) => {
+		const n = Math.max(1, Math.round(Math.hypot(b[0] - a[0], b[1] - a[1])));
+		return Array.from(
+			{ length: n + 1 },
+			(_, i) =>
+				/** @type {Pt} */ ([a[0] + ((b[0] - a[0]) * i) / n, a[1] + ((b[1] - a[1]) * i) / n]),
+		);
+	};
+	const gateposts = (/** @type {Pt} */ l, /** @type {Pt} */ r) =>
+		/** @type {Part} */ ({
+			solid: [post(l, h + 1.4), post(r, h + 1.4)],
+			role: 'wood',
+			sharp: true,
+		});
+	if (o.shape === 'square') {
+		const { W, dv } = squareFootprint(rx, ry);
+		/** @type {Pt} */ const FL = [-W / 2, 0];
+		/** @type {Pt} */ const FR = [W / 2, 0];
+		const BL = add(FL, dv),
+			BR = add(FR, dv);
+		/** @type {Pt} */ const GL = [-gap / 2, 0];
+		/** @type {Pt} */ const GR = [gap / 2, 0];
+		return {
+			back: [
+				{ piece: stretch(line(BL, BR)), wall: true },
+				{ piece: stretch(line(FL, BL)), wall: true },
+			],
+			front: [
+				{ piece: stretch(line(FR, BR)), wall: true },
+				{
+					piece: [...stretch(line(FL, GL)), ...stretch(line(GR, FR)), gateposts(GL, GR)],
+					wall: true,
+				},
+			],
+		};
+	}
+	/** The ring from a0 to a1 degrees, a point every degree or so. */
+	const arc = (/** @type {number} */ a0, /** @type {number} */ a1) => {
+		const n = Math.max(2, Math.round(Math.abs(a1 - a0)));
+		return Array.from({ length: n + 1 }, (_, i) => {
+			const a = ((a0 + ((a1 - a0) * i) / n) * Math.PI) / 180;
+			return /** @type {Pt} */ ([rx * Math.cos(a), ry * Math.sin(a)]);
+		});
+	};
+	const half = ((gap / 2 / rx) * 180) / Math.PI;
+	const gl = arc(270 - half, 270 - half)[0],
+		gr = arc(270 + half, 270 + half)[0];
+	return {
+		back: [{ piece: stretch(arc(0, 180)), wall: true }],
+		front: [
+			{
+				piece: [
+					...stretch(arc(180, 270 - half)),
+					...stretch(arc(270 + half, 360)),
+					gateposts(gl, gr),
+				],
+				wall: true,
+			},
+		],
+	};
+}
+
+/**
+ * Lookout tower: a timber watch-post up on four splayed legs, braced in
+ * two bays, with a ladder up the front to a plank deck and a small
+ * lookout cabin — a wide window band round it — under a pyramid roof, a
+ * flag on top where the culture flies them. A frontier outpost's, or a
+ * camp's.
+ * @param {Design} D
+ * @param {{h?: number}} [o]
+ * @returns {Part[]}
+ */
+export function lookoutTower(D, o = {}) {
+	const top = 3.4, // half-width at the deck
+		foot = top + 1.1, // half-width at the feet: the legs splay
+		lt = 1.1, // leg thickness
+		H = (o.h ?? 16) * D.stature,
+		slab = 1.3,
+		ch = 4.4 * D.stature,
+		ov = 0.8,
+		wd = top + ov; // the deck's half-width
+	const roofY = H + slab + ch,
+		rh = (top + 1.4) * 1.5 * D.pitch;
+	const P = boxProjector(top * 1.6, D.perspective, roofY, roofY + rh);
+	const wood = /** @type {const} */ ('wood');
+	/** x of a leg's outer edge at height y. @param {number} y */
+	const legX = (y) => foot + (top - foot) * (y / H);
+	/** A leg on side `s` (−1 left, 1 right), at depth `t`. */
+	const leg = (/** @type {-1 | 1} */ s, /** @type {number} */ t) =>
+		/** @type {Poly} */ (
+			[
+				[s * legX(0), 0],
+				[s * (legX(0) - lt), 0],
+				[s * (legX(H) - lt), H],
+				[s * legX(H), H],
+			].map((p) => P.at(/** @type {Pt} */ (p), t))
+		);
+	/** A timber bar from a to b. @param {Pt} a @param {Pt} b */
+	const bar = (a, b, wdt = 0.75) => {
+		const dx = b[0] - a[0],
+			dy = b[1] - a[1],
+			l = Math.hypot(dx, dy) || 1;
+		const nx = (-dy / l) * (wdt / 2),
+			ny = (dx / l) * (wdt / 2);
+		return /** @type {Poly} */ ([
+			[a[0] + nx, a[1] + ny],
+			[b[0] + nx, b[1] + ny],
+			[b[0] - nx, b[1] - ny],
+			[a[0] - nx, a[1] - ny],
+		]);
+	};
+	// The bays the bracing crosses, and a girt between them.
+	const y0 = 0.6,
+		y1 = H * 0.5,
+		y2 = H - 0.3;
+	/** X braces and the girt on the front (t = 0) or the right side. */
+	const front = (/** @type {number} */ t) => {
+		const at = (/** @type {-1 | 1} */ s, /** @type {number} */ y) =>
+			P.at([s * (legX(y) - lt / 2), y], t);
+		return [
+			bar(at(-1, y0), at(1, y1)),
+			bar(at(1, y0), at(-1, y1)),
+			bar(at(-1, y1), at(1, y2)),
+			bar(at(1, y1), at(-1, y2)),
+			bar(at(-1, y1), at(1, y1), 0.9),
+		];
+	};
+	const side = () => {
+		const at = (/** @type {number} */ t, /** @type {number} */ y) => P.at([legX(y) - lt / 2, y], t);
+		return [
+			bar(at(0, y0), at(1, y1)),
+			bar(at(1, y0), at(0, y1)),
+			bar(at(0, y1), at(1, y2)),
+			bar(at(1, y1), at(0, y2)),
+			bar(at(0, y1), at(1, y1), 0.9),
+		];
+	};
+	// Deck: a plank slab overhanging the legs, front and right faces.
+	/** @type {Poly} */
+	const deckSide = [[wd, H], P.back([wd, H]), P.back([wd, H + slab]), [wd, H + slab]];
+	// The cabin on it, a window band round it.
+	const cw = top;
+	/** @type {Poly} */
+	const cabSide = [[cw, H + slab], P.back([cw, H + slab]), P.back([cw, roofY]), [cw, roofY]];
+	const winY = H + slab + ch * 0.42,
+		winH = ch * 0.34;
+	// Pyramid roof over the cabin, its eaves out over the walls.
+	/** @type {Pt} */ const fl = [-cw - 1.2, roofY];
+	/** @type {Pt} */ const fr = [cw + 1.2, roofY];
+	const br = P.back(fr);
+	const apex = P.at([0, roofY + rh], 0.5);
+	const c = /** @type {Pt} */ ([P.at([0, roofY], 0.5)[0], roofY]);
+	const ridge = sag(fr, apex, c, D.concave);
+	/** @type {Poly} */
+	const roofFront = [fl, ...ridge, ...sag(apex, fl, c, D.concave).slice(1, -1)];
+	/** @type {Poly} */
+	const roofSide = [
+		fr,
+		br,
+		...sag(br, apex, c, D.concave).slice(1),
+		...ridge.slice(1, -1).reverse(),
+	];
+	/** @type {Line[]} */
+	const ladder = [];
+	for (const x of [-0.9, 0.9])
+		ladder.push({
+			pts: [
+				[x, -0.2],
+				[x, H],
+			],
+			w: 0.9,
+		});
+	for (let y = 1.4; y < H - 0.5; y += 1.6)
+		ladder.push({
+			pts: [
+				[-0.9, y],
+				[0.9, y],
+			],
+			w: 0.6,
+		});
+	/** @type {Part[]} */
+	const parts = [
+		// The back legs, then the right side's bracing, seen past the front.
+		{ solid: [leg(-1, 1), leg(1, 1)], role: wood },
+		{ solid: side(), role: wood, shaded: true },
+		{ solid: [leg(-1, 0), leg(1, 0)], role: wood },
+		{ solid: front(0), role: wood },
+		{ solid: [], free: ladder },
+		{ solid: [deckSide], role: wood, shaded: true },
+		{ solid: [rect(-wd, H, wd * 2, slab)], role: wood },
+		{
+			solid: [cabSide],
+			role: wood,
+			shaded: true,
+			fills: [P.face(rect(-1.2, 0, 2.4, winH), cw, winY, 0.5)],
+		},
+		{
+			solid: [rect(-cw, H + slab, cw * 2, ch)],
+			role: wood,
+			fills: [rect(-cw + 1, winY, cw * 2 - 2, winH)],
+		},
+		pyramid(roofFront, roofSide, ridge, 'roof', D.hatch),
+	];
+	if (D.flags) parts.unshift(...flag(D, apex[0], apex[1] - 1));
+	return parts;
 }
 
 /**

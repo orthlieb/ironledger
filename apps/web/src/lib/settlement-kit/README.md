@@ -132,6 +132,22 @@ palisade seams and bone seams — like masonry courses and barn planks on
 buildings — stay ink but paint in a layer of their own, `ink-texture`.
 Flat walls (square enclosures, a standalone wall) keep the full tiles.
 
+**Fence** (`walls: 'fence'`, `fenceWall()`) isn't a wall at all: a
+post-and-rail fence — a timber post every few units, two rails between —
+low and open, so what's inside shows through, with a gap at the front
+between two taller gateposts; round or square like the rest, split
+back / front as theirs are, never towered, never raised by the culture's
+wall height. Plain `wood`, no pattern, and `sharp` so the soft join
+doesn't round its thin rails away. Prototype: the playground's Walls
+offers it; the map's Walls doesn't yet.
+
+**Prototype pieces** in the playground's reference row (null keys, so not
+on the Buildings tab yet): the **Lookout tower** (`lookoutTower()` — a
+timber watch-post on four splayed, braced legs, a ladder up to a plank
+deck and a lookout cabin under a pyramid roof) and the **Farmstead**
+(`farmstead()` in `layouts3d.js` — a barn and a farmhouse at the back of
+a farmland field inside a square fence).
+
 All of that line-work is texture (`TEXTURE_ROLES` in `patterns.js`): a
 culture with `texture` off draws none of it, its walls in flat material
 colours (`renderLayered(…, {texture: false})`), and a map icon drawn

@@ -20,6 +20,7 @@ import {
 	groundPlane,
 	keep,
 	lighthouse,
+	lookoutTower,
 	market,
 	mine,
 	moundHut,
@@ -44,7 +45,7 @@ import {
 /** @typedef {import('./pieces3d.js').Placed} Placed */
 /** @typedef {import('./geom.js').Pt} Pt */
 /** @typedef {import('./geom.js').Poly} Poly */
-/** @typedef {'none' | 'stone' | 'palisade' | 'earth' | 'hedge' | 'bone' | 'reef'} Walls */
+/** @typedef {'none' | 'stone' | 'palisade' | 'earth' | 'hedge' | 'bone' | 'reef' | 'fence'} Walls */
 /** A wall's shape — the recipe's, never the culture's. @typedef {'round' | 'square'} WallShape */
 
 /**
@@ -778,7 +779,41 @@ const PIECES = [
 	['tent', 'Tent', (D) => [{ piece: tent(D) }]],
 	['pavilion', 'Pavilion', (D) => [{ piece: pavilion(D) }]],
 	['witch-hut', 'Witch hut', (D) => [{ piece: witchHut(D) }]],
+	[null, 'Lookout tower', (D) => [{ piece: lookoutTower(D) }]],
+	[null, 'Farmstead', (D, s) => farmstead(D, s ?? 13)],
 ];
+
+/**
+ * A farmstead: a barn and a farmhouse at the back of a fenced field — the
+ * field ploughed farmland inside a post-and-rail fence, its gate at the
+ * front; the barn back left, the house back right, the field before them.
+ * @param {Design} D
+ * @param {number} seed varies the barn and the house
+ * @returns {Placed[]}
+ */
+function farmstead(D, seed) {
+	const wrx = 30,
+		wry = wrx * 0.42;
+	const { W, dv } = squareFootprint(wrx, wry);
+	const fence = ringWall(D, { rx: wrx, ry: wry, type: 'fence', shape: 'square' });
+	/** A point `u` across the field (−1 left … 1 right) and `t` back (0
+	 *  the front fence … 1 the back). @param {number} u @param {number} t */
+	const at = (u, t) => ({ x: (u * W) / 2 + t * dv[0], y: t * dv[1] });
+	/** @type {Poly} */
+	const field = [
+		[-W / 2, 0],
+		[W / 2, 0],
+		[W / 2 + dv[0], dv[1]],
+		[-W / 2 + dv[0], dv[1]],
+	];
+	return [
+		{ piece: [{ solid: [field], role: 'ground-farmland', terrain: true }] },
+		...fence.back,
+		{ piece: sideHouse(D, { seed, kind: 'barn', w: 20 }), ...at(-0.5, 0.74) },
+		{ piece: gableHouse(D, { seed: seed + 1, w: 13 }), ...at(0.5, 0.7) },
+		...fence.front,
+	];
+}
 
 /**
  * Single pieces for the reference row, each on `ground` as a building is
