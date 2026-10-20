@@ -496,6 +496,57 @@ describe('newer pieces', () => {
 			expect(layers.wall || layers.wood, `${name} has walls or timber`).toBeTruthy();
 		}
 	});
+
+	const TOWERS = ['Octagonal tower', 'Tower house', 'Tiered tower', 'Lookout tower', 'Town hall'];
+	const drawn = (D: typeof DEFAULT_DESIGN, name: string) => {
+		const [, items] = pieces(D).find(([n]) => n === name)!;
+		return items.flatMap((it) => place(it.piece, { x: it.x ?? 0, y: it.y ?? 0, s: it.s ?? 1 }));
+	};
+	it.each(TOWERS)("tops a %s with the culture's tower cap", (name) => {
+		const cone = drawn({ ...DEFAULT_DESIGN, towerRoof: 'cone' }, name);
+		const caps = (['onion', 'dome', 'lancet'] as const).map((towerRoof) =>
+			JSON.stringify(drawn({ ...DEFAULT_DESIGN, towerRoof }, name)),
+		);
+		expect(caps).not.toContain(JSON.stringify(cone));
+		expect(new Set(caps).size, 'each cap its own').toBe(3);
+	});
+	it('crenellates the octagonal tower as a round tower: bare, or under a cap', () => {
+		const oct = (towerRoof: 'none' | 'dome', towerCrenel: boolean) =>
+			drawn({ ...DEFAULT_DESIGN, towerRoof, towerCrenel }, 'Octagonal tower');
+		expect(oct('none', false).some((p) => p.role === 'roof')).toBe(false); // a bare walk
+		expect(oct('none', false)).toEqual(oct('none', true)); // no cap: always crenellated
+		const banded = oct('dome', true),
+			plain = oct('dome', false);
+		expect(banded.some((p) => p.role === 'roof')).toBe(true);
+		// The parapet band under the dome, its crenels slots in it.
+		expect(banded.length).toBeGreaterThan(plain.length);
+		expect(banded.flatMap((p) => p.fills ?? []).length).toBeGreaterThan(
+			plain.flatMap((p) => p.fills ?? []).length,
+		);
+	});
+	it.each(['onion', 'dome', 'lancet', 'cone'] as const)(
+		'leaves no %s cap or flag hanging in the air over a ruined new tower',
+		(towerRoof) => {
+			for (const name of TOWERS) {
+				const piece = drawn({ ...DEFAULT_DESIGN, towerRoof, flags: true }, name);
+				const [ruin] = ruinPlaced([{ piece }], {
+					decay: 0.6,
+					overgrowth: 0,
+					burned: false,
+					single: true,
+					seed: 1,
+				});
+				expect(
+					ruin.piece.some((p) => p.role === 'flag'),
+					name,
+				).toBe(false);
+				expect(
+					ruin.piece.filter((p) => !p.solid.length && p.free?.length && !p.mask),
+					name,
+				).toEqual([]);
+			}
+		},
+	);
 });
 
 describe('buildings (the Buildings tab)', () => {

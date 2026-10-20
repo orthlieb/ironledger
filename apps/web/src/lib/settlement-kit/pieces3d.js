@@ -793,6 +793,39 @@ function lancetCap(D, cx, y, R) {
 }
 
 /**
+ * The culture's round cap — onion, dome or lancet — on a flat top: `deck`
+ * (if any) over the top, then the cap at its centre `c`, of base radius `r`
+ * on screen. Null for a cone or none: the piece draws its own pyramid or
+ * parapet. `socket` is how deep a finial seats in the tip (see seat()).
+ * @param {Design} D
+ * @param {Design['towerRoof']} roof
+ * @param {Part | null} deck
+ * @param {Pt} c
+ * @param {number} r
+ * @returns {{parts: Part[], tip: Pt, socket: number} | null}
+ */
+function roundCap(D, roof, deck, c, r) {
+	/** @type {Part[]} */
+	const parts = deck ? [deck] : [];
+	if (roof === 'onion') {
+		const dome = onionDome(D, c[0], c[1] - 0.6, r);
+		parts.push(...dome.parts);
+		return { parts, tip: dome.tip, socket: 0 };
+	}
+	if (roof === 'dome') {
+		const dome = hemiDome(c[0], c[1], r * 1.04, D.hatch);
+		parts.push(dome.part);
+		return { parts, tip: dome.tip, socket: 0 };
+	}
+	if (roof === 'lancet') {
+		const cap = lancetCap(D, c[0], c[1], r * 1.04);
+		parts.push(cap.part);
+		return { parts, tip: cap.tip, socket: 3 };
+	}
+	return null;
+}
+
+/**
  * A two-faced spire — lit front plus shaded receding side — as ONE part.
  * Drawn as two triangles, softening rounds each tip on its own and the
  * apex comes out as two offset bumps that never close; one solid rounds
@@ -1234,9 +1267,10 @@ export function sideHouse(D, o = {}) {
 
 /**
  * A lookout turret straddling a side-on roof's ridge: a small box rising
- * from the roof slopes, a window in front, under a pyramid roof of its own
- * — a town hall's, a guildhall's. In the house's own frame (its projector
- * `P`, depth `d`, eave height `h`, roof rise `rh`).
+ * from the roof slopes, a window in front, under the culture's tower cap —
+ * an onion, dome or lancet, else a pyramid roof of its own — a town hall's,
+ * a guildhall's. In the house's own frame (its projector `P`, depth `d`,
+ * eave height `h`, roof rise `rh`).
  * @param {Design} D
  * @param {ReturnType<typeof boxProjector>} P
  * @param {number} d
@@ -1277,17 +1311,22 @@ function ridgeTurret(D, P, d, h, rh) {
 		P.at([1, wy + wh], tf),
 		P.at([-1, wy + wh], tf),
 	];
+	/** @type {Part[]} */
+	const parts = [
+		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
+		{ solid: [front], fills: [win] },
+	];
+	/** @type {Poly} */
+	const deck = [P.at([-tw, yt], tf), P.at([tw, yt], tf), P.at([tw, yt], tb), P.at([-tw, yt], tb)];
+	const cap = roundCap(D, D.towerRoof, { solid: [deck] }, P.at([0, yt], 0.5), tw * P.scale(0.5));
+	if (cap) return [...parts, ...cap.parts];
 	const ef = tf - ov / d,
 		eb = tb + ov / d;
 	/** @type {Pt} */ const fl = P.at([-tw - ov, yt], ef);
 	/** @type {Pt} */ const fr = P.at([tw + ov, yt], ef);
 	/** @type {Pt} */ const br = P.at([tw + ov, yt], eb);
 	/** @type {Pt} */ const apex = P.at([0, yt + (tw + ov) * 1.4 * D.pitch], 0.5);
-	return [
-		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
-		{ solid: [front], fills: [win] },
-		pyramid([fl, fr, apex], [fr, br, apex], [fr, apex], 'roof', D.hatch),
-	];
+	return [...parts, pyramid([fl, fr, apex], [fr, br, apex], [fr, apex], 'roof', D.hatch)];
 }
 
 /** Barracks front: a door in the middle, regular slit windows either side. */
@@ -1993,25 +2032,11 @@ export function squareTower(D, o = {}) {
 	// front, side and roof meet don't leave a sliver of background showing.
 	if (corbel && !crenel) parts.push({ solid: [[fl, fr, br, bl]], role: 'roof' });
 	const deck = !corbel || crenel;
-	if (roof === 'onion') {
-		if (deck) parts.push({ solid: [flatTop] });
-		const dome = onionDome(D, top[0], top[1] - 0.6, topW * cs);
-		parts.push(...dome.parts);
-		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
-		return parts;
-	}
-	if (roof === 'dome') {
-		if (deck) parts.push({ solid: [flatTop] });
-		const dome = hemiDome(top[0], top[1], topW * 1.04 * cs, D.hatch);
-		parts.push(dome.part);
-		if (o.finial) parts.push(...symbolAt(D.symbol, dome.tip));
-		return parts;
-	}
-	if (roof === 'lancet') {
-		if (deck) parts.push({ solid: [flatTop] });
-		const cap = lancetCap(D, top[0], top[1], topW * 1.04 * cs);
-		parts.push(cap.part);
-		if (o.finial) seat(parts, D.symbol, cap.tip, 3);
+	const cap = roundCap(D, roof, deck ? { solid: [flatTop] } : null, top, topW * cs);
+	if (cap) {
+		parts.push(...cap.parts);
+		if (o.finial && cap.socket) seat(parts, D.symbol, cap.tip, cap.socket);
+		else if (o.finial) parts.push(...symbolAt(D.symbol, cap.tip));
 		return parts;
 	}
 	// Pyramid (the cone cap on a square tower), one part so the apex closes.
@@ -3085,9 +3110,9 @@ function fenceWall(D, o) {
 /**
  * Lookout tower: a timber watch-post up on four splayed legs, braced in
  * two bays, with a ladder up the front to a plank deck and a small
- * lookout cabin — a wide window band round it — under a pyramid roof, a
- * flag on top where the culture flies them. A frontier outpost's, or a
- * camp's.
+ * lookout cabin — a wide window band round it — under a pyramid roof (or
+ * the culture's onion, dome or lancet), a flag on top where the culture
+ * flies them. A frontier outpost's, or a camp's.
  * @param {Design} D
  * @param {{h?: number}} [o]
  * @returns {Part[]}
@@ -3221,9 +3246,22 @@ export function lookoutTower(D, o = {}) {
 			role: wood,
 			fills: [rect(-cw + 1, winY, cw * 2 - 2, winH)],
 		},
-		pyramid(roofFront, roofSide, ridge, 'roof', D.hatch),
 	];
-	if (D.flags) parts.unshift(...flag(D, apex[0], apex[1] - 1));
+	// The culture's onion, dome or lancet on the cabin's top; else (a cone
+	// or none) the pyramid roof.
+	/** @type {Poly} */
+	const cabTop = [[-cw, roofY], [cw, roofY], P.back([cw, roofY]), P.back([-cw, roofY])];
+	const cap = roundCap(
+		D,
+		D.towerRoof,
+		{ solid: [cabTop], role: wood },
+		P.at([0, roofY], 0.5),
+		cw * P.scale(0.5),
+	);
+	if (cap) parts.push(...cap.parts);
+	else parts.push(pyramid(roofFront, roofSide, ridge, 'roof', D.hatch));
+	const tip = cap ? [cap.tip[0], cap.tip[1] - 2] : [apex[0], apex[1] - 1];
+	if (D.flags) parts.unshift(...flag(D, tip[0], tip[1]));
 	return parts;
 }
 
@@ -3264,7 +3302,9 @@ export function townHall(D, o = {}) {
 /**
  * Octagonal tower: an eight-sided body — its three front faces showing,
  * the right one in shadow, edges between them — with a door and slits,
- * under a crenellated parapet corbelled out round a walk.
+ * under the culture's top, as a round tower's: a crenellated parapet
+ * corbelled out (bare round a walk, or under a cap), then the cap — an
+ * eight-sided spire for a cone, or an onion, dome or lancet.
  * @param {Design} D
  * @param {{r?: number, h?: number}} [o]
  * @returns {Part[]}
@@ -3276,6 +3316,7 @@ export function octTower(D, o = {}) {
 		R = r + 0.7, // the parapet's
 		band = 3.2,
 		notch = 1.4;
+	const { roof, crenel } = towerTop(D);
 	/** The octagon's vertex `i` (0…7, from 22.5°) at radius `rr`, height `y`. */
 	const vx = (/** @type {number} */ i, /** @type {number} */ rr, /** @type {number} */ y) => {
 		const a = ((22.5 + 45 * i) * Math.PI) / 180;
@@ -3311,32 +3352,16 @@ export function octTower(D, o = {}) {
 		}
 		return /** @type {Poly} */ ([[a[0], a[1] + y0], [b[0], b[1] + y0], ...top]);
 	};
+	/** The octagon at radius `rr`, height `y` — a top seen from above. */
+	const ring = (/** @type {number} */ rr, /** @type {number} */ y) =>
+		/** @type {Poly} */ (Array.from({ length: 8 }, (_, i) => vx(i, rr, y)));
 	// Faces 4, 5 and 6 (202.5°…337.5°) face the viewer; 6 is the shaded one.
 	const lit = [face(4, r, 0, h), face(5, r, 0, h)];
 	const dark = face(6, r, 0, h);
 	/** @type {Line[]} */
 	const edges = [5, 6].map((i) => ({ pts: [vx(i, r, -0.5), vx(i, r, h + 0.5)], w: THIN }));
-	const y1 = h + 0.8,
-		y2 = y1 + band;
-	// The walk, below the crenels, and the back half's inner faces.
-	const yd = y2 - notch * 1.6;
-	/** @type {Poly} */
-	const walk = Array.from({ length: 8 }, (_, i) => vx(i, R, yd));
-	/** @type {Poly[]} */
-	const backFaces = [0, 1, 2, 3].map((i) => crenFace(i, yd, y2));
-	/** The corbel: the body's top widening to the parapet. */
-	/** @type {Poly} */
-	const corbel = [
-		vx(4, r, h),
-		vx(5, r, h),
-		vx(6, r, h),
-		vx(7, r, h),
-		vx(7, R, y1),
-		vx(6, R, y1),
-		vx(5, R, y1),
-		vx(4, R, y1),
-	];
-	return [
+	/** @type {Part[]} */
+	const parts = [
 		{
 			solid: [...lit, dark],
 			lines: edges,
@@ -3353,15 +3378,91 @@ export function octTower(D, o = {}) {
 				rect(-0.6, h * 0.78, 1.2, 3),
 			],
 		},
-		{
+	];
+	/** Fly the culture's flag from `tip`. @param {Pt} tip */
+	const crown = (tip) => {
+		if (D.flags) parts.unshift(...flag(D, tip[0], tip[1]));
+	};
+	// Caps sit at `capY` on radius `capR`: the body's top, or the parapet's.
+	let capY = h,
+		capR = r;
+	if (crenel) {
+		const y1 = h + 0.8,
+			y2 = y1 + band;
+		/** The corbel: the body's top widening to the parapet. */
+		/** @type {Poly} */
+		const corbel = [
+			vx(4, r, h),
+			vx(5, r, h),
+			vx(6, r, h),
+			vx(7, r, h),
+			vx(7, R, y1),
+			vx(6, R, y1),
+			vx(5, R, y1),
+			vx(4, R, y1),
+		];
+		parts.push({
 			solid: [corbel],
 			lines: [{ pts: [vx(4, R, y1), vx(5, R, y1), vx(6, R, y1), vx(7, R, y1)], w: THIN }],
-		},
-		{ solid: [walk] },
-		{ solid: backFaces, shaded: true },
-		{ solid: [crenFace(4, y1, y2), crenFace(5, y1, y2)] },
-		{ solid: [crenFace(6, y1, y2)], shaded: true },
-	];
+		});
+		if (roof === 'none') {
+			// The walk, below the crenels, and the back half's inner faces.
+			const yd = y2 - notch * 1.6;
+			parts.push(
+				{ solid: [ring(R, yd)] },
+				{ solid: [0, 1, 2, 3].map((i) => crenFace(i, yd, y2)), shaded: true },
+				{ solid: [crenFace(4, y1, y2), crenFace(5, y1, y2)] },
+				{ solid: [crenFace(6, y1, y2)], shaded: true },
+			);
+			crown([0, y2 - 2]);
+			return parts;
+		}
+		// Capped, the band runs level; its crenels show as dark slots under
+		// the cap's rim, two to a face.
+		/** Slot at `t` along face `i`. @param {number} i @param {number} t */
+		const slot = (i, t) => {
+			const a = vx(i, R, 0),
+				b = vx(i + 1, R, 0);
+			const at = (/** @type {number} */ u, /** @type {number} */ y) =>
+				/** @type {Pt} */ ([a[0] + (b[0] - a[0]) * u, a[1] + (b[1] - a[1]) * u + y]);
+			const lo = y2 - band * 0.42,
+				hi = y2 + 0.6;
+			return /** @type {Poly} */ ([
+				at(t - 0.11, lo),
+				at(t + 0.11, lo),
+				at(t + 0.11, hi),
+				at(t - 0.11, hi),
+			]);
+		};
+		const slots = (/** @type {number} */ i) => [slot(i, 0.3), slot(i, 0.7)];
+		parts.push(
+			{ solid: [face(4, R, y1, y2), face(5, R, y1, y2)], fills: [...slots(4), ...slots(5)] },
+			{ solid: [face(6, R, y1, y2)], shaded: true, fills: slots(6) },
+		);
+		capY = y2;
+		capR = R;
+	}
+	const cap = roundCap(D, roof, { solid: [ring(capR, capY)] }, [0, capY], capR * 0.96);
+	if (cap) {
+		parts.push(...cap.parts);
+		crown([cap.tip[0], cap.tip[1] - 2]);
+		return parts;
+	}
+	// The cone: an eight-sided spire, its eaves out over what it sits on —
+	// faces 4 and 5 lit, 6 in shadow, an edge between the lit two.
+	const Re = capR + 1.4;
+	/** @type {Pt} */ const apex = [0, capY + r * 2 * D.spire * 0.75];
+	const e = (/** @type {number} */ i) => vx(i, Re, capY);
+	const spire = pyramid(
+		[e(4), e(5), e(6), apex],
+		[e(6), e(7), apex],
+		[e(6), apex],
+		'roof',
+		D.hatch,
+	);
+	parts.push({ ...spire, lines: [...(spire.lines ?? []), { pts: [e(5), apex], w: THIN }] });
+	crown([apex[0], apex[1] - 1]);
+	return parts;
 }
 
 /**
@@ -3411,7 +3512,8 @@ export function towerHouse(D) {
 /**
  * Tiered tower: three storeys, each narrower and set back on the one
  * below, a skirt of roof round the top of each and a pyramid over the
- * last, a flag on it where the culture flies them.
+ * last (or the culture's onion, dome or lancet), a flag on it where the
+ * culture flies them.
  * @param {Design} D
  * @returns {Part[]}
  */
@@ -3464,13 +3566,32 @@ export function tieredTower(D) {
 			w = wn;
 			h *= 0.82;
 		} else {
-			/** @type {Pt} */ const fl = P.at([-w / 2 - ov, he], -ov / d);
-			/** @type {Pt} */ const fr = P.at([w / 2 + ov, he], -ov / d);
-			/** @type {Pt} */ const br = P.at([w / 2 + ov, he], 1 + ov / d);
-			/** @type {Pt} */ const apex = P.at([0, he + (w / 2 + ov) * 1.7 * D.pitch], 0.5);
-			tier.push(pyramid([fl, fr, apex], [fr, br, apex], [fr, apex], 'roof', D.hatch));
+			// The culture's onion, dome or lancet on the top storey; else (a
+			// cone or none) a pyramid.
+			/** @type {Poly} */
+			const deck = [[-w / 2, h], [w / 2, h], P.back([w / 2, h]), P.back([-w / 2, h])];
+			const cap = roundCap(
+				D,
+				D.towerRoof,
+				{ solid: [deck] },
+				P.at([0, h], 0.5),
+				(w / 2) * P.scale(0.5),
+			);
+			/** @type {Pt} */
+			let tip;
+			if (cap) {
+				tier.push(...cap.parts);
+				tip = [cap.tip[0], cap.tip[1] - 2];
+			} else {
+				/** @type {Pt} */ const fl = P.at([-w / 2 - ov, he], -ov / d);
+				/** @type {Pt} */ const fr = P.at([w / 2 + ov, he], -ov / d);
+				/** @type {Pt} */ const br = P.at([w / 2 + ov, he], 1 + ov / d);
+				/** @type {Pt} */ const apex = P.at([0, he + (w / 2 + ov) * 1.7 * D.pitch], 0.5);
+				tier.push(pyramid([fl, fr, apex], [fr, br, apex], [fr, apex], 'roof', D.hatch));
+				tip = [apex[0], apex[1] - 1];
+			}
 			parts.push(...place(tier, { x: at[0], y: at[1] }));
-			if (D.flags) parts.unshift(...flag(D, at[0] + apex[0], at[1] + apex[1] - 1));
+			if (D.flags) parts.unshift(...flag(D, at[0] + tip[0], at[1] + tip[1]));
 		}
 	}
 	return parts;

@@ -75,9 +75,14 @@ cap** — read from the culture with `towerTop(D, o)`:
   ring round a walk set below its crenels: the front and right walls'
   outer faces crenellated, the back and left walls' inner faces rising
   from the walk in shadow, with merlons of their own.
-- **Cap** (`towerRoof`): `cone` (a pyramid spire on square towers),
-  `onion`, `dome`, `lancet`, or `none` — a bare crenellated top. A tower
-  with no cap always gets the crenellated top, so it never ends flat.
+- **Cap** (`towerRoof`): `cone` (a pyramid spire on square towers, an
+  eight-sided one on the octagonal tower), `onion`, `dome`, `lancet`, or
+  `none` — a bare crenellated top. A tower with no cap always gets the
+  crenellated top, so it never ends flat. On a flat top — a square
+  tower's, the tiered tower's top storey, the lookout's cabin, the town
+  hall's turret — `roundCap()` lays a deck and sets the onion, dome or
+  lancet on it; the timber and roofed towers keep their pyramid for a
+  cone or none.
 - The **flag** flies from whichever is uppermost; landmark towers carry the
   culture's holy-symbol finial instead. On a sharp tip (a spire, a lancet)
   the symbol's post runs down into the cap and the symbol is drawn behind
@@ -371,17 +376,20 @@ Decay slider reads as a progression:
 the **L-plan house** (`crossHouse()` — a side-on house with a gabled wing
 standing out from its front; sideHouse's `hide` leaves out the openings
 the wing would half-cover), the **Octagonal tower** (`octTower()` — three
-faces showing, a crenellated parapet corbelled out round a walk), the
-**Tower house** (`towerHouse()` — a plain square tower, squareTower's
-`plain` windows for a belfry, with a lean-to against its side), the
-**Tiered tower** (`tieredTower()` — three storeys, each set back under a
-skirt of roof, a pyramid over the last), the **Lookout tower**
-(`lookoutTower()` — a timber watch-post on four splayed, braced legs, a
-ladder to a plank deck and a lookout cabin under a pyramid roof), the
-**Town hall** (`townHall()` — a two-storey side-on house with a lookout
-turret on its ridge, sideHouse's `lantern`) and the **Farmstead**
+faces showing, under the culture's top as a round tower's: a crenellated
+parapet corbelled out, bare round a walk or under a cap), the **Tower
+house** (`towerHouse()` — a plain square tower, squareTower's `plain`
+windows for a belfry, with a lean-to against its side), the **Tiered
+tower** (`tieredTower()` — three storeys, each set back under a skirt of
+roof, a pyramid over the last), the **Lookout tower** (`lookoutTower()` —
+a timber watch-post on four splayed, braced legs, a ladder to a plank deck
+and a lookout cabin under a pyramid roof), the **Town hall** (`townHall()`
+— a two-storey side-on house with a lookout turret on its ridge,
+sideHouse's `lantern`) and the **Farmstead**
 (`farmstead()` — a barn and a farmhouse at the back of a square fenced
 plot, on whatever ground it's given; its fence never goes up on stilts).
+The towers among them take the culture's tower cap (see Towers): the
+pyramids above are what a cone or none draws.
 
 | Decay   | What's left                                                                                                                                       |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
