@@ -29,8 +29,6 @@ import { place } from './render.js';
 
 /** @typedef {import('./render.js').Part} Part */
 /** @typedef {import('./render.js').Line} Line */
-/** A culture's house roof (Design.houseRoof).
- *  @typedef {'gable' | 'hip' | 'gambrel' | 'mansard' | 'flat'} HouseRoof */
 /** @typedef {import('./geom.js').Poly} Poly */
 /** @typedef {import('./geom.js').Pt} Pt */
 /** What a settlement or building stands on — set by the recipe, not the
@@ -50,11 +48,6 @@ import { place } from './render.js';
  * @property {number} gable share of houses with the gable to the front (0..1)
  * @property {number} concave how far roof edges sag inward (0 = straight)
  * @property {number} storeys chance a house has a second storey (0..1)
- * @property {HouseRoof} houseRoof the roof on its houses (gable-front and
- *   side-on, taverns too): `gable` (two slopes and a gable end — the
- *   default), `hip` (sloped on every side), `gambrel` (a steep lower and a
- *   shallow upper slope, a barn's), `mansard` (steep lower slopes all round,
- *   dormers in them, a low top) or `flat` (a deck inside a parapet).
  * @property {'square' | 'arched' | 'slit' | 'round' | 'lancet'} window
  * @property {'arched' | 'square' | 'lancet'} door house / vernacular door
  *   shape — arched (default, round-headed Romanesque), square (plain
@@ -136,7 +129,6 @@ export const DEFAULT_DESIGN = {
 	gable: 0.5,
 	concave: 0,
 	storeys: 0.3,
-	houseRoof: 'gable',
 	window: 'square',
 	door: 'arched',
 	manyDoors: false,
@@ -244,7 +236,6 @@ export function makeDesign(seed) {
 		scale: 0.85 + avg() * 0.35,
 		flourish: avg(),
 		variety: 0, // rolled below, after the draws it must not shift
-		houseRoof: 'gable', // so is this
 		masonry: r() < 0.3,
 		texture: true,
 		longhouse: r() < 0.3 ? avg() : 0,
@@ -270,19 +261,6 @@ export function makeDesign(seed) {
 	D.steeple = r() < 0.25 ? 'round' : 'square';
 	// and one in ten is a mixed, freeport-like patchwork of builders.
 	D.variety = r() < 0.1 ? 0.3 + r() * 0.5 : 0;
-	// Most build gable roofs; the rest hip, gambrel, mansard or flat ones.
-	// (Rolled last, so older seeds keep everything else.)
-	const roof = r();
-	D.houseRoof =
-		roof < 0.55
-			? 'gable'
-			: roof < 0.72
-				? 'hip'
-				: roof < 0.84
-					? 'gambrel'
-					: roof < 0.94
-						? 'mansard'
-						: 'flat';
 	return D;
 }
 
@@ -955,19 +933,6 @@ export function gableHouse(D, o = {}) {
 	const ar = sag(A, R, mid, D.concave);
 	const left = /** @type {Poly} */ ([...la, ...la.map(P.back).reverse()]);
 	const right = /** @type {Poly} */ ([...ar, ...ar.map(P.back).reverse()]);
-	if ((D.houseRoof ?? 'gable') !== 'gable')
-		return frontRoofHouse(
-			/** @type {Exclude<HouseRoof, 'gable'>} */ (D.houseRoof),
-			D,
-			P,
-			w,
-			h,
-			rh,
-			ov,
-			side,
-			sideLines,
-			facade(D, -w / 2, w / 2, h, two, r),
-		);
 	const fills = facade(D, -w / 2, w / 2, h, two, r);
 	fills.push(opening(D, 0, h + rh * 0.22, 2.4));
 	// The left slope faces away from the viewer whenever pitch > 1/3, so the
@@ -991,141 +956,6 @@ export function gableHouse(D, o = {}) {
 					},
 				]
 			: []),
-	];
-}
-
-/**
- * A gable-front house (gableHouse) under a culture's houseRoof other than a
- * gable — hip, gambrel, mansard or flat: its side wall (`side`, with
- * `sideLines`), the roof, and the front wall with its windows and door
- * (`fills`).
- * @param {Exclude<HouseRoof, 'gable'>} type
- * @param {Design} D
- * @param {ReturnType<typeof boxProjector>} P
- * @param {number} w
- * @param {number} h
- * @param {number} rh
- * @param {number} ov
- * @param {Poly} side
- * @param {Line[]} sideLines
- * @param {Poly[]} fills
- * @returns {Part[]}
- */
-function frontRoofHouse(type, D, P, w, h, rh, ov, side, sideLines, fills) {
-	/** @type {Pt} */ const L = [-w / 2 - ov, h];
-	/** @type {Pt} */ const R = [w / 2 + ov, h];
-	const bL = P.back(L),
-		bR = P.back(R);
-	const dd = P.d;
-	const roof = /** @type {const} */ ('roof');
-	const front = rect(-w / 2, 0, w, h);
-	/** @type {Part[]} */
-	const knobs =
-		D.flourish > 0.6
-			? [{ solid: [circle(L[0], L[1], 1.1), circle(R[0], R[1], 1.1)], role: roof }]
-			: [];
-	if (type === 'hip') {
-		// The ridge runs back from a hip at the front to one at the back
-		// (meeting in a point when the house is deeper than wide).
-		const t1 = Math.min(0.5, w / 2 / dd);
-		const A1 = P.at([0, h + rh], t1),
-			A2 = P.at([0, h + rh], 1 - t1);
-		/** @type {Poly} */
-		const rightSlope = [R, bR, A2, A1];
-		return [
-			{ solid: [side], shaded: true, lines: sideLines },
-			{ solid: [[L, A1, A2, bL]], role: roof },
-			{ solid: [rightSlope], role: roof, shaded: true, lines: hatch(rightSlope, -28, D.hatch) },
-			{ solid: [front], fills, lines: D.masonry ? stoneCourses(-w / 2, w / 2, 0, h) : [] },
-			{ solid: [[L, R, A1]], role: roof },
-			...(D.flourish > 0.25 ? finial(A1) : []),
-			...knobs,
-		];
-	}
-	if (type === 'gambrel') {
-		// The gable wall in a gambrel's profile: steep to a knee, shallow
-		// to the ridge.
-		/** @type {Pt} */ const K1 = [-w * 0.3, h + rh * 0.72];
-		/** @type {Pt} */ const K2 = [w * 0.3, h + rh * 0.72];
-		/** @type {Pt} */ const A = [0, h + rh];
-		const rightRun = [A, K2, R];
-		/** @type {Poly} */
-		const rightSlope = [...rightRun, ...rightRun.map(P.back).reverse()];
-		const leftRun = [L, K1, A];
-		return [
-			{ solid: [side], shaded: true, lines: sideLines },
-			{ solid: [[...leftRun, ...leftRun.map(P.back).reverse()]], role: roof },
-			{
-				solid: [rightSlope],
-				role: roof,
-				shaded: true,
-				lines: [...hatch(rightSlope, -28, D.hatch), { pts: [K2, P.back(K2)], outline: true }],
-			},
-			{
-				solid: [front, [L, K1, A, K2, R]],
-				fills: [...fills, opening(D, 0, h + rh * 0.28, 2.4)],
-				lines: D.masonry ? stoneCourses(-w / 2, w / 2, 0, h + rh) : [],
-			},
-			...(D.flourish > 0.25 ? finial(A) : []),
-			...knobs,
-		];
-	}
-	if (type === 'mansard') {
-		// Steep lower slopes all round to a curb, a dormer in the front one,
-		// a low top above.
-		const m = w * 0.16,
-			tk = m / dd,
-			hk = h + rh * 0.78;
-		const kFL = P.at([-w / 2 + m, hk], tk),
-			kFR = P.at([w / 2 - m, hk], tk),
-			kBR = P.at([w / 2 - m, hk], 1 - tk),
-			kBL = P.at([-w / 2 + m, hk], 1 - tk);
-		/** @type {Poly} */
-		const rightSlope = [R, bR, kBR, kFR];
-		const dy0 = h + 0.5,
-			dy1 = kFR[1] - 0.6;
-		return [
-			{ solid: [side], shaded: true, lines: sideLines },
-			{ solid: [[L, kFL, kBL, bL]], role: roof },
-			{ solid: [[kFL, kFR, kBR, kBL]], role: roof },
-			{ solid: [rightSlope], role: roof, shaded: true, lines: hatch(rightSlope, -28, D.hatch) },
-			{ solid: [front], fills, lines: D.masonry ? stoneCourses(-w / 2, w / 2, 0, h) : [] },
-			{
-				solid: [[L, R, kFR, kFL]],
-				role: roof,
-				fills: [rect((kFL[0] + kFR[0]) / 2 - 1.2, dy0 + (dy1 - dy0) * 0.2, 2.4, (dy1 - dy0) * 0.6)],
-			},
-			...knobs,
-		];
-	}
-	// Flat: a deck inside a parapet, the walls carried up to it.
-	const y = h + PARAPET,
-		i = 0.8;
-	/** @type {Poly} */
-	const tall = [[w / 2, 0], P.back([w / 2, 0]), P.back([w / 2, y]), [w / 2, y]];
-	return [
-		{
-			solid: [tall],
-			shaded: true,
-			lines: [...hatch(tall, 65, D.hatch), ...(D.masonry ? faceCourses(P, w / 2, 0, y) : [])],
-		},
-		{ solid: [[[-w / 2, y], [w / 2, y], P.back([w / 2, y]), P.back([-w / 2, y])]] },
-		{
-			solid: [
-				[
-					[-w / 2 + i, y],
-					[w / 2 - i, y],
-					P.at([w / 2 - i, y], 1 - i / dd),
-					P.at([-w / 2 + i, y], 1 - i / dd),
-				],
-			],
-			role: roof,
-		},
-		{
-			solid: [rect(-w / 2, 0, w, y)],
-			fills,
-			lines: D.masonry ? stoneCourses(-w / 2, w / 2, 0, y) : [],
-		},
 	];
 }
 
@@ -1204,10 +1034,6 @@ export function sideHouse(D, o = {}) {
 		const y = h + (gTop[1] - h) * f;
 		courses.push(seg([-w, y], [w + 10, y + 0.0001], THIN));
 	}
-	// A dwelling's roof follows the culture's houseRoof; trade buildings,
-	// the church and the longhouse keep their gables.
-	const roofType = kind === 'house' || kind === 'tavern' ? (D.houseRoof ?? 'gable') : 'gable';
-	const alt = roofType === 'gable' ? null : sideRoof(roofType, D, P, w, d, h, rh, ov, courses);
 	const fills =
 		kind === 'warehouse'
 			? loadingBay(D, w, h)
@@ -1336,12 +1162,7 @@ export function sideHouse(D, o = {}) {
 			{ solid: [circle(C[0], C[1], 1.3)], role: 'wood' },
 		);
 	}
-	if (o.lantern)
-		extras.push(
-			...(alt
-				? ridgeTurret(D, P, d, alt.top, alt.fall)
-				: ridgeTurret(D, P, d, h + rh, (2 * rh) / d)),
-		);
+	if (o.lantern) extras.push(...ridgeTurret(D, P, d, h, rh));
 	/** @type {Line[]} */
 	const hoist = [];
 	/** @type {Part[]} */
@@ -1363,19 +1184,16 @@ export function sideHouse(D, o = {}) {
 		const c = add(top, [5.2, -7]);
 		crate.push({ solid: [rect(c[0] - 1.8, c[1] - 3.2, 3.6, 3.2)], role: 'wood' });
 	}
-	const end = alt ? alt.end : gableEnd;
 	return [
 		...race,
-		...(alt
-			? alt.behind
-			: [{ solid: [backSlope], role: /** @type {const} */ ('roof'), shaded: true }]),
+		{ solid: [backSlope], role: 'roof', shaded: true },
 		...back,
 		{
-			solid: [end],
+			solid: [gableEnd],
 			role: wallRole,
 			shaded: true,
 			lines: [
-				...hatch(end, 65, D.hatch),
+				...hatch(gableEnd, 65, D.hatch),
 				...(woodBarn ? planks(w / 2, w / 2 + v[0], 0, h + rh + v[1]) : []),
 				...(stone ? faceCourses(P, w / 2, 0, h + rh) : []),
 			],
@@ -1386,11 +1204,11 @@ export function sideHouse(D, o = {}) {
 						? [P.face(rect(-1.6, 0, 3.2, 3.2), w / 2, h + 0.8, 0.5)]
 						: kind === 'church'
 							? [circle(rose[0], rose[1], 2.6)]
-							: [P.face(opening(D, 0, 0, 2.2), w / 2, alt?.endWindow ?? h + 1.5, 0.45)],
+							: [P.face(opening(D, 0, 0, 2.2), w / 2, h + 1.5, 0.45)],
 			cuts: kind === 'church' ? roseCuts(rose) : [],
 		},
 		{
-			solid: [rect(-w / 2, 0, w, alt?.wallTop ?? h)],
+			solid: [rect(-w / 2, 0, w, h)],
 			role: wallRole,
 			fills: shown,
 			cuts: kind === 'warehouse' ? doorCuts(w, h) : barn ? barnDoorCuts(h) : [],
@@ -1406,13 +1224,9 @@ export function sideHouse(D, o = {}) {
 						}))
 					: [],
 		},
-		...(alt
-			? alt.roof
-			: [{ solid: [slope], role: /** @type {const} */ ('roof'), lines: courses, free: hoist }]),
-		...(D.flourish > 0.45 && (!alt || alt.ridge)
-			? cresting(...(alt?.ridge ?? [add(rL, [ov * 0.6, 0]), add(rR, [-ov * 0.6, 0])]))
-			: []),
-		...(D.flourish > 0.25 && (!alt || alt.apex) ? finial(alt?.apex ?? gTop) : []),
+		{ solid: [slope], role: 'roof', lines: courses, free: hoist },
+		...(D.flourish > 0.45 ? cresting(add(rL, [ov * 0.6, 0]), add(rR, [-ov * 0.6, 0])) : []),
+		...(D.flourish > 0.25 ? finial(gTop) : []),
 		...crate,
 		...extras,
 	];
@@ -1422,16 +1236,15 @@ export function sideHouse(D, o = {}) {
  * A lookout turret straddling a side-on roof's ridge: a small box rising
  * from the roof slopes, a window in front, under a pyramid roof of its own
  * — a town hall's, a guildhall's. In the house's own frame (its projector
- * `P`, depth `d`), on a roof whose top is at `top` and falls `fall` per
- * unit of depth from it (0 for a flat top).
+ * `P`, depth `d`, eave height `h`, roof rise `rh`).
  * @param {Design} D
  * @param {ReturnType<typeof boxProjector>} P
  * @param {number} d
- * @param {number} top
- * @param {number} fall
+ * @param {number} h
+ * @param {number} rh
  * @returns {Part[]}
  */
-function ridgeTurret(D, P, d, top, fall) {
+function ridgeTurret(D, P, d, h, rh) {
 	const tw = 2.6,
 		dt = Math.min(4, d * 0.5),
 		th = 4.6 * D.stature,
@@ -1440,8 +1253,8 @@ function ridgeTurret(D, P, d, top, fall) {
 	// to `yf`; it rises `th` over the ridge.
 	const tf = 0.5 - dt / (2 * d),
 		tb = 0.5 + dt / (2 * d);
-	const yf = top - fall * (dt / 2),
-		yr = top,
+	const yf = h + rh * (1 - dt / d),
+		yr = h + rh,
 		yt = yr + th;
 	/** @type {Poly} */
 	const front = [P.at([-tw, yf], tf), P.at([tw, yf], tf), P.at([tw, yt], tf), P.at([-tw, yt], tf)];
@@ -1475,158 +1288,6 @@ function ridgeTurret(D, P, d, top, fall) {
 		{ solid: [front], fills: [win] },
 		pyramid([fl, fr, apex], [fr, br, apex], [fr, apex], 'roof', D.hatch),
 	];
-}
-
-/** How high a flat roof's parapet stands over the eaves. */
-const PARAPET = 1.6;
-
-/**
- * A side-on house's roof when its culture's houseRoof isn't a gable: the
- * right end wall it leaves (`end`), what's behind the house (`behind`: a
- * gambrel's back verge), the roof parts in front, the ridge for cresting
- * and the apex for a finial (null where there's none), where a window
- * goes in the end wall, how high the front wall rises (`wallTop`, above
- * the eaves only for a flat roof's parapet), and the top a ridge turret
- * stands on, with how fast the roof falls from it (`fall`).
- * @param {Exclude<HouseRoof, 'gable'>} type
- * @param {Design} D
- * @param {ReturnType<typeof boxProjector>} P
- * @param {number} w
- * @param {number} d
- * @param {number} h
- * @param {number} rh
- * @param {number} ov
- * @param {Line[]} courses the roof's tile courses
- */
-function sideRoof(type, D, P, w, d, h, rh, ov, courses) {
-	/** @type {Pt} */ const eL = [-w / 2 - ov, h - 0.4];
-	/** @type {Pt} */ const eR = [w / 2 + ov, h - 0.4];
-	const bR = P.back([w / 2 + ov, h - 0.4]),
-		bL = P.back([-w / 2 - ov, h - 0.4]);
-	/** The end wall up to `y`, no gable. @param {number} y @returns {Poly} */
-	const box = (y) => [[w / 2, 0], P.back([w / 2, 0]), P.back([w / 2, y]), [w / 2, y]];
-	const roof = /** @type {const} */ ('roof');
-	/** @type {{end: Poly, behind: Part[], roof: Part[], ridge: [Pt, Pt] | null, apex: Pt | null, endWindow: number, wallTop: number, top: number, fall: number}} */
-	const out = {
-		end: box(h),
-		behind: [],
-		roof: [],
-		ridge: null,
-		apex: null,
-		endWindow: h * 0.5,
-		wallTop: h,
-		top: h + rh,
-		fall: (2 * rh) / d,
-	};
-	if (type === 'hip') {
-		// Equal slopes all round: the ridge stops half the depth short of
-		// each end, where the hips rise to it.
-		const run = Math.min(w / 2, d / 2);
-		const rR = P.at([w / 2 - run, h + rh], 0.5),
-			rL = P.at([-w / 2 + run, h + rh], 0.5);
-		/** @type {Poly} */
-		const hipEnd = [eR, bR, rR];
-		out.roof = [
-			{ solid: [[eL, eR, rR, rL]], role: roof, lines: courses },
-			{ solid: [hipEnd], role: roof, shaded: true, lines: hatch(hipEnd, -28, D.hatch) },
-		];
-		out.ridge = [rL, rR];
-		out.apex = rR;
-	} else if (type === 'gambrel') {
-		// A steep lower slope to a knee, a shallow upper one to the ridge.
-		const tk = 0.22,
-			hk = h + rh * 0.72;
-		const kR = P.at([w / 2 + ov * 0.8, hk], tk),
-			kL = P.at([-w / 2 - ov * 0.8, hk], tk);
-		const rR = add(P.at([w / 2, h + rh], 0.5), [ov * 0.6, 0]),
-			rL = add(P.at([-w / 2, h + rh], 0.5), [-ov * 0.6, 0]);
-		out.end = [
-			[w / 2, 0],
-			P.back([w / 2, 0]),
-			P.back([w / 2, h]),
-			P.at([w / 2, hk], 1 - tk),
-			P.at([w / 2, h + rh], 0.5),
-			P.at([w / 2, hk], tk),
-			[w / 2, h],
-		];
-		out.behind = [
-			{
-				solid: [
-					[
-						bL,
-						bR,
-						P.at([w / 2 + ov * 0.8, hk], 1 - tk),
-						rR,
-						rL,
-						P.at([-w / 2 - ov * 0.8, hk], 1 - tk),
-					],
-				],
-				role: roof,
-				shaded: true,
-			},
-		];
-		out.roof = [
-			{ solid: [[eL, eR, kR, kL]], role: roof, lines: courses },
-			{ solid: [[kL, kR, rR, rL]], role: roof, lines: courses },
-		];
-		out.ridge = [rL, rR];
-		out.apex = P.at([w / 2, h + rh], 0.5);
-		out.endWindow = h + 1.5;
-		out.fall = rh / d; // the shallow upper slope's
-	} else if (type === 'mansard') {
-		// Steep lower slopes all round to a curb, dormers in the front one,
-		// a low top above.
-		const tk = 0.2,
-			m = d * tk,
-			hk = h + rh * 0.78;
-		const kFR = P.at([w / 2 - m, hk], tk),
-			kFL = P.at([-w / 2 + m, hk], tk),
-			kBR = P.at([w / 2 - m, hk], 1 - tk),
-			kBL = P.at([-w / 2 + m, hk], 1 - tk);
-		/** @type {Poly} */
-		const hipEnd = [eR, bR, kBR, kFR];
-		/** @type {Poly[]} */
-		const dormers = [];
-		const n = Math.max(2, Math.round(w / 8));
-		const y0 = h + 0.4,
-			y1 = kFR[1] - 0.6;
-		for (let i = 0; i < n; i++) {
-			// Across the lower slope, leaning back with it.
-			const t = (i + 0.5) / n;
-			const x = kFL[0] + (kFR[0] - kFL[0]) * t - (kFL[0] - (-w / 2 + m)) * 0.5;
-			dormers.push(rect(x - 1, y0 + (y1 - y0) * 0.2, 2, (y1 - y0) * 0.6));
-		}
-		out.roof = [
-			{ solid: [[kFL, kFR, kBR, kBL]], role: roof },
-			{ solid: [hipEnd], role: roof, shaded: true, lines: hatch(hipEnd, -28, D.hatch) },
-			{ solid: [[eL, eR, kFR, kFL]], role: roof, fills: dormers },
-		];
-		out.top = hk;
-		out.fall = 0;
-	} else {
-		// Flat: a deck inside a parapet, the walls carried up to it.
-		const y = h + PARAPET,
-			i = 0.8;
-		out.end = box(y);
-		out.wallTop = y;
-		out.roof = [
-			{ solid: [[[-w / 2, y], [w / 2, y], P.back([w / 2, y]), P.back([-w / 2, y])]] },
-			{
-				solid: [
-					[
-						[-w / 2 + i, y],
-						[w / 2 - i, y],
-						P.at([w / 2 - i, y], 1 - i / d),
-						P.at([-w / 2 + i, y], 1 - i / d),
-					],
-				],
-				role: roof,
-			},
-		];
-		out.top = y;
-		out.fall = 0;
-	}
-	return out;
 }
 
 /** Barracks front: a door in the middle, regular slit windows either side. */

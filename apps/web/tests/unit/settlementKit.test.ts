@@ -485,57 +485,6 @@ const PROTOTYPES = [
 	'Tiered tower',
 ];
 
-describe('house roofs (houseRoof)', () => {
-	const ROOFS = ['hip', 'gambrel', 'mansard', 'flat'] as const;
-	const roofArea = (parts: ReturnType<typeof gableHouse>) =>
-		parts.filter((p) => p.role === 'roof').length;
-	it('is a gable by default, drawn as it always was', () => {
-		expect(DEFAULT_DESIGN.houseRoof).toBe('gable');
-		expect(gableHouse({ ...DEFAULT_DESIGN, houseRoof: 'gable' })).toEqual(
-			gableHouse(DEFAULT_DESIGN),
-		);
-		expect(sideHouse({ ...DEFAULT_DESIGN, houseRoof: 'gable' })).toEqual(sideHouse(DEFAULT_DESIGN));
-	});
-	it.each(ROOFS)('roofs gable-front and side-on houses %s', (houseRoof) => {
-		const D = { ...DEFAULT_DESIGN, houseRoof, flourish: 0.8 };
-		for (const parts of [gableHouse(D), sideHouse(D), sideHouse(D, { kind: 'tavern' })]) {
-			expect(parts).not.toEqual(gableHouse(DEFAULT_DESIGN));
-			expect(roofArea(parts)).toBeGreaterThan(0);
-			const { layers } = renderLayered(parts, { join: 'soft' });
-			expect(layers.roof).toBeTruthy();
-		}
-		// The prototypes built on them follow too.
-		for (const name of ['L-plan house', 'Town hall'])
-			expect(pieces(D).find(([n]) => n === name)).toBeDefined();
-	});
-	it('leaves trade buildings, the church and the longhouse their gables', () => {
-		for (const kind of [
-			'barn',
-			'warehouse',
-			'workshop',
-			'church',
-			'longhouse',
-			'barracks',
-		] as const)
-			expect(sideHouse({ ...DEFAULT_DESIGN, houseRoof: 'flat' }, { kind })).toEqual(
-				sideHouse(DEFAULT_DESIGN, { kind }),
-			);
-	});
-	it('a flat roof carries the walls up to a parapet round a deck', () => {
-		const flat = gableHouse({ ...DEFAULT_DESIGN, houseRoof: 'flat' });
-		const gable = gableHouse(DEFAULT_DESIGN);
-		const top = (ps: typeof flat) =>
-			Math.max(...ps.flatMap((p) => p.solid.flat().map(([, y]) => y)));
-		expect(top(flat)).toBeLessThan(top(gable)); // no gable peak above the walls
-		expect(flat.filter((p) => p.role === 'roof')).toHaveLength(1); // the deck
-	});
-	it('random cultures roll every roof type, mostly gables', () => {
-		const roofs = Array.from({ length: 200 }, (_, i) => makeDesign(i + 1).houseRoof);
-		for (const r of ['gable', ...ROOFS]) expect(roofs, r).toContain(r);
-		expect(roofs.filter((r) => r === 'gable').length).toBeGreaterThan(80);
-	});
-});
-
 describe('newer pieces', () => {
 	it.each(PROTOTYPES)('draws a %s, in any culture', (name) => {
 		for (const D of [DEFAULT_DESIGN, makeDesign(7), makeDesign(42)]) {
