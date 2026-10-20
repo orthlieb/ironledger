@@ -974,9 +974,11 @@ export function gableHouse(D, o = {}) {
  *   'mill'      — a waterwheel at the front, standing in a mill race.
  * @param {Design} D
  * `two` sets a house's storeys (else rolled from the culture's share);
- * `lantern` puts a lookout turret on the ridge, its own little roof over it.
+ * `lantern` puts a lookout turret on the ridge, its own little roof over it;
+ * `hide` is an x span of the front hidden by something before it (an
+ * L-plan's wing) — no door or window is drawn there.
  * @param {Design} D
- * @param {{w?: number, seed?: number, two?: boolean, lantern?: boolean, kind?: 'house' | 'warehouse' | 'workshop' | 'church' | 'longhouse' | 'barn' | 'tavern' | 'barracks' | 'mill'}} [o]
+ * @param {{w?: number, seed?: number, two?: boolean, lantern?: boolean, hide?: [number, number], kind?: 'house' | 'warehouse' | 'workshop' | 'church' | 'longhouse' | 'barn' | 'tavern' | 'barracks' | 'mill'}} [o]
  * @returns {Part[]}
  */
 export function sideHouse(D, o = {}) {
@@ -1042,6 +1044,15 @@ export function sideHouse(D, o = {}) {
 					: kind === 'barracks'
 						? barracksWindows(w, h)
 						: facade(D, -w / 2, w / 2, h, two, r);
+	// Openings behind something standing in front of the house (an
+	// L-plan's wing) are left out, not drawn half-hidden.
+	const hide = o.hide;
+	const shown = hide
+		? fills.filter((f) => {
+				const xs = f.map(([x]) => x);
+				return Math.max(...xs) < hide[0] || Math.min(...xs) > hide[1];
+			})
+		: fills;
 	const barn = kind === 'barn';
 	// Barns are plank-walled — unless the culture builds in masonry, when
 	// they're stone barns (still with their braced doors and hayloft).
@@ -1199,7 +1210,7 @@ export function sideHouse(D, o = {}) {
 		{
 			solid: [rect(-w / 2, 0, w, h)],
 			role: wallRole,
-			fills,
+			fills: shown,
 			cuts: kind === 'warehouse' ? doorCuts(w, h) : barn ? barnDoorCuts(h) : [],
 			lines: stone
 				? stoneCourses(-w / 2, w / 2, 0, h)
@@ -3227,11 +3238,15 @@ export function lookoutTower(D, o = {}) {
 export function crossHouse(D, o = {}) {
 	const seed = o.seed ?? 21;
 	const two = rng(seed)() < D.storeys;
-	const ww = 10;
+	const ww = 10,
+		wx = -4.5; // the wing's centre along the house's front
 	const v = depthVec(ww * D.depth);
+	// The wing hides the front from the house's left end to just past its
+	// own right side and eave.
+	const hide = /** @type {[number, number]} */ ([-Infinity, wx + ww / 2 + 2.5]);
 	return [
-		...sideHouse(D, { seed, kind: 'house', w: 22, two }),
-		...place(gableHouse(D, { seed: seed + 3, w: ww, two }), { x: -4.5 - v[0], y: -v[1] }),
+		...sideHouse(D, { seed, kind: 'house', w: 22, two, hide }),
+		...place(gableHouse(D, { seed: seed + 3, w: ww, two }), { x: wx - v[0], y: -v[1] }),
 	];
 }
 
