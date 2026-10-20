@@ -347,11 +347,13 @@ and every culture knob. It's used three ways:
 
 - **The Buildings tab** — the Choose Icon dialog's second tab, between
   Icons and Settlement builder (`SettlementBuilder.svelte` with
-  `kind="building"`). One building — any of 24 of the kit's single
+  `kind="building"`). One building — any of 31 of the kit's single
   pieces (`SETTLEMENT_BUILDINGS`, from houses and towers to the
-  cathedral and a market) — in any culture. Walls (None by
+  cathedral and a market, an L-plan house, a town hall, octagonal,
+  tiered and lookout towers, a tower house and a fenced farmstead) — in
+  any culture. Walls (None by
   default) puts a small ring or square wall of that type round it (in
-  the chosen wall shape); On stilts sets it on a timber-post deck (its
+  the chosen wall shape) — or Fence, a low open post-and-rail one; On stilts sets it on a timber-post deck (its
   terrain — a market's square — stays on the ground). (The Wall is no
   longer a building: a marker that was one keeps its plain icon, the
   baked Stone wall, which the Icons tab still offers.) The tab lays itself out to

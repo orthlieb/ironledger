@@ -90,6 +90,7 @@
 		{ value: 'hedge', label: 'Hedge' },
 		{ value: 'bone', label: 'Whalebone' },
 		{ value: 'reef', label: 'Reef' },
+		{ value: 'fence', label: 'Fence' },
 	];
 	type Shape = 'round' | 'square';
 	const SHAPES: { value: Shape; label: string }[] = [

@@ -737,6 +737,7 @@ const side = (kind, seed0) => (D, s) => [{ piece: sideHouse(D, { seed: s ?? seed
 const PIECES = [
 	['gable-house', 'Gable house', (D, s) => [{ piece: gableHouse(D, { seed: s ?? 4 }) }]],
 	['side-house', 'Side house', side('house', 5)],
+	['l-plan-house', 'L-plan house', (D, s) => [{ piece: crossHouse(D, { seed: s }) }]],
 	[
 		'round-tower',
 		'Round tower',
@@ -747,6 +748,10 @@ const PIECES = [
 			return [{ piece: roundTower(D, { r: 5 + r() * 1.5, h: 32 + r() * 14 }) }];
 		},
 	],
+	['octagonal-tower', 'Octagonal tower', (D) => [{ piece: octTower(D) }]],
+	['tower-house', 'Tower house', (D) => [{ piece: towerHouse(D) }]],
+	['tiered-tower', 'Tiered tower', (D) => [{ piece: tieredTower(D) }]],
+	['lookout-tower', 'Lookout tower', (D) => [{ piece: lookoutTower(D) }]],
 	['bell-tower', 'Bell tower', (D) => [{ piece: belfry(D, { finial: true }) }]],
 	['church', 'Church', (D, s) => [{ piece: church(D, { seed: s }) }]],
 	['keep', 'Keep', (D) => [{ piece: keep(D) }]],
@@ -769,7 +774,9 @@ const PIECES = [
 	['longhouse', 'Longhouse', side('longhouse', 8)],
 	['windmill', 'Windmill', (D) => [{ piece: windmill(D) }]],
 	['townhouse', 'Townhouse', (D) => [{ piece: townhouse(D) }]],
+	['town-hall', 'Town hall', (D, s) => [{ piece: townHall(D, { seed: s }) }]],
 	['barn', 'Barn', side('barn', 9)],
+	['farmstead', 'Farmstead', (D, s) => farmstead(D, s ?? 13)],
 	['tavern', 'Tavern', side('tavern', 10)],
 	['barracks', 'Barracks', side('barracks', 11)],
 	['water-mill', 'Water mill', side('mill', 12)],
@@ -784,13 +791,6 @@ const PIECES = [
 	['tent', 'Tent', (D) => [{ piece: tent(D) }]],
 	['pavilion', 'Pavilion', (D) => [{ piece: pavilion(D) }]],
 	['witch-hut', 'Witch hut', (D) => [{ piece: witchHut(D) }]],
-	[null, 'Lookout tower', (D) => [{ piece: lookoutTower(D) }]],
-	[null, 'Farmstead', (D, s) => farmstead(D, s ?? 13)],
-	[null, 'L-plan house', (D, s) => [{ piece: crossHouse(D, { seed: s }) }]],
-	[null, 'Town hall', (D, s) => [{ piece: townHall(D, { seed: s }) }]],
-	[null, 'Octagonal tower', (D) => [{ piece: octTower(D) }]],
-	[null, 'Tower house', (D) => [{ piece: towerHouse(D) }]],
-	[null, 'Tiered tower', (D) => [{ piece: tieredTower(D) }]],
 ];
 
 /**
@@ -875,6 +875,8 @@ export function building(key, D, o = {}) {
 	// market's square, a mine's mountain) left on the ground.
 	if (o.stilts)
 		items = items.map((it) => {
+			// A fence or wall of its own (a farmstead's) stays on the ground.
+			if (it.wall) return it;
 			const built = it.piece.filter((p) => !p.terrain);
 			return built.length
 				? { ...it, piece: [...it.piece.filter((p) => p.terrain), ...onStilts(built, own)] }

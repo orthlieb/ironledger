@@ -132,31 +132,6 @@ palisade seams and bone seams — like masonry courses and barn planks on
 buildings — stay ink but paint in a layer of their own, `ink-texture`.
 Flat walls (square enclosures, a standalone wall) keep the full tiles.
 
-**Fence** (`walls: 'fence'`, `fenceWall()`) isn't a wall at all: a
-post-and-rail fence — a timber post every few units, two rails between —
-low and open, so what's inside shows through, with a gap at the front
-between two taller gateposts; round or square like the rest, split
-back / front as theirs are, never towered, never raised by the culture's
-wall height. Plain `wood`, no pattern, and `sharp` so the soft join
-doesn't round its thin rails away. Prototype: the playground's Walls
-offers it; the map's Walls doesn't yet.
-
-**Prototype pieces** in the playground's reference row (null keys, so not
-on the Buildings tab yet): the **Lookout tower** (`lookoutTower()` — a
-timber watch-post on four splayed, braced legs, a ladder up to a plank
-deck and a lookout cabin under a pyramid roof) and the **Farmstead**
-(`farmstead()` in `layouts3d.js` — a barn and a farmhouse at the back of
-a square fenced plot, on whatever ground it's given). And, from the same
-list: the **L-plan house** (`crossHouse()` — a side-on house with a
-gabled wing standing out from its front), the **Town hall** (`townHall()`
-— a two-storey side-on house with a lookout turret on its ridge,
-sideHouse's `lantern`), the **Octagonal tower** (`octTower()` — three
-faces showing, a crenellated parapet corbelled out round a walk), the
-**Tower house** (`towerHouse()` — a plain square tower, `plain` windows
-for a belfry, with a lean-to against its side) and the **Tiered tower**
-(`tieredTower()` — three storeys, each set back under a skirt of roof, a
-pyramid over the last).
-
 All of that line-work is texture (`TEXTURE_ROLES` in `patterns.js`): a
 culture with `texture` off draws none of it, its walls in flat material
 colours (`renderLayered(…, {texture: false})`), and a map icon drawn
@@ -200,6 +175,15 @@ To add a material:
 4. Add a row to the `wall patterns` table in `settlementKit.test.ts`.
 
 The app needs no change: it draws whatever `patterns.js` defines.
+
+**Fence** (`walls: 'fence'`, `fenceWall()`) isn't a wall at all: a
+post-and-rail fence — a timber post every few units, two rails between —
+low and open, so what's inside shows through, with a gap at the front
+between two taller gateposts; round or square like the rest, split
+back / front as theirs are, never towered, never raised by the culture's
+wall height. Plain `wood`, no pattern, and `sharp` so the soft join
+doesn't round its thin rails away. The map's Walls offers it, for a
+settlement or a single building.
 
 ## Ground
 
@@ -384,6 +368,22 @@ stalls and piers timber), and a ruin takes stone 0.15 less far gone,
 timber 0.15 further). Every
 building comes down by degrees (`ruinPiece()` in `ruins3d.js`), so the
 Decay slider reads as a progression:
+
+**The newer pieces** (from a reference list, drawn the kit's own way):
+the **L-plan house** (`crossHouse()` — a side-on house with a gabled wing
+standing out from its front; sideHouse's `hide` leaves out the openings
+the wing would half-cover), the **Octagonal tower** (`octTower()` — three
+faces showing, a crenellated parapet corbelled out round a walk), the
+**Tower house** (`towerHouse()` — a plain square tower, squareTower's
+`plain` windows for a belfry, with a lean-to against its side), the
+**Tiered tower** (`tieredTower()` — three storeys, each set back under a
+skirt of roof, a pyramid over the last), the **Lookout tower**
+(`lookoutTower()` — a timber watch-post on four splayed, braced legs, a
+ladder to a plank deck and a lookout cabin under a pyramid roof), the
+**Town hall** (`townHall()` — a two-storey side-on house with a lookout
+turret on its ridge, sideHouse's `lantern`) and the **Farmstead**
+(`farmstead()` — a barn and a farmhouse at the back of a square fenced
+plot, on whatever ground it's given; its fence never goes up on stilts).
 
 | Decay   | What's left                                                                                                                                       |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |

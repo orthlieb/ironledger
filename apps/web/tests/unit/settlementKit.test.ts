@@ -405,7 +405,7 @@ describe('piece details', () => {
 	it('draws a fenced settlement and a fenced building', () => {
 		const roles = (svg: string) => [...svg.matchAll(/data-role="([\w-]+)"/g)].map((m) => m[1]);
 		const town = generateSettlementSvg(
-			{ tier: 'hamlet', culture: 'default', seed: 3, walls: 'fence' as never },
+			{ tier: 'hamlet', culture: 'default', seed: 3, walls: 'fence' },
 			null,
 		);
 		expect(roles(town)).toContain('wood');
@@ -474,8 +474,7 @@ describe('piece details', () => {
 	});
 });
 
-/** Pieces drawn in the playground's reference row but not (yet) offered on
- *  the map's Buildings tab. */
+/** The pieces added from the reference list (and the Buildings tab's). */
 const PROTOTYPES = [
 	'Lookout tower',
 	'Farmstead',
@@ -537,7 +536,7 @@ describe('house roofs (houseRoof)', () => {
 	});
 });
 
-describe('prototype pieces', () => {
+describe('newer pieces', () => {
 	it.each(PROTOTYPES)('draws a %s, in any culture', (name) => {
 		for (const D of [DEFAULT_DESIGN, makeDesign(7), makeDesign(42)]) {
 			const [, items] = pieces(D).find(([n]) => n === name)!;
@@ -560,10 +559,10 @@ describe('buildings (the Buildings tab)', () => {
 		const names = pieces(DEFAULT_DESIGN).map(([n]) => n);
 		expect(names).toHaveLength(32);
 		expect(names).toContain('Camp'); // a Settlement-builder size, not a building
-		// Prototypes in the playground, not (yet) on the Buildings tab.
-		expect(names).toEqual(expect.arrayContaining(PROTOTYPES));
+		// The newer pieces, on the Buildings tab too.
+		expect(BUILDINGS.map(([, n]) => n)).toEqual(expect.arrayContaining(PROTOTYPES));
 		expect(names).not.toContain('Wall'); // retired: the Stone wall icons draw wallRun()
-		expect(BUILDINGS).toHaveLength(24);
+		expect(BUILDINGS).toHaveLength(31);
 		expect(BUILDINGS.map(([key]) => key)).not.toContain('wall');
 	});
 	it.each(BUILDINGS.map(([key]) => key))('draws %s on its own', (key) => {

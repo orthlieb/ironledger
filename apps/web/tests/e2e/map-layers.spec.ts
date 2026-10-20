@@ -147,7 +147,7 @@ test('the editor moves a marker between layers; deleting a layer keeps its marke
 	await closeLayers(page);
 
 	// Move Oakhold to Roads in its editor.
-	await page.locator('[aria-label="Edit marker"]').click();
+	await page.locator('.mp-toolbar [aria-label="Edit marker"]').click();
 	await expect(page.locator('.mp-props-dialog')).toBeVisible();
 	await page.locator('.mp-props-dialog button[aria-label="Layer"]').click();
 	await page.locator('.bui-select-content [role="option"]', { hasText: 'Roads' }).click();
@@ -160,6 +160,8 @@ test('the editor moves a marker between layers; deleting a layer keeps its marke
 	await page.locator('[aria-label="Hide Roads"]').click();
 	await expect(markers(page)).toHaveCount(0);
 	await page.locator('[aria-label="Delete Roads"]').click();
+	// Deleting a layer asks first.
+	await page.getByRole('alertdialog').getByRole('button', { name: 'DELETE' }).click();
 	await expect(row(page, 'Roads')).toHaveCount(0);
 	await expect(markers(page)).toHaveCount(1);
 	await expect(row(page, 'Default').locator('.ml-count')).toHaveText('1');
