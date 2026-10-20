@@ -3110,9 +3110,9 @@ function fenceWall(D, o) {
 /**
  * Lookout tower: a timber watch-post up on four splayed legs, braced in
  * two bays, with a ladder up the front to a plank deck and a small
- * lookout cabin — a wide window band round it — under a pyramid roof (or
- * the culture's onion, dome or lancet), a flag on top where the culture
- * flies them. A frontier outpost's, or a camp's.
+ * lookout cabin — a wide window band round it — under a pyramid roof
+ * whatever the culture's tower cap, a flag on top where the culture flies
+ * them. A frontier outpost's, or a camp's.
  * @param {Design} D
  * @param {{h?: number}} [o]
  * @returns {Part[]}
@@ -3246,22 +3246,10 @@ export function lookoutTower(D, o = {}) {
 			role: wood,
 			fills: [rect(-cw + 1, winY, cw * 2 - 2, winH)],
 		},
+		// Always its pyramid: a timber watch-post isn't a tower to cap.
+		pyramid(roofFront, roofSide, ridge, 'roof', D.hatch),
 	];
-	// The culture's onion, dome or lancet on the cabin's top; else (a cone
-	// or none) the pyramid roof.
-	/** @type {Poly} */
-	const cabTop = [[-cw, roofY], [cw, roofY], P.back([cw, roofY]), P.back([-cw, roofY])];
-	const cap = roundCap(
-		D,
-		D.towerRoof,
-		{ solid: [cabTop], role: wood },
-		P.at([0, roofY], 0.5),
-		cw * P.scale(0.5),
-	);
-	if (cap) parts.push(...cap.parts);
-	else parts.push(pyramid(roofFront, roofSide, ridge, 'roof', D.hatch));
-	const tip = cap ? [cap.tip[0], cap.tip[1] - 2] : [apex[0], apex[1] - 1];
-	if (D.flags) parts.unshift(...flag(D, tip[0], tip[1]));
+	if (D.flags) parts.unshift(...flag(D, apex[0], apex[1] - 1));
 	return parts;
 }
 

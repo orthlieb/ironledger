@@ -497,7 +497,7 @@ describe('newer pieces', () => {
 		}
 	});
 
-	const TOWERS = ['Octagonal tower', 'Tower house', 'Tiered tower', 'Lookout tower', 'Town hall'];
+	const TOWERS = ['Octagonal tower', 'Tower house', 'Tiered tower', 'Town hall'];
 	const drawn = (D: typeof DEFAULT_DESIGN, name: string) => {
 		const [, items] = pieces(D).find(([n]) => n === name)!;
 		return items.flatMap((it) => place(it.piece, { x: it.x ?? 0, y: it.y ?? 0, s: it.s ?? 1 }));
@@ -509,6 +509,11 @@ describe('newer pieces', () => {
 		);
 		expect(caps).not.toContain(JSON.stringify(cone));
 		expect(new Set(caps).size, 'each cap its own').toBe(3);
+	});
+	it('keeps the lookout tower its pyramid roof, whatever the cap', () => {
+		const cone = drawn({ ...DEFAULT_DESIGN, towerRoof: 'cone' }, 'Lookout tower');
+		for (const towerRoof of ['onion', 'dome', 'lancet', 'none'] as const)
+			expect(drawn({ ...DEFAULT_DESIGN, towerRoof }, 'Lookout tower'), towerRoof).toEqual(cone);
 	});
 	it('crenellates the octagonal tower as a round tower: bare, or under a cap', () => {
 		const oct = (towerRoof: 'none' | 'dome', towerCrenel: boolean) =>
@@ -527,7 +532,7 @@ describe('newer pieces', () => {
 	it.each(['onion', 'dome', 'lancet', 'cone'] as const)(
 		'leaves no %s cap or flag hanging in the air over a ruined new tower',
 		(towerRoof) => {
-			for (const name of TOWERS) {
+			for (const name of [...TOWERS, 'Lookout tower']) {
 				const piece = drawn({ ...DEFAULT_DESIGN, towerRoof, flags: true }, name);
 				const [ruin] = ruinPlaced([{ piece }], {
 					decay: 0.6,

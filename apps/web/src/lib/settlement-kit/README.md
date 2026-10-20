@@ -79,10 +79,9 @@ cap** — read from the culture with `towerTop(D, o)`:
   eight-sided one on the octagonal tower), `onion`, `dome`, `lancet`, or
   `none` — a bare crenellated top. A tower with no cap always gets the
   crenellated top, so it never ends flat. On a flat top — a square
-  tower's, the tiered tower's top storey, the lookout's cabin, the town
-  hall's turret — `roundCap()` lays a deck and sets the onion, dome or
-  lancet on it; the timber and roofed towers keep their pyramid for a
-  cone or none.
+  tower's, the tiered tower's top storey, the town hall's turret —
+  `roundCap()` lays a deck and sets the onion, dome or lancet on it; the
+  roofed ones keep their pyramid for a cone or none.
 - The **flag** flies from whichever is uppermost; landmark towers carry the
   culture's holy-symbol finial instead. On a sharp tip (a spire, a lancet)
   the symbol's post runs down into the cap and the symbol is drawn behind
@@ -389,7 +388,8 @@ sideHouse's `lantern`) and the **Farmstead**
 (`farmstead()` — a barn and a farmhouse at the back of a square fenced
 plot, on whatever ground it's given; its fence never goes up on stilts).
 The towers among them take the culture's tower cap (see Towers): the
-pyramids above are what a cone or none draws.
+pyramids above are what a cone or none draws. Not the lookout tower: a
+timber watch-post, it keeps its pyramid roof in every culture.
 
 | Decay   | What's left                                                                                                                                       |
 | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
