@@ -524,6 +524,30 @@ describe('newer pieces', () => {
 			expect(Math.min(...ys(top.solid[0]))).toBeLessThan(Math.max(...ys(front.solid[0])));
 		},
 	);
+	it.each([
+		['dome', 0.5],
+		['dome', 0],
+		['lancet', 0.5],
+		['lancet', 0],
+	] as const)(
+		'centres a %s on a square top, its base on the top (perspective %s)',
+		(towerRoof, perspective) => {
+			const parts = squareTower({ ...DEFAULT_DESIGN, towerRoof, perspective });
+			// The tucked top: [fl↓, fr↓, br↓, br, bl, fl].
+			const t = parts[0].solid[0];
+			const [fl, br] = [t[5], t[3]];
+			const fr: [number, number] = [t[1][0], t[1][1] + 2];
+			const cap = parts.find((p) => p.role === 'roof')!.solid[0];
+			const xs = cap.map(([x]) => x),
+				ys = cap.map(([, y]) => y);
+			// Its sides even about the top's centre (its diagonal's middle).
+			expect((Math.min(...xs) + Math.max(...xs)) / 2).toBeCloseTo((fl[0] + br[0]) / 2, 0);
+			// Its front on the front edge's middle — not hanging out over it.
+			const front = cap[ys.indexOf(Math.min(...ys))];
+			expect(front[0]).toBeCloseTo((fl[0] + fr[0]) / 2, 0);
+			expect(front[1]).toBeCloseTo(fl[1], 1);
+		},
+	);
 	it('keeps the lookout tower its pyramid roof, whatever the cap', () => {
 		const cone = drawn({ ...DEFAULT_DESIGN, towerRoof: 'cone' }, 'Lookout tower');
 		for (const towerRoof of ['onion', 'dome', 'lancet', 'none'] as const)

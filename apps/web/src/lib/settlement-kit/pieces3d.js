@@ -793,9 +793,10 @@ function lancetCap(D, cx, y, R) {
 }
 
 /**
- * The culture's round cap — onion, dome or lancet — on a flat top, at its
- * centre `c`, of base radius `r` on screen (the piece lays the top itself,
- * tuckedTop()). Null for a cone or none: the piece draws its own pyramid or
+ * The culture's round cap — onion, dome or lancet — on a round top (the
+ * octagonal tower's), its rim level as a round tower's, at the top's centre
+ * `c`, of base radius `r` on screen. (A box's square top takes boxCap()
+ * instead.) Null for a cone or none: the piece draws its own pyramid or
  * parapet. `socket` is how deep a finial seats in the tip (see seat()).
  * @param {Design} D
  * @param {Design['towerRoof']} roof
@@ -822,6 +823,109 @@ function roundCap(D, roof, c, r) {
 		return { parts, tip: cap.tip, socket: 3 };
 	}
 	return null;
+}
+
+/**
+ * The culture's round cap — onion, dome or lancet — on a box's flat top,
+ * built in the box's own frame and run through its projector `P` like
+ * every corner of the box: each level of the cap a ring on the top's plane
+ * — `a` half-width across, as deep as the top (depth fractions `t0`…`t1`)
+ * — raised to its height. So the cap takes the same foreshortening as the
+ * top it sits on, perspective and all: its base is the top's own circle,
+ * centred on it, and its height is its own. Its outline runs up the rings'
+ * right ends and down their left ends from the front of its base ring.
+ * Null for a cone or none: the piece draws its own pyramid or parapet.
+ * @param {Design} D
+ * @param {Design['towerRoof']} roof
+ * @param {ReturnType<typeof boxProjector>} P
+ * @param {number} a
+ * @param {number} y0 the top's height
+ * @param {number} [t0]
+ * @param {number} [t1]
+ * @returns {{parts: Part[], tip: Pt, socket: number} | null}
+ */
+function boxCap(D, roof, P, a, y0, t0 = 0, t1 = 1) {
+	const tc = (t0 + t1) / 2,
+		b = ((t1 - t0) / 2) * P.d;
+	/** The cap's rise, and its radius (a share of `a`) at a share `u` of it. */
+	let H = 0,
+		/** @type {(u: number) => number} */
+		radius;
+	if (roof === 'dome') {
+		H = a;
+		radius = (u) => Math.sqrt(Math.max(0, 1 - u * u));
+	} else if (roof === 'lancet') {
+		// As lancetCap(): each side an arc centred on the springing line.
+		H = a * (1.4 + 0.4 * D.spire);
+		const c = (a * a - H * H) / (2 * a),
+			rr = a - c;
+		radius = (u) => (c + Math.sqrt(Math.max(0, rr * rr - (u * H) ** 2))) / a;
+	} else if (roof === 'onion') {
+		H = a * 0.9 * (2 + D.spire * 0.3);
+		radius = onionRadius;
+	} else return null;
+	// An onion's bulge stands out past its base: a little narrower than
+	// the top, so it doesn't swamp it.
+	const r = roof === 'onion' ? a * 0.9 : a;
+	/** The ring at a share `u` of the rise, through the box's projector. */
+	const ring = (/** @type {number} */ u) => {
+		const k = radius(u) * (r / a);
+		return Array.from({ length: 72 }, (_, i) => {
+			const f = (2 * Math.PI * i) / 72;
+			return P.at([a * k * Math.cos(f), y0 + u * H], tc + (b * k * Math.sin(f)) / P.d);
+		});
+	};
+	/** A ring's leftmost and rightmost points' indices. @param {Poly} R */
+	const ends = (R) => {
+		let l = 0,
+			rt = 0;
+		R.forEach(([x], i) => {
+			if (x < R[l][0]) l = i;
+			if (x > R[rt][0]) rt = i;
+		});
+		return [l, rt];
+	};
+	const base = ring(0);
+	const [iL, iR] = ends(base);
+	/** @type {Poly} */
+	const front = []; // the base ring's front, left end to right
+	for (let i = iL; ; i = (i + 1) % base.length) {
+		front.push(base[i]);
+		if (i === iR) break;
+	}
+	/** @type {Pt[]} */
+	const lefts = [],
+		/** @type {Pt[]} */
+		rights = [];
+	for (let i = 1; i <= 40; i++) {
+		const R = ring(i / 40),
+			[l, rt] = ends(R);
+		lefts.push(R[l]);
+		rights.push(R[rt]);
+	}
+	/** @type {Poly} */
+	const outline = [...front, ...rights, ...lefts.slice(0, -1).reverse()];
+	const axis = P.at([0, y0], tc)[0],
+		top = P.at([0, y0 + H], tc);
+	const E = Math.max(...outline.map(([x]) => x)) - axis,
+		yLo = Math.min(...outline.map(([, y]) => y)),
+		yHi = top[1];
+	/** @type {Part[]} */
+	const parts = [
+		{
+			solid: [outline],
+			role: 'roof',
+			shadeArea: rect(axis + E * 0.3, yLo - 2, E * 2, yHi - yLo + 4),
+			shadeLines: capHatch(axis, E, yLo - 2, yHi + 2, D.hatch),
+		},
+	];
+	if (roof !== 'onion') return { parts, tip: top, socket: roof === 'lancet' ? 3 : 0 };
+	// An onion's ball and spike, as onionDome()'s.
+	parts.push(
+		{ solid: [circle(axis, yHi + 1.4, 0.9)], role: 'roof' },
+		{ solid: [], free: [seg([axis, yHi - 0.5], [axis, yHi + 4.5], 1)] },
+	);
+	return { parts, tip: [axis, yHi + 4.5], socket: 0 };
 }
 
 /**
@@ -1346,7 +1450,7 @@ function ridgeTurret(D, P, d, h, rh) {
 		{ solid: [side], shaded: true, lines: hatch(side, 65, D.hatch) },
 		{ solid: [front], fills: [win] },
 	];
-	const cap = roundCap(D, D.towerRoof, P.at([0, yt], 0.5), tw * P.scale(0.5));
+	const cap = boxCap(D, D.towerRoof, P, tw, yt, tf, tb);
 	if (cap) {
 		// Its top, under the cap, tucked behind its front and side.
 		const top = tuckedTop(
@@ -2051,11 +2155,9 @@ export function squareTower(D, o = {}) {
 	const br = P.back(fr);
 	const bl = P.back(fl);
 	const apex = P.at([0, topY + w * D.spire], 0.5);
-	// Centre of the top (where the caps sit) and the scale there; the spire
-	// faces sag toward a point level with the front eave below it.
-	const top = P.at([0, topY], 0.5),
-		cs = P.scale(0.5);
-	const c = /** @type {Pt} */ ([top[0], topY]);
+	// The spire faces sag toward a point under the top's centre, level with
+	// the front eave below it.
+	const c = /** @type {Pt} */ ([P.at([0, topY], 0.5)[0], topY]);
 	/** @type {Poly} */
 	const flatTop = tuckedTop(
 		[-topW, topY],
@@ -2075,7 +2177,7 @@ export function squareTower(D, o = {}) {
 	// tucked behind the walls, as a capped top is.
 	if (corbel && !crenel) parts.unshift({ solid: [tuckedTop(fl, fr, br, bl)], role: 'roof' });
 	const deck = !corbel || crenel;
-	const cap = roundCap(D, roof, top, topW * cs);
+	const cap = boxCap(D, roof, P, topW, topY);
 	if (cap) {
 		if (deck) parts.unshift({ solid: [flatTop] });
 		parts.push(...cap.parts);
@@ -2211,9 +2313,10 @@ function gateTower(D, y0, h, wood) {
 		],
 	});
 	if (D.towerRoof === 'dome') {
-		const [dx, dy] = P.at([0, yTop], 0.5);
-		const dome = hemiDome(dx, dy, w * 0.42 * P.scale(0.5), D.hatch);
-		parts.push(dome.part);
+		const dome = /** @type {NonNullable<ReturnType<typeof boxCap>>} */ (
+			boxCap(D, 'dome', P, w * 0.42, yTop)
+		);
+		parts.push(...dome.parts);
 		flagAt = [dome.tip[0], dome.tip[1] - 1.5];
 	} else {
 		const ov = 1.2,
@@ -3607,7 +3710,7 @@ export function tieredTower(D) {
 		} else {
 			// The culture's onion, dome or lancet on the top storey; else (a
 			// cone or none) a pyramid.
-			const cap = roundCap(D, D.towerRoof, P.at([0, h], 0.5), (w / 2) * P.scale(0.5));
+			const cap = boxCap(D, D.towerRoof, P, w / 2, h);
 			/** @type {Pt} */
 			let tip;
 			if (cap) {

@@ -78,13 +78,18 @@ cap** — read from the culture with `towerTop(D, o)`:
 - **Cap** (`towerRoof`): `cone` (a pyramid spire on square towers, an
   eight-sided one on the octagonal tower), `onion`, `dome`, `lancet`, or
   `none` — a bare crenellated top. A tower with no cap always gets the
-  crenellated top, so it never ends flat. On a flat top — a square
-  tower's, the tiered tower's top storey, the town hall's turret — the
-  piece lays the top behind its walls, run on a little way down them
-  (`tuckedTop()`: seen obliquely its front-left and back-right corners are
-  sharp, and softening would round them short of the walls', leaving a
-  notch), and `roundCap()` sets the onion, dome or lancet on it; the
-  roofed ones keep their pyramid for a cone or none.
+  crenellated top, so it never ends flat. On a box's flat top — a square
+  tower's, the tiered tower's top storey, the town hall's turret, a gate
+  tower's dome — the piece lays the top behind its walls, run on a little
+  way down them (`tuckedTop()`: seen obliquely its front-left and
+  back-right corners are sharp, and softening would round them short of
+  the walls', leaving a notch), and `boxCap()` builds the onion, dome or
+  lancet in the box's own frame: each level of it a ring on the top's
+  plane, run through the box's projector like every corner of the box. So
+  the cap takes the top's foreshortening, perspective and all — its base
+  is the top's own circle, centred on it, touching each edge at its middle
+  — and keeps its own height. The roofed ones keep their pyramid for a
+  cone or none.
 - The **flag** flies from whichever is uppermost; landmark towers carry the
   culture's holy-symbol finial instead. On a sharp tip (a spire, a lancet)
   the symbol's post runs down into the cap and the symbol is drawn behind
