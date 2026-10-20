@@ -11,6 +11,7 @@ into one layered SVG per piece or per settlement.
 | File           | Responsibility                                                                                                                                   |
 | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | `geom.js`      | Primitive shapes (`rect`, `arc`, `circle`, `archOpening`, `lancet`, `crenellated`) and the PRNG.                                                 |
+| `frame3d.js`   | `depthVec()` and `frame()`: a piece's 3D frame and its one camera (prototype — the 3D-frame church).                                             |
 | `pieces3d.js`  | Every drawable piece (house, tower, keep, well, …) and the `Design` typedef with the culture knobs.                                              |
 | `layouts3d.js` | Templates (stead → freeport) that lay pieces out into a settlement, including the ring wall; `building()` draws one piece for the Buildings tab. |
 | `ruins3d.js`   | Decay / overgrowth / scorch transformation applied over any `Placed[]` list.                                                                     |
@@ -60,6 +61,32 @@ parallel oblique).
   and top edges follow the face's slope so it reads as painted on the
   wall, not floating over it.
 - Round pieces, walls and the pier stay parallel.
+
+### 3D frame (prototype)
+
+A box projector serves one box: a piece of several boxes (a church's tower
+and nave) draws each through a projector of its own and shifts it into
+place in 2D, so its parts converge toward different points and anything
+that joins them (a roof meeting a wall, a cap on a top) has to be fitted by
+hand. `frame3d.js` is the alternative being tried: lay the whole piece out
+in 3D — x across, y up, z back — and send every point through the frame's
+one camera, `F.pt([x, y, z])` (the same oblique view and perspective as
+`boxProjector`, capped once for the frame's tallest top and ridge). Faces
+are still 2D polygons for the unchanged renderer: build one on its own
+plane with `F.front(poly, z)`, `F.side(poly, x)` or `F.level(poly, y)`, or
+point by point; `F.box(x, z0, d)` hands helpers written against a box
+projector (`boxCap()`, `faceCourses()`) one for a box standing in the
+frame. Building the geometry is a small share of an icon's time (the
+renderer's clipping is the rest), so the frame costs nothing measurable.
+
+`church3d()` — the playground's **Church (3D frame)**, beside the Church —
+is the first piece built this way: tower and nave in one frame, the nave's
+roof running up to the tower's wall and stopping there, the rose window a
+circle on the gable wall foreshortened with it, the crenellated band
+corbelled out on all four sides with its sloped underside showing, and the
+cap built on the band's top. Square steeple only (a round one falls back to
+`church()`), and no corbelled tower body yet. The map's church is still
+`church()`.
 
 ## Towers
 
