@@ -51,6 +51,7 @@ import {
 	sideHouse,
 	squareTower,
 	stiltHut,
+	tieredTower,
 	townhouse,
 	upgradeDesign,
 	well,
@@ -550,6 +551,26 @@ describe('newer pieces', () => {
 			const front = parts.findIndex((p) => !p.shaded && p.fills?.length);
 			expect(i).toBeGreaterThan(0);
 			expect(i).toBeLessThan(front);
+		},
+	);
+	it.each([0.5, 0])(
+		"stands each of the tiered tower's storeys on the skirt below (perspective %s)",
+		(perspective) => {
+			const parts = tieredTower({ ...DEFAULT_DESIGN, perspective, flags: false });
+			const sides = parts.filter((p) => p.shaded && !p.role).map((p) => p.solid[0]);
+			const skirts = parts
+				.filter((p) => p.role === 'roof' && p.shaded && p.solid[0].length === 4)
+				.map((p) => p.solid[0]);
+			expect(skirts).toHaveLength(2);
+			skirts.forEach((skirt, k) => {
+				// The skirt's inner edge, front-right [3] → back-right [2], is the
+				// next storey's side's foot, front [0] → back [1]: no gap at the back.
+				const [foot0, foot1] = sides[k + 1];
+				expect(skirt[3][0]).toBeCloseTo(foot0[0], 6);
+				expect(skirt[3][1]).toBeCloseTo(foot0[1], 6);
+				expect(skirt[2][0]).toBeCloseTo(foot1[0], 6);
+				expect(skirt[2][1]).toBeCloseTo(foot1[1], 6);
+			});
 		},
 	);
 	it('keeps the lookout tower its pyramid roof, whatever the cap', () => {

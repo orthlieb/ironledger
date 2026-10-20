@@ -3604,9 +3604,15 @@ export function tieredTower(D) {
 			/** @type {Pt} */ const FLo = P.at([-w / 2 - ov, he], -ov / d);
 			/** @type {Pt} */ const FRo = P.at([w / 2 + ov, he], -ov / d);
 			/** @type {Pt} */ const BRo = P.at([w / 2 + ov, he], 1 + ov / d);
-			/** @type {Pt} */ const FLi = P.at([-wn / 2, h + rise], ts);
-			/** @type {Pt} */ const FRi = P.at([wn / 2, h + rise], ts);
-			/** @type {Pt} */ const BRi = P.at([wn / 2, h + rise], ts + dn / d);
+			// The skirt's inner edge is the next storey's foot: its corners
+			// through that storey's own projector, so the storey stands on the
+			// skirt all along — through this one's, perspective drops the
+			// raised back corner further and the storey lifts off at the back.
+			const base = P.at([0, h + rise], ts),
+				Pn = boxProjector(dn, D.perspective, h * 0.82 + 3, h * 0.82 + 6);
+			/** @type {Pt} */ const FLi = add(base, [-wn / 2, 0]);
+			/** @type {Pt} */ const FRi = add(base, [wn / 2, 0]);
+			/** @type {Pt} */ const BRi = add(base, Pn.back([wn / 2, 0]));
 			/** @type {Poly} */
 			const skirtSide = [FRo, BRo, BRi, FRi];
 			tier.push(
@@ -3614,7 +3620,7 @@ export function tieredTower(D) {
 				{ solid: [[FLo, FRo, FRi, FLi]], role: 'roof' },
 			);
 			parts.push(...place(tier, { x: at[0], y: at[1] }));
-			at = add(at, P.at([0, h + rise], ts));
+			at = add(at, base);
 			w = wn;
 			h *= 0.82;
 		} else {
