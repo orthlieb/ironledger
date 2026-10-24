@@ -5,6 +5,8 @@
 // Settings → Appearance. Each one is a self-contained folder:
 //
 //   liveries/<slug>/livery.json
+//   liveries/<slug>/brand.svg          (optional)
+//   liveries/<slug>/icons/<name>.svg   (optional, any of ICON_NAMES)
 //
 // This linter reads every one, validates its shape, and fails (exit 1) on:
 //   • id not matching its folder slug / not a safe CSS ident
@@ -13,6 +15,8 @@
 //     dark/light halves disagree, or that holds a non-colour value
 //   • an unknown `transliterate` transformer
 //   • zero, or more than one, livery flagged `default: true`
+//   • an `icons/` file that isn't one of ICON_NAMES' `<name>.svg`, or isn't
+//     an SVG
 //
 // It exports `loadLiveries()` so the manifest generator validates with the
 // same rules instead of duplicating them.
@@ -75,6 +79,23 @@ export const DICE_TEXTURES = new Set([
   'tiger',
   'cheetah',
 ]);
+
+// The app icons a livery may replace, each with its own
+// `liveries/<id>/icons/<name>.svg`: the four areas' and the six entity
+// kinds'. Mirrors LIVERY_ICON_NAMES in apps/web/src/lib/liveryIcons.ts —
+// keep the two in sync.
+export const ICON_NAMES = [
+  'characters',
+  'expeditions',
+  'foes',
+  'connections',
+  'journey',
+  'scene',
+  'site',
+  'settlements',
+  'npcs',
+  'landmarks',
+];
 
 const CSS_IDENT = /^[a-z][a-z0-9-]*$/;
 const HEX_COLOR = /^#([0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
@@ -168,6 +189,26 @@ export function validateLivery(lv, slug) {
   return errs;
 }
 
+/** Validate a livery's optional `icons/` folder. Returns error strings. */
+async function validateIcons(slug) {
+  const dir = path.join(LIVERIES_DIR, slug, 'icons');
+  if (!existsSync(dir)) return [];
+  const errs = [];
+  for (const e of await readdir(dir, { withFileTypes: true })) {
+    const name = e.name.replace(/\.svg$/, '');
+    if (!e.isFile() || !e.name.endsWith('.svg') || !ICON_NAMES.includes(name)) {
+      errs.push(
+        `${slug} → icons/${e.name} is not one of the replaceable icons ` +
+          `(${ICON_NAMES.map((n) => `${n}.svg`).join(', ')})`,
+      );
+      continue;
+    }
+    const src = (await readFile(path.join(dir, e.name), 'utf8')).trim();
+    if (!src.startsWith('<svg')) errs.push(`${slug} → icons/${e.name} does not start with <svg`);
+  }
+  return errs;
+}
+
 /**
  * Read + validate every livery folder. Throws (with a multi-line message)
  * on any validation failure. Returns the liveries sorted default-first,
@@ -196,7 +237,7 @@ export async function loadLiveries() {
       errors.push(`${slug} → livery.json is not valid JSON: ${e.message}`);
       continue;
     }
-    const errs = validateLivery(parsed, slug);
+    const errs = [...validateLivery(parsed, slug), ...(await validateIcons(slug))];
     if (errs.length) errors.push(...errs);
     else liveries.push(parsed);
   }

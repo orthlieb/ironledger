@@ -22,6 +22,8 @@ liveries/
   merlin/livery.json      ← Merlin
   yorick/livery.json      ← Yorick
   deckard/livery.json     ← Deckard sample — copy this as your template
+  <id>/brand.svg          ← optional nav mark + favicon (below)
+  <id>/icons/<name>.svg   ← optional area / entity icons (below)
 ```
 
 One folder per livery; the folder name is the livery **id** and must match the
@@ -130,6 +132,45 @@ swapped by rebuilding the `<link rel="icon" type="image/svg+xml">` with a
 data URL. `apple-touch-icon.png` is untouched — the home-screen icon is
 captured when a user adds the site and can't be swapped at runtime.
 
+### Area and entity icons (optional) — `icons/<name>.svg`
+
+A livery may also replace any of the app's area and entity-kind icons with
+its own, one SVG each in an `icons/` folder next to its `livery.json`:
+
+```
+liveries/<id>/icons/<name>.svg
+```
+
+| `<name>`      | Replaces                                                                     |
+| ------------- | ---------------------------------------------------------------------------- |
+| `characters`  | the Characters area's icon (header, empty state, home tab, export, About)    |
+| `expeditions` | the Expeditions area's icon                                                  |
+| `foes`        | the Foes area's icon                                                         |
+| `connections` | the Connections area's icon                                                  |
+| `journey`     | the Journey kind's icon, wherever a journey shows its kind (pickers, chips…) |
+| `scene`       | the Scene kind's                                                             |
+| `site`        | the Site kind's                                                              |
+| `settlements` | the Settlement kind's                                                        |
+| `npcs`        | the NPC kind's                                                               |
+| `landmarks`   | the Landmark kind's                                                          |
+
+Ship as many or as few as you like: any the livery doesn't ship stay the
+app's own, and a livery with no `icons/` folder looks exactly as before.
+The SVGs follow the same normalisation as `brand.svg` above (`currentColor`
+fills, no width/height, no background rect); unlike `brand.svg`, their
+viewBox is kept as drawn, as the app's own icons are, so draw them on the
+same kind of canvas as the icon they replace. `npm run lint:liveries` fails
+on a file in `icons/` that isn't one of the names above, or isn't an SVG.
+
+The build inlines them into `liveries.manifest.json` as `icons: { <name>:
+svg }`, and the livery's `preview.html` shows them in a row under the dice.
+In the app, `appIcon(name)` (`apps/web/src/lib/liveryIcons.ts`) returns
+the active livery's icon or the app's own, and the entity kinds'
+`ENTITY_KIND_META[kind].icon` reads through it — both reactive, so a
+livery switch swaps them in place. (The name list lives in both
+`liveryIcons.ts` and `scripts/lint-liveries.mjs`; a unit test keeps them in
+step.)
+
 ## How the build wires it up
 
 Two committed, generator-owned artifacts are produced from the JSON:
@@ -140,7 +181,7 @@ npm run gen:liveries        # scripts/gen-liveries-manifest.mjs
 
 - **`apps/web/src/lib/liveries.manifest.json`** — runtime metadata (id, label,
   default, description, preview, googleFamily, dice, previewColors, optional
-  brandSvg). Read by `fontStore.svelte.ts` (active-livery state +
+  brandSvg and icons). Read by `fontStore.svelte.ts` (active-livery state +
   `activeLiveryDice()` + `activeLiveryBrand()`), `SettingsDialog.svelte` (the
   dropdown), and `dice.ts` (per-livery dice colours/texture).
 - **`apps/web/src/lib/liveries.generated.css`** — the per-livery

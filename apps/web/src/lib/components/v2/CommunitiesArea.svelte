@@ -99,7 +99,7 @@
 	import heartPulseSvg from '$icons/heart-pulse-solid.svg?raw';
 	import skullSvg from '$icons/skull-crossbones-solid.svg?raw';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
-	import villageIconSvg from '$icons/village.svg?raw';
+	import { appIcon } from '$lib/liveryIcons.js';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
 	import gotoSvg from '$icons/arrow-up-right-from-square-solid.svg?raw';
@@ -909,7 +909,7 @@
 <div class="cm-area">
 	<header class="cm-header">
 		{#if showTitle}
-			<span class="cm-title-icon" aria-hidden="true">{@html villageIconSvg}</span>
+			<span class="cm-title-icon" aria-hidden="true">{@html appIcon('connections')}</span>
 			<span class="cmt-title">{headingText('Connections')}</span>
 		{/if}
 		<div class="cm-header-actions" data-entry-count={entries.length}>
@@ -949,7 +949,7 @@
 		<div class="cm-loading">Loading…</div>
 	{:else if entries.length === 0}
 		<div class="cm-empty">
-			<span class="cm-empty-icon" aria-hidden="true">{@html villageIconSvg}</span>
+			<span class="cm-empty-icon" aria-hidden="true">{@html appIcon('connections')}</span>
 			<p class="cm-empty-text">
 				There are people and places to <s>plunder</s> discover. Pick
 				<strong>+ New Settlement…</strong>, <strong>+ New NPC…</strong>, or

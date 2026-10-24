@@ -55,6 +55,11 @@ export interface LiveryMeta {
 	 *  present, the nav brand icon and the favicon both switch to it while
 	 *  this livery is active. Absent → the default sharp-axe stays. */
 	brandSvg?: string;
+	/** Optional replacements a livery may ship at
+	 *  `liveries/<id>/icons/<name>.svg` for the app's area and entity-kind
+	 *  icons (liveryIcons.ts's LIVERY_ICON_NAMES), by name. Any it doesn't
+	 *  ship stay the app's own. */
+	icons?: Record<string, string>;
 }
 
 export const LIVERIES: LiveryMeta[] = manifest.liveries;
@@ -103,6 +108,12 @@ export function activeLiveryDice(): LiveryDice | null {
  *  re-render on livery change. */
 export function activeLiveryBrand(): string | null {
 	return LIVERIES.find((l) => l.id === _font)?.brandSvg ?? null;
+}
+
+/** The active livery's replacement icons, by name (none → empty). Reactive
+ *  as activeLiveryBrand() is; read through liveryIcons.ts's appIcon(). */
+export function activeLiveryIcons(): Record<string, string> {
+	return LIVERIES.find((l) => l.id === _font)?.icons ?? {};
 }
 
 // URL-encode an SVG string for use in a data: URI. Cheaper than base64 for

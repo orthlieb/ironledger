@@ -63,7 +63,7 @@
 		assetDisplayName,
 	} from '$lib/character.js';
 	import hornedHelmSvg from '$icons/horned-helm.svg?raw';
-	import charactersIconSvg from '$icons/Characters.svg?raw';
+	import { appIcon } from '$lib/liveryIcons.js';
 	import type { CharacterData, CharacterAsset } from '$lib/types.js';
 	import AssetCard from '$lib/components/AssetCard.svelte';
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
@@ -1064,7 +1064,7 @@
 	<!-- Header -->
 	<header class="ca-header">
 		{#if showTitle}
-			<span class="ca-title-icon" aria-hidden="true">{@html charactersIconSvg}</span>
+			<span class="ca-title-icon" aria-hidden="true">{@html appIcon('characters')}</span>
 			<span class="ca-title">{headingText('Characters')}</span>
 		{/if}
 
@@ -1136,7 +1136,7 @@
 		<div class="ca-loading">Loading…</div>
 	{:else if characters.length === 0}
 		<div class="ca-empty">
-			<span class="ca-empty-icon" aria-hidden="true">{@html charactersIconSvg}</span>
+			<span class="ca-empty-icon" aria-hidden="true">{@html appIcon('characters')}</span>
 			<p class="ca-empty-text">
 				Your saga begins not with a battle, but with a button. Pick
 				<strong>+ New character…</strong> from the switcher above to start.

@@ -112,10 +112,7 @@
 			return false;
 		}
 	}
-	import charactersIconSvg from '$icons/Characters.svg?raw';
-	import foesIconSvg from '$icons/Foes.svg?raw';
-	import expeditionsIconSvg from '$icons/Expeditions.svg?raw';
-	import villageIconSvg from '$icons/village.svg?raw';
+	import { appIcon } from '$lib/liveryIcons.js';
 	import {
 		buildGraph,
 		effectiveRegion,
@@ -2593,28 +2590,28 @@
 			class:mob-tab--active={mobileTab === 'characters'}
 			onclick={() => (mobileTab = 'characters')}
 		>
-			<span class="mob-tab-icon" aria-hidden="true">{@html charactersIconSvg}</span>Characters
+			<span class="mob-tab-icon" aria-hidden="true">{@html appIcon('characters')}</span>Characters
 		</button>
 		<button
 			class="mob-tab"
 			class:mob-tab--active={mobileTab === 'foes'}
 			onclick={() => (mobileTab = 'foes')}
 		>
-			<span class="mob-tab-icon" aria-hidden="true">{@html foesIconSvg}</span>Foes
+			<span class="mob-tab-icon" aria-hidden="true">{@html appIcon('foes')}</span>Foes
 		</button>
 		<button
 			class="mob-tab"
 			class:mob-tab--active={mobileTab === 'expeditions'}
 			onclick={() => (mobileTab = 'expeditions')}
 		>
-			<span class="mob-tab-icon" aria-hidden="true">{@html expeditionsIconSvg}</span>Expeditions
+			<span class="mob-tab-icon" aria-hidden="true">{@html appIcon('expeditions')}</span>Expeditions
 		</button>
 		<button
 			class="mob-tab"
 			class:mob-tab--active={mobileTab === 'communities'}
 			onclick={() => (mobileTab = 'communities')}
 		>
-			<span class="mob-tab-icon" aria-hidden="true">{@html villageIconSvg}</span>Connections
+			<span class="mob-tab-icon" aria-hidden="true">{@html appIcon('connections')}</span>Connections
 		</button>
 	</nav>
 
