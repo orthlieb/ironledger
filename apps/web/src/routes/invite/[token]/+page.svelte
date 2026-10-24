@@ -33,7 +33,7 @@
 		{#if data.error}
 			<div class="hero-image-wrap">
 				<img
-					src="/ironledger-email-expired.webp"
+					src="/email/ironledger-email-expired.webp"
 					alt="A weathered scroll, its seal broken, drifts away on a cold wind"
 					class="hero-image"
 				/>

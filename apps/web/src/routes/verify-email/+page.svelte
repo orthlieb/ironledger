@@ -35,7 +35,7 @@
 				<div class="hero-image-wrap">
 					<img
 						class="hero-image"
-						src="/ironledger-email-expired.webp"
+						src="/email/ironledger-email-expired.webp"
 						alt="A Norse warrior holds the charred remains of a scroll with resigned disappointment"
 					/>
 					<p class="hero-caption">The link has perished.</p>
@@ -48,7 +48,7 @@
 				<div class="hero-image-wrap">
 					<img
 						class="hero-image"
-						src="/ironledger-email-verified.webp"
+						src="/email/ironledger-email-verified.webp"
 						alt="A Norse warrior pumps his fist in triumphant relief"
 					/>
 					<p class="hero-caption">The oath is sworn.</p>

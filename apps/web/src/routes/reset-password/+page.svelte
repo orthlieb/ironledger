@@ -52,7 +52,7 @@
 				<div class="hero-image-wrap">
 					<img
 						class="hero-image"
-						src="/ironledger-reset-password.webp"
+						src="/email/ironledger-reset-password.webp"
 						alt="A Norse warrior kneels before an oracle, seeking wisdom he should already have"
 					/>
 					<p class="hero-caption">A new key, forged for the gate.</p>
