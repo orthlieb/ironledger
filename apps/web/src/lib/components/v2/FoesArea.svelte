@@ -47,7 +47,7 @@
 	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
 	import { Tabs } from 'bits-ui';
 	import Combobox from '$lib/components/Combobox.svelte';
-	import foesIconSvg from '$icons/Foes.svg?raw';
+	import { appIcon } from '$lib/liveryIcons.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
@@ -288,7 +288,7 @@
 <div class="fa-area" data-foe-count={encounters.length}>
 	<header class="fa-header">
 		{#if showTitle}
-			<span class="fa-title-icon" aria-hidden="true">{@html foesIconSvg}</span>
+			<span class="fa-title-icon" aria-hidden="true">{@html appIcon('foes')}</span>
 			<span class="fa-title">{headingText('Foes')}</span>
 		{/if}
 		<div class="fa-header-actions">
@@ -332,7 +332,7 @@
 		<div class="fa-loading">Loading…</div>
 	{:else if encounters.length === 0}
 		<div class="fa-empty">
-			<span class="fa-empty-icon" aria-hidden="true">{@html foesIconSvg}</span>
+			<span class="fa-empty-icon" aria-hidden="true">{@html appIcon('foes')}</span>
 			<p class="fa-empty-text">
 				Nothing currently wants you dead. Disappointing. Pick
 				<strong>+ New foe…</strong> from the switcher above to dance with fate.

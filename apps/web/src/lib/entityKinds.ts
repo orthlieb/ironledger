@@ -10,17 +10,11 @@
 // source of truth; consumers import `ENTITY_KIND_META` and read the field
 // they need.
 //
-// SVG imports use Vite's `?raw` suffix and resolve to the icon's inner
-// markup for `{@html …}` inlining — same shape existing components already
-// consume.
+// Icons are raw SVG markup for `{@html …}` inlining — the active livery's
+// where it ships one, else the app's own (liveryIcons.ts).
 // =============================================================================
 
-import hutSvg from '$icons/hut.svg?raw';
-import farmerSvg from '$icons/farmer.svg?raw';
-import locationDotSvg from '$icons/location-dot-solid.svg?raw';
-import journeySvg from '$icons/journey.svg?raw';
-import dungeonGateSvg from '$icons/dungeon-gate.svg?raw';
-import hourglassSvg from '$icons/hourglass-clock-solid.svg?raw';
+import { appIcon } from './liveryIcons.js';
 
 /** All first-class entity kinds users can create or link. Order = the
  *  canonical order the rails render / pickers list. */
@@ -33,8 +27,11 @@ export interface EntityKindMeta {
 	 *  list without clashing against the parchment background. */
 	color: string;
 	/** Inline SVG markup for the kind's glyph. Consumers render with
-	 *  `{@html icon}` and colour via `fill: currentColor`. */
-	icon: string;
+	 *  `{@html icon}` and colour via `fill: currentColor`. The active
+	 *  livery's, where it ships one (liveryIcons.ts): read it in a template
+	 *  or `$derived`, not into a plain constant, so it follows a livery
+	 *  change. */
+	readonly icon: string;
 	/** User-facing singular label (title case). */
 	label: string;
 	/** User-facing plural label (title case) — used by filter chips
@@ -49,7 +46,9 @@ export interface EntityKindMeta {
 export const ENTITY_KIND_META: Record<EntityKind, EntityKindMeta> = {
 	community: {
 		color: '#D06840',
-		icon: hutSvg,
+		get icon() {
+			return appIcon('settlements');
+		},
 		// User-facing label is "Settlement" (canon); the internal kind id stays
 		// `community` (DB kind value, /communities API route, communityStore) to
 		// avoid a data migration — that identifier is never shown to users.
@@ -60,31 +59,41 @@ export const ENTITY_KIND_META: Record<EntityKind, EntityKindMeta> = {
 		// `kind` stays 'place' everywhere (DB, API, marker links, exports);
 		// only the user-facing label reads "Landmark" — its canon name.
 		color: '#4AA0C8',
-		icon: locationDotSvg,
+		get icon() {
+			return appIcon('landmarks');
+		},
 		label: 'Landmark',
 		labelPlural: 'Landmarks',
 	},
 	npc: {
 		color: '#C848A8',
-		icon: farmerSvg,
+		get icon() {
+			return appIcon('npcs');
+		},
 		label: 'NPC',
 		labelPlural: 'NPCs',
 	},
 	journey: {
 		color: '#E4AA28',
-		icon: journeySvg,
+		get icon() {
+			return appIcon('journey');
+		},
 		label: 'Journey',
 		labelPlural: 'Journeys',
 	},
 	site: {
 		color: '#4472D0',
-		icon: dungeonGateSvg,
+		get icon() {
+			return appIcon('site');
+		},
 		label: 'Site',
 		labelPlural: 'Sites',
 	},
 	scene: {
 		color: '#7E57C2',
-		icon: hourglassSvg,
+		get icon() {
+			return appIcon('scene');
+		},
 		label: 'Scene',
 		labelPlural: 'Scenes',
 	},

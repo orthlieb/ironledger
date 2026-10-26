@@ -67,11 +67,12 @@
 	import Combobox from '$lib/components/Combobox.svelte';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import CountdownTrack from '$lib/components/CountdownTrack.svelte';
-	const journeyPlaceholderSvg = ENTITY_KIND_META.journey.icon;
-	const sitePlaceholderSvg = ENTITY_KIND_META.site.icon;
-	const scenePlaceholderSvg = ENTITY_KIND_META.scene.icon;
+	// Derived, so they follow the livery (a livery may ship its own).
+	const journeyPlaceholderSvg = $derived(ENTITY_KIND_META.journey.icon);
+	const sitePlaceholderSvg = $derived(ENTITY_KIND_META.site.icon);
+	const scenePlaceholderSvg = $derived(ENTITY_KIND_META.scene.icon);
 	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
-	import expeditionsIconSvg from '$icons/Expeditions.svg?raw';
+	import { appIcon } from '$lib/liveryIcons.js';
 	import { headingText } from '$lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
@@ -216,11 +217,11 @@
 		{ key: 'site', label: 'Sites', color: SITE_COLOR },
 		{ key: 'scene', label: 'Scenes', color: SCENE_COLOR },
 	];
-	const EXP_ICON: Record<ExpKind, string> = {
+	const EXP_ICON = $derived<Record<ExpKind, string>>({
 		journey: journeyPlaceholderSvg,
 		site: sitePlaceholderSvg,
 		scene: scenePlaceholderSvg,
-	};
+	});
 	const EXP_COLOR: Record<ExpKind, string> = {
 		journey: JOURNEY_COLOR,
 		site: SITE_COLOR,
@@ -709,7 +710,7 @@
 <div class="ea-area">
 	<header class="ea-header">
 		{#if showTitle}
-			<span class="ea-title-icon" aria-hidden="true">{@html expeditionsIconSvg}</span>
+			<span class="ea-title-icon" aria-hidden="true">{@html appIcon('expeditions')}</span>
 			<span class="ea-title">{headingText('Expeditions')}</span>
 		{/if}
 		<div class="ea-header-actions" data-exp-count={expeditions.length}>
@@ -758,7 +759,7 @@
 		<div class="ea-loading">Loading…</div>
 	{:else if expeditions.length === 0}
 		<div class="ea-empty">
-			<span class="ea-empty-icon" aria-hidden="true">{@html expeditionsIconSvg}</span>
+			<span class="ea-empty-icon" aria-hidden="true">{@html appIcon('expeditions')}</span>
 			<p class="ea-empty-text">
 				You seem to be a homebody. Pick <strong>+ New Journey…</strong> or
 				<strong>+ New Site…</strong> from the switcher above to take your first step.

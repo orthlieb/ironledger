@@ -33,10 +33,9 @@
 	import { findFoe, resolveFoeName } from '$lib/foeStore.svelte.js';
 	import type { ExportSelection } from '$lib/exportSelection.js';
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
-	import charactersIconSvg from '$icons/Characters.svg?raw';
+	import { appIcon } from '$lib/liveryIcons.js';
 	import treasureMapIconSvg from '$icons/treasure-map.svg?raw';
 	import logIconSvg from '$icons/log.svg?raw';
-	import foesIconSvg from '$icons/Foes.svg?raw';
 
 	const CHECK =
 		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>';
@@ -89,7 +88,7 @@
 			key: 'char',
 			label: 'Characters',
 			color: '#5aa467',
-			icon: charactersIconSvg,
+			icon: appIcon('characters'),
 			items: chars.map((c) => ({
 				key: `char:${c.id}`,
 				cat: 'char',
@@ -204,7 +203,7 @@
 			key: 'foe',
 			label: 'Foes',
 			color: '#b04a3a',
-			icon: foesIconSvg,
+			icon: appIcon('foes'),
 			items: foeEncounters.map((enc) => {
 				const def = findFoe(enc.foeId);
 				return {

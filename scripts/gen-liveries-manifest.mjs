@@ -28,7 +28,7 @@ import { readFile, writeFile } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { loadLiveries, LIVERIES_DIR, TOKEN_KEYS } from './lint-liveries.mjs';
+import { ICON_NAMES, loadLiveries, LIVERIES_DIR, TOKEN_KEYS } from './lint-liveries.mjs';
 // svg-path-bounds is CJS with no types; the default export is
 // (pathD: string) => [left, top, right, bottom]. Node's CJS→ESM interop
 // picks up the default reliably at runtime.
@@ -167,10 +167,28 @@ async function readBrandSvg(id) {
   return tightenBrandViewBox(id, raw);
 }
 
-async function attachBrandSvgs(liveries) {
+// Read a livery's optional `liveries/<id>/icons/<name>.svg` replacements for
+// the app's area and entity-kind icons (ICON_NAMES; lint-liveries.mjs checks
+// the names) → { name: svg } in ICON_NAMES order, trimmed, or null when it
+// ships none. Inlined into the manifest so the app renders them as
+// currentColor glyphs without a runtime fetch; unlike brand.svg the viewBox
+// is kept as drawn, as the app's own icons are.
+async function readIcons(id) {
+  const dir = path.join(LIVERIES_DIR, id, 'icons');
+  if (!existsSync(dir)) return null;
+  const icons = {};
+  for (const name of ICON_NAMES) {
+    const p = path.join(dir, `${name}.svg`);
+    if (existsSync(p)) icons[name] = (await readFile(p, 'utf8')).trim();
+  }
+  return Object.keys(icons).length ? icons : null;
+}
+
+async function attachSvgs(liveries) {
   await Promise.all(
     liveries.map(async (l) => {
       l.brandSvg = await readBrandSvg(l.id);
+      l.icons = await readIcons(l.id);
     }),
   );
 }
@@ -197,6 +215,10 @@ function buildManifest(liveries) {
       // liveries/<id>/brand.svg — inlined verbatim so the client renders it
       // as a currentColor glyph without a runtime fetch.
       ...(brandById[l.id] ? { brandSvg: brandById[l.id] } : {}),
+      // Optional replacements for the app's area and entity-kind icons,
+      // from liveries/<id>/icons/<name>.svg; any it doesn't ship stay the
+      // app's own.
+      ...(l.icons ? { icons: l.icons } : {}),
     })),
   };
   return JSON.stringify(obj, null, 2) + '\n';
@@ -279,7 +301,7 @@ function swatch(name, hex) {
 // renders the livery's brand icon to the left of the "Iron Ledger" wordmark
 // (mirrors the actual nav bar); falls back to the shared axe on liveries
 // that ship no brand.svg so the strip always shows the icon slot.
-function themeBlock(mode, pal, dice, fontFamily, brandSvg, label) {
+function themeBlock(mode, pal, dice, fontFamily, brandSvg, label, icons) {
   const rows = TOKEN_KEYS.map((k) => swatch(k, pal[k])).join('\n');
   const rules = [
     `background: ${pal['bg-page']}`,
@@ -300,6 +322,21 @@ function themeBlock(mode, pal, dice, fontFamily, brandSvg, label) {
       `\t\t\t\t<div class="die" style="background: ${dice.ones}; color: ${dice.tens}">d100 (1s)</div>\n` +
       `\t\t\t</div>\n`
     : '';
+  // The livery's replacement icons, each captioned with its name — only for
+  // a livery that ships some (inline styles, so the other previews' bytes
+  // don't change).
+  const iconRow = icons
+    ? `\t\t\t<div class="icons" style="display: flex; flex-wrap: wrap; gap: 14px; margin-top: 12px;">\n` +
+      Object.entries(icons)
+        .map(
+          ([name, svg]) =>
+            `\t\t\t\t<span style="display: inline-flex; flex-direction: column; align-items: center; gap: 3px; color: ${pal['text-accent']}; font-size: 0.65rem;">` +
+            `${svg.replace(/\n\s*/g, '').replace('<svg', '<svg width="26" height="26"')}` +
+            `<span style="color: ${pal['text-muted']};">${esc(name)}</span></span>\n`,
+        )
+        .join('') +
+      `\t\t\t</div>\n`
+    : '';
   const fontRule = fontFamily ? `font-family: ${esc(fontFamily)}, serif;` : '';
   const iconSpan = brandSvg
     ? `\t\t\t\t<span class="demo-icon" style="color: ${pal['text-accent']};">${brandSvg.replace(/\n\s*/g, '')}</span>\n`
@@ -314,6 +351,7 @@ function themeBlock(mode, pal, dice, fontFamily, brandSvg, label) {
     `\t\t\t\t<span style="color: ${pal['text-muted']}; margin-left: auto; font-size: 0.75rem;">muted</span>\n` +
     `\t\t\t</div>\n` +
     diceRow +
+    iconRow +
     `\t\t\t<div class="grid">\n${rows}\n\t\t\t</div>\n` +
     `\t\t</section>`
   );
@@ -332,8 +370,24 @@ function previewHtml(livery) {
       `\t\t<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="anonymous" />\n` +
       `\t\t<link href="https://fonts.googleapis.com/css2?family=${familyForLink}&family=Roboto:wght@400;600&display=swap" rel="stylesheet" />\n`
     : `\t\t<link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;600&display=swap" rel="stylesheet" />\n`;
-  const dark = themeBlock('dark', pal.dark, livery.dice, familyForCss, livery.brandSvg, 'Dark');
-  const light = themeBlock('light', pal.light, livery.dice, familyForCss, livery.brandSvg, 'Light');
+  const dark = themeBlock(
+    'dark',
+    pal.dark,
+    livery.dice,
+    familyForCss,
+    livery.brandSvg,
+    'Dark',
+    livery.icons,
+  );
+  const light = themeBlock(
+    'light',
+    pal.light,
+    livery.dice,
+    familyForCss,
+    livery.brandSvg,
+    'Light',
+    livery.icons,
+  );
   const note = livery.palette
     ? ''
     : `\t\t<p class="note">This livery has <code>palette: null</code> — it inherits the base forge-amber chrome, shown here as its dark + light halves.</p>\n`;
@@ -410,7 +464,7 @@ async function readIf(file) {
 }
 
 const liveries = await loadLiveries();
-await attachBrandSvgs(liveries);
+await attachSvgs(liveries);
 const manifest = buildManifest(liveries);
 const css = buildCss(liveries);
 // Per-livery preview.html — each livery gets a design-review swatch page

@@ -1,11 +1,8 @@
 <script lang="ts">
-	import charactersSvg from '$icons/Characters.svg?raw';
-	import foesSvg from '$icons/Foes.svg?raw';
-	import expeditionsSvg from '$icons/Expeditions.svg?raw';
+	import { appIcon } from '$lib/liveryIcons.js';
 	import adventureSvg from '$icons/Adventure.svg?raw';
 	import eyeSvg from '$icons/eye-solid.svg?raw';
 	import noteSvg from '$icons/note-sticky-solid.svg?raw';
-	import villageSvg from '$icons/village.svg?raw';
 	import mobileSvg from '$icons/mobile-screen-solid.svg?raw';
 	import penSvg from '$icons/pen-to-square-solid.svg?raw';
 	import mapSvg from '$icons/treasure-map.svg?raw';
@@ -33,13 +30,17 @@
 		alt?: string;
 	}[] = [
 		{
-			icon: charactersSvg,
+			get icon() {
+				return appIcon('characters');
+			},
 			title: 'Character Sheets',
 			body: "Stats, vows, bonds, debilities, XP — everything the Ironlands will hurl at you, and everything you'll cling to when the dice betray you. Auto-saved, because the darkness waits for no one.",
 			color: 'var(--color-edge)',
 		},
 		{
-			icon: foesSvg,
+			get icon() {
+				return appIcon('foes');
+			},
 			title: 'Foe Tracker',
 			body: '83 horrors catalogued for your convenience. Know your enemy before it knows you. (Spoiler: it probably already does.) Track combat progress, mark the fallen, and try not to think about what comes next.',
 			color: 'var(--color-heart)',
@@ -47,7 +48,9 @@
 			alt: 'A cornered warrior faces a monstrous foe by torchlight',
 		},
 		{
-			icon: expeditionsSvg,
+			get icon() {
+				return appIcon('expeditions');
+			},
 			title: 'Expeditions',
 			body: 'The road goes ever on. Track journeys, delves, and scene challenges so you remember which haunted barrow nearly claimed you last session. Themes, domains, denizens, countdown clocks, progress tracks — all the grim details, preserved.',
 			color: 'var(--color-iron)',
@@ -95,7 +98,9 @@
 			alt: 'A skald singing a saga to a firelit hall',
 		},
 		{
-			icon: villageSvg,
+			get icon() {
+				return appIcon('connections');
+			},
 			title: 'Connections, NPCs & Landmarks',
 			body: "The Ironlands are not empty. Track the settlements you've found, the people you've met, the ones who owe you a favour, and the landmarks that anchor your saga — an inn, a shrine, a ruin on the horizon. Oracle-powered random generation for names and locations — or build them by hand, if you're that kind of hero.",
 			color: 'var(--color-health)',
