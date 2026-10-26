@@ -18,7 +18,7 @@
 		<div class="hero-image-wrap">
 			<img
 				class="hero-image"
-				src="/ironledger-verify-pending.webp"
+				src="/email/ironledger-verify-pending.webp"
 				alt="A Norse warrior scans the horizon, waiting for your verification to arrive"
 			/>
 			<p class="hero-caption">The raven has been dispatched.</p>

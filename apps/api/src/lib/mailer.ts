@@ -157,7 +157,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
           <tr>
             <td style="background:#ffffff;padding:0;line-height:0;">
               <img
-                src="${config.APP_URL}/ironledger-email-hero.webp"
+                src="${config.APP_URL}/email/ironledger-email-hero.webp"
                 alt="A Norse warrior points directly at you, demanding you claim your destiny"
                 width="520"
                 style="display:block;width:100%;height:auto;"
@@ -245,7 +245,7 @@ export async function sendPasswordResetEmail(to: string, token: string): Promise
           <tr>
             <td style="background:#ffffff;padding:0;line-height:0;">
               <img
-                src="${config.APP_URL}/ironledger-reset-password.webp"
+                src="${config.APP_URL}/email/ironledger-reset-password.webp"
                 alt="A Norse warrior kneels before an oracle, seeking wisdom he should already have"
                 width="520"
                 style="display:block;width:100%;height:auto;"
@@ -339,7 +339,7 @@ export async function sendInviteEmail(
           <tr>
             <td style="background:#ffffff;padding:0;line-height:0;">
               <img
-                src="${config.APP_URL}/ironledger-email-hero.webp"
+                src="${config.APP_URL}/email/ironledger-email-hero.webp"
                 alt="A Norse warrior points directly at you, demanding you claim your destiny"
                 width="520"
                 style="display:block;width:100%;height:auto;"
