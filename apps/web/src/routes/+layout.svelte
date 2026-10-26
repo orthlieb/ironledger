@@ -355,7 +355,12 @@
 	</div>
 {/if}
 
-<BroadcastBanner status={broadcastStatus} />
+<!-- The admin's broadcast is for signed-in users only — not the login and
+     other signed-out screens. (The maintenance notice above stays on them,
+     so visitors know before they sign in.) -->
+{#if data.user}
+	<BroadcastBanner status={broadcastStatus} />
+{/if}
 
 <SessionExpiredBanner />
 
