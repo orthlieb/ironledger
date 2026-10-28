@@ -9,6 +9,7 @@
 	import HamburgerMenu from '$lib/components/HamburgerMenu.svelte';
 	import BroadcastBanner from '$lib/components/BroadcastBanner.svelte';
 	import SessionExpiredBanner from '$lib/components/SessionExpiredBanner.svelte';
+	import UpdateBanner from '$lib/components/UpdateBanner.svelte';
 	import MovesDialog from '$lib/components/MovesDialog.svelte';
 	import OraclesDialog from '$lib/components/OraclesDialog.svelte';
 	import DiceRollerDialog from '$lib/components/DiceRollerDialog.svelte';
@@ -363,6 +364,10 @@
 {/if}
 
 <SessionExpiredBanner />
+
+<!-- A newer deploy is out (shown signed in or out — any open window,
+     installed app included, can be running an old build). -->
+<UpdateBanner />
 
 <svelte:head>
 	<!-- Warm up the CDN connection before the dice library is actually needed -->
