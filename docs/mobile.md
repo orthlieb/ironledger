@@ -157,6 +157,38 @@ pattern to copy.
 
 ---
 
+## Installing as an App
+
+Iron Ledger installs as an app from Chrome (desktop: the install icon in the
+address bar, or ⋮ → _Cast, save and share_ → _Install page as app…_; Android:
+⋮ → _Add to Home screen_) and from iOS Safari's _Add to Home Screen_. It then
+opens in its own window with no browser chrome. The manifest is
+`apps/web/static/manifest.webmanifest`:
+
+- **`id` / `start_url` `/`** — `/` redirects to `/home` (signed in) or
+  `/login`.
+- **No `orientation`** — the installed app rotates freely, so tablets and
+  phones get landscape (the wide layout at > 900px) as a browser tab does.
+- **Icons** — `icon-192.png` / `icon-512.png` / `favicon.svg` are the `any`
+  icons (rounded tile, artwork near the edge). Android crops `maskable` icons
+  to its own shape, so those are separate: `icon-maskable.svg` (full-bleed
+  background, the axe scaled into the centre 80% safe zone) and its
+  `icon-maskable-192.png` / `-512.png` renders. Regenerate the PNGs from the
+  SVG if the artwork changes.
+
+There is **no service worker**, so nothing is cached for offline use: every
+launch or reload fetches the deployed build, and an installed app updates on
+its own. The one gap is a window left open across a deploy, still running the
+old code. `kit.version.pollInterval` (`svelte.config.js`, 5 min) has SvelteKit
+check `/_app/version.json`, and `UpdateBanner.svelte` (in the root layout)
+shows _A new version of Iron Ledger is available_ with a **Reload** button once
+it differs. The banner also re-checks whenever the window comes back into view.
+Reload waits 2 s first, past the stores' 1.5 s autosave debounce, because the
+app has no save-on-unload flush. Until reloaded, a route change does a full
+page load (same-page query/hash changes stay client-side).
+
+---
+
 ## Testing Mobile Changes
 
 - **Playwright e2e:** `apps/web/tests/e2e/navigation.spec.ts` covers the
