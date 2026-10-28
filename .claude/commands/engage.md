@@ -175,8 +175,10 @@ job does — build image, push, roll). Any one of them going red is a
 failure of this ship. Immediately after emitting the ship report —
 same turn, do not wait — spawn a background worker to watch all
 three. The main session ends its turn as soon as the worker is
-spawned; when the worker finishes, a task-notification wakes this
-session with its report. Never poll for the worker's status.
+spawned. The worker's progress messages (step 3 below) arrive
+mid-run; relay each to the user in a line. When the worker finishes,
+a task-notification wakes this session with its final report. Never
+poll for the worker's status.
 
 Call the `Agent` tool with:
 - `subagent_type`: `"general-purpose"`
@@ -202,16 +204,30 @@ Call the `Agent` tool with:
      `action_required`). Use plain Bash `sleep` between polls —
      that's fine inside a background agent. CI usually terminates
      first (~2 min), then Deploy (~3 min), then E2E (~12 min).
-  3. **Report each workflow's result AS IT LANDS**, don't wait for
-     all three. When a run reaches a terminal conclusion, emit one
-     line for it right then ("CI on `<sha>` (PR #<n>) passed in
-     <t>" or "CI on `<sha>` (PR #<n>) FAILED after <t> — <one-line
-     summary of the failing job / step>"), then keep polling
-     whatever's still running. Each of these lines becomes its own
-     task-notification the main session will surface to the user;
-     staggered reports beat a single end-of-run summary because
-     the user can start reacting to a CI red before E2E's 12-min
-     run even finishes.
+  3. **Report progress ASYNC while polling**, via `SendMessage`
+     with `to: "main"` — the worker's plain text output isn't seen
+     until it finishes, so a line that's only printed arrives with
+     the final result, not as it lands.
+     - **Heartbeat about every 2 min** while anything is still
+       running: one short line per message, e.g. "E2E (PR #<n>):
+       'Run Playwright', 6m of ~12m · CI ✓ 1234/1234 · Deploy ✓".
+     - **Each result AS IT LANDS**, don't wait for all three: when
+       a run reaches a terminal conclusion, send its line right then
+       ("CI on `<sha>` (PR #<n>) passed in <t> — 1234/1234 tests" or
+       "CI on `<sha>` (PR #<n>) FAILED after <t> — <one-line summary
+       of the failing job / step>"), then keep polling whatever's
+       still running. The user can start reacting to a CI red
+       before E2E's 12-min run even finishes.
+     - **Test counts (n/m)** come from the finished job's log
+       (`mcp__github__get_job_logs` with `job_id` +
+       `return_content: true`, `tail_lines` ~400; job ids from
+       `mcp__github__actions_list` `method: "list_workflow_jobs"`).
+       GitHub returns 404 for a job's log until that job finishes,
+       so mid-run heartbeats carry step + elapsed time, not counts.
+       Vitest prints `Tests  <n> passed (<m>)` (one per suite — list
+       or sum them); Playwright prints `Running <m> tests …` at the
+       start and `<n> passed` / `failed` / `flaky` / `skipped` at
+       the end. Report passed/total plus any failed/flaky/skipped.
   4. **On CI or Deploy failing**, STOP polling E2E and cancel it
      from your outstanding work. E2E's result on the same head no
      longer matters — a red CI or Deploy already means main isn't
@@ -222,8 +238,8 @@ Call the `Agent` tool with:
      only remaining signal in that case, so keep it and triage
      it.)
   5. **On all three green**: after the third success line has
-     been reported, no summary needed — the per-workflow lines are
-     the report.
+     been sent, finish with all three outcomes and their n/m
+     counts as the final result.
   6. **On any non-success terminal conclusion (on any of the
      three)**: triage and fix.
      - Fetch failing job logs with `mcp__github__get_job_logs`
