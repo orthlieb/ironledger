@@ -35,7 +35,6 @@
 	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
 	import { appIcon } from '$lib/liveryIcons.js';
 	import treasureMapIconSvg from '$icons/treasure-map.svg?raw';
-	import logIconSvg from '$icons/log.svg?raw';
 
 	const CHECK =
 		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>';
@@ -218,7 +217,7 @@
 			key: 'log',
 			label: 'Session Log',
 			color: '#a46fb0',
-			icon: logIconSvg,
+			icon: appIcon('log'),
 			items:
 				logEntries.length > 0
 					? [{ key: 'log', cat: 'log', id: 'all', name: `${logEntries.length} entries` }]

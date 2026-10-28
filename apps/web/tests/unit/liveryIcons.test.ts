@@ -34,8 +34,9 @@ describe('livery icons', () => {
 	});
 
 	it("draws the livery's own where it ships one — the kinds' too", () => {
-		livery.icons = { characters: '<svg>c</svg>', settlements: '<svg>s</svg>' };
+		livery.icons = { characters: '<svg>c</svg>', log: '<svg>l</svg>', settlements: '<svg>s</svg>' };
 		expect(appIcon('characters')).toBe('<svg>c</svg>');
+		expect(appIcon('log')).toBe('<svg>l</svg>');
 		expect(appIcon('foes')).toBe(APP_ICONS.foes);
 		expect(ENTITY_KIND_META.community.icon).toBe('<svg>s</svg>');
 		expect(ENTITY_KIND_META.place.icon).toBe(APP_ICONS.landmarks);
