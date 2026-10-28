@@ -210,7 +210,14 @@ Call the `Agent` tool with:
      the final result, not as it lands.
      - **Heartbeat about every 2 min** while anything is still
        running: one short line per message, e.g. "E2E (PR #<n>):
-       'Run Playwright', 6m of ~12m · CI ✓ 1234/1234 · Deploy ✓".
+       212/270 passed, 6m of ~12m · CI ✓ 272/272 · Deploy ✓".
+       E2E's live count is the "E2E progress" check run its
+       Playwright reporter keeps updated
+       (`apps/web/tests/reporters/github-check-progress.ts`):
+       `gh api "repos/orthlieb/ironledger/commits/<merge SHA>/check-runs?check_name=E2E%20progress" --jq '.check_runs[0].output | .title + " — " + .summary'`
+       (title like `212/270 passed, 1 failed`; the summary splits
+       out flaky / skipped / still to run). Before Playwright starts
+       there's no such check yet: report the current step instead.
      - **Each result AS IT LANDS**, don't wait for all three: when
        a run reaches a terminal conclusion, send its line right then
        ("CI on `<sha>` (PR #<n>) passed in <t> — 1234/1234 tests" or
@@ -223,7 +230,7 @@ Call the `Agent` tool with:
        `return_content: true`, `tail_lines` ~400; job ids from
        `mcp__github__actions_list` `method: "list_workflow_jobs"`).
        GitHub returns 404 for a job's log until that job finishes,
-       so mid-run heartbeats carry step + elapsed time, not counts.
+       so CI's counts come at its end (E2E's are live, above).
        Vitest prints `Tests  <n> passed (<m>)` (one per suite — list
        or sum them); Playwright prints `Running <m> tests …` at the
        start and `<n> passed` / `failed` / `flaky` / `skipped` at
