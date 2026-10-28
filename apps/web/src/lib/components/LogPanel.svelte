@@ -35,7 +35,7 @@
 	import anglesLeftSvg from '$icons/angles-left-solid.svg?raw';
 	import anglesRightSvg from '$icons/angles-right-solid.svg?raw';
 	import broomWideSvg from '$icons/broom-wide-solid.svg?raw';
-	import logIconSvg from '$icons/log.svg?raw';
+	import { appIcon } from '$lib/liveryIcons.js';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import StoryDialog from './StoryDialog.svelte';
 	import {
@@ -765,7 +765,7 @@
 <div class="log-panel">
 	<!-- ── Built-in header: title · pagination · clear ── -->
 	<div class="log-header">
-		<span class="log-title-icon" aria-hidden="true">{@html logIconSvg}</span>
+		<span class="log-title-icon" aria-hidden="true">{@html appIcon('log')}</span>
 		<span class="log-title">{headingText('Log')}</span>
 
 		<div class="log-pagination">
@@ -827,7 +827,7 @@
 	>
 		{#if entries.length === 0}
 			<div class="log-empty">
-				<span class="log-empty-icon" aria-hidden="true">{@html logIconSvg}</span>
+				<span class="log-empty-icon" aria-hidden="true">{@html appIcon('log')}</span>
 				<span>No entries yet. History waits patiently.<br />It will not wait forever.</span>
 			</div>
 		{:else}

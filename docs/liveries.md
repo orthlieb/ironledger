@@ -132,9 +132,9 @@ swapped by rebuilding the `<link rel="icon" type="image/svg+xml">` with a
 data URL. `apple-touch-icon.png` is untouched — the home-screen icon is
 captured when a user adds the site and can't be swapped at runtime.
 
-### Area and entity icons (optional) — `icons/<name>.svg`
+### Area, log and entity icons (optional) — `icons/<name>.svg`
 
-A livery may also replace any of the app's area and entity-kind icons with
+A livery may also replace any of the app's area, log and entity-kind icons with
 its own, one SVG each in an `icons/` folder next to its `livery.json`:
 
 ```
@@ -147,6 +147,7 @@ liveries/<id>/icons/<name>.svg
 | `expeditions` | the Expeditions area's icon                                                  |
 | `foes`        | the Foes area's icon                                                         |
 | `connections` | the Connections area's icon                                                  |
+| `log`         | the session Log's icon (panel header, empty log, export)                     |
 | `journey`     | the Journey kind's icon, wherever a journey shows its kind (pickers, chips…) |
 | `scene`       | the Scene kind's                                                             |
 | `site`        | the Site kind's                                                              |

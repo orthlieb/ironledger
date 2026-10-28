@@ -168,7 +168,7 @@ async function readBrandSvg(id) {
 }
 
 // Read a livery's optional `liveries/<id>/icons/<name>.svg` replacements for
-// the app's area and entity-kind icons (ICON_NAMES; lint-liveries.mjs checks
+// the app's area, log and entity-kind icons (ICON_NAMES; lint-liveries.mjs checks
 // the names) → { name: svg } in ICON_NAMES order, trimmed, or null when it
 // ships none. Inlined into the manifest so the app renders them as
 // currentColor glyphs without a runtime fetch; unlike brand.svg the viewBox
@@ -215,7 +215,7 @@ function buildManifest(liveries) {
       // liveries/<id>/brand.svg — inlined verbatim so the client renders it
       // as a currentColor glyph without a runtime fetch.
       ...(brandById[l.id] ? { brandSvg: brandById[l.id] } : {}),
-      // Optional replacements for the app's area and entity-kind icons,
+      // Optional replacements for the app's area, log and entity-kind icons,
       // from liveries/<id>/icons/<name>.svg; any it doesn't ship stay the
       // app's own.
       ...(l.icons ? { icons: l.icons } : {}),

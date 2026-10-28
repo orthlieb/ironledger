@@ -81,14 +81,15 @@ export const DICE_TEXTURES = new Set([
 ]);
 
 // The app icons a livery may replace, each with its own
-// `liveries/<id>/icons/<name>.svg`: the four areas' and the six entity
-// kinds'. Mirrors LIVERY_ICON_NAMES in apps/web/src/lib/liveryIcons.ts —
-// keep the two in sync.
+// `liveries/<id>/icons/<name>.svg`: the four areas', the session log's and
+// the six entity kinds'. Mirrors LIVERY_ICON_NAMES in
+// apps/web/src/lib/liveryIcons.ts — keep the two in sync.
 export const ICON_NAMES = [
   'characters',
   'expeditions',
   'foes',
   'connections',
+  'log',
   'journey',
   'scene',
   'site',

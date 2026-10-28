@@ -1,8 +1,9 @@
 // =============================================================================
 // Iron Ledger — the app icons a livery may replace
 //
-// The four areas' icons (Characters, Expeditions, Foes, Connections) and the
-// six entity kinds' (settlements, landmarks, NPCs, journeys, sites, scenes).
+// The four areas' icons (Characters, Expeditions, Foes, Connections), the
+// session log's, and the six entity kinds' (settlements, landmarks, NPCs,
+// journeys, sites, scenes).
 // A livery replaces any of them with its own `liveries/<id>/icons/<name>.svg`
 // (inlined into liveries.manifest.json by scripts/gen-liveries-manifest.mjs);
 // the ones it doesn't ship stay the app's own. Read one with `appIcon(name)`:
@@ -15,6 +16,7 @@ import charactersSvg from '$icons/Characters.svg?raw';
 import expeditionsSvg from '$icons/Expeditions.svg?raw';
 import foesSvg from '$icons/Foes.svg?raw';
 import villageSvg from '$icons/village.svg?raw';
+import logSvg from '$icons/log.svg?raw';
 import journeySvg from '$icons/journey.svg?raw';
 import hourglassSvg from '$icons/hourglass-clock-solid.svg?raw';
 import dungeonGateSvg from '$icons/dungeon-gate.svg?raw';
@@ -30,6 +32,7 @@ export const LIVERY_ICON_NAMES = [
 	'expeditions',
 	'foes',
 	'connections',
+	'log',
 	'journey',
 	'scene',
 	'site',
@@ -45,6 +48,7 @@ export const APP_ICONS: Record<LiveryIconName, string> = {
 	expeditions: expeditionsSvg,
 	foes: foesSvg,
 	connections: villageSvg,
+	log: logSvg,
 	journey: journeySvg,
 	scene: hourglassSvg,
 	site: dungeonGateSvg,

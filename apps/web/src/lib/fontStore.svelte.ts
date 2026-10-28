@@ -56,7 +56,7 @@ export interface LiveryMeta {
 	 *  this livery is active. Absent → the default sharp-axe stays. */
 	brandSvg?: string;
 	/** Optional replacements a livery may ship at
-	 *  `liveries/<id>/icons/<name>.svg` for the app's area and entity-kind
+	 *  `liveries/<id>/icons/<name>.svg` for the app's area, log and entity-kind
 	 *  icons (liveryIcons.ts's LIVERY_ICON_NAMES), by name. Any it doesn't
 	 *  ship stay the app's own. */
 	icons?: Record<string, string>;
