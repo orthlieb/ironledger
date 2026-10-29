@@ -41,6 +41,7 @@ Thumbs.db
 coverage/
 .nyc_output/
 test-results/
+playwright-report/
 apps/web/tests/e2e/.auth/
 
 # Database

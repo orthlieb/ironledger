@@ -211,13 +211,13 @@ Call the `Agent` tool with:
      - **Heartbeat about every 2 min** while anything is still
        running: one short line per message, e.g. "E2E (PR #<n>):
        212/270 passed, 6m of ~12m · CI ✓ 272/272 · Deploy ✓".
-       E2E's live count is the "E2E progress" check run its
+       E2E's live count is the "E2E progress" commit status its
        Playwright reporter keeps updated
-       (`apps/web/tests/reporters/github-check-progress.ts`):
-       `gh api "repos/orthlieb/ironledger/commits/<merge SHA>/check-runs?check_name=E2E%20progress" --jq '.check_runs[0].output | .title + " — " + .summary'`
-       (title like `212/270 passed, 1 failed`; the summary splits
-       out flaky / skipped / still to run). Before Playwright starts
-       there's no such check yet: report the current step instead.
+       (`apps/web/tests/reporters/github-progress-status.ts`):
+       `gh api "repos/orthlieb/ironledger/commits/<merge SHA>/status" --jq '.statuses[] | select(.context == "E2E progress") | .state + " · " + .description'`
+       (e.g. `pending · 212/270 passed, 1 failed · 1 flaky · 0 skipped
+       · 56 to run`). Before Playwright starts there's no such status
+       yet: report the current step instead.
      - **Each result AS IT LANDS**, don't wait for all three: when
        a run reaches a terminal conclusion, send its line right then
        ("CI on `<sha>` (PR #<n>) passed in <t> — 1234/1234 tests" or
