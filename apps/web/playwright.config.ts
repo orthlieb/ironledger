@@ -12,9 +12,15 @@ export default defineConfig({
 	forbidOnly: !!process.env.CI,
 	retries: process.env.CI ? 2 : 0,
 	workers: 1,
-	// github-progress-status posts a live "n/m passed" commit status in CI
-	// (it's inert without the env the E2E workflow sets).
-	reporter: [['list'], ['./tests/reporters/github-progress-status.ts']],
+	// html writes playwright-report/ (traces + failure screenshots), which the
+	// E2E workflow uploads as an artifact; github-progress-status posts a live
+	// "n/m passed" commit status in CI (it's inert without the env the E2E
+	// workflow sets).
+	reporter: [
+		['list'],
+		['html', { open: 'never' }],
+		['./tests/reporters/github-progress-status.ts'],
+	],
 
 	use: {
 		baseURL: 'http://localhost:5173',
