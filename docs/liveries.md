@@ -212,11 +212,12 @@ Every icon carries its credit as a comment straight after the opening
 `<svg …>` tag, so provenance survives the build (the manifest inlines the
 file verbatim):
 
-| Source                  | Comment                                                      |
-| ----------------------- | ------------------------------------------------------------ |
-| game-icons.net          | `<!--game-icons.net "<name>" by <Author> — CC BY 3.0-->`     |
-| The Noun Project (free) | `<!--The Noun Project "<name>" by <Creator> — CC BY 3.0-->`  |
-| Your own art            | `<!--"<name>" by <Your Name> — <licence, e.g. CC BY 4.0>-->` |
+| Source                  | Comment                                                       |
+| ----------------------- | ------------------------------------------------------------- |
+| game-icons.net          | `<!--game-icons.net "<name>" by <Author> — CC BY 3.0-->`      |
+| The Noun Project (free) | `<!--The Noun Project "<name>" by <Creator> — CC BY 3.0-->`   |
+| Your own art            | `<!--"<name>" by <Your Name> — <licence, e.g. CC BY 4.0>-->`  |
+| AI-generated            | `<!--"<name>" — AI-generated (<tool>), supplied by <Name>-->` |
 
 - **game-icons.net.** An icon's page is `game-icons.net/1x1/<author>/<name>.html`;
   the original SVG is the same path in the project's GitHub repo,
