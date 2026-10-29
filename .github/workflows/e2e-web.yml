@@ -21,11 +21,11 @@ on:
       - 'package-lock.json'
       - '.github/workflows/e2e-web.yml'
 
-# checks: write lets the github-check-progress reporter post its live
-# "n/m passed" check run (apps/web/tests/reporters/github-check-progress.ts).
+# statuses: write lets the github-progress-status reporter post its live
+# "n/m passed" commit status (apps/web/tests/reporters/github-progress-status.ts).
 permissions:
   contents: read
-  checks: write
+  statuses: write
 
 jobs:
   playwright:
@@ -76,7 +76,7 @@ jobs:
       RATE_LIMIT_LOGIN: '1000'
       RATE_LIMIT_REGISTER: '1000'
       RATE_LIMIT_GLOBAL: '10000'
-      # The commit the "E2E progress" check run attaches to: on a pull
+      # The commit the "E2E progress" status is posted on: on a pull
       # request the PR's head (github.sha is the throwaway merge commit),
       # otherwise the pushed commit.
       PROGRESS_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
@@ -195,21 +195,22 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
 
-      - name: Close E2E progress check if Playwright stopped early
-        # The reporter completes its check run itself; this catches a run
-        # that was killed or timed out before it could (always() runs on
-        # cancellation too), so the check never sits "in progress".
+      - name: Close E2E progress status if Playwright stopped early
+        # The reporter posts its own final status; this catches a run that
+        # was killed or timed out before it could (always() runs on
+        # cancellation too), so the status never sits "pending".
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          for id in $(gh api "repos/${{ github.repository }}/commits/$PROGRESS_SHA/check-runs?check_name=E2E%20progress" \
-                        --jq '.check_runs[] | select(.status != "completed") | .id'); do
-            gh api -X PATCH "repos/${{ github.repository }}/check-runs/$id" \
-              -f status=completed -f conclusion=cancelled \
-              -f 'output[title]=Stopped before the suite finished' \
-              -f 'output[summary]=The Playwright run ended without reporting a result.' || true
-          done
+          state=$(gh api "repos/${{ github.repository }}/commits/$PROGRESS_SHA/status" \
+                    --jq '.statuses[] | select(.context == "E2E progress") | .state' || true)
+          if [ "$state" = "pending" ]; then
+            gh api "repos/${{ github.repository }}/statuses/$PROGRESS_SHA" \
+              -f state=error -f context='E2E progress' \
+              -f description='Stopped before the suite finished' \
+              -f target_url="${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" || true
+          fi
 
       - name: Upload Playwright report
         if: always()
