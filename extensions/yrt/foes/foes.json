@@ -205,6 +205,7 @@
       ],
       "description": "Ember Kites are what happens when a raptor population nests for many generations at the edge of a Crimson blight zone. Their feathers absorb and retain heat through a biology that no ordinary raptor shares: the tissue throughout their flight musculature is threaded with Crimson-saturated capillaries that act as a living heat battery. A kite basking on a warm outcrop is charging. A kite diving is discharging.\n\nThe thermal release on impact is not fire. There are no flames, no ignition source, no visible effect until the moment of contact — at which point the stored heat transfers instantaneously into the target at a level sufficient to cause serious burns and ignite loose cloth or dry material. The bird itself is unharmed.\n\nEmber Kites are territorial and predictable in range. A bonded pair will hold a stretch of thermal-rich cliff or ridge for years and will attack anything that enters their territory without exception, regardless of size. Travellers who know what to look for — the rust-orange silhouettes circling high thermals, the absence of other birds in an area, the shimmer of heat distortion near certain outcroppings — can usually route around them.\n\nConclave surveyors treat Ember Kite sightings as a reliable early indicator of Crimson contamination. The birds do not cause the blight; they only live where it already exists.",
       "source": "yrt",
+      "icon": "foe-ember-kite",
       "extras": {
         "yrt": {
           "natureNote": "Crimson-saturated raptor",
