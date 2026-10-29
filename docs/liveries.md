@@ -3,11 +3,14 @@
 A **livery** pairs a display (heading) font with an optional chrome palette. It
 is the "skin" the user picks in **Settings → Appearance → Livery**. The
 built-in looks — all named after mythic or literary figures whose visual
-world matches the theme — **Beowulf** (Skranji/verdigris, default),
-**Merlin** (Simonetta/amber), **Yorick** (Metamorphous/granite), **Deckard**
-(Orbitron/void-navy), **Vlad** (Nosifer/oxblood), **Jack** (Berkshire
-Swash/pumpkin), and **Elspeth** (witch violet + moss) — are all defined
-as data. Adding a new one is a drop-in: create a folder, run one command.
+world matches the theme — **Beowulf** (Skranji over the base forge-amber
+chrome, default), **Merlin** (Simonetta/sea-green), **Yorick**
+(Cinzel/lichen-on-granite), **Deckard** (Orbitron/void-navy and cyan),
+**Vlad** (Nosifer/oxblood), **Jack** (Berkshire Swash/pumpkin), and
+**Elspeth** (Griffy/aubergine and poison green) — are all defined as data.
+Each also ships a brand mark, and all but Beowulf ship a full set of area
+and entity icons. Adding a new one is a drop-in: create a folder, run one
+command.
 
 Liveries are orthogonal to the light/dark **theme** (`data-theme`) and to
 gameplay colours (stats, resources, danger/success). A livery only restyles the
@@ -18,12 +21,13 @@ and the heading font. Every livery works in both light and dark theme.
 
 ```
 liveries/
-  beowulf/livery.json     ← Beowulf (default)
-  merlin/livery.json      ← Merlin
-  yorick/livery.json      ← Yorick
-  deckard/livery.json     ← Deckard sample — copy this as your template
-  <id>/brand.svg          ← optional nav mark + favicon (below)
-  <id>/icons/<name>.svg   ← optional area / entity icons (below)
+  beowulf/                ← Beowulf (default) — brand.svg, no icons/ (the app's own)
+  deckard/                ← Deckard, the sample — copy this as your template
+    livery.json
+    brand.svg             ← optional nav mark + favicon (below)
+    icons/<name>.svg      ← optional area / log / entity icons (below)
+    preview.html          ← generated swatch page (below)
+  elspeth/  jack/  merlin/  vlad/  yorick/   ← same shape as deckard/
 ```
 
 One folder per livery; the folder name is the livery **id** and must match the
@@ -63,7 +67,7 @@ One folder per livery; the folder name is the livery **id** and must match the
 
 ### The palette
 
-`palette` is either `null` (inherit the base theme's chrome — what **Merlin**
+`palette` is either `null` (inherit the base theme's chrome — what **Beowulf**
 does) or an object with a `dark` and a `light` half. Each half must define
 **exactly** these 14 tokens (any hex colour, `#rgb`/`#rgba`/`#rrggbb`/`#rrggbbaa`):
 
@@ -172,6 +176,68 @@ livery switch swaps them in place. (The name list lives in both
 `liveryIcons.ts` and `scripts/lint-liveries.mjs`; a unit test keeps them in
 step.)
 
+The foe dropdown's per-foe glyphs are **not** livery icons: they come from
+each foe's nature (`foe-ironlander` barbute, `foe-firstborn` elf-helmet,
+`foe-animal` stag-head, `foe-beast` dragon-head, `foe-horror` spectre,
+`foe-anomaly` vortex, `foe-construct` rock-golem — `iconRegistry.ts`) and
+stay the same under every livery. Avoid them for a livery's own slots, or
+an NPC and an Ironlander foe end up wearing the same helmet.
+
+#### The built-in sets
+
+Every icon is from [game-icons.net](https://game-icons.net) unless noted;
+each file's comment carries its exact credit.
+
+| `<name>`      | Merlin         | Yorick                | Deckard           | Vlad                        | Jack            | Elspeth           |
+| ------------- | -------------- | --------------------- | ----------------- | --------------------------- | --------------- | ----------------- |
+| `characters`  | wizard-face    | plague-doctor-profile | astronaut-helmet  | stake-hammer                | scarecrow       | witch-face        |
+| `expeditions` | wizard-staff   | old-lantern           | lunar-module      | cloaked-figure-on-horseback | old-wagon       | magic-broom       |
+| `foes`        | wyvern         | ghost                 | alien-skull       | werewolf                    | goblin-head     | imp               |
+| `connections` | Roundtable ¹   | graveyard             | radar-dish        | family-tree                 | triple-corn     | triquetra         |
+| `log`         | scroll-quill   | black-book            | processor         | wax-seal                    | wood-pile       | spell-book        |
+| `journey`     | horse-head     | raven                 | orbit             | night-sky                   | direction-signs | forest-entrance   |
+| `scene`       | orbital-rays   | sundial               | digital-trace     | lit-candelabra              | moon            | spider-web        |
+| `site`        | Stonehenge ²   | crypt-entrance        | defense-satellite | castle-ruins                | maze            | cave-entrance     |
+| `settlements` | castle         | medieval-village-01   | habitat-dome      | village                     | granary         | spooky-house      |
+| `npcs`        | jester-hat     | barbute               | android-mask      | torch                       | pilgrim-hat     | frog              |
+| `landmarks`   | sword-in-stone | gothic-cross          | ringed-planet     | gargoyle                    | holy-oak        | mushrooms-cluster |
+
+¹ Original art by Carl Orthlieb (CC BY 4.0). ² The Noun Project, Delwar Hossain
+(CC BY 3.0). Yorick's `npcs` barbute is the same glyph as the Ironlander foe
+icon (see above).
+
+#### Sourcing and crediting icons
+
+Every icon carries its credit as a comment straight after the opening
+`<svg …>` tag, so provenance survives the build (the manifest inlines the
+file verbatim):
+
+| Source                  | Comment                                                      |
+| ----------------------- | ------------------------------------------------------------ |
+| game-icons.net          | `<!--game-icons.net "<name>" by <Author> — CC BY 3.0-->`     |
+| The Noun Project (free) | `<!--The Noun Project "<name>" by <Creator> — CC BY 3.0-->`  |
+| Your own art            | `<!--"<name>" by <Your Name> — <licence, e.g. CC BY 4.0>-->` |
+
+- **game-icons.net.** An icon's page is `game-icons.net/1x1/<author>/<name>.html`;
+  the original SVG is the same path in the project's GitHub repo,
+  `raw.githubusercontent.com/game-icons/icons/master/<author>/<name>.svg`.
+  Spell `<Author>` the way game-icons' own `license.txt` credits them
+  (`Lorc`, `Delapouite`, `Skoll`, `SpencerDub`, `Caro Asercion`,
+  `DarkZaitzev`, …). The download is a white glyph on a full-canvas black
+  `<path d="M0 0h512v512H0z"/>`: drop that background path and set the glyph
+  to `fill="currentColor"`. The same name can exist under two authors
+  (`castle`, `stopwatch`, `tombstone`, `fist`…), so credit the one you used.
+- **The Noun Project.** A free download must be credited "_name_ by
+  _creator_ from Noun Project" (CC BY 3.0); a NounPro licence waives that,
+  but keep the comment anyway. Its SVGs reserve room under the glyph for that
+  credit line — a `viewBox="0 0 100 125"` or `"-5.0 -10.0 110.0 135.0"` frame
+  — so tighten the viewBox to a square around the glyph, as Merlin's
+  `site.svg` does.
+- **Pick against the brand mark and the defaults.** Don't repeat the
+  livery's own `brand.svg` in a slot (Vlad has no bats — its brand is one;
+  Yorick's characters aren't skulls), and don't pick the app's default icon
+  for a slot (`log` is already an axe in a log), or the swap is invisible.
+
 ## How the build wires it up
 
 Two committed, generator-owned artifacts are produced from the JSON:
@@ -183,8 +249,12 @@ npm run gen:liveries        # scripts/gen-liveries-manifest.mjs
 - **`apps/web/src/lib/liveries.manifest.json`** — runtime metadata (id, label,
   default, description, preview, googleFamily, dice, previewColors, optional
   brandSvg and icons). Read by `fontStore.svelte.ts` (active-livery state +
-  `activeLiveryDice()` + `activeLiveryBrand()`), `SettingsDialog.svelte` (the
-  dropdown), and `dice.ts` (per-livery dice colours/texture).
+  `activeLiveryDice()` + `activeLiveryBrand()` + `activeLiveryIcons()`),
+  `SettingsDialog.svelte` (the dropdown), and `dice.ts` (per-livery dice
+  colours/texture).
+- **`liveries/<id>/preview.html`** — a standalone swatch page per livery
+  (title, chrome, dice, and its icon row in dark and light), for eyeballing
+  a livery without running the app.
 - **`apps/web/src/lib/liveries.generated.css`** — the per-livery
   `[data-font='<id>']` typography block (including `--font-display`, so the
   render-blocking stylesheet owns the font stack — no FOUC, no JS to set it)
@@ -207,21 +277,25 @@ npm run gen:liveries:check   # fail if the committed artifacts are stale
 
 ## Add a livery in four steps
 
-1. **Copy the sample:** `cp -r liveries/deckard liveries/<your-id>`.
+1. **Copy the sample:** `cp -r liveries/deckard liveries/<your-id>`. That
+   brings Deckard's `brand.svg` and `icons/` too: replace them with your own
+   (credited — see "Sourcing and crediting icons"), or delete them to keep
+   the default sharp-axe and the app's own icons.
 2. **Edit `liveries/<your-id>/livery.json`** — set `id` to the folder name,
    pick a font `stack`, and either set `palette: null` or fill both `dark` and
    `light` halves.
 3. **Regenerate:** `npm run gen:liveries` (or just build/check `apps/web`).
-4. **Verify:** it appears in Settings → Appearance → Livery. Toggle light/dark
-   to check both palettes.
+4. **Verify:** open `liveries/<your-id>/preview.html` for the swatches and
+   icon row, then check it in Settings → Appearance → Livery. Toggle
+   light/dark to check both palettes.
 
 That's it — no edit to `fontStore`, `SettingsDialog`, `app.css`, or the
 manifest by hand.
 
 ## Web fonts (only if you need one)
 
-The built-in liveries load their web fonts (Skranji, Metamorphous, Simonetta,
-Orbitron, Nosifer, Berkshire Swash) from the Google Fonts `<link>` in
+The built-in liveries load their web fonts (Skranji, Simonetta, Cinzel,
+Orbitron, Nosifer, Berkshire Swash, Griffy) from the Google Fonts `<link>` in
 `apps/web/src/app.html`. **Deckard** demonstrates the path — its Orbitron face
 is declared via `googleFamily` and added to that `<link>`.
 
