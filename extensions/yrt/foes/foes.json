@@ -237,6 +237,7 @@
       ],
       "description": "A Greatmask is a Mask Risen built at a scale and a permanence ordinary Mask Risen are not. Where a normal Mask Risen is a single-purpose tool for a single named target, a Greatmask is a territory marker — a defensive construct keyed to a region rather than to a person, and intended to persist for generations.\n\nThe mask is enormous, hand-carved by a Verdani elder over the course of months, and laced with deep Verdant programming that includes recognition of the territorial perimeter, recognition of Verdani kin, a low-priority stand-down protocol for unrecognised non-hostiles passing through, and an aggressive engagement protocol for unrecognised actors who behave in proscribed ways.\n\nBecause the Greatmask is intended to outlive any individual walker, the mask is not held by one elder; it is held by a line — typically a family or a small council — who pass the responsibility down through generations. As long as someone in the line is alive and accepts the role, the Greatmask remains active. A Greatmask is essentially impossible to defeat in combat. The only practical responses are: do not provoke it, leave the territory, or find the line of keepers and persuade them to stand it down.",
       "source": "yrt",
+      "icon": "foe-greatmask",
       "extras": {
         "yrt": {
           "natureNote": "elven, Verdant — ancient",
@@ -303,6 +304,7 @@
       ],
       "description": "A Mask Risen is what the Verdani make when something needs to be done that they cannot do themselves. The mask is the active component: a piece of Amber-laced hardwood, carved with a recognition pattern (the named target) and an instruction (typically confront, sometimes kill). The mask is handed to a designated walker — an elder of the community, usually one with little time left — who carries it into the forest and lays it down in a place of strong Verdant flow.\n\nThe Verdant flow does the rest. Local biomass accretes around the mask: leaves, soil, root mass, beetle shells, fungal mycelium, the bones of small animals. Within a day or two there is a body. Within a week the body is walking.\n\nThe walker is the handler. They do not need to be physically present — the mask carries the recognition pattern and the local Verdant flow carries the energy — but they must be alive, and they must be reasonably close. When the walker dies, the Mask Risen falls inert. A Mask Risen cannot be permanently killed by physical means. The only way to stop one for good is to find and destroy the mask, or to find and stop the walker.",
       "source": "yrt",
+      "icon": "foe-mask-risen",
       "extras": {
         "yrt": {
           "natureNote": "elven, Verdant",
