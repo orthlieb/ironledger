@@ -80,6 +80,9 @@ jobs:
       # request the PR's head (github.sha is the throwaway merge commit),
       # otherwise the pushed commit.
       PROGRESS_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+      # The reporter writes this once its final status has posted; the
+      # close-status step below checks for it.
+      PROGRESS_DONE_FILE: /tmp/e2e-progress-done
 
     steps:
       - name: Checkout
@@ -198,11 +201,19 @@ jobs:
       - name: Close E2E progress status if Playwright stopped early
         # The reporter posts its own final status; this catches a run that
         # was killed or timed out before it could (always() runs on
-        # cancellation too), so the status never sits "pending".
+        # cancellation too), so the status never sits "pending". The done
+        # file comes first: reading the status straight back can still return
+        # the last "pending" for a second or so after the reporter's final
+        # POST, and acting on that stale read replaced a "success" with
+        # "error" (seen on 4e10c10a).
         if: always()
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
+          if [ -f "$PROGRESS_DONE_FILE" ]; then
+            echo "Reporter posted its final status: $(cat "$PROGRESS_DONE_FILE")"
+            exit 0
+          fi
           state=$(gh api "repos/${{ github.repository }}/commits/$PROGRESS_SHA/status" \
                     --jq '.statuses[] | select(.context == "E2E progress") | .state' || true)
           if [ "$state" = "pending" ]; then

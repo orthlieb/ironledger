@@ -17,7 +17,14 @@
  * request, so the status shows on the PR). Anywhere else, including local
  * runs, it does nothing. It never fails the test run: the first API error
  * turns it off with one warning.
+ *
+ * Once the final status has posted, it writes the file named by
+ * PROGRESS_DONE_FILE (when set). The workflow's always() clean-up step looks
+ * for that file rather than reading the status back: the combined-status read
+ * can lag a write by a second or more, and a stale "pending" made it replace a
+ * fresh "success" with "error".
  */
+import { writeFileSync } from 'node:fs';
 import type {
 	FullConfig,
 	FullResult,
@@ -84,6 +91,7 @@ export default class GitHubProgressStatus implements Reporter {
 	private readonly token = process.env.GITHUB_TOKEN;
 	private readonly repo = process.env.GITHUB_REPOSITORY;
 	private readonly sha = process.env.PROGRESS_SHA;
+	private readonly doneFile = process.env.PROGRESS_DONE_FILE;
 	private readonly api = process.env.GITHUB_API_URL ?? 'https://api.github.com';
 	private readonly runUrl = process.env.GITHUB_RUN_ID
 		? `${process.env.GITHUB_SERVER_URL ?? 'https://github.com'}/${this.repo}/actions/runs/${process.env.GITHUB_RUN_ID}`
@@ -111,8 +119,16 @@ export default class GitHubProgressStatus implements Reporter {
 
 	async onEnd(result: FullResult): Promise<void> {
 		if (!this.enabled || !this.suite) return;
-		this.post(FINAL_STATE[result.status]);
+		const state = FINAL_STATE[result.status];
+		this.post(state);
 		await this.queue;
+		// Still enabled → every request, the final one included, succeeded.
+		if (!this.enabled || !this.doneFile) return;
+		try {
+			writeFileSync(this.doneFile, `${state}\n`);
+		} catch (e) {
+			console.warn(`[github-progress-status] could not write ${this.doneFile}: ${String(e)}`);
+		}
 	}
 
 	/** Queue a status with the tally as of now. */
