@@ -582,6 +582,7 @@
       ],
       "description": "The Pura Ecclesia is, in ordinary doctrine, opposed to the use of dead matter and to the animation of the inert. The vow walker is the order's one acknowledged exception — a doctrinal compromise so politically delicate that it is held by a single internal suborder, the Iron Wardens, and is never discussed with outsiders.\n\nA vow walker is built to honour a final oath. When a senior Ecclesia figure faces death they may, with the order's approval, dictate a final standing oath. The oath is recorded. The body is interred. A vow walker is then constructed as the oath's reliquary: a Luminous-shelled, Azure-jointed, Crimson-cored armour body, carrying the deceased's death-mask and a single Amber tablet inscribed with the oath.\n\nThe Iron Wardens hold the operating Amber keys. Each vow walker has a designated handler from within the Wardens, and that handler is responsible for the construct's actions for the rest of their life. The Ecclesia's theological line is precise: they do not animate the dead; the construct is a reliquary, not a corpse. A vow walker can be destroyed. The shell is tough but not invulnerable; the Crimson core, once breached, ends the construct cleanly.",
       "source": "yrt",
+      "icon": "foe-vow-walker",
       "extras": {
         "yrt": {
           "natureNote": "Pura Ecclesia reliquary, handler-driven",
