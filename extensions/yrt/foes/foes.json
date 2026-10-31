@@ -205,6 +205,7 @@
       ],
       "description": "Ember Kites are what happens when a raptor population nests for many generations at the edge of a Crimson blight zone. Their feathers absorb and retain heat through a biology that no ordinary raptor shares: the tissue throughout their flight musculature is threaded with Crimson-saturated capillaries that act as a living heat battery. A kite basking on a warm outcrop is charging. A kite diving is discharging.\n\nThe thermal release on impact is not fire. There are no flames, no ignition source, no visible effect until the moment of contact — at which point the stored heat transfers instantaneously into the target at a level sufficient to cause serious burns and ignite loose cloth or dry material. The bird itself is unharmed.\n\nEmber Kites are territorial and predictable in range. A bonded pair will hold a stretch of thermal-rich cliff or ridge for years and will attack anything that enters their territory without exception, regardless of size. Travellers who know what to look for — the rust-orange silhouettes circling high thermals, the absence of other birds in an area, the shimmer of heat distortion near certain outcroppings — can usually route around them.\n\nConclave surveyors treat Ember Kite sightings as a reliable early indicator of Crimson contamination. The birds do not cause the blight; they only live where it already exists.",
       "source": "yrt",
+      "icon": "foe-ember-kite",
       "extras": {
         "yrt": {
           "natureNote": "Crimson-saturated raptor",
@@ -236,6 +237,7 @@
       ],
       "description": "A Greatmask is a Mask Risen built at a scale and a permanence ordinary Mask Risen are not. Where a normal Mask Risen is a single-purpose tool for a single named target, a Greatmask is a territory marker — a defensive construct keyed to a region rather than to a person, and intended to persist for generations.\n\nThe mask is enormous, hand-carved by a Verdani elder over the course of months, and laced with deep Verdant programming that includes recognition of the territorial perimeter, recognition of Verdani kin, a low-priority stand-down protocol for unrecognised non-hostiles passing through, and an aggressive engagement protocol for unrecognised actors who behave in proscribed ways.\n\nBecause the Greatmask is intended to outlive any individual walker, the mask is not held by one elder; it is held by a line — typically a family or a small council — who pass the responsibility down through generations. As long as someone in the line is alive and accepts the role, the Greatmask remains active. A Greatmask is essentially impossible to defeat in combat. The only practical responses are: do not provoke it, leave the territory, or find the line of keepers and persuade them to stand it down.",
       "source": "yrt",
+      "icon": "foe-greatmask",
       "extras": {
         "yrt": {
           "natureNote": "elven, Verdant — ancient",
@@ -302,6 +304,7 @@
       ],
       "description": "A Mask Risen is what the Verdani make when something needs to be done that they cannot do themselves. The mask is the active component: a piece of Amber-laced hardwood, carved with a recognition pattern (the named target) and an instruction (typically confront, sometimes kill). The mask is handed to a designated walker — an elder of the community, usually one with little time left — who carries it into the forest and lays it down in a place of strong Verdant flow.\n\nThe Verdant flow does the rest. Local biomass accretes around the mask: leaves, soil, root mass, beetle shells, fungal mycelium, the bones of small animals. Within a day or two there is a body. Within a week the body is walking.\n\nThe walker is the handler. They do not need to be physically present — the mask carries the recognition pattern and the local Verdant flow carries the energy — but they must be alive, and they must be reasonably close. When the walker dies, the Mask Risen falls inert. A Mask Risen cannot be permanently killed by physical means. The only way to stop one for good is to find and destroy the mask, or to find and stop the walker.",
       "source": "yrt",
+      "icon": "foe-mask-risen",
       "extras": {
         "yrt": {
           "natureNote": "elven, Verdant",
@@ -579,6 +582,7 @@
       ],
       "description": "The Pura Ecclesia is, in ordinary doctrine, opposed to the use of dead matter and to the animation of the inert. The vow walker is the order's one acknowledged exception — a doctrinal compromise so politically delicate that it is held by a single internal suborder, the Iron Wardens, and is never discussed with outsiders.\n\nA vow walker is built to honour a final oath. When a senior Ecclesia figure faces death they may, with the order's approval, dictate a final standing oath. The oath is recorded. The body is interred. A vow walker is then constructed as the oath's reliquary: a Luminous-shelled, Azure-jointed, Crimson-cored armour body, carrying the deceased's death-mask and a single Amber tablet inscribed with the oath.\n\nThe Iron Wardens hold the operating Amber keys. Each vow walker has a designated handler from within the Wardens, and that handler is responsible for the construct's actions for the rest of their life. The Ecclesia's theological line is precise: they do not animate the dead; the construct is a reliquary, not a corpse. A vow walker can be destroyed. The shell is tough but not invulnerable; the Crimson core, once breached, ends the construct cleanly.",
       "source": "yrt",
+      "icon": "foe-vow-walker",
       "extras": {
         "yrt": {
           "natureNote": "Pura Ecclesia reliquary, handler-driven",
