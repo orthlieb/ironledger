@@ -7,6 +7,7 @@
 		"build:map-icons": "node scripts/build-map-icons.mjs",
 		"build:settlement-icons": "node scripts/build-settlement-icons.mjs",
 		"build:settlement-playground": "node scripts/settlement-kit/build-playground.mjs",
+		"screenshots:about": "node scripts/about-screenshots.mjs",
 		"gen:liveries": "node ../../scripts/gen-liveries-manifest.mjs",
 		"dev": "vite dev --port 5173",
 		"prebuild": "npm run gen:liveries",

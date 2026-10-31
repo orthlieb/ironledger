@@ -219,14 +219,15 @@ Integrated into the home page as a dedicated **Admin** tab (screwdriver-wrench i
 
 ## Scripts
 
-| Command             | Description                 |
-| ------------------- | --------------------------- |
-| `npm run dev`       | Start API dev server        |
-| `npm run dev:web`   | Start web dev server        |
-| `npm run build`     | Build both API and web      |
-| `npm run test`      | Run API test suite (vitest) |
-| `npm run migrate`   | Run database migrations     |
-| `npm run check:web` | TypeScript check for web    |
+| Command                                 | Description                                                                 |
+| --------------------------------------- | --------------------------------------------------------------------------- |
+| `npm run dev`                           | Start API dev server                                                        |
+| `npm run dev:web`                       | Start web dev server                                                        |
+| `npm run build`                         | Build both API and web                                                      |
+| `npm run test`                          | Run API test suite (vitest)                                                 |
+| `npm run migrate`                       | Run database migrations                                                     |
+| `npm run check:web`                     | TypeScript check for web                                                    |
+| `npm run screenshots:about -w apps/web` | Regenerate the About page's screenshots ([docs](docs/about-screenshots.md)) |
 
 ## Deployment
 
@@ -245,6 +246,7 @@ Feature docs are in the `docs/` directory:
 
 | Doc                                                         | Description                                                              |
 | ----------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [about-screenshots.md](docs/about-screenshots.md)           | Regenerating the About page's app screenshots                            |
 | [admin.md](docs/admin.md)                                   | Admin panel — users, logs, maintenance, registration lock                |
 | [ai-story.md](docs/ai-story.md)                             | AI Storyteller — encrypted keys, providers, proxy                        |
 | [architecture_decisions.md](docs/architecture_decisions.md) | Architecture and design decisions                                        |
