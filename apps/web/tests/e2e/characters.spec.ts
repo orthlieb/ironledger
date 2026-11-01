@@ -7,6 +7,8 @@
  */
 import { test, expect } from '@playwright/test';
 import { resetCharacters } from './helpers/reset';
+import { selectCharacterByName } from './helpers/home';
+import { waitForSave } from './helpers/saves';
 
 const CHAR_AREA = '.home-area--characters';
 const CHAR_HEADER = `${CHAR_AREA} .ca-header`;
@@ -21,11 +23,11 @@ const CHAR_COMBOBOX = `${CHAR_HEADER} .ca-hdr-combobox`;
  *  Fills the name AND clicks the stat-Roll button — Create is now gated on
  *  a name plus at least one non-zero stat, so a fresh dialog with all-zero
  *  stats cannot commit until the user acts on the allocator. */
-async function createCharacter(page: import('@playwright/test').Page) {
+async function createCharacter(page: import('@playwright/test').Page, name = 'E2E Character') {
 	await page.locator(CHAR_COMBOBOX).click();
 	await page.locator('.cb-item--action', { hasText: /New character/i }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-	await page.locator('.confirm-modal .co-input').fill('E2E Character');
+	await page.locator('.confirm-modal .co-input').fill(name);
 	// Roll starting stats — the StatAllocator's Roll button is the only
 	// dice button inside `.sa-field`. Clicking it fills the five StatControls.
 	await page.locator('.confirm-modal .sa-field .dice-btn').click();
@@ -481,26 +483,37 @@ test.describe('Characters area (v2)', () => {
 	});
 
 	test('vow notes: persist across a page reload', async ({ page }) => {
-		await ensureCharacterSelected(page);
-		const vow = await ensureVow(page);
-
 		const marker = `note-persist-${Date.now()}`;
 		const noteText = `Persisted: ${marker}`;
+		// A character of its own, uniquely named, so it can be re-selected
+		// after the reload (see below).
+		const charName = `Note Keeper ${marker}`;
+
+		await waitForCharactersLoaded(page);
+		await createCharacter(page, charName);
+		await expect(page.locator(`${CHAR_COMBOBOX} .cb-value`)).toHaveText(charName);
+		const vow = await ensureVow(page);
 
 		const display = vow.locator('.md-notes-display');
 		const textarea = vow.locator('.md-notes-input');
 
+		// Reload only once the server has acknowledged the save carrying the
+		// note. A fixed wait for the 1.5 s autosave debounce flaked on slow CI
+		// runs, reloading before the save landed.
+		const saved = waitForSave(page, '/api/characters/', noteText);
 		await display.click();
 		await expect(textarea).toBeVisible({ timeout: 3_000 });
 		await textarea.fill(noteText);
 		await textarea.blur();
 		await expect(display.locator('p')).toHaveText(noteText, { timeout: 3_000 });
+		await saved;
 
-		// Wait out the 1500 ms auto-save debounce + the PATCH round-trip.
-		await page.waitForTimeout(2_200);
-
+		// After a reload the area selects its FIRST character, and characters
+		// sort by updatedAt (every autosave bumps it), so the one just edited
+		// is usually not first. Select it by name before looking for the note.
 		await page.reload();
 		await waitForCharactersLoaded(page);
+		await selectCharacterByName(page, charName);
 		await switchCharTab(page, 'Vows');
 
 		const restoredVow = page
@@ -509,6 +522,54 @@ test.describe('Characters area (v2)', () => {
 			})
 			.first();
 		await expect(restoredVow).toBeVisible({ timeout: 8_000 });
+	});
+
+	test('a note typed just before a reload is still saved', async ({ page }) => {
+		// No waiting for the 1.5 s autosave: the page flushes pending edits as
+		// it unloads (pageExit.ts), with keepalive requests that outlive it.
+		const marker = `note-unload-${Date.now()}`;
+		const charName = `Quick Reloader ${marker}`;
+		await waitForCharactersLoaded(page);
+		await createCharacter(page, charName);
+		await expect(page.locator(`${CHAR_COMBOBOX} .cb-value`)).toHaveText(charName);
+		const vow = await ensureVow(page);
+		await vow.locator('.md-notes-display').click();
+		await vow.locator('.md-notes-input').fill(marker);
+
+		const restoredVow = page.locator(`${CHAR_AREA} .vow-card`, {
+			has: page.locator(`.md-notes-display p:has-text("${marker}")`),
+		});
+		// The exit save and the reloaded page's fetch race, so look again after
+		// a second reload before failing. (Without the exit flush the note is
+		// never saved, and no number of reloads brings it back.)
+		await expect(async () => {
+			await page.reload();
+			await waitForCharactersLoaded(page);
+			await selectCharacterByName(page, charName);
+			await switchCharTab(page, 'Vows');
+			await expect(restoredVow).toBeVisible({ timeout: 3_000 });
+		}).toPass({ timeout: 30_000 });
+	});
+
+	test('a reload re-opens the character you had open, not the first one', async ({ page }) => {
+		const stamp = Date.now();
+		const first = `First Comer ${stamp}`;
+		await waitForCharactersLoaded(page);
+		await createCharacter(page, first);
+		await createCharacter(page, `Second Comer ${stamp}`);
+		// Go back to the first one and edit it. It's now the most recently
+		// updated character, so it sorts LAST (oldest first by updatedAt), and a
+		// reload that just opened the first entry would land elsewhere.
+		await selectCharacterByName(page, first);
+		await switchCharTab(page, 'Vows');
+		const vowName = `Kept Vow ${stamp}`;
+		const saved = waitForSave(page, '/api/characters/', vowName);
+		await addVow(page, vowName);
+		await saved;
+
+		await page.reload();
+		await waitForCharactersLoaded(page);
+		await expect(page.locator(`${CHAR_COMBOBOX} .cb-value`)).toHaveText(first);
 	});
 
 	test('vow notes: markdown renders bold, heading, and list', async ({ page }) => {

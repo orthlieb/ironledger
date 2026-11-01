@@ -16,6 +16,8 @@ export const loadNpcs = store.load;
 /** All NPCs, in insertion order. Reactive. */
 export const getNpcs = store.get;
 export const isNpcLoading = store.isLoading;
+/** True once the first load has finished (ok or not). */
+export const isNpcLoaded = store.isLoaded;
 export const isNpcSaving = store.isSaving;
 /** Append a new NPC and persist. */
 export const addNpc = store.add;

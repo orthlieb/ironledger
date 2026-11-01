@@ -21,6 +21,7 @@
 	} from '$lib/encounterStore.svelte.js';
 	import { setActiveFoeId } from '$lib/activeContext.svelte.js';
 	import { createDebouncedSave } from '$lib/debouncedSave.js';
+	import { initialSelection, rememberSelection } from '$lib/rememberedSelection.js';
 	import { appendLog } from '$lib/log.svelte.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { rankBadgeStyle } from '$lib/badgeStyles.js';
@@ -86,9 +87,16 @@
 		{ label: '+ New foe…', value: '+ New foe', onselect: () => void foePickerRef?.open() },
 	];
 
+	// Open the foe this device had open last, or else the first.
 	$effect(() => {
-		if (!activeFoeId && encounters.length > 0) activeFoeId = encounters[0].id;
+		if (!activeFoeId && encounters.length > 0) {
+			activeFoeId = initialSelection(
+				'foes',
+				encounters.map((e) => e.id),
+			);
+		}
 	});
+	$effect(() => rememberSelection('foes', activeFoeId));
 
 	const activeEnc = $derived(encounters.find((e) => e.id === activeFoeId));
 	const activeDef = $derived<FoeDef | undefined>(activeEnc ? findFoe(activeEnc.foeId) : undefined);

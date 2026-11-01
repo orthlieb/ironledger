@@ -177,6 +177,10 @@ momentumReset(d); // 2 / 1 / 0 depending on debility count
 
 Changes to any field in `$state data` trigger a `$effect` watcher that starts/resets a 1500 ms debounce timer. On expiry the component calls `characters.update(id, { name, data })` via the API client. Save status is shown in the header: **Saving…** → **Saved** → **Save failed!**.
 
+**Reloading or closing the tab inside the debounce doesn't lose the edit.** `src/lib/pageExit.ts` runs every pending save on `pagehide`, and when the page is hidden (on mobile a hidden page can be discarded without `pagehide`). The requests those saves start are sent `keepalive`, so the browser finishes them after the page is gone. This covers the shared debounce (`debouncedSave.ts`) behind all four home areas. For the session-collection stores it also covers `entitySync.ts`: on exit it sends every unsynced row at once instead of one request at a time.
+
+**A reload re-opens the entry you had open.** Each home area (Characters, Foes, Expeditions, Connections) remembers its open entry per device in localStorage (`src/lib/rememberedSelection.ts`). It falls back to the first entry when that one is gone. Without this, a reload landed on whatever sorted first. For characters that's rarely the one you were editing, because the list sorts by `updatedAt` and every save bumps it.
+
 ---
 
 ## Action Bus Integration

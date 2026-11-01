@@ -31,6 +31,7 @@
 	import { setActiveDiceCtx } from '$lib/diceContext.svelte.js';
 	import { getActiveCharacterId, setActiveCharacterId } from '$lib/activeContext.svelte.js';
 	import { createDebouncedSave } from '$lib/debouncedSave.js';
+	import { initialSelection, rememberSelection } from '$lib/rememberedSelection.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { rollOracle, getOracles, findOracle } from '$lib/oracleStore.svelte.js';
 	import {
@@ -185,12 +186,17 @@
 	const characters = $derived(getCharacters());
 	const loading = $derived(isCharacterLoading() || isAssetsLoading());
 
-	// Auto-select the first character once data has loaded.
+	// Once data has loaded, open the character this device had open last, or
+	// else the first (see rememberedSelection.ts).
 	$effect(() => {
 		if (!activeCharId && characters.length > 0) {
-			activeCharId = characters[0].id;
+			activeCharId = initialSelection(
+				'characters',
+				characters.map((c) => c.id),
+			);
 		}
 	});
+	$effect(() => rememberSelection('characters', activeCharId));
 
 	// Two-way sync with the module-level active-character id in activeContext
 	// so external code (the /home command bar, deep links, …) can request a

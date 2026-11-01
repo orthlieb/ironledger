@@ -35,6 +35,7 @@
 	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
 	import { setActiveExpeditionId } from '$lib/activeContext.svelte.js';
 	import { createDebouncedSave } from '$lib/debouncedSave.js';
+	import { initialSelection, rememberSelection } from '$lib/rememberedSelection.js';
 	import { tooltip } from '$lib/actions/tooltip.js';
 	import { loadDelveData, buildCombinedTable } from '$lib/delveStore.svelte.js';
 	import { rollFromRangeTable, rollOracle, getOracles } from '$lib/oracleStore.svelte.js';
@@ -189,9 +190,16 @@
 	const expeditions = $derived(getExpeditions());
 	const loading = $derived(isExpeditionLoading());
 
+	// Open the expedition this device had open last, or else the first.
 	$effect(() => {
-		if (!activeExpId && expeditions.length > 0) activeExpId = expeditions[0].id;
+		if (!activeExpId && expeditions.length > 0) {
+			activeExpId = initialSelection(
+				'expeditions',
+				expeditions.map((e) => e.id),
+			);
+		}
 	});
+	$effect(() => rememberSelection('expeditions', activeExpId));
 
 	const activeExp = $derived(expeditions.find((e) => e.id === activeExpId));
 	const activeSite = $derived<Site | null>(activeExp?.type === 'site' ? (activeExp as Site) : null);

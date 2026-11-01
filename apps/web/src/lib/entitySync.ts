@@ -14,7 +14,17 @@
 // The snapshot only advances on a successful response, so a failed write is
 // naturally retried on the next pass. Overlapping persist() calls coalesce: a
 // change made mid-flight flags a re-run rather than racing the in-flight loop.
+//
+// When the page is hidden or unloading (pageExit.ts) the loop is too slow:
+// each request waits for the last, so the later ones would never start.
+// Instead every unsynced row goes out at once, as keepalive requests the
+// browser finishes after the page is gone (flushOnExit).
 // =============================================================================
+
+import { isPageExiting, keepaliveInit, onPageExit } from './pageExit.js';
+
+/** inFlight marker for a DELETE (never valid entity JSON). */
+const DELETING = '\u0000delete';
 
 export interface EntitySync<T> {
 	/** Rebuild the snapshot from a freshly-loaded list (call after load). */
@@ -35,8 +45,20 @@ export function makeEntitySync<T extends { id?: string }>(
 	tag: string,
 ): EntitySync<T> {
 	let synced = new Map<string, string>();
+	/** What's on the wire per id: the JSON being written, or DELETING. */
+	const inFlight = new Map<string, string>();
 	let syncing = false;
 	let again = false;
+
+	/** Mark `id` as being written with `body` until `req` settles. */
+	async function track<R>(id: string, body: string, req: Promise<R>): Promise<R> {
+		inFlight.set(id, body);
+		try {
+			return await req;
+		} finally {
+			if (inFlight.get(id) === body) inFlight.delete(id);
+		}
+	}
 
 	function reset(items: T[]): void {
 		synced = new Map();
@@ -56,20 +78,23 @@ export function makeEntitySync<T extends { id?: string }>(
 			const prev = synced.get(it.id);
 			if (prev === json) continue; // unchanged
 			try {
-				const res =
+				const res = await track(
+					it.id,
+					json,
 					prev === undefined
-						? await fetch(base, {
+						? fetch(base, {
 								method: 'POST',
 								credentials: 'include',
 								headers: { 'Content-Type': 'application/json' },
 								body: json,
 							})
-						: await fetch(`${base}/${encodeURIComponent(it.id)}`, {
+						: fetch(`${base}/${encodeURIComponent(it.id)}`, {
 								method: 'PATCH',
 								credentials: 'include',
 								headers: { 'Content-Type': 'application/json' },
 								body: json,
-							});
+							}),
+				);
 				if (res.ok) synced.set(it.id, json);
 				else console.error(`[${tag}] Persist failed:`, res.status);
 			} catch (err) {
@@ -80,10 +105,14 @@ export function makeEntitySync<T extends { id?: string }>(
 		for (const id of [...synced.keys()]) {
 			if (present.has(id)) continue;
 			try {
-				const res = await fetch(`${base}/${encodeURIComponent(id)}`, {
-					method: 'DELETE',
-					credentials: 'include',
-				});
+				const res = await track(
+					id,
+					DELETING,
+					fetch(`${base}/${encodeURIComponent(id)}`, {
+						method: 'DELETE',
+						credentials: 'include',
+					}),
+				);
 				if (res.ok || res.status === 404) synced.delete(id);
 				else console.error(`[${tag}] Delete failed:`, res.status);
 			} catch (err) {
@@ -92,7 +121,67 @@ export function makeEntitySync<T extends { id?: string }>(
 		}
 	}
 
+	/**
+	 * Page exit: send every unsynced row NOW, all at once and keepalive,
+	 * instead of one at a time. Skips a row whose same content is already on
+	 * the wire, and a row whose create (POST) is still in flight, since a
+	 * PATCH could reach the server before the row exists.
+	 */
+	function flushOnExit(): void {
+		const base = `/api/session/${kind}`;
+		const present = new Set<string>();
+		for (const it of getItems()) {
+			if (!it || typeof it.id !== 'string') continue;
+			present.add(it.id);
+			const json = JSON.stringify(it);
+			const prev = synced.get(it.id);
+			const wire = inFlight.get(it.id);
+			if (prev === json || wire === json) continue;
+			if (prev === undefined && wire !== undefined) continue;
+			const id = it.id;
+			const create = prev === undefined;
+			void track(
+				id,
+				json,
+				fetch(create ? base : `${base}/${encodeURIComponent(id)}`, {
+					method: create ? 'POST' : 'PATCH',
+					credentials: 'include',
+					headers: { 'Content-Type': 'application/json' },
+					body: json,
+					...keepaliveInit(json),
+				}),
+			)
+				.then((res) => {
+					if (res.ok) synced.set(id, json);
+					else console.error(`[${tag}] Persist on exit failed:`, res.status);
+				})
+				.catch((err) => console.error(`[${tag}] Persist on exit error:`, err));
+		}
+		for (const id of [...synced.keys()]) {
+			if (present.has(id) || inFlight.get(id) === DELETING) continue;
+			void track(
+				id,
+				DELETING,
+				fetch(`${base}/${encodeURIComponent(id)}`, {
+					method: 'DELETE',
+					credentials: 'include',
+					...keepaliveInit(),
+				}),
+			)
+				.then((res) => {
+					if (res.ok || res.status === 404) synced.delete(id);
+					else console.error(`[${tag}] Delete on exit failed:`, res.status);
+				})
+				.catch((err) => console.error(`[${tag}] Delete on exit error:`, err));
+		}
+	}
+	if (typeof window !== 'undefined') onPageExit(flushOnExit);
+
 	async function persist(): Promise<void> {
+		if (isPageExiting()) {
+			flushOnExit();
+			return;
+		}
 		if (syncing) {
 			again = true;
 			return;

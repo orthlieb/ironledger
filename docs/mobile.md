@@ -183,9 +183,10 @@ old code. `kit.version.pollInterval` (`svelte.config.js`, 5 min) has SvelteKit
 check `/_app/version.json`, and `UpdateBanner.svelte` (in the root layout)
 shows _A new version of Iron Ledger is available_ with a **Reload** button once
 it differs. The banner also re-checks whenever the window comes back into view.
-Reload waits 2 s first, past the stores' 1.5 s autosave debounce, because the
-app has no save-on-unload flush. Until reloaded, a route change does a full
-page load (same-page query/hash changes stay client-side).
+Reload blurs the focused field and waits 2 s first, past the stores' 1.5 s
+autosave debounce. The page also flushes pending saves as it unloads
+(`pageExit.ts`), so the wait is belt and braces. Until reloaded, a route change
+does a full page load (same-page query/hash changes stay client-side).
 
 ---
 
