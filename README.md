@@ -111,7 +111,8 @@ findings are surfaced as warnings, not errors, so they don't block CI.
 
 - Create and manage Ironsworn characters
 - Full character sheet with stats, tracks, assets, and vows
-- Auto-save with 1500ms debounce
+- Auto-save with 1500ms debounce; pending edits are flushed if you reload or close the tab
+- A reload re-opens the character, foe, expedition or connection you had open
 
 ### Moves & Dice
 

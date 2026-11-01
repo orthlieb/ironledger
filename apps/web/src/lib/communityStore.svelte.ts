@@ -16,6 +16,8 @@ export const loadCommunities = store.load;
 /** All communities, in insertion order. Reactive. */
 export const getCommunities = store.get;
 export const isCommunityLoading = store.isLoading;
+/** True once the first load has finished (ok or not). */
+export const isCommunityLoaded = store.isLoaded;
 export const isCommunitySaving = store.isSaving;
 /** Append a new community and persist. */
 export const addCommunity = store.add;

@@ -17,6 +17,8 @@ export const loadPlaces = store.load;
 /** All Places, in insertion order. Reactive. */
 export const getPlaces = store.get;
 export const isPlaceLoading = store.isLoading;
+/** True once the first load has finished (ok or not). */
+export const isPlaceLoaded = store.isLoaded;
 export const isPlaceSaving = store.isSaving;
 /** Append a new Place and persist. */
 export const addPlace = store.add;

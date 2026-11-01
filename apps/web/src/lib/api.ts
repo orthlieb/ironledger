@@ -6,6 +6,8 @@
 // token — clean BFF pattern.
 // =============================================================================
 
+import { keepaliveInit } from './pageExit.js';
+
 export class ApiError extends Error {
 	constructor(
 		public readonly status: number,
@@ -18,6 +20,8 @@ export class ApiError extends Error {
 
 async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 	const res = await fetch(path, {
+		// A save flushed as the page exits must outlive it (see pageExit.ts).
+		...keepaliveInit(init.body),
 		...init,
 		headers: {
 			'Content-Type': 'application/json',

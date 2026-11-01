@@ -25,6 +25,7 @@
 	import {
 		getCommunities,
 		isCommunityLoading,
+		isCommunityLoaded,
 		persistCommunitiesNow,
 		addCommunity,
 		removeCommunity,
@@ -32,6 +33,7 @@
 	} from '$lib/communityStore.svelte.js';
 	import {
 		getNpcs,
+		isNpcLoaded,
 		persistNpcsNow,
 		addNpc,
 		removeNpc,
@@ -48,8 +50,10 @@
 		type ContainmentNode,
 	} from '$lib/entityContainment.js';
 	import { createDebouncedSave } from '$lib/debouncedSave.js';
+	import { initialSelection, rememberSelection } from '$lib/rememberedSelection.js';
 	import {
 		getPlaces,
+		isPlaceLoaded,
 		persistPlacesNow,
 		addPlace,
 		removePlace,
@@ -458,9 +462,19 @@
 			),
 	);
 
+	// Open the entry this device had open last, or else the first. Entries
+	// merge three stores that load separately, so wait for all three: the
+	// remembered entry may be in one that hasn't arrived yet.
 	$effect(() => {
-		if (!activeEntryId && entries.length > 0) activeEntryId = entries[0].id;
+		if (!isCommunityLoaded() || !isNpcLoaded() || !isPlaceLoaded()) return;
+		if (!activeEntryId && entries.length > 0) {
+			activeEntryId = initialSelection(
+				'connections',
+				entries.map((e) => e.id),
+			);
+		}
 	});
+	$effect(() => rememberSelection('connections', activeEntryId));
 
 	const activeEntry = $derived(entries.find((e) => e.id === activeEntryId));
 	/** The active entry's current container ref (empty when top-level) — drives

@@ -25,6 +25,8 @@ export interface EntityStore<T> {
 	/** Reactive list of all entities, in insertion order. */
 	get(): T[];
 	isLoading(): boolean;
+	/** True once the first load has finished, whether or not it succeeded. */
+	isLoaded(): boolean;
 	isSaving(): boolean;
 	/** Append + persist. */
 	add(item: T): Promise<void>;
@@ -55,6 +57,8 @@ export function makeEntityStore<T extends { id: string }>(
 	let _items = $state<T[]>([]);
 	let _loading = $state(false);
 	let _loaded = false;
+	/** First load finished (ok or not) — reactive, unlike `_loaded`. */
+	let _settled = $state(false);
 	let _saving = $state(false);
 
 	// Per-entity sync engine — diffs the live list against the server snapshot
@@ -85,6 +89,7 @@ export function makeEntityStore<T extends { id: string }>(
 			console.error(`[${tag}] Failed to load ${key}:`, err);
 		} finally {
 			_loading = false;
+			_settled = true;
 		}
 	}
 
@@ -92,6 +97,7 @@ export function makeEntityStore<T extends { id: string }>(
 		load,
 		get: () => _items,
 		isLoading: () => _loading,
+		isLoaded: () => _settled,
 		isSaving: () => _saving,
 		async add(item: T) {
 			_items = [..._items, item];

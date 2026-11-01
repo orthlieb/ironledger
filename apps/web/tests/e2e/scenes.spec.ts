@@ -176,6 +176,28 @@ test.describe('Expeditions area (v2) — Scene Challenge', () => {
 		await expect(consequencesInput).toHaveValue('The village turns on us');
 	});
 
+	test('an edit made just before a reload is still saved', async ({ page }) => {
+		// No waiting for the autosave: the page flushes pending edits as it
+		// unloads (pageExit.ts / entitySync.flushOnExit), sent keepalive.
+		const name = `Hasty ${Date.now()}`;
+		await createScene(page, { name, objective: 'Hold the bridge' });
+		const objective = page.locator(`${EXP_AREA} input[id^="ea-obj-"]`).first();
+		await expect(objective).toHaveValue('Hold the bridge');
+		const sceneId = (await objective.getAttribute('id'))!.slice('ea-obj-'.length);
+		const consequencesInput = page.locator(`[id="ea-cons-${sceneId}"]`);
+		await consequencesInput.fill('The bridge falls');
+
+		// The exit save and the reloaded page's fetch race, so look again after
+		// a second reload before failing. (Without the exit flush the edit is
+		// never saved, and no number of reloads brings it back.)
+		await expect(async () => {
+			await page.reload();
+			await waitForExpeditionsLoaded(page);
+			await selectExpeditionByName(page, name);
+			await expect(consequencesInput).toHaveValue('The bridge falls', { timeout: 3_000 });
+		}).toPass({ timeout: 30_000 });
+	});
+
 	test('countdown fills through the clicked segment and clears the topmost one', async ({
 		page,
 	}) => {
