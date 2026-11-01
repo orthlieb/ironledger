@@ -9,6 +9,9 @@
 import { expect, type Page } from '@playwright/test';
 
 const CHAR_AREA = '.home-area--characters';
+/** The areas' header switchers (Combobox triggers). */
+const CHAR_SWITCHER = `${CHAR_AREA} .ca-hdr-combobox`;
+const EXP_SWITCHER = '.home-area--expeditions .ea-hdr-combobox';
 
 /** Wait for the home page's initial store loads + hydration to settle. */
 export async function settleHome(page: Page): Promise<void> {
@@ -44,6 +47,37 @@ export async function selectCharacterByIndex(page: Page, index: number): Promise
 	await expect(page.locator('.cb-popover'))
 		.toBeHidden({ timeout: 3_000 })
 		.catch(() => {});
+}
+
+/**
+ * Open an area's header switcher and pick the entry named `name`. After a
+ * reload the v2 areas re-select their FIRST entry, and the list order isn't
+ * stable: characters sort by `updatedAt` (which every autosave bumps), so the
+ * entry a test just edited is usually not first. Select it by name, and give
+ * it a unique name so the pick is unambiguous.
+ */
+async function selectByName(page: Page, trigger: string, name: string): Promise<void> {
+	await page.locator(trigger).click();
+	await page.locator('.cb-popover .cb-search').fill(name);
+	await page
+		.locator('.cb-popover .cb-item:not(.cb-item--action)', { hasText: name })
+		.first()
+		.click();
+	await expect(page.locator('.cb-popover'))
+		.toBeHidden({ timeout: 3_000 })
+		.catch(() => {});
+}
+
+/** Make the character named `name` active (see selectByName). */
+export async function selectCharacterByName(page: Page, name: string): Promise<void> {
+	await selectByName(page, CHAR_SWITCHER, name);
+	await expect(page.locator(`${CHAR_SWITCHER} .cb-value`)).toHaveText(name);
+}
+
+/** Make the expedition named `name` active (see selectByName). */
+export async function selectExpeditionByName(page: Page, name: string): Promise<void> {
+	await selectByName(page, EXP_SWITCHER, name);
+	await expect(page.locator(`${EXP_SWITCHER} .cb-value`)).toHaveText(name);
 }
 
 /**

@@ -20,6 +20,8 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetExpeditions } from './helpers/reset';
+import { selectExpeditionByName } from './helpers/home';
+import { waitForSave } from './helpers/saves';
 
 const EXP_AREA = '.home-area--expeditions';
 const EXP_HEADER = `${EXP_AREA} .ea-header`;
@@ -134,50 +136,44 @@ test.describe('Expeditions area (v2) — Scene Challenge', () => {
 	});
 
 	test('objective + consequences round-trip through inline edits on Core', async ({ page }) => {
-		await createScene(page, { name: 'A tense meeting', objective: 'Initial goal' });
+		// A unique name: an earlier test in this file leaves "A tense meeting"
+		// behind (objective "Convince the elder"), and after a reload the area
+		// selects its FIRST expedition, which may be that leftover. Selecting
+		// this one by name after the reload keeps the assertions on it.
+		const name = `Parley ${Date.now()}`;
+		await createScene(page, { name, objective: 'Initial goal' });
 
 		const objective = page.locator(`${EXP_AREA} input[id^="ea-obj-"]`).first();
-		const consequences = page.locator(`${EXP_AREA} input[id^="ea-cons-"]`).first();
-
 		await expect(objective).toHaveValue('Initial goal');
-		await expect(consequences).toHaveValue('');
+		// Pin the inputs to this scene: their ids end in the scene's id.
+		const sceneId = (await objective.getAttribute('id'))!.slice('ea-obj-'.length);
+		const objectiveInput = page.locator(`[id="ea-obj-${sceneId}"]`);
+		const consequencesInput = page.locator(`[id="ea-cons-${sceneId}"]`);
+		await expect(consequencesInput).toHaveValue('');
 
-		// ExpeditionsArea auto-saves through a 1.5 s trailing debounce, and each
-		// updateExp() call flushes the *previous* pending save (via the effect's
-		// teardown) — so back-to-back fills leave only the last edit still on the
-		// timer at reload time. Wait for the PATCH the second fill kicks off to
-		// hit the wire before we navigate away.
-		const pendingPatch = page.waitForResponse(
-			(r) =>
-				r.url().includes('/api/session/expeditions/') && r.request().method() === 'PATCH' && r.ok(),
-			{ timeout: 5_000 },
+		// ExpeditionsArea autosaves through a 1.5 s trailing debounce, and each
+		// updateExp() flushes the previous pending save. So the objective edit
+		// can go out in a PATCH of its own, and the consequences edit then
+		// queues behind that in-flight PATCH as a second request. Waiting for
+		// "a PATCH" plus networkidle let a slow second PATCH slip past, and
+		// the reload lost the consequences. Reload only once the server has
+		// acknowledged the PATCH that carries BOTH edits.
+		const saved = waitForSave(
+			page,
+			`/api/session/expeditions/${sceneId}`,
+			'Convince the elder',
+			'The village turns on us',
 		);
-		await objective.fill('Convince the elder');
-		await consequences.fill('The village turns on us');
-		await consequences.blur();
-		await pendingPatch;
-		// Belt-and-braces: give the second (still-debounced) save its 1.5 s and
-		// wait for its PATCH to land too. Guarded so a coalesced single PATCH
-		// doesn't hang the test.
-		await page
-			.waitForResponse(
-				(r) =>
-					r.url().includes('/api/session/expeditions/') &&
-					r.request().method() === 'PATCH' &&
-					r.ok(),
-				{ timeout: 3_000 },
-			)
-			.catch(() => {});
-		await page.waitForLoadState('networkidle', { timeout: 5_000 }).catch(() => {});
+		await objectiveInput.fill('Convince the elder');
+		await consequencesInput.fill('The village turns on us');
+		await consequencesInput.blur();
+		await saved;
 
 		await page.reload();
 		await waitForExpeditionsLoaded(page);
-		await expect(page.locator(`${EXP_AREA} input[id^="ea-obj-"]`).first()).toHaveValue(
-			'Convince the elder',
-		);
-		await expect(page.locator(`${EXP_AREA} input[id^="ea-cons-"]`).first()).toHaveValue(
-			'The village turns on us',
-		);
+		await selectExpeditionByName(page, name);
+		await expect(objectiveInput).toHaveValue('Convince the elder');
+		await expect(consequencesInput).toHaveValue('The village turns on us');
 	});
 
 	test('countdown fills through the clicked segment and clears the topmost one', async ({
