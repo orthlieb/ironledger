@@ -91,6 +91,13 @@ jobs:
       - name: svelte-check (web)
         run: npm run check --workspace=apps/web
 
+      # The web app's own unit tests (apps/web/tests/unit: the DSL, map
+      # geometry, the settlement kit, saving on page exit, …). The API test
+      # steps below don't cover them. No database or server needed;
+      # `pretest` builds the map icons some of them read.
+      - name: Unit tests (web)
+        run: npm test --workspace=apps/web
+
       - name: Setup test database roles
         env:
           PGPASSWORD: testpassword
