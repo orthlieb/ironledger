@@ -37,8 +37,8 @@ import type { FastifyReply } from 'fastify';
 
 const kindParams = z.object({ kind: z.string() });
 const kindIdParams = z.object({ kind: z.string(), id: z.string() });
-const entityBody = z.record(z.unknown());
-const replaceBody = z.record(z.unknown()); // { <kind>: Entity[] }
+const entityBody = z.record(z.string(), z.unknown());
+const replaceBody = z.record(z.string(), z.unknown()); // { <kind>: Entity[] }
 const portraitBody = z.object({ dataUrl: z.string() });
 
 const patchSessionStateBody = z.object({
@@ -178,7 +178,7 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
     {
       schema: {
         params: kindParams,
-        body: z.object({ entities: z.array(z.record(z.unknown())).max(2000) }),
+        body: z.object({ entities: z.array(z.record(z.string(), z.unknown())).max(2000) }),
       },
     },
     async (req, reply) => {

@@ -203,7 +203,7 @@
 		const move = findMove(moveId);
 		let outcomeTextHtml = '';
 		if (move) {
-			let raw = '';
+			let raw: string;
 			if (newHits1 && newHits2) raw = move.strong ?? '';
 			else if (newHits1 || newHits2) raw = move.weak ?? '';
 			else raw = move.miss ?? '';

@@ -1,5 +1,14 @@
+// @vitest-environment jsdom
 /**
  * sanitize.test.ts
+ *
+ * ── WHICH DOM ─────────────────────────────────────────────────────────────────
+ * Runs on jsdom, not the happy-dom the other unit tests use. From DOMPurify
+ * 3.4.9 on, sanitizing against a happy-dom window misbehaves: it leaves
+ * <script> in place and strips allowed tags, while the same version is
+ * correct in a real browser and in jsdom (the server path). That is a
+ * happy-dom incompatibility, not an app bug; jsdom follows the DOM spec
+ * closely enough that these results match the browser's.
  *
  * Two-tier regression suite for log HTML sanitisation.
  *
@@ -18,13 +27,11 @@
  *
  * Tier 2 – XSS / dangerous-content removal (output-based)
  *   Calls sanitizeLogHtml() and checks that genuinely dangerous payloads are
- *   stripped.  These work reliably across environments (happy-dom, jsdom, node)
- *   because DOMPurify always strips script/event-handler/js: content regardless
- *   of the DOM implementation.
+ *   stripped. (A spec-faithful DOM is needed for these too: see WHICH DOM.)
  *
  * NOTE ON ATTRIBUTE TESTING
- * Tier 3 (below) tests attribute preservation end-to-end using happy-dom, which
- * runs isomorphic-dompurify in browser mode.  This caught a regression where
+ * Tier 3 (below) tests attribute preservation end-to-end through
+ * isomorphic-dompurify.  This caught a regression where
  * combining ALLOW_DATA_ATTR:false + ALLOWED_URI_REGEXP stripped ALL data-*
  * attributes even when explicitly listed in ALLOWED_ATTR.  The fix was to drop
  * the custom ALLOWED_URI_REGEXP (DOMPurify's built-in protection is sufficient).
