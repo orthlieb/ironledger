@@ -2184,9 +2184,10 @@ function gateTower(D, y0, h, wood) {
 		: crenellated(-w / 2, w / 2, y0, y0 + h, { merlon: 2.2, notch: 2 });
 	// A wooden gate takes the palisade's plank pattern.
 	const role = wood ? /** @type {const} */ ('wall-wood') : undefined;
-	// Banner is planted on whatever caps the gate — the dome tip, the pyramid
-	// apex, or (stone gate) just the crenellated parapet.
-	let flagAt = /** @type {Pt} */ ([0.6, y0 + h - 0.5]);
+	// Banner is planted on whatever caps the gate: the dome tip or the
+	// pyramid apex (set in the branches below).
+	/** @type {Pt} */
+	let flagAt;
 	/** @type {Part[]} */
 	const parts = [
 		{
