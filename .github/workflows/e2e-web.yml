@@ -69,7 +69,11 @@ jobs:
       EMAIL_PROVIDER: resend
       RESEND_API_KEY: re_test
       HCAPTCHA_SECRET: '0x0000000000000000000000000000000000000000'
-      JWT_EXPIRES_IN: '900'
+      # auth.setup.ts signs in once and every test reuses that access token
+      # (no refresh token: the API rotates those, and reusing one across tests
+      # would revoke the session). So the token has to outlive the whole run:
+      # with 15 min, a slow run sends the last specs to /login.
+      JWT_EXPIRES_IN: '3600'
       REFRESH_TOKEN_TTL_DAYS: '30'
       # Same reasoning as ci.yml e2e: a single fixture IP runs every test,
       # so the production-default buckets would trip.
