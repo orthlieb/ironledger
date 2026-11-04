@@ -10,9 +10,9 @@ export default defineConfig({
 	test: {
 		name: 'unit',
 		include: ['tests/unit/**/*.test.ts'],
-		// happy-dom gives us a real DOM so isomorphic-dompurify runs in browser mode
-		// (the same code path as the actual app) rather than falling back to a
-		// server-side stub that skips most sanitisation.
+		// A DOM for the tests that need one. sanitize.test.ts opts into jsdom
+		// instead (see its header): newer DOMPurify releases misbehave on
+		// happy-dom, while jsdom matches the browser.
 		environment: 'happy-dom',
 		coverage: {
 			provider: 'v8',
