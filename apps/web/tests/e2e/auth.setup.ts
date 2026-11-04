@@ -11,7 +11,10 @@ import { resetAll } from './helpers/reset';
 const AUTH_FILE = path.join(import.meta.dirname, '.auth/user.json');
 
 setup('authenticate as dev user', async ({ page }) => {
-	// Call the API directly to get an access token (avoids Svelte form hydration issues)
+	// Call the API directly to get an access token (avoids Svelte form hydration issues).
+	// Every test reuses this one token, so the API must issue it for longer
+	// than the whole run takes: the E2E workflow sets JWT_EXPIRES_IN=3600, and
+	// a local full run needs the same, or the last specs land on /login.
 	const apiCtx = await request.newContext({ baseURL: 'http://127.0.0.1:3000' });
 	const res = await apiCtx.post('/api/v1/auth/login', {
 		data: {

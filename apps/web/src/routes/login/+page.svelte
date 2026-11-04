@@ -1,9 +1,9 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
-	import PasswordInput from '$lib/components/PasswordInput.svelte';
-	import Checkbox from '$lib/components/Checkbox.svelte';
-	import swordSvg from '$icons/sharp-axe.svg?raw';
-	import { browser } from '$app/environment';
+	import PasswordInput from '#lib/components/PasswordInput.svelte';
+	import Checkbox from '#lib/components/Checkbox.svelte';
+	import swordSvg from '#icons/sharp-axe.svg?raw';
+	import { browser } from '$app/env';
 
 	let { form, data }: { form: ActionData; data: PageData } = $props();
 

@@ -18,13 +18,13 @@
 		flushEncountersToApi,
 		removeEncounter,
 		addEncounter,
-	} from '$lib/encounterStore.svelte.js';
-	import { setActiveFoeId } from '$lib/activeContext.svelte.js';
-	import { createDebouncedSave } from '$lib/debouncedSave.js';
-	import { initialSelection, rememberSelection } from '$lib/rememberedSelection.js';
-	import { appendLog } from '$lib/log.svelte.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import { rankBadgeStyle } from '$lib/badgeStyles.js';
+	} from '#lib/encounterStore.svelte.js';
+	import { setActiveFoeId } from '#lib/activeContext.svelte.js';
+	import { createDebouncedSave } from '#lib/debouncedSave.js';
+	import { initialSelection, rememberSelection } from '#lib/rememberedSelection.js';
+	import { appendLog } from '#lib/log.svelte.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import { rankBadgeStyle } from '#lib/badgeStyles.js';
 	import {
 		findFoe,
 		FOE_RANKS,
@@ -32,24 +32,24 @@
 		FOE_NATURE_COLORS,
 		resolveFoeDescription,
 		resolveFoeName,
-	} from '$lib/foeStore.svelte.js';
-	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
-	import { foeExtraFlag } from '$lib/foeExtras.js';
-	import { foeIcon } from '$lib/iconRegistry.js';
-	import type { FoeEncounter, FoeDef, FoeQuantity } from '$lib/types.js';
+	} from '#lib/foeStore.svelte.js';
+	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '#lib/foePortrait.js';
+	import { foeExtraFlag } from '#lib/foeExtras.js';
+	import { foeIcon } from '#lib/iconRegistry.js';
+	import type { FoeEncounter, FoeDef, FoeQuantity } from '#lib/types.js';
 
-	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
-	import FoePickerDialog from '$lib/components/FoePickerDialog.svelte';
-	import FoeOptionsDialog from '$lib/components/FoeOptionsDialog.svelte';
-	import Lightbox from '$lib/components/Lightbox.svelte';
-	import iconGearSvg from '$icons/gear-solid.svg?raw';
-	import swordSvg from '$icons/sword-solid.svg?raw';
-	import skullSvg from '$icons/skull-crossbones-solid.svg?raw';
-	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
+	import ProgressTrackPanel from '#lib/components/ProgressTrackPanel.svelte';
+	import FoePickerDialog from '#lib/components/FoePickerDialog.svelte';
+	import FoeOptionsDialog from '#lib/components/FoeOptionsDialog.svelte';
+	import Lightbox from '#lib/components/Lightbox.svelte';
+	import iconGearSvg from '#icons/gear-solid.svg?raw';
+	import swordSvg from '#icons/sword-solid.svg?raw';
+	import skullSvg from '#icons/skull-crossbones-solid.svg?raw';
+	import SegmentedRadio from '#lib/components/SegmentedRadio.svelte';
 	import { Tabs } from 'bits-ui';
-	import Combobox from '$lib/components/Combobox.svelte';
-	import { appIcon } from '$lib/liveryIcons.js';
-	import { headingText } from '$lib/fontStore.svelte.js';
+	import Combobox from '#lib/components/Combobox.svelte';
+	import { appIcon } from '#lib/liveryIcons.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
 

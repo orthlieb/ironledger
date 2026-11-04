@@ -6,35 +6,35 @@
 	 * rarity slot, and a remove button that opens a rules-aware dialog.
 	 * All fonts are var(--font-ui) (Roboto) per design spec.
 	 */
-	import type { CharacterAsset, AssetDefinition } from '$lib/types.js';
-	import { findRaritiesForAsset, getGlobalCounterDef } from '$lib/assetStore.svelte.js';
-	import { assetIcon } from '$lib/iconRegistry.js';
-	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
-	import { renderNote } from '$lib/markdown.js';
-	import { renderRich } from '$lib/dsl.js';
-	import { draggable } from '$lib/actions/draggable.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import Select from '$lib/components/Select.svelte';
-	import Checkbox from '$lib/components/Checkbox.svelte';
+	import type { CharacterAsset, AssetDefinition } from '#lib/types.js';
+	import { findRaritiesForAsset, getGlobalCounterDef } from '#lib/assetStore.svelte.js';
+	import { assetIcon } from '#lib/iconRegistry.js';
+	import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
+	import { renderNote } from '#lib/markdown.js';
+	import { renderRich } from '#lib/dsl.js';
+	import { draggable } from '#lib/actions/draggable.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import Select from '#lib/components/Select.svelte';
+	import Checkbox from '#lib/components/Checkbox.svelte';
 	import { RadioGroup } from 'bits-ui';
 
-	import iconHeart from '$icons/icon-heart.svg?raw';
-	import iconSkull from '$icons/skull-crossbones-solid.svg?raw';
-	import iconSword from '$icons/sword-solid.svg?raw';
-	import iconShield from '$icons/shield-halved-solid.svg?raw';
-	import iconEye from '$icons/eye-solid.svg?raw';
-	import iconMoon from '$icons/moon-solid.svg?raw';
-	import iconSun from '$icons/sun-solid.svg?raw';
-	import iconDice from '$icons/dice-d10-light.svg?raw';
-	import iconNote from '$icons/note-sticky-solid.svg?raw';
-	import iconSackDollar from '$icons/sack-dollar-solid.svg?raw';
-	import chevronDownSvg from '$icons/chevron-down-solid.svg?raw';
-	import chevronRightSvg from '$icons/chevron-right-solid.svg?raw';
-	import xmarkSvg from '$icons/xmark-solid.svg?raw';
-	import gripSvg from '$icons/grip-vertical-solid.svg?raw';
-	import iconMana from '$icons/icon-mana.svg?raw';
-	import iconPuppet from '$icons/puppet-solid.svg?raw';
-	import iconGolem from '$icons/rock-golem.svg?raw';
+	import iconHeart from '#icons/icon-heart.svg?raw';
+	import iconSkull from '#icons/skull-crossbones-solid.svg?raw';
+	import iconSword from '#icons/sword-solid.svg?raw';
+	import iconShield from '#icons/shield-halved-solid.svg?raw';
+	import iconEye from '#icons/eye-solid.svg?raw';
+	import iconMoon from '#icons/moon-solid.svg?raw';
+	import iconSun from '#icons/sun-solid.svg?raw';
+	import iconDice from '#icons/dice-d10-light.svg?raw';
+	import iconNote from '#icons/note-sticky-solid.svg?raw';
+	import iconSackDollar from '#icons/sack-dollar-solid.svg?raw';
+	import chevronDownSvg from '#icons/chevron-down-solid.svg?raw';
+	import chevronRightSvg from '#icons/chevron-right-solid.svg?raw';
+	import xmarkSvg from '#icons/xmark-solid.svg?raw';
+	import gripSvg from '#icons/grip-vertical-solid.svg?raw';
+	import iconMana from '#icons/icon-mana.svg?raw';
+	import iconPuppet from '#icons/puppet-solid.svg?raw';
+	import iconGolem from '#icons/rock-golem.svg?raw';
 
 	/** Canonical short-name → SVG string map for counter badges. */
 	const COUNTER_ICONS: Record<string, string> = {
@@ -220,8 +220,8 @@
 	 *  the catalogue-wide canonical definition so the cap/default/icon are
 	 *  consistent regardless of which asset surfaces the counter. */
 	function effectiveCf(
-		cf: import('$lib/types.js').CustomFieldDef,
-	): import('$lib/types.js').CustomFieldDef {
+		cf: import('#lib/types.js').CustomFieldDef,
+	): import('#lib/types.js').CustomFieldDef {
 		return cf.global ? (getGlobalCounterDef(cf.id) ?? cf) : cf;
 	}
 
@@ -229,7 +229,7 @@
 	 * Resolve effective maxValue for a counter field. If maxValue is an array, use the value
 	 * at the index of the highest currently-enabled ability.
 	 */
-	function getEffectiveMax(cf: import('$lib/types.js').CustomFieldDef): number {
+	function getEffectiveMax(cf: import('#lib/types.js').CustomFieldDef): number {
 		const eff = effectiveCf(cf);
 		const mv = eff.maxValue;
 		if (mv === undefined) return 0;
@@ -261,13 +261,13 @@
 		asset.abilities = next;
 	}
 
-	function getCounterVal(cf: import('$lib/types.js').CustomFieldDef): number {
+	function getCounterVal(cf: import('#lib/types.js').CustomFieldDef): number {
 		const eff = effectiveCf(cf);
 		const store = cf.global ? globalValues : asset.customValues;
 		return parseInt(store?.[cf.id] ?? String(eff.default ?? 0));
 	}
 
-	function setCounter(cf: import('$lib/types.js').CustomFieldDef, newVal: number) {
+	function setCounter(cf: import('#lib/types.js').CustomFieldDef, newVal: number) {
 		const old = getCounterVal(cf);
 		if (newVal === old) return;
 		if (cf.global) {

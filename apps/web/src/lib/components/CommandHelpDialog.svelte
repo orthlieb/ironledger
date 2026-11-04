@@ -7,16 +7,16 @@
 	 * /help and the ? button open this dialog; the log is untouched.
 	 *
 	 * The command reference (verb, arg shape, tagline) lives here — one row per
-	 * command. Keep it in sync with parseCommand() in $lib/commandBar.ts.
+	 * command. Keep it in sync with parseCommand() in #lib/commandBar.ts.
 	 *
 	 * bits-ui Dialog under the hood — Portal + Overlay + Content. Escape /
 	 * focus trap / body scroll-lock all handled by the primitive.
 	 */
 
-	import { headingText } from '$lib/fontStore.svelte.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
 	import { Dialog } from 'bits-ui';
-	import DialogHeader from '$lib/components/DialogHeader.svelte';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
+	import DialogHeader from '#lib/components/DialogHeader.svelte';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
 
 	let dialogOpen = $state(false);
 	let stackDepth = $state(1);

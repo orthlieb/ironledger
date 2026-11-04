@@ -14,12 +14,12 @@
 //   • rollOracle(key, oracles)   — high-level dispatcher → { roll, html, title }
 // =============================================================================
 
-import type { CatalogueSource } from '$lib/types.js';
+import type { CatalogueSource } from '#lib/types.js';
 import {
 	isSourceEnabled,
 	loadExtensions,
 	suppressedOracleKeys,
-} from '$lib/expansionStore.svelte.js';
+} from '#lib/expansionStore.svelte.js';
 import {
 	ROLL_DSL,
 	hasRollTemplate,
@@ -291,11 +291,11 @@ export function findOracle(key: string): OracleFile | undefined {
 // propagate through $derived so pickers re-run on toggle changes.
 // ---------------------------------------------------------------------------
 
-export type { CharacterConcept } from '$lib/characterConcept.js';
+export type { CharacterConcept } from '#lib/characterConcept.js';
 import {
 	resolveCharacterConcept,
 	type CharacterConcept as _CharacterConcept,
-} from '$lib/characterConcept.js';
+} from '#lib/characterConcept.js';
 
 export function resolveCharacterOracle(concept: _CharacterConcept): OracleFile | null {
 	return resolveCharacterConcept(concept, _oracles, suppressedOracleKeys(), isSourceEnabled);

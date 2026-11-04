@@ -43,7 +43,7 @@ Proven end-to-end on the `feat/moves-oracles-dsl-poc` branch: one move
 
 Nothing else starts until this is solid; it de-risks every later phase.
 
-- **`renderRich`** (`$lib/dsl.ts`): finalize; confirm the `renderNote` reuse
+- **`renderRich`** (`#lib/dsl.ts`): finalize; confirm the `renderNote` reuse
   covers all needed markdown (bold/italic/lists). **Decision:** keep the
   hand-rolled `renderNote` rather than pulling in `markdown-it` — the only
   syntax in use is bold/italic/lists, and staying dependency-free avoids the

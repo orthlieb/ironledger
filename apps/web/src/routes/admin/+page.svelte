@@ -5,7 +5,7 @@
 		broadcast as broadcastApi,
 		registrationQuota as quotaApi,
 		type RegistrationQuotaStatus,
-	} from '$lib/api';
+	} from '#lib/api.js';
 	import type {
 		AdminUser,
 		AdminStats,
@@ -17,9 +17,9 @@
 		RegistrationLockStatus,
 	} from '@ironledger/shared';
 	import type { LayoutData } from '../$types';
-	import ErrorBar from '$lib/components/ErrorBar.svelte';
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import rotateRightSvg from '$icons/arrow-rotate-right-solid.svg?raw';
+	import ErrorBar from '#lib/components/ErrorBar.svelte';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import rotateRightSvg from '#icons/arrow-rotate-right-solid.svg?raw';
 	import { RadioGroup, Tabs } from 'bits-ui';
 
 	let { data }: { data: LayoutData } = $props();

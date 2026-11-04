@@ -14,10 +14,10 @@
 	 *   <DenizenDialog bind:this={ref} onSelect={handleFoeSelected} />
 	 *   ref.open(site);
 	 */
-	import type { Site, FoeDef, FoeQuantity, FoeRollRow } from '$lib/types.js';
-	import { DENIZEN_CELLS } from '$lib/types.js';
-	import { loadFoes, getFoes } from '$lib/foeStore.svelte.js';
-	import FoeRollDialog from '$lib/components/FoeRollDialog.svelte';
+	import type { Site, FoeDef, FoeQuantity, FoeRollRow } from '#lib/types.js';
+	import { DENIZEN_CELLS } from '#lib/types.js';
+	import { loadFoes, getFoes } from '#lib/foeStore.svelte.js';
+	import FoeRollDialog from '#lib/components/FoeRollDialog.svelte';
 
 	let {
 		onSelect,

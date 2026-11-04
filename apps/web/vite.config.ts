@@ -1,3 +1,5 @@
+import adapter from '@sveltejs/adapter-node';
+import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig } from 'vite';
 import { readFileSync } from 'fs';
@@ -45,7 +47,27 @@ function mapIconManifestPlugin() {
 }
 
 export default defineConfig({
-	plugins: [mapIconManifestPlugin(), sveltekit()],
+	plugins: [
+		mapIconManifestPlugin(),
+		sveltekit({
+			preprocess: vitePreprocess(),
+			adapter: adapter({ out: 'build', precompress: false }),
+			// Check /_app/version.json every 5 min so an open window — the
+			// installed app above all — learns a new deploy is out and shows
+			// UpdateBanner (which also checks whenever the window comes back
+			// into view).
+			version: { pollInterval: 5 * 60_000 },
+			// The public origin, used for CSRF checks on form submissions. Read
+			// at BUILD time; adapter-node no longer reads ORIGIN at run time.
+			// Production leaves it unset: behind nginx it's derived from each
+			// request (the Host header, with https as adapter-node's default
+			// protocol). A build served over plain http (CI, the E2E workflow,
+			// local runs of the production build) must set it, or every form
+			// post fails the CSRF check:
+			//   ORIGIN=http://localhost:5173 npm run build -w apps/web
+			paths: { origin: process.env.ORIGIN || undefined },
+		}),
+	],
 	server: {
 		port: 5173,
 		fs: {

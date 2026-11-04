@@ -1,8 +1,8 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
-	import swordSvg from '$icons/sharp-axe.svg?raw';
-	import arrowLeftSvg from '$icons/arrow-left-solid.svg?raw';
-	import { browser } from '$app/environment';
+	import swordSvg from '#icons/sharp-axe.svg?raw';
+	import arrowLeftSvg from '#icons/arrow-left-solid.svg?raw';
+	import { browser } from '$app/env';
 
 	let { form, data }: { form: ActionData; data: PageData } = $props();
 

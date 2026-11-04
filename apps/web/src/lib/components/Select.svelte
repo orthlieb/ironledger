@@ -12,8 +12,8 @@
 	 * top layer.
 	 */
 	import { Select as BitsSelect } from 'bits-ui';
-	import caretDownSvg from '$icons/caret-large-down-solid.svg?raw';
-	import { pushDialog, popDialog, contentZ } from '$lib/dialogStack.svelte.js';
+	import caretDownSvg from '#icons/caret-large-down-solid.svg?raw';
+	import { pushDialog, popDialog, contentZ } from '#lib/dialogStack.svelte.js';
 
 	interface Option {
 		value: T;

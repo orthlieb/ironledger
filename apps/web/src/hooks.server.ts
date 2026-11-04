@@ -1,4 +1,4 @@
-import type { Handle, HandleServerError } from '@sveltejs/kit';
+import type { Handle, HandleServerError } from '@sveltejs/kit/hooks';
 
 const INTERNAL_API_URL = process.env.INTERNAL_API_URL ?? 'http://localhost:3000';
 
@@ -125,16 +125,25 @@ export const handle: Handle = async ({ event, resolve }) => {
 	return resolve(event);
 };
 
-// 404s for unauthenticated, non-existent paths are not errors — scanners probe
-// constantly and legitimate users mistype URLs. SvelteKit's default error
-// logger treats every 404 as ERROR-level, which floods PM2 logs. Downgrade
-// 404 → warn; keep 5xx at error.
-export const handleError: HandleServerError = ({ error, status }) => {
-	const message = error instanceof Error ? error.message : String(error);
-	if (status === 404) {
-		console.warn(`[web] 404 ${message}`);
-		return { message: 'Not found' };
+// SvelteKit 3 sends every error through here, tagged by `kind`.
+// - 'app': thrown on purpose with error(...). Expected, so log nothing and
+//   keep its status and message (SvelteKit 2 never passed these here).
+// - 'framework' / 'validation': SvelteKit's own, chiefly 404s for unknown
+//   paths. Those aren't errors: scanners probe constantly and people mistype
+//   URLs, and logging them at ERROR level floods the PM2 logs. So 404 → warn;
+//   anything else stays at error level.
+// - 'unknown': thrown by our code or code it calls.
+export const handleError: HandleServerError = ({ kind, error, event }) => {
+	if (kind === 'app') return;
+	if (kind === 'framework' || kind === 'validation') {
+		if (error.status === 404) {
+			console.warn(`[web] 404 ${event.url.pathname}`);
+			return { message: 'Not found' };
+		}
+		console.error('[web]', error);
+		return;
 	}
 	console.error('[web]', error);
+	const message = error instanceof Error ? error.message : String(error);
 	return { message: message || 'Internal error' };
 };

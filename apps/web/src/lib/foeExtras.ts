@@ -13,7 +13,7 @@
 // reader).
 // =============================================================================
 
-import type { FoeDef } from '$lib/types.js';
+import type { FoeDef } from '#lib/types.js';
 
 /** Read one extras-bag value: `def.extras?.<ext>?.<key>`. Returns undefined
  *  when the def, the extension's bag, or the key is missing. */

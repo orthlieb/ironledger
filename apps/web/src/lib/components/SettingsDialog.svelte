@@ -27,23 +27,23 @@
 		getDiceTexture,
 		setDiceTexture,
 		DICE_TEXTURE_OPTIONS,
-	} from '$lib/dice';
-	import { isDiceSoundEnabled, setDiceSoundEnabled, isDiceSoundSupported } from '$lib/diceSound.js';
+	} from '#lib/dice.js';
+	import { isDiceSoundEnabled, setDiceSoundEnabled, isDiceSoundSupported } from '#lib/diceSound.js';
 	import {
 		getToggleableExtensions,
 		isSourceEnabled,
 		setExtensionEnabled,
 		loadExtensions,
-	} from '$lib/expansionStore.svelte.js';
-	import { headingText } from '$lib/fontStore.svelte.js';
+	} from '#lib/expansionStore.svelte.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
 	import {
 		type LiveryId,
 		LIVERIES,
 		getFontDisplay,
 		savedFont,
 		setFontDisplay,
-	} from '$lib/fontStore.svelte.js';
-	import swordSvg from '$icons/sharp-axe.svg?raw';
+	} from '#lib/fontStore.svelte.js';
+	import swordSvg from '#icons/sharp-axe.svg?raw';
 	import {
 		type AiProvider,
 		AI_PROVIDERS,
@@ -54,15 +54,15 @@
 		setActiveProvider,
 		getSetup,
 		setSetup,
-	} from '$lib/aiSettings.svelte.js';
+	} from '#lib/aiSettings.svelte.js';
 	import { Dialog, Tabs, ToggleGroup } from 'bits-ui';
-	import DialogHeader from '$lib/components/DialogHeader.svelte';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import AiConfigDialog from '$lib/components/AiConfigDialog.svelte';
-	import Select from '$lib/components/Select.svelte';
-	import ColorPicker from '$lib/components/ColorPicker.svelte';
-	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
-	import diceD10Svg from '$icons/dice-d10-light.svg?raw';
+	import DialogHeader from '#lib/components/DialogHeader.svelte';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
+	import AiConfigDialog from '#lib/components/AiConfigDialog.svelte';
+	import Select from '#lib/components/Select.svelte';
+	import ColorPicker from '#lib/components/ColorPicker.svelte';
+	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
+	import diceD10Svg from '#icons/dice-d10-light.svg?raw';
 
 	// ---------------------------------------------------------------------------
 	// Display font — delegated to fontStore

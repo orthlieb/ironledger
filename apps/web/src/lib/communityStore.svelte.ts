@@ -6,8 +6,8 @@
 // see makeEntityStore.
 // =============================================================================
 
-import type { Community } from '$lib/types.js';
-import { makeEntityStore } from '$lib/makeEntityStore.svelte.js';
+import type { Community } from '#lib/types.js';
+import { makeEntityStore } from '#lib/makeEntityStore.svelte.js';
 
 const store = makeEntityStore<Community>('communities', 'communityStore');
 

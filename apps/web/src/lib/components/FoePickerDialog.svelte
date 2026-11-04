@@ -12,7 +12,7 @@
 	 * onSelect is called with (foeDef, quantity, effectiveRank) when confirmed.
 	 */
 
-	import type { FoeDef, FoeQuantity, CatalogueSource } from '$lib/types.js';
+	import type { FoeDef, FoeQuantity, CatalogueSource } from '#lib/types.js';
 	import {
 		loadFoes,
 		getFoes,
@@ -27,23 +27,23 @@
 		FOE_RANKS,
 		FOE_QUANTITIES,
 		FOE_NATURE_COLORS,
-	} from '$lib/foeStore.svelte.js';
-	import { sourceLabel } from '$lib/expansionStore.svelte.js';
-	import { rankBadgeStyle } from '$lib/badgeStyles.js';
-	import { headingText } from '$lib/fontStore.svelte.js';
-	import { draggable } from '$lib/actions/draggable.js';
+	} from '#lib/foeStore.svelte.js';
+	import { sourceLabel } from '#lib/expansionStore.svelte.js';
+	import { rankBadgeStyle } from '#lib/badgeStyles.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
+	import { draggable } from '#lib/actions/draggable.js';
 	import { Dialog, RadioGroup } from 'bits-ui';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import DialogHeader from '$lib/components/DialogHeader.svelte';
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import gripSvg from '$icons/grip-vertical-solid.svg?raw';
-	import chevronUpSvg from '$icons/chevron-up-solid.svg?raw';
-	import chevronDownSvg from '$icons/chevron-down-solid.svg?raw';
-	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
-	import FoeImageCarousel from '$lib/components/FoeImageCarousel.svelte';
-	import clearFiltersSvg from '$icons/filter-circle-xmark-solid.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
-	import { foeIcon } from '$lib/iconRegistry.js';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
+	import DialogHeader from '#lib/components/DialogHeader.svelte';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import gripSvg from '#icons/grip-vertical-solid.svg?raw';
+	import chevronUpSvg from '#icons/chevron-up-solid.svg?raw';
+	import chevronDownSvg from '#icons/chevron-down-solid.svg?raw';
+	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '#lib/foePortrait.js';
+	import FoeImageCarousel from '#lib/components/FoeImageCarousel.svelte';
+	import clearFiltersSvg from '#icons/filter-circle-xmark-solid.svg?raw';
+	import searchIconSvg from '#icons/magnifying-glass-solid.svg?raw';
+	import { foeIcon } from '#lib/iconRegistry.js';
 
 	// ---------------------------------------------------------------------------
 	// Props

@@ -6,7 +6,7 @@
 // spinning up a SvelteKit environment. assetStore.svelte.ts re-exports the
 // pieces consumers care about.
 // =============================================================================
-import type { AssetDefinition, CustomFieldDef } from '$lib/types.js';
+import type { AssetDefinition, CustomFieldDef } from '#lib/types.js';
 
 /**
  * Iterate `assets` in order and return a map of global-counter id → canonical

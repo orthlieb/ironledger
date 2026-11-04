@@ -63,8 +63,13 @@ jobs:
 
             cd ~/app
 
-            echo "▶ Pulling latest code..."
             source ~/.nvm/nvm.sh
+            # SvelteKit 3 needs Node >= 22.17. Check before touching anything,
+            # so a too-old server fails here with the running app untouched.
+            echo "▶ Node $(node --version)"
+            node -e 'const [a, b] = process.versions.node.split(".").map(Number); if (a < 22 || (a === 22 && b < 17)) { console.error("Node >= 22.17 is required (SvelteKit 3). On the server: nvm install 22 && nvm alias default 22"); process.exit(1); }'
+
+            echo "▶ Pulling latest code..."
             git fetch origin main
             git reset --hard origin/main
 

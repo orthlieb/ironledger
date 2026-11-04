@@ -36,7 +36,7 @@
 	 *      `pointer-events: none`; hits are resolved via `markersAt()`.
 	 *
 	 * Icon vocabulary comes from apps/web/static/map/<category>/<slug>.svg,
-	 * indexed at build time into $lib/generated/mapIconManifest. New
+	 * indexed at build time into #lib/generated/mapIconManifest. New
 	 * markers get the default icon+color; users override via the
 	 * selection toolbar's "Change icon…" nested picker dialog.
 	 *
@@ -45,26 +45,26 @@
 	 * max-height on the scrollable body with overscroll-behavior: contain.
 	 */
 
-	import { headingText } from '$lib/fontStore.svelte.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
 	import DialogHeader from './DialogHeader.svelte';
 	import MapOptionsDialog from './MapOptionsDialog.svelte';
 	import MarkerPropertiesDialog from './MarkerPropertiesDialog.svelte';
-	import { mapSettings } from '$lib/mapSettingsStore.svelte.js';
-	import iconExpandSvg from '$icons/expand-solid.svg?raw';
-	import iconZoomInSvg from '$icons/magnifying-glass-plus-solid.svg?raw';
-	import iconZoomOutSvg from '$icons/magnifying-glass-minus-solid.svg?raw';
-	import iconGearSvg from '$icons/gear-solid.svg?raw';
-	import iconEditSvg from '$icons/pen-to-square-solid.svg?raw';
-	import iconRulerSvg from '$icons/ruler-solid.svg?raw';
-	import iconLocationDotSvg from '$icons/location-dot-solid.svg?raw';
-	import iconMaximizeSvg from '$icons/maximize-solid.svg?raw';
-	import iconMinimizeSvg from '$icons/minimize-solid.svg?raw';
-	import xmarkSvg from '$icons/xmark-solid.svg?raw';
+	import { mapSettings } from '#lib/mapSettingsStore.svelte.js';
+	import iconExpandSvg from '#icons/expand-solid.svg?raw';
+	import iconZoomInSvg from '#icons/magnifying-glass-plus-solid.svg?raw';
+	import iconZoomOutSvg from '#icons/magnifying-glass-minus-solid.svg?raw';
+	import iconGearSvg from '#icons/gear-solid.svg?raw';
+	import iconEditSvg from '#icons/pen-to-square-solid.svg?raw';
+	import iconRulerSvg from '#icons/ruler-solid.svg?raw';
+	import iconLocationDotSvg from '#icons/location-dot-solid.svg?raw';
+	import iconMaximizeSvg from '#icons/maximize-solid.svg?raw';
+	import iconMinimizeSvg from '#icons/minimize-solid.svg?raw';
+	import xmarkSvg from '#icons/xmark-solid.svg?raw';
 	import { Dialog } from 'bits-ui';
-	import Combobox from '$lib/components/Combobox.svelte';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import { resolveMarkerIcon } from '$lib/settlementIcons.svelte.js';
+	import Combobox from '#lib/components/Combobox.svelte';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import { resolveMarkerIcon } from '#lib/settlementIcons.svelte.js';
 	import MarkerCard from './MarkerCard.svelte';
 	import {
 		DEFAULT_MAP_ASPECT,
@@ -75,8 +75,8 @@
 		haloPaddedViewBox,
 		mapGlyphInner,
 		subGridOctaveForZoom,
-	} from '$lib/mapConstants.js';
-	import { gridLineOffsets, isMajorLine } from '$lib/mapGeometry.js';
+	} from '#lib/mapConstants.js';
+	import { gridLineOffsets, isMajorLine } from '#lib/mapGeometry.js';
 	import {
 		mapState,
 		mapListState,
@@ -100,10 +100,10 @@
 		switchMap,
 		createMap,
 		type MapMarker,
-	} from '$lib/mapStore.svelte.js';
-	import { downscaleImage, MapImageError } from '$lib/mapImage.js';
-	import { exportMapPng, exportMapZip } from '$lib/mapExport.js';
-	import { resolveEntity } from '$lib/mapEntityLinks.js';
+	} from '#lib/mapStore.svelte.js';
+	import { downscaleImage, MapImageError } from '#lib/mapImage.js';
+	import { exportMapPng, exportMapZip } from '#lib/mapExport.js';
+	import { resolveEntity } from '#lib/mapEntityLinks.js';
 	import MapLayersMenu from './MapLayersMenu.svelte';
 
 	// Module-level guard so only one <MapDialog /> instance in the page
@@ -3005,7 +3005,7 @@
 	   at the tip so the "you're about to drop here" affordance is
 	   unmistakable AND lines up with the pin the click actually creates.
 	   The pin is a URL-encoded location-dot SVG (mirrors
-	   $icons/location-dot-solid.svg), rendered at 24×32 with a white
+	   #icons/location-dot-solid.svg), rendered at 24×32 with a white
 	   stroke halo so it reads on both dark and pale map backgrounds. The
 	   `crosshair` fallback keeps the affordance obvious on the handful of
 	   browsers / hardened profiles that ignore SVG cursors. */

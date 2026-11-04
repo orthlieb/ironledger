@@ -17,17 +17,17 @@
 	 * whatever extensions are enabled), matching how the New NPC dialog
 	 * already gated them.
 	 */
-	import { resolveCharacterOracle } from '$lib/oracleStore.svelte.js';
-	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
+	import { resolveCharacterOracle } from '#lib/oracleStore.svelte.js';
+	import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
 	import Checkbox from './Checkbox.svelte';
 	import Select from './Select.svelte';
-	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
+	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
 	import {
 		regionOriginOptions,
 		rollRandomRegionOrigin,
 		type CharacterRandomizeFlags,
-	} from '$lib/characterRollups.js';
+	} from '#lib/characterRollups.js';
 
 	let {
 		flags = $bindable(),

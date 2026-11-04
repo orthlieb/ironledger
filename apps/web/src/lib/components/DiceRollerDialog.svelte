@@ -9,19 +9,19 @@
 	 * All results are appended to the session log.
 	 * 3D dice animation runs via @3d-dice/dice-box-threejs (CDN, lazy-loaded).
 	 */
-	import { appendLog } from '$lib/log.svelte.js';
-	import { matchNoteHtml } from '$lib/rollMatch.js';
-	import { rollDie, rollD100, animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
-	import type { DiceCtx } from '$lib/diceContext.svelte.js';
-	import { headingText } from '$lib/fontStore.svelte.js';
-	import { getActiveDebilityWarnings } from '$lib/debilityWarnings.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
+	import { appendLog } from '#lib/log.svelte.js';
+	import { matchNoteHtml } from '#lib/rollMatch.js';
+	import { rollDie, rollD100, animateDice, DIE_BLACK, DIE_WHITE } from '#lib/dice.js';
+	import type { DiceCtx } from '#lib/diceContext.svelte.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
+	import { getActiveDebilityWarnings } from '#lib/debilityWarnings.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
 
-	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
+	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
 	import { Dialog } from 'bits-ui';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import DialogHeader from '$lib/components/DialogHeader.svelte';
-	import diceD10Svg from '$icons/dice-d10-light.svg?raw';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
+	import DialogHeader from '#lib/components/DialogHeader.svelte';
+	import diceD10Svg from '#icons/dice-d10-light.svg?raw';
 
 	// ---------------------------------------------------------------------------
 	// Props

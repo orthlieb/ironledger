@@ -20,10 +20,10 @@
 	 * After a successful upload the just-cropped data URL is shown immediately
 	 * as a local preview so there's no flash waiting for the round-trip GET.
 	 */
-	import { cropImageFile } from '$lib/imageCrop.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import Lightbox from '$lib/components/Lightbox.svelte';
-	import trashSvg from '$icons/trash-solid.svg?raw';
+	import { cropImageFile } from '#lib/imageCrop.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import Lightbox from '#lib/components/Lightbox.svelte';
+	import trashSvg from '#icons/trash-solid.svg?raw';
 
 	let {
 		endpoint,

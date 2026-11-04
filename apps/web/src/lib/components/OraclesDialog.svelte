@@ -17,19 +17,19 @@
 		getVisibleOracles,
 		buildTableHtml,
 		rollOracle,
-	} from '$lib/oracleStore.svelte.js';
-	import { headingText } from '$lib/fontStore.svelte.js';
-	import { oracleCategoryIcon } from '$lib/iconRegistry.js';
-	import { oracleCategoryMeta } from '$lib/extensionCategories.svelte.js';
-	import { renderNote } from '$lib/markdown.js';
-	import { appendLog, enrichOutcomeLinks } from '$lib/log.svelte.js';
-	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
-	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
+	} from '#lib/oracleStore.svelte.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
+	import { oracleCategoryIcon } from '#lib/iconRegistry.js';
+	import { oracleCategoryMeta } from '#lib/extensionCategories.svelte.js';
+	import { renderNote } from '#lib/markdown.js';
+	import { appendLog, enrichOutcomeLinks } from '#lib/log.svelte.js';
+	import { animateDice, DIE_BLACK, DIE_WHITE } from '#lib/dice.js';
+	import { getActiveDiceCtx } from '#lib/diceContext.svelte.js';
 
 	import { Dialog } from 'bits-ui';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import DialogHeader from '$lib/components/DialogHeader.svelte';
-	import FilterBar from '$lib/components/FilterBar.svelte';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
+	import DialogHeader from '#lib/components/DialogHeader.svelte';
+	import FilterBar from '#lib/components/FilterBar.svelte';
 
 	// ---------------------------------------------------------------------------
 	// Internal state

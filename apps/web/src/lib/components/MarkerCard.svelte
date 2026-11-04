@@ -20,17 +20,17 @@
 	 * and the card simply follows it.
 	 */
 	import { Popover } from 'bits-ui';
-	import type { MapMarker } from '$lib/mapStore.svelte.js';
-	import type { MapIcon } from '$lib/generated/mapIconManifest.js';
-	import { haloPaddedViewBox, mapGlyphInner } from '$lib/mapConstants.js';
-	import { markerSummary } from '$lib/markerSummary.js';
-	import { renderNote } from '$lib/markdown.js';
-	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
-	import { contentZ } from '$lib/dialogStack.svelte.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import gotoSvg from '$icons/arrow-up-right-from-square-solid.svg?raw';
-	import editSvg from '$icons/pen-to-square-solid.svg?raw';
-	import closeSvg from '$icons/xmark-solid.svg?raw';
+	import type { MapMarker } from '#lib/mapStore.svelte.js';
+	import type { MapIcon } from '#lib/generated/mapIconManifest.js';
+	import { haloPaddedViewBox, mapGlyphInner } from '#lib/mapConstants.js';
+	import { markerSummary } from '#lib/markerSummary.js';
+	import { renderNote } from '#lib/markdown.js';
+	import { ENTITY_KIND_META } from '#lib/entityKinds.js';
+	import { contentZ } from '#lib/dialogStack.svelte.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import gotoSvg from '#icons/arrow-up-right-from-square-solid.svg?raw';
+	import editSvg from '#icons/pen-to-square-solid.svg?raw';
+	import closeSvg from '#icons/xmark-solid.svg?raw';
 
 	let {
 		open,

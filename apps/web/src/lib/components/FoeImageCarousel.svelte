@@ -9,7 +9,7 @@
 	 * Keyboard: ArrowLeft / ArrowRight cycle when the component has focus.
 	 */
 
-	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '$lib/foePortrait.js';
+	import { foePortraitUrl, UNKNOWN_FOE_PORTRAIT } from '#lib/foePortrait.js';
 
 	interface Props {
 		name: string;

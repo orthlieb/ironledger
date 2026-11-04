@@ -206,9 +206,9 @@ Both buses use the nonce-queue-drain pattern to ensure mutations happen inside S
 
 | Variable       | File                           | Used for       |
 | -------------- | ------------------------------ | -------------- |
-| `trashSvg`     | `$icons/trash-solid.svg?raw`   | Delete button  |
-| `iconHeart`    | `$icons/icon-heart.svg?raw`    | Health meter   |
-| `iconMomentum` | `$icons/icon-momentum.svg?raw` | Momentum meter |
-| `iconSpirit`   | `$icons/icon-spirit.svg?raw`   | Spirit meter   |
-| `iconSupply`   | `$icons/icon-supply.svg?raw`   | Supply meter   |
-| `iconMana`     | `$icons/icon-mana.svg?raw`     | Mana meter     |
+| `trashSvg`     | `#icons/trash-solid.svg?raw`   | Delete button  |
+| `iconHeart`    | `#icons/icon-heart.svg?raw`    | Health meter   |
+| `iconMomentum` | `#icons/icon-momentum.svg?raw` | Momentum meter |
+| `iconSpirit`   | `#icons/icon-spirit.svg?raw`   | Spirit meter   |
+| `iconSupply`   | `#icons/icon-supply.svg?raw`   | Supply meter   |
+| `iconMana`     | `#icons/icon-mana.svg?raw`     | Mana meter     |

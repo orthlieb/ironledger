@@ -3,7 +3,7 @@
  * No auth required — all users (including logged-out) can check.
  */
 import type { RequestHandler } from './$types';
-import { INTERNAL_API_URL } from '$lib/server/config.js';
+import { INTERNAL_API_URL } from '#lib/server/config.js';
 
 export const GET: RequestHandler = async () => {
 	try {

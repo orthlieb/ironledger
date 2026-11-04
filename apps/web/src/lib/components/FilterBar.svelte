@@ -13,11 +13,11 @@
 	 * even though the host portals its dialog out of this component's tree.
 	 */
 	import type { Snippet } from 'svelte';
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
-	import clearFiltersSvg from '$icons/filter-circle-xmark-solid.svg?raw';
-	import chevronUpSvg from '$icons/chevron-up-solid.svg?raw';
-	import chevronDownSvg from '$icons/chevron-down-solid.svg?raw';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import searchIconSvg from '#icons/magnifying-glass-solid.svg?raw';
+	import clearFiltersSvg from '#icons/filter-circle-xmark-solid.svg?raw';
+	import chevronUpSvg from '#icons/chevron-up-solid.svg?raw';
+	import chevronDownSvg from '#icons/chevron-down-solid.svg?raw';
 
 	let {
 		search = $bindable(''),

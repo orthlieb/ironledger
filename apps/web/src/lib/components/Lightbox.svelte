@@ -13,10 +13,10 @@
 	 * click closes via Overlay's click handler; Escape via Dialog.Root's
 	 * onOpenChange.
 	 */
-	import { tooltip } from '$lib/actions/tooltip.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
 	import { Dialog } from 'bits-ui';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import xmarkSvg from '$icons/xmark-solid.svg?raw';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
+	import xmarkSvg from '#icons/xmark-solid.svg?raw';
 
 	let {
 		src,

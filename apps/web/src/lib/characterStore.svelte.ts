@@ -16,9 +16,9 @@
 //   • setPartySupply(val)               — update all chars.supply + persist each
 // =============================================================================
 
-import type { CharacterFull } from '$lib/api.js';
-import { characters as api } from '$lib/api.js';
-import { hydrateCharacterInPlace } from '$lib/character.js';
+import type { CharacterFull } from '#lib/api.js';
+import { characters as api } from '#lib/api.js';
+import { hydrateCharacterInPlace } from '#lib/character.js';
 
 // ---------------------------------------------------------------------------
 // Module-level state

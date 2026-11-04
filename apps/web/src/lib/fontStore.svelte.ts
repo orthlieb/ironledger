@@ -13,7 +13,7 @@
  * on. This store only tracks the active id and exposes helpers keyed off it.
  *
  * Usage in any component:
- *   import { headingText } from '$lib/fontStore.svelte.js';
+ *   import { headingText } from '#lib/fontStore.svelte.js';
  *   // in template: {headingText(character.name)}
  */
 

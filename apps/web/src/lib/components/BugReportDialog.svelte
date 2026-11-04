@@ -16,8 +16,8 @@
 	 */
 
 	import { Dialog } from 'bits-ui';
-	import DialogHeader from '$lib/components/DialogHeader.svelte';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
+	import DialogHeader from '#lib/components/DialogHeader.svelte';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
 
 	const BUG_EMAIL = 'bugs@ironledger.org';
 

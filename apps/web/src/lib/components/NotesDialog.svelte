@@ -7,12 +7,12 @@
 	 *   ref.open()
 	 */
 
-	import { appendLog } from '$lib/log.svelte.js';
+	import { appendLog } from '#lib/log.svelte.js';
 	import { Dialog } from 'bits-ui';
-	import DialogHeader from '$lib/components/DialogHeader.svelte';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import { renderNote } from '$lib/markdown.js';
-	import { headingText } from '$lib/fontStore.svelte.js';
+	import DialogHeader from '#lib/components/DialogHeader.svelte';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
+	import { renderNote } from '#lib/markdown.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
 
 	// ---------------------------------------------------------------------------
 	// Internal state

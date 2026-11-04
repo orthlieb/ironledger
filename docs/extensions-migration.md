@@ -312,7 +312,7 @@ This is the extensibility unlock.
 | `apps/web/src/lib/foeStore.svelte.ts`               | `SOURCE_ORDER` and the `foe.id.startsWith('yrt/')` inference → manifest-declared source + id-namespace.                                            |
 | `apps/web/src/lib/oracleStore.svelte.ts`            | The hard-coded yrt→source map → generic source from catalogue. **Leave the `yrtTouched` compound-roll logic (lines ~253, 461–480) baked in (D8).** |
 | `apps/web/src/lib/iconRegistry.ts`                  | Extend `import.meta.glob` to include `$extensions/*/icons/*.svg`.                                                                                  |
-| `apps/web/vite.config` / `svelte.config`            | Add `$extensions` alias → repo `extensions/`.                                                                                                      |
+| `apps/web/vite.config`                              | Add `$extensions` alias → repo `extensions/`.                                                                                                      |
 | **new** `scripts/gen-extensions-manifest.ts`        | Build-time manifest generator (§5) + foe-image copy (§6.2) + the lint (§10).                                                                       |
 | **new** `scripts/lint-extensions.ts`                | Build-time extension validator (§10) — may live inside the generator or as a sibling sharing its parsed manifest.                                  |
 

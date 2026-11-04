@@ -16,7 +16,7 @@
 	 */
 	import { tick } from 'svelte';
 	import { Popover } from 'bits-ui';
-	import { tooltip } from '$lib/actions/tooltip.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
 	import {
 		DEFAULT_LAYER_ID,
 		type MapLayer,
@@ -29,13 +29,13 @@
 		renameLayer,
 		setActiveLayer,
 		setLayerHidden,
-	} from '$lib/mapStore.svelte.js';
-	import layersSvg from '$icons/layer-group.svg?raw';
-	import newLayerSvg from '$icons/new-layer.svg?raw';
-	import eyeSvg from '$icons/eye-solid.svg?raw';
-	import eyeSlashSvg from '$icons/eye-slash-solid.svg?raw';
-	import penSvg from '$icons/pen-to-square-solid.svg?raw';
-	import trashSvg from '$icons/trash-solid.svg?raw';
+	} from '#lib/mapStore.svelte.js';
+	import layersSvg from '#icons/layer-group.svg?raw';
+	import newLayerSvg from '#icons/new-layer.svg?raw';
+	import eyeSvg from '#icons/eye-solid.svg?raw';
+	import eyeSlashSvg from '#icons/eye-slash-solid.svg?raw';
+	import penSvg from '#icons/pen-to-square-solid.svg?raw';
+	import trashSvg from '#icons/trash-solid.svg?raw';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 
 	let open = $state(false);

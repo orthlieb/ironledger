@@ -13,12 +13,12 @@
 	 */
 
 	import type { MoveDefinition } from '@ironledger/shared';
-	import type { DiceCtx } from '$lib/diceContext.svelte.js';
-	import type { PreconditionContext } from '$lib/preconditions.js';
-	import { headingText } from '$lib/fontStore.svelte.js';
-	import { moveCategoryIcon } from '$lib/iconRegistry.js';
-	import { moveCategoryMeta } from '$lib/extensionCategories.svelte.js';
-	import { matchNoteHtml } from '$lib/rollMatch.js';
+	import type { DiceCtx } from '#lib/diceContext.svelte.js';
+	import type { PreconditionContext } from '#lib/preconditions.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
+	import { moveCategoryIcon } from '#lib/iconRegistry.js';
+	import { moveCategoryMeta } from '#lib/extensionCategories.svelte.js';
+	import { matchNoteHtml } from '#lib/rollMatch.js';
 	import {
 		loadMoves,
 		getVisibleMoves,
@@ -29,29 +29,29 @@
 		isSpellRollMove,
 		isTableRollMove,
 		hasRollableStats,
-	} from '$lib/moveStore.svelte.js';
-	import { firstPreconditionFailure } from '$lib/preconditions.js';
-	import { applyInitiativeDowngrade } from '$lib/initiativeDowngrade.js';
-	import { appendLog, enrichOutcomeLinks, triggerAction } from '$lib/log.svelte.js';
-	import { renderRich } from '$lib/dsl.js';
-	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
+	} from '#lib/moveStore.svelte.js';
+	import { firstPreconditionFailure } from '#lib/preconditions.js';
+	import { applyInitiativeDowngrade } from '#lib/initiativeDowngrade.js';
+	import { appendLog, enrichOutcomeLinks, triggerAction } from '#lib/log.svelte.js';
+	import { renderRich } from '#lib/dsl.js';
+	import { getActiveFoeId, getActiveExpeditionId } from '#lib/activeContext.svelte.js';
 	import { untrack } from 'svelte';
-	import { momentumReset } from '$lib/character.js';
-	import { BURN_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
-	import { rollDie, animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
-	import { playMissScream, preloadMissScream } from '$lib/diceSound.js';
+	import { momentumReset } from '#lib/character.js';
+	import { BURN_MOMENTUM_TITLE } from '#lib/cascadeRules.js';
+	import { rollDie, animateDice, DIE_BLACK, DIE_WHITE } from '#lib/dice.js';
+	import { playMissScream, preloadMissScream } from '#lib/diceSound.js';
 
-	import diceD6RawSvg from '$icons/dice-d6-light.svg?raw';
-	import diceD10RawSvg from '$icons/dice-d10-light.svg?raw';
+	import diceD6RawSvg from '#icons/dice-d6-light.svg?raw';
+	import diceD10RawSvg from '#icons/dice-d10-light.svg?raw';
 	import { Dialog } from 'bits-ui';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import DialogHeader from '$lib/components/DialogHeader.svelte';
-	import FilterBar from '$lib/components/FilterBar.svelte';
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import { loadAssets, findAsset } from '$lib/assetStore.svelte.js';
-	import { getRelevantAbilities } from '$lib/assetMatcherStore.svelte.js';
-	import { getActiveDebilityWarnings } from '$lib/debilityWarnings.js';
-	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
+	import DialogHeader from '#lib/components/DialogHeader.svelte';
+	import FilterBar from '#lib/components/FilterBar.svelte';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import { loadAssets, findAsset } from '#lib/assetStore.svelte.js';
+	import { getRelevantAbilities } from '#lib/assetMatcherStore.svelte.js';
+	import { getActiveDebilityWarnings } from '#lib/debilityWarnings.js';
+	import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
 
 	// ---------------------------------------------------------------------------
 	// Props
@@ -180,7 +180,7 @@
 		if (!selectedMove || !ctx) return [];
 		return getRelevantAbilities(
 			selectedMove.id,
-			(ctx.data.assets as import('$lib/types.js').CharacterAsset[]) ?? [],
+			(ctx.data.assets as import('#lib/types.js').CharacterAsset[]) ?? [],
 			findAsset,
 		);
 	});
@@ -247,7 +247,7 @@
 			return m.preconditions?.length ? 'No character selected' : null;
 		}
 		return firstPreconditionFailure(
-			m.preconditions as import('$lib/preconditions.js').Precondition[] | undefined,
+			m.preconditions as import('#lib/preconditions.js').Precondition[] | undefined,
 			ctx.data,
 			pctx,
 		);

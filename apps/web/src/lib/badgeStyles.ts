@@ -5,7 +5,7 @@
  * rank hue as text) that was copy-pasted as `rankBadgeStyle` / `diffBadgeStyle`
  * across FoesArea, FoePickerDialog, DenizenDialog, and ExpeditionsArea.
  */
-import { RANK_COLORS } from '$lib/foeStore.svelte.js';
+import { RANK_COLORS } from '#lib/foeStore.svelte.js';
 
 /** Expedition difficulty label → foe rank number (1–5). */
 export const DIFFICULTY_RANK: Record<string, number> = {

@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { INTERNAL_API_URL, HCAPTCHA_SITE_KEY } from '$lib/server/config.js';
+import { INTERNAL_API_URL, HCAPTCHA_SITE_KEY } from '#lib/server/config.js';
 
 const TAGLINES = [
 	'Your ledger awaits. Try not to die filling it in.',

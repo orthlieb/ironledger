@@ -19,23 +19,23 @@
 		appendLog,
 		getLog,
 		sessionLog,
-	} from '$lib/log.svelte.js';
-	import { OVERFLOW_RULES, FLOOR_OVERFLOW_RULES } from '$lib/cascadeRules.js';
-	import type { DiceCtx } from '$lib/diceContext.svelte.js';
-	import { headingText } from '$lib/fontStore.svelte.js';
-	import { matchNoteHtml } from '$lib/rollMatch.js';
-	import { momentumReset } from '$lib/character.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import { findMove } from '$lib/moveStore.svelte.js';
-	import { renderNote } from '$lib/markdown.js';
-	import { parseStorySource } from '$lib/aiSerialize.js';
-	import { sanitizeLogHtml, sanitizeNoteHtml } from '$lib/sanitize.js';
-	import trashSvg from '$icons/trash-solid.svg?raw';
-	import penSvg from '$icons/pen-to-square-solid.svg?raw';
-	import anglesLeftSvg from '$icons/angles-left-solid.svg?raw';
-	import anglesRightSvg from '$icons/angles-right-solid.svg?raw';
-	import broomWideSvg from '$icons/broom-wide-solid.svg?raw';
-	import { appIcon } from '$lib/liveryIcons.js';
+	} from '#lib/log.svelte.js';
+	import { OVERFLOW_RULES, FLOOR_OVERFLOW_RULES } from '#lib/cascadeRules.js';
+	import type { DiceCtx } from '#lib/diceContext.svelte.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
+	import { matchNoteHtml } from '#lib/rollMatch.js';
+	import { momentumReset } from '#lib/character.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import { findMove } from '#lib/moveStore.svelte.js';
+	import { renderNote } from '#lib/markdown.js';
+	import { parseStorySource } from '#lib/aiSerialize.js';
+	import { sanitizeLogHtml, sanitizeNoteHtml } from '#lib/sanitize.js';
+	import trashSvg from '#icons/trash-solid.svg?raw';
+	import penSvg from '#icons/pen-to-square-solid.svg?raw';
+	import anglesLeftSvg from '#icons/angles-left-solid.svg?raw';
+	import anglesRightSvg from '#icons/angles-right-solid.svg?raw';
+	import broomWideSvg from '#icons/broom-wide-solid.svg?raw';
+	import { appIcon } from '#lib/liveryIcons.js';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import StoryDialog from './StoryDialog.svelte';
 	import {
@@ -47,10 +47,10 @@
 		toggleStart,
 		toggleEnd,
 		clearSection,
-	} from '$lib/sectionStore.svelte.js';
-	import caretUpSvg from '$icons/caret-large-up-solid.svg?raw';
-	import caretDownSvg from '$icons/caret-large-down-solid.svg?raw';
-	import rotateRightSvg from '$icons/arrow-rotate-right-solid.svg?raw';
+	} from '#lib/sectionStore.svelte.js';
+	import caretUpSvg from '#icons/caret-large-up-solid.svg?raw';
+	import caretDownSvg from '#icons/caret-large-down-solid.svg?raw';
+	import rotateRightSvg from '#icons/arrow-rotate-right-solid.svg?raw';
 
 	// ---------------------------------------------------------------------------
 	// Callback props for interactive log links (Phase 2)

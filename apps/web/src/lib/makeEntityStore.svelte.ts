@@ -16,8 +16,8 @@
 // caller's reactive context exactly as the old module-level `$state` did.
 // =============================================================================
 
-import { makeEntitySync } from '$lib/entitySync.js';
-import { fetchSession } from '$lib/sessionData.js';
+import { makeEntitySync } from '#lib/entitySync.js';
+import { fetchSession } from '#lib/sessionData.js';
 
 export interface EntityStore<T> {
 	/** Load from the server once per session (idempotent). */

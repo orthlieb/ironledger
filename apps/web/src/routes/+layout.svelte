@@ -1,43 +1,43 @@
 <script lang="ts">
 	import '../app.css';
 	// Per-livery typography + chrome palettes, generated from liveries/<id>/livery.json.
-	import '$lib/liveries.generated.css';
+	import '#lib/liveries.generated.css';
 	import type { LayoutData } from './$types';
 	import type { MaintenanceStatus, BroadcastStatus } from '@ironledger/shared';
-	import SettingsDialog from '$lib/components/SettingsDialog.svelte';
-	import BugReportDialog from '$lib/components/BugReportDialog.svelte';
-	import HamburgerMenu from '$lib/components/HamburgerMenu.svelte';
-	import BroadcastBanner from '$lib/components/BroadcastBanner.svelte';
-	import SessionExpiredBanner from '$lib/components/SessionExpiredBanner.svelte';
-	import UpdateBanner from '$lib/components/UpdateBanner.svelte';
-	import MovesDialog from '$lib/components/MovesDialog.svelte';
-	import OraclesDialog from '$lib/components/OraclesDialog.svelte';
-	import DiceRollerDialog from '$lib/components/DiceRollerDialog.svelte';
-	import NotesDialog from '$lib/components/NotesDialog.svelte';
-	import { system } from '$lib/api';
-	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
-	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
-	import { getEncounters } from '$lib/encounterStore.svelte.js';
-	import { getExpeditions } from '$lib/expeditionStore.svelte.js';
-	import { FOE_RANKS, findFoe } from '$lib/foeStore.svelte.js';
-	import type { PreconditionContext } from '$lib/preconditions.js';
-	import swordSvg from '$icons/sharp-axe.svg?raw';
-	import iconMoves from '$icons/person-running-solid.svg?raw';
-	import iconMap from '$icons/compass-rose.svg?raw';
-	import iconOracles from '$icons/crystal-ball.svg?raw';
-	import iconDice from '$icons/dice-d10-light.svg?raw';
-	import iconNotes from '$icons/note-sticky-solid.svg?raw';
-	import { preloadDice } from '$lib/dice';
-	import { setAiDebug } from '$lib/aiSettings.svelte.js';
-	import { page } from '$app/stores';
+	import SettingsDialog from '#lib/components/SettingsDialog.svelte';
+	import BugReportDialog from '#lib/components/BugReportDialog.svelte';
+	import HamburgerMenu from '#lib/components/HamburgerMenu.svelte';
+	import BroadcastBanner from '#lib/components/BroadcastBanner.svelte';
+	import SessionExpiredBanner from '#lib/components/SessionExpiredBanner.svelte';
+	import UpdateBanner from '#lib/components/UpdateBanner.svelte';
+	import MovesDialog from '#lib/components/MovesDialog.svelte';
+	import OraclesDialog from '#lib/components/OraclesDialog.svelte';
+	import DiceRollerDialog from '#lib/components/DiceRollerDialog.svelte';
+	import NotesDialog from '#lib/components/NotesDialog.svelte';
+	import { system } from '#lib/api.js';
+	import { getActiveDiceCtx } from '#lib/diceContext.svelte.js';
+	import { getActiveFoeId, getActiveExpeditionId } from '#lib/activeContext.svelte.js';
+	import { getEncounters } from '#lib/encounterStore.svelte.js';
+	import { getExpeditions } from '#lib/expeditionStore.svelte.js';
+	import { FOE_RANKS, findFoe } from '#lib/foeStore.svelte.js';
+	import type { PreconditionContext } from '#lib/preconditions.js';
+	import swordSvg from '#icons/sharp-axe.svg?raw';
+	import iconMoves from '#icons/person-running-solid.svg?raw';
+	import iconMap from '#icons/compass-rose.svg?raw';
+	import iconOracles from '#icons/crystal-ball.svg?raw';
+	import iconDice from '#icons/dice-d10-light.svg?raw';
+	import iconNotes from '#icons/note-sticky-solid.svg?raw';
+	import { preloadDice } from '#lib/dice.js';
+	import { setAiDebug } from '#lib/aiSettings.svelte.js';
+	import { page } from '$app/state';
 	import { goto } from '$app/navigation';
 	import {
 		headingText,
 		savedFont,
 		setFontDisplay,
 		activeLiveryBrand,
-	} from '$lib/fontStore.svelte.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
+	} from '#lib/fontStore.svelte.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
 
 	let { data, children }: { data: LayoutData; children: import('svelte').Snippet } = $props();
 
@@ -117,7 +117,7 @@
 	// the layout-level dialogs can react. Avoids prop-drilling refs through
 	// the route tree.
 	import { onMount } from 'svelte';
-	import { cycleViewMode, viewMode } from '$lib/viewModeStore.svelte.js';
+	import { cycleViewMode, viewMode } from '#lib/viewModeStore.svelte.js';
 	onMount(() => {
 		// Adopt the persisted livery: fontStore's module-level `_font` starts at
 		// DEFAULT_LIVERY on both server and client (so SSR + first client paint
@@ -217,7 +217,8 @@
 	// turn on the wire-level pane in that browser; `?debug=off` clears it.
 	// Persisted in localStorage so it survives navigation without the param.
 	$effect(() => {
-		const flag = $page.url.searchParams.get('debug');
+		const flag = page.url.searchParams.get('debug');
+
 		if (flag === 'ai') setAiDebug(true);
 		else if (flag === 'off') setAiDebug(false);
 	});
@@ -254,8 +255,8 @@
 		<a
 			href="/home"
 			class="nav-brand"
-			class:nav-brand--current={$page.url.pathname === '/home'}
-			aria-current={$page.url.pathname === '/home' ? 'page' : undefined}
+			class:nav-brand--current={page.url.pathname === '/home'}
+			aria-current={page.url.pathname === '/home' ? 'page' : undefined}
 		>
 			<span class="nav-brand-icon" aria-hidden="true">
 				{@html activeLiveryBrand() ?? swordSvg}
@@ -268,7 +269,7 @@
 					<a
 						href="/admin"
 						class="nav-link"
-						class:nav-link--active={$page.url.pathname.startsWith('/admin')}>Admin</a
+						class:nav-link--active={page.url.pathname.startsWith('/admin')}>Admin</a
 					>
 				{/if}
 			</nav>
@@ -330,7 +331,8 @@
 
 {#if maintStatus?.enabled}
 	<div class="maint-banner" class:maint-imminent={countdown === 'NOW'}>
-		<span class="maint-icon" aria-hidden="true">&#9888;</span>
+		<span class="maint-icon" aria-hidden="true">⚠</span>
+
 		{#if countdown === 'NOW'}
 			<span class="maint-text"
 				>Logging you out now…{maintStatus.message ? ` \u2014 ${maintStatus.message}` : ''}</span

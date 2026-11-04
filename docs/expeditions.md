@@ -69,7 +69,7 @@ The Expeditions tab contains:
 ### JourneyCard
 
 - Name, difficulty selector
-- Click-to-edit **markdown** notes field — renders via `renderNote()` from `$lib/markdown.js` (supports `**bold**`, `*italic*`, `# heading`, `- list`); textarea on click, rendered HTML on blur
+- Click-to-edit **markdown** notes field — renders via `renderNote()` from `#lib/markdown.js` (supports `**bold**`, `*italic*`, `# heading`, `- list`); textarea on click, rendered HTML on blur
 - 10-box progress track with +/- buttons
 - Mark Complete toggle
 

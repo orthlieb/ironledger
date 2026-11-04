@@ -4,8 +4,8 @@
  *
  * These are the new edge-case-rich functions added when AssetCard was
  * converted from per-toggle XP charges to a single consolidated entry on
- * commit. They're all pure functions in $lib/character.ts and
- * $lib/assetStore.svelte.ts, deliberately exported so they can be tested
+ * commit. They're all pure functions in #lib/character.ts and
+ * #lib/assetStore.svelte.ts, deliberately exported so they can be tested
  * without spinning up Svelte runes or the DOM.
  */
 import { describe, it, expect, vi } from 'vitest';

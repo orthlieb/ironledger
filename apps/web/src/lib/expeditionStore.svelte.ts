@@ -6,8 +6,8 @@
 // factory — see makeEntityStore.
 // =============================================================================
 
-import type { Expedition } from '$lib/types.js';
-import { makeEntityStore } from '$lib/makeEntityStore.svelte.js';
+import type { Expedition } from '#lib/types.js';
+import { makeEntityStore } from '#lib/makeEntityStore.svelte.js';
 
 const store = makeEntityStore<Expedition>('expeditions', 'expeditionStore');
 

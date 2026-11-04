@@ -10,8 +10,8 @@
 	 *   • `value={...} oninput={fn}` — for parents whose data lives in
 	 *     nested state and is updated through an update callback.
 	 */
-	import { renderNote } from '$lib/markdown.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
+	import { renderNote } from '#lib/markdown.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
 
 	let {
 		value = $bindable(''),

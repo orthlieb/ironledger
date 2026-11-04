@@ -6,10 +6,10 @@
  * The `browser` guard prevents accidental SSR execution — server-rendered
  * templates see empty arrays and hydrate correctly once the client fetches.
  */
-import { browser } from '$app/environment';
-import type { AssetDefinition, CustomFieldDef, RarityDefinition } from '$lib/types.js';
-import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
-import { buildGlobalCounterRegistry } from '$lib/globalCounters.js';
+import { browser } from '$app/env';
+import type { AssetDefinition, CustomFieldDef, RarityDefinition } from '#lib/types.js';
+import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
+import { buildGlobalCounterRegistry } from '#lib/globalCounters.js';
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -32,10 +32,9 @@ export async function loadAssets(): Promise<void> {
 	try {
 		const res = await fetch('/api/catalogue');
 		if (!res.ok) throw new Error(`Catalogue fetch failed: ${res.status}`);
-		const json = (await res.json()) as {
-			assets: AssetDefinition[];
-			rarities: RarityDefinition[];
-		};
+
+		const json = (await res.json()) as { assets: AssetDefinition[]; rarities: RarityDefinition[] };
+
 		_assets = json.assets;
 		_rarities = json.rarities ?? [];
 		_lastFetched = Date.now();

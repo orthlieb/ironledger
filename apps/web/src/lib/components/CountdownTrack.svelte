@@ -14,11 +14,11 @@
 	 * end across the row) — dimmed like the stat-tile icons, with the accent
 	 * background filling in as segments are marked.
 	 */
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import hgStart from '$icons/hourglass-start-solid.svg?raw';
-	import hg75 from '$icons/hourglass-75.svg?raw';
-	import hg25 from '$icons/hourglass-25.svg?raw';
-	import hgEnd from '$icons/hourglass-end-solid.svg?raw';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import hgStart from '#icons/hourglass-start-solid.svg?raw';
+	import hg75 from '#icons/hourglass-75.svg?raw';
+	import hg25 from '#icons/hourglass-25.svg?raw';
+	import hgEnd from '#icons/hourglass-end-solid.svg?raw';
 
 	/** Draining stages, one per segment (only used for the canonical 4-box track). */
 	const HOURGLASS = [hgStart, hg25, hg75, hgEnd];

@@ -22,20 +22,20 @@
 	 * the component fully self-contained.)
 	 */
 	import { Dialog, Tabs } from 'bits-ui';
-	import SettlementBuilder from '$lib/components/SettlementBuilder.svelte';
-	import type { SettlementRecipe } from '$lib/settlementRecipe.js';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import DialogHeader from '$lib/components/DialogHeader.svelte';
-	import { headingText } from '$lib/fontStore.svelte.js';
+	import SettlementBuilder from '#lib/components/SettlementBuilder.svelte';
+	import type { SettlementRecipe } from '#lib/settlementRecipe.js';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
+	import DialogHeader from '#lib/components/DialogHeader.svelte';
+	import { headingText } from '#lib/fontStore.svelte.js';
 	import { untrack } from 'svelte';
 	import {
 		MAP_ICON_CATEGORIES,
 		MAP_ICON_LIST,
 		type MapIcon,
-	} from '$lib/generated/mapIconManifest.js';
-	import { mapGlyphInner, haloPaddedViewBox } from '$lib/mapConstants.js';
-	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
-	import FilterBar from '$lib/components/FilterBar.svelte';
+	} from '#lib/generated/mapIconManifest.js';
+	import { mapGlyphInner, haloPaddedViewBox } from '#lib/mapConstants.js';
+	import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
+	import FilterBar from '#lib/components/FilterBar.svelte';
 
 	let {
 		open = $bindable(false),

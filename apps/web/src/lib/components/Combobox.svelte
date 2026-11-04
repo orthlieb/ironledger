@@ -18,11 +18,11 @@
 	 */
 	import { Popover, Command } from 'bits-ui';
 	import type { Snippet } from 'svelte';
-	import iconCaretDownSvg from '$icons/caret-large-down-solid.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
-	import clearFiltersSvg from '$icons/filter-circle-xmark-solid.svg?raw';
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import { pushDialog, popDialog, contentZ } from '$lib/dialogStack.svelte.js';
+	import iconCaretDownSvg from '#icons/caret-large-down-solid.svg?raw';
+	import searchIconSvg from '#icons/magnifying-glass-solid.svg?raw';
+	import clearFiltersSvg from '#icons/filter-circle-xmark-solid.svg?raw';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import { pushDialog, popDialog, contentZ } from '#lib/dialogStack.svelte.js';
 
 	interface FilterPill {
 		key: string;
