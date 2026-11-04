@@ -115,7 +115,7 @@ function parseConfig() {
   const result = refined.safeParse(process.env);
 
   if (!result.success) {
-    const errors = result.error.errors.map((e) => `  ${e.path.join('.')}: ${e.message}`).join('\n');
+    const errors = result.error.issues.map((e) => `  ${e.path.join('.')}: ${e.message}`).join('\n');
     // Crash immediately — a misconfigured app should not start
     console.error('❌ Invalid environment configuration:\n' + errors);
     process.exit(1);

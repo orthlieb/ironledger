@@ -146,7 +146,7 @@ const putMarkersBody = z.object({ markers: z.array(mapMarkerSchema).max(500) });
 /** Free-form settings blob; the client owns the shape. Small size cap so
  *  a bug can't wedge megabytes of JSON into the row. */
 const putMapSettingsBody = z.object({
-  settings: z.record(z.unknown()),
+  settings: z.record(z.string(), z.unknown()),
 });
 
 const mapIdParams = z.object({ mapId: z.string().uuid() });

@@ -21,12 +21,12 @@ import type { FastifyReply } from 'fastify';
 
 const createBody = z.object({
   name: z.string().min(1).max(100),
-  data: z.record(z.unknown()).optional().default({}),
+  data: z.record(z.string(), z.unknown()).optional().default({}),
 });
 
 const updateBody = z.object({
   name: z.string().min(1).max(100).optional(),
-  data: z.record(z.unknown()).optional(),
+  data: z.record(z.string(), z.unknown()).optional(),
 });
 
 const historyBody = z.object({
