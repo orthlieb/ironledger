@@ -151,14 +151,14 @@ overflow:hidden; the body must always equal viewport size or shorter.
 
 All draggable dialogs share the same header (grip ⠿ → title → optional
 close ✕). **Use the `<DialogHeader>` component**
-(`$lib/components/DialogHeader.svelte`) — do not hand-roll the markup/CSS
+(`#lib/components/DialogHeader.svelte`) — do not hand-roll the markup/CSS
 again. It is the single source of truth for the pattern; `use:draggable`
 lives inside it.
 
 ```svelte
 <script>
-  import DialogHeader from '$lib/components/DialogHeader.svelte';
-  import { headingText } from '$lib/fontStore.svelte.js';
+  import DialogHeader from '#lib/components/DialogHeader.svelte';
+  import { headingText } from '#lib/fontStore.svelte.js';
 </script>
 
 <!-- standard: grip + title + ✕ close -->
@@ -292,11 +292,11 @@ aren't baked; the map's Settlement builder generates them on the fly.) See
 ## Tooltips — use `use:tooltip`, not the native `title=` attribute
 
 For every visible hover hint on HTML elements, use the `tooltip` action
-from `$lib/actions/tooltip.js`:
+from `#lib/actions/tooltip.js`:
 
 ```svelte
 <script>
-  import { tooltip } from '$lib/actions/tooltip.js';
+  import { tooltip } from '#lib/actions/tooltip.js';
 </script>
 
 <button use:tooltip={'Save changes'} aria-label="Save">{@html saveIcon}</button>
@@ -338,11 +338,11 @@ native control drifts from it.
 
 Concretely:
 
-- `<select>` → `<Select>` (`$lib/components/Select.svelte` — bits-ui
+- `<select>` → `<Select>` (`#lib/components/Select.svelte` — bits-ui
   `Select` inside). See `docs/ui-components.md` → "Simple dropdown
   fields — `<Select>` wrapper".
 - Searchable pickers / "switch or add X" headers → `<Combobox>`
-  (`$lib/components/Combobox.svelte` — bits-ui `Popover + Command`
+  (`#lib/components/Combobox.svelte` — bits-ui `Popover + Command`
   inside, `.cb-*` styles; supports filter pills, per-item glyphs, a
   clear row, and "+ New …" actions). Add a prop rather than
   hand-rolling a fresh Popover+Command block. See
@@ -362,7 +362,7 @@ UI attached: `<input type="text|number|checkbox|radio|range>`,
 `<textarea>`, and `<button>`. When in doubt, look for an existing
 bits-ui-based component or wrapper first; if none exists and the
 control is worth sharing, build a small wrapper in
-`$lib/components/` (see `Select.svelte` as the template — one
+`#lib/components/` (see `Select.svelte` as the template — one
 `:global(.foo-*)` block, a docstring in prose without embedded
 `<TagName>` syntax so Svelte's script tokenizer doesn't choke).
 

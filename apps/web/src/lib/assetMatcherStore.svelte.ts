@@ -7,7 +7,7 @@
  * this module reads from the asset catalogue already loaded by assetStore.
  */
 
-import type { CharacterAsset, AssetDefinition } from '$lib/types.js';
+import type { CharacterAsset, AssetDefinition } from '#lib/types.js';
 
 // ---------------------------------------------------------------------------
 // Types (kept for backward-compat with MovesDialog imports)

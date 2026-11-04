@@ -12,17 +12,17 @@
 // through ENTITY_KIND_META's `icon`, which calls it.
 // =============================================================================
 
-import charactersSvg from '$icons/Characters.svg?raw';
-import expeditionsSvg from '$icons/Expeditions.svg?raw';
-import foesSvg from '$icons/Foes.svg?raw';
-import villageSvg from '$icons/village.svg?raw';
-import logSvg from '$icons/log.svg?raw';
-import journeySvg from '$icons/journey.svg?raw';
-import hourglassSvg from '$icons/hourglass-clock-solid.svg?raw';
-import dungeonGateSvg from '$icons/dungeon-gate.svg?raw';
-import hutSvg from '$icons/hut.svg?raw';
-import farmerSvg from '$icons/farmer.svg?raw';
-import locationDotSvg from '$icons/location-dot-solid.svg?raw';
+import charactersSvg from '#icons/Characters.svg?raw';
+import expeditionsSvg from '#icons/Expeditions.svg?raw';
+import foesSvg from '#icons/Foes.svg?raw';
+import villageSvg from '#icons/village.svg?raw';
+import logSvg from '#icons/log.svg?raw';
+import journeySvg from '#icons/journey.svg?raw';
+import hourglassSvg from '#icons/hourglass-clock-solid.svg?raw';
+import dungeonGateSvg from '#icons/dungeon-gate.svg?raw';
+import hutSvg from '#icons/hut.svg?raw';
+import farmerSvg from '#icons/farmer.svg?raw';
+import locationDotSvg from '#icons/location-dot-solid.svg?raw';
 import { activeLiveryIcons } from './fontStore.svelte.js';
 
 /** The replaceable icons, by the name a livery's `icons/<name>.svg` takes.

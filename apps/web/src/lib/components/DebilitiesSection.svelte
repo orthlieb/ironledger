@@ -1,6 +1,6 @@
 <script lang="ts">
-	import type { CharacterData } from '$lib/types.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
+	import type { CharacterData } from '#lib/types.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
 
 	let {
 		data,

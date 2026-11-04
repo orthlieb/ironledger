@@ -15,7 +15,7 @@
 //   • `base` is core content — always enabled, never toggleable.
 // =============================================================================
 
-import type { ExtensionInfo } from '$lib/types.js';
+import type { ExtensionInfo } from '#lib/types.js';
 
 const key = (id: string) => `ironledger:expansion:${id}`;
 

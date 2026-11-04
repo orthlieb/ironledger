@@ -11,10 +11,10 @@
 	 * through `oncommit` / `ondelete`.
 	 */
 
-	import { headingText } from '$lib/fontStore.svelte.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
 	import { Dialog } from 'bits-ui';
 	import DialogHeader from './DialogHeader.svelte';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 
 	interface Props {

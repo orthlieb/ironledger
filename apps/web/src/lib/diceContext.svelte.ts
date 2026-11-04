@@ -6,7 +6,7 @@
 // supply charId + live data to DiceRollerDialog.
 // =============================================================================
 
-import type { CharacterData } from '$lib/types.js';
+import type { CharacterData } from '#lib/types.js';
 
 export interface DiceCtx {
 	charId: string;

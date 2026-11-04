@@ -31,7 +31,10 @@ artwork. The script leaves them alone.
 ## Before you run it
 
 - **The stack is up.** API on `:3000`, web on `:5173`. Use the dev servers
-  or a production build (see the README's Development Setup).
+  or a production build (see the README's Development Setup). A production
+  build served on plain http needs its origin set when building:
+  `ORIGIN=http://localhost:5173 npm run build -w apps/web` (see
+  docs/deployment.md, "SvelteKit: CSRF and the app's origin").
 - **The account can be wiped.** By default the script signs in as the seeded
   Playwright user, `test@ironledger.local`. ⚠ It deletes everything on that
   account (characters, foes, expeditions, connections, maps, log) before it

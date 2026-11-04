@@ -1,5 +1,5 @@
 // =============================================================================
-// Icon registry — build-time scan of $lib/icons/*.svg.
+// Icon registry — build-time scan of #lib/icons/*.svg.
 //
 // Vite's import.meta.glob enumerates every SVG in the icons directory at
 // build time and inlines them as raw strings. Adding a new SVG to the
@@ -11,7 +11,7 @@
 // gracefully returns an empty string when the slug isn't registered, so
 // missing icons degrade silently instead of throwing.
 // =============================================================================
-import type { AssetCategory, AssetDefinition, FoeDef, FoeNature } from '$lib/types.js';
+import type { AssetCategory, AssetDefinition, FoeDef, FoeNature } from '#lib/types.js';
 
 // `eager: true` inlines the SVG text into the bundle (no async, no chunk
 // splitting). With the current ~12 icons each ~1–3 KB this is comfortably

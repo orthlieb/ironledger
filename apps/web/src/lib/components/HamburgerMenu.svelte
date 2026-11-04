@@ -12,11 +12,11 @@
 	 */
 
 	import { DropdownMenu } from 'bits-ui';
-	import chevronRightSvg from '$icons/chevron-right-solid.svg?raw';
+	import chevronRightSvg from '#icons/chevron-right-solid.svg?raw';
 	import ExportDialog from './ExportDialog.svelte';
-	import type { ExportSelection } from '$lib/exportSelection.js';
-	import { viewMode, setViewMode, VIEW_MODES, type ViewMode } from '$lib/viewModeStore.svelte.js';
-	import { getExtensions, isSourceEnabled } from '$lib/expansionStore.svelte.js';
+	import type { ExportSelection } from '#lib/exportSelection.js';
+	import { viewMode, setViewMode, VIEW_MODES, type ViewMode } from '#lib/viewModeStore.svelte.js';
+	import { getExtensions, isSourceEnabled } from '#lib/expansionStore.svelte.js';
 	import { onMount } from 'svelte';
 
 	// The View submenu is only meaningful on desktop / tablet — mobile

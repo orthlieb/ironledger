@@ -1,6 +1,6 @@
-import { appendLog, enrichOutcomeLinks } from '$lib/log.svelte.js';
-import { setStart, setEnd, clearSection } from '$lib/sectionStore.svelte.js';
-import { triggerSessionExpired } from '$lib/sessionGuard.svelte.js';
+import { appendLog, enrichOutcomeLinks } from '#lib/log.svelte.js';
+import { setStart, setEnd, clearSection } from '#lib/sectionStore.svelte.js';
+import { triggerSessionExpired } from '#lib/sessionGuard.svelte.js';
 
 // Expose log helpers on window so Playwright E2E tests can inject mock log
 // entries against the production build (vite preview), not just dev mode.

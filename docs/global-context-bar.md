@@ -120,7 +120,7 @@ const RESOURCE_DEFS = [
 ];
 ```
 
-Resource icons are inline SVGs from `$lib/images/icon-*.svg?raw` using `currentColor`.
+Resource icons are inline SVGs from `#lib/images/icon-*.svg?raw` using `currentColor`.
 
 ---
 

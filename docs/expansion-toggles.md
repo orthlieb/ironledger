@@ -39,7 +39,7 @@ This means a player can disable YRT before a session, run an Ironsworn-only game
 `apps/web/src/lib/expansionStore.svelte.ts`
 
 ```typescript
-import type { CatalogueSource } from '$lib/types.js';
+import type { CatalogueSource } from '#lib/types.js';
 // CatalogueSource = string — any extension id (see @ironledger/shared).
 
 /** Single predicate used by every catalogue filter. Consumers pass the

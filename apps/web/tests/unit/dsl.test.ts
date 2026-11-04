@@ -1,5 +1,5 @@
 /**
- * dsl.test.ts — the markdown + interactive-link DSL (`$lib/dsl.ts`).
+ * dsl.test.ts — the markdown + interactive-link DSL (`#lib/dsl.ts`).
  *
  * Pins the three behaviours the whole migration leans on:
  *   • parseDslHref  — lenient query parsing (`+` stays literal, not a space)

@@ -182,7 +182,7 @@ CATEGORY_COLORS map; each entry is a `CategoryDef`:
 ```ts
 interface CategoryDef {
   key: string; // exact string on move.category / oracle.category
-  icon?: string; // slug in $lib/icons/ or extensions/<id>/icons/
+  icon?: string; // slug in #lib/icons/ or extensions/<id>/icons/
   color?: string; // CSS colour token or literal
   order?: number; // move-picker sort slot; missing → sorts last
 }

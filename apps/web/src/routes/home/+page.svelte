@@ -21,56 +21,56 @@
 	 *   └─────────────────────────────┘
 	 */
 	import { onMount, tick } from 'svelte';
-	import type { CharacterFull } from '$lib/api.js';
-	import type { Community, Npc, Expedition, Place } from '$lib/types.js';
+	import type { CharacterFull } from '#lib/api.js';
+	import type { Community, Npc, Expedition, Place } from '#lib/types.js';
 	import {
 		loadCharacters,
 		getCharacters,
 		createCharacter,
 		persistCharacterNow,
-	} from '$lib/characterStore.svelte.js';
-	import { loadEncounters, getEncounters } from '$lib/encounterStore.svelte.js';
+	} from '#lib/characterStore.svelte.js';
+	import { loadEncounters, getEncounters } from '#lib/encounterStore.svelte.js';
 	import {
 		loadExpeditions,
 		getExpeditions,
 		addManyExpeditions,
-	} from '$lib/expeditionStore.svelte.js';
+	} from '#lib/expeditionStore.svelte.js';
 	import {
 		loadCommunities,
 		getCommunities,
 		addManyCommunities,
-	} from '$lib/communityStore.svelte.js';
-	import { loadNpcs, getNpcs, addManyNpcs } from '$lib/npcStore.svelte.js';
-	import { loadPlaces, getPlaces, addManyPlaces } from '$lib/placeStore.svelte.js';
+	} from '#lib/communityStore.svelte.js';
+	import { loadNpcs, getNpcs, addManyNpcs } from '#lib/npcStore.svelte.js';
+	import { loadPlaces, getPlaces, addManyPlaces } from '#lib/placeStore.svelte.js';
 	import {
 		loadAssets,
 		getAssets,
 		getGlobalCounterDef,
 		getGlobalCounterIds,
-	} from '$lib/assetStore.svelte.js';
-	import { reconcileGlobalValues } from '$lib/character.js';
-	import { loadFoes, findFoe, resolveFoeName, FOE_RANKS } from '$lib/foeStore.svelte.js';
-	import { loadExtensions } from '$lib/expansionStore.svelte.js';
-	import { viewMode } from '$lib/viewModeStore.svelte.js';
-	import LogPanel from '$lib/components/LogPanel.svelte';
-	import CommandBar from '$lib/components/CommandBar.svelte';
-	import CharactersArea from '$lib/components/v2/CharactersArea.svelte';
-	import FoesArea from '$lib/components/v2/FoesArea.svelte';
-	import ExpeditionsArea from '$lib/components/v2/ExpeditionsArea.svelte';
-	import CommunitiesArea from '$lib/components/v2/CommunitiesArea.svelte';
-	import ImportCollisionDialog from '$lib/components/ImportCollisionDialog.svelte';
-	import ImportDialog from '$lib/components/ImportDialog.svelte';
-	import ExportProgressDialog from '$lib/components/ExportProgressDialog.svelte';
-	import MapOwnerConflictDialog from '$lib/components/MapOwnerConflictDialog.svelte';
+	} from '#lib/assetStore.svelte.js';
+	import { reconcileGlobalValues } from '#lib/character.js';
+	import { loadFoes, findFoe, resolveFoeName, FOE_RANKS } from '#lib/foeStore.svelte.js';
+	import { loadExtensions } from '#lib/expansionStore.svelte.js';
+	import { viewMode } from '#lib/viewModeStore.svelte.js';
+	import LogPanel from '#lib/components/LogPanel.svelte';
+	import CommandBar from '#lib/components/CommandBar.svelte';
+	import CharactersArea from '#lib/components/v2/CharactersArea.svelte';
+	import FoesArea from '#lib/components/v2/FoesArea.svelte';
+	import ExpeditionsArea from '#lib/components/v2/ExpeditionsArea.svelte';
+	import CommunitiesArea from '#lib/components/v2/CommunitiesArea.svelte';
+	import ImportCollisionDialog from '#lib/components/ImportCollisionDialog.svelte';
+	import ImportDialog from '#lib/components/ImportDialog.svelte';
+	import ExportProgressDialog from '#lib/components/ExportProgressDialog.svelte';
+	import MapOwnerConflictDialog from '#lib/components/MapOwnerConflictDialog.svelte';
 	import {
 		normaliseName,
 		type CollisionItems,
 		type CollisionStrategy,
-	} from '$lib/components/importCollision.js';
-	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
-	import { getActiveFoeId, getActiveExpeditionId } from '$lib/activeContext.svelte.js';
-	import { triggerAction, appendLog, sessionLog } from '$lib/log.svelte.js';
-	import { parseImportZip, sanitizeLogHtml, ImportError } from '$lib/importSanitizer.js';
+	} from '#lib/components/importCollision.js';
+	import { getActiveDiceCtx } from '#lib/diceContext.svelte.js';
+	import { getActiveFoeId, getActiveExpeditionId } from '#lib/activeContext.svelte.js';
+	import { triggerAction, appendLog, sessionLog } from '#lib/log.svelte.js';
+	import { parseImportZip, sanitizeLogHtml, ImportError } from '#lib/importSanitizer.js';
 	import { zipSync, strToU8, unzipSync, strFromU8 } from 'fflate';
 	import {
 		makeTimestamp,
@@ -79,9 +79,9 @@
 		b64ToU8,
 		slugify,
 		formatTicks,
-	} from '$lib/exportSerialize.js';
-	import type { ExportSelection } from '$lib/exportSelection.js';
-	import { logToMarkdown } from '$lib/exportMarkdown.js';
+	} from '#lib/exportSerialize.js';
+	import type { ExportSelection } from '#lib/exportSelection.js';
+	import { logToMarkdown } from '#lib/exportMarkdown.js';
 	import {
 		buildMapZipEntries,
 		importMapZip,
@@ -89,10 +89,10 @@
 		applyMapImport,
 		populateMap,
 		type MapZipBody,
-	} from '$lib/mapExport.js';
-	import { gridDimsForAspect } from '$lib/mapConstants.js';
-	import type { MapOwnerKind, MapMarker } from '$lib/mapStore.svelte.js';
-	import { resolveEntity, parseEntityId, formatEntityId } from '$lib/mapEntityLinks.js';
+	} from '#lib/mapExport.js';
+	import { gridDimsForAspect } from '#lib/mapConstants.js';
+	import type { MapOwnerKind, MapMarker } from '#lib/mapStore.svelte.js';
+	import { resolveEntity, parseEntityId, formatEntityId } from '#lib/mapEntityLinks.js';
 
 	/** Peek a zip's manifest.json to see if this is a per-map bundle.
 	 *  Cheap enough (only unzips into an entries dict + parses one small
@@ -112,14 +112,14 @@
 			return false;
 		}
 	}
-	import { appIcon } from '$lib/liveryIcons.js';
+	import { appIcon } from '#lib/liveryIcons.js';
 	import {
 		buildGraph,
 		effectiveRegion,
 		breadcrumbRefs,
 		sanitizeContainment,
 		type ContainmentNode,
-	} from '$lib/entityContainment.js';
+	} from '#lib/entityContainment.js';
 
 	// Log divider width is persisted PER desktop view mode — grid and log keep
 	// independent positions (a dominant log in "log" view must not carry over
@@ -803,7 +803,7 @@
 					sanitizeLogHtml(String(entry.html ?? '')),
 					undefined,
 					entry.source as string | undefined,
-					entry.roll as import('$lib/log.svelte.js').LogEntry['roll'],
+					entry.roll as import('#lib/log.svelte.js').LogEntry['roll'],
 				);
 			}
 

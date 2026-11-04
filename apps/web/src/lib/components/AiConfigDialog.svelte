@@ -12,11 +12,11 @@
 	 *   ref.openFor('claude')
 	 */
 
-	import { headingText } from '$lib/fontStore.svelte.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
 	import { Dialog } from 'bits-ui';
-	import DialogHeader from '$lib/components/DialogHeader.svelte';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import Select from '$lib/components/Select.svelte';
+	import DialogHeader from '#lib/components/DialogHeader.svelte';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
+	import Select from '#lib/components/Select.svelte';
 	import {
 		type AiProvider,
 		PROVIDER_LABEL,
@@ -27,7 +27,7 @@
 		saveProviderConfig,
 		clearProviderKey,
 		testProviderKey,
-	} from '$lib/aiSettings.svelte.js';
+	} from '#lib/aiSettings.svelte.js';
 
 	let dialogOpen = $state(false);
 	let stackDepth = $state(1);

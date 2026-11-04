@@ -104,7 +104,7 @@ copies were consolidated into `.dice-btn`.)
 >
 ```
 
-`type="button"` so it doesn't submit any enclosing form. `disabled={rolling}` prevents double-rolls while the d6 animation is in flight. SVG comes from `$icons/dice-d6-light.svg?raw` — never use a unicode die character.
+`type="button"` so it doesn't submit any enclosing form. `disabled={rolling}` prevents double-rolls while the d6 animation is in flight. SVG comes from `#icons/dice-d6-light.svg?raw` — never use a unicode die character.
 
 ### Checklist when adding a new inline roller
 
@@ -127,7 +127,7 @@ doesn't show on touch, and is clipped by `overflow: hidden/auto` ancestors
 
 ```svelte
 <script>
-  import { tooltip } from '$lib/actions/tooltip.js';
+  import { tooltip } from '#lib/actions/tooltip.js';
 </script>
 
 <button use:tooltip={'Save changes'} aria-label="Save">{@html saveIcon}</button>
@@ -289,7 +289,7 @@ Pills live at the **top of the collapsible body**, NOT in the title bar. Title b
 Copy into any component needing difficulty as a pill:
 
 ```typescript
-import { RANK_COLORS } from '$lib/foeStore.svelte.js';
+import { RANK_COLORS } from '#lib/foeStore.svelte.js';
 const DIFFICULTY_RANK: Record<string, number> = {
   troublesome: 1,
   dangerous: 2,
@@ -664,7 +664,7 @@ components (CharactersArea, FoesArea, ExpeditionsArea, CommunitiesArea,
 VowCard, AssetCard) have been extracted into single shared components.
 Prefer these over rebuilding the pattern inline.
 
-### `ProgressTrackPanel` (`$lib/components/ProgressTrackPanel.svelte`)
+### `ProgressTrackPanel` (`#lib/components/ProgressTrackPanel.svelte`)
 
 Wraps `ProgressTrack` with the **foe-pattern** layout: a label row
 (title + tally) above a controls row (boxes + ± buttons),
@@ -688,7 +688,7 @@ Props: `value` (bindable), `label`, `color?`, `step?` (default 1),
 `onchange?`. Used by Characters (Bonds, Failures), VowCard, FoesArea,
 ExpeditionsArea.
 
-### `MarkdownNotes` (`$lib/components/MarkdownNotes.svelte`)
+### `MarkdownNotes` (`#lib/components/MarkdownNotes.svelte`)
 
 Click-to-edit markdown notes field — rendered HTML in display mode,
 textarea on click, returns to display on blur. Supports both
@@ -709,10 +709,10 @@ state so parents can hide e.g. floating portraits during edit),
 Characters (background, bondsFormed, lessonsLearned), VowCard,
 ExpeditionsArea, CommunitiesArea (core + notes tab).
 
-### `PortraitUploader` (`$lib/components/PortraitUploader.svelte`)
+### `PortraitUploader` (`#lib/components/PortraitUploader.svelte`)
 
 170×170 floating portrait with file picker + clear button. Crops to a
-256-pixel-square JPEG via `cropImageFile()` (`$lib/imageCrop.ts`).
+256-pixel-square JPEG via `cropImageFile()` (`#lib/imageCrop.ts`).
 
 ```svelte
 <PortraitUploader
@@ -726,7 +726,7 @@ Props: `value` (bindable, JPEG data URL), `placeholderSvg` (raw SVG
 string), `alt?`, `oninput?`. Used by Characters, CommunitiesArea
 (community + NPC), ExpeditionsArea.
 
-### `EditableName` (`$lib/editableName.svelte.ts`)
+### `EditableName` (`#lib/editableName.svelte.ts`)
 
 Helper class (NOT a component) encapsulating the click-to-edit name
 pattern — state, focus/select effect, Enter/Escape key handling,
@@ -756,17 +756,17 @@ const nameEdit = new EditableName((restored) => {
 Used by Characters, FoesArea, ExpeditionsArea, CommunitiesArea,
 VowCard.
 
-### `cropImageFile()` (`$lib/imageCrop.ts`)
+### `cropImageFile()` (`#lib/imageCrop.ts`)
 
 Pure async helper: takes a `File`, returns a Promise<string> resolving
 to a centred-square JPEG data URL (default max 256 × 256 at 0.85
 quality). Used internally by `PortraitUploader`.
 
-### Global counter registry (`$lib/globalCounters.ts`)
+### Global counter registry (`#lib/globalCounters.ts`)
 
 `buildGlobalCounterRegistry(assets, onMismatch?)` and
 `getGlobalCounterDef(id)` / `getGlobalCounterIds()` (re-exported by
-`$lib/assetStore.svelte.ts`) provide the canonical definition for
+`#lib/assetStore.svelte.ts`) provide the canonical definition for
 counter fields declared `global: true`. First declaration wins; later
 mismatches log `console.error`. See `docs/data-schema.md` for the
 draft/snapshot model that depends on this.
@@ -870,7 +870,7 @@ one-off.
 ### Combobox pattern (search-first pickers) — `<Combobox>` wrapper
 
 For any pick-from-a-list-with-typeahead — the shadcn-svelte
-combobox shape — use the shared **`$lib/components/Combobox.svelte`**
+combobox shape — use the shared **`#lib/components/Combobox.svelte`**
 wrapper (bits-ui `Popover` + `Command` inside, `.cb-*` styles). It
 is to the searchable picker what `<Select>` is to the plain
 dropdown: one component owns the trigger, the search box, an
@@ -881,7 +881,7 @@ any field whose option list is long enough to want typeahead.
 
 ```svelte
 <script>
-  import Combobox from '$lib/components/Combobox.svelte';
+  import Combobox from '#lib/components/Combobox.svelte';
 </script>
 
 <Combobox
@@ -951,7 +951,7 @@ than hand-rolling a fresh `Popover` + `Command` block.
 
 For a plain form-field dropdown (a native `<select>` you'd
 otherwise reach for), use the shared
-`$lib/components/Select.svelte` wrapper — bits-ui `Select`
+`#lib/components/Select.svelte` wrapper — bits-ui `Select`
 underneath, uniform trigger + popover chrome across the app.
 Every native `<select>` in the app was migrated to this in the
 same pass that introduced the Popover + Command combobox above;

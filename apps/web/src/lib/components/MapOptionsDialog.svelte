@@ -17,20 +17,20 @@
 	 * one tier above the outer `.mp-dialog` so it renders on top.
 	 */
 
-	import { headingText } from '$lib/fontStore.svelte.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
 	import { Dialog } from 'bits-ui';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
 	import DialogHeader from './DialogHeader.svelte';
 	import ConfirmDialog from './ConfirmDialog.svelte';
 	import Checkbox from './Checkbox.svelte';
-	import { mapSettings, persistMapSettings } from '$lib/mapSettingsStore.svelte.js';
+	import { mapSettings, persistMapSettings } from '#lib/mapSettingsStore.svelte.js';
 	import {
 		mapState,
 		persistSettings,
 		clearMarkers,
 		renameMap,
 		deleteMap,
-	} from '$lib/mapStore.svelte.js';
+	} from '#lib/mapStore.svelte.js';
 
 	interface Props {
 		/** Fires when the user clicks "Replace background image…". Wired

@@ -8,7 +8,7 @@
  * moves: string[]     specific move IDs only
  */
 
-import type { CharacterData } from '$lib/types.js';
+import type { CharacterData } from '#lib/types.js';
 
 export interface DebilityWarning {
 	key: keyof CharacterData;

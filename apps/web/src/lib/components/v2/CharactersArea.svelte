@@ -27,13 +27,13 @@
 		flushCharacterToApi,
 		persistCharacterNow,
 		setPartySupply,
-	} from '$lib/characterStore.svelte.js';
-	import { setActiveDiceCtx } from '$lib/diceContext.svelte.js';
-	import { getActiveCharacterId, setActiveCharacterId } from '$lib/activeContext.svelte.js';
-	import { createDebouncedSave } from '$lib/debouncedSave.js';
-	import { initialSelection, rememberSelection } from '$lib/rememberedSelection.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import { rollOracle, getOracles, findOracle } from '$lib/oracleStore.svelte.js';
+	} from '#lib/characterStore.svelte.js';
+	import { setActiveDiceCtx } from '#lib/diceContext.svelte.js';
+	import { getActiveCharacterId, setActiveCharacterId } from '#lib/activeContext.svelte.js';
+	import { createDebouncedSave } from '#lib/debouncedSave.js';
+	import { initialSelection, rememberSelection } from '#lib/rememberedSelection.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import { rollOracle, getOracles, findOracle } from '#lib/oracleStore.svelte.js';
 	import {
 		NAME_ORACLES,
 		defaultRandomizeFlags,
@@ -42,47 +42,47 @@
 		touchedLogHtml,
 		logCreateRolls,
 		type CharacterRandomizeFlags,
-	} from '$lib/characterRollups.js';
-	import RandomizeBlock from '$lib/components/RandomizeBlock.svelte';
-	import StatAllocator from '$lib/components/StatAllocator.svelte';
-	import { availableStatArrays, type Stat } from '$lib/rules/statArrays.js';
-	import Select from '$lib/components/Select.svelte';
-	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
+	} from '#lib/characterRollups.js';
+	import RandomizeBlock from '#lib/components/RandomizeBlock.svelte';
+	import StatAllocator from '#lib/components/StatAllocator.svelte';
+	import { availableStatArrays, type Stat } from '#lib/rules/statArrays.js';
+	import Select from '#lib/components/Select.svelte';
+	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
 	import {
 		findAsset,
 		findRaritiesForAsset,
 		getGlobalCounterDef,
 		isAssetsLoading,
 		getAssets,
-	} from '$lib/assetStore.svelte.js';
-	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
+	} from '#lib/assetStore.svelte.js';
+	import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
 	import {
 		hydrateCharacterInPlace,
 		maxMomentum,
 		momentumReset,
 		computeAssetXpDiff,
 		assetDisplayName,
-	} from '$lib/character.js';
-	import hornedHelmSvg from '$icons/horned-helm.svg?raw';
-	import { appIcon } from '$lib/liveryIcons.js';
-	import type { CharacterData, CharacterAsset } from '$lib/types.js';
-	import AssetCard from '$lib/components/AssetCard.svelte';
-	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
-	import AssetPicker from '$lib/components/AssetPicker.svelte';
-	import StatControl from '$lib/components/StatControl.svelte';
-	import ResourceTile from '$lib/components/ResourceTile.svelte';
-	import MomentumTile from '$lib/components/MomentumTile.svelte';
-	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
-	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
-	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
-	import { assetIcon } from '$lib/iconRegistry.js';
+	} from '#lib/character.js';
+	import hornedHelmSvg from '#icons/horned-helm.svg?raw';
+	import { appIcon } from '#lib/liveryIcons.js';
+	import type { CharacterData, CharacterAsset } from '#lib/types.js';
+	import AssetCard from '#lib/components/AssetCard.svelte';
+	import SegmentedRadio from '#lib/components/SegmentedRadio.svelte';
+	import AssetPicker from '#lib/components/AssetPicker.svelte';
+	import StatControl from '#lib/components/StatControl.svelte';
+	import ResourceTile from '#lib/components/ResourceTile.svelte';
+	import MomentumTile from '#lib/components/MomentumTile.svelte';
+	import ProgressTrackPanel from '#lib/components/ProgressTrackPanel.svelte';
+	import MarkdownNotes from '#lib/components/MarkdownNotes.svelte';
+	import PortraitUploader from '#lib/components/PortraitUploader.svelte';
+	import { assetIcon } from '#lib/iconRegistry.js';
 	import { Dialog, Tabs } from 'bits-ui';
-	import Combobox from '$lib/components/Combobox.svelte';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-	import CharacterOptionsDialog from '$lib/components/CharacterOptionsDialog.svelte';
-	import VowCard from '$lib/components/VowCard.svelte';
-	import DebilitiesSection from '$lib/components/DebilitiesSection.svelte';
+	import Combobox from '#lib/components/Combobox.svelte';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
+	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
+	import CharacterOptionsDialog from '#lib/components/CharacterOptionsDialog.svelte';
+	import VowCard from '#lib/components/VowCard.svelte';
+	import DebilitiesSection from '#lib/components/DebilitiesSection.svelte';
 	import {
 		appendLog,
 		enrichOutcomeLinks,
@@ -91,33 +91,33 @@
 		getActionNonce,
 		drainActions,
 		type LogAction,
-	} from '$lib/log.svelte.js';
-	import { renderRich } from '$lib/dsl.js';
-	import { FLOOR_RULES, DEBILITY_MOMENTUM_TITLE } from '$lib/cascadeRules.js';
-	import { type Vow, type VowDifficulty, VOW_FORSAKE_STRESS } from '$lib/types.js';
-	import iconHealth from '$icons/icon-health.svg?raw';
-	import iconSpirit from '$icons/icon-spirit.svg?raw';
-	import iconSupply from '$icons/icon-supply.svg?raw';
-	import iconStar from '$icons/star-solid.svg?raw';
-	import iconGearSvg from '$icons/gear-solid.svg?raw';
-	import swordSvg from '$icons/sword-solid.svg?raw';
-	import gemSvg from '$icons/gem-solid.svg?raw';
-	import linkSvg from '$icons/link-solid.svg?raw';
+	} from '#lib/log.svelte.js';
+	import { renderRich } from '#lib/dsl.js';
+	import { FLOOR_RULES, DEBILITY_MOMENTUM_TITLE } from '#lib/cascadeRules.js';
+	import { type Vow, type VowDifficulty, VOW_FORSAKE_STRESS } from '#lib/types.js';
+	import iconHealth from '#icons/icon-health.svg?raw';
+	import iconSpirit from '#icons/icon-spirit.svg?raw';
+	import iconSupply from '#icons/icon-supply.svg?raw';
+	import iconStar from '#icons/star-solid.svg?raw';
+	import iconGearSvg from '#icons/gear-solid.svg?raw';
+	import swordSvg from '#icons/sword-solid.svg?raw';
+	import gemSvg from '#icons/gem-solid.svg?raw';
+	import linkSvg from '#icons/link-solid.svg?raw';
 	// Counter icons — same map as v1 AssetCard.COUNTER_ICONS. The asset
 	// definition's customField.icon string keys into this map.
-	import iconHeart from '$icons/icon-heart.svg?raw';
-	import iconSkull from '$icons/skull-crossbones-solid.svg?raw';
-	import iconShield from '$icons/shield-halved-solid.svg?raw';
-	import iconEye from '$icons/eye-solid.svg?raw';
-	import iconMoon from '$icons/moon-solid.svg?raw';
-	import iconSun from '$icons/sun-solid.svg?raw';
-	import iconDice from '$icons/dice-d10-light.svg?raw';
-	import iconNote from '$icons/note-sticky-solid.svg?raw';
-	import iconSackDollar from '$icons/sack-dollar-solid.svg?raw';
-	import iconMana from '$icons/icon-mana.svg?raw';
-	import iconPuppet from '$icons/puppet-solid.svg?raw';
-	import iconGolem from '$icons/rock-golem.svg?raw';
-	import { headingText } from '$lib/fontStore.svelte.js';
+	import iconHeart from '#icons/icon-heart.svg?raw';
+	import iconSkull from '#icons/skull-crossbones-solid.svg?raw';
+	import iconShield from '#icons/shield-halved-solid.svg?raw';
+	import iconEye from '#icons/eye-solid.svg?raw';
+	import iconMoon from '#icons/moon-solid.svg?raw';
+	import iconSun from '#icons/sun-solid.svg?raw';
+	import iconDice from '#icons/dice-d10-light.svg?raw';
+	import iconNote from '#icons/note-sticky-solid.svg?raw';
+	import iconSackDollar from '#icons/sack-dollar-solid.svg?raw';
+	import iconMana from '#icons/icon-mana.svg?raw';
+	import iconPuppet from '#icons/puppet-solid.svg?raw';
+	import iconGolem from '#icons/rock-golem.svg?raw';
+	import { headingText } from '#lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
 
@@ -136,7 +136,7 @@
 		puppet: iconPuppet,
 		'rock-golem': iconGolem,
 	};
-	import shieldSvg from '$icons/shield-halved-solid.svg?raw';
+	import shieldSvg from '#icons/shield-halved-solid.svg?raw';
 
 	type CardKey = 'background' | 'core' | 'vows' | 'assets' | 'status';
 	const CARD_LABELS: { key: CardKey; label: string }[] = [
@@ -571,7 +571,7 @@
 					next = Math.max(
 						-6,
 						Math.min(
-							maxMomentum(data as unknown as import('$lib/types.js').CharacterData),
+							maxMomentum(data as unknown as import('#lib/types.js').CharacterData),
 							old + delta,
 						),
 					);

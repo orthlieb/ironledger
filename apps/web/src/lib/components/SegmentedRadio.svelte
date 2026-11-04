@@ -20,7 +20,7 @@
 	 * Tooltips use the shared `tooltip` action; `label` doubles as the
 	 * accessible name (required, since icon-only segments have no text).
 	 */
-	import { tooltip } from '$lib/actions/tooltip.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
 
 	type Tone = 'go' | 'stop' | 'warn' | 'neutral';
 

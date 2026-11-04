@@ -1,14 +1,14 @@
 <script lang="ts">
-	import { appIcon } from '$lib/liveryIcons.js';
-	import adventureSvg from '$icons/Adventure.svg?raw';
-	import eyeSvg from '$icons/eye-solid.svg?raw';
-	import noteSvg from '$icons/note-sticky-solid.svg?raw';
-	import mobileSvg from '$icons/mobile-screen-solid.svg?raw';
-	import penSvg from '$icons/pen-to-square-solid.svg?raw';
-	import mapSvg from '$icons/treasure-map.svg?raw';
-	import angleLeftSvg from '$icons/angle-left-solid.svg?raw';
-	import angleRightSvg from '$icons/angle-right-solid.svg?raw';
-	import { headingText } from '$lib/fontStore.svelte.js';
+	import { appIcon } from '#lib/liveryIcons.js';
+	import adventureSvg from '#icons/Adventure.svg?raw';
+	import eyeSvg from '#icons/eye-solid.svg?raw';
+	import noteSvg from '#icons/note-sticky-solid.svg?raw';
+	import mobileSvg from '#icons/mobile-screen-solid.svg?raw';
+	import penSvg from '#icons/pen-to-square-solid.svg?raw';
+	import mapSvg from '#icons/treasure-map.svg?raw';
+	import angleLeftSvg from '#icons/angle-left-solid.svg?raw';
+	import angleRightSvg from '#icons/angle-right-solid.svg?raw';
+	import { headingText } from '#lib/fontStore.svelte.js';
 	import emblaCarouselSvelte from 'embla-carousel-svelte';
 	import Autoplay from 'embla-carousel-autoplay';
 	import type { EmblaCarouselType, EmblaOptionsType } from 'embla-carousel';

@@ -6,7 +6,7 @@
  * browser can take advantage of 304 Not Modified caching.
  */
 import type { RequestHandler } from './$types';
-import { INTERNAL_API_URL } from '$lib/server/config.js';
+import { INTERNAL_API_URL } from '#lib/server/config.js';
 
 export const GET: RequestHandler = async ({ request }) => {
 	const upstream = await fetch(`${INTERNAL_API_URL}/api/v1/catalogue/assets`, {

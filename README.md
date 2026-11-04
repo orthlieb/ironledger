@@ -47,7 +47,7 @@ ironledger/
 
 ### Prerequisites
 
-- Node.js 22+ (pinned in `.nvmrc` — run `nvm use` to select it)
+- Node.js 22.17+ (SvelteKit 3's minimum; `.nvmrc` pins 22 — run `nvm use` to select it)
 - PostgreSQL 16+ (or Docker)
 - Redis 7+ (or Docker)
 

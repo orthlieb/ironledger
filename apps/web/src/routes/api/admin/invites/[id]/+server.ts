@@ -3,7 +3,7 @@
  */
 import type { RequestHandler } from './$types';
 import { error } from '@sveltejs/kit';
-import { INTERNAL_API_URL } from '$lib/server/config.js';
+import { INTERNAL_API_URL } from '#lib/server/config.js';
 
 export const DELETE: RequestHandler = async ({ locals, params }) => {
 	if (!locals.accessToken) throw error(401, 'Not authenticated');

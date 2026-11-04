@@ -117,7 +117,7 @@ export interface FoeDef {
 	drives: string[];
 	tactics: string[];
 	description: string;
-	/** Optional icon override — slug of an SVG in $lib/icons/ (e.g.
+	/** Optional icon override — slug of an SVG in #lib/icons/ (e.g.
 	 *  "wolf-pup"). Falls back to the nature icon when absent. */
 	icon?: string;
 	/** Per-extension extras bag. Extensions namespace their custom flags/data
@@ -453,7 +453,7 @@ export interface AssetDefinition {
 	name: string;
 	category: AssetCategory;
 	source?: CatalogueSource;
-	/** Optional icon override — slug of an SVG in $lib/icons/ (e.g.
+	/** Optional icon override — slug of an SVG in #lib/icons/ (e.g.
 	 *  "asset-wayfinder"). Falls back to the category icon when absent. */
 	icon?: string;
 	summary?: string;

@@ -74,7 +74,7 @@ The script installs (11 steps):
 2. UFW firewall (SSH + HTTP + HTTPS only)
 3. SSH hardening (no password auth, key-only)
 4. `ironledger` app user
-5. Node.js 22 via nvm
+5. Node.js 22 via nvm (22.17 or later, for SvelteKit 3; each deploy checks this before it changes anything)
 6. PostgreSQL 16 with `app_admin` and `app_user` roles
 7. Redis (Valkey) bound to localhost
 8. Nginx with Iron Ledger site config
@@ -386,19 +386,19 @@ curl https://yourdomain.com/health
 
 ## Troubleshooting
 
-| Symptom                                           | Fix                                                                                                                                         |
-| ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| 502 Bad Gateway                                   | `pm2 status` — check if Node processes are running                                                                                          |
-| Deploy health check fails                         | `pm2 logs ironledger --lines 50` — check for startup errors                                                                                 |
-| Database connection refused                       | `systemctl status postgresql` — ensure PG is running                                                                                        |
-| Redis connection error                            | `systemctl status valkey` — ensure Redis is running                                                                                         |
-| SSL certificate expired                           | `sudo certbot renew` — Certbot auto-renews via cron                                                                                         |
-| Rate limited during deploy                        | Health check endpoint (`/health`) has no rate limit                                                                                         |
-| Migration fails                                   | Check `DATABASE_ADMIN_URL` in `.env` has superuser credentials                                                                              |
-| `pm2` not found when running as root              | PM2 is installed under the `ironledger` user's nvm — use `su - ironledger` (interactive) first                                              |
-| `[PM2][ERROR] File ecosystem.config.js not found` | Must run PM2 from `~/app` directory: `cd ~/app && pm2 reload ecosystem.config.js --update-env`                                              |
-| Cross-site POST form submissions forbidden        | CSRF: SvelteKit compares `Origin` header to `ORIGIN` env var — update `ORIGIN` in `ecosystem.config.js` and reload after switching to HTTPS |
-| Sign-out not working                              | `cookies.delete()` must pass the same options (`httpOnly`, `sameSite`, `secure`) as `cookies.set()` or the browser ignores the deletion     |
+| Symptom                                           | Fix                                                                                                                                       |
+| ------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| 502 Bad Gateway                                   | `pm2 status` — check if Node processes are running                                                                                        |
+| Deploy health check fails                         | `pm2 logs ironledger --lines 50` — check for startup errors                                                                               |
+| Database connection refused                       | `systemctl status postgresql` — ensure PG is running                                                                                      |
+| Redis connection error                            | `systemctl status valkey` — ensure Redis is running                                                                                       |
+| SSL certificate expired                           | `sudo certbot renew` — Certbot auto-renews via cron                                                                                       |
+| Rate limited during deploy                        | Health check endpoint (`/health`) has no rate limit                                                                                       |
+| Migration fails                                   | Check `DATABASE_ADMIN_URL` in `.env` has superuser credentials                                                                            |
+| `pm2` not found when running as root              | PM2 is installed under the `ironledger` user's nvm — use `su - ironledger` (interactive) first                                            |
+| `[PM2][ERROR] File ecosystem.config.js not found` | Must run PM2 from `~/app` directory: `cd ~/app && pm2 reload ecosystem.config.js --update-env`                                            |
+| Cross-site POST form submissions forbidden        | CSRF: the browser's `Origin` doesn't match the origin SvelteKit derives for the request; see "SvelteKit: CSRF and the app's origin" below |
+| Sign-out not working                              | `cookies.delete()` must pass the same options (`httpOnly`, `sameSite`, `secure`) as `cookies.set()` or the browser ignores the deletion   |
 
 ---
 
@@ -457,24 +457,24 @@ cookies.delete('access_token', {
 });
 ```
 
-### SvelteKit: CSRF — update ORIGIN when switching to HTTPS
+### SvelteKit: CSRF and the app's origin
 
-SvelteKit compares the `Origin` request header against the `ORIGIN` environment variable for POST form submissions. After enabling Let's Encrypt, if `ORIGIN` still has the `http://` address, every login attempt fails with:
+For POST form submissions (login, register, …) SvelteKit compares the browser's `Origin` header with the app's own origin, and refuses a mismatch with:
 
 ```
 Cross-site POST form submissions are forbidden
 ```
 
-**Fix**: Update `ORIGIN` in `ecosystem.config.js` and reload with env:
+Since SvelteKit 3, adapter-node no longer reads an `ORIGIN` environment variable. The origin comes from `paths.origin` in `sveltekit({...})` (`apps/web/vite.config.ts`), which is fixed **at build time** from `ORIGIN` if that's set when building:
 
-```bash
-cd ~/app
-# The config uses JS object syntax, not env var syntax
-sed -i "s|ORIGIN: 'http://OLD_VALUE'|ORIGIN: 'https://yourdomain.com'|" ecosystem.config.js
-pm2 reload ecosystem.config.js --update-env
-```
+- **Production** builds without it, so the origin is derived from each request: the `Host` header that nginx passes through (`proxy_set_header Host $http_host`), with `https` (adapter-node's default protocol). Nothing to configure. An `ORIGIN` left in the server's `.env` is ignored.
+- **A build served over plain http** (CI, the E2E workflow, running the production build locally) must set it when building, or every form post fails:
 
-Note: `pm2 reload ironledger-api --update-env` alone won't pick up ecosystem config changes — you must use the `.cjs` file form.
+  ```bash
+  ORIGIN=http://localhost:5173 npm run build --workspace=apps/web
+  ```
+
+If the site is ever served from a host nginx doesn't pass through unchanged, set `ORIGIN=https://yourdomain.com` in the deploy's web build step instead.
 
 ### PM2: must run as ironledger user (nvm dependency)
 

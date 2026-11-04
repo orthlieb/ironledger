@@ -208,7 +208,7 @@ When a move has multiple stats, the `triggerPreamble` field provides the text be
 
 The `strong`, `weak`, `miss`, `notes`, `trigger`, and `table[].value` fields are
 authored in **markdown + the interactive-link DSL**, rendered by `renderRich`
-(`$lib/dsl.ts`). This is the default — no per-move flag is needed.
+(`#lib/dsl.ts`). This is the default — no per-move flag is needed.
 
 - **Prose formatting** is mini-markdown: `**bold**`, `*italic*`, `-` / `*`
   bullet lists, `1.` ordered lists, blank-line paragraphs. (Raw HTML tags are

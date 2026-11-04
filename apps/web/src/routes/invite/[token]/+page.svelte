@@ -1,7 +1,7 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
-	import PasswordInput from '$lib/components/PasswordInput.svelte';
-	import swordSvg from '$icons/sharp-axe.svg?raw';
+	import PasswordInput from '#lib/components/PasswordInput.svelte';
+	import swordSvg from '#icons/sharp-axe.svg?raw';
 
 	let { form, data }: { form: ActionData; data: PageData } = $props();
 

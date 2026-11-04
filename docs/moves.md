@@ -65,7 +65,7 @@ interface MoveDefinition {
 ```
 
 Prose fields are authored in **markdown + the interactive-link DSL** and rendered
-by `renderRich` (`$lib/dsl.ts`) — `**bold**` / `*italic*` / lists for formatting,
+by `renderRich` (`#lib/dsl.ts`) — `**bold**` / `*italic*` / lists for formatting,
 `[label](scheme:args)` links for cross-references. Set `html: true` to opt a move
 back to raw legacy HTML. See
 [data-schema.md → Outcome Text](data-schema.md#outcome-text-markdown--link-dsl)

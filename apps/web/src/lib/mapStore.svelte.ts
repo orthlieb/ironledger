@@ -27,9 +27,9 @@
 // =============================================================================
 
 import type { SettlementRecipe } from './settlementRecipe';
-import { gridDimsForAspect } from '$lib/mapConstants.js';
-import { clampMarkersToBounds } from '$lib/mapGeometry.js';
-import { fetchSession } from '$lib/sessionData.js';
+import { gridDimsForAspect } from '#lib/mapConstants.js';
+import { clampMarkersToBounds } from '#lib/mapGeometry.js';
+import { fetchSession } from '#lib/sessionData.js';
 
 const LEGACY_STORAGE_KEY = 'ironledger:map';
 

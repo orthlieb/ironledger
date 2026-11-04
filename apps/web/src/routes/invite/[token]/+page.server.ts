@@ -1,6 +1,6 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { INTERNAL_API_URL } from '$lib/server/config.js';
+import { INTERNAL_API_URL } from '#lib/server/config.js';
 
 const THIRTY_DAYS = 30 * 24 * 60 * 60;
 

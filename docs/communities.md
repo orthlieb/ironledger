@@ -304,7 +304,7 @@ The name oracle selection is sticky per session (`_pendingNpcNameOracle`).
 
 ## Notes Field
 
-Both cards render the `notes` field as **click-to-edit markdown** via `renderNote()` from `$lib/markdown.js` (the same pattern as Site/Journey notes — see [expeditions.md](expeditions.md)). Supports `**bold**`, `*italic*`, `# heading`, `- list`. No external markdown library; the renderer is a hand-rolled regex parser in `apps/web/src/lib/markdown.ts`.
+Both cards render the `notes` field as **click-to-edit markdown** via `renderNote()` from `#lib/markdown.js` (the same pattern as Site/Journey notes — see [expeditions.md](expeditions.md)). Supports `**bold**`, `*italic*`, `# heading`, `- list`. No external markdown library; the renderer is a hand-rolled regex parser in `apps/web/src/lib/markdown.ts`.
 
 ---
 

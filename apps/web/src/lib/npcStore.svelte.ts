@@ -6,8 +6,8 @@
 // Thin facade over the shared entity-store factory — see makeEntityStore.
 // =============================================================================
 
-import type { Npc } from '$lib/types.js';
-import { makeEntityStore } from '$lib/makeEntityStore.svelte.js';
+import type { Npc } from '#lib/types.js';
+import { makeEntityStore } from '#lib/makeEntityStore.svelte.js';
 
 const store = makeEntityStore<Npc>('npcs', 'npcStore');
 

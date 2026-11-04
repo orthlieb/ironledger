@@ -17,9 +17,9 @@
 	 * mirroring ImportCollisionDialog: `await ref.open(names)`.
 	 */
 	import { Dialog, RadioGroup } from 'bits-ui';
-	import DialogHeader from '$lib/components/DialogHeader.svelte';
-	import { headingText } from '$lib/fontStore.svelte.js';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
+	import DialogHeader from '#lib/components/DialogHeader.svelte';
+	import { headingText } from '#lib/fontStore.svelte.js';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
 
 	type Strategy = 'replace' | 'skip';
 

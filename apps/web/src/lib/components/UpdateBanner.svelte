@@ -26,7 +26,9 @@
 
 	let reloading = $state(false);
 
-	beforeNavigate(({ willUnload, to }) => {
+	beforeNavigate(({ willUnload, to, shallow, type }) => {
+		if (shallow && type === 'goto') return;
+
 		if (updated.current && !willUnload && to?.url && to.url.pathname !== location.pathname) {
 			location.href = to.url.href;
 		}
@@ -50,7 +52,7 @@
 
 {#if updated.current}
 	<div class="upd-banner" role="status" aria-live="polite">
-		<span class="upd-icon" aria-hidden="true">&#x27F3;</span>
+		<span class="upd-icon" aria-hidden="true">⟳</span>
 		<span class="upd-text">A new version of Iron Ledger is available.</span>
 		<button type="button" class="btn btn-primary upd-reload" onclick={reload} disabled={reloading}
 			>{reloading ? 'Saving…' : 'Reload'}</button

@@ -116,7 +116,7 @@ sharp-axe stays for both.
 liveries/<id>/brand.svg
 ```
 
-The SVG follows the same normalisation as `$lib/icons/` art (see the
+The SVG follows the same normalisation as `#lib/icons/` art (see the
 "Icon SVGs" section in `CLAUDE.md`):
 
 - Root is `<svg xmlns viewBox>` — no width/height, no `style`, no

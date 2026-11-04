@@ -1,12 +1,8 @@
-import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vitest/config';
 
+// `#lib/…` and `#icons/…` are subpath imports (package.json "imports"), which
+// Vite resolves on its own, so tests load modules exactly as the app does.
 export default defineConfig({
-	// The app's `$icons` alias (svelte.config.js), so a module that imports
-	// its icons (`$icons/….svg?raw`) loads under test as it does in the app.
-	resolve: {
-		alias: { $icons: fileURLToPath(new URL('./src/lib/icons', import.meta.url)) },
-	},
 	test: {
 		name: 'unit',
 		include: ['tests/unit/**/*.test.ts'],

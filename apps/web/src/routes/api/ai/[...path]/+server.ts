@@ -7,7 +7,7 @@
  */
 import type { RequestHandler } from './$types';
 import { error } from '@sveltejs/kit';
-import { INTERNAL_API_URL } from '$lib/server/config.js';
+import { INTERNAL_API_URL } from '#lib/server/config.js';
 
 type Method = 'GET' | 'PUT' | 'POST' | 'DELETE';
 

@@ -7,19 +7,19 @@
 	 * Tiles show precondition failures as disabled with tooltip.
 	 * Clicking an eligible tile shows an "Add X?" confirm dialog.
 	 */
-	import type { AssetCategory, AssetDefinition, CharacterData } from '$lib/types.js';
-	import clearFiltersSvg from '$icons/filter-circle-xmark-solid.svg?raw';
-	import chevronUpSvg from '$icons/chevron-up-solid.svg?raw';
-	import chevronDownSvg from '$icons/chevron-down-solid.svg?raw';
-	import searchIconSvg from '$icons/magnifying-glass-solid.svg?raw';
-	import { getVisibleAssets, isAssetsLoading, findAsset } from '$lib/assetStore.svelte.js';
-	import { firstPreconditionFailure, type Precondition } from '$lib/preconditions.js';
-	import { headingText } from '$lib/fontStore.svelte.js';
+	import type { AssetCategory, AssetDefinition, CharacterData } from '#lib/types.js';
+	import clearFiltersSvg from '#icons/filter-circle-xmark-solid.svg?raw';
+	import chevronUpSvg from '#icons/chevron-up-solid.svg?raw';
+	import chevronDownSvg from '#icons/chevron-down-solid.svg?raw';
+	import searchIconSvg from '#icons/magnifying-glass-solid.svg?raw';
+	import { getVisibleAssets, isAssetsLoading, findAsset } from '#lib/assetStore.svelte.js';
+	import { firstPreconditionFailure, type Precondition } from '#lib/preconditions.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
 	import { Dialog } from 'bits-ui';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import DialogHeader from '$lib/components/DialogHeader.svelte';
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import { assetIcon } from '$lib/iconRegistry.js';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
+	import DialogHeader from '#lib/components/DialogHeader.svelte';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import { assetIcon } from '#lib/iconRegistry.js';
 
 	let {
 		ownedIds = [],

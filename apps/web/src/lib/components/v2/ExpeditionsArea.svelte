@@ -16,7 +16,7 @@
 		persistExpeditionsNow,
 		removeExpedition,
 		addExpedition,
-	} from '$lib/expeditionStore.svelte.js';
+	} from '#lib/expeditionStore.svelte.js';
 	import type {
 		Expedition,
 		Journey,
@@ -28,53 +28,53 @@
 		FoeDef,
 		FoeQuantity,
 		FoeEncounter,
-	} from '$lib/types.js';
-	import { EXPEDITION_MARK_TICKS, DENIZEN_CELLS, DELVE_THEMES, DELVE_DOMAINS } from '$lib/types.js';
-	import Select from '$lib/components/Select.svelte';
-	import { difficultyBadgeStyle } from '$lib/badgeStyles.js';
-	import { isSourceEnabled } from '$lib/expansionStore.svelte.js';
-	import { setActiveExpeditionId } from '$lib/activeContext.svelte.js';
-	import { createDebouncedSave } from '$lib/debouncedSave.js';
-	import { initialSelection, rememberSelection } from '$lib/rememberedSelection.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import { loadDelveData, buildCombinedTable } from '$lib/delveStore.svelte.js';
-	import { rollFromRangeTable, rollOracle, getOracles } from '$lib/oracleStore.svelte.js';
-	import { appendLog } from '$lib/log.svelte.js';
-	import { addEncounter } from '$lib/encounterStore.svelte.js';
+	} from '#lib/types.js';
+	import { EXPEDITION_MARK_TICKS, DENIZEN_CELLS, DELVE_THEMES, DELVE_DOMAINS } from '#lib/types.js';
+	import Select from '#lib/components/Select.svelte';
+	import { difficultyBadgeStyle } from '#lib/badgeStyles.js';
+	import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
+	import { setActiveExpeditionId } from '#lib/activeContext.svelte.js';
+	import { createDebouncedSave } from '#lib/debouncedSave.js';
+	import { initialSelection, rememberSelection } from '#lib/rememberedSelection.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import { loadDelveData, buildCombinedTable } from '#lib/delveStore.svelte.js';
+	import { rollFromRangeTable, rollOracle, getOracles } from '#lib/oracleStore.svelte.js';
+	import { appendLog } from '#lib/log.svelte.js';
+	import { addEncounter } from '#lib/encounterStore.svelte.js';
 	import { onMount } from 'svelte';
 
-	import ProgressTrackPanel from '$lib/components/ProgressTrackPanel.svelte';
-	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
-	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
-	import FoePickerDialog from '$lib/components/FoePickerDialog.svelte';
-	import DenizenDialog from '$lib/components/DenizenDialog.svelte';
-	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-	import Checkbox from '$lib/components/Checkbox.svelte';
-	import ExpeditionOptionsDialog from '$lib/components/ExpeditionOptionsDialog.svelte';
-	import MapDialog from '$lib/components/MapDialog.svelte';
+	import ProgressTrackPanel from '#lib/components/ProgressTrackPanel.svelte';
+	import MarkdownNotes from '#lib/components/MarkdownNotes.svelte';
+	import PortraitUploader from '#lib/components/PortraitUploader.svelte';
+	import FoePickerDialog from '#lib/components/FoePickerDialog.svelte';
+	import DenizenDialog from '#lib/components/DenizenDialog.svelte';
+	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
+	import Checkbox from '#lib/components/Checkbox.svelte';
+	import ExpeditionOptionsDialog from '#lib/components/ExpeditionOptionsDialog.svelte';
+	import MapDialog from '#lib/components/MapDialog.svelte';
 	import {
 		entityMarkerIndexState,
 		loadEntityMarkerIndex,
 		markersForEntity,
 		unlinkEntityFromMaps,
 		type EntityMarkerRef,
-	} from '$lib/mapStore.svelte.js';
-	import { formatEntityId } from '$lib/mapEntityLinks.js';
-	import iconGearSvg from '$icons/gear-solid.svg?raw';
-	import checkSvg from '$icons/circle-check-solid.svg?raw';
-	import locationSvg from '$icons/location-dot-solid.svg?raw';
-	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
+	} from '#lib/mapStore.svelte.js';
+	import { formatEntityId } from '#lib/mapEntityLinks.js';
+	import iconGearSvg from '#icons/gear-solid.svg?raw';
+	import checkSvg from '#icons/circle-check-solid.svg?raw';
+	import locationSvg from '#icons/location-dot-solid.svg?raw';
+	import SegmentedRadio from '#lib/components/SegmentedRadio.svelte';
 	import { Tabs } from 'bits-ui';
-	import Combobox from '$lib/components/Combobox.svelte';
-	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
-	import CountdownTrack from '$lib/components/CountdownTrack.svelte';
+	import Combobox from '#lib/components/Combobox.svelte';
+	import { ENTITY_KIND_META } from '#lib/entityKinds.js';
+	import CountdownTrack from '#lib/components/CountdownTrack.svelte';
 	// Derived, so they follow the livery (a livery may ship its own).
 	const journeyPlaceholderSvg = $derived(ENTITY_KIND_META.journey.icon);
 	const sitePlaceholderSvg = $derived(ENTITY_KIND_META.site.icon);
 	const scenePlaceholderSvg = $derived(ENTITY_KIND_META.scene.icon);
-	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
-	import { appIcon } from '$lib/liveryIcons.js';
-	import { headingText } from '$lib/fontStore.svelte.js';
+	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
+	import { appIcon } from '#lib/liveryIcons.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
 

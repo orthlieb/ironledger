@@ -18,7 +18,7 @@
 	 * Character/foe switching is handled locally via the active-context stores.
 	 */
 
-	import type { Command, CommandName } from '$lib/commandBar.js';
+	import type { Command, CommandName } from '#lib/commandBar.js';
 	import {
 		COMMAND_NAMES,
 		parseCommand,
@@ -30,13 +30,13 @@
 		NUMERIC_OPS,
 		INITIATIVE_VALUES,
 		initiativeToNumber,
-	} from '$lib/commandBar.js';
-	import { appendLog, sessionLog, triggerAction } from '$lib/log.svelte.js';
-	import { renderNote } from '$lib/markdown.js';
-	import { rollDie, animateDice, type DiceSpec } from '$lib/dice.js';
-	import { getCharacters } from '$lib/characterStore.svelte.js';
-	import { getEncounters } from '$lib/encounterStore.svelte.js';
-	import { findFoe, resolveFoeName, FOE_NATURE_COLORS } from '$lib/foeStore.svelte.js';
+	} from '#lib/commandBar.js';
+	import { appendLog, sessionLog, triggerAction } from '#lib/log.svelte.js';
+	import { renderNote } from '#lib/markdown.js';
+	import { rollDie, animateDice, type DiceSpec } from '#lib/dice.js';
+	import { getCharacters } from '#lib/characterStore.svelte.js';
+	import { getEncounters } from '#lib/encounterStore.svelte.js';
+	import { findFoe, resolveFoeName, FOE_NATURE_COLORS } from '#lib/foeStore.svelte.js';
 
 	/** The display name for a foe encounter: user's custom name, else
 	 *  the foe def's resolved name (an active expansion override may rename
@@ -48,10 +48,10 @@
 		const def = findFoe(enc.foeId);
 		return def ? resolveFoeName(def) : fallback || enc.foeId || '';
 	}
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import { getVisibleMoves, loadMoves } from '$lib/moveStore.svelte.js';
-	import { getVisibleOracles, loadOracles } from '$lib/oracleStore.svelte.js';
-	import { getStartId, getEndId, hasSection, setStart, setEnd } from '$lib/sectionStore.svelte.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import { getVisibleMoves, loadMoves } from '#lib/moveStore.svelte.js';
+	import { getVisibleOracles, loadOracles } from '#lib/oracleStore.svelte.js';
+	import { getStartId, getEndId, hasSection, setStart, setEnd } from '#lib/sectionStore.svelte.js';
 	import {
 		getActiveCharacterId,
 		setActiveCharacterId,
@@ -59,15 +59,15 @@
 		setActiveFoeId,
 		getActiveExpeditionId,
 		setActiveExpeditionId,
-	} from '$lib/activeContext.svelte.js';
-	import { getActiveDiceCtx } from '$lib/diceContext.svelte.js';
-	import { firstPreconditionFailure } from '$lib/preconditions.js';
-	import type { PreconditionContext, Precondition } from '$lib/preconditions.js';
-	import { getExpeditions } from '$lib/expeditionStore.svelte.js';
-	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
-	import { FOE_RANKS } from '$lib/foeStore.svelte.js';
+	} from '#lib/activeContext.svelte.js';
+	import { getActiveDiceCtx } from '#lib/diceContext.svelte.js';
+	import { firstPreconditionFailure } from '#lib/preconditions.js';
+	import type { PreconditionContext, Precondition } from '#lib/preconditions.js';
+	import { getExpeditions } from '#lib/expeditionStore.svelte.js';
+	import { ENTITY_KIND_META } from '#lib/entityKinds.js';
+	import { FOE_RANKS } from '#lib/foeStore.svelte.js';
 	import type { MoveDefinition } from '@ironledger/shared';
-	import type { CharacterData } from '$lib/types.js';
+	import type { CharacterData } from '#lib/types.js';
 	import CommandHelpDialog from './CommandHelpDialog.svelte';
 
 	let input = $state('');

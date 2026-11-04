@@ -25,7 +25,7 @@
 // an expansion in Settings.
 // =============================================================================
 
-import type { CategoryDef, ExtensionInfo } from '$lib/types.js';
+import type { CategoryDef, ExtensionInfo } from '#lib/types.js';
 import { getExtensions, isSourceEnabled } from './expansionStore.svelte.js';
 
 /** Merge all `moveCategories` (or `oracleCategories`) across enabled extensions.

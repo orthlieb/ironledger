@@ -11,8 +11,8 @@
 	 *   └────────────────────────────────────────┘
 	 */
 	import ProgressTrack from './ProgressTrack.svelte';
-	import { progressText } from '$lib/character.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
+	import { progressText } from '#lib/character.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
 
 	let {
 		value = $bindable(0),

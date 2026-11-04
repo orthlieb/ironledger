@@ -16,11 +16,11 @@
 	 *                           prompt, replacing the body in place
 	 */
 
-	import { headingText } from '$lib/fontStore.svelte.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
 	import { Dialog } from 'bits-ui';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import DialogHeader from '$lib/components/DialogHeader.svelte';
-	import Checkbox from '$lib/components/Checkbox.svelte';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
+	import DialogHeader from '#lib/components/DialogHeader.svelte';
+	import Checkbox from '#lib/components/Checkbox.svelte';
 	import {
 		getIncludePreface,
 		setIncludePreface,
@@ -30,8 +30,8 @@
 		getAiDebug,
 		PROVIDER_LABEL,
 		loadAiConfig,
-	} from '$lib/aiSettings.svelte.js';
-	import { sectionEntries, clearSection } from '$lib/sectionStore.svelte.js';
+	} from '#lib/aiSettings.svelte.js';
+	import { sectionEntries, clearSection } from '#lib/sectionStore.svelte.js';
 	import {
 		serializeLogSection,
 		estimateTokens,
@@ -45,17 +45,17 @@
 		type PrefaceCharacter,
 		type PrefaceFoe,
 		type PrefaceExpedition,
-	} from '$lib/aiSerialize.js';
-	import { streamStory } from '$lib/aiStream.js';
-	import { appendLog, updateLogEntryHtml } from '$lib/log.svelte.js';
-	import { renderNote } from '$lib/markdown.js';
-	import type { LogEntry } from '$lib/log.svelte.js';
-	import { getEncounters } from '$lib/encounterStore.svelte.js';
-	import { findFoe, resolveFoeDescription, resolveFoeName } from '$lib/foeStore.svelte.js';
-	import { getExpeditions } from '$lib/expeditionStore.svelte.js';
-	import { getCharacters } from '$lib/characterStore.svelte.js';
-	import { findAsset } from '$lib/assetStore.svelte.js';
-	import type { CharacterData } from '$lib/types.js';
+	} from '#lib/aiSerialize.js';
+	import { streamStory } from '#lib/aiStream.js';
+	import { appendLog, updateLogEntryHtml } from '#lib/log.svelte.js';
+	import { renderNote } from '#lib/markdown.js';
+	import type { LogEntry } from '#lib/log.svelte.js';
+	import { getEncounters } from '#lib/encounterStore.svelte.js';
+	import { findFoe, resolveFoeDescription, resolveFoeName } from '#lib/foeStore.svelte.js';
+	import { getExpeditions } from '#lib/expeditionStore.svelte.js';
+	import { getCharacters } from '#lib/characterStore.svelte.js';
+	import { findAsset } from '#lib/assetStore.svelte.js';
+	import type { CharacterData } from '#lib/types.js';
 
 	let dialogOpen = $state(false);
 	let stackDepth = $state(1);

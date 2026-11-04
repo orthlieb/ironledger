@@ -7,8 +7,8 @@
 // shared entity-store factory — see makeEntityStore.
 // =============================================================================
 
-import type { Place } from '$lib/types.js';
-import { makeEntityStore } from '$lib/makeEntityStore.svelte.js';
+import type { Place } from '#lib/types.js';
+import { makeEntityStore } from '#lib/makeEntityStore.svelte.js';
 
 const store = makeEntityStore<Place>('places', 'placeStore');
 

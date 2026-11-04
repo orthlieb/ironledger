@@ -16,8 +16,8 @@
 	 */
 	import { Dialog, Progress } from 'bits-ui';
 	import DialogHeader from './DialogHeader.svelte';
-	import { headingText } from '$lib/fontStore.svelte.js';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
 
 	let {
 		open = $bindable(false),

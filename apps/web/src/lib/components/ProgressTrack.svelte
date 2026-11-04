@@ -15,8 +15,8 @@
 	 * Pass `color` to override the default amber accent (e.g. foe nature colour,
 	 * journey green, site blue). Danger boxes always use red regardless of `color`.
 	 */
-	import { boxTicks, cycleBox, progressText } from '$lib/character.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
+	import { boxTicks, cycleBox, progressText } from '#lib/character.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
 
 	let {
 		label,

@@ -30,7 +30,7 @@
 		addCommunity,
 		removeCommunity,
 		updateCommunityLocal,
-	} from '$lib/communityStore.svelte.js';
+	} from '#lib/communityStore.svelte.js';
 	import {
 		getNpcs,
 		isNpcLoaded,
@@ -38,7 +38,7 @@
 		addNpc,
 		removeNpc,
 		updateNpcLocal,
-	} from '$lib/npcStore.svelte.js';
+	} from '#lib/npcStore.svelte.js';
 	import {
 		buildGraph,
 		eligibleContainerRefs,
@@ -48,9 +48,9 @@
 		breadcrumbRefs,
 		isNested,
 		type ContainmentNode,
-	} from '$lib/entityContainment.js';
-	import { createDebouncedSave } from '$lib/debouncedSave.js';
-	import { initialSelection, rememberSelection } from '$lib/rememberedSelection.js';
+	} from '#lib/entityContainment.js';
+	import { createDebouncedSave } from '#lib/debouncedSave.js';
+	import { initialSelection, rememberSelection } from '#lib/rememberedSelection.js';
 	import {
 		getPlaces,
 		isPlaceLoaded,
@@ -58,14 +58,14 @@
 		addPlace,
 		removePlace,
 		updatePlaceLocal,
-	} from '$lib/placeStore.svelte.js';
-	import type { Community, Npc, Place, NpcRelationship } from '$lib/types.js';
-	import Select from '$lib/components/Select.svelte';
-	import MarkdownNotes from '$lib/components/MarkdownNotes.svelte';
-	import PortraitUploader from '$lib/components/PortraitUploader.svelte';
-	import { isSourceEnabled, resolveOracleKey } from '$lib/expansionStore.svelte.js';
+	} from '#lib/placeStore.svelte.js';
+	import type { Community, Npc, Place, NpcRelationship } from '#lib/types.js';
+	import Select from '#lib/components/Select.svelte';
+	import MarkdownNotes from '#lib/components/MarkdownNotes.svelte';
+	import PortraitUploader from '#lib/components/PortraitUploader.svelte';
+	import { isSourceEnabled, resolveOracleKey } from '#lib/expansionStore.svelte.js';
 	import { Tabs } from 'bits-ui';
-	import Combobox from '$lib/components/Combobox.svelte';
+	import Combobox from '#lib/components/Combobox.svelte';
 	import {
 		loadOracles,
 		getOracles,
@@ -73,7 +73,7 @@
 		rollOracle,
 		findOracle,
 		resolveCharacterOracle,
-	} from '$lib/oracleStore.svelte.js';
+	} from '#lib/oracleStore.svelte.js';
 	import {
 		NAME_ORACLES,
 		defaultRandomizeFlags,
@@ -82,32 +82,32 @@
 		touchedLogHtml,
 		logCreateRolls,
 		type CharacterRandomizeFlags,
-	} from '$lib/characterRollups.js';
-	import RandomizeBlock from '$lib/components/RandomizeBlock.svelte';
-	import { appendLog } from '$lib/log.svelte.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
+	} from '#lib/characterRollups.js';
+	import RandomizeBlock from '#lib/components/RandomizeBlock.svelte';
+	import { appendLog } from '#lib/log.svelte.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
 
-	import ConfirmDialog from '$lib/components/ConfirmDialog.svelte';
-	import Checkbox from '$lib/components/Checkbox.svelte';
-	import ConnectionOptionsDialog from '$lib/components/ConnectionOptionsDialog.svelte';
-	import MapDialog from '$lib/components/MapDialog.svelte';
+	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
+	import Checkbox from '#lib/components/Checkbox.svelte';
+	import ConnectionOptionsDialog from '#lib/components/ConnectionOptionsDialog.svelte';
+	import MapDialog from '#lib/components/MapDialog.svelte';
 	import {
 		entityMarkerIndexState,
 		loadEntityMarkerIndex,
 		markersForEntity,
 		unlinkEntityFromMaps,
 		type EntityMarkerRef,
-	} from '$lib/mapStore.svelte.js';
-	import { formatEntityId } from '$lib/mapEntityLinks.js';
-	import iconGearSvg from '$icons/gear-solid.svg?raw';
-	import heartPulseSvg from '$icons/heart-pulse-solid.svg?raw';
-	import skullSvg from '$icons/skull-crossbones-solid.svg?raw';
-	import SegmentedRadio from '$lib/components/SegmentedRadio.svelte';
-	import { appIcon } from '$lib/liveryIcons.js';
-	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
-	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
-	import gotoSvg from '$icons/arrow-up-right-from-square-solid.svg?raw';
-	import { headingText } from '$lib/fontStore.svelte.js';
+	} from '#lib/mapStore.svelte.js';
+	import { formatEntityId } from '#lib/mapEntityLinks.js';
+	import iconGearSvg from '#icons/gear-solid.svg?raw';
+	import heartPulseSvg from '#icons/heart-pulse-solid.svg?raw';
+	import skullSvg from '#icons/skull-crossbones-solid.svg?raw';
+	import SegmentedRadio from '#lib/components/SegmentedRadio.svelte';
+	import { appIcon } from '#lib/liveryIcons.js';
+	import { ENTITY_KIND_META } from '#lib/entityKinds.js';
+	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
+	import gotoSvg from '#icons/arrow-up-right-from-square-solid.svg?raw';
+	import { headingText } from '#lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
 

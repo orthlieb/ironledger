@@ -19,21 +19,21 @@
 	 *   ref.open();
 	 */
 
-	import type { FoeDef, FoeQuantity, FoeRollRow } from '$lib/types.js';
-	import { headingText } from '$lib/fontStore.svelte.js';
+	import type { FoeDef, FoeQuantity, FoeRollRow } from '#lib/types.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
 	import { Dialog, RadioGroup } from 'bits-ui';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import DialogHeader from '$lib/components/DialogHeader.svelte';
-	import { rankBadgeStyle } from '$lib/badgeStyles.js';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
+	import DialogHeader from '#lib/components/DialogHeader.svelte';
+	import { rankBadgeStyle } from '#lib/badgeStyles.js';
 	import {
 		FOE_RANKS,
 		FOE_QUANTITIES,
 		FOE_NATURE_COLORS,
 		effectiveRank as calcEffectiveRank,
-	} from '$lib/foeStore.svelte.js';
-	import { animateDice, DIE_BLACK, DIE_WHITE } from '$lib/dice.js';
-	import { appendLog } from '$lib/log.svelte.js';
-	import FoeImageCarousel from '$lib/components/FoeImageCarousel.svelte';
+	} from '#lib/foeStore.svelte.js';
+	import { animateDice, DIE_BLACK, DIE_WHITE } from '#lib/dice.js';
+	import { appendLog } from '#lib/log.svelte.js';
+	import FoeImageCarousel from '#lib/components/FoeImageCarousel.svelte';
 
 	let {
 		title,

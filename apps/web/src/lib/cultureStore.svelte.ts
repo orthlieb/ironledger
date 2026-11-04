@@ -13,13 +13,13 @@
 // markers already placed — the toggles only gate what the builder offers.
 // =============================================================================
 
-import type { Culture } from '$lib/settlement-kit/generate.js';
+import type { Culture } from '#lib/settlement-kit/generate.js';
 import {
 	isSourceEnabled,
 	loadExtensions,
 	resolveCultureKey,
 	supersededCultureKeys,
-} from '$lib/expansionStore.svelte.js';
+} from '#lib/expansionStore.svelte.js';
 
 /** The default culture's key — first in the builder, used when none fits. */
 export const DEFAULT_CULTURE = 'ironlanders';

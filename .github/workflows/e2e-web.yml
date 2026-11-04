@@ -153,6 +153,11 @@ jobs:
         run: npm run build --workspace=apps/api
 
       - name: Build web
+        # The web server below is plain http on localhost, so bake that in as
+        # the app's origin (vite.config.ts → paths.origin). Without it
+        # SvelteKit assumes https and every form post fails its CSRF check.
+        env:
+          ORIGIN: http://localhost:5173
         run: npm run build --workspace=apps/web
 
       - name: Start API (background)
@@ -164,10 +169,10 @@ jobs:
         # `vite preview` is the dev preview server and does not execute the
         # SvelteKit form-action handlers — every POST returns 403 ("Cross-
         # site POST form submissions are forbidden"). Run the actual
-        # adapter-node output instead, with ORIGIN matching the served URL
-        # so SvelteKit's CSRF check passes.
+        # adapter-node output instead. Its origin was set at build time (see
+        # "Build web"): adapter-node no longer reads ORIGIN at run time.
         run: |
-          ORIGIN=http://localhost:5173 PORT=5173 HOST=127.0.0.1 \
+          PORT=5173 HOST=127.0.0.1 \
             node build/index.js > /tmp/web.log 2>&1 &
           echo $! > /tmp/web.pid
         working-directory: apps/web

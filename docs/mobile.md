@@ -179,7 +179,7 @@ opens in its own window with no browser chrome. The manifest is
 There is **no service worker**, so nothing is cached for offline use: every
 launch or reload fetches the deployed build, and an installed app updates on
 its own. The one gap is a window left open across a deploy, still running the
-old code. `kit.version.pollInterval` (`svelte.config.js`, 5 min) has SvelteKit
+old code. `version.pollInterval` (in `sveltekit({...})`, `vite.config.ts`, 5 min) has SvelteKit
 check `/_app/version.json`, and `UpdateBanner.svelte` (in the root layout)
 shows _A new version of Iron Ledger is available_ with a **Reload** button once
 it differs. The banner also re-checks whenever the window comes back into view.

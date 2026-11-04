@@ -23,20 +23,20 @@
 	 * settlementIcons.
 	 */
 	import { untrack } from 'svelte';
-	import Select from '$lib/components/Select.svelte';
-	import Checkbox from '$lib/components/Checkbox.svelte';
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
-	import { haloPaddedViewBox, mapGlyphInner } from '$lib/mapConstants.js';
-	import { sourceLabel } from '$lib/expansionStore.svelte.js';
+	import Select from '#lib/components/Select.svelte';
+	import Checkbox from '#lib/components/Checkbox.svelte';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
+	import { haloPaddedViewBox, mapGlyphInner } from '#lib/mapConstants.js';
+	import { sourceLabel } from '#lib/expansionStore.svelte.js';
 	import {
 		DEFAULT_CULTURE,
 		allCultures,
 		loadCultures,
 		offeredCultures,
 		resolveCulture,
-	} from '$lib/cultureStore.svelte.js';
-	import { recipeLabel, settlementIcon } from '$lib/settlementIcons.svelte.js';
+	} from '#lib/cultureStore.svelte.js';
+	import { recipeLabel, settlementIcon } from '#lib/settlementIcons.svelte.js';
 	import {
 		SETTLEMENT_BUILDINGS,
 		cleanSettlementRecipe,
@@ -46,7 +46,7 @@
 		type SettlementRecipe,
 		type SettlementTier,
 		type SettlementWalls,
-	} from '$lib/settlementRecipe.js';
+	} from '#lib/settlementRecipe.js';
 
 	let {
 		kind = 'settlement',

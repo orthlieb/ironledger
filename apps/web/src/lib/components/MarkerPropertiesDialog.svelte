@@ -21,16 +21,16 @@
 	 */
 	import { untrack } from 'svelte';
 	import { Dialog, RadioGroup } from 'bits-ui';
-	import Combobox from '$lib/components/Combobox.svelte';
-	import ColorPicker from '$lib/components/ColorPicker.svelte';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
+	import Combobox from '#lib/components/Combobox.svelte';
+	import ColorPicker from '#lib/components/ColorPicker.svelte';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
 	import DialogHeader from './DialogHeader.svelte';
 	import MapIconPicker from './MapIconPicker.svelte';
-	import { headingText } from '$lib/fontStore.svelte.js';
-	import { DEFAULT_MARKER_COLOR, haloPaddedViewBox, mapGlyphInner } from '$lib/mapConstants.js';
-	import { resolveMarkerIcon } from '$lib/settlementIcons.svelte.js';
-	import { fallbackIcon } from '$lib/settlement-kit/fallback.js';
-	import type { SettlementRecipe } from '$lib/settlementRecipe.js';
+	import { headingText } from '#lib/fontStore.svelte.js';
+	import { DEFAULT_MARKER_COLOR, haloPaddedViewBox, mapGlyphInner } from '#lib/mapConstants.js';
+	import { resolveMarkerIcon } from '#lib/settlementIcons.svelte.js';
+	import { fallbackIcon } from '#lib/settlement-kit/fallback.js';
+	import type { SettlementRecipe } from '#lib/settlementRecipe.js';
 	import {
 		updateMarker,
 		removeMarker,
@@ -44,14 +44,14 @@
 		MAX_MARKER_SCALE,
 		type MapMarker,
 		type MapMarkerLabelPosition,
-	} from '$lib/mapStore.svelte.js';
-	import { getLinkableEntities, resolveEntity } from '$lib/mapEntityLinks.js';
-	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import iconPaletteSvg from '$icons/palette-solid.svg?raw';
-	import Select from '$lib/components/Select.svelte';
-	import plusSvg from '$icons/plus-solid.svg?raw';
-	import minusSvg from '$icons/minus-solid.svg?raw';
+	} from '#lib/mapStore.svelte.js';
+	import { getLinkableEntities, resolveEntity } from '#lib/mapEntityLinks.js';
+	import { ENTITY_KIND_META } from '#lib/entityKinds.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import iconPaletteSvg from '#icons/palette-solid.svg?raw';
+	import Select from '#lib/components/Select.svelte';
+	import plusSvg from '#icons/plus-solid.svg?raw';
+	import minusSvg from '#icons/minus-solid.svg?raw';
 
 	let {
 		selectedMarker,

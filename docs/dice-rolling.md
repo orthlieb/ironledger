@@ -77,7 +77,7 @@ The core Ironsworn resolution mechanic: **1d6 + stat + adds vs 2d10**.
 
 **Matched-dice note:** In Ironsworn a match only carries special meaning on a
 **strong hit** or a **miss** — it signals a twist. `matchNoteHtml()`
-(`$lib/rollMatch.ts`) appends an explanatory `.roll-match-note` line after the
+(`#lib/rollMatch.ts`) appends an explanatory `.roll-match-note` line after the
 outcome:
 
 - **Strong hit + match** → a positive twist (unexpected opportunity / broader effect).

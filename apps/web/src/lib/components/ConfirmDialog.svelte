@@ -21,11 +21,11 @@
 	 */
 	import type { Snippet } from 'svelte';
 	import { AlertDialog } from 'bits-ui';
-	import { headingText } from '$lib/fontStore.svelte.js';
-	import { draggable as dragAction } from '$lib/actions/draggable.js';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
-	import gripSvg from '$icons/grip-vertical-solid.svg?raw';
-	import xmarkSvg from '$icons/xmark-solid.svg?raw';
+	import { headingText } from '#lib/fontStore.svelte.js';
+	import { draggable as dragAction } from '#lib/actions/draggable.js';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
+	import gripSvg from '#icons/grip-vertical-solid.svg?raw';
+	import xmarkSvg from '#icons/xmark-solid.svg?raw';
 
 	let {
 		title,

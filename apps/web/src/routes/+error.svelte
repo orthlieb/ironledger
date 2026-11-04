@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { page } from '$app/stores';
+	import { page } from '$app/state';
 </script>
 
 <svelte:head>
@@ -13,8 +13,8 @@
 		class="error-image"
 	/>
 	<div class="error-body">
-		<p class="error-code">{$page.status}</p>
-		<p class="error-message">{$page.error?.message ?? 'An unexpected error occurred'}</p>
+		<p class="error-code">{page.status}</p>
+		<p class="error-message">{page.error?.message ?? 'An unexpected error occurred'}</p>
 		<a href="/" class="error-home">Return to safety</a>
 	</div>
 </div>

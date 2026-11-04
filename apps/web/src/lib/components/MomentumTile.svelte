@@ -4,11 +4,11 @@
 	 * Left column: MOMENTUM label + background icon + − value + controls.
 	 * Right column (divided by hairline): ↺ Reset: n button + MAX: m display.
 	 */
-	import momentumSvg from '$icons/icon-momentum.svg?raw';
-	import plusSvg from '$icons/plus-solid.svg?raw';
-	import minusSvg from '$icons/minus-solid.svg?raw';
-	import rotateLeftSvg from '$icons/arrow-rotate-left-solid.svg?raw';
-	import { tooltip } from '$lib/actions/tooltip.js';
+	import momentumSvg from '#icons/icon-momentum.svg?raw';
+	import plusSvg from '#icons/plus-solid.svg?raw';
+	import minusSvg from '#icons/minus-solid.svg?raw';
+	import rotateLeftSvg from '#icons/arrow-rotate-left-solid.svg?raw';
+	import { tooltip } from '#lib/actions/tooltip.js';
 
 	let {
 		value = $bindable(0),

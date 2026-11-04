@@ -570,7 +570,7 @@ internally by entry id).
 
 ### The import dialog
 
-Import runs behind the **`ImportDialog`** (`$lib/components/ImportDialog.svelte`),
+Import runs behind the **`ImportDialog`** (`#lib/components/ImportDialog.svelte`),
 which the Hamburger → Import… action opens and the page's `runImport()` drives
 through a small set of stages:
 

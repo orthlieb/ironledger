@@ -13,13 +13,13 @@
 // =============================================================================
 
 import { SvelteMap } from 'svelte/reactivity';
-import type { MapIcon } from '$lib/generated/mapIconManifest.js';
-import { resolveMapIcon } from '$lib/mapConstants.js';
-import { primeLayered } from '$lib/mapIconCache.js';
-import type { MapMarker } from '$lib/mapStore.svelte.js';
-import type { Culture } from '$lib/settlement-kit/generate.js';
-import { culturesLoaded, loadCultures, resolveCulture } from '$lib/cultureStore.svelte.js';
-import { recipeKey, recipeLabel, type SettlementRecipe } from '$lib/settlementRecipe.js';
+import type { MapIcon } from '#lib/generated/mapIconManifest.js';
+import { resolveMapIcon } from '#lib/mapConstants.js';
+import { primeLayered } from '#lib/mapIconCache.js';
+import type { MapMarker } from '#lib/mapStore.svelte.js';
+import type { Culture } from '#lib/settlement-kit/generate.js';
+import { culturesLoaded, loadCultures, resolveCulture } from '#lib/cultureStore.svelte.js';
+import { recipeKey, recipeLabel, type SettlementRecipe } from '#lib/settlementRecipe.js';
 
 /** Most generated icons kept (rerolls in the builder make a lot of them). */
 const MAX_CACHED = 120;
@@ -59,7 +59,7 @@ export async function generateSvg(
 	if (!w) {
 		// No workers (SSR, unit tests): generate inline. Dynamic import keeps
 		// the kit and clipper-lib out of the main bundle either way.
-		const { generateSettlementSvg } = await import('$lib/settlement-kit/generate.js');
+		const { generateSettlementSvg } = await import('#lib/settlement-kit/generate.js');
 		return generateSettlementSvg(recipe, culture);
 	}
 	const id = nextId++;

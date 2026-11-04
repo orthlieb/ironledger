@@ -18,23 +18,23 @@
 	 */
 	import { untrack } from 'svelte';
 	import { Dialog, ToggleGroup } from 'bits-ui';
-	import { pushDialog, popDialog, overlayZ, contentZ } from '$lib/dialogStack.svelte.js';
+	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
 	import DialogHeader from './DialogHeader.svelte';
 	import FilterBar from './FilterBar.svelte';
-	import { headingText } from '$lib/fontStore.svelte.js';
-	import { getCharacters } from '$lib/characterStore.svelte.js';
-	import { getExpeditions } from '$lib/expeditionStore.svelte.js';
-	import { getCommunities } from '$lib/communityStore.svelte.js';
-	import { getNpcs } from '$lib/npcStore.svelte.js';
-	import { getPlaces } from '$lib/placeStore.svelte.js';
-	import { mapListState, initMap } from '$lib/mapStore.svelte.js';
-	import { sessionLog } from '$lib/log.svelte.js';
-	import { getEncounters } from '$lib/encounterStore.svelte.js';
-	import { findFoe, resolveFoeName } from '$lib/foeStore.svelte.js';
-	import type { ExportSelection } from '$lib/exportSelection.js';
-	import { ENTITY_KIND_META } from '$lib/entityKinds.js';
-	import { appIcon } from '$lib/liveryIcons.js';
-	import treasureMapIconSvg from '$icons/treasure-map.svg?raw';
+	import { headingText } from '#lib/fontStore.svelte.js';
+	import { getCharacters } from '#lib/characterStore.svelte.js';
+	import { getExpeditions } from '#lib/expeditionStore.svelte.js';
+	import { getCommunities } from '#lib/communityStore.svelte.js';
+	import { getNpcs } from '#lib/npcStore.svelte.js';
+	import { getPlaces } from '#lib/placeStore.svelte.js';
+	import { mapListState, initMap } from '#lib/mapStore.svelte.js';
+	import { sessionLog } from '#lib/log.svelte.js';
+	import { getEncounters } from '#lib/encounterStore.svelte.js';
+	import { findFoe, resolveFoeName } from '#lib/foeStore.svelte.js';
+	import type { ExportSelection } from '#lib/exportSelection.js';
+	import { ENTITY_KIND_META } from '#lib/entityKinds.js';
+	import { appIcon } from '#lib/liveryIcons.js';
+	import treasureMapIconSvg from '#icons/treasure-map.svg?raw';
 
 	const CHECK =
 		'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>';

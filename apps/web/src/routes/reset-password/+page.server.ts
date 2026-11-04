@@ -1,6 +1,6 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
-import { INTERNAL_API_URL } from '$lib/server/config.js';
+import { INTERNAL_API_URL } from '#lib/server/config.js';
 
 export const load: PageServerLoad = async ({ url }) => {
 	// Block password reset during maintenance — same gate as /forgot-password.

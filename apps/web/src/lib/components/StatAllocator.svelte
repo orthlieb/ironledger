@@ -28,9 +28,9 @@
 	import StatControl from './StatControl.svelte';
 	import Checkbox from './Checkbox.svelte';
 	import { DropdownMenu } from 'bits-ui';
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import diceD6Svg from '$icons/dice-d6-light.svg?raw';
-	import { rollStats, type Stat, type StatArray } from '$lib/rules/statArrays.js';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
+	import { rollStats, type Stat, type StatArray } from '#lib/rules/statArrays.js';
 
 	let {
 		stats = $bindable(),

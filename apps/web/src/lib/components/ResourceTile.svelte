@@ -6,7 +6,7 @@
 	 * Button style matches the progress-track buttons in GlobalContextBar.
 	 */
 
-	import { tooltip as tooltipAction } from '$lib/actions/tooltip.js';
+	import { tooltip as tooltipAction } from '#lib/actions/tooltip.js';
 
 	let {
 		label,

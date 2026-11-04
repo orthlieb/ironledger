@@ -7,9 +7,9 @@
 // HTML→Markdown conversion is shared with the zip exports via exportSerialize.
 // =============================================================================
 
-import type { LogEntry } from '$lib/log.svelte.js';
-import { parseStorySource } from '$lib/aiSerialize.js';
-import { htmlToMd } from '$lib/exportSerialize.js';
+import type { LogEntry } from '#lib/log.svelte.js';
+import { parseStorySource } from '#lib/aiSerialize.js';
+import { htmlToMd } from '#lib/exportSerialize.js';
 
 /** Full session log as Markdown (newest first), each entry's HTML converted to
  *  Markdown, with any note rendered as a blockquote. */

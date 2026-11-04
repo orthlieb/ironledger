@@ -17,9 +17,9 @@
 	 * pass `detail` on the detail view so the dynamic title ellipsizes.
 	 */
 	import type { Snippet } from 'svelte';
-	import { draggable } from '$lib/actions/draggable.js';
-	import gripSvg from '$icons/grip-vertical-solid.svg?raw';
-	import xmarkSvg from '$icons/xmark-solid.svg?raw';
+	import { draggable } from '#lib/actions/draggable.js';
+	import gripSvg from '#icons/grip-vertical-solid.svg?raw';
+	import xmarkSvg from '#icons/xmark-solid.svg?raw';
 
 	let {
 		title,

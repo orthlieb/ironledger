@@ -13,9 +13,9 @@
 //   • removeEncounter(id)           — delete one + persist
 // =============================================================================
 
-import type { FoeEncounter } from '$lib/types.js';
-import { makeEntitySync } from '$lib/entitySync.js';
-import { fetchSession } from '$lib/sessionData.js';
+import type { FoeEncounter } from '#lib/types.js';
+import { makeEntitySync } from '#lib/entitySync.js';
+import { fetchSession } from '#lib/sessionData.js';
 
 // ---------------------------------------------------------------------------
 // Module-level state

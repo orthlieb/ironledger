@@ -24,8 +24,8 @@
 //   • FOE_NATURE_COLORS       — nature → CSS hex colour
 // =============================================================================
 
-import type { FoeDef, FoeNature, CatalogueSource } from '$lib/types.js';
-import { getExtensions, isSourceEnabled } from '$lib/expansionStore.svelte.js';
+import type { FoeDef, FoeNature, CatalogueSource } from '#lib/types.js';
+import { getExtensions, isSourceEnabled } from '#lib/expansionStore.svelte.js';
 
 // ---------------------------------------------------------------------------
 // Types

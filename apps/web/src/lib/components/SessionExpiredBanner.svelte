@@ -8,7 +8,7 @@
 	 */
 
 	import { fly, fade } from 'svelte/transition';
-	import { sessionState } from '$lib/sessionGuard.svelte.js';
+	import { sessionState } from '#lib/sessionGuard.svelte.js';
 </script>
 
 {#if sessionState.expired}

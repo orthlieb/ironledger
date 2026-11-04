@@ -23,8 +23,8 @@
 	 *   .error-bar-msg, .error-bar-dismiss
 	 */
 
-	import { tooltip } from '$lib/actions/tooltip.js';
-	import xmarkSvg from '$icons/xmark-solid.svg?raw';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import xmarkSvg from '#icons/xmark-solid.svg?raw';
 
 	type Severity = 'notification' | 'warning' | 'error';
 
