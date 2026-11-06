@@ -352,6 +352,22 @@ function sag(a, b, toward, amt, n = 8) {
 }
 
 /**
+ * Whether point p lies inside polygon poly (even-odd rule).
+ * @param {Pt} p
+ * @param {Poly} poly
+ */
+function insidePoly(p, poly) {
+	let inside = false;
+	for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+		const [xi, yi] = poly[i];
+		const [xj, yj] = poly[j];
+		if (yi > p[1] !== yj > p[1] && p[0] < ((xj - xi) * (p[1] - yi)) / (yj - yi) + xi)
+			inside = !inside;
+	}
+	return inside;
+}
+
+/**
  * How far a bow setting bends a line: positive swoops inward (concave),
  * negative bulges outward (convex), 0 is straight.
  * @param {Bow} b
@@ -1066,34 +1082,71 @@ export function sideHouse(D, o = {}) {
 	// The ridge runs at mid-depth, so under perspective it comes out
 	// narrower than the front eave and the roof plane reads as a trapezoid.
 	/** @type {Pt} */ const gTop = P.at([w / 2, h + rh], 0.5);
-	const gableEnd = /** @type {Poly} */ ([
-		[w / 2, 0],
-		P.back([w / 2, 0]),
-		P.back([w / 2, h]),
-		gTop,
-		[w / 2, h],
-	]);
 	/** @type {Pt} */ const eL = [-w / 2 - ov, h - 0.4];
 	/** @type {Pt} */ const eR = [w / 2 + ov, h - 0.4];
 	/** @type {Pt} */ const rR = add(gTop, [ov * 0.6, 0]);
 	/** @type {Pt} */ const rL = add(P.at([-w / 2, h + rh], 0.5), [-ov * 0.6, 0]);
-	const below = /** @type {Pt} */ ([0, h - rh]);
 	// A longhouse ridge dips in the middle like an upturned boat.
 	const ridge = long ? sag(rR, rL, [(rR[0] + rL[0]) / 2, h], 0.06) : [rR, rL];
-	const slope = /** @type {Poly} */ ([
-		eL,
-		eR,
-		...sag(eR, rR, below, D.concave * 0.5).slice(1),
-		...ridge.slice(1),
-		...sag(rL, eL, below, D.concave * 0.5).slice(1, -1),
-	]);
+	/**
+	 * One edge of the swept roof, from an eave up to the ridge: the roof's
+	 * profile at width x, run back in depth and projected, so the verges,
+	 * the back slope and the gable end all share one sweep and meet where
+	 * they should. The profile is the front gable's (gableHouse), turned to
+	 * run in depth: sagged toward a point a third of the way up under the
+	 * ridge, by the culture's `concave`. `x` gives the width at a depth
+	 * fraction (the roof's overhang narrows from the eave to the ridge);
+	 * `back` runs it from the back eave instead of the front one; `amt` is
+	 * the sweep (0 draws the straight roof).
+	 * @param {(t: number) => number} x @param {number} yEave @param {boolean} back
+	 * @returns {Poly} eave → ridge
+	 */
+	const profileEdge = (x, yEave, back, amt = D.concave) =>
+		sag([-d / 2, yEave], [0, h + rh], [0, yEave + (h + rh - yEave) * 0.35], amt).map(([u, y]) => {
+			const t = back ? 0.5 - u / d : 0.5 + u / d;
+			return P.at([x(t), y], t);
+		});
+	// The roof's half-width at depth fraction t: the full overhang at the
+	// eaves, the ridge's shorter one (rR / rL) at mid-depth.
+	const ridgeOv = (ov * 0.6) / P.scale(0.5);
+	const roofX = (/** @type {number} */ t) =>
+		w / 2 + ov + (ridgeOv - ov) * (1 - Math.abs(2 * t - 1));
+	// The gable end's top follows the same sweep at the wall's own width (no
+	// overhang), back half and front, so the verges always cover it.
+	const wallX = () => w / 2;
+	const gableOf = (/** @type {number} */ amt) =>
+		/** @type {Poly} */ ([
+			[w / 2, 0],
+			P.back([w / 2, 0]),
+			...profileEdge(wallX, h, true, amt), // back eave → gTop
+			...profileEdge(wallX, h, false, amt).reverse().slice(1, -1),
+			[w / 2, h],
+		]);
+	// The front slope: its verges run from the eaves (eR, eL) up to the
+	// ridge's ends (rR, rL).
+	const slopeOf = (/** @type {number} */ amt) =>
+		/** @type {Poly} */ ([
+			eL,
+			eR,
+			...profileEdge(roofX, h - 0.4, false, amt).slice(1, -1),
+			...ridge,
+			...profileEdge((t) => -roofX(t), h - 0.4, false, amt)
+				.slice(1, -1)
+				.reverse(),
+		]);
+	const gableEnd = gableOf(D.concave);
+	const slope = slopeOf(D.concave);
 	// The back slope, from the ridge down to the back eave. The front slope
 	// and the gable hide all of it but its verge: the sliver it overhangs the
 	// gable end by, past the gable's back edge.
 	const backSlope = /** @type {Poly} */ ([
 		P.back([-w / 2 - ov, h - 0.4]),
 		P.back([w / 2 + ov, h - 0.4]),
+		...profileEdge(roofX, h - 0.4, true).slice(1, -1),
 		...ridge,
+		...profileEdge((t) => -roofX(t), h - 0.4, true)
+			.slice(1, -1)
+			.reverse(),
 	]);
 	/** @type {Line[]} */
 	const courses = [];
@@ -1136,7 +1189,73 @@ export function sideHouse(D, o = {}) {
 			out.push(seg([x, y0 - 1], [x + v[0], y1 + v[1]], 0.45, { role: TEXTURE }));
 		return out;
 	};
-	const rose = P.at([w / 2, h + rh * 0.3], 0.5);
+	/**
+	 * How much of an opening shows, 0–1: the share of a grid of points over
+	 * it that land on the gable end and clear of the front slope.
+	 * @param {Poly} poly @param {Poly} gable @param {Poly} front
+	 */
+	const showing = (poly, gable, front) => {
+		const xs = poly.map(([x]) => x),
+			ys = poly.map(([, y]) => y);
+		const x0 = Math.min(...xs),
+			x1 = Math.max(...xs),
+			y0 = Math.min(...ys),
+			y1 = Math.max(...ys);
+		let n = 0,
+			seen = 0;
+		for (let i = 0.5; i < 8; i++)
+			for (let j = 0.5; j < 8; j++) {
+				/** @type {Pt} */ const p = [x0 + ((x1 - x0) * i) / 8, y0 + ((y1 - y0) * j) / 8];
+				if (!insidePoly(p, poly)) continue;
+				n++;
+				if (insidePoly(p, gable) && !insidePoly(p, front)) seen++;
+			}
+		return n ? seen / n : 0;
+	};
+	/**
+	 * Where an opening goes on the gable end. Its place was set for the
+	 * straight roof; a swept one lowers the gable's top and brings the front
+	 * slope down over it, which can hide the opening there. So under a sweep,
+	 * each of `at`'s candidates (most preferred first, the straight roof's
+	 * own first) is tried at the depth fractions nearest `t`, and the first
+	 * to show as much of itself as the straight roof's placement does wins.
+	 * Null when none does: like openings behind a wing, it's left out rather
+	 * than drawn more hidden. On a straight roof the placement stands as is.
+	 * @param {((t: number) => Poly)[]} at the opening drawn at depth fraction t
+	 * @param {number} t
+	 * @returns {[number, number] | null} [candidate, depth fraction]
+	 */
+	const onGable = (at, t) => {
+		if (!D.concave) return [0, t];
+		const want = showing(at[0](t), gableOf(0), slopeOf(0)) - 1e-9;
+		for (let i = 0; i < at.length; i++)
+			for (let k = 0; k <= 40; k++)
+				for (const tt of k ? [t + k / 100, t - k / 100] : [t])
+					if (showing(at[i](tt), gableEnd, slope) >= want) return [i, tt];
+		return null;
+	};
+	// The church's rose window: 0.3 of the way up the roof, or, if a sweep
+	// hides it there, lower, though not below the eave.
+	/** @type {Pt | null} */
+	let rose = null;
+	if (kind === 'church') {
+		const ys = [0.3, 0.24, 0.18, 0.12].map((f) =>
+			Math.max(h + rh * f, Math.min(h + rh * 0.3, h + 3)),
+		);
+		const at = ys.map((y) => (/** @type {number} */ t) => {
+			const c = P.at([w / 2, y], t);
+			return circle(c[0], c[1], 2.6);
+		});
+		const fit = onGable(at, 0.5);
+		if (fit) rose = P.at([w / 2, ys[fit[0]]], fit[1]);
+	}
+	const gableWindow = (/** @type {number} */ t) => P.face(opening(D, 0, 0, 2.2), w / 2, h + 1.5, t);
+	const hatchDoor = (/** @type {number} */ t) => P.face(rect(-1.6, 0, 3.2, 3.2), w / 2, h + 0.8, t);
+	const tWin =
+		kind === 'warehouse' || barn || kind === 'church'
+			? null
+			: (onGable([gableWindow], 0.45)?.[1] ?? null);
+	const tHatch = barn ? (onGable([hatchDoor], 0.5)?.[1] ?? null) : null;
 	/** @type {Part[]} */
 	const back =
 		kind === 'workshop'
@@ -1264,15 +1383,14 @@ export function sideHouse(D, o = {}) {
 				...(woodBarn ? planks(w / 2, w / 2 + v[0], 0, h + rh + v[1]) : []),
 				...(stone ? faceCourses(P, w / 2, 0, h + rh) : []),
 			],
-			fills:
-				kind === 'warehouse'
-					? []
-					: barn
-						? [P.face(rect(-1.6, 0, 3.2, 3.2), w / 2, h + 0.8, 0.5)]
-						: kind === 'church'
-							? [circle(rose[0], rose[1], 2.6)]
-							: [P.face(opening(D, 0, 0, 2.2), w / 2, h + 1.5, 0.45)],
-			cuts: kind === 'church' ? roseCuts(rose) : [],
+			fills: rose
+				? [circle(rose[0], rose[1], 2.6)]
+				: tHatch !== null
+					? [hatchDoor(tHatch)]
+					: tWin !== null
+						? [gableWindow(tWin)]
+						: [],
+			cuts: rose ? roseCuts(rose) : [],
 		},
 		{
 			solid: [rect(-w / 2, 0, w, h)],
