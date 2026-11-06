@@ -1,0 +1,82 @@
+name: Pages (Settlement Playground)
+
+# Publishes the settlement playground to GitHub Pages:
+#   https://orthlieb.github.io/ironledger/settlement-playground/
+# (the site's root redirects there).
+#
+# It's built fresh from main's settlement kit rather than copied from the
+# committed tools/settlement-playground.html, so the published page can't
+# fall behind the kit. It rebuilds whenever something the bundle reads
+# changes: the kit, the playground's own scripts, the culture plugins it
+# bakes in as presets, or the lockfile (esbuild, clipper-lib).
+#
+# One-time setup: Settings → Pages → Build and deployment → Source:
+# "GitHub Actions". Until then the deploy job fails with "Ensure GitHub
+# Pages has been enabled"; once it's set, re-run this workflow (Actions →
+# Pages (Settlement Playground) → Run workflow).
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'apps/web/src/lib/settlement-kit/**'
+      - 'apps/web/scripts/settlement-kit/**'
+      - 'apps/api/data/cultures/**'
+      - 'extensions/*/cultures/**'
+      - 'package-lock.json'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write # deploy to Pages
+  id-token: write # deploy-pages proves the deployment came from this workflow
+
+# One Pages deploy at a time; a newer push supersedes a queued older one.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build playground
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js 22
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: '.nvmrc'
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build the playground
+        run: |
+          node apps/web/scripts/settlement-kit/build-playground.mjs _site/settlement-playground/index.html
+          cat > _site/index.html <<'EOF'
+          <!doctype html><html lang="en"><head><meta charset="utf-8">
+          <title>Iron Ledger tools</title>
+          <meta http-equiv="refresh" content="0; url=settlement-playground/">
+          </head><body><a href="settlement-playground/">Settlement Playground</a></body></html>
+          EOF
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}settlement-playground/
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

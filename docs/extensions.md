@@ -219,7 +219,8 @@ A culture styles the map's generated settlement icons:
 is any subset of the settlement kit's 44 knobs (reference:
 `apps/web/src/lib/settlement-kit/README.md` → "Cultures") and `palette` its
 eight colour roles. The easiest way to author one is the playground
-(`tools/settlement-playground.html`): Import an existing culture (or start
+(`tools/settlement-playground.html`, or online at
+<https://orthlieb.github.io/ironledger/settlement-playground/>): Import an existing culture (or start
 from a preset), set the knobs and colours, then **Export culture** and drop
 the file in. Markers store only the culture's
 `key`, so a culture that disappears draws with the default. Cultures aren't baked into icons — the map's Settlement builder
