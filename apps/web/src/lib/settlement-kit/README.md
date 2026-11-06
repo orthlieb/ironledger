@@ -513,12 +513,14 @@ it with `build-playground.mjs --pwa`, which writes a web app manifest, a
 service worker and the app icons next to the page; without `--pwa` the
 output is the plain single file above. The service worker serves the
 network's copy when online, so a new deploy shows on the next launch, and
-its cached one when offline. The icon — a crenellated round tower with a
-lancet-capped turret flying a pennant — is drawn with the kit by
+its cached one when offline. The icon is a round tower exported from the
+playground (`scripts/settlement-kit/playground-icon-tower.svg`: default
+culture, crenellated, a cone cap flying a pennant), framed on parchment by
 `npm run build:playground-icons -w apps/web` into
-`scripts/settlement-kit/playground-icons/`. That's a local script (it needs
-Playwright's Chromium to make the PNGs); re-run it and commit the output to
-change the icon.
+`scripts/settlement-kit/playground-icons/`. To change it, export another
+piece with the playground's SVG button, save it over that file, re-run the
+script (a local one: it needs Playwright's Chromium for the PNGs) and
+commit the output.
 
 It runs the same kit code as the app, bundled at build time, so rebuild it
 after every kit change. Its Outline and Soft radius sliders are drawing

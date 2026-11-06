@@ -1,13 +1,13 @@
 // =============================================================================
-// Draws the settlement playground's app icons (the installed web app's, on
-// GitHub Pages) with the settlement kit itself:
+// Makes the settlement playground's app icons (the installed web app's, on
+// GitHub Pages) from playground-icon-tower.svg:
 //
 //   npm run build:playground-icons -w apps/web
 //
-// A round tower with a crenellated top and lancet windows, and rising from
-// inside its parapet a turret with a lancet (ogival) cap flying a pennant,
-// on parchment, cropped below the tower's window so the top fills the
-// icon. Writes, into scripts/settlement-kit/playground-icons/ (committed;
+// The tower is a round tower exported from the playground itself (default
+// culture: corbelled, crenellated, a cone cap flying a pennant). It's set on
+// parchment, cropped below its window so the top fills the icon. Writes,
+// into scripts/settlement-kit/playground-icons/ (committed;
 // build-playground.mjs --pwa copies them next to the page):
 //
 //   icon.svg                 rounded parchment tile: favicon, "any" icon
@@ -15,47 +15,23 @@
 //   icon-maskable-512.png    full bleed, the tower inside the 80% safe zone
 //   apple-touch-icon.png     full bleed, 180×180 (iOS rounds the corners)
 //
+// To change the icon, export another piece from the playground (its SVG
+// button), save it over playground-icon-tower.svg and re-run this. The
+// framing below assumes the playground's export: the tower's axis at x = 0.
 // It's a local script, not a build step: the PNGs need a browser
-// (Playwright's Chromium; set CHROMIUM_PATH to use another binary). Re-run it
-// when you want the icon to pick up a change to the kit's drawing, and
-// commit what it writes.
+// (Playwright's Chromium; set CHROMIUM_PATH to use another binary). Commit
+// what it writes.
 // =============================================================================
 
 import { chromium } from '@playwright/test';
-import { mkdirSync, writeFileSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { PARCHMENT, toLayeredSvg } from '../../src/lib/settlement-kit/generate.js';
-import { DEFAULT_DESIGN, roundTower } from '../../src/lib/settlement-kit/pieces3d.js';
 
-const OUT = join(dirname(fileURLToPath(import.meta.url)), 'playground-icons');
-const BG = PARCHMENT.halo; // the playground's own background
+const HERE = dirname(fileURLToPath(import.meta.url));
+const OUT = join(HERE, 'playground-icons');
+const BG = '#F4EFE4'; // the playground's own background, and the tower's halo
 const EDGE = '#E2D7C2';
-
-/** The tower: crenellated, with a lancet-capped turret inside its parapet. */
-function towerSvg() {
-	const base = { ...DEFAULT_DESIGN, window: 'lancet', flagShape: 'pennant', flags: true };
-	const r = 10,
-		h = 22;
-	const outer = roundTower(
-		{ ...base, towerRoof: 'none', towerCrenel: true },
-		{ r, h, flags: false },
-	);
-	const turret = roundTower(
-		{ ...base, towerRoof: 'lancet', towerCrenel: false },
-		{ r: 6.5, h: 21 },
-	);
-	// The turret stands on the parapet's floor (the top of the 45° corbel
-	// under the merlons; see roundTower), behind the tower, so the merlons
-	// overlap its foot and it shows through the crenels.
-	const floor = h + Math.max(0.8, r * 0.2);
-	return toLayeredSvg(
-		'Settlement playground',
-		[{ piece: turret, y: floor }, { piece: outer }],
-		PARCHMENT,
-		{ texture: false },
-	);
-}
 
 /**
  * The tower placed in a 512 box: its axis on the centre line, its top
@@ -76,18 +52,18 @@ function placed(svg, { top, span, show }) {
 	return `<svg x="${f(x)}" y="${top}" width="${f(vw * s)}" height="${f(vh * s)}" viewBox="${vb}">${inner}</svg>`;
 }
 
-const tower = towerSvg();
+const tower = readFileSync(join(HERE, 'playground-icon-tower.svg'), 'utf-8').trim();
 const head = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--Settlement playground — Iron Ledger settlement kit-->`;
 const tile =
 	`${head}\n<defs><clipPath id="tile"><rect x="16" y="16" width="480" height="480" rx="104"/></clipPath></defs>\n` +
 	`<rect x="16" y="16" width="480" height="480" rx="104" fill="${BG}"/>\n` +
-	`<g clip-path="url(#tile)">${placed(tower, { top: 52, span: 444, show: 0.92 })}</g>\n` +
+	`<g clip-path="url(#tile)">${placed(tower, { top: 52, span: 444, show: 0.74 })}</g>\n` +
 	`<rect x="18" y="18" width="476" height="476" rx="102" fill="none" stroke="${EDGE}" stroke-width="4"/>\n</svg>\n`;
 // Full bleed: maskable icons are cut to any shape down to the circle of 40%
 // radius, so the pennant, cap and battlements stay inside it.
 const bleed =
 	`${head}\n<rect width="512" height="512" fill="${BG}"/>\n` +
-	`${placed(tower, { top: 84, span: 428, show: 0.92 })}\n</svg>\n`;
+	`${placed(tower, { top: 84, span: 428, show: 0.74 })}\n</svg>\n`;
 
 mkdirSync(OUT, { recursive: true });
 writeFileSync(join(OUT, 'icon.svg'), tile);
