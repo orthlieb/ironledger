@@ -507,6 +507,19 @@ culture plugin or the lockfile changes, so the hosted copy never falls
 behind; run it by hand from the Actions tab to republish. It needs Pages'
 source set to "GitHub Actions" (Settings → Pages), once.
 
+The hosted copy is an installable web app (the browser's Install button,
+or Add to Home Screen on iOS) that also opens offline. The workflow builds
+it with `build-playground.mjs --pwa`, which writes a web app manifest, a
+service worker and the app icons next to the page; without `--pwa` the
+output is the plain single file above. The service worker serves the
+network's copy when online, so a new deploy shows on the next launch, and
+its cached one when offline. The icon — a crenellated round tower with a
+lancet-capped turret flying a pennant — is drawn with the kit by
+`npm run build:playground-icons -w apps/web` into
+`scripts/settlement-kit/playground-icons/`. That's a local script (it needs
+Playwright's Chromium to make the PNGs); re-run it and commit the output to
+change the icon.
+
 It runs the same kit code as the app, bundled at build time, so rebuild it
 after every kit change. Its Outline and Soft radius sliders are drawing
 options the app doesn't expose; at their defaults (1.4, 0.9) it draws

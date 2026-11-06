@@ -2,7 +2,10 @@ name: Pages (Settlement Playground)
 
 # Publishes the settlement playground to GitHub Pages:
 #   https://orthlieb.github.io/ironledger/settlement-playground/
-# (the site's root redirects there).
+# (the site's root redirects there). Built with --pwa, it's an installable
+# web app that also opens offline: a manifest, a service worker and the
+# app icons (apps/web/scripts/settlement-kit/playground-icons/) go next
+# to the page.
 #
 # It's built fresh from main's settlement kit rather than copied from the
 # committed tools/settlement-playground.html, so the published page can't
@@ -56,7 +59,7 @@ jobs:
 
       - name: Build the playground
         run: |
-          node apps/web/scripts/settlement-kit/build-playground.mjs _site/settlement-playground/index.html
+          node apps/web/scripts/settlement-kit/build-playground.mjs --pwa _site/settlement-playground/index.html
           cat > _site/index.html <<'EOF'
           <!doctype html><html lang="en"><head><meta charset="utf-8">
           <title>Iron Ledger tools</title>
