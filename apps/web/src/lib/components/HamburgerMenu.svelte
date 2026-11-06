@@ -1,8 +1,8 @@
 <script lang="ts">
 	/**
 	 * HamburgerMenu — three-bar dropdown in the title bar.
-	 * Items: About, Settings, Import, Export, Report a bug, Admin (admins
-	 * only), Sign Out.
+	 * Items: About, Settings, View, Info, Tutorials, Import, Export, Report
+	 * a bug, Admin (admins only), Sign Out.
 	 *
 	 * The dropdown itself is bits-ui DropdownMenu; the Export item opens
 	 * <ExportDialog> (the comprehensive multi-select picker). Export /
@@ -17,6 +17,7 @@
 	import type { ExportSelection } from '#lib/exportSelection.js';
 	import { viewMode, setViewMode, VIEW_MODES, type ViewMode } from '#lib/viewModeStore.svelte.js';
 	import { getExtensions, isSourceEnabled } from '#lib/expansionStore.svelte.js';
+	import { TUTORIALS, startTutorial } from '#lib/tutorials/index.js';
 	import { onMount } from 'svelte';
 
 	// The View submenu is only meaningful on desktop / tablet — mobile
@@ -150,6 +151,26 @@
 					</DropdownMenu.SubContent>
 				</DropdownMenu.Sub>
 			{/if}
+
+			<!-- Tutorials submenu — point-and-click walkthroughs
+			     (#lib/tutorials). setTimeout so the menu finishes closing and
+			     handing focus back before the tour takes over the page. -->
+			<DropdownMenu.Sub>
+				<DropdownMenu.SubTrigger class="hm-item hm-item--sub">
+					Tutorials
+					<span class="hm-sub-arrow" aria-hidden="true">{@html chevronRightSvg}</span>
+				</DropdownMenu.SubTrigger>
+				<DropdownMenu.SubContent class="hm-menu hm-submenu" sideOffset={4}>
+					{#each TUTORIALS as t (t.id)}
+						<DropdownMenu.Item
+							class="hm-item"
+							onSelect={() => setTimeout(() => void startTutorial(t.id), 0)}
+						>
+							{t.title}
+						</DropdownMenu.Item>
+					{/each}
+				</DropdownMenu.SubContent>
+			</DropdownMenu.Sub>
 
 			<DropdownMenu.Separator class="hm-sep" />
 

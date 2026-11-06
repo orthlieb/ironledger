@@ -246,7 +246,12 @@
 	let charPickerOpen = $state(false);
 	/** Switcher combobox action row. */
 	const charActions = [
-		{ label: '+ New character…', value: '+ New character', onselect: () => void addCharacter() },
+		{
+			label: '+ New character…',
+			value: '+ New character',
+			onselect: () => void addCharacter(),
+			tour: 'new-char-action',
+		},
 	];
 
 	// Hydrate the active character's data IN PLACE the first time it becomes
@@ -1100,6 +1105,7 @@
 				ariaLabel="Switch or add character"
 				class="ca-hdr-combobox"
 				actions={charActions}
+				tour="char-switcher"
 			/>
 
 			{#if activeChar && activeData}
@@ -1161,7 +1167,9 @@
 					>
 						<Tabs.List class="ca-tabs">
 							{#each CARD_LABELS as tab (tab.key)}
-								<Tabs.Trigger value={tab.key} class="ca-tab">{tab.label}</Tabs.Trigger>
+								<Tabs.Trigger value={tab.key} class="ca-tab" data-tour={`char-tab-${tab.key}`}
+									>{tab.label}</Tabs.Trigger
+								>
 							{/each}
 						</Tabs.List>
 					</Tabs.Root>
@@ -1185,6 +1193,7 @@
 										}}
 										placeholderSvg={hornedHelmSvg}
 										alt={`Portrait of ${d.name || activeChar.name}`}
+										tour="char-portrait"
 									/>
 								{/if}
 
@@ -1193,6 +1202,7 @@
 									bind:editing={editingBackground}
 									placeholder="Origin, upbringing, major traits…"
 									rows={6}
+									tour="char-bio"
 								/>
 							</div>
 						{:else if activeCard === 'core'}
@@ -1597,44 +1607,52 @@
 	onconfirm={_commitNewCharacter}
 	oncancel={resetNewCharDraft}
 	ondismiss={resetNewCharDraft}
+	tour="new-char-dialog"
 >
-	<label class="co-field">
-		<span class="co-field-label">Character name</span>
-		<!-- svelte-ignore a11y_autofocus -->
-		<input
-			class="co-input"
-			type="text"
-			bind:value={newCharName}
-			placeholder="New Character"
-			autofocus
-			onkeydown={(e) => {
-				// Enter commits only when the Create button would be enabled —
-				// same gate as the button (name + ≥1 non-zero stat) so a hasty
-				// Enter with unrolled stats doesn't leak an under-hydrated
-				// character through.
-				if (e.key === 'Enter' && canCreateChar) {
-					e.preventDefault();
-					newCharDialogRef?.close();
-					void _commitNewCharacter();
-				}
-			}}
-		/>
-	</label>
-	<div class="co-field">
-		<span class="co-field-label">Use a name oracle to roll a random name</span>
-		<div class="co-name-row">
-			<Select bind:value={newCharNameOracle} options={NAME_ORACLES} />
-			<button
-				class="dice-btn"
-				type="button"
-				onclick={rollNewCharName}
-				use:tooltip={'Roll a name'}
-				aria-label="Random name">{@html diceD6Svg}</button
-			>
+	<!-- The name field and its oracle roller, grouped so the Create-a-
+	     character tutorial (#lib/tutorials) can highlight them together. -->
+	<div class="nc-name" data-tour="new-char-name">
+		<label class="co-field">
+			<span class="co-field-label">Character name</span>
+			<!-- svelte-ignore a11y_autofocus -->
+			<input
+				class="co-input"
+				type="text"
+				bind:value={newCharName}
+				placeholder="New Character"
+				autofocus
+				onkeydown={(e) => {
+					// Enter commits only when the Create button would be enabled —
+					// same gate as the button (name + ≥1 non-zero stat) so a hasty
+					// Enter with unrolled stats doesn't leak an under-hydrated
+					// character through.
+					if (e.key === 'Enter' && canCreateChar) {
+						e.preventDefault();
+						newCharDialogRef?.close();
+						void _commitNewCharacter();
+					}
+				}}
+			/>
+		</label>
+		<div class="co-field">
+			<span class="co-field-label">Use a name oracle to roll a random name</span>
+			<div class="co-name-row">
+				<Select bind:value={newCharNameOracle} options={NAME_ORACLES} />
+				<button
+					class="dice-btn"
+					type="button"
+					onclick={rollNewCharName}
+					use:tooltip={'Roll a name'}
+					aria-label="Random name"
+					data-tour="roll-name">{@html diceD6Svg}</button
+				>
+			</div>
 		</div>
 	</div>
 
-	<StatAllocator bind:stats={newCharStats} arrays={statArrays} />
+	<div data-tour="new-char-stats">
+		<StatAllocator bind:stats={newCharStats} arrays={statArrays} />
+	</div>
 
 	<RandomizeBlock bind:flags={newCharFlags} bind:origin={newCharOrigin} />
 </ConfirmDialog>
@@ -1700,6 +1718,14 @@
 		flex-direction: column;
 		height: 100%;
 		min-height: 0;
+	}
+
+	/* New Character dialog: the name field + its oracle roller as one block
+	   (a tutorial target), spaced like the dialog body's other rows. */
+	.nc-name {
+		display: flex;
+		flex-direction: column;
+		gap: 8px;
 	}
 
 	/* ── Header ───────────────────────────────────────── */

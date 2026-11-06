@@ -35,6 +35,8 @@
 		/** Command search value for the row (so it survives text filtering). */
 		value: string;
 		onselect: () => void;
+		/** `data-tour` id on the row, for tutorials (#lib/tutorials). */
+		tour?: string;
 	}
 
 	let {
@@ -63,6 +65,7 @@
 		actions,
 		portalTo,
 		trigger,
+		tour,
 	}: {
 		/** Popover open state. */
 		open?: boolean;
@@ -116,6 +119,8 @@
 		portalTo?: Element | string;
 		/** Optional trigger-content override (inside the Popover.Trigger). */
 		trigger?: Snippet;
+		/** `data-tour` id on the trigger, for tutorials (#lib/tutorials). */
+		tour?: string;
 	} = $props();
 
 	// Only pills whose class actually appears in the current items — a class
@@ -183,7 +188,7 @@
 {/snippet}
 
 <Popover.Root bind:open>
-	<Popover.Trigger {id} class={`cb-trigger ${cls}`.trim()} aria-label={ariaLabel}>
+	<Popover.Trigger {id} class={`cb-trigger ${cls}`.trim()} aria-label={ariaLabel} data-tour={tour}>
 		{#if trigger}
 			{@render trigger()}
 		{:else}
@@ -286,6 +291,7 @@
 							<Command.Item
 								class="cb-item cb-item--action"
 								value={action.value}
+								data-tour={action.tour}
 								onSelect={() => {
 									open = false;
 									action.onselect();

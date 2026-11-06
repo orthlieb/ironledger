@@ -28,6 +28,7 @@
 		"@ironledger/shared": "*",
 		"@sveltejs/kit": "^3.0.0",
 		"bits-ui": "^2.18.1",
+		"driver.js": "^1.10.2",
 		"embla-carousel": "^8.6.0",
 		"embla-carousel-autoplay": "^8.6.0",
 		"embla-carousel-svelte": "^8.6.0",

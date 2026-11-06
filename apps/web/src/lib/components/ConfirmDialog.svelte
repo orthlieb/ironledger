@@ -44,6 +44,7 @@
 		ondismiss,
 		onalternate,
 		portalTo,
+		tour,
 		children,
 	}: {
 		title: string;
@@ -69,6 +70,9 @@
 		 *  inside one, so it doesn't render behind that dialog's top
 		 *  layer. */
 		portalTo?: Element | string;
+		/** `data-tour` id for tutorials (#lib/tutorials): on the dialog, and
+		 *  `<tour>-confirm` on its confirm button. */
+		tour?: string;
 		children?: Snippet;
 	} = $props();
 
@@ -133,6 +137,7 @@
 		<AlertDialog.Overlay class="cm-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<AlertDialog.Content
 			class="confirm-modal"
+			data-tour={tour}
 			style="--accent: {accentColor}; z-index: {contentZ(stackDepth)}{width
 				? `; width: ${width}`
 				: ''}"
@@ -162,6 +167,7 @@
 					{/if}
 					<AlertDialog.Action
 						class="btn {confirmClass}"
+						data-tour={tour ? `${tour}-confirm` : undefined}
 						onclick={handleConfirm}
 						disabled={confirmDisabled}>{confirmLabel}</AlertDialog.Action
 					>

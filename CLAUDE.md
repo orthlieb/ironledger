@@ -415,3 +415,16 @@ bits-ui), use HTML `autofocus` on the target input. It fires on
 first mount only, so if the dialog persists across opens (like
 MapDialog's icon picker), also bind a ref and call `.focus()`
 inside the `showModal()` call site.
+
+## Tutorial hooks — `data-tour` attributes are load-bearing
+
+The point-and-click tutorials (☰ → Tutorials; `apps/web/src/lib/tutorials/`,
+on Driver.js) find their controls by `data-tour` ids, set directly in markup
+or through the `tour` prop on `Combobox`, `ConfirmDialog`, `MarkdownNotes`
+and `PortraitUploader`. Removing or renaming one strands a tutorial step,
+and nothing at compile time notices.
+
+When you move, rename or rebuild a control that carries a `data-tour`,
+keep the attribute on its replacement and run
+`apps/web/tests/e2e/tutorials.spec.ts`, which follows each tutorial through
+on desktop and phone. See `docs/tutorials.md` for how tutorials are written.

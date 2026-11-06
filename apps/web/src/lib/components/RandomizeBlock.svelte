@@ -68,7 +68,7 @@
 </script>
 
 {#if yrt}
-	<div class="co-field">
+	<div class="co-field" data-tour="randomize-origin">
 		<span class="co-field-label">Region of origin (optional — where they were born)</span>
 		<div class="co-name-row">
 			<Select bind:value={origin} options={originOpts} placeholder="Select a region…" />
@@ -77,13 +77,14 @@
 				type="button"
 				onclick={randomOrigin}
 				use:tooltip={'Random region of origin'}
-				aria-label="Random region of origin">{@html diceD6Svg}</button
+				aria-label="Random region of origin"
+				data-tour="roll-origin">{@html diceD6Svg}</button
 			>
 		</div>
 	</div>
 {/if}
 
-<div class="nn-randomize">
+<div class="nn-randomize" data-tour="randomize-also">
 	<span class="nn-randomize-label">Also randomize</span>
 	{#if firstLookOk}
 		<Checkbox

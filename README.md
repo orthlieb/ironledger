@@ -270,6 +270,7 @@ Feature docs are in the `docs/` directory:
 | [moves.md](docs/moves.md)                                   | Moves system and dice rolling                                            |
 | [notes.md](docs/notes.md)                                   | Notes dialog                                                             |
 | [oracles.md](docs/oracles.md)                               | Oracle tables                                                            |
+| [tutorials.md](docs/tutorials.md)                           | Point-and-click tutorials (☰ → Tutorials) — writing one on Driver.js    |
 | [ui-components.md](docs/ui-components.md)                   | Shared UI design specs (cards, pills, tooltips, side labels)             |
 | [extensions/yrt/README.md](extensions/yrt/README.md)        | YRT homebrew data format extensions                                      |
 
