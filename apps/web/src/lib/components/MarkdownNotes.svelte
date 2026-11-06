@@ -20,6 +20,7 @@
 		placeholder = 'Click to edit (markdown supported)',
 		rows = 4,
 		oninput,
+		tour,
 	}: {
 		value?: string;
 		/** Bindable — true while the textarea is shown. Parents can read
@@ -34,6 +35,9 @@
 		/** Callback fired on every keystroke. Use this when `value` is
 		 *  stored in nested state that the parent updates explicitly. */
 		oninput?: (newValue: string) => void;
+		/** `data-tour` id, for tutorials (#lib/tutorials) — on the field's
+		 *  wrapper, which stays put as it switches to and from editing. */
+		tour?: string;
 	} = $props();
 
 	let textareaEl = $state<HTMLTextAreaElement | null>(null);
@@ -49,7 +53,7 @@
 	}
 </script>
 
-<div class="md-notes">
+<div class="md-notes" data-tour={tour}>
 	{#if label}
 		<span class="md-notes-label">{label}</span>
 	{/if}

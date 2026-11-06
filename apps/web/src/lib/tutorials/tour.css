@@ -1,0 +1,130 @@
+/* Point-and-click tutorials (tour.ts, on driver.js): driver's popover in
+   the house style — the dialog card look (ConfirmDialog), display-font
+   title, .btn / .btn-primary buttons — and, while a tour runs, bits-ui
+   menus above its overlay. Loaded with driver's own CSS on first use. */
+
+.driver-popover.il-tour {
+	background: var(--bg-card);
+	color: var(--text);
+	border: 1px solid var(--border-mid);
+	border-left: 3px solid var(--text-accent);
+	border-radius: 8px;
+	box-shadow: 0 12px 40px #00000060;
+	font-family: var(--font-body);
+	min-width: 0;
+	width: max-content;
+	max-width: min(320px, calc(100vw - 24px));
+	padding: 12px 14px 10px;
+}
+
+.driver-popover.il-tour .driver-popover-title {
+	font-family: var(--font-display);
+	font-size: calc(0.95rem * var(--font-display-scale));
+	font-weight: var(--font-display-weight);
+	font-variant: var(--font-display-variant);
+	text-transform: var(--font-display-transform);
+	color: var(--text-accent);
+	line-height: 1.3;
+	padding-right: 22px;
+}
+
+.driver-popover.il-tour .driver-popover-description {
+	margin-top: 6px;
+	font-size: 0.85rem;
+	line-height: 1.5;
+	color: var(--text);
+}
+
+.driver-popover.il-tour .driver-popover-close-btn {
+	color: var(--text-dimmer);
+}
+.driver-popover.il-tour .driver-popover-close-btn:hover,
+.driver-popover.il-tour .driver-popover-close-btn:focus-visible {
+	color: var(--text-accent);
+}
+
+.driver-popover.il-tour .driver-popover-footer {
+	margin-top: 12px;
+	gap: 8px;
+}
+.driver-popover.il-tour .driver-popover-progress-text {
+	font-family: var(--font-ui);
+	font-size: 0.7rem;
+	color: var(--text-dimmer);
+}
+.driver-popover.il-tour .driver-popover-navigation-btns {
+	gap: 6px;
+}
+.driver-popover.il-tour .driver-popover-navigation-btns button + button {
+	margin-left: 0;
+}
+
+/* Footer buttons — the app's .btn; Next / Done is .btn-primary. */
+.driver-popover.il-tour .driver-popover-footer-btn {
+	display: inline-flex;
+	align-items: center;
+	padding: 5px 13px;
+	border-radius: 3px;
+	border: 1px solid var(--border-mid);
+	background: var(--bg-control);
+	color: var(--text-muted);
+	font-family: var(--font-ui);
+	font-size: 0.72rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	line-height: 1.5;
+	text-shadow: none;
+	transition:
+		background 0.12s,
+		border-color 0.12s,
+		color 0.12s;
+}
+.driver-popover.il-tour .driver-popover-footer-btn:hover,
+.driver-popover.il-tour .driver-popover-footer-btn:focus-visible {
+	background: var(--bg-hover);
+	color: var(--text);
+}
+.driver-popover.il-tour .driver-popover-next-btn {
+	border-color: var(--text-accent);
+	color: var(--text-accent);
+	box-shadow:
+		inset 0 1px 0 var(--accent-dim),
+		0 1px 4px #00000030;
+}
+.driver-popover.il-tour .driver-popover-next-btn:hover,
+.driver-popover.il-tour .driver-popover-next-btn:focus-visible {
+	border-color: var(--text-accent);
+	color: var(--text);
+}
+
+/* The arrow, in the card's colour (driver draws it with one coloured
+   border side). */
+.driver-popover.il-tour .driver-popover-arrow-side-left {
+	border-left-color: var(--bg-card);
+}
+.driver-popover.il-tour .driver-popover-arrow-side-right {
+	border-right-color: var(--bg-card);
+}
+.driver-popover.il-tour .driver-popover-arrow-side-top {
+	border-top-color: var(--bg-card);
+}
+.driver-popover.il-tour .driver-popover-arrow-side-bottom {
+	border-bottom-color: var(--bg-card);
+}
+
+/* While a tour runs, driver disables pointer events on everything but the
+   highlighted element and dims the page with an overlay at z-index 10000.
+   A Select or DropdownMenu opened FROM the highlighted control (the name
+   oracle picker, the stat-array menu) portals its list to <body>, outside
+   the highlight — so lift every bits-ui floating layer above the overlay,
+   and above the tour's own popover (z-index 1000000000) since the list is
+   what the user is working with while it's open; and let it take clicks,
+   or the list would open dimmed, hidden and dead. */
+body.driver-active [data-bits-floating-content-wrapper] {
+	z-index: 1000000001 !important;
+}
+body.driver-active [data-bits-floating-content-wrapper],
+body.driver-active [data-bits-floating-content-wrapper] * {
+	pointer-events: auto;
+}

@@ -31,6 +31,7 @@
 		placeholderSvg,
 		alt = '',
 		oninput,
+		tour,
 	}: {
 		/** Per-entity portrait resource URL (no query string). */
 		endpoint: string;
@@ -41,6 +42,8 @@
 		alt?: string;
 		/** Called after a successful upload (new etag) or clear (''). */
 		oninput?: (newEtag: string) => void;
+		/** `data-tour` id, for tutorials (#lib/tutorials). */
+		tour?: string;
 	} = $props();
 
 	let lightboxOpen = $state(false);
@@ -99,7 +102,7 @@
 	}
 </script>
 
-<div class="pu-wrap">
+<div class="pu-wrap" data-tour={tour}>
 	{#if src}
 		<!-- Filled state: image is a button that opens the lightbox. -->
 		<button

@@ -103,7 +103,8 @@
 				type="button"
 				onclick={roll}
 				use:tooltip={'Roll stats for the selected array'}
-				aria-label="Roll stats">{@html diceD6Svg}</button
+				aria-label="Roll stats"
+				data-tour="roll-stats">{@html diceD6Svg}</button
 			>
 		</div>
 		{#if selected}
@@ -122,7 +123,8 @@
 				type="button"
 				onclick={roll}
 				use:tooltip={'Roll stats'}
-				aria-label="Roll stats">{@html diceD6Svg}</button
+				aria-label="Roll stats"
+				data-tour="roll-stats">{@html diceD6Svg}</button
 			>
 		</div>
 		{#if selected}

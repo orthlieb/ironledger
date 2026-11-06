@@ -1,0 +1,221 @@
+/**
+ * Point-and-click tutorials, on driver.js (MIT — https://driverjs.com).
+ *
+ * A tutorial is a list of `TourStep`s, each pointing at an element by its
+ * `data-tour` id. Driver dims the page, cuts out the highlighted element
+ * (which stays clickable) and shows a popover beside it. Three kinds of
+ * step:
+ *
+ *   • do-this (`continueWhen`) — no Next button; the tour moves on once
+ *     what the user's action opens is on screen (the list's "+ New
+ *     character…" row, the dialog). Keyed to the result rather than the
+ *     click, so it can't get out of step: a list closed and reopened, or
+ *     already open, still lands right.
+ *   • click-along (`clickToContinue`) — no Next button; the tour moves on
+ *     when the user clicks the highlighted control, waiting (`wait`) for
+ *     the next step's target. For clicks whose result is already on
+ *     screen (Create, then the character it made).
+ *   • explain (the default) — Next moves on. `beforeNext` can do the step
+ *     for the user first (roll a name they skipped), so the tour never
+ *     strands them at a disabled button further on.
+ *
+ * Driver and its CSS are loaded on first use, so nothing ships in the main
+ * bundle for users who never open a tutorial. tour.css restyles driver's
+ * popover in the house style and lifts bits-ui menus above its overlay.
+ */
+import type { Driver, DriveStep, Popover } from 'driver.js';
+
+export interface TourStep {
+	/** `data-tour` id of the element to highlight; none centres the popover. */
+	target?: string;
+	title: string;
+	body: string;
+	side?: 'top' | 'right' | 'bottom' | 'left';
+	align?: 'start' | 'center' | 'end';
+	/** Move on once this `data-tour` target is on screen (no Next button). */
+	continueWhen?: string;
+	/** Move on when the user clicks the highlighted element (no Next button). */
+	clickToContinue?: boolean;
+	/** Wait up to this many ms for the target to appear (a dialog opening). */
+	wait?: number;
+	/** Leave the step out unless this returns true (asked when the tour starts). */
+	when?: () => boolean;
+	/** Runs when Next is pressed, before moving on (`el` is the target). */
+	beforeNext?: (el: Element | undefined) => void;
+	/** If the target vanishes while showing (its popover closed), go back a step. */
+	backIfGone?: boolean;
+	/** Show Back — only where the step before is still on screen. */
+	back?: boolean;
+}
+
+export interface Tutorial {
+	id: string;
+	/** Menu label. */
+	title: string;
+	/** The route it runs on; the runner navigates there first. */
+	route: string;
+	/** `data-tour` id that's on the page once the route has rendered. */
+	ready: string;
+	steps: () => TourStep[];
+}
+
+/** The `[data-tour]` selector for an id. */
+export const tourSel = (id: string) => `[data-tour="${id}"]`;
+
+/** The element with this `data-tour` id, if it's rendered and visible. */
+export function tourTarget(id: string): HTMLElement | null {
+	const el = document.querySelector<HTMLElement>(tourSel(id));
+	return el && el.getClientRects().length > 0 ? el : null;
+}
+
+/** Resolves once an element with this `data-tour` id exists (or after `ms`). */
+export function whenRendered(id: string, ms = 5000): Promise<boolean> {
+	return new Promise((resolve) => {
+		const start = performance.now();
+		const tick = () => {
+			if (document.querySelector(tourSel(id))) resolve(true);
+			else if (performance.now() - start > ms) resolve(false);
+			else requestAnimationFrame(tick);
+		};
+		tick();
+	});
+}
+
+let active: Driver | null = null;
+
+/** Is a tutorial running? */
+export function tourRunning(): boolean {
+	return !!active?.isActive();
+}
+
+/** Run a tour. Replaces any tour already running. */
+export async function runTour(steps: TourStep[]): Promise<void> {
+	const [{ driver }] = await Promise.all([
+		import('driver.js'),
+		import('driver.js/dist/driver.css'),
+		import('./tour.css'),
+	]);
+	active?.destroy();
+
+	const chosen = steps.filter((s) => s.when?.() ?? true);
+	/** Stops the current step's watches (continueWhen, backIfGone). */
+	let unwatch: (() => void)[] = [];
+	const stopWatch = () => {
+		unwatch.forEach((stop) => stop());
+		unwatch = [];
+	};
+
+	const toDriveStep = (s: TourStep, i: number): DriveStep => {
+		const popover: Popover = {
+			title: s.title,
+			description: s.body,
+			side: s.side,
+			align: s.align,
+			showButtons: [
+				...(s.clickToContinue || s.continueWhen ? [] : (['next'] as const)),
+				...(s.back ? (['previous'] as const) : []),
+				'close',
+			],
+		};
+		// Only set when there's a hook: driver spreads the popover over its
+		// own defaults, so an `onNextClick: undefined` would wipe out Next.
+		if (s.beforeNext) {
+			const before = s.beforeNext;
+			popover.onNextClick = (el, _step, { driver: d }) => {
+				before(el);
+				// A tick later, once the page shows what `before` did (a
+				// rolled name, an editor closed and the portrait back).
+				window.setTimeout(() => d.moveNext(), 0);
+			};
+		}
+		return {
+			element: s.target ? tourSel(s.target) : undefined,
+			waitForElement: s.wait ?? 0,
+			// From the start of the step's highlight, not its end: driver
+			// animates the move to a step and its own click-to-advance
+			// (`advanceOnClick`) ignores clicks until that's done, so a quick
+			// click on Create made the character but left the tour behind.
+			onHighlightStarted: (el) => {
+				stopWatch();
+				if (el) unwatch.push(followSize(el));
+				if (s.clickToContinue && el) unwatch.push(onClickOf(el, i));
+				if (s.continueWhen) unwatch.push(watchFor(s.continueWhen, i));
+				if (s.backIfGone && el) unwatch.push(watchGone(el, i));
+			},
+			onDeselected: stopWatch,
+			popover,
+		};
+	};
+
+	/** Keep the highlight on `el` as it grows or shrinks (a field switching
+	 *  to its editor) — driver only re-measures on scroll and resize. */
+	function followSize(el: Element): () => void {
+		const ro = new ResizeObserver(() => active?.refresh());
+		ro.observe(el);
+		return () => ro.disconnect();
+	}
+
+	/** Move on from step `index` when `el` is clicked. */
+	function onClickOf(el: Element, index: number): () => void {
+		// After the click's own handlers have run (it may close a dialog).
+		const go = () =>
+			window.setTimeout(() => {
+				if (active?.getActiveIndex() === index) active.moveNext();
+			}, 0);
+		el.addEventListener('click', go, { capture: true });
+		return () => el.removeEventListener('click', go, { capture: true });
+	}
+
+	/** Move on from step `index` once the `id` target is on screen. */
+	function watchFor(id: string, index: number): () => void {
+		const timer = window.setInterval(() => {
+			const d = active;
+			if (!d || d.getActiveIndex() !== index || !tourTarget(id)) return;
+			window.clearInterval(timer);
+			d.moveNext();
+		}, 150);
+		return () => window.clearInterval(timer);
+	}
+
+	/**
+	 * Back a step if the target leaves the screen while the tour is still
+	 * on it — a list row the step points at, filtered out by typing in the
+	 * list's search box, or the list closed. Only after it's stayed gone for
+	 * two checks, so a moment's re-render doesn't count.
+	 */
+	function watchGone(el: Element, index: number): () => void {
+		let misses = 0;
+		const timer = window.setInterval(() => {
+			const d = active;
+			const gone = !el.isConnected || el.getClientRects().length === 0;
+			if (!d || !gone || d.getActiveIndex() !== index) return (misses = 0);
+			if (++misses < 2) return;
+			window.clearInterval(timer);
+			d.movePrevious();
+		}, 250);
+		return () => window.clearInterval(timer);
+	}
+
+	const d = driver({
+		steps: chosen.map(toDriveStep),
+		showProgress: chosen.length > 1,
+		progressText: '{{current}} of {{total}}',
+		nextBtnText: 'Next',
+		prevBtnText: 'Back',
+		doneBtnText: 'Done',
+		// A stray tap on the dimmed page shouldn't end the tutorial: it ends
+		// with ✕, Escape or Done.
+		overlayClickBehavior: 'none',
+		overlayOpacity: 0.55,
+		stagePadding: 6,
+		stageRadius: 6,
+		popoverClass: 'il-tour',
+		smoothScroll: true,
+		onDestroyed: () => {
+			stopWatch();
+			if (active === d) active = null;
+		},
+	});
+	active = d;
+	d.drive();
+}
