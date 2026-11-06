@@ -499,6 +499,14 @@ a live control, every piece and every tier re-renders in-page on each
 change. Each icon exports as SVG or PNG, and the current knobs + colours
 export as a `cultures/*.json` plugin ready to drop into an extension.
 
+It's also published to GitHub Pages at
+<https://orthlieb.github.io/ironledger/settlement-playground/>. The
+`Pages (Settlement Playground)` workflow (`.github/workflows/pages.yml`)
+builds it fresh from `main` whenever the kit, the playground's scripts, a
+culture plugin or the lockfile changes, so the hosted copy never falls
+behind; run it by hand from the Actions tab to republish. It needs Pages'
+source set to "GitHub Actions" (Settings → Pages), once.
+
 It runs the same kit code as the app, bundled at build time, so rebuild it
 after every kit change. Its Outline and Soft radius sliders are drawing
 options the app doesn't expose; at their defaults (1.4, 0.9) it draws

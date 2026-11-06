@@ -392,7 +392,8 @@ and every culture knob. It's used three ways:
   marker that already has a recipe lands on the builder, pre-filled.
 - **The playground** — `tools/settlement-playground.html`, a standalone
   page with every knob (`npm run build:settlement-playground -w
-apps/web`). Its presets are the culture plugins, baked in at build
+apps/web`), also hosted at
+  <https://orthlieb.github.io/ironledger/settlement-playground/>. Its presets are the culture plugins, baked in at build
   time. **Import culture** loads a `cultures/<key>.json` file to tweak
   (unknown or mistyped fields are ignored), and **Export culture**
   downloads the current knobs + colours as one, keeping the imported
