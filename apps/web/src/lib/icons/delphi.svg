@@ -1,6 +1,7 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--"delphi" — a cross between two crescents; original drawing for Iron Ledger-->
-  <path fill="currentColor" d="M234 32h44v448h-44z"/>
-  <path fill="currentColor" d="M32 234h448v44H32z"/>
-  <path fill="currentColor" d="M92 108A148 148 0 0 1 92 404v-44A104 104 0 0 0 92 152z"/>
-  <path fill="currentColor" d="M420 108A148 148 0 0 0 420 404v-44A104 104 0 0 1 420 152z"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512"><!--"delphi" — a cross between two crescents, in a ring; original drawing for Iron Ledger-->
+  <path fill="currentColor" d="M256 8a248 248 0 1 1 0 496a248 248 0 1 1 0-496zm0 34a214 214 0 1 0 0 428a214 214 0 1 0 0-428z"/>
+  <path fill="currentColor" d="M234 76h44v360h-44z"/>
+  <path fill="currentColor" d="M76 234h360v44H76z"/>
+  <path fill="currentColor" d="M124 133A123 123 0 0 1 124 379v-44A79 79 0 0 0 124 177z"/>
+  <path fill="currentColor" d="M388 133A123 123 0 0 0 388 379v-44A79 79 0 0 1 388 177z"/>
 </svg>
