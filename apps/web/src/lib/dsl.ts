@@ -107,14 +107,32 @@ function renderRichWith(md: string | undefined, format: (s: string) => string): 
 		const html = dslActionLink(label, parseDslHref(href));
 		return html == null ? m : protect(html);
 	});
-	s = s.replace(SPAN, (m, text: string, cls: string) =>
-		SPAN_CLASSES.has(cls) ? protect(`<span class="${cls}">${esc(text)}</span>`) : m,
-	);
+	// A span's text gets its own markdown: **bold** within a line; across
+	// lines (a list of choices, Make Camp's on a weak hit), a block of its
+	// own, set apart from the paragraph it was written in below.
+	const blocks: string[] = [];
+	s = s.replace(SPAN, (m, text: string, cls: string) => {
+		if (!SPAN_CLASSES.has(cls)) return m;
+		if (!text.includes('\n')) return protect(`<span class="${cls}">${renderInline(text)}</span>`);
+		const mark = protect(`<div class="${cls}">${renderNote(text.trim())}</div>`);
+		blocks.push(mark);
+		return mark;
+	});
+	let out = format(s);
+	// A block can't sit in a <p> (the browser would close the paragraph at
+	// it, leaving an empty one after): split the paragraph round it, and drop
+	// the empty ones that leaves.
+	for (const mark of blocks) {
+		out = out.replace(
+			new RegExp(`<p>((?:(?!</p>)[\\s\\S])*?)${mark}((?:(?!</p>)[\\s\\S])*?)</p>`),
+			(_m, before: string, after: string) => `<p>${before}</p>${mark}<p>${after}</p>`,
+		);
+	}
+	if (blocks.length) out = out.replace(/<p><\/p>/g, '');
 	// Restore protected HTML. Loop until stable: a `{.class}` span can wrap a
 	// `[label](href)` link, so its stashed HTML embeds inner sentinels that only
 	// surface once the outer span sentinel is replaced (String.replace is 1-pass).
 	const restore = new RegExp(`${P0}(\\d+)${P1}`, 'g');
-	let out = format(s);
 	for (let i = 0; i < 100 && out.includes(P0); i++) {
 		out = out.replace(restore, (_m, n: string) => stash[Number(n)]);
 	}

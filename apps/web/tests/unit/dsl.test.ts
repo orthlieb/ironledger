@@ -165,6 +165,32 @@ describe('renderRich', () => {
 				'<a class="resource-link" data-resource="supply" data-value="+2">+2 supply</a>.</span></p>',
 		);
 	});
+
+	it('applies emphasis inside a span', () => {
+		expect(renderRich('[Choose **one** from the list above.]{.dialog-only}')).toBe(
+			'<p><span class="dialog-only">Choose <strong>one</strong> from the list above.</span></p>',
+		);
+	});
+
+	it('renders a span across lines as a block of its own, after the paragraph (Make Camp)', () => {
+		const md =
+			'[Choose **one** from the list above.]{.dialog-only}' +
+			'[Choose **one**:\n- Relax: Take [+1 spirit](resource:spirit?value=+1).\n- Focus: Take +1 momentum.]{.log-only}';
+		expect(renderRich(md)).toBe(
+			'<p><span class="dialog-only">Choose <strong>one</strong> from the list above.</span></p>' +
+				'<div class="log-only"><p>Choose <strong>one</strong>:</p><ul>' +
+				'<li>Relax: Take <a class="resource-link" data-resource="spirit" data-value="+1">+1 spirit</a>.</li>' +
+				'<li>Focus: Take +1 momentum.</li></ul></div>',
+		);
+	});
+
+	it('splits the paragraph round a block span written mid-line (Sojourn)', () => {
+		expect(renderRich('Choose one.[\n**Mend**\n- Clear it.]{.log-only} Then rest.')).toBe(
+			'<p>Choose one.</p>' +
+				'<div class="log-only"><p><strong>Mend</strong></p><ul><li>Clear it.</li></ul></div>' +
+				'<p> Then rest.</p>',
+		);
+	});
 });
 
 // ── Oracle roll: templates ───────────────────────────────────────────────────
