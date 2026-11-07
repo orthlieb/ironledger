@@ -367,6 +367,75 @@ function insidePoly(p, poly) {
 	return inside;
 }
 
+/** How far a soft join rounds a shape's corners, in piece units: render.js's
+ *  softRadius (0.9) at the ×2 the icons and the playground draw at, for a
+ *  piece placed at about 0.9 — a settlement's (0.85 × its builders' scale)
+ *  or a lone building's (1). */
+const SOFT_R = 0.5;
+/** A disc of radius SOFT_R, as its centre and points round its rim. */
+const SOFT_DISC = /** @type {Pt[]} */ ([
+	[0, 0],
+	...Array.from({ length: 24 }, (_, i) => [
+		Math.cos((i * Math.PI) / 12) * SOFT_R,
+		Math.sin((i * Math.PI) / 12) * SOFT_R,
+	]),
+]);
+/** How far a flag's pole reaches into the cap it flies from, at least. */
+const POLE_IN = 0.6;
+/** How far above its cap's drawn tip a symbol may stand, at most. */
+const STALK = 0.8;
+
+/**
+ * How far below `tip` a cap ends as drawn. A soft join rounds every shape:
+ * render.js opens it by SOFT_R (shrinks it, then grows it back), so a narrow
+ * tip — a tall or swept spire's — comes out short of its apex, and further
+ * the narrower it is: on a culture's tallest, most swept spires (the Elves'),
+ * by more than a flag's pole or a symbol's post reaches, leaving it floating
+ * above the cap. The drawn tip is where a disc of that radius first fits
+ * inside the cap, on the tip's vertical. 0 for a sharp or round join, which
+ * keep the tip.
+ * @param {Design} D
+ * @param {Poly[]} cap the cap's outline: its parts' solids, together
+ * @param {Pt} tip
+ */
+function tipRounding(D, cap, tip) {
+	if (D.join !== 'soft' || !cap.length) return 0;
+	const inside = (/** @type {Pt} */ p) => cap.some((poly) => insidePoly(p, poly));
+	for (let d = SOFT_R; d < 40; d += 0.05) {
+		const x = tip[0],
+			y = tip[1] - d;
+		if (SOFT_DISC.every(([dx, dy]) => inside([x + dx, y + dy]))) return d - SOFT_R;
+	}
+	return 0;
+}
+
+/**
+ * The foot of a flag flown from a cap's `tip`: `drop` below the tip, as the
+ * cap sets, or — where the cap is drawn rounded off lower than that — far
+ * enough below that its pole still reaches into the cap.
+ * @param {Design} D
+ * @param {Poly[]} cap @param {Pt} tip @param {number} drop
+ * @returns {number}
+ */
+function flagFoot(D, cap, tip, drop) {
+	return tip[1] - Math.max(drop, tipRounding(D, cap, tip) + POLE_IN);
+}
+
+/**
+ * Where the holy symbol stands on a cap's `tip`: on the tip, or — where the
+ * cap is drawn rounded off well short of it — lowered to just above the drawn
+ * tip, so the symbol sits on the cap and its post reaches into it.
+ * @param {Design} D
+ * @param {Poly[]} cap @param {Pt} tip
+ * @returns {Pt}
+ */
+function symbolSeat(D, cap, tip) {
+	return [tip[0], tip[1] - Math.max(0, tipRounding(D, cap, tip) - STALK)];
+}
+
+/** Every solid of `parts`: a cap's outline. @param {Part[]} parts */
+const solidsOf = (parts) => parts.flatMap((p) => p.solid);
+
 /**
  * How far a bow setting bends a line: positive swoops inward (concave),
  * negative bulges outward (convex), 0 is straight.
@@ -1030,7 +1099,7 @@ export function gableHouse(D, o = {}) {
 			fills,
 			lines: D.masonry ? stoneCourses(-w / 2, w / 2, 0, h + rh) : [],
 		},
-		...(D.flourish > 0.25 ? finial(A) : []),
+		...(D.flourish > 0.25 ? finialOn(D, [left, right, [...la, ...ar.slice(1)]], A) : []),
 		...(D.flourish > 0.6
 			? [
 					{
@@ -1411,7 +1480,7 @@ export function sideHouse(D, o = {}) {
 		},
 		{ solid: [slope], role: 'roof', lines: courses, free: hoist },
 		...(D.flourish > 0.45 ? cresting(add(rL, [ov * 0.6, 0]), add(rR, [-ov * 0.6, 0])) : []),
-		...(D.flourish > 0.25 ? finial(gTop) : []),
+		...(D.flourish > 0.25 ? finialOn(D, [slope, gableEnd], gTop) : []),
 		...crate,
 		...extras,
 	];
@@ -1525,6 +1594,22 @@ function finial(p) {
 			free: [{ pts: [p, [p[0], p[1] + 4]], w: 0.8 }],
 		},
 	];
+}
+
+/** How far above its cap's drawn tip a finial's spike may start: the outline
+ *  drawn round the cap reaches that far past it. */
+const FINIAL_SLACK = 0.3;
+
+/**
+ * An ornamental finial on a cap's `tip` — lowered, where the cap is drawn
+ * rounded off short of its tip (a steep or swept hut cone), onto the drawn
+ * tip, which it would otherwise float above.
+ * @param {Design} D
+ * @param {Poly[]} cap the cap's outline @param {Pt} tip
+ * @returns {Part[]}
+ */
+function finialOn(D, cap, tip) {
+	return finial([tip[0], tip[1] - Math.max(0, tipRounding(D, cap, tip) - FINIAL_SLACK)]);
 }
 
 /** A row of little spikes along a roof ridge. @param {Pt} a @param {Pt} b @returns {Part[]} */
@@ -1894,11 +1979,16 @@ export function roundTower(D, o = {}) {
 	let capY = h,
 		capR = topCorbel;
 	const flies = D.flags && o.flags !== false && !o.finial;
-	/** Flag or finial on the uppermost point `tip` of the top. */
-	const crown = (/** @type {Pt} */ tip, /** @type {number} */ drop, socket = 0) => {
-		if (o.finial && socket) seat(parts, D.symbol, tip, socket);
-		else if (o.finial) parts.push(...symbolAt(D.symbol, tip));
-		else if (flies) parts.unshift(...flag(D, tip[0], tip[1] - drop));
+	/**
+	 * Flag or finial on the uppermost point `tip` of the top, the cap
+	 * (outline `cap`) under it: placed for where the cap's tip is drawn.
+	 * @param {Pt} tip @param {number} drop @param {number} [socket]
+	 * @param {Poly[]} [cap]
+	 */
+	const crown = (tip, drop, socket = 0, cap = []) => {
+		if (o.finial && socket) seat(parts, D.symbol, symbolSeat(D, cap, tip), socket);
+		else if (o.finial) parts.push(...symbolAt(D.symbol, symbolSeat(D, cap, tip)));
+		else if (flies) parts.unshift(...flag(D, tip[0], flagFoot(D, cap, tip, drop)));
 	};
 	if (crenel) {
 		const ov = Math.max(0.8, r * 0.2),
@@ -1947,19 +2037,19 @@ export function roundTower(D, o = {}) {
 	if (roof === 'onion') {
 		const dome = onionDome(D, 0, capY, capR * 0.95);
 		parts.push(...dome.parts);
-		crown(dome.tip, 2);
+		crown(dome.tip, 2, 0, solidsOf(dome.parts));
 		return parts;
 	}
 	if (roof === 'dome') {
 		const dome = hemiDome(0, capY, capR + 0.4, D.hatch);
 		parts.push(dome.part);
-		crown(dome.tip, 2);
+		crown(dome.tip, 2, 0, dome.part.solid);
 		return parts;
 	}
 	if (roof === 'lancet') {
 		const cap = lancetCap(D, 0, capY, capR + 0.2);
 		parts.push(cap.part);
-		crown(cap.tip, 2, 3);
+		crown(cap.tip, 2, 3, cap.part.solid);
 		return parts;
 	}
 	// Cone base sits on whatever is below — the crenellated top, or the
@@ -1980,7 +2070,7 @@ export function roundTower(D, o = {}) {
 		shadeArea: rect(R * 0.25, capY - ry - 2, R * 2, rh + ry + 4),
 		shadeLines: capHatch(0, R, capY - ry - 2, capY + rh + 2, D.hatch),
 	});
-	crown(apex, 1, 3);
+	crown(apex, 1, 3, [outline]);
 	return parts;
 }
 
@@ -2201,8 +2291,9 @@ export function squareTower(D, o = {}) {
 		// Drawn level, as on a round tower, and BEHIND the walls: their top
 		// edges trim its base to the top, so it sits on it, not over its edge.
 		const capParts = [...cap.parts];
-		if (o.finial && cap.socket) seat(capParts, D.symbol, cap.tip, cap.socket);
-		else if (o.finial) capParts.push(...symbolAt(D.symbol, cap.tip));
+		const at = symbolSeat(D, solidsOf(cap.parts), cap.tip);
+		if (o.finial && cap.socket) seat(capParts, D.symbol, at, cap.socket);
+		else if (o.finial) capParts.push(...symbolAt(D.symbol, at));
 		// After a corbelled top's deck (parts[0]), which it stands on.
 		parts.splice(
 			corbel && !crenel ? 1 : 0,
@@ -2217,7 +2308,7 @@ export function squareTower(D, o = {}) {
 	/** @type {Poly} */
 	const frontFace = [fl, ...ridge, ...sag(apex, fl, c, D.concave).slice(1, -1)];
 	parts.push(pyramid(frontFace, sideFace, ridge, 'roof', D.hatch));
-	if (o.finial) seat(parts, D.symbol, apex, 3);
+	if (o.finial) seat(parts, D.symbol, symbolSeat(D, [frontFace, sideFace], apex), 3);
 	return parts;
 }
 
@@ -2346,7 +2437,7 @@ function gateTower(D, y0, h, wood) {
 		const [dx, dy] = P.at([0, yTop], 0.5);
 		const dome = hemiDome(dx, dy, w * 0.42 * P.scale(0.5), D.hatch);
 		parts.splice(1, 0, dome.part);
-		flagAt = [dome.tip[0], dome.tip[1] - 1.5];
+		flagAt = [dome.tip[0], flagFoot(D, dome.part.solid, dome.tip, 1.5)];
 	} else {
 		const ov = 1.2,
 			rh = w * 0.55;
@@ -2358,7 +2449,7 @@ function gateTower(D, y0, h, wood) {
 		const frontRoof = /** @type {Poly} */ ([fL, fR, apex]);
 		const sideRoof = /** @type {Poly} */ ([fR, bR, apex]);
 		parts.push(pyramid(frontRoof, sideRoof, [fR, apex], roofRole, D.hatch));
-		flagAt = [apex[0], apex[1] - 1];
+		flagAt = [apex[0], flagFoot(D, [frontRoof, sideRoof], apex, 1)];
 	}
 	// Banner flies in front of everything so it reads clearly against the cap.
 	if (D.flags) parts.push(...flag(D, flagAt[0], flagAt[1]));
@@ -3431,7 +3522,7 @@ export function lookoutTower(D, o = {}) {
 		// Always its pyramid: a timber watch-post isn't a tower to cap.
 		pyramid(roofFront, roofSide, ridge, 'roof', D.hatch),
 	];
-	if (D.flags) parts.unshift(...flag(D, apex[0], apex[1] - 1));
+	if (D.flags) parts.unshift(...flag(D, apex[0], flagFoot(D, [roofFront, roofSide], apex, 1)));
 	return parts;
 }
 
@@ -3549,9 +3640,13 @@ export function octTower(D, o = {}) {
 			],
 		},
 	];
-	/** Fly the culture's flag from `tip`. @param {Pt} tip */
-	const crown = (tip) => {
-		if (D.flags) parts.unshift(...flag(D, tip[0], tip[1]));
+	/**
+	 * Fly the culture's flag from `tip`, `drop` below it — or lower, where
+	 * the cap under it (outline `cap`) is drawn rounded off.
+	 * @param {Pt} tip @param {number} drop @param {Poly[]} [cap]
+	 */
+	const crown = (tip, drop, cap = []) => {
+		if (D.flags) parts.unshift(...flag(D, tip[0], flagFoot(D, cap, tip, drop)));
 	};
 	// Caps sit at `capY` on radius `capR`: the body's top, or the parapet's.
 	let capY = h,
@@ -3584,7 +3679,7 @@ export function octTower(D, o = {}) {
 				{ solid: [crenFace(4, y1, y2), crenFace(5, y1, y2)] },
 				{ solid: [crenFace(6, y1, y2)], shaded: true },
 			);
-			crown([0, y2 - 2]);
+			crown([0, y2], 2);
 			return parts;
 		}
 		// Capped, the band runs level; its crenels show as dark slots under
@@ -3616,7 +3711,7 @@ export function octTower(D, o = {}) {
 	if (cap) {
 		// The top under it; an octagon's corners are blunt, so it lies on.
 		parts.push({ solid: [ring(capR, capY)] }, ...cap.parts);
-		crown([cap.tip[0], cap.tip[1] - 2]);
+		crown(cap.tip, 2, solidsOf(cap.parts));
 		return parts;
 	}
 	// The cone: an eight-sided spire, its eaves out over what it sits on —
@@ -3632,7 +3727,7 @@ export function octTower(D, o = {}) {
 		D.hatch,
 	);
 	parts.push({ ...spire, lines: [...(spire.lines ?? []), { pts: [e(5), apex], w: THIN }] });
-	crown([apex[0], apex[1] - 1]);
+	crown(apex, 1, spire.solid);
 	return parts;
 }
 
@@ -3753,14 +3848,25 @@ export function tieredTower(D) {
 				// cap level and behind them too, their top edges trimming its base.
 				const top = tuckedTop([-w / 2, h], [w / 2, h], P.back([w / 2, h]), P.back([-w / 2, h]));
 				tier.unshift({ solid: [top] }, ...cap.parts);
-				tip = [cap.tip[0], cap.tip[1] - 2];
+				tip = [cap.tip[0], flagFoot(D, solidsOf(cap.parts), cap.tip, 2)];
 			} else {
 				/** @type {Pt} */ const fl = P.at([-w / 2 - ov, he], -ov / d);
 				/** @type {Pt} */ const fr = P.at([w / 2 + ov, he], -ov / d);
 				/** @type {Pt} */ const br = P.at([w / 2 + ov, he], 1 + ov / d);
 				/** @type {Pt} */ const apex = P.at([0, he + (w / 2 + ov) * 1.7 * D.pitch], 0.5);
 				tier.push(pyramid([fl, fr, apex], [fr, br, apex], [fr, apex], 'roof', D.hatch));
-				tip = [apex[0], apex[1] - 1];
+				tip = [
+					apex[0],
+					flagFoot(
+						D,
+						[
+							[fl, fr, apex],
+							[fr, br, apex],
+						],
+						apex,
+						1,
+					),
+				];
 			}
 			parts.push(...place(tier, { x: at[0], y: at[1] }));
 			if (D.flags) parts.unshift(...flag(D, at[0] + tip[0], at[1] + tip[1]));
@@ -4211,7 +4317,7 @@ export function roundHut(D, o = {}) {
 			shadeArea: rect(R * 0.25, h - ry - 2, R * 2, rh + ry + 4),
 			lines: thatch,
 		},
-		...(D.flourish > 0.25 ? finial(apex) : []),
+		...(D.flourish > 0.25 ? finialOn(D, [roof], apex) : []),
 	];
 }
 
@@ -4498,7 +4604,7 @@ export function townhouse(D, o = {}) {
 		{ solid: [right], role: 'roof', shaded: true, lines: hatch(right, -28, D.hatch) },
 		...fronts,
 		{ solid: [[...la, ...ar.slice(1)]], fills: [opening(D, 0, H + rh * 0.25, 2.2)] },
-		...(D.flourish > 0.25 ? finial(A) : []),
+		...(D.flourish > 0.25 ? finialOn(D, [left, right, [...la, ...ar.slice(1)]], A) : []),
 	];
 }
 
@@ -4861,20 +4967,20 @@ export function lighthouse(D) {
 		const R = lr + 1,
 			rh = R * 1.5 * Math.max(0.6, D.pitch);
 		/** @type {Pt} */ const apex = [0, h + lh + rh];
+		/** @type {Poly} */
+		const cap = [
+			...ell(0, h + lh, R, R * k, 180, 360, 14),
+			...sag([R, h + lh], apex, [0, h + lh], D.concave * 0.8).slice(1),
+			...sag(apex, [-R, h + lh], [0, h + lh], D.concave * 0.8).slice(1, -1),
+		];
 		parts.push(
 			{
-				solid: [
-					[
-						...ell(0, h + lh, R, R * k, 180, 360, 14),
-						...sag([R, h + lh], apex, [0, h + lh], D.concave * 0.8).slice(1),
-						...sag(apex, [-R, h + lh], [0, h + lh], D.concave * 0.8).slice(1, -1),
-					],
-				],
+				solid: [cap],
 				role: 'roof',
 				shadeArea: rect(R * 0.25, h, R * 2, rh + lh + 4),
 				shadeLines: capHatch(0, R, h + lh - R, h + lh + rh + 1, D.hatch),
 			},
-			...finial(apex),
+			...finialOn(D, [cap], apex),
 		);
 	}
 	return parts;
@@ -5130,7 +5236,7 @@ export function pavilion(D, o = {}) {
 		},
 		{ solid: [val], role: 'roof', shadeArea: rect(R * 0.25, h - ry - 4, R * 2, ry + 4) },
 	];
-	if (D.flags) parts.unshift(...flag(D, 0, h + rh - 1));
+	if (D.flags) parts.unshift(...flag(D, 0, flagFoot(D, [roof], apex, 1)));
 	else parts.push({ solid: [], free: [{ pts: [apex, [0, h + rh + 2.4]], w: 0.9 }] });
 	return parts;
 }
@@ -5184,7 +5290,7 @@ export function cathedral(D) {
 			cuts: roseCuts(rose),
 			lines: D.masonry ? stoneCourses(-w / 2, w / 2, 0, h + rh) : [],
 		},
-		...(D.flourish > 0.25 ? finial(A) : []),
+		...(D.flourish > 0.25 ? finialOn(D, [right, [...la, ...ar.slice(1)]], A) : []),
 		...towerAt(w / 2 + tw / 2 - 1),
 	];
 }
