@@ -31,14 +31,19 @@ export interface TourStep {
 	/** A CSS selector instead, for what the app writes as HTML and can't tag
 	 *  (a log entry's link): the first match is highlighted. */
 	selector?: string;
+	/** Or a function that finds it, for an element known only once the step
+	 *  is reached (the roll just made, the move that can be made now). */
+	find?: () => Element | null;
 	title: string;
 	body: string;
 	side?: 'top' | 'right' | 'bottom' | 'left';
 	align?: 'start' | 'center' | 'end';
 	/** Move on once this `data-tour` target is on screen (no Next button). */
 	continueWhen?: string;
-	/** Move on when the user clicks the highlighted element (no Next button). */
-	clickToContinue?: boolean;
+	/** Move on when the user clicks the highlighted element (no Next button) —
+	 *  or, given a selector, a control in it that matches (Apply, not the
+	 *  steppers beside it). */
+	clickToContinue?: boolean | string;
 	/** Wait up to this many ms for the target to appear (a dialog opening). */
 	wait?: number;
 	/** Leave the step out unless this returns true (asked when the tour starts). */
@@ -53,6 +58,9 @@ export interface TourStep {
 	/** Skip the step, rather than wait or point at nothing, when its target
 	 *  isn't there (a section only some foes have). */
 	optional?: boolean;
+	/** A class on `<body>` while the step shows, for tour.css to make room
+	 *  for its target (`il-tour-log`: a taller log on a phone). */
+	pageClass?: string;
 }
 
 export interface Tutorial {
@@ -140,7 +148,10 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 			};
 		}
 		return {
-			element: s.target ? tourSel(s.target) : s.selector,
+			// driver takes a function too, and calls it as it reaches the step.
+			element: s.target
+				? tourSel(s.target)
+				: ((s.find as (() => Element) | undefined) ?? s.selector),
 			waitForElement: s.wait ?? 0,
 			skipMissingElement: s.optional,
 			// From the start of the step's highlight, not its end: driver
@@ -150,8 +161,17 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 			onHighlightStarted: (el) => {
 				stopWatch();
 				settled = false;
-				if (el) unwatch.push(followSize(el));
-				if (s.clickToContinue && el) unwatch.push(onClickOf(el, i));
+				// Before driver scrolls to the target, so it scrolls by the room made.
+				if (s.pageClass) {
+					const c = s.pageClass;
+					document.body.classList.add(c);
+					unwatch.push(() => document.body.classList.remove(c));
+				}
+				if (el) unwatch.push(follow(el));
+				if (s.clickToContinue && el) {
+					const only = typeof s.clickToContinue === 'string' ? s.clickToContinue : undefined;
+					unwatch.push(onClickOf(el, i, only));
+				}
 				if (s.continueWhen) unwatch.push(watchFor(s.continueWhen, i));
 				if (s.backIfGone && el) unwatch.push(watchGone(el, i));
 			},
@@ -166,30 +186,42 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 		};
 	};
 
-	/** Keep the highlight on `el` as it grows or shrinks (a field switching
-	 *  to its editor) — driver only re-measures on scroll and resize. */
-	function followSize(el: Element): () => void {
-		const ro = new ResizeObserver(() => {
-			if (settled) active?.refresh();
+	/** Keep the highlight on `el` as it moves or changes size — a field
+	 *  switching to its editor, a list scrolled to it, a log entry pushed
+	 *  down by a newer one — where driver re-measures only when the window
+	 *  scrolls or resizes. Checked every frame, once the step has settled. */
+	function follow(el: Element): () => void {
+		let last = '';
+		let frame = requestAnimationFrame(function check() {
+			const r = el.getBoundingClientRect();
+			const now = `${r.x} ${r.y} ${r.width} ${r.height}`;
+			if (now !== last) {
+				if (settled && last) active?.refresh();
+				last = now;
+			}
+			frame = requestAnimationFrame(check);
 		});
-		ro.observe(el);
-		return () => ro.disconnect();
+		return () => cancelAnimationFrame(frame);
 	}
 
 	/** Move on from step `index` when `el` is clicked — or tapped, where the
 	 *  page acts on the tap itself and cancels the click that would follow
-	 *  (the log's links do, to skip the browser's click delay). */
-	function onClickOf(el: Element, index: number): () => void {
+	 *  (the log's links do, to skip the browser's click delay). With `only`,
+	 *  just a click on what matches it inside `el`. */
+	function onClickOf(el: Element, index: number, only?: string): () => void {
 		const advance = () => {
 			if (active?.getActiveIndex() === index) active.moveNext();
 		};
+		const counts = (e: Event) => !only || (e.target instanceof Element && !!e.target.closest(only));
 		// After the click's own handlers have run (it may close a dialog).
-		const click = () => window.setTimeout(advance, 0);
+		const click = (e: Event) => {
+			if (counts(e)) window.setTimeout(advance, 0);
+		};
 		// Only a cancelled tap: otherwise its click is still to come, and
 		// moving on first would cover the control it lands on.
 		const tap = (e: Event) =>
 			window.setTimeout(() => {
-				if (e.defaultPrevented) advance();
+				if (e.defaultPrevented && counts(e)) advance();
 			}, 0);
 		el.addEventListener('click', click, { capture: true });
 		el.addEventListener('touchend', tap, { capture: true, passive: true });
@@ -208,6 +240,14 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 			d.moveNext();
 		}, 150);
 		return () => window.clearInterval(timer);
+	}
+
+	/** Is step `s`'s target there? (One with none, its popover centred, is.) */
+	function onScreen(s: TourStep | undefined): boolean {
+		if (s?.target) return !!tourTarget(s.target);
+		if (s?.find) return !!s.find();
+		if (s?.selector) return !!document.querySelector(s.selector);
+		return true;
 	}
 
 	/**
@@ -230,11 +270,7 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 			if (++misses < 2) return;
 			window.clearInterval(timer);
 			let to = index - 1;
-			while (to > 0) {
-				const t = chosen[to]?.target;
-				if (!t || tourTarget(t)) break;
-				to--;
-			}
+			while (to > 0 && !onScreen(chosen[to])) to--;
 			d.moveTo(Math.max(0, to));
 		}, 250);
 		return () => window.clearInterval(timer);

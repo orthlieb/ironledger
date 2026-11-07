@@ -1293,7 +1293,7 @@
 								     ResourceTile carries its own +/− buttons. XP lives here per the v2 layout
 								     so it sits with the other tracked resources. Wrapped with a vertical
 								     "VITALS" side label on the LHS (V1 vitals-row-wrapper pattern). -->
-								<div class="ca-vitals-wrapper">
+								<div class="ca-vitals-wrapper" data-tour="char-vitals">
 									<div class="ca-side-label">Vitals</div>
 									<div class="ca-vitals-row">
 										<MomentumTile

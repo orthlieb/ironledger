@@ -13,12 +13,23 @@
  * foe, set how many, Add to Foes; then its pills, marking progress and
  * vanquishing it.
  *
+ * Fight your foe: Move → Enter the Fray → roll, and its outcome's links in
+ * the log; Strike, and its harm on the foe's progress track; Endure Harm,
+ * and it off your health. The dice are loaded, so each roll comes out as
+ * the test says.
+ *
  * The steps find their controls by `data-tour` ids, so these tests also
  * catch a UI change that strands a tutorial (a renamed control, a moved
  * dialog).
  */
 import { test, expect, type Locator, type Page } from '@playwright/test';
-import { resetCharacters, resetFoes } from './helpers/reset';
+import {
+	resetCharacters,
+	resetFoes,
+	resetLog,
+	seedCharacter,
+	seedFoeEncounter,
+} from './helpers/reset';
 import { settleHome, characterCount, activeCharacterName } from './helpers/home';
 
 const POPOVER = '.driver-popover';
@@ -367,5 +378,178 @@ test.describe('Tutorial — Create your first foe, on a phone', () => {
 		await expectStep(page, 'Vanquish it', '11 of 11');
 		await next(page);
 		await expect(page.locator(POPOVER)).toBeHidden();
+	});
+});
+
+/**
+ * Load the dice: `rollDie` draws one Uint32 from crypto.getRandomValues per
+ * die, so queued values come up in order (`roll()` queues them).
+ */
+async function loadDice(page: Page) {
+	await page.addInitScript(() => {
+		const queue: number[] = [];
+		(window as unknown as { __dice: number[] }).__dice = queue;
+		const real = crypto.getRandomValues.bind(crypto);
+		crypto.getRandomValues = ((arr: Uint32Array) => {
+			if (queue.length && arr instanceof Uint32Array && arr.length === 1) {
+				arr[0] = queue.shift() ?? 0;
+				return arr;
+			}
+			return real(arr);
+		}) as typeof crypto.getRandomValues;
+	});
+}
+
+/** An action roll's dice: the action die, then the two challenge dice. */
+const STRONG = [6, 1, 1];
+const MISS = [1, 10, 10];
+
+/** Queue `dice` (faces) and press Roll Move. */
+async function roll(page: Page, dice: number[], tap = false) {
+	await page.evaluate(
+		(faces) => (window as unknown as { __dice: number[] }).__dice.push(...faces.map((f) => f - 1)),
+		dice,
+	);
+	await (tap ? target(page, 'move-roll').tap() : target(page, 'move-roll').click());
+}
+
+/** What the tour is pointing at. */
+const highlighted = (page: Page) => page.locator('.driver-active-element').first();
+
+/**
+ * Fight your foe, from its Move button on: Enter the Fray (a strong hit;
+ * take its momentum, leave initiative to Next), Strike (a strong hit; its
+ * harm on the foe), Endure Harm (applied, then a miss). `phone` taps, and
+ * takes the steps that bring up the Foes and Characters tabs.
+ */
+async function fight(page: Page, total: number, phone = false) {
+	const press = (l: Locator) => (phone ? l.tap() : l.click());
+	const health = page.locator('.res-tile', { hasText: 'Health' }).locator('.res-value');
+	const tally = target(page, 'foe-progress').locator('.ptp-tally');
+	await expect(health).toHaveText('5');
+	const progress = await tally.innerText();
+
+	await expectStep(page, 'Make a move');
+	await press(target(page, 'tb-move'));
+	await expectStep(page, 'Find a move');
+	await target(page, 'moves-search').locator('input').fill('fray');
+	await next(page);
+	await expectStep(page, 'Enter the Fray');
+	await press(target(page, 'move-enter-the-fray'));
+	await expectStep(page, 'How you go in');
+	await next(page);
+	await expectStep(page, 'Roll');
+	await roll(page, STRONG, phone);
+
+	// The roll just made; its momentum taken, its initiative left to Next.
+	await expectStep(page, 'What happened');
+	await expect(highlighted(page)).toContainText('Strong Hit');
+	await press(highlighted(page).locator('a.resource-link'));
+	await expect(highlighted(page).locator('a.resource-link')).toHaveCount(0);
+	await next(page);
+	await expect(page.getByRole('radio', { name: 'You have initiative' })).toHaveAttribute(
+		'aria-checked',
+		'true',
+	);
+
+	// With initiative, the tour points at Strike.
+	await expectStep(page, 'Attack');
+	await press(target(page, 'tb-move'));
+	await expectStep(page, 'Strike or Clash');
+	await expect(highlighted(page)).toHaveAttribute('data-tour', 'move-strike');
+	await press(highlighted(page));
+	await expectStep(page, 'Close in, or at range');
+	await next(page);
+	await expectStep(page, 'Roll');
+	await roll(page, STRONG, phone);
+	await expectStep(page, 'Harm your foe');
+	await expect(highlighted(page)).toContainText('Inflict double harm');
+	await press(highlighted(page).locator('a.progress-link'));
+	await expect(tally).not.toHaveText(progress);
+	await next(page);
+	if (phone) {
+		await expectStep(page, 'Your foe');
+		await press(target(page, 'tab-foes'));
+	}
+	await expectStep(page, 'Wearing your foe down');
+	await next(page);
+
+	// Endure Harm: applied, it comes off health; then a miss.
+	await expectStep(page, 'When you’re hurt');
+	await press(target(page, 'tb-move'));
+	await expectStep(page, 'Endure Harm');
+	await press(target(page, 'move-endure-harm'));
+	await expectStep(page, 'Take the harm');
+	await press(target(page, 'move-harm').locator('.md-harm-apply'));
+	await expectStep(page, 'Health or iron');
+	await expect(health).not.toHaveText('5');
+	await next(page);
+	await expectStep(page, 'Shake it off?');
+	await roll(page, MISS, phone);
+	await expectStep(page, 'What it cost');
+	await expect(highlighted(page)).toContainText('Miss');
+	await next(page);
+	if (phone) {
+		await expectStep(page, 'Back to you');
+		await press(target(page, 'tab-characters'));
+	}
+	await expectStep(page, 'Your health', `${total} of ${total}`);
+	await next(page); // Done
+	await expect(page.locator(POPOVER)).toBeHidden();
+}
+
+test.describe('Tutorial — Fight your foe', () => {
+	test.beforeAll(async () => {
+		await resetCharacters();
+		await resetFoes();
+		await resetLog();
+		await seedCharacter('Brand');
+	});
+
+	test('without a foe, says to make one first', async ({ page }) => {
+		await openHome(page, false);
+		await startTutorial(page, 'Fight your foe');
+		await expectStep(page, 'First, a foe');
+		await next(page); // Done
+		await expect(page.locator(POPOVER)).toBeHidden();
+	});
+
+	test('walks through Enter the Fray, a Strike and Endure Harm', async ({ page }) => {
+		await seedFoeEncounter({ name: 'Boar', foeId: 'ironsworn/boar' });
+		await loadDice(page);
+		await openHome(page, false);
+		await startTutorial(page, 'Fight your foe');
+		await expectStep(page, 'Your vitals', '1 of 21');
+		await next(page);
+		await expectStep(page, 'Initiative', '2 of 21');
+		await next(page);
+		await fight(page, 21);
+	});
+});
+
+test.describe('Tutorial — Fight your foe, on a phone', () => {
+	test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+	test.beforeAll(async () => {
+		await resetCharacters();
+		await resetFoes();
+		await resetLog();
+		await seedCharacter('Brand');
+		await seedFoeEncounter({ name: 'Boar', foeId: 'ironsworn/boar' });
+	});
+
+	test('shows the Characters tab, then the Foes tab and back, tapping', async ({ page }) => {
+		await loadDice(page);
+		await openHome(page, false);
+		await page.locator('.mob-tab', { hasText: 'Foes' }).click();
+		await startTutorial(page, 'Fight your foe');
+		await expectStep(page, 'Your character', '1 of 25');
+		await target(page, 'tab-characters').tap();
+		// The sheet is on Core already: that step moves itself on.
+		await expectStep(page, 'Your vitals', '3 of 25');
+		await next(page);
+		await expectStep(page, 'Initiative');
+		await next(page);
+		await fight(page, 25, true);
 	});
 });
