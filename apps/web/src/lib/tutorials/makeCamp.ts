@@ -20,8 +20,6 @@ import { closeMoves, logWatch } from './moves.js';
 import { tourTarget, type TourStep, type Tutorial } from './tour.js';
 
 export const makeCamp: Tutorial = {
-	id: 'make-camp',
-	title: 'Make camp and heal',
 	route: '/home',
 	ready: 'char-switcher',
 	steps: (): TourStep[] => {

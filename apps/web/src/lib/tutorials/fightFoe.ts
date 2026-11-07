@@ -45,8 +45,6 @@ function hasFoe(): boolean {
 }
 
 export const fightFoe: Tutorial = {
-	id: 'fight-foe',
-	title: 'Fight your foe',
 	route: '/home',
 	ready: 'char-switcher',
 	steps: (): TourStep[] => {

@@ -5,8 +5,10 @@ UI. They dim the page, highlight one control at a time and explain it in a
 popover beside it. Players start them from **☰ → Tutorials**. They work on
 desktop, tablet and phone, with mouse or touch.
 
-They're built on [Driver.js](https://driverjs.com) (MIT), which loads the
-first time a tutorial starts, so it adds nothing to the main bundle.
+They're built on [Driver.js](https://driverjs.com) (MIT). Only the menu's
+list of ids and titles ships with the page (under half a kilobyte
+gzipped): a tutorial's steps, the runner and Driver.js load when it's
+picked, each tutorial in a chunk of its own.
 
 | Tutorial              | What it covers                                                                                                                                                                                                                                                                                                                                                 |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -31,7 +33,7 @@ first time a tutorial starts, so it adds nothing to the main bundle.
 
 ## Writing a tutorial
 
-A tutorial is a `Tutorial`: an `id`, a menu `title`, the `route` it runs on
+A tutorial is a `Tutorial`, in a module of its own: the `route` it runs on
 (the runner navigates there first), a `ready` target that's on the page once
 that route has rendered, and its `steps()`.
 
@@ -90,8 +92,10 @@ make by who holds initiative, and its `beforeNext` applies what the fight
 needs (initiative, harm) if the player left the link. Their E2E tests load
 the dice, so each roll comes out as the test says.
 
-Then add it to `TUTORIALS` in `index.ts`, and add a test to
-`tutorials.spec.ts` that follows it through using the real controls.
+Then add it to `TUTORIALS` in `index.ts` — its `id`, its menu `title`, and
+a `load` that imports its module — and add a test to `tutorials.spec.ts`
+that follows it through using the real controls. Don't import a tutorial or
+`tour.ts` anywhere else up front: that would put them back in every page.
 
 ## Things the runner handles
 
