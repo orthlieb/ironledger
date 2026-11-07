@@ -23,7 +23,8 @@
 import { getActiveFoeId } from '#lib/activeContext.svelte.js';
 import { getActiveDiceCtx } from '#lib/diceContext.svelte.js';
 import { getEncounters } from '#lib/encounterStore.svelte.js';
-import { getLog, triggerAction } from '#lib/log.svelte.js';
+import { triggerAction } from '#lib/log.svelte.js';
+import { closeMoves, logWatch, pickHighest, searchFor, tabbed, use } from './moves.js';
 import { tourTarget, type TourStep, type Tutorial } from './tour.js';
 
 /** Initiative as the character stores it (1 is the character's). */
@@ -41,53 +42,6 @@ function setInitiative(value: number) {
 function hasFoe(): boolean {
 	const id = getActiveFoeId();
 	return !!id && getEncounters().some((e) => e.id === id && !e.vanquished);
-}
-
-/** Phones and tablets (and the Tabs view) show one panel at a time. */
-const tabbed = () => !!tourTarget('tab-foes');
-
-/** The log's move rolls, newest first. */
-const rolls = () =>
-	[...document.querySelectorAll<HTMLElement>('.log-entry')].filter((e) =>
-		e.querySelector('.move-outcome'),
-	);
-
-/** Click the first link of `kind` left in `entry` (one not yet used). */
-function use(entry: Element | undefined, kind: string) {
-	entry?.querySelector<HTMLElement>(`a.${kind}`)?.click();
-}
-
-/** Close the Moves dialog, should an outcome's link have opened it (Pay
- *  the Price, on a miss): the next step is elsewhere. */
-function closeMoves() {
-	const dialog = document.querySelector('.moves-dialog');
-	if (!dialog) return;
-	const buttons = [...dialog.querySelectorAll<HTMLButtonElement>('button')];
-	(
-		dialog.querySelector<HTMLButtonElement>('button[aria-label="Close"]') ??
-		buttons.find((b) => b.textContent?.trim() === 'Close')
-	)?.click();
-}
-
-/** In the search box `el` holds, search for `text`, unless the move `id`
- *  is already showing. */
-function searchFor(el: Element | undefined, id: string, text: string) {
-	if (tourTarget(id)) return;
-	const input = el?.querySelector('input');
-	if (!input) return;
-	input.value = text;
-	input.dispatchEvent(new Event('input', { bubbles: true }));
-}
-
-/** Choose whichever of the stats `el` lists is highest. */
-function pickHighest(el: Element | undefined) {
-	const rows = [...(el?.querySelectorAll<HTMLElement>('.md-stat-row-btn') ?? [])];
-	const value = (row: HTMLElement) => Number(row.querySelector('.md-sval')?.textContent ?? 0);
-	const best = rows.reduce<HTMLElement | undefined>(
-		(top, row) => (!top || value(row) > value(top) ? row : top),
-		undefined,
-	);
-	best?.click();
 }
 
 export const fightFoe: Tutorial = {
@@ -111,14 +65,8 @@ export const fightFoe: Tutorial = {
 				},
 			];
 
-		// The rolls already in the log; each roll step points at the newest
-		// one that isn't, then adds it.
-		const seen = new Set(rolls().map((e) => e.dataset['entryId']));
-		const newRoll = () => rolls().find((e) => !seen.has(e.dataset['entryId'])) ?? null;
-		const done = () => rolls().forEach((e) => seen.add(e.dataset['entryId']));
-		// And the entries, to tell a note the player writes from those before.
-		const before = new Set(getLog().map((e) => e.id));
-		const wroteNote = () => getLog().some((e) => e.title === 'Note' && !before.has(e.id));
+		// Each roll step points at the newest roll the tour hasn't seen.
+		const log = logWatch();
 
 		return [
 			{
@@ -198,7 +146,7 @@ export const fightFoe: Tutorial = {
 				backIfGone: true,
 			},
 			{
-				find: newRoll,
+				find: log.newRoll,
 				title: 'What happened',
 				body: 'The roll goes in the log, with its outcome. Its links apply it: click them to take momentum, and to give initiative to whoever has it. Each works once. If you leave initiative, Next sets it.',
 				// The dice roll first.
@@ -212,7 +160,7 @@ export const fightFoe: Tutorial = {
 						if (roll?.querySelector('.roll-outcome-weak') && tookMomentum) setInitiative(FOE);
 						else use(roll, 'initiative-link');
 					}
-					done();
+					log.done();
 				},
 			},
 
@@ -221,7 +169,7 @@ export const fightFoe: Tutorial = {
 				target: 'log-note',
 				title: 'Say what you do',
 				body: 'Before you roll, say what your character does. Type it here, as you’d tell it — “I rush in, axe high” — and press Enter. It goes in the log, so your fight reads as a story.',
-				continueWhen: wroteNote,
+				continueWhen: log.wroteNote,
 			},
 			{
 				target: 'tb-move',
@@ -254,7 +202,7 @@ export const fightFoe: Tutorial = {
 				backIfGone: true,
 			},
 			{
-				find: newRoll,
+				find: log.newRoll,
 				title: 'Harm your foe',
 				body: 'On a hit, click Inflict your harm: it marks progress against your foe, double on a strong hit. On a miss your foe hits back, and you Pay the Price. Next applies the harm and initiative if you don’t.',
 				wait: 8000,
@@ -263,7 +211,7 @@ export const fightFoe: Tutorial = {
 					closeMoves();
 					use(roll, 'progress-link');
 					use(roll, 'initiative-link');
-					done();
+					log.done();
 				},
 			},
 			{
@@ -318,14 +266,14 @@ export const fightFoe: Tutorial = {
 				backIfGone: true,
 			},
 			{
-				find: newRoll,
+				find: log.newRoll,
 				title: 'What it cost',
 				body: 'Click its links to apply them, as before.',
 				wait: 8000,
 				pageClass: 'il-tour-log',
 				beforeNext: () => {
 					closeMoves();
-					done();
+					log.done();
 				},
 			},
 			{

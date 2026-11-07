@@ -7,9 +7,10 @@ import { page } from '$app/state';
 import { createCharacter } from './createCharacter.js';
 import { createFoe } from './createFoe.js';
 import { fightFoe } from './fightFoe.js';
+import { makeCamp } from './makeCamp.js';
 import { runTour, whenRendered, type Tutorial } from './tour.js';
 
-export const TUTORIALS: readonly Tutorial[] = [createCharacter, createFoe, fightFoe];
+export const TUTORIALS: readonly Tutorial[] = [createCharacter, createFoe, fightFoe, makeCamp];
 
 /** Start a tutorial, going to its page first if need be. */
 export async function startTutorial(id: string): Promise<void> {

@@ -1236,7 +1236,7 @@
 							{/if}
 							<!-- Outcomes -->
 							{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-								<div class="md-outcomes">
+								<div class="md-outcomes" data-tour="move-outcomes">
 									{#if selectedMove.strong}
 										<div
 											class="md-outcome-section"

@@ -13,18 +13,21 @@ first time a tutorial starts, so it adds nothing to the main bundle.
 | Create a character    | The switcher's "+ New character…", rolling a name, stats and (YRT) a region, randomizing the rest, Create; a bio and a portrait on the Background tab; initiative; swearing a first vow; taking a first starting asset and spending its experience from the log; debilities and bonds on the Status tab                                                        |
 | Create your first foe | The switcher's "+ New foe…", searching and filtering the foe picker, choosing a foe, solo / pack / horde, its features, drives and tactics, Add to Foes, then its pills, marking progress and vanquishing it                                                                                                                                                   |
 | Fight your foe        | With the active character and foe: vitals and initiative; Move → searching for Enter the Fray → a stat → Roll Move, then applying the outcome from the log's links; saying what you do, as a note in the log; Strike or Clash as initiative allows, and the harm marked on the foe's progress track; Endure Harm, applying it, rolling, and the health it cost |
+| Make camp and heal    | After a fight, with the active character: their vitals; Heal (a stat, the roll, its health and wounded links in the log); saying where you camp, as a note in the log; Make Camp (what it lets you choose, the roll, choosing from its links); the vitals again                                                                                                |
 
 ## Where things live
 
-| File                                            | What it holds                                                          |
-| ----------------------------------------------- | ---------------------------------------------------------------------- |
-| `apps/web/src/lib/tutorials/tour.ts`            | The runner: `TourStep`, `Tutorial`, `runTour()` on top of Driver.js    |
-| `apps/web/src/lib/tutorials/tour.css`           | The popover in the house style; bits-ui menus above the tour's overlay |
-| `apps/web/src/lib/tutorials/index.ts`           | `TUTORIALS` (the menu's list) and `startTutorial(id)`                  |
-| `apps/web/src/lib/tutorials/createCharacter.ts` | The Create a character tutorial                                        |
-| `apps/web/src/lib/tutorials/createFoe.ts`       | The Create your first foe tutorial                                     |
-| `apps/web/src/lib/tutorials/fightFoe.ts`        | The Fight your foe tutorial                                            |
-| `apps/web/tests/e2e/tutorials.spec.ts`          | E2E tests that follow each tutorial as a player would                  |
+| File                                            | What it holds                                                                                                                                    |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `apps/web/src/lib/tutorials/tour.ts`            | The runner: `TourStep`, `Tutorial`, `runTour()` on top of Driver.js                                                                              |
+| `apps/web/src/lib/tutorials/tour.css`           | The popover in the house style; bits-ui menus above the tour's overlay                                                                           |
+| `apps/web/src/lib/tutorials/index.ts`           | `TUTORIALS` (the menu's list) and `startTutorial(id)`                                                                                            |
+| `apps/web/src/lib/tutorials/createCharacter.ts` | The Create a character tutorial                                                                                                                  |
+| `apps/web/src/lib/tutorials/createFoe.ts`       | The Create your first foe tutorial                                                                                                               |
+| `apps/web/src/lib/tutorials/fightFoe.ts`        | The Fight your foe tutorial                                                                                                                      |
+| `apps/web/src/lib/tutorials/makeCamp.ts`        | The Make camp and heal tutorial                                                                                                                  |
+| `apps/web/src/lib/tutorials/moves.ts`           | What the tutorials that make moves share: the rolls and notes made since the tour began, closing the Moves dialog, searching it, choosing a stat |
+| `apps/web/tests/e2e/tutorials.spec.ts`          | E2E tests that follow each tutorial as a player would                                                                                            |
 
 ## Writing a tutorial
 
@@ -81,10 +84,11 @@ but over the dialog itself. When a step's player must use a button there
 `side: 'top'`, so the popover sits above it, not over it.
 
 Where dice decide what happens, read the page as it is rather than assume
-an outcome: Fight your foe finds each roll it points at as the newest it
-hasn't seen, the move to make by who holds initiative, and its `beforeNext`
-applies what the fight needs (initiative, harm) if the player left the
-link. Its E2E test loads the dice, so each roll comes out as the test says.
+an outcome. A roll's step finds its roll as the newest one the tour hasn't
+seen (`logWatch()` in `moves.ts`). Fight your foe also picks the move to
+make by who holds initiative, and its `beforeNext` applies what the fight
+needs (initiative, harm) if the player left the link. Their E2E tests load
+the dice, so each roll comes out as the test says.
 
 Then add it to `TUTORIALS` in `index.ts`, and add a test to
 `tutorials.spec.ts` that follows it through using the real controls.
