@@ -412,7 +412,7 @@
 			</p>
 		{/if}
 
-		<div class="abilities-list">
+		<div class="abilities-list" data-tour="asset-abilities">
 			{#each definition.abilities as ab, i}
 				{@const _cap = abilityMax()}
 				{@const _atCap = !asset.abilities[i] && enabledCount >= _cap}
@@ -752,7 +752,9 @@
 	{:else}
 		<!-- Add-mode footer — single Add button on the right. X close discards. -->
 		<div class="asset-footer asset-footer--add">
-			<button class="btn btn-primary asset-footer-btn" onclick={onCommit}>Add</button>
+			<button class="btn btn-primary asset-footer-btn" onclick={onCommit} data-tour="asset-card-add"
+				>Add</button
+			>
 		</div>
 	{/if}
 </div>

@@ -171,7 +171,7 @@
 			<DialogHeader title={headingText('Choose an Asset')} onclose={onClose} />
 
 			<!-- Search row + filter toggle -->
-			<div class="picker-controls">
+			<div class="picker-controls" data-tour="asset-picker-search">
 				<div class="ap-search-row">
 					<div class="ap-search-field">
 						<span class="ap-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
@@ -220,7 +220,7 @@
 			</div>
 
 			<!-- Scrollable body — only this part scrolls -->
-			<div class="picker-body">
+			<div class="picker-body" data-tour="asset-picker-grid">
 				{#if isAssetsLoading()}
 					<p class="picker-hint">Loading catalogue…</p>
 				{:else if filtered.length === 0}

@@ -1118,6 +1118,7 @@
 					onclick={addVow}
 					use:tooltip={'Add Vow'}
 					aria-label="Add Vow"
+					data-tour="char-add-vow"
 					><span class="ca-hdr-icon-plus" aria-hidden="true">+</span>{@html linkSvg}</button
 				>
 				<button
@@ -1128,6 +1129,7 @@
 					}}
 					use:tooltip={'Add Asset'}
 					aria-label="Add Asset"
+					data-tour="char-add-asset"
 					><span class="ca-hdr-icon-plus" aria-hidden="true">+</span>{@html gemSvg}</button
 				>
 
@@ -1210,7 +1212,7 @@
 								<!-- Initiative — None / Foe / Character. Mirrors V1's
 								     cs-init-section. Stored on data.initiative
 								     (0 = none, 1 = character, 2 = foe). -->
-								<div class="ca-init-section">
+								<div class="ca-init-section" data-tour="char-initiative">
 									<span class="ca-init-label">Initiative</span>
 									<SegmentedRadio
 										ariaLabel="Initiative"
@@ -1345,7 +1347,7 @@
 										</p>
 									</div>
 								{:else}
-									<div class="ca-vows-list">
+									<div class="ca-vows-list" data-tour="char-vows">
 										{#each d.vows ?? [] as vow, i (vow.id)}
 											<VowCard
 												bind:vow={d.vows[i]}
@@ -1367,7 +1369,7 @@
 										</p>
 									</div>
 								{:else}
-									<div class="ca-asset-grid" aria-label="Assets">
+									<div class="ca-asset-grid" aria-label="Assets" data-tour="char-assets">
 										{#each d.assets ?? [] as a (a.assetId)}
 											{@const def = findAsset(a.assetId)}
 											{@const catColor = CAT_COLOR[def?.category ?? ''] ?? 'var(--text-muted)'}
@@ -1440,7 +1442,7 @@
 						{:else if activeCard === 'status'}
 							<div class="ca-card-section ca-status-section">
 								<!-- Debilities — Conditions / Banes / Burdens grid (V1 component). -->
-								<div class="ca-debilities-wrapper">
+								<div class="ca-debilities-wrapper" data-tour="char-debilities">
 									<div class="section-label">Debilities</div>
 									<DebilitiesSection
 										data={d}
@@ -1450,7 +1452,7 @@
 
 								<!-- Bonds & Failures — V1 progress tracks with ± spinners. The
 								     note fields expand to fill the panel while being edited. -->
-								<div class="ca-tracks-row">
+								<div class="ca-tracks-row" data-tour="char-tracks">
 									<ProgressTrackPanel label="Bonds" bind:value={d.bonds} />
 
 									<!-- value + oninput (not bind:value): bondsFormed/lessonsLearned
@@ -1515,6 +1517,7 @@
 				<Dialog.Content
 					bind:ref={dialogEl}
 					class="ca-asset-dialog"
+					data-tour="asset-card"
 					style="z-index: {contentZ(stackDepth)}"
 					onkeydown={(e) => {
 						// Enter = OK/Add (the primary action). Skip when the user is
@@ -1696,6 +1699,7 @@
 	bind:this={newVowDialogRef}
 	title="New Vow"
 	draggable
+	tour="new-vow-dialog"
 	confirmLabel="Swear Vow"
 	confirmClass="btn-primary"
 	cancelLabel="Cancel"
