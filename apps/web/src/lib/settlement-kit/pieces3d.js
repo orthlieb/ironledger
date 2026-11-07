@@ -3562,10 +3562,11 @@ export function townHall(D, o = {}) {
 
 /**
  * Octagonal tower: an eight-sided body — its three front faces showing,
- * the right one in shadow, edges between them — with a door and slits,
- * under the culture's top, as a round tower's: a crenellated parapet
- * corbelled out (bare round a walk, or under a cap), then the cap — an
- * eight-sided spire for a cone, or an onion, dome or lancet.
+ * the right one in shadow, edges between them — with a door and slits on
+ * the middle face, the one square to us (a receding face is too narrow
+ * for a door), under the culture's top, as a round tower's: a crenellated
+ * parapet corbelled out (bare round a walk, or under a cap), then the
+ * cap — an eight-sided spire for a cone, or an onion, dome or lancet.
  * @param {Design} D
  * @param {{r?: number, h?: number}} [o]
  * @returns {Part[]}
@@ -3629,12 +3630,8 @@ export function octTower(D, o = {}) {
 			shadeArea: dark,
 			shadeLines: hatch(dark, 65, D.hatch),
 			fills: [
-				archOpening(
-					vx(5, r, 0)[0] / 2 + vx(4, r, 0)[0] / 2 + 0.6,
-					(vx(4, r, 0)[1] + vx(5, r, 0)[1]) / 2,
-					3.6,
-					6,
-				),
+				// A round tower's door, at the foot of the middle face.
+				archOpening(0, vx(5, r, 0)[1], 2.8, 5),
 				rect(-0.6, h * 0.5, 1.2, 3.6),
 				rect(-0.6, h * 0.78, 1.2, 3),
 			],
