@@ -28,24 +28,41 @@ import type { Driver, DriveStep, Popover } from 'driver.js';
 export interface TourStep {
 	/** `data-tour` id of the element to highlight; none centres the popover. */
 	target?: string;
+	/** A CSS selector instead, for what the app writes as HTML and can't tag
+	 *  (a log entry's link): the first match is highlighted. */
+	selector?: string;
+	/** Or a function that finds it, for an element known only once the step
+	 *  is reached (the roll just made, the move that can be made now). */
+	find?: () => Element | null;
 	title: string;
 	body: string;
 	side?: 'top' | 'right' | 'bottom' | 'left';
 	align?: 'start' | 'center' | 'end';
-	/** Move on once this `data-tour` target is on screen (no Next button). */
-	continueWhen?: string;
-	/** Move on when the user clicks the highlighted element (no Next button). */
-	clickToContinue?: boolean;
+	/** Move on once this `data-tour` target is on screen (no Next button) —
+	 *  or once this returns true, for a result with no target of its own (a
+	 *  note written to the log). */
+	continueWhen?: string | (() => boolean);
+	/** Move on when the user clicks the highlighted element (no Next button) —
+	 *  or, given a selector, a control in it that matches (Apply, not the
+	 *  steppers beside it). */
+	clickToContinue?: boolean | string;
 	/** Wait up to this many ms for the target to appear (a dialog opening). */
 	wait?: number;
 	/** Leave the step out unless this returns true (asked when the tour starts). */
 	when?: () => boolean;
 	/** Runs when Next is pressed, before moving on (`el` is the target). */
 	beforeNext?: (el: Element | undefined) => void;
-	/** If the target vanishes while showing (its popover closed), go back a step. */
+	/** If the target vanishes while showing (its list or dialog closed), go
+	 *  back to the nearest earlier step still on screen. */
 	backIfGone?: boolean;
 	/** Show Back — only where the step before is still on screen. */
 	back?: boolean;
+	/** Skip the step, rather than wait or point at nothing, when its target
+	 *  isn't there (a section only some foes have). */
+	optional?: boolean;
+	/** A class on `<body>` while the step shows, for tour.css to make room
+	 *  for its target (`il-tour-log`: a taller log on a phone). */
+	pageClass?: string;
 }
 
 export interface Tutorial {
@@ -100,6 +117,10 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 	const chosen = steps.filter((s) => s.when?.() ?? true);
 	/** Stops the current step's watches (continueWhen, backIfGone). */
 	let unwatch: (() => void)[] = [];
+	/** Has driver finished moving to the current step? Until it has, a
+	 *  refresh measures the step before (driver only takes the new one's
+	 *  element as the move ends) and puts the popover by that. */
+	let settled = false;
 	const stopWatch = () => {
 		unwatch.forEach((stop) => stop());
 		unwatch = [];
@@ -129,59 +150,119 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 			};
 		}
 		return {
-			element: s.target ? tourSel(s.target) : undefined,
+			// driver takes a function too, and calls it as it reaches the step.
+			element: s.target
+				? tourSel(s.target)
+				: ((s.find as (() => Element) | undefined) ?? s.selector),
 			waitForElement: s.wait ?? 0,
+			skipMissingElement: s.optional,
 			// From the start of the step's highlight, not its end: driver
 			// animates the move to a step and its own click-to-advance
 			// (`advanceOnClick`) ignores clicks until that's done, so a quick
 			// click on Create made the character but left the tour behind.
 			onHighlightStarted: (el) => {
 				stopWatch();
-				if (el) unwatch.push(followSize(el));
-				if (s.clickToContinue && el) unwatch.push(onClickOf(el, i));
+				settled = false;
+				// Before driver scrolls to the target, so it scrolls by the room made.
+				if (s.pageClass) {
+					const c = s.pageClass;
+					document.body.classList.add(c);
+					unwatch.push(() => document.body.classList.remove(c));
+				}
+				if (el) unwatch.push(follow(el));
+				if (s.clickToContinue && el) {
+					const only = typeof s.clickToContinue === 'string' ? s.clickToContinue : undefined;
+					unwatch.push(onClickOf(el, i, only));
+				}
 				if (s.continueWhen) unwatch.push(watchFor(s.continueWhen, i));
 				if (s.backIfGone && el) unwatch.push(watchGone(el, i));
+			},
+			// Measure again now the move's done, for a target that changed size
+			// on the way (a list still loading), whose resize was held back.
+			onHighlighted: () => {
+				settled = true;
+				active?.refresh();
 			},
 			onDeselected: stopWatch,
 			popover,
 		};
 	};
 
-	/** Keep the highlight on `el` as it grows or shrinks (a field switching
-	 *  to its editor) — driver only re-measures on scroll and resize. */
-	function followSize(el: Element): () => void {
-		const ro = new ResizeObserver(() => active?.refresh());
-		ro.observe(el);
-		return () => ro.disconnect();
+	/** Keep the highlight on `el` as it moves or changes size — a field
+	 *  switching to its editor, a list scrolled to it, a log entry pushed
+	 *  down by a newer one — where driver re-measures only when the window
+	 *  scrolls or resizes. Checked every frame, once the step has settled. */
+	function follow(el: Element): () => void {
+		let last = '';
+		let frame = requestAnimationFrame(function check() {
+			const r = el.getBoundingClientRect();
+			const now = `${r.x} ${r.y} ${r.width} ${r.height}`;
+			if (now !== last) {
+				if (settled && last) active?.refresh();
+				last = now;
+			}
+			frame = requestAnimationFrame(check);
+		});
+		return () => cancelAnimationFrame(frame);
 	}
 
-	/** Move on from step `index` when `el` is clicked. */
-	function onClickOf(el: Element, index: number): () => void {
+	/** Move on from step `index` when `el` is clicked — or tapped, where the
+	 *  page acts on the tap itself and cancels the click that would follow
+	 *  (the log's links do, to skip the browser's click delay). With `only`,
+	 *  just a click on what matches it inside `el`. */
+	function onClickOf(el: Element, index: number, only?: string): () => void {
+		const advance = () => {
+			if (active?.getActiveIndex() === index) active.moveNext();
+		};
+		const counts = (e: Event) => !only || (e.target instanceof Element && !!e.target.closest(only));
 		// After the click's own handlers have run (it may close a dialog).
-		const go = () =>
+		const click = (e: Event) => {
+			if (counts(e)) window.setTimeout(advance, 0);
+		};
+		// Only a cancelled tap: otherwise its click is still to come, and
+		// moving on first would cover the control it lands on.
+		const tap = (e: Event) =>
 			window.setTimeout(() => {
-				if (active?.getActiveIndex() === index) active.moveNext();
+				if (e.defaultPrevented && counts(e)) advance();
 			}, 0);
-		el.addEventListener('click', go, { capture: true });
-		return () => el.removeEventListener('click', go, { capture: true });
+		el.addEventListener('click', click, { capture: true });
+		el.addEventListener('touchend', tap, { capture: true, passive: true });
+		return () => {
+			el.removeEventListener('click', click, { capture: true });
+			el.removeEventListener('touchend', tap, { capture: true });
+		};
 	}
 
-	/** Move on from step `index` once the `id` target is on screen. */
-	function watchFor(id: string, index: number): () => void {
+	/** Move on from step `index` once the `when` target is on screen, or
+	 *  `when` returns true. */
+	function watchFor(when: string | (() => boolean), index: number): () => void {
+		const met = typeof when === 'string' ? () => !!tourTarget(when) : when;
 		const timer = window.setInterval(() => {
 			const d = active;
-			if (!d || d.getActiveIndex() !== index || !tourTarget(id)) return;
+			if (!d || d.getActiveIndex() !== index || !met()) return;
 			window.clearInterval(timer);
 			d.moveNext();
 		}, 150);
 		return () => window.clearInterval(timer);
 	}
 
+	/** Is step `s`'s target there? (One with none, its popover centred, is.) */
+	function onScreen(s: TourStep | undefined): boolean {
+		if (s?.target) return !!tourTarget(s.target);
+		if (s?.find) return !!s.find();
+		if (s?.selector) return !!document.querySelector(s.selector);
+		return true;
+	}
+
 	/**
-	 * Back a step if the target leaves the screen while the tour is still
-	 * on it — a list row the step points at, filtered out by typing in the
-	 * list's search box, or the list closed. Only after it's stayed gone for
-	 * two checks, so a moment's re-render doesn't count.
+	 * Go back if the target leaves the screen while the tour is still on it
+	 * — a list row the step points at, filtered out by typing in the list's
+	 * search box; the list closed; a dialog cancelled — to the nearest step
+	 * before it whose target is still there (for a cancelled dialog, the
+	 * control that opens it). Only after it's stayed gone for two checks, so
+	 * a moment's re-render doesn't count, and not while the tour is already
+	 * moving on: waiting for the next step's target, which the click that
+	 * closed this one (Add, Create) opens.
 	 */
 	function watchGone(el: Element, index: number): () => void {
 		let misses = 0;
@@ -189,9 +270,12 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 			const d = active;
 			const gone = !el.isConnected || el.getClientRects().length === 0;
 			if (!d || !gone || d.getActiveIndex() !== index) return (misses = 0);
+			if (d.getState('__pendingWaitCancel')) return (misses = 0);
 			if (++misses < 2) return;
 			window.clearInterval(timer);
-			d.movePrevious();
+			let to = index - 1;
+			while (to > 0 && !onScreen(chosen[to])) to--;
+			d.moveTo(Math.max(0, to));
 		}, 250);
 		return () => window.clearInterval(timer);
 	}

@@ -128,3 +128,17 @@ body.driver-active [data-bits-floating-content-wrapper],
 body.driver-active [data-bits-floating-content-wrapper] * {
 	pointer-events: auto;
 }
+
+/* A step's `pageClass`: room for what it points at. il-tour-log grows the
+   log, where it's a strip under one panel (phones, tablets, the Tabs view),
+   to show a whole roll with its links — the log can't be scrolled while
+   one of its entries is highlighted. */
+body.il-tour-log .home-shell--layout-tabs .home-log {
+	height: max(var(--mob-log-height, 25vh), 60vh) !important;
+}
+
+/* The 3D dice roll above the tour's overlay (driver's is z-index 10000, the
+   dice's 9999), not dimmed under it; they take no clicks. */
+body.driver-active #il-dice-overlay {
+	z-index: 10001 !important;
+}

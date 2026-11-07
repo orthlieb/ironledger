@@ -1042,7 +1042,7 @@
 				<DialogHeader title={headingText('Moves')} onclose={close} />
 
 				<!-- Controls -->
-				<div class="md-controls">
+				<div class="md-controls" data-tour="moves-search">
 					<FilterBar
 						bind:search
 						bind:active={activeCategories}
@@ -1120,6 +1120,7 @@
 											<button
 												class="md-tile"
 												class:md-tile--dimmed={!!fail}
+												data-tour={`move-${move.id.split('/').pop()}`}
 												style:--tcolor={catColor(move.category)}
 												use:tooltip={{ text: fail ?? move.triggerShort }}
 												onclick={() => {
@@ -1178,7 +1179,7 @@
 				     the foe's rank; editable for "as appropriate to the situation". The
 				     Apply button commits it to the character; then roll. -->
 						{#if isEndureMove}
-							<div class="md-harm-row">
+							<div class="md-harm-row" data-tour="move-harm">
 								<span class="md-harm-label">{harmWord}</span>
 								<button
 									class="md-adj"
@@ -1212,7 +1213,7 @@
 						{#if hasRollableStats(selectedMove)}
 							<!-- Stat picker -->
 							{#if selectedMove.stats && selectedMove.stats.length > 0}
-								<div class="md-stat-list">
+								<div class="md-stat-list" data-tour="move-stats">
 									{#each selectedMove.stats as s (s.stat)}
 										<button
 											class="md-stat-row-btn"
@@ -1525,6 +1526,7 @@
 									<button
 										class="btn btn-primary md-roll-btn"
 										onclick={doActionRoll}
+										data-tour="move-roll"
 										disabled={rolling || !ctx || !!fail}
 									>
 										{rolling ? 'Rolling…' : 'Roll Move'}

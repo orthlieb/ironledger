@@ -116,6 +116,9 @@ export function assetDisplayName(
  *     AND a new rarity is selected. Cleared rarities aren't refunded.
  *   • Toggling on then off within the dialog is free (state-based diff,
  *     not history-based).
+ *   • An asset that comes with no ability marked — a companion, whose
+ *     starting ability you choose — includes that first pick in its
+ *     purchase: Advance prices a new asset at 3 XP, not 3 + 2.
  *
  * Pure function — exposed for unit testing the snapshot/diff edge cases.
  */
@@ -145,8 +148,17 @@ export function computeAssetXpDiff(args: {
 	if (draftRarityId !== snapshotRarityId && draftRarityId) {
 		rarityXp = rarityXpCost(draftRarityId);
 	}
-	return purchaseCost + newEnables * 2 + rarityXp;
+	// Buying an asset with nothing marked: its first pick comes with it.
+	const includedPick = purchaseCost > 0 && !snapshotAbilities.some(Boolean) ? 1 : 0;
+	return purchaseCost + Math.max(0, newEnables - includedPick) * 2 + rarityXp;
 }
+
+/**
+ * Experience a character starts with, from the New Character dialog:
+ * enough to buy its three starting assets through Advance (3 XP each).
+ * Each purchase logs a link that spends it.
+ */
+export const STARTING_XP = 9;
 
 /**
  * Reconcile an imported `globalValues` map against the current catalogue.

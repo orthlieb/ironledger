@@ -280,6 +280,7 @@
 					<button
 						class="btn btn-primary act-btn"
 						onclick={() => movesDialogRef?.open()}
+						data-tour="tb-move"
 						use:tooltip={'Browse and roll moves'}
 					>
 						<span class="act-icon">{@html iconMoves}</span><span class="act-label">Move</span>
