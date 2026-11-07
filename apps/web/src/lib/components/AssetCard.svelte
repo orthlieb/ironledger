@@ -8,6 +8,7 @@
 	 */
 	import type { CharacterAsset, AssetDefinition } from '#lib/types.js';
 	import { findRaritiesForAsset, getGlobalCounterDef } from '#lib/assetStore.svelte.js';
+	import { computeAssetXpDiff } from '#lib/character.js';
 	import { assetIcon } from '#lib/iconRegistry.js';
 	import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
 	import { renderNote } from '#lib/markdown.js';
@@ -188,18 +189,24 @@
 	/** Returns true when a candidate (abilities, rarityId) state fits inside
 	 *  the character's current XP budget given the snapshot baseline. Used to
 	 *  gate ability/rarity toggles so the user can't run themselves negative
-	 *  inside the dialog. */
+	 *  inside the dialog. Priced as the commit will log it. */
 	function canAfford(abilities: boolean[], rarityId: string | undefined): boolean {
-		let newEnables = 0;
-		for (let i = 0; i < abilities.length; i++) {
-			if (!snapshotAbilities[i] && abilities[i]) newEnables++;
-		}
-		let rarityXp = 0;
-		if (rarityId !== snapshotRarityId && rarityId) {
-			const r = visibleRarities.find((r) => r.id === rarityId);
-			if (r) rarityXp = r.xpCost;
-		}
-		return purchaseCost + newEnables * 2 + rarityXp <= characterXp;
+		const cost = computeAssetXpDiff({
+			snapshotAbilities,
+			draftAbilities: abilities,
+			snapshotRarityId,
+			draftRarityId: rarityId,
+			rarityXpCost: (id) => visibleRarities.find((r) => r.id === id)?.xpCost ?? 0,
+			purchaseCost,
+		});
+		return cost <= characterXp;
+	}
+
+	/** Whether marking ability `i` (on top of what's marked) is affordable. */
+	function canAffordAbility(i: number): boolean {
+		const next = [...asset.abilities];
+		next[i] = true;
+		return canAfford(next, asset.rarityId);
 	}
 
 	// Category colour
@@ -419,7 +426,7 @@
 				<label
 					class="ability-row"
 					class:ability-enabled={asset.abilities[i]}
-					class:ability-disabled={!asset.abilities[i] && (characterXp < 2 || _atCap)}
+					class:ability-disabled={!asset.abilities[i] && (!canAffordAbility(i) || _atCap)}
 					use:tooltip={_atCap
 						? `Your current level only allows ${_cap} ${_cap === 1 ? 'ability' : 'abilities'} — increase your touched level to unlock more`
 						: ''}

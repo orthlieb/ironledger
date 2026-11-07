@@ -631,17 +631,25 @@ When a character acquires an asset, each ability checkbox is pre-set to `ability
 | **Companion**     | ✗ Unchecked          | ✗ Unchecked           |
 | **Touched** (Yrt) | ✓ Enabled            | ✗ Unchecked           |
 
-Per the Ironsworn printable asset sheet: Paths, Rituals, and Combat Talents include their first ability when acquired (filled circle on the card). Companions start with no abilities pre-enabled — all three must be purchased with 2 XP each.
+Per the Ironsworn printable asset sheet: Paths, Rituals, and Combat Talents include their first ability when acquired (filled circle on the card). Companions start with no abilities pre-enabled: you choose the one yours starts with, and that first pick comes with the 3 XP purchase, as the first ability does for any other asset. Each ability after it costs 2 XP.
 
 ### XP Cost and Gating
 
+A new character starts with **9 XP** (`STARTING_XP` in `character.ts`,
+set by the New Character dialog): enough to buy its three starting assets
+through Advance, 3 XP each, spending each from its log link.
+
 The UI enforces XP requirements for asset-related actions:
 
-| Action                        | XP Cost            | Gate                                               |
-| ----------------------------- | ------------------ | -------------------------------------------------- |
-| Acquire a new asset           | 3 XP               | `+ Asset` button disabled when `xp < 3`            |
-| Enable a new ability checkbox | 2 XP               | Ability checkbox disabled when `xp < 2`            |
-| Unlock a rarity               | `rarity.xpCost` XP | Rarity checkbox disabled when `xp < rarity.xpCost` |
+| Action                        | XP Cost            | Gate                                                                |
+| ----------------------------- | ------------------ | ------------------------------------------------------------------- |
+| Acquire a new asset           | 3 XP               | None: `+ Asset` and the card's Add are always enabled               |
+| Enable a new ability checkbox | 2 XP               | Ability checkbox disabled when the dialog's total would exceed `xp` |
+| Unlock a rarity               | `rarity.xpCost` XP | Rarity checkbox disabled when the dialog's total would exceed `xp`  |
+
+"The dialog's total" is the whole diff for the open card (purchase, new
+abilities and rarity together; see the cost formula below), so a companion's
+first pick on a new card is free of the 2 XP gate.
 
 Disabling a previously-enabled ability has no XP cost (per Ironsworn RAW
 — XP spent is sunk) and is always allowed.
@@ -680,9 +688,14 @@ double-use.
 ```
 purchaseCost    = mode === 'add' ? 3 : 0
 newEnables      = count of indices where snapshot=false AND draft=true
+includedPick    = (purchaseCost > 0 && no ability marked in snapshot) ? 1 : 0
 rarityXp        = (draft.rarityId !== snapshot.rarityId && draft.rarityId) ? newRarity.xpCost : 0
-totalCost       = purchaseCost + newEnables * 2 + rarityXp
+totalCost       = purchaseCost + max(0, newEnables - includedPick) * 2 + rarityXp
 ```
+
+`includedPick` is the companion's first pick: an asset bought with nothing
+marked (a companion) gets its first ability in the 3 XP, as every other
+asset does, so Advance prices it at 3, not 3 + 2.
 
 Notable: a swap (disable A, enable B) charges only for the new enable —
 A's XP is sunk. Toggle-on-then-off within the same dialog is free

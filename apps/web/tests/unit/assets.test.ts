@@ -145,6 +145,60 @@ describe('computeAssetXpDiff', () => {
 			}),
 		).toBe(8);
 	});
+
+	describe('a companion (no ability marked to start)', () => {
+		const none = [false, false, false];
+		it('includes its first pick in the 3-XP purchase', () => {
+			expect(
+				computeAssetXpDiff({
+					snapshotAbilities: none,
+					draftAbilities: [false, true, false],
+					rarityXpCost: noRarities,
+					purchaseCost: 3,
+				}),
+			).toBe(3);
+		});
+		it('charges 2 for each pick beyond the first', () => {
+			expect(
+				computeAssetXpDiff({
+					snapshotAbilities: none,
+					draftAbilities: [true, true, false],
+					rarityXpCost: noRarities,
+					purchaseCost: 3,
+				}),
+			).toBe(5);
+		});
+		it('costs just the purchase when bought with no pick yet', () => {
+			expect(
+				computeAssetXpDiff({
+					snapshotAbilities: none,
+					draftAbilities: none,
+					rarityXpCost: noRarities,
+					purchaseCost: 3,
+				}),
+			).toBe(3);
+		});
+		it('charges 2 for a pick made later, on an asset already owned', () => {
+			expect(
+				computeAssetXpDiff({
+					snapshotAbilities: none,
+					draftAbilities: [true, false, false],
+					rarityXpCost: noRarities,
+					purchaseCost: 0,
+				}),
+			).toBe(2);
+		});
+	});
+	it('still charges 2 for a second ability on an asset that starts with one', () => {
+		expect(
+			computeAssetXpDiff({
+				snapshotAbilities: [true, false, false],
+				draftAbilities: [true, true, false],
+				rarityXpCost: noRarities,
+				purchaseCost: 3,
+			}),
+		).toBe(5);
+	});
 });
 
 // ---------------------------------------------------------------------------

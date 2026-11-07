@@ -62,6 +62,7 @@
 		momentumReset,
 		computeAssetXpDiff,
 		assetDisplayName,
+		STARTING_XP,
 	} from '#lib/character.js';
 	import hornedHelmSvg from '#icons/horned-helm.svg?raw';
 	import { appIcon } from '#lib/liveryIcons.js';
@@ -1013,6 +1014,8 @@
 				iron: newCharStats.iron,
 				shadow: newCharStats.shadow,
 				wits: newCharStats.wits,
+				// Enough to buy the three starting assets (Advance: 3 each).
+				xp: STARTING_XP,
 			};
 			if (md) initial.background = md;
 			const newChar = await createCharacter(nameToUse, initial);
