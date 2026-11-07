@@ -2597,6 +2597,7 @@
 			class="mob-tab"
 			class:mob-tab--active={mobileTab === 'foes'}
 			onclick={() => (mobileTab = 'foes')}
+			data-tour="tab-foes"
 		>
 			<span class="mob-tab-icon" aria-hidden="true">{@html appIcon('foes')}</span>Foes
 		</button>

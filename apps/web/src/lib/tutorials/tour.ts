@@ -42,10 +42,14 @@ export interface TourStep {
 	when?: () => boolean;
 	/** Runs when Next is pressed, before moving on (`el` is the target). */
 	beforeNext?: (el: Element | undefined) => void;
-	/** If the target vanishes while showing (its popover closed), go back a step. */
+	/** If the target vanishes while showing (its list or dialog closed), go
+	 *  back to the nearest earlier step still on screen. */
 	backIfGone?: boolean;
 	/** Show Back — only where the step before is still on screen. */
 	back?: boolean;
+	/** Skip the step, rather than wait or point at nothing, when its target
+	 *  isn't there (a section only some foes have). */
+	optional?: boolean;
 }
 
 export interface Tutorial {
@@ -131,6 +135,7 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 		return {
 			element: s.target ? tourSel(s.target) : undefined,
 			waitForElement: s.wait ?? 0,
+			skipMissingElement: s.optional,
 			// From the start of the step's highlight, not its end: driver
 			// animates the move to a step and its own click-to-advance
 			// (`advanceOnClick`) ignores clicks until that's done, so a quick
@@ -178,10 +183,14 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 	}
 
 	/**
-	 * Back a step if the target leaves the screen while the tour is still
-	 * on it — a list row the step points at, filtered out by typing in the
-	 * list's search box, or the list closed. Only after it's stayed gone for
-	 * two checks, so a moment's re-render doesn't count.
+	 * Go back if the target leaves the screen while the tour is still on it
+	 * — a list row the step points at, filtered out by typing in the list's
+	 * search box; the list closed; a dialog cancelled — to the nearest step
+	 * before it whose target is still there (for a cancelled dialog, the
+	 * control that opens it). Only after it's stayed gone for two checks, so
+	 * a moment's re-render doesn't count, and not while the tour is already
+	 * moving on: waiting for the next step's target, which the click that
+	 * closed this one (Add, Create) opens.
 	 */
 	function watchGone(el: Element, index: number): () => void {
 		let misses = 0;
@@ -189,9 +198,16 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 			const d = active;
 			const gone = !el.isConnected || el.getClientRects().length === 0;
 			if (!d || !gone || d.getActiveIndex() !== index) return (misses = 0);
+			if (d.getState('__pendingWaitCancel')) return (misses = 0);
 			if (++misses < 2) return;
 			window.clearInterval(timer);
-			d.movePrevious();
+			let to = index - 1;
+			while (to > 0) {
+				const t = chosen[to]?.target;
+				if (!t || tourTarget(t)) break;
+				to--;
+			}
+			d.moveTo(Math.max(0, to));
 		}, 250);
 		return () => window.clearInterval(timer);
 	}

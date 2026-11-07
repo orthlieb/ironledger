@@ -5,9 +5,10 @@
 import { goto } from '$app/navigation';
 import { page } from '$app/state';
 import { createCharacter } from './createCharacter.js';
+import { createFoe } from './createFoe.js';
 import { runTour, whenRendered, type Tutorial } from './tour.js';
 
-export const TUTORIALS: readonly Tutorial[] = [createCharacter];
+export const TUTORIALS: readonly Tutorial[] = [createCharacter, createFoe];
 
 /** Start a tutorial, going to its page first if need be. */
 export async function startTutorial(id: string): Promise<void> {

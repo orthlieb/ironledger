@@ -57,6 +57,9 @@ export const createCharacter: Tutorial = {
 			title: 'Roll a name',
 			body: 'Pick a name oracle — Ironlander, Elf, Giant and more — and click the die to roll a name. Roll again until one fits, or type your own. If you skip it, Next rolls one for you.',
 			wait: 3000,
+			// This and the dialog's other steps: if it's cancelled, back to
+			// the switcher.
+			backIfGone: true,
 			beforeNext: (el) => {
 				if (!el?.querySelector('input')?.value.trim()) press(el, 'roll-name');
 			},
@@ -64,6 +67,7 @@ export const createCharacter: Tutorial = {
 		{
 			target: 'new-char-stats',
 			title: 'Roll your stats',
+			backIfGone: true,
 			body: 'Click the die to deal a stat array across Edge, Heart, Iron, Shadow and Wits. With Lodestar on, choose one of its three arrays first. You can still adjust any stat by hand.',
 			back: true,
 			beforeNext: (el) => {
@@ -76,6 +80,7 @@ export const createCharacter: Tutorial = {
 			when: () => isSourceEnabled('yrt'),
 			target: 'randomize-origin',
 			title: 'Roll a region of origin',
+			backIfGone: true,
 			body: 'Choose where your character was born, or click the die for a random region. Their religion is rolled for that region.',
 			back: true,
 			beforeNext: (el) => {
@@ -85,6 +90,7 @@ export const createCharacter: Tutorial = {
 		{
 			target: 'randomize-also',
 			title: 'Randomize the rest',
+			backIfGone: true,
 			// All ticked by default; what the player unticks stays unticked.
 			body: 'Everything ticked here is rolled when you create the character and written into their background. Untick anything you’d rather fill in yourself.',
 			back: true,
@@ -92,6 +98,7 @@ export const createCharacter: Tutorial = {
 		{
 			target: 'new-char-dialog-confirm',
 			title: 'Create your character',
+			backIfGone: true,
 			body: 'Click Create. Everything you ticked is rolled, and every roll goes in the log.',
 			side: 'top',
 			clickToContinue: true,

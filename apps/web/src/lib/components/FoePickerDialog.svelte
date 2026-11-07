@@ -257,7 +257,7 @@
 					radius="8px 8px 0 0"
 				/>
 
-				<div class="fd-controls">
+				<div class="fd-controls" data-tour="foe-picker-search">
 					<div class="fd-search-row">
 						<div class="fd-search-field">
 							<span class="fd-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
@@ -338,7 +338,7 @@
 					{/if}
 				</div>
 
-				<div class="fd-grid-wrap">
+				<div class="fd-grid-wrap" data-tour="foe-picker-grid">
 					{#if filtered().length === 0}
 						<div class="fd-empty">No foes match your filters.</div>
 					{:else}
@@ -420,7 +420,7 @@
 							/>
 						</div>
 
-						<div class="fd-qty-top">
+						<div class="fd-qty-top" data-tour="foe-quantity">
 							<RadioGroup.Root
 								class="fd-quantity-group"
 								value={quantity}
@@ -459,7 +459,7 @@
 
 					<!-- Bottom: description + features/drives/tactics, always full width -->
 					{#if resolvedDesc || confirmFoe.features.length > 0 || confirmFoe.drives.length > 0 || confirmFoe.tactics.length > 0}
-						<div class="fd-confirm-bottom">
+						<div class="fd-confirm-bottom" data-tour="foe-details">
 							{#if resolvedDesc}
 								<p class="fc-desc" style="white-space: pre-line">{resolvedDesc}</p>
 							{/if}
@@ -496,7 +496,9 @@
 						<button class="btn back-btn" onclick={goBack} style="margin-right: auto">Back</button>
 					{/if}
 					<button class="btn" onclick={close}>Cancel</button>
-					<button class="btn btn-primary" onclick={confirm}>Add to Foes</button>
+					<button class="btn btn-primary" onclick={confirm} data-tour="foe-picker-confirm"
+						>Add to Foes</button
+					>
 				</div>
 			{/if}
 		</Dialog.Content>

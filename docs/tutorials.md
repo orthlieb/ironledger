@@ -8,9 +8,10 @@ desktop, tablet and phone, with mouse or touch.
 They're built on [Driver.js](https://driverjs.com) (MIT), which loads the
 first time a tutorial starts, so it adds nothing to the main bundle.
 
-| Tutorial           | What it covers                                                                                                                                             |
-| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Create a character | The switcher's "+ New character…", rolling a name, stats and (YRT) a region, randomizing the rest, Create, then a bio and a portrait on the Background tab |
+| Tutorial              | What it covers                                                                                                                                                                                               |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Create a character    | The switcher's "+ New character…", rolling a name, stats and (YRT) a region, randomizing the rest, Create, then a bio and a portrait on the Background tab                                                   |
+| Create your first foe | The switcher's "+ New foe…", searching and filtering the foe picker, choosing a foe, solo / pack / horde, its features, drives and tactics, Add to Foes, then its pills, marking progress and vanquishing it |
 
 ## Where things live
 
@@ -20,6 +21,7 @@ first time a tutorial starts, so it adds nothing to the main bundle.
 | `apps/web/src/lib/tutorials/tour.css`           | The popover in the house style; bits-ui menus above the tour's overlay |
 | `apps/web/src/lib/tutorials/index.ts`           | `TUTORIALS` (the menu's list) and `startTutorial(id)`                  |
 | `apps/web/src/lib/tutorials/createCharacter.ts` | The Create a character tutorial                                        |
+| `apps/web/src/lib/tutorials/createFoe.ts`       | The Create your first foe tutorial                                     |
 | `apps/web/tests/e2e/tutorials.spec.ts`          | E2E tests that follow each tutorial as a player would                  |
 
 ## Writing a tutorial
@@ -34,6 +36,10 @@ this: `Combobox` (its trigger, and a `tour` on each action row),
 `ConfirmDialog` (the dialog, and `<tour>-confirm` on its confirm button),
 `MarkdownNotes` and `PortraitUploader`. Point at stable elements: a wrapper
 that stays put while its content changes beats the content itself.
+
+While a tour runs, only the highlighted control takes clicks (and a menu
+opened from it). So a step must highlight whatever the player has to use:
+point at a block holding the controls, not at an explanation beside them.
 
 A step is one of three kinds:
 
@@ -51,13 +57,14 @@ A step is one of three kinds:
 
 Other step options:
 
-| Option                | Meaning                                                                           |
-| --------------------- | --------------------------------------------------------------------------------- |
-| `when: () => boolean` | Leave the step out unless true, asked when the tour starts (YRT on, a tab hidden) |
-| `wait: ms`            | Wait for the target to appear (a dialog opening)                                  |
-| `backIfGone`          | If the target leaves the screen (a list row filtered out), go back a step         |
-| `back`                | Show Back. Only where the step before is still on screen                          |
-| `side`, `align`       | Where the popover sits                                                            |
+| Option                | Meaning                                                                                                                           |
+| --------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `when: () => boolean` | Leave the step out unless true, asked when the tour starts (YRT on, a tab hidden)                                                 |
+| `wait: ms`            | Wait for the target to appear (a dialog opening)                                                                                  |
+| `backIfGone`          | If the target leaves the screen (a list row filtered out, its dialog closed), go back to the nearest earlier step still on screen |
+| `optional`            | Skip the step when its target isn't there (a section only some foes have)                                                         |
+| `back`                | Show Back. Only where the step before is still on screen                                                                          |
+| `side`, `align`       | Where the popover sits                                                                                                            |
 
 Then add it to `TUTORIALS` in `index.ts`, and add a test to
 `tutorials.spec.ts` that follows it through using the real controls.

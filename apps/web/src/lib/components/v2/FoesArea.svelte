@@ -84,7 +84,12 @@
 		return def ? (FOE_NATURE_COLORS[def.nature] ?? '#7A9AB8') : '#7A9AB8';
 	}
 	const foeActions = [
-		{ label: '+ New foe…', value: '+ New foe', onselect: () => void foePickerRef?.open() },
+		{
+			label: '+ New foe…',
+			value: '+ New foe',
+			onselect: () => void foePickerRef?.open(),
+			tour: 'new-foe-action',
+		},
 	];
 
 	// Open the foe this device had open last, or else the first.
@@ -323,6 +328,7 @@
 				ariaLabel="Switch or add foe"
 				class="fa-hdr-combobox"
 				actions={foeActions}
+				tour="foe-switcher"
 			/>
 
 			{#if activeEnc}
@@ -361,7 +367,9 @@
 					>
 						<Tabs.List class="fa-tabs">
 							{#each TAB_LABELS as tab (tab.key)}
-								<Tabs.Trigger value={tab.key} class="fa-tab">{tab.label}</Tabs.Trigger>
+								<Tabs.Trigger value={tab.key} class="fa-tab" data-tour={`foe-tab-${tab.key}`}
+									>{tab.label}</Tabs.Trigger
+								>
 							{/each}
 						</Tabs.List>
 					</Tabs.Root>
@@ -425,7 +433,7 @@
 						{:else if activeTab === 'core'}
 							{#if activeDef && rankInfo}
 								<!-- Pills row -->
-								<div class="fa-pills-row">
+								<div class="fa-pills-row" data-tour="foe-pills">
 									<span class="fa-badge" style="background: {natureColor}22; color: {natureColor}"
 										>{activeDef.nature}</span
 									>
@@ -459,7 +467,7 @@
 								</div>
 
 								<!-- Status toggle — Active / Vanquished. -->
-								<div class="fa-status-section">
+								<div class="fa-status-section" data-tour="foe-status">
 									<span class="fa-status-label">Status</span>
 									<SegmentedRadio
 										ariaLabel="Foe status"
@@ -486,7 +494,7 @@
 								</div>
 
 								<!-- Progress track -->
-								<div class="fa-section">
+								<div class="fa-section" data-tour="foe-progress">
 									<ProgressTrackPanel
 										label="Progress track"
 										value={activeEnc.ticks}

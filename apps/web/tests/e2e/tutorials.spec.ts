@@ -5,12 +5,18 @@
  *
  * Create a character: open the switcher, "+ New character…", roll a name,
  * stats and (YRT) a region, leave the rest to be randomized, Create; then
- * on the Background tab, write a bio and add a portrait. The steps find
- * their controls by `data-tour` ids, so these tests also catch a UI change
- * that strands a tutorial (a renamed control, a moved dialog).
+ * on the Background tab, write a bio and add a portrait.
+ *
+ * Create your first foe: open the switcher, "+ New foe…", search, choose a
+ * foe, set how many, Add to Foes; then its pills, marking progress and
+ * vanquishing it.
+ *
+ * The steps find their controls by `data-tour` ids, so these tests also
+ * catch a UI change that strands a tutorial (a renamed control, a moved
+ * dialog).
  */
 import { test, expect, type Page } from '@playwright/test';
-import { resetCharacters } from './helpers/reset';
+import { resetCharacters, resetFoes } from './helpers/reset';
 import { settleHome, characterCount, activeCharacterName } from './helpers/home';
 
 const POPOVER = '.driver-popover';
@@ -27,11 +33,11 @@ async function openHome(page: Page, yrt: boolean) {
 	await settleHome(page);
 }
 
-/** ☰ → Tutorials → Create a character. */
-async function startTutorial(page: Page) {
+/** ☰ → Tutorials → `name`. */
+async function startTutorial(page: Page, name = 'Create a character') {
 	await page.locator('.hamburger-btn').click();
 	await page.locator('.hm-item--sub', { hasText: 'Tutorials' }).click();
-	await page.getByRole('menuitem', { name: 'Create a character' }).click();
+	await page.getByRole('menuitem', { name }).click();
 }
 
 /** The tour shows the step titled `title` (optionally "n of m"). */
@@ -186,6 +192,113 @@ test.describe('Tutorial — Create a character, on a phone', () => {
 		await expect(target(page, 'char-tab-background')).toHaveAttribute('data-state', 'active');
 		await next(page);
 		await expectStep(page, 'Add a portrait', '10 of 10');
+		await next(page);
+		await expect(page.locator(POPOVER)).toBeHidden();
+	});
+});
+
+test.describe('Tutorial — Create your first foe', () => {
+	test.beforeAll(async () => {
+		await resetFoes();
+	});
+
+	test('walks through finding, sizing and adding a foe, then fighting it', async ({ page }) => {
+		await openHome(page, false);
+		await startTutorial(page, 'Create your first foe');
+
+		await expectStep(page, 'Open the foe list', '1 of 10');
+		await target(page, 'foe-switcher').click();
+		await expectStep(page, 'Add a foe', '2 of 10');
+		await target(page, 'new-foe-action').click();
+
+		// Clicking Next mustn't dismiss the picker (a bits-ui Dialog closes
+		// on a click outside it, and the tour's popover is outside it).
+		await expectStep(page, 'Find your foe', '3 of 10');
+		await target(page, 'foe-picker-search').locator('input').fill('wolf');
+		await next(page);
+
+		await expectStep(page, 'Choose a foe', '4 of 10');
+		const tile = target(page, 'foe-picker-grid').locator('.fd-tile').first();
+		const name = (await tile.locator('.fd-tile-name').innerText()).trim();
+		await tile.click();
+
+		await expectStep(page, 'How many?', '5 of 10');
+		await target(page, 'foe-quantity').locator('.fd-qty-label', { hasText: 'Pack' }).click();
+		await next(page);
+
+		await expectStep(page, 'Know your foe', '6 of 10');
+		await next(page);
+
+		await expectStep(page, 'Add it', '7 of 10');
+		await target(page, 'foe-picker-confirm').click();
+
+		await expectStep(page, 'Your foe', '8 of 10');
+		await expect(target(page, 'foe-switcher')).toContainText(name);
+		await expect(target(page, 'foe-pills')).toContainText('Pack');
+		await next(page);
+
+		await expectStep(page, 'Mark progress', '9 of 10');
+		const tally = target(page, 'foe-progress').locator('.ptp-tally');
+		const before = await tally.innerText();
+		await target(page, 'foe-progress').locator('.ptp-btn').last().click();
+		await expect(tally).not.toHaveText(before);
+		await next(page);
+
+		await expectStep(page, 'Vanquish it', '10 of 10');
+		await next(page); // Done
+		await expect(page.locator(POPOVER)).toBeHidden();
+	});
+
+	// While a tour runs only the highlighted control takes clicks, so a player
+	// can't cancel the picker (Escape ends the tour too). Should it close
+	// anyway, the tour goes back past every step whose target went with it,
+	// to the switcher.
+	test('if the picker closes under it, the tour goes back to the switcher', async ({ page }) => {
+		await openHome(page, false);
+		await startTutorial(page, 'Create your first foe');
+		await expectStep(page, 'Open the foe list');
+		await target(page, 'foe-switcher').click();
+		await expectStep(page, 'Add a foe');
+		await target(page, 'new-foe-action').click();
+		await expectStep(page, 'Find your foe');
+		await next(page);
+		await expectStep(page, 'Choose a foe');
+		await target(page, 'foe-picker-grid').locator('.fd-tile').first().click();
+		await expectStep(page, 'How many?');
+		await page.locator('.foe-dialog .btn', { hasText: 'Cancel' }).dispatchEvent('click');
+		await expectStep(page, 'Open the foe list');
+	});
+});
+
+test.describe('Tutorial — Create your first foe, on a phone', () => {
+	test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+	test('starts by showing the Foes tab', async ({ page }) => {
+		await openHome(page, false);
+		await page.locator('.mob-tab', { hasText: 'Characters' }).click();
+		await startTutorial(page, 'Create your first foe');
+
+		await expectStep(page, 'Your foes', '1 of 11');
+		await target(page, 'tab-foes').click();
+		await expectStep(page, 'Open the foe list', '2 of 11');
+		await target(page, 'foe-switcher').click();
+		await expectStep(page, 'Add a foe');
+		await target(page, 'new-foe-action').click();
+		await expectStep(page, 'Find your foe');
+		await next(page);
+		await expectStep(page, 'Choose a foe');
+		await target(page, 'foe-picker-grid').locator('.fd-tile').first().click();
+		await expectStep(page, 'How many?');
+		await next(page);
+		await expectStep(page, 'Know your foe');
+		await next(page);
+		await expectStep(page, 'Add it');
+		await target(page, 'foe-picker-confirm').click();
+		await expectStep(page, 'Your foe');
+		await next(page);
+		await expectStep(page, 'Mark progress');
+		await next(page);
+		await expectStep(page, 'Vanquish it', '11 of 11');
 		await next(page);
 		await expect(page.locator(POPOVER)).toBeHidden();
 	});
