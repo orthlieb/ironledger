@@ -1,20 +1,49 @@
 /**
  * The tutorials, for the menu (HamburgerMenu → Tutorials), and how to start
- * one. Each lives in its own module; see tour.ts for how they're written.
+ * one. The menu needs only their ids and titles: each tutorial's module,
+ * the runner (tour.ts) and Driver.js load when one is picked, so none of
+ * it ships with the page. See tour.ts for how they're written.
  */
 import { goto } from '$app/navigation';
 import { page } from '$app/state';
-import { createCharacter } from './createCharacter.js';
-import { createFoe } from './createFoe.js';
-import { fightFoe } from './fightFoe.js';
-import { runTour, whenRendered, type Tutorial } from './tour.js';
+import type { Tutorial } from './tour.js';
 
-export const TUTORIALS: readonly Tutorial[] = [createCharacter, createFoe, fightFoe];
+export interface TutorialEntry {
+	id: string;
+	/** Menu label. */
+	title: string;
+	/** Its steps, loaded on demand. */
+	load: () => Promise<Tutorial>;
+}
+
+export const TUTORIALS: readonly TutorialEntry[] = [
+	{
+		id: 'create-character',
+		title: 'Create a character',
+		load: () => import('./createCharacter.js').then((m) => m.createCharacter),
+	},
+	{
+		id: 'create-foe',
+		title: 'Create your first foe',
+		load: () => import('./createFoe.js').then((m) => m.createFoe),
+	},
+	{
+		id: 'fight-foe',
+		title: 'Fight your foe',
+		load: () => import('./fightFoe.js').then((m) => m.fightFoe),
+	},
+	{
+		id: 'make-camp',
+		title: 'Make camp and heal',
+		load: () => import('./makeCamp.js').then((m) => m.makeCamp),
+	},
+];
 
 /** Start a tutorial, going to its page first if need be. */
 export async function startTutorial(id: string): Promise<void> {
-	const t = TUTORIALS.find((x) => x.id === id);
-	if (!t) return;
+	const entry = TUTORIALS.find((x) => x.id === id);
+	if (!entry) return;
+	const [t, { runTour, whenRendered }] = await Promise.all([entry.load(), import('./tour.js')]);
 	if (page.url.pathname !== t.route) await goto(t.route);
 	// Its steps (and their `when` checks) need the page drawn.
 	await whenRendered(t.ready);

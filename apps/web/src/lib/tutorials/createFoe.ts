@@ -13,8 +13,6 @@
 import { tourTarget, type Tutorial } from './tour.js';
 
 export const createFoe: Tutorial = {
-	id: 'create-foe',
-	title: 'Create your first foe',
 	route: '/home',
 	ready: 'foe-switcher',
 	steps: () => [

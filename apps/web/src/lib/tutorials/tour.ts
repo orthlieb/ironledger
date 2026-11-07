@@ -19,9 +19,10 @@
  *     for the user first (roll a name they skipped), so the tour never
  *     strands them at a disabled button further on.
  *
- * Driver and its CSS are loaded on first use, so nothing ships in the main
- * bundle for users who never open a tutorial. tour.css restyles driver's
- * popover in the house style and lifts bits-ui menus above its overlay.
+ * This module, Driver and its CSS load only when a tutorial is picked (see
+ * index.ts): nothing of them ships with the page. tour.css restyles
+ * driver's popover in the house style and lifts bits-ui menus above its
+ * overlay.
  */
 import type { Driver, DriveStep, Popover } from 'driver.js';
 
@@ -65,10 +66,9 @@ export interface TourStep {
 	pageClass?: string;
 }
 
+/** A tutorial's steps and where they run. Its id and menu title are in
+ *  index.ts, which loads this only once it's picked. */
 export interface Tutorial {
-	id: string;
-	/** Menu label. */
-	title: string;
 	/** The route it runs on; the runner navigates there first. */
 	route: string;
 	/** `data-tour` id that's on the page once the route has rendered. */

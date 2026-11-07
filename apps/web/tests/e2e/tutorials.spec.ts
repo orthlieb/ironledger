@@ -15,7 +15,10 @@
  *
  * Fight your foe: Move → Enter the Fray → roll, and its outcome's links in
  * the log; a note saying what you do; Strike, and its harm on the foe's
- * progress track; Endure Harm, and it off your health. The dice are loaded, so each roll comes out as
+ * progress track; Endure Harm, and it off your health.
+ *
+ * Make camp and heal: Heal, and its +2 health; a note saying where you
+ * camp; Make Camp, choosing Recuperate and Focus from its links. The dice are loaded, so each roll comes out as
  * the test says.
  *
  * The steps find their controls by `data-tour` ids, so these tests also
@@ -559,5 +562,107 @@ test.describe('Tutorial — Fight your foe, on a phone', () => {
 		await expectStep(page, 'Initiative');
 		await next(page);
 		await fight(page, 26, true);
+	});
+});
+
+/**
+ * Make camp and heal, from its first step: the character hurt first
+ * (health 5 → 2), so Heal (a strong hit; its +2 health taken) and Make
+ * Camp (a strong hit; Recuperate and Focus taken) have something to mend.
+ * `phone` taps, and starts with the Characters tab hidden.
+ */
+async function rest(page: Page, total: number, phone = false) {
+	const press = (l: Locator) => (phone ? l.tap() : l.click());
+	const vital = (name: string) =>
+		page.locator('.res-tile', { hasText: name }).locator('.res-value');
+	const n = (i: number) => `${i + (total - 13)} of ${total}`;
+
+	await expectStep(page, 'After the fight', n(1));
+	await expect(page.locator(`${POPOVER} .driver-popover-description`)).toContainText(
+		'health 2 of 5',
+	);
+	await next(page);
+
+	await expectStep(page, 'Tend your wounds', n(2));
+	await press(target(page, 'tb-move'));
+	await expectStep(page, 'Heal', n(3));
+	await press(target(page, 'move-heal'));
+	await expectStep(page, 'Whose wounds?', n(4));
+	await next(page);
+	await expectStep(page, 'Roll', n(5));
+	await roll(page, STRONG, phone);
+	await expectStep(page, 'Take the health', n(6));
+	await expect(highlighted(page)).toContainText('Strong Hit');
+	await press(highlighted(page).locator('a.resource-link', { hasText: '+2 health' }));
+	await expect(vital('Health')).toHaveText('4');
+	await next(page);
+
+	await expectStep(page, 'Where do you camp?', n(7));
+	const bar = target(page, 'log-note').locator('input');
+	await press(bar);
+	await bar.fill('Under a rock shelf, out of the wind.');
+	await bar.press('Enter');
+	await expectStep(page, 'Make camp', n(8));
+	await expect(page.locator('.log-entry', { hasText: 'out of the wind' })).toHaveCount(1);
+	await press(target(page, 'tb-move'));
+	await expectStep(page, 'Make Camp', n(9));
+	await press(target(page, 'move-make-camp'));
+	await expectStep(page, 'How you rest', n(10));
+	await expect(target(page, 'move-outcomes')).toContainText('Recuperate');
+	await next(page);
+	await expectStep(page, 'Roll +supply', n(11));
+	await roll(page, STRONG, phone);
+
+	// Recuperate and Focus: +1 health, +1 momentum.
+	await expectStep(page, 'Choose', n(12));
+	await press(highlighted(page).locator('a.resource-link', { hasText: '+1 health' }).first());
+	await expect(vital('Health')).toHaveText('5');
+	const focus = highlighted(page).locator('a.resource-link', { hasText: '+1 momentum' });
+	await press(focus);
+	await expect(focus).toHaveCount(0);
+	await next(page);
+	await expectStep(page, 'Rested', n(13));
+	await next(page); // Done
+	await expect(page.locator(POPOVER)).toBeHidden();
+}
+
+test.describe('Tutorial — Make camp and heal', () => {
+	test.beforeAll(async () => {
+		await resetCharacters();
+		await resetLog();
+		await seedCharacter('Brand');
+	});
+
+	test('heals, says where they camp, and makes camp', async ({ page }) => {
+		await loadDice(page);
+		await openHome(page, false);
+		for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Decrease Health' }).click();
+		await expect(page.locator('.res-tile', { hasText: 'Health' }).locator('.res-value')).toHaveText(
+			'2',
+		);
+		await startTutorial(page, 'Make camp and heal');
+		await rest(page, 13);
+	});
+});
+
+test.describe('Tutorial — Make camp and heal, on a phone', () => {
+	test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+	test.beforeAll(async () => {
+		await resetCharacters();
+		await resetLog();
+		await seedCharacter('Brand');
+	});
+
+	test('brings up the Characters tab, then rests, tapping', async ({ page }) => {
+		await loadDice(page);
+		await openHome(page, false);
+		for (let i = 0; i < 3; i++) await page.getByRole('button', { name: 'Decrease Health' }).tap();
+		await page.locator('.mob-tab', { hasText: 'Foes' }).click();
+		await startTutorial(page, 'Make camp and heal');
+		await expectStep(page, 'Your character', '1 of 15');
+		await target(page, 'tab-characters').tap();
+		// The sheet is on Core already: that step moves itself on.
+		await rest(page, 15, true);
 	});
 });

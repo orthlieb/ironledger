@@ -29,8 +29,6 @@ function press(root: Element | undefined, id: string) {
 }
 
 export const createCharacter: Tutorial = {
-	id: 'create-character',
-	title: 'Create a character',
 	route: '/home',
 	ready: 'char-switcher',
 	steps: () => [
