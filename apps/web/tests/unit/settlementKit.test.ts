@@ -21,6 +21,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
+import elves from '../../../api/data/cultures/elves.json';
 import {
 	PARCHMENT,
 	generateSettlementSvg,
@@ -43,6 +44,7 @@ import {
 	gableHouse,
 	keep,
 	makeDesign,
+	octTower,
 	onStilts,
 	lookoutTower,
 	ringWall,
@@ -1096,6 +1098,53 @@ describe('render robustness', () => {
 		const roofs = squareTower(DEFAULT_DESIGN, {}).filter((p) => p.role === 'roof');
 		expect(roofs).toHaveLength(1);
 		expect(roofs[0].shadeLines?.length).toBeGreaterThan(0);
+	});
+});
+
+describe('flags, symbols and finials stand on their caps', () => {
+	// The soft join rounds a narrow spire tip well short of its apex: on the
+	// Elves' tall, swept spires by more than a flag's pole or a symbol's post
+	// reached, so both floated above the roof. Floating, it's an island of
+	// its own in the silhouette. Count islands only: rings wound like the
+	// biggest one (a wheel's holes wind the other way).
+	const D = upgradeDesign({
+		...DEFAULT_DESIGN,
+		...(elves.design as Partial<typeof DEFAULT_DESIGN>),
+	});
+	const islands = (d: string) => {
+		const areas = d
+			.split('M')
+			.filter((s) => s.trim())
+			.map((ring) => {
+				const pts = ring
+					.replace(/Z/g, '')
+					.split('L')
+					.map((p) => p.trim().split(/\s+/).map(Number));
+				let a = 0;
+				for (let i = 0; i < pts.length; i++) {
+					const [x1, y1] = pts[i];
+					const [x2, y2] = pts[(i + 1) % pts.length];
+					a += x1 * y2 - x2 * y1;
+				}
+				return a;
+			});
+		const big = areas.reduce((m, a) => (Math.abs(a) > Math.abs(m) ? a : m), 0);
+		return areas.filter((a) => Math.sign(a) === Math.sign(big)).length;
+	};
+	it.each([
+		['a round tower’s flag', () => roundTower(D)],
+		['a round tower’s symbol', () => roundTower(D, { finial: true })],
+		['a square tower’s symbol', () => squareTower(D, { finial: true })],
+		['an octagonal tower’s flag', () => octTower(D)],
+		['the clock tower’s symbol', () => clocktower(D)],
+		['a tiered tower’s flag', () => tieredTower(D)],
+		['a round hut’s finial', () => roundHut(D)],
+	])('%s, on the Elves’ spires', (_, make) => {
+		// As a lone building (×2) and a settlement draws it (×2 at 0.85).
+		for (const s of [2, 1.7]) {
+			const { silhouette } = renderLayered(place(make(), { s }), { outline: 1.4, join: D.join });
+			expect(islands(silhouette)).toBe(1);
+		}
 	});
 });
 
