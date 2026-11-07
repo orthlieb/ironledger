@@ -1346,7 +1346,10 @@
 										<span class="ca-empty-icon" aria-hidden="true">{@html linkSvg}</span>
 										<p class="ca-empty-text">
 											You currently have no vows. Do you want to fade into obscurity or perform
-											great deeds? Click <strong>+ VOW</strong> to swear on iron.
+											great deeds? Click
+											<span class="ca-empty-key" role="img" aria-label="Add Vow"
+												><span class="ca-empty-key-plus">+</span>{@html linkSvg}</span
+											> to swear on iron.
 										</p>
 									</div>
 								{:else}
@@ -1368,7 +1371,10 @@
 										<span class="ca-empty-icon" aria-hidden="true">{@html gemSvg}</span>
 										<p class="ca-empty-text">
 											You currently have no assets. You are either unskilled, destitute, or both.
-											Click <strong>+ ASSET</strong> to prove me wrong.
+											Click
+											<span class="ca-empty-key" role="img" aria-label="Add Asset"
+												><span class="ca-empty-key-plus">+</span>{@html gemSvg}</span
+											> to prove me wrong.
 										</p>
 									</div>
 								{:else}
@@ -1819,6 +1825,33 @@
 		margin: 0;
 		line-height: 1.5;
 		max-width: 26ch;
+	}
+	/* The header's add button, drawn into the empty state's text ("Click + ⛓
+	   to swear on iron"): it has no label, so the text shows what to look for. */
+	.ca-empty-key {
+		display: inline-flex;
+		align-items: center;
+		gap: 3px;
+		padding: 2px 5px;
+		margin: 0 1px;
+		border: 1px solid var(--border-mid);
+		border-radius: 3px;
+		background: var(--bg-control);
+		color: var(--text-muted);
+		line-height: 1;
+		vertical-align: middle;
+	}
+	.ca-empty-key-plus {
+		font-weight: 700;
+		font-size: 0.85rem;
+	}
+	.ca-empty-key :global(svg) {
+		width: 11px;
+		height: 11px;
+		fill: currentColor;
+	}
+	.ca-empty-key :global(svg path) {
+		fill: currentColor;
 	}
 
 	/* ── Body: name header + stage (spine strip retired). ─────────── */
