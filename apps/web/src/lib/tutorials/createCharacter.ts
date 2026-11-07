@@ -73,7 +73,7 @@ export const createCharacter: Tutorial = {
 			target: 'new-char-stats',
 			title: 'Roll your stats',
 			backIfGone: true,
-			body: 'Click the die to deal a stat array across Edge, Heart, Iron, Shadow and Wits. With Lodestar on, choose one of its three arrays first. You can still adjust any stat by hand.',
+			body: 'Click the die to roll your stats across Edge, Heart, Iron, Shadow and Wits. With Lodestar on, choose a difficulty level first — Challenging, Perilous or Grim: the harder it is, the lower your stats. You can still adjust any stat by hand.',
 			back: true,
 			beforeNext: (el) => {
 				const values = [...(el?.querySelectorAll('input') ?? [])].map((i) => Number(i.value));
