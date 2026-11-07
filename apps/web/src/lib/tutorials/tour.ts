@@ -28,6 +28,9 @@ import type { Driver, DriveStep, Popover } from 'driver.js';
 export interface TourStep {
 	/** `data-tour` id of the element to highlight; none centres the popover. */
 	target?: string;
+	/** A CSS selector instead, for what the app writes as HTML and can't tag
+	 *  (a log entry's link): the first match is highlighted. */
+	selector?: string;
 	title: string;
 	body: string;
 	side?: 'top' | 'right' | 'bottom' | 'left';
@@ -104,6 +107,10 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 	const chosen = steps.filter((s) => s.when?.() ?? true);
 	/** Stops the current step's watches (continueWhen, backIfGone). */
 	let unwatch: (() => void)[] = [];
+	/** Has driver finished moving to the current step? Until it has, a
+	 *  refresh measures the step before (driver only takes the new one's
+	 *  element as the move ends) and puts the popover by that. */
+	let settled = false;
 	const stopWatch = () => {
 		unwatch.forEach((stop) => stop());
 		unwatch = [];
@@ -133,7 +140,7 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 			};
 		}
 		return {
-			element: s.target ? tourSel(s.target) : undefined,
+			element: s.target ? tourSel(s.target) : s.selector,
 			waitForElement: s.wait ?? 0,
 			skipMissingElement: s.optional,
 			// From the start of the step's highlight, not its end: driver
@@ -142,10 +149,17 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 			// click on Create made the character but left the tour behind.
 			onHighlightStarted: (el) => {
 				stopWatch();
+				settled = false;
 				if (el) unwatch.push(followSize(el));
 				if (s.clickToContinue && el) unwatch.push(onClickOf(el, i));
 				if (s.continueWhen) unwatch.push(watchFor(s.continueWhen, i));
 				if (s.backIfGone && el) unwatch.push(watchGone(el, i));
+			},
+			// Measure again now the move's done, for a target that changed size
+			// on the way (a list still loading), whose resize was held back.
+			onHighlighted: () => {
+				settled = true;
+				active?.refresh();
 			},
 			onDeselected: stopWatch,
 			popover,
@@ -155,20 +169,34 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 	/** Keep the highlight on `el` as it grows or shrinks (a field switching
 	 *  to its editor) — driver only re-measures on scroll and resize. */
 	function followSize(el: Element): () => void {
-		const ro = new ResizeObserver(() => active?.refresh());
+		const ro = new ResizeObserver(() => {
+			if (settled) active?.refresh();
+		});
 		ro.observe(el);
 		return () => ro.disconnect();
 	}
 
-	/** Move on from step `index` when `el` is clicked. */
+	/** Move on from step `index` when `el` is clicked — or tapped, where the
+	 *  page acts on the tap itself and cancels the click that would follow
+	 *  (the log's links do, to skip the browser's click delay). */
 	function onClickOf(el: Element, index: number): () => void {
+		const advance = () => {
+			if (active?.getActiveIndex() === index) active.moveNext();
+		};
 		// After the click's own handlers have run (it may close a dialog).
-		const go = () =>
+		const click = () => window.setTimeout(advance, 0);
+		// Only a cancelled tap: otherwise its click is still to come, and
+		// moving on first would cover the control it lands on.
+		const tap = (e: Event) =>
 			window.setTimeout(() => {
-				if (active?.getActiveIndex() === index) active.moveNext();
+				if (e.defaultPrevented) advance();
 			}, 0);
-		el.addEventListener('click', go, { capture: true });
-		return () => el.removeEventListener('click', go, { capture: true });
+		el.addEventListener('click', click, { capture: true });
+		el.addEventListener('touchend', tap, { capture: true, passive: true });
+		return () => {
+			el.removeEventListener('click', click, { capture: true });
+			el.removeEventListener('touchend', tap, { capture: true });
+		};
 	}
 
 	/** Move on from step `index` once the `id` target is on screen. */

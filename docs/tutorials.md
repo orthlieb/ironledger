@@ -8,10 +8,10 @@ desktop, tablet and phone, with mouse or touch.
 They're built on [Driver.js](https://driverjs.com) (MIT), which loads the
 first time a tutorial starts, so it adds nothing to the main bundle.
 
-| Tutorial              | What it covers                                                                                                                                                                                               |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Create a character    | The switcher's "+ New character…", rolling a name, stats and (YRT) a region, randomizing the rest, Create, then a bio and a portrait on the Background tab                                                   |
-| Create your first foe | The switcher's "+ New foe…", searching and filtering the foe picker, choosing a foe, solo / pack / horde, its features, drives and tactics, Add to Foes, then its pills, marking progress and vanquishing it |
+| Tutorial              | What it covers                                                                                                                                                                                                                                                                                          |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Create a character    | The switcher's "+ New character…", rolling a name, stats and (YRT) a region, randomizing the rest, Create; a bio and a portrait on the Background tab; initiative; swearing a first vow; taking a first starting asset and spending its experience from the log; debilities and bonds on the Status tab |
+| Create your first foe | The switcher's "+ New foe…", searching and filtering the foe picker, choosing a foe, solo / pack / horde, its features, drives and tactics, Add to Foes, then its pills, marking progress and vanquishing it                                                                                            |
 
 ## Where things live
 
@@ -59,12 +59,18 @@ Other step options:
 
 | Option                | Meaning                                                                                                                           |
 | --------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `selector`            | A CSS selector in place of `target`, for what the app writes as HTML and can't tag (a log entry's link); the first match is used  |
 | `when: () => boolean` | Leave the step out unless true, asked when the tour starts (YRT on, a tab hidden)                                                 |
 | `wait: ms`            | Wait for the target to appear (a dialog opening)                                                                                  |
 | `backIfGone`          | If the target leaves the screen (a list row filtered out, its dialog closed), go back to the nearest earlier step still on screen |
 | `optional`            | Skip the step when its target isn't there (a section only some foes have)                                                         |
 | `back`                | Show Back. Only where the step before is still on screen                                                                          |
 | `side`, `align`       | Where the popover sits                                                                                                            |
+
+On a phone a dialog can fill the screen, leaving the popover nowhere to go
+but over the dialog itself. When a step's player must use a button there
+(Add on an asset card), give the button a step of its own with
+`side: 'top'`, so the popover sits above it, not over it.
 
 Then add it to `TUTORIALS` in `index.ts`, and add a test to
 `tutorials.spec.ts` that follows it through using the real controls.
@@ -79,6 +85,13 @@ Then add it to `TUTORIALS` in `index.ts`, and add a test to
   the highlighted element.
 - **Clicks during the move to a step count.** Driver's own click-to-advance
   ignores clicks while it animates; the runner listens itself.
+- **Taps the page acts on itself count as clicks.** The log handles a tap
+  on a link at touchend and cancels the click that would follow; a
+  click-along step counts such a cancelled tap as its click.
+- **A target that changes size on the way is measured again.** Driver takes
+  a step's measure only as its move ends (a refresh before then places the
+  popover by the step before), so the runner holds resizes until then and
+  measures once more: a foe list still loading as the picker's grid comes up.
 - **A tap on the dimmed page doesn't end the tour.** It ends with ✕, Escape
   or Done.
 - **The tour's own buttons don't take focus.** Driver swallows their
