@@ -8,11 +8,11 @@ desktop, tablet and phone, with mouse or touch.
 They're built on [Driver.js](https://driverjs.com) (MIT), which loads the
 first time a tutorial starts, so it adds nothing to the main bundle.
 
-| Tutorial              | What it covers                                                                                                                                                                                                                                                                                                       |
-| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Create a character    | The switcher's "+ New character…", rolling a name, stats and (YRT) a region, randomizing the rest, Create; a bio and a portrait on the Background tab; initiative; swearing a first vow; taking a first starting asset and spending its experience from the log; debilities and bonds on the Status tab              |
-| Create your first foe | The switcher's "+ New foe…", searching and filtering the foe picker, choosing a foe, solo / pack / horde, its features, drives and tactics, Add to Foes, then its pills, marking progress and vanquishing it                                                                                                         |
-| Fight your foe        | With the active character and foe: vitals and initiative; Move → searching for Enter the Fray → a stat → Roll Move, then applying the outcome from the log's links; Strike or Clash as initiative allows, and the harm marked on the foe's progress track; Endure Harm, applying it, rolling, and the health it cost |
+| Tutorial              | What it covers                                                                                                                                                                                                                                                                                                                                                 |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Create a character    | The switcher's "+ New character…", rolling a name, stats and (YRT) a region, randomizing the rest, Create; a bio and a portrait on the Background tab; initiative; swearing a first vow; taking a first starting asset and spending its experience from the log; debilities and bonds on the Status tab                                                        |
+| Create your first foe | The switcher's "+ New foe…", searching and filtering the foe picker, choosing a foe, solo / pack / horde, its features, drives and tactics, Add to Foes, then its pills, marking progress and vanquishing it                                                                                                                                                   |
+| Fight your foe        | With the active character and foe: vitals and initiative; Move → searching for Enter the Fray → a stat → Roll Move, then applying the outcome from the log's links; saying what you do, as a note in the log; Strike or Clash as initiative allows, and the harm marked on the foe's progress track; Endure Harm, applying it, rolling, and the health it cost |
 
 ## Where things live
 
@@ -49,7 +49,9 @@ A step is one of three kinds:
   once the `<id>` target is on screen, meaning what the player's action
   opened. It's keyed to the result, not the click, so a menu closed and
   reopened, or already open, still lands right. Use it for "open the
-  list" and "choose + New character…".
+  list" and "choose + New character…". For a result with no target of its
+  own, give it a function instead, and the tour moves on once it returns
+  true (a note the player wrote to the log).
 - **Click along** (`clickToContinue`): no Next button. The tour moves on
   when the player clicks the highlighted control. Use it when the click's
   result is already on screen (Create, then the character it made). Given

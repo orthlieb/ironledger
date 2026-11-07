@@ -38,8 +38,10 @@ export interface TourStep {
 	body: string;
 	side?: 'top' | 'right' | 'bottom' | 'left';
 	align?: 'start' | 'center' | 'end';
-	/** Move on once this `data-tour` target is on screen (no Next button). */
-	continueWhen?: string;
+	/** Move on once this `data-tour` target is on screen (no Next button) —
+	 *  or once this returns true, for a result with no target of its own (a
+	 *  note written to the log). */
+	continueWhen?: string | (() => boolean);
 	/** Move on when the user clicks the highlighted element (no Next button) —
 	 *  or, given a selector, a control in it that matches (Apply, not the
 	 *  steppers beside it). */
@@ -231,11 +233,13 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 		};
 	}
 
-	/** Move on from step `index` once the `id` target is on screen. */
-	function watchFor(id: string, index: number): () => void {
+	/** Move on from step `index` once the `when` target is on screen, or
+	 *  `when` returns true. */
+	function watchFor(when: string | (() => boolean), index: number): () => void {
+		const met = typeof when === 'string' ? () => !!tourTarget(when) : when;
 		const timer = window.setInterval(() => {
 			const d = active;
-			if (!d || d.getActiveIndex() !== index || !tourTarget(id)) return;
+			if (!d || d.getActiveIndex() !== index || !met()) return;
 			window.clearInterval(timer);
 			d.moveNext();
 		}, 150);

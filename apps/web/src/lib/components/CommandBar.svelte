@@ -917,7 +917,7 @@
 	}
 </script>
 
-<div class="cb">
+<div class="cb" data-tour="log-note">
 	<div class="cb-context" aria-label="Active context">
 		{#if activeCharName}
 			<span class="cb-chip cb-chip-char" use:tooltip={'Active character'}>{activeCharName}</span>

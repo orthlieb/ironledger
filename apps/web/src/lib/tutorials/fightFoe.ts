@@ -2,7 +2,8 @@
  * Tutorial: fight your foe — with the active character and foe, look at the
  * character's vitals and initiative; make a move (Move → search → Enter the
  * Fray → a stat → Roll Move) and apply its outcome from the log's links;
- * Strike or Clash, as initiative allows, and see the harm marked on the
+ * say what the character does, as a note in the log; Strike or Clash, as
+ * initiative allows, and see the harm marked on the
  * foe's progress track; then Endure Harm, apply it, roll, and see it come
  * off the character's health.
  *
@@ -16,13 +17,13 @@
  * (CharactersArea), tb-move (the layout's Move button), moves-search,
  * move-<id> (each move's tile: move-enter-the-fray, move-strike,
  * move-clash, move-endure-harm), move-stats, move-harm and move-roll
- * (MovesDialog), foe-progress (FoesArea); and the log's entries
- * (`.log-entry` holding a `.move-outcome`).
+ * (MovesDialog), foe-progress (FoesArea), log-note (CommandBar, the log's
+ * note bar); and the log's entries (`.log-entry` holding a `.move-outcome`).
  */
 import { getActiveFoeId } from '#lib/activeContext.svelte.js';
 import { getActiveDiceCtx } from '#lib/diceContext.svelte.js';
 import { getEncounters } from '#lib/encounterStore.svelte.js';
-import { triggerAction } from '#lib/log.svelte.js';
+import { getLog, triggerAction } from '#lib/log.svelte.js';
 import { tourTarget, type TourStep, type Tutorial } from './tour.js';
 
 /** Initiative as the character stores it (1 is the character's). */
@@ -115,6 +116,9 @@ export const fightFoe: Tutorial = {
 		const seen = new Set(rolls().map((e) => e.dataset['entryId']));
 		const newRoll = () => rolls().find((e) => !seen.has(e.dataset['entryId'])) ?? null;
 		const done = () => rolls().forEach((e) => seen.add(e.dataset['entryId']));
+		// And the entries, to tell a note the player writes from those before.
+		const before = new Set(getLog().map((e) => e.id));
+		const wroteNote = () => getLog().some((e) => e.title === 'Note' && !before.has(e.id));
 
 		return [
 			{
@@ -214,9 +218,15 @@ export const fightFoe: Tutorial = {
 
 			// ── Strike or Clash ─────────────────────────────────────────────
 			{
+				target: 'log-note',
+				title: 'Say what you do',
+				body: 'Before you roll, say what your character does. Type it here, as you’d tell it — “I rush in, axe high” — and press Enter. It goes in the log, so your fight reads as a story.',
+				continueWhen: wroteNote,
+			},
+			{
 				target: 'tb-move',
-				title: 'Attack',
-				body: 'Now act on it. With initiative, Strike; if your foe has it, Clash to fight back. Click Move.',
+				title: 'Make the move',
+				body: 'Now make the move it calls for. With initiative, that’s Strike; if your foe has it, Clash, to fight back. Click Move.',
 				continueWhen: 'moves-search',
 			},
 			{
@@ -328,7 +338,7 @@ export const fightFoe: Tutorial = {
 			{
 				target: 'char-vitals',
 				title: 'Your health',
-				body: 'The harm came off your health here. Heal and Make Camp bring it back. Trade moves like these until the fight is done.',
+				body: 'The harm came off your health here. Heal and Make Camp bring it back. Fight on like this until it’s done: say what you do, make the move, apply what it says.',
 				wait: 3000,
 			},
 		];

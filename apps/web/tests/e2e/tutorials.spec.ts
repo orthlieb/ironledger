@@ -14,8 +14,8 @@
  * vanquishing it.
  *
  * Fight your foe: Move → Enter the Fray → roll, and its outcome's links in
- * the log; Strike, and its harm on the foe's progress track; Endure Harm,
- * and it off your health. The dice are loaded, so each roll comes out as
+ * the log; a note saying what you do; Strike, and its harm on the foe's
+ * progress track; Endure Harm, and it off your health. The dice are loaded, so each roll comes out as
  * the test says.
  *
  * The steps find their controls by `data-tour` ids, so these tests also
@@ -452,8 +452,16 @@ async function fight(page: Page, total: number, phone = false) {
 		'true',
 	);
 
+	// Say what you do: a note in the log moves the tour on.
+	await expectStep(page, 'Say what you do');
+	const bar = target(page, 'log-note').locator('input');
+	await press(bar);
+	await bar.fill('I rush in, axe high.');
+	await bar.press('Enter');
+	await expect(page.locator('.log-entry', { hasText: 'I rush in, axe high.' })).toHaveCount(1);
+
 	// With initiative, the tour points at Strike.
-	await expectStep(page, 'Attack');
+	await expectStep(page, 'Make the move');
 	await press(target(page, 'tb-move'));
 	await expectStep(page, 'Strike or Clash');
 	await expect(highlighted(page)).toHaveAttribute('data-tour', 'move-strike');
@@ -514,16 +522,16 @@ test.describe('Tutorial — Fight your foe', () => {
 		await expect(page.locator(POPOVER)).toBeHidden();
 	});
 
-	test('walks through Enter the Fray, a Strike and Endure Harm', async ({ page }) => {
+	test('walks through Enter the Fray, a note, a Strike and Endure Harm', async ({ page }) => {
 		await seedFoeEncounter({ name: 'Boar', foeId: 'ironsworn/boar' });
 		await loadDice(page);
 		await openHome(page, false);
 		await startTutorial(page, 'Fight your foe');
-		await expectStep(page, 'Your vitals', '1 of 21');
+		await expectStep(page, 'Your vitals', '1 of 22');
 		await next(page);
-		await expectStep(page, 'Initiative', '2 of 21');
+		await expectStep(page, 'Initiative', '2 of 22');
 		await next(page);
-		await fight(page, 21);
+		await fight(page, 22);
 	});
 });
 
@@ -543,13 +551,13 @@ test.describe('Tutorial — Fight your foe, on a phone', () => {
 		await openHome(page, false);
 		await page.locator('.mob-tab', { hasText: 'Foes' }).click();
 		await startTutorial(page, 'Fight your foe');
-		await expectStep(page, 'Your character', '1 of 25');
+		await expectStep(page, 'Your character', '1 of 26');
 		await target(page, 'tab-characters').tap();
 		// The sheet is on Core already: that step moves itself on.
-		await expectStep(page, 'Your vitals', '3 of 25');
+		await expectStep(page, 'Your vitals', '3 of 26');
 		await next(page);
 		await expectStep(page, 'Initiative');
 		await next(page);
-		await fight(page, 25, true);
+		await fight(page, 26, true);
 	});
 });
