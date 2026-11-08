@@ -22,6 +22,12 @@ export const addVow: Tutorial = {
 					body: 'A vow needs someone to swear it. Run Create a character, and come back.',
 				},
 			];
+		// The vows sworn already: the dialog's step waits for a new one (the
+		// vow list may be on screen behind it all along).
+		const vows = () => getActiveDiceCtx()?.data.vows?.length ?? 0;
+		const before = vows();
+		const swore = () => !tourTarget('new-vow-dialog') && vows() > before;
+
 		return [
 			{
 				// Phones and tablets (and the Tabs view) show one panel at a time.
@@ -42,7 +48,7 @@ export const addVow: Tutorial = {
 				target: 'new-vow-dialog',
 				title: 'Name it and rank it',
 				body: 'Say what you swear to do, and choose its rank: the harder the vow, the more progress it takes, and the more experience it earns when you fulfill it. Then click Swear Vow.',
-				continueWhen: 'char-vows',
+				continueWhen: swore,
 				// Cancelled: back to the + ⛓ button.
 				backIfGone: true,
 			},
