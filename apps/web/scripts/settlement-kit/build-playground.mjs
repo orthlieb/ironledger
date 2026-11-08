@@ -51,6 +51,11 @@ const { outputFiles } = await build({
 	},
 });
 const js = outputFiles[0].text.replace(/<\/script/gi, '<\\/script');
+// The app's d6, for the roll-a-culture button (as the app's dice buttons).
+const d6 = readFileSync(
+	join(HERE, '..', '..', 'src', 'lib', 'icons', 'dice-d6-light.svg'),
+	'utf8',
+).replace('<svg', '<svg aria-hidden="true"');
 
 // The app's manifest, icons and theme colour, and (at the end of the body)
 // its service worker — the hosted copy only.
@@ -82,6 +87,8 @@ header h1{font-size:16px;margin:0 6px 0 0}
 #note{flex-basis:100%;font-size:12.5px;color:var(--fg);font-style:italic}#note:empty{display:none}
 button,select{font:inherit;padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:var(--card);color:var(--fg);cursor:pointer}
 button.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+button.dice{display:inline-flex;align-items:center;justify-content:center;width:30px;height:30px;padding:0;background:transparent;color:var(--muted)}
+button.dice:hover{color:var(--accent);border-color:var(--accent)}button.dice svg{width:15px;height:15px;fill:currentColor}
 .layout{display:grid;grid-template-columns:290px minmax(0,1fr);gap:16px;padding:12px 16px 40px;align-items:start}
 #knobs{position:sticky;top:60px;max-height:calc(100dvh - 72px);overflow:auto;overscroll-behavior:contain;padding-right:4px}
 fieldset{border:1px solid var(--line);border-radius:8px;margin:0 0 10px;padding:6px 10px 8px;background:var(--card)}
@@ -121,7 +128,7 @@ figcaption{font-size:13px;display:flex;justify-content:center;align-items:center
 </style></head><body>
 <header><h1>Settlement playground</h1>
 <select id="preset" autocomplete="off" aria-label="Culture preset"></select>
-<button class="primary" id="culture" title="Shift-click for the default culture">Culture ⟳</button>
+<button class="dice" id="culture" aria-label="Roll a culture" title="Roll a culture (shift-click for the default)">${d6}</button>
 <button id="reset">Reset drawing</button>
 <button id="copy">Copy settings</button>
 <button id="import" title="Load a cultures/*.json plugin to tweak">Import culture</button>

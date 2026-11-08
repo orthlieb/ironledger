@@ -110,7 +110,7 @@ import { place } from './render.js';
  *   workshops
  * @property {boolean} church a full church (nave + bell tower) rather than a lone bell
  *   tower
- * @property {'none' | 'orb' | 'sun' | 'spike' | 'cross' | 'horns' | 'wheel' | 'claw' | 'trident'} symbol
+ * @property {'none' | 'orb' | 'sun' | 'spike' | 'cross' | 'horns' | 'wheel' | 'claw' | 'trident' | 'skull' | 'flame' | 'droplet' | 'diamond' | 'hurricane'} symbol
  *   finial atop temple towers
  * @property {'none' | 'city' | 'town' | 'all'} keep smallest settlement with a castle keep
  * @property {'none' | 'town' | 'all'} market smallest settlement with a market square
@@ -1304,19 +1304,34 @@ export function sideHouse(D, o = {}) {
 		return null;
 	};
 	// The church's rose window: 0.3 of the way up the roof, or, if a sweep
-	// hides it there, lower, though not below the eave.
-	/** @type {Pt | null} */
+	// hides it there, lower, though not below the eave. Round on the wall,
+	// so drawn on the receding face (P.face): an ellipse leaning with it.
+	/** @type {((o: Pt) => Pt) | null} */
 	let rose = null;
 	if (kind === 'church') {
 		const ys = [0.3, 0.24, 0.18, 0.12].map((f) =>
 			Math.max(h + rh * f, Math.min(h + rh * 0.3, h + 3)),
 		);
-		const at = ys.map((y) => (/** @type {number} */ t) => {
-			const c = P.at([w / 2, y], t);
-			return circle(c[0], c[1], 2.6);
-		});
+		/** A point of the rose, as an offset from its centre on the wall. */
+		const place = (/** @type {number} */ y, /** @type {number} */ t) => (/** @type {Pt} */ o) =>
+			P.face([o], w / 2, y, t)[0];
+		const at = ys.map((y) => (/** @type {number} */ t) => circle(0, 0, 2.6).map(place(y, t)));
 		const fit = onGable(at, 0.5);
-		if (fit) rose = P.at([w / 2, ys[fit[0]]], fit[1]);
+		if (fit) {
+			// Under the apex the front slope's verge, overhanging, covers the
+			// rose's front edge: step it back along the wall until it clears
+			// (a ring wider by the verge's drawn edge), or as near as it gets.
+			const y = ys[fit[0]];
+			let best = fit[1],
+				most = -1;
+			for (let k = 0; k <= 20; k++) {
+				const t = fit[1] + k / 100;
+				const shows = showing(circle(0, 0, 3.4).map(place(y, t)), gableEnd, slope);
+				if (shows > most) [best, most] = [t, shows];
+				if (shows >= 0.97) break;
+			}
+			rose = place(y, best);
+		}
 	}
 	const gableWindow = (/** @type {number} */ t) => P.face(opening(D, 0, 0, 2.2), w / 2, h + 1.5, t);
 	const hatchDoor = (/** @type {number} */ t) => P.face(rect(-1.6, 0, 3.2, 3.2), w / 2, h + 0.8, t);
@@ -1453,13 +1468,13 @@ export function sideHouse(D, o = {}) {
 				...(stone ? faceCourses(P, w / 2, 0, h + rh) : []),
 			],
 			fills: rose
-				? [circle(rose[0], rose[1], 2.6)]
+				? [circle(0, 0, 2.6).map(rose)]
 				: tHatch !== null
 					? [hatchDoor(tHatch)]
 					: tWin !== null
 						? [gableWindow(tWin)]
 						: [],
-			cuts: rose ? roseCuts(rose) : [],
+			cuts: rose ? roseCuts(rose([0, 0]), rose) : [],
 		},
 		{
 			solid: [rect(-w / 2, 0, w, h)],
@@ -1714,18 +1729,22 @@ function naveWindows(/** @type {number} */ w, /** @type {number} */ h) {
 }
 
 /**
- * Tracery knocked out of a rose window. @param {Pt} c
+ * Tracery knocked out of a rose window centred on `c`. `place` puts an
+ * offset from the centre on the page: as is for a rose facing the viewer,
+ * or onto a receding wall (P.face), where the tracery leans with the rose.
+ * @param {Pt} c
+ * @param {(o: Pt) => Pt} [place]
  * @returns {Line[]}
  */
-function roseCuts(c) {
+function roseCuts(c, place = (o) => [c[0] + o[0], c[1] + o[1]]) {
 	/** @type {Line[]} */
 	const out = [];
 	for (let a = 0; a < 180; a += 45) {
 		const t = (a * Math.PI) / 180;
 		out.push(
 			seg(
-				[c[0] - Math.cos(t) * 3, c[1] - Math.sin(t) * 3],
-				[c[0] + Math.cos(t) * 3, c[1] + Math.sin(t) * 3],
+				place([-Math.cos(t) * 3, -Math.sin(t) * 3]),
+				place([Math.cos(t) * 3, Math.sin(t) * 3]),
 				0.6,
 			),
 		);
@@ -2880,6 +2899,100 @@ function seat(parts, kind, tip, socket) {
 }
 
 /**
+ * The Varou's paw (the `claw` symbol): a pad and four clawed toes, as
+ * offsets from the symbol's point, y up, about 6.2 wide and standing 1.6 up
+ * its post. Flattened from Font Awesome Pro's "paw-claws" (Fonticons, Inc.,
+ * commercial licence), its curves sampled three times each.
+ */
+// prettier-ignore
+const PAW = /** @type {Poly[]} */ (
+	[
+		[[-0.67, 4.52], [-1.51, 3.87], [-2.26, 2.55], [-2.3, 2.43], [-2.32, 2.31], [-2.33, 2.17], [-2.25, 1.88], [-2.05, 1.68], [-1.76, 1.6], [-1.62, 1.61], [-1.48, 1.62], [-1.35, 1.65], [-0.28, 1.92], [-0.09, 1.95], [0.09, 1.95], [0.28, 1.92], [1.35, 1.65], [1.48, 1.62], [1.62, 1.61], [1.76, 1.6], [2.04, 1.68], [2.25, 1.88], [2.33, 2.18], [2.32, 2.31], [2.3, 2.43], [2.26, 2.55], [1.5, 3.87], [0.67, 4.52], [0, 4.7]],
+		[[-2.96, 6.02], [-3.06, 5.91], [-3.1, 5.77], [-3.1, 4.89], [-3.08, 4.73], [-3.04, 4.56], [-2.96, 4.39], [-2.68, 4.07], [-2.34, 3.93], [-2.01, 3.99], [-1.79, 4.24], [-1.75, 4.61], [-1.88, 5.01], [-2.07, 5.24], [-2.28, 5.4], [-2.52, 5.47], [-2.52, 5.77], [-2.56, 5.91], [-2.66, 6.02], [-2.81, 6.06]],
+		[[2.66, 6.02], [2.56, 5.91], [2.52, 5.77], [2.52, 5.47], [2.29, 5.4], [2.07, 5.24], [1.89, 5.01], [1.75, 4.61], [1.79, 4.24], [2.01, 3.99], [2.34, 3.93], [2.68, 4.08], [2.96, 4.39], [3.04, 4.56], [3.09, 4.73], [3.1, 4.89], [3.1, 5.77], [3.06, 5.91], [2.96, 6.02], [2.81, 6.06]],
+		[[-1.6, 7.57], [-1.7, 7.46], [-1.74, 7.32], [-1.74, 6.25], [-1.74, 6.11], [-1.72, 5.97], [-1.68, 5.82], [-1.42, 5.38], [-1.06, 5.13], [-0.66, 5.12], [-0.34, 5.36], [-0.2, 5.78], [-0.26, 6.29], [-0.48, 6.69], [-0.8, 6.95], [-1.16, 7.02], [-1.16, 7.32], [-1.2, 7.46], [-1.31, 7.57], [-1.45, 7.61]],
+		[[1.31, 7.57], [1.2, 7.46], [1.16, 7.32], [1.16, 7.02], [0.8, 6.95], [0.48, 6.69], [0.26, 6.29], [0.2, 5.78], [0.34, 5.36], [0.66, 5.12], [1.06, 5.13], [1.42, 5.38], [1.68, 5.82], [1.72, 5.97], [1.74, 6.11], [1.74, 6.25], [1.74, 7.32], [1.7, 7.46], [1.6, 7.57], [1.45, 7.61]],
+	]
+);
+
+/**
+ * The `skull` symbol: a head with its jaw's teeth (SKULL) and two eye
+ * sockets, drawn in ink like windows (SKULL_EYES); offsets from the
+ * symbol's point, y up, 5.6 wide and standing 1.8 up its post. Flattened
+ * from Font Awesome Pro's "skull" (Fonticons, Inc., commercial licence).
+ */
+// prettier-ignore
+const SKULL = /** @type {Poly} */ (
+[[1.75, 2.73], [2.18, 3.13], [2.51, 3.62], [2.73, 4.17], [2.8, 4.77], [2.58, 5.8], [1.98, 6.63], [1.09, 7.19], [0, 7.4], [-1.09, 7.19], [-1.98, 6.63], [-2.58, 5.8], [-2.8, 4.77], [-2.73, 4.17], [-2.51, 3.62], [-2.18, 3.13], [-1.75, 2.73], [-1.75, 1.8], [-0.87, 1.8], [-0.87, 2.5], [-0.35, 2.5], [-0.35, 1.8], [0.35, 1.8], [0.35, 2.5], [0.88, 2.5], [0.88, 1.8], [1.75, 1.8]]
+);
+// prettier-ignore
+const SKULL_EYES = /** @type {Poly[]} */ (
+	[
+		[[-1.69, 4.33], [-1.54, 4.11], [-1.32, 3.96], [-1.05, 3.9], [-0.78, 3.96], [-0.56, 4.11], [-0.41, 4.33], [-0.35, 4.6], [-0.41, 4.87], [-0.56, 5.09], [-0.78, 5.24], [-1.05, 5.3], [-1.32, 5.24], [-1.54, 5.09], [-1.69, 4.87], [-1.75, 4.6]],
+		[[0.78, 5.24], [0.56, 5.09], [0.41, 4.87], [0.35, 4.6], [0.41, 4.33], [0.56, 4.11], [0.78, 3.96], [1.05, 3.9], [1.32, 3.96], [1.54, 4.11], [1.69, 4.33], [1.75, 4.6], [1.69, 4.87], [1.54, 5.09], [1.32, 5.24], [1.05, 5.3]],
+	]
+);
+
+/**
+ * The `flame` symbol: a flame (FLAME) with a pale core (FLAME_CORE, its
+ * inner tongue); offsets from the symbol's point, y up, 4.8 wide and 6.4
+ * tall, standing 1.8 up its post. Flattened from Font Awesome Pro's
+ * "fire-flame" (Fonticons, Inc., commercial licence).
+ */
+// prettier-ignore
+const FLAME = /** @type {Poly} */ (
+[[2.26, 4.99], [1.88, 5.87], [1.41, 6.68], [0.86, 7.42], [0.21, 8.09], [-0.86, 7.42], [-1.41, 6.68], [-1.88, 5.87], [-2.25, 5.02], [-2.32, 4.8], [-2.36, 4.59], [-2.39, 4.39], [-2.4, 4.18], [-2.21, 3.25], [-1.69, 2.5], [-0.93, 1.99], [0, 1.8], [0.93, 1.99], [1.69, 2.5], [2.21, 3.25], [2.4, 4.18], [2.39, 4.39], [2.36, 4.59], [2.32, 4.8]]
+);
+// prettier-ignore
+const FLAME_CORE = /** @type {Poly} */ (
+[[-0.11, 6.25], [-0.19, 6.12], [-0.25, 5.99], [-0.29, 5.84], [-0.3, 5.69], [-0.28, 5.51], [-0.23, 5.33], [-0.14, 5.17], [-0.02, 5.03], [0.14, 4.86], [0.21, 4.78], [0.26, 4.68], [0.29, 4.58], [0.3, 4.48], [0.26, 4.26], [0.14, 4.09], [-0.04, 3.97], [-0.25, 3.93], [-0.46, 3.97], [-0.64, 4.09], [-0.76, 4.26], [-0.8, 4.48], [-1.04, 5.12], [-1.13, 5.02], [-1.24, 4.86], [-1.33, 4.69], [-1.38, 4.5], [-1.4, 4.2], [-1.29, 3.66], [-0.99, 3.21], [-0.55, 2.91], [0.04, 2.8], [0.57, 2.91], [1, 3.2], [1.29, 3.63], [1.4, 4.16], [1.37, 4.45], [1.29, 4.72], [1.15, 4.97], [0.97, 5.2], [0.2, 6.12], [-0.04, 6.35]]
+);
+
+/**
+ * The \`droplet\` symbol (water): a drop (DROPLET) in the culture's water
+ * colour with a pale glint (DROPLET_GLINT); offsets from the symbol's
+ * point, y up, 4.5 wide and 6.2 tall, standing 1.8 up its post. Flattened
+ * from Font Awesome Free's "droplet" (Fonticons, Inc., CC BY 4.0).
+ */
+// prettier-ignore
+const DROPLET = /** @type {Poly} */ (
+[[0.88, 1.98], [1.6, 2.46], [2.09, 3.18], [2.27, 4.07], [2.02, 5.03], [1.44, 6.16], [0.79, 7.19], [-0.3, 7.88], [-0.79, 7.19], [-1.44, 6.16], [-2.02, 5.03], [-2.27, 4.07], [-2.09, 3.18], [-1.6, 2.46], [-0.88, 1.98], [0, 1.8]]
+);
+// prettier-ignore
+const DROPLET_GLINT = /** @type {Poly} */ (
+[[-0.94, 4.16], [-0.97, 4.27], [-1.03, 4.36], [-1.12, 4.42], [-1.23, 4.44], [-1.34, 4.42], [-1.43, 4.36], [-1.49, 4.27], [-1.51, 4.16], [-1.38, 3.54], [-1.04, 3.03], [-0.53, 2.68], [0.09, 2.56], [0.2, 2.58], [0.29, 2.64], [0.36, 2.73], [0.38, 2.84], [0.36, 2.95], [0.29, 3.04], [0.2, 3.1], [0.09, 3.12], [-0.31, 3.2], [-0.64, 3.43], [-0.86, 3.76]]
+);
+/**
+ * The \`diamond\` symbol (earth): a rounded diamond in the culture's earth
+ * colour; offsets from the symbol's point, y up, 5.7 across, standing 1.7
+ * up its post. Flattened from Font Awesome Free's "diamond" (Fonticons,
+ * Inc., CC BY 4.0).
+ */
+// prettier-ignore
+const DIAMOND = /** @type {Poly} */ (
+[[-2.76, 4.93], [-2.82, 4.82], [-2.85, 4.69], [-2.87, 4.57], [-2.85, 4.44], [-2.82, 4.32], [-2.76, 4.21], [-2.68, 4.11], [-0.46, 1.89], [-0.36, 1.81], [-0.25, 1.75], [-0.13, 1.71], [0, 1.7], [0.13, 1.71], [0.25, 1.75], [0.36, 1.81], [0.46, 1.89], [2.68, 4.11], [2.76, 4.21], [2.82, 4.32], [2.85, 4.44], [2.87, 4.57], [2.85, 4.69], [2.82, 4.82], [2.76, 4.93], [2.68, 5.03], [0.46, 7.24], [0.36, 7.33], [0.25, 7.38], [0.13, 7.42], [0, 7.43], [-0.13, 7.42], [-0.25, 7.38], [-0.36, 7.33], [-0.46, 7.24], [-2.68, 5.03]]
+);
+/**
+ * The \`hurricane\` symbol (air): a swirl (HURRICANE), pale as the walls,
+ * with its eye in ink (HURRICANE_EYE) and a pale centre (HURRICANE_CORE);
+ * offsets from the symbol's point, y up, 4.5 wide and 6 tall, standing 1.8
+ * up its post. Flattened from Font Awesome Pro's "hurricane" (Fonticons,
+ * Inc., commercial licence).
+ */
+// prettier-ignore
+const HURRICANE = /** @type {Poly} */ (
+[[-2.09, 4.46], [-1.61, 3.7], [-0.89, 3.17], [0, 2.93], [0, 1.8], [0.89, 2.04], [1.61, 2.58], [2.09, 3.33], [2.27, 4.25], [2.09, 5.16], [1.61, 5.92], [0.89, 6.45], [0, 6.69], [0, 7.82], [-0.89, 7.58], [-1.61, 7.04], [-2.09, 6.29], [-2.27, 5.37]]
+);
+// prettier-ignore
+const HURRICANE_EYE = /** @type {Poly} */ (
+[[1.13, 4.81], [1.04, 5.25], [0.8, 5.61], [0.44, 5.85], [0, 5.94], [-0.44, 5.85], [-0.8, 5.61], [-1.04, 5.25], [-1.13, 4.81], [-1.04, 4.37], [-0.8, 4.01], [-0.44, 3.76], [0, 3.67], [0.44, 3.76], [0.8, 4.01], [1.04, 4.37]]
+);
+// prettier-ignore
+const HURRICANE_CORE = /** @type {Poly} */ (
+[[-0.15, 5.15], [-0.27, 5.07], [-0.35, 4.95], [-0.38, 4.81], [-0.35, 4.66], [-0.27, 4.54], [-0.15, 4.46], [0, 4.43], [0.15, 4.46], [0.27, 4.54], [0.35, 4.66], [0.38, 4.81], [0.35, 4.95], [0.27, 5.07], [0.15, 5.15], [0, 5.18]]
+);
+
+/**
  * @param {Design['symbol']} kind
  * @param {Pt} p
  * @returns {Part[]}
@@ -2888,6 +3001,10 @@ function symbolShape(kind, p) {
 	const [x, y] = p;
 	/** @param {Poly} pts @param {number} [w] @returns {Line} */
 	const ln = (pts, w = 1.2) => ({ pts, w });
+	/** A drawn symbol's offsets, placed at the point. @param {Poly} poly */
+	const at = (poly) => poly.map(([dx, dy]) => /** @type {Pt} */ ([x + dx, y + dy]));
+	/** Its post, from the point up to `top`. @param {number} top @returns {Line} */
+	const post = (top) => ({ pts: [p, [x, y + top]], w: 1 });
 	switch (kind) {
 		case 'none':
 			return [];
@@ -2944,14 +3061,27 @@ function symbolShape(kind, p) {
 			}
 			return [{ solid: [circle(x, y + 5.2, 0.8)], role: 'roof', free: spokes }];
 		}
-		case 'claw': {
-			// Varou clan mark: three claw slashes on a post.
-			/** @type {Line[]} */
-			const marks = [{ pts: [p, [x, y + 2]], w: 1 }];
-			for (const dx of [-1.6, 0, 1.6])
-				marks.push(seg([x + dx - 1.1, y + 2.4], [x + dx + 1.1, y + 7.4], 0.9, { round: true }));
-			return [{ solid: [], free: marks }];
-		}
+		case 'claw':
+			// Varou clan mark: a clawed paw on a post.
+			return [{ solid: PAW.map(at), role: 'roof', free: [post(2)] }];
+		case 'skull':
+			// Bone, not roof: the culture's wall colour, eyes in ink.
+			return [{ solid: [at(SKULL)], fills: SKULL_EYES.map(at), free: [post(1.9)] }];
+		case 'droplet':
+			return [
+				{ solid: [at(DROPLET)], role: 'water', free: [post(1.9)] },
+				{ solid: [at(DROPLET_GLINT)] },
+			];
+		case 'diamond':
+			return [{ solid: [at(DIAMOND)], role: 'earth', free: [post(1.8)] }];
+		case 'hurricane':
+			return [
+				{ solid: [at(HURRICANE)], fills: [at(HURRICANE_EYE)], free: [post(1.9)] },
+				{ solid: [at(HURRICANE_CORE)] },
+			];
+		case 'flame':
+			// The flame in the roof's colour, its core in the wall's, in front.
+			return [{ solid: [at(FLAME)], role: 'roof', free: [post(1.9)] }, { solid: [at(FLAME_CORE)] }];
 		case 'trident':
 			return [
 				{
