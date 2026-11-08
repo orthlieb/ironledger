@@ -72,7 +72,7 @@ describe('formatTouchedMd', () => {
 
 	it('Prime with one feature — singular "feature" and one bullet', () => {
 		const md = formatTouchedMd('Aldric', touched({ className: 'Prime' }));
-		expect(md).toBe('Aldric is **Prime with 1** feature of a wolf.\n- yellow eyes');
+		expect(md).toBe('Aldric is a **Prime with 1** feature of a wolf.\n- yellow eyes');
 	});
 
 	it('Second with two features — plural "features", two bullets, "1–3" only in the log', () => {
@@ -87,7 +87,9 @@ describe('formatTouchedMd', () => {
 				],
 			}),
 		);
-		expect(md).toBe('Vela is **Second with 2** features of a wolf.\n- yellow eyes\n- canine teeth');
+		expect(md).toBe(
+			'Vela is a **Second with 2** features of a wolf.\n- yellow eyes\n- canine teeth',
+		);
 	});
 
 	it('Third with four features — bullet list stays flat', () => {
@@ -104,7 +106,7 @@ describe('formatTouchedMd', () => {
 				],
 			}),
 		);
-		expect(md).toBe('Ren is **Third with 4** features of a wolf.\n- a\n- b\n- c\n- d');
+		expect(md).toBe('Ren is a **Third with 4** features of a wolf.\n- a\n- b\n- c\n- d');
 	});
 
 	it('Feral — no bullet list, italic narrative placeholder', () => {
@@ -120,17 +122,27 @@ describe('formatTouchedMd', () => {
 
 	it('picks "an" for a vowel-initial animal', () => {
 		const md = formatTouchedMd('X', touched({ animal: 'owl' }));
-		expect(md.startsWith('X is **Prime with 1** feature of an owl.')).toBe(true);
+		expect(md.startsWith('X is a **Prime with 1** feature of an owl.')).toBe(true);
 	});
 
 	it('picks "a" for a consonant-initial animal', () => {
 		const md = formatTouchedMd('X', touched({ animal: 'boar' }));
-		expect(md.startsWith('X is **Prime with 1** feature of a boar.')).toBe(true);
+		expect(md.startsWith('X is a **Prime with 1** feature of a boar.')).toBe(true);
 	});
 
-	it('falls back to "They" when the name is blank or whitespace', () => {
-		expect(formatTouchedMd('', touched()).startsWith('They is ')).toBe(true);
-		expect(formatTouchedMd('   ', touched()).startsWith('They is ')).toBe(true);
+	it('falls back to "They are" when the name is blank or whitespace', () => {
+		expect(formatTouchedMd('', touched()).startsWith('They are a ')).toBe(true);
+		expect(formatTouchedMd('   ', touched()).startsWith('They are a ')).toBe(true);
+	});
+
+	it('takes "a" for a rank (Prime, Second, Third), none for Pure or Feral', () => {
+		const lead = (className: TouchedRoll['className']) =>
+			formatTouchedMd('Ash', touched({ className })).split('**')[0];
+		expect(lead('Prime')).toBe('Ash is a ');
+		expect(lead('Second')).toBe('Ash is a ');
+		expect(lead('Third')).toBe('Ash is a ');
+		expect(lead('Feral')).toBe('Ash is ');
+		expect(lead('Pure')).toBe('Ash is ');
 	});
 });
 
@@ -244,7 +256,7 @@ describe('randomizationsAsMarkdown', () => {
 		const parts = md.split('\n\n');
 		expect(parts[0]).toBe('**Role:** trader');
 		expect(parts[1]).toBe('**Region of origin:** Havens');
-		expect(md.endsWith('Vela is **Prime with 1** feature of a wolf.\n- yellow eyes')).toBe(true);
+		expect(md.endsWith('Vela is a **Prime with 1** feature of a wolf.\n- yellow eyes')).toBe(true);
 	});
 
 	it('name is forwarded into the Touched block (falls back to "They" when omitted)', () => {
@@ -252,7 +264,7 @@ describe('randomizationsAsMarkdown', () => {
 			rolled: [],
 			touched: touched({ className: 'Pure', animal: '', features: [] }),
 		};
-		expect(randomizationsAsMarkdown(r)).toBe('They is **Pure with no touched features**.');
+		expect(randomizationsAsMarkdown(r)).toBe('They are **Pure with no touched features**.');
 		expect(randomizationsAsMarkdown(r, 'Aldric')).toBe(
 			'Aldric is **Pure with no touched features**.',
 		);

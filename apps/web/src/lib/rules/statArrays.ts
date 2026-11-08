@@ -64,7 +64,7 @@ export const LODESTAR_ARRAYS: readonly StatArray[] = [
 	{
 		id: 'perilous',
 		label: 'Perilous',
-		hint: 'The standard Ironsworn array — a moderately dangerous campaign.',
+		hint: 'Ironsworn’s standard stats — a moderately dangerous campaign.',
 		values: [3, 2, 2, 1, 1],
 		default: true,
 	},

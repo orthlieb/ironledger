@@ -80,27 +80,29 @@ export function defaultRandomizeFlags(): CharacterRandomizeFlags {
 
 /** Render the Touched roll into the concise markdown template we prepend to
  *  an NPC's notes or a Character's background:
- *    <name> is **<class> with <count>** features of a/an <animal>.
+ *    <name> is a **<class> with <count>** features of a/an <animal>.
  *    - feature 1
  *    - feature 2
- *  Pure has no animal (and no bullets). Feral drops the bullets for a
- *  narrative placeholder. */
+ *  Prime, Second and Third are ranks, so "a Prime"; Pure and Feral describe
+ *  them, so no article: "is **Feral with many** features…". Pure has no
+ *  animal (and no bullets). Feral drops the bullets for a narrative
+ *  placeholder. Unnamed, it's "They are …". */
 export function formatTouchedMd(name: string, r: TouchedRoll): string {
-	const who = name.trim() || 'They';
+	const who = name.trim() ? `${name.trim()} is` : 'They are';
 	if (r.className === 'Pure') {
-		return `${who} is **Pure with no touched features**.`;
+		return `${who} **Pure with no touched features**.`;
 	}
 	const article = /^[aeiouAEIOU]/.test(r.animal) ? 'an' : 'a';
 	if (r.className === 'Feral') {
 		return (
-			`${who} is **Feral with many** features of ${article} ${r.animal}.\n` +
+			`${who} **Feral with many** features of ${article} ${r.animal}.\n` +
 			`- _Enter narrative concerning this character here._`
 		);
 	}
 	const n = r.features.length;
 	const noun = n === 1 ? 'feature' : 'features';
 	const bullets = r.features.map((f) => `- ${f.value}`).join('\n');
-	return `${who} is **${r.className} with ${n}** ${noun} of ${article} ${r.animal}.\n` + bullets;
+	return `${who} a **${r.className} with ${n}** ${noun} of ${article} ${r.animal}.\n` + bullets;
 }
 
 /** Log breakdown of a Touched roll: class + animal aspect, the feature-count

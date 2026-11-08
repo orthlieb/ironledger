@@ -81,7 +81,7 @@
 		     NOT roll immediately. -->
 		<div class="sa-picker-row">
 			<DropdownMenu.Root>
-				<DropdownMenu.Trigger class="sa-trigger" aria-label="Choose stat array">
+				<DropdownMenu.Trigger class="sa-trigger" aria-label="Choose difficulty level">
 					<span class="sa-trigger-label">{selected?.label ?? ''}</span>
 					<span class="sa-trigger-chevron" aria-hidden="true">▾</span>
 				</DropdownMenu.Trigger>
@@ -102,7 +102,7 @@
 				class="dice-btn"
 				type="button"
 				onclick={roll}
-				use:tooltip={'Roll stats for the selected array'}
+				use:tooltip={'Roll stats for the selected difficulty level'}
 				aria-label="Roll stats"
 				data-tour="roll-stats">{@html diceD6Svg}</button
 			>
