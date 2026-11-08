@@ -107,7 +107,7 @@ export const fightFoe: Tutorial = {
 			{
 				target: 'tb-move',
 				title: 'Make a move',
-				body: `When you do something risky, you make a move: it says what to roll and what comes of it. Click ${MOVE}.`,
+				body: `Moves help you decide what happens when you do something risky or uncertain, and they resolve various fictional and mechanical situations. Click ${MOVE}.`,
 				continueWhen: 'moves-search',
 			},
 			{
