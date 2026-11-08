@@ -14,8 +14,8 @@
  * switcher and its rows), new-settlement-dialog / new-npc-dialog, cm-card
  * (the entry's card), npc-within (an NPC's Within picker), and tb-move.
  */
-import { getCommunities } from '#lib/communityStore.svelte.js';
-import { getNpcs } from '#lib/npcStore.svelte.js';
+import { getCommunities, isCommunityLoaded } from '#lib/communityStore.svelte.js';
+import { getNpcs, isNpcLoaded } from '#lib/npcStore.svelte.js';
 import { MOVE } from './keys.js';
 import { tourTarget, type TourStep, type Tutorial } from './tour.js';
 
@@ -29,6 +29,8 @@ function madeNew(list: () => { id: string }[], dialog: string): () => boolean {
 export const addConnections: Tutorial = {
 	route: '/home',
 	ready: 'cm-switcher',
+	// The entries there already, which the dialogs' steps wait past.
+	loaded: () => isCommunityLoaded() && isNpcLoaded(),
 	steps: (): TourStep[] => {
 		const madeSettlement = madeNew(getCommunities, 'new-settlement-dialog');
 		const madeNpc = madeNew(getNpcs, 'new-npc-dialog');

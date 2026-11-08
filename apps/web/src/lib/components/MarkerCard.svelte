@@ -94,6 +94,7 @@
 		{#if marker && info}
 			<Popover.Content
 				class="mk-card"
+				data-tour="marker-card"
 				customAnchor={anchor}
 				{side}
 				align="center"

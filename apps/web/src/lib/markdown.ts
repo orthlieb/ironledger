@@ -37,6 +37,24 @@ export function renderInline(text: string): string {
 }
 
 /**
+ * Drop the inline markers renderInline understands — **bold**, *italic*,
+ * _italic_ — keeping their text, for a plain-text field filled from an
+ * oracle whose results are written in markdown.
+ */
+export function stripInline(text: string): string {
+	return (text ?? '')
+		.split(/(\*\*[^*]+\*\*|\*[^*]+\*|_[^_]+_)/g)
+		.map((seg) =>
+			/^\*\*(.+)\*\*$/.test(seg)
+				? seg.slice(2, -2)
+				: /^\*(.+)\*$/.test(seg) || /^_(.+)_$/.test(seg)
+					? seg.slice(1, -1)
+					: seg,
+		)
+		.join('');
+}
+
+/**
  * Apply inline formatting (**bold**, *italic*, _italic_) to a plain-text
  * segment and return the HTML string.
  */

@@ -28,6 +28,12 @@
  * typed), their cards, the NPC's Within set to the settlement, and the
  * Forge a Bond pointer.
  *
+ * Put your settlement on the map: Map, a picture for a new map, + marker
+ * and a click on it, the marker linked to the settlement, the Choose Icon
+ * dialog's Icons, Buildings and Settlement builder tabs (a settlement drawn
+ * and used), OK, the marker's card and its Go To, and the map on the
+ * settlement's card.
+ *
  * Make camp and heal: Heal, and its +2 health; a note saying where you
  * camp; Make Camp, choosing Recuperate and Focus from its links. The dice are loaded, so each roll comes out as
  * the test says.
@@ -38,12 +44,15 @@
  */
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import {
+	clearAllMaps,
+	fetchMaps,
 	resetCharacters,
 	resetCommunities,
 	resetExpeditions,
 	resetFoes,
 	resetLog,
 	seedCharacter,
+	seedCommunity,
 	seedFoeEncounter,
 } from './helpers/reset';
 import { settleHome, characterCount, activeCharacterName } from './helpers/home';
@@ -168,7 +177,7 @@ async function giveExperience(page: Page, xp: number, tap = false) {
 	await expect(experience(page)).toHaveText(String(xp));
 }
 
-/** A 1×1 PNG, for the portrait upload. */
+/** A 1×1 PNG, for the portrait upload and the map's picture. */
 const PNG = Buffer.from(
 	'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI6QAAAABJRU5ErkJggg==',
 	'base64',
@@ -913,5 +922,119 @@ test.describe('Tutorial — Add a settlement and an NPC, on a phone', () => {
 		await expectStep(page, 'Your connections', '1 of 11');
 		await target(page, 'tab-connections').tap();
 		await connect(page, 2, 11, 'Ashfen', 'Rurik', true);
+	});
+});
+
+/**
+ * Put your settlement on the map, Map to Done, on a new map: its picture,
+ * a marker placed and linked to `town`, the Choose Icon dialog's three tabs
+ * with a settlement drawn and used on the last, OK, the marker's card and
+ * its Go To, and the map on the settlement's card. `phone` taps, and reads
+ * the builder's tab by its short name.
+ */
+async function mapIt(page: Page, town: string, phone = false) {
+	const n = (i: number) => `${i} of 15`;
+	const press = (l: Locator) => (phone ? l.tap() : l.click());
+
+	await expectStep(page, 'Your campaign map', n(1));
+	await press(target(page, 'tb-map'));
+	await expectStep(page, 'A picture to draw on', n(2));
+	await page
+		.locator('#mp-file-input')
+		.setInputFiles({ name: 'map.png', mimeType: 'image/png', buffer: PNG });
+
+	// + marker, then a click on the map: the marker's editor.
+	await expectStep(page, 'Mark your settlement', n(3));
+	await press(target(page, 'map-add-marker'));
+	await expectStep(page, 'Where is it?', n(4));
+	const grid = page.locator('.mp-grid-capture');
+	const box = await grid.boundingBox();
+	if (!box) throw new Error('the map has no grid');
+	await grid.click({ position: { x: box.width * 0.4, y: box.height * 0.35 } });
+	await expectStep(page, 'Link it', n(5));
+	await press(target(page, 'marker-link'));
+	await press(page.locator('.cb-popover .cb-item', { hasText: town }).first());
+	await expect(page.locator('#mp-props-name')).toHaveValue(town);
+
+	// Choose Icon: Icons, then Buildings, then the settlement builder.
+	await expectStep(page, 'How it looks', n(6));
+	await press(target(page, 'marker-icon'));
+	await expectStep(page, 'Icons', n(7));
+	await next(page);
+	await expectStep(page, 'Buildings', n(8));
+	await press(target(page, 'icon-tab-buildings'));
+	await expectStep(page, 'One building', n(9));
+	await next(page);
+	await expectStep(page, 'A whole settlement', n(10));
+	await expect(page.locator(POPOVER)).toContainText(
+		phone ? 'Click Settlements.' : 'Click Settlement builder.',
+	);
+	await press(target(page, 'icon-tab-builder'));
+	await expectStep(page, 'Draw your settlement', n(11));
+	await next(page);
+	await expectStep(page, 'Use this', n(12));
+	const preview = target(page, 'sb-preview');
+	await expect(preview.locator('.sb-big svg')).toBeVisible({ timeout: 30_000 });
+	await press(preview.getByRole('button', { name: 'Use this' }));
+	await expectStep(page, 'Done', n(13));
+	await press(target(page, 'marker-ok'));
+
+	// The card, its Go To, and the settlement's card listing the map.
+	await expectStep(page, 'On the map', n(14));
+	await press(target(page, 'marker-card').getByRole('button', { name: /Go To Settlement/ }));
+	await expectStep(page, 'Where it’s marked', n(15));
+	await expect(target(page, 'cm-switcher')).toContainText(town);
+	await expect(target(page, 'cm-map')).toContainText('My New Map');
+	await next(page); // Done
+	await expect(page.locator(POPOVER)).toBeHidden();
+
+	// Saved: one marker, named for the settlement, linked to it, drawn as one.
+	const markers = ((await fetchMaps())[0]?.markers ?? []) as Array<{
+		label?: string;
+		entityId?: string;
+		settlement?: { tier?: string; building?: string };
+	}>;
+	expect(markers).toHaveLength(1);
+	expect(markers[0].label).toBe(town);
+	expect(markers[0].entityId).toMatch(/^community:/);
+	expect(markers[0].settlement?.tier).toBeTruthy();
+	expect(markers[0].settlement?.building).toBeUndefined();
+}
+
+test.describe('Tutorial — Put your settlement on the map', () => {
+	test.beforeAll(async () => {
+		await clearAllMaps();
+		await resetCommunities();
+	});
+
+	test('asks for a settlement first', async ({ page }) => {
+		await openHome(page, false);
+		await startTutorial(page, 'Put your settlement on the map');
+		await expectStep(page, 'First, a settlement');
+		await next(page); // Done
+		await expect(page.locator(POPOVER)).toBeHidden();
+	});
+
+	test('marks it, drawn, on a new map', async ({ page }) => {
+		await seedCommunity('Thornhold');
+		await openHome(page, false);
+		await startTutorial(page, 'Put your settlement on the map');
+		await mapIt(page, 'Thornhold');
+	});
+});
+
+test.describe('Tutorial — Put your settlement on the map, on a phone', () => {
+	test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+	test.beforeAll(async () => {
+		await clearAllMaps();
+		await resetCommunities();
+		await seedCommunity('Ashfen');
+	});
+
+	test('marks it, tapping', async ({ page }) => {
+		await openHome(page, false);
+		await startTutorial(page, 'Put your settlement on the map');
+		await mapIt(page, 'Ashfen', true);
 	});
 });

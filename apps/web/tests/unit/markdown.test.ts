@@ -9,7 +9,7 @@
  * @vitest-environment node
  */
 import { describe, it, expect } from 'vitest';
-import { renderNote } from '../../src/lib/markdown.js';
+import { renderNote, stripInline } from '../../src/lib/markdown.js';
 
 describe('renderNote — empty / whitespace input', () => {
 	it('returns "" for empty string', () => {
@@ -148,5 +148,19 @@ describe('renderNote — vow-notes integration scenario', () => {
 				'<ul><li>recover the shard</li><li><em>quietly</em></li></ul>' +
 				'<ol><li>find the cave</li><li>survive</li></ol>',
 		);
+	});
+});
+
+describe('stripInline — oracle results into plain-text fields', () => {
+	it('drops **bold**, *italic* and _italic_ markers, keeping their text', () => {
+		expect(stripInline('**Village** — Moderate-sized settlement')).toBe(
+			'Village — Moderate-sized settlement',
+		);
+		expect(stripInline('a *b* _c_ d')).toBe('a b c d');
+	});
+	it('leaves plain text and lone markers alone', () => {
+		expect(stripInline('Outpost')).toBe('Outpost');
+		expect(stripInline('2 * 3')).toBe('2 * 3');
+		expect(stripInline('')).toBe('');
 	});
 });

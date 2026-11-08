@@ -1816,6 +1816,7 @@
 			bind:ref={dialogEl}
 			class={effectiveFullscreen ? 'mp-dialog mp-dialog--fullscreen' : 'mp-dialog'}
 			style="z-index: {contentZ(stackDepth)}"
+			data-tour="map-dialog"
 		>
 			<DialogHeader title={headingText('Maps')}>
 				{#snippet trailing()}
@@ -1861,6 +1862,7 @@
 						class:mp-btn-add--armed={placingMarker}
 						onclick={togglePlacingMarker}
 						aria-pressed={placingMarker}
+						data-tour="map-add-marker"
 						use:tooltip={placingMarker
 							? 'Click on the map to place the marker (Esc to cancel)'
 							: 'Click, then tap the map to place a marker'}
@@ -1986,6 +1988,7 @@
 					class:mp-canvas--measuring={measuring}
 					class:mp-canvas--panning={panState?.active}
 					class:mp-canvas--focused={selectedMarkerId != null}
+					data-tour="map-canvas"
 					bind:this={canvasEl}
 					onscroll={onScroll}
 				>
@@ -2352,7 +2355,11 @@
 		     swallowed on iOS Safari. -->
 				{#if mapState.loaded && !mapState.backgroundHash}
 					<div class="mp-empty-cta">
-						<button class="mp-empty-cta-btn" onclick={triggerBackgroundUpload}>
+						<button
+							class="mp-empty-cta-btn"
+							onclick={triggerBackgroundUpload}
+							data-tour="map-background"
+						>
 							<span class="mp-empty-cta-plus" aria-hidden="true">+</span>
 							<span class="mp-empty-cta-label">Add background image</span>
 						</button>

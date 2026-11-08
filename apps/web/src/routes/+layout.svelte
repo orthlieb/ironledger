@@ -307,6 +307,7 @@
 					<button
 						class="btn btn-primary act-btn"
 						onclick={() => document.dispatchEvent(new CustomEvent('ironledger:open-campaign-map'))}
+						data-tour="tb-map"
 						use:tooltip={'Open the campaign map'}
 						aria-label="Open the campaign map"
 					>

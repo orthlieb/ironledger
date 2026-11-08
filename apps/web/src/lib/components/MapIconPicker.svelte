@@ -216,6 +216,7 @@
 			bind:ref={dialogEl}
 			class="mp-icon-dialog"
 			style="z-index: {contentZ(stackDepth)}"
+			data-tour="icon-picker"
 			onOpenAutoFocus={(e) => {
 				// Focus the search input — or, on a builder tab, "Use this"
 				// (CLAUDE.md focus rule).
@@ -238,14 +239,21 @@
 			>
 				<Tabs.List class="mp-icon-tabs">
 					<Tabs.Trigger value="icons" class="mp-icon-tab">Icons</Tabs.Trigger>
-					<Tabs.Trigger value="buildings" class="mp-icon-tab">Buildings</Tabs.Trigger>
-					<Tabs.Trigger value="builder" class="mp-icon-tab" aria-label="Settlement builder">
+					<Tabs.Trigger value="buildings" class="mp-icon-tab" data-tour="icon-tab-buildings"
+						>Buildings</Tabs.Trigger
+					>
+					<Tabs.Trigger
+						value="builder"
+						class="mp-icon-tab"
+						aria-label="Settlement builder"
+						data-tour="icon-tab-builder"
+					>
 						<!-- Shortened on a phone so three tabs fit on one line. -->
 						<span class="mp-icon-tab-long">Settlement builder</span>
 						<span class="mp-icon-tab-short">Settlements</span>
 					</Tabs.Trigger>
 				</Tabs.List>
-				<Tabs.Content value="icons" class="mp-icon-panel">
+				<Tabs.Content value="icons" class="mp-icon-panel" data-tour="icon-icons">
 					<div class="mp-icon-search-row">
 						<FilterBar
 							bind:search={iconSearch}
@@ -292,7 +300,11 @@
 						{/if}
 					</div>
 				</Tabs.Content>
-				<Tabs.Content value="buildings" class="mp-icon-panel mp-icon-body">
+				<Tabs.Content
+					value="buildings"
+					class="mp-icon-panel mp-icon-body"
+					data-tour="icon-buildings"
+				>
 					{#if open && tab === 'buildings'}
 						<SettlementBuilder
 							kind="building"
@@ -303,7 +315,7 @@
 						/>
 					{/if}
 				</Tabs.Content>
-				<Tabs.Content value="builder" class="mp-icon-panel mp-icon-body">
+				<Tabs.Content value="builder" class="mp-icon-panel mp-icon-body" data-tour="icon-builder">
 					{#if open && tab === 'builder'}
 						<SettlementBuilder
 							color={selectedColor}

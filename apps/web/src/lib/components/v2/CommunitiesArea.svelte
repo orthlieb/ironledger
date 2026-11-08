@@ -85,6 +85,7 @@
 	} from '#lib/characterRollups.js';
 	import RandomizeBlock from '#lib/components/RandomizeBlock.svelte';
 	import { appendLog } from '#lib/log.svelte.js';
+	import { stripInline } from '#lib/markdown.js';
 	import { tooltip } from '#lib/actions/tooltip.js';
 
 	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
@@ -625,15 +626,18 @@
 		oracles: ReturnType<typeof getOracles>,
 	): string {
 		if (key === 'type')
-			// settlementType values carry <strong>…</strong> markup for the picker;
-			// strip tags so the plain-text field shows "Outpost — Border or…".
+			// settlementType values are written in markdown ("**Village** — …"),
+			// which reads well in the log and the Oracles dialog; strip it (and
+			// any tags) so the plain-text field shows "Village — Moderate…".
 			// resolveOracleKey picks up YRT's supersession (yrtSettlementType) when
 			// YRT is on, else falls through to Lodestar's settlementType.
-			return (
-				rollOracle(resolveOracleKey('settlementType'), oracles, {
-					stat: tierForRegion(region, oracles),
-				}).value ?? ''
-			).replace(/<[^>]+>/g, '');
+			return stripInline(
+				(
+					rollOracle(resolveOracleKey('settlementType'), oracles, {
+						stat: tierForRegion(region, oracles),
+					}).value ?? ''
+				).replace(/<[^>]+>/g, ''),
+			);
 		if (key === 'condition')
 			return rollOracle(resolveOracleKey('settlementCondition'), oracles).value ?? '';
 		const oracleKey: Record<Exclude<LodestarSettlementFieldKey, 'type' | 'condition'>, string> = {
@@ -1184,7 +1188,7 @@
 								     the store returns refs across all maps, chips wrap
 								     onto new rows via flex-wrap. Coord (x, y) lives in
 								     the tooltip; chip text is the map name only. -->
-								<div class="cm-field-row cm-field-row--map">
+								<div class="cm-field-row cm-field-row--map" data-tour="cm-map">
 									<span class="cm-field-label">Map</span>
 									<div class="cm-mapref-chips">
 										{#if activeEntryMarkers.length === 0}
