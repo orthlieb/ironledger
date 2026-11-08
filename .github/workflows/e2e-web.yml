@@ -120,6 +120,11 @@ jobs:
         run: |
           openssl genrsa -out /tmp/jwt_private.pem 2048
           openssl rsa -in /tmp/jwt_private.pem -pubout -out /tmp/jwt_public.pem
+          # A throwaway key, but keep it out of the logs: GitHub prints each
+          # step's environment and masks only what it's told to, line by line.
+          grep -v -- '-----' /tmp/jwt_private.pem | while IFS= read -r line; do
+            echo "::add-mask::$line"
+          done
           # Expose as multi-line env for subsequent steps
           {
             echo "JWT_PRIVATE_KEY<<JWTK"
