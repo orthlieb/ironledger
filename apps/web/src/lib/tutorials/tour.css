@@ -142,3 +142,47 @@ body.il-tour-log .home-shell--layout-tabs .home-log {
 body.driver-active #il-dice-overlay {
 	z-index: 10001 !important;
 }
+
+/* A control drawn into a step's text as it looks on the page (keys.ts):
+   the house .btn's border, fill and type, small enough to sit in a line. */
+.driver-popover.il-tour .il-tour-key {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	padding: 1px 6px;
+	margin: 0 1px;
+	border: 1px solid var(--border-mid);
+	border-radius: 3px;
+	background: var(--bg-control);
+	color: var(--text-muted);
+	font-family: var(--font-ui);
+	font-size: 0.7rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	line-height: 1.5;
+	vertical-align: middle;
+}
+.driver-popover.il-tour .il-tour-key--primary {
+	border-color: var(--text-accent);
+	color: var(--text-accent);
+}
+.driver-popover.il-tour .il-tour-key svg {
+	width: 11px;
+	height: 11px;
+}
+.driver-popover.il-tour .il-tour-key svg,
+.driver-popover.il-tour .il-tour-key svg path {
+	fill: currentColor;
+}
+.driver-popover.il-tour .il-tour-key-plus {
+	font-size: 0.85rem;
+	font-weight: 700;
+	line-height: 1;
+}
+/* The header hides its buttons' words on narrow screens; so does the key. */
+@media (max-width: 600px) {
+	.driver-popover.il-tour .il-tour-key-label {
+		display: none;
+	}
+}

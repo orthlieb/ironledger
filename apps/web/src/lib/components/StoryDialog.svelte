@@ -258,7 +258,7 @@
 	// ── Generate actions ───────────────────────────────────────────────────
 	async function handleStart() {
 		if (!storytellerReady) {
-			errorMsg = 'No AI storyteller configured. Choose one in Settings.';
+			errorMsg = 'No AI storyteller configured. Choose one in ☰ → Settings.';
 			return;
 		}
 		if (!promptText.trim()) {

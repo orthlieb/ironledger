@@ -23,6 +23,16 @@ export const TUTORIALS: readonly TutorialEntry[] = [
 		load: () => import('./createCharacter.js').then((m) => m.createCharacter),
 	},
 	{
+		id: 'first-vow',
+		title: 'Add your first vow',
+		load: () => import('./addVow.js').then((m) => m.addVow),
+	},
+	{
+		id: 'add-assets',
+		title: 'Add your assets',
+		load: () => import('./addAssets.js').then((m) => m.addAssets),
+	},
+	{
 		id: 'create-foe',
 		title: 'Create your first foe',
 		load: () => import('./createFoe.js').then((m) => m.createFoe),

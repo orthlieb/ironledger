@@ -12,7 +12,9 @@ picked, each tutorial in a chunk of its own.
 
 | Tutorial              | What it covers                                                                                                                                                                                                                                                                                                                                                 |
 | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Create a character    | The switcher's "+ New character…", rolling a name, stats and (YRT) a region, randomizing the rest, Create; a bio and a portrait on the Background tab; initiative; swearing a first vow; taking a first starting asset and spending its experience from the log; debilities and bonds on the Status tab                                                        |
+| Create a character    | The switcher's "+ New character…", rolling a name, stats and (YRT) a region, randomizing the rest, Create; a bio and a portrait on the Background tab; initiative; debilities and bonds on the Status tab; then on to the next two                                                                                                                             |
+| Add your first vow    | The + ⛓ button, naming the vow and choosing its rank, and the vow on the Vows tab                                                                                                                                                                                                                                                                              |
+| Add your assets       | The + ◆ button, finding and picking an asset, its first ability, Add, and spending its 3 experience from the log; a new character takes three, with the 9 experience it starts with                                                                                                                                                                            |
 | Create your first foe | The switcher's "+ New foe…", searching and filtering the foe picker, choosing a foe, solo / pack / horde, its features, drives and tactics, Add to Foes, then its pills, marking progress and vanquishing it                                                                                                                                                   |
 | Fight your foe        | With the active character and foe: vitals and initiative; Move → searching for Enter the Fray → a stat → Roll Move, then applying the outcome from the log's links; saying what you do, as a note in the log; Strike or Clash as initiative allows, and the harm marked on the foe's progress track; Endure Harm, applying it, rolling, and the health it cost |
 | Make camp and heal    | After a fight, with the active character: their vitals; Heal (a stat, the roll, its health and wounded links in the log); saying where you camp, as a note in the log; Make Camp (what it lets you choose, the roll, choosing from its links); the vitals again                                                                                                |
@@ -25,10 +27,13 @@ picked, each tutorial in a chunk of its own.
 | `apps/web/src/lib/tutorials/tour.css`           | The popover in the house style; bits-ui menus above the tour's overlay                                                                           |
 | `apps/web/src/lib/tutorials/index.ts`           | `TUTORIALS` (the menu's list) and `startTutorial(id)`                                                                                            |
 | `apps/web/src/lib/tutorials/createCharacter.ts` | The Create a character tutorial                                                                                                                  |
+| `apps/web/src/lib/tutorials/addVow.ts`          | The Add your first vow tutorial                                                                                                                  |
+| `apps/web/src/lib/tutorials/addAssets.ts`       | The Add your assets tutorial                                                                                                                     |
 | `apps/web/src/lib/tutorials/createFoe.ts`       | The Create your first foe tutorial                                                                                                               |
 | `apps/web/src/lib/tutorials/fightFoe.ts`        | The Fight your foe tutorial                                                                                                                      |
 | `apps/web/src/lib/tutorials/makeCamp.ts`        | The Make camp and heal tutorial                                                                                                                  |
 | `apps/web/src/lib/tutorials/moves.ts`           | What the tutorials that make moves share: the rolls and notes made since the tour began, closing the Moves dialog, searching it, choosing a stat |
+| `apps/web/src/lib/tutorials/keys.ts`            | Controls drawn into a step's text as they look (`MOVE`, `ADD_VOW`, `ADD_ASSET`), for buttons that show an icon, not a word                       |
 | `apps/web/tests/e2e/tutorials.spec.ts`          | E2E tests that follow each tutorial as a player would                                                                                            |
 
 ## Writing a tutorial
@@ -79,6 +84,11 @@ Other step options:
 | `optional`            | Skip the step when its target isn't there (a section only some foes have)                                                         |
 | `back`                | Show Back. Only where the step before is still on screen                                                                          |
 | `side`, `align`       | Where the popover sits                                                                                                            |
+
+Name a control by what it shows. Where it's an icon with no word (the
+header's Move on a phone, the character's + ⛓ and + ◆), draw it into the
+text with `keys.ts`: "Click ${MOVE}" shows the button itself, its label
+hidden on narrow screens as the header hides it.
 
 On a phone a dialog can fill the screen, leaving the popover nowhere to go
 but over the dialog itself. When a step's player must use a button there

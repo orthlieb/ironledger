@@ -26,6 +26,7 @@ import { getEncounters } from '#lib/encounterStore.svelte.js';
 import { triggerAction } from '#lib/log.svelte.js';
 import { closeMoves, logWatch, pickHighest, searchFor, tabbed, use } from './moves.js';
 import { tourTarget, type TourStep, type Tutorial } from './tour.js';
+import { MOVE } from './keys.js';
 
 /** Initiative as the character stores it (1 is the character's). */
 const NONE = 0,
@@ -106,7 +107,7 @@ export const fightFoe: Tutorial = {
 			{
 				target: 'tb-move',
 				title: 'Make a move',
-				body: 'When you do something risky, you make a move: it says what to roll and what comes of it. Click Move.',
+				body: `Moves help you decide what happens when you do something risky or uncertain, and they resolve various fictional and mechanical situations. Click ${MOVE}.`,
 				continueWhen: 'moves-search',
 			},
 			{
@@ -172,7 +173,7 @@ export const fightFoe: Tutorial = {
 			{
 				target: 'tb-move',
 				title: 'Make the move',
-				body: 'Now make the move it calls for. With initiative, that’s Strike; if your foe has it, Clash, to fight back. Click Move.',
+				body: `Now make the move it calls for. With initiative, that’s Strike; if your foe has it, Clash, to fight back. Click ${MOVE}.`,
 				continueWhen: 'moves-search',
 			},
 			{
@@ -230,7 +231,7 @@ export const fightFoe: Tutorial = {
 			{
 				target: 'tb-move',
 				title: 'When you’re hurt',
-				body: 'When your foe lands a blow, you Endure Harm. Click Move.',
+				body: `When your foe lands a blow, you Endure Harm. Click ${MOVE}.`,
 				continueWhen: 'moves-search',
 			},
 			{

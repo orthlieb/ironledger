@@ -3,10 +3,9 @@
  * Characters panel's switcher, roll a name, roll stats, roll a region of
  * origin (YRT), leave everything else to be randomized, and create; then,
  * on the sheet's Background tab, rewrite the rolled details as a bio and
- * add a portrait; on Core, initiative; swear a first vow; take a first
- * starting asset (of three, paid for with the 9 experience a new character
- * starts with) and spend its experience from the log; and on Status, the
- * debilities and bonds.
+ * add a portrait; on Core, initiative; and on Status, the debilities and
+ * bonds. Its first vow and its assets have tutorials of their own (addVow,
+ * addAssets), which its last step points to.
  *
  * Targets (`data-tour`): tab-characters (home's mobile tab bar),
  * char-switcher + new-char-action (CharactersArea's switcher and its
@@ -14,11 +13,8 @@
  * roll-stats (StatAllocator), randomize-origin / roll-origin and
  * randomize-also (RandomizeBlock), new-char-dialog-confirm (Create),
  * char-tab-background, char-bio (MarkdownNotes) and char-portrait
- * (PortraitUploader), char-tab-core / char-initiative, char-add-vow /
- * new-vow-dialog / char-vows, char-add-asset / asset-picker-search /
- * asset-picker-grid (AssetPicker) / asset-card / asset-card-add (its Add
- * button) / char-assets, the log's
- * .xp-cost-link, and char-tab-status / char-debilities / char-tracks.
+ * (PortraitUploader), char-tab-core / char-initiative, and char-tab-status
+ * / char-debilities / char-tracks.
  */
 import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
 import { tourSel, tourTarget, type Tutorial } from './tour.js';
@@ -155,81 +151,6 @@ export const createCharacter: Tutorial = {
 			back: true,
 		},
 		{
-			target: 'char-add-vow',
-			title: 'Swear your first vow',
-			body: 'Every Ironsworn is bound by iron vows. Click + to swear your first: the quest that sets your story in motion.',
-			continueWhen: 'new-vow-dialog',
-			back: true,
-		},
-		{
-			target: 'new-vow-dialog',
-			title: 'Name it and rank it',
-			body: 'Say what you swear to do, and choose its rank: the harder the vow, the more progress it takes, and the more experience it earns when you fulfill it. Then click Swear Vow.',
-			continueWhen: 'char-vows',
-			backIfGone: true,
-		},
-		{
-			target: 'char-vows',
-			title: 'Your vow',
-			body: 'Mark progress here each time you Reach a Milestone. When you believe you’ve done what you swore, Fulfill Your Vow.',
-			wait: 3000,
-		},
-		{
-			target: 'char-add-asset',
-			title: 'Choose three assets',
-			body: 'You start with three assets: any mix of Companions, Paths, Combat Talents and Rituals. Your 9 experience pays for them, 3 each. Click + to choose your first.',
-			continueWhen: 'asset-picker-search',
-			back: true,
-		},
-		{
-			target: 'asset-picker-search',
-			title: 'Find one',
-			body: 'Search by name, or open Filters to show just one kind.',
-			wait: 3000,
-			// This and the picker's and the card's other steps: if one closes,
-			// back to the + button.
-			backIfGone: true,
-		},
-		{
-			target: 'asset-picker-grid',
-			title: 'Pick one',
-			body: 'Each card shows its kind and what it does. Click one to read it in full.',
-			continueWhen: 'asset-card',
-			back: true,
-			backIfGone: true,
-		},
-		{
-			target: 'asset-card',
-			title: 'Its first ability',
-			body: 'Its first ability comes marked: that’s what you start with. A companion comes with none, so choose the one it starts with.',
-			backIfGone: true,
-		},
-		{
-			// A step of its own, with the popover above the button: on a phone
-			// the card fills the screen, and a popover beside it covers Add.
-			target: 'asset-card-add',
-			title: 'Take it',
-			body: 'Click Add. A new asset costs 3 experience.',
-			side: 'top',
-			clickToContinue: true,
-			back: true,
-			backIfGone: true,
-		},
-		{
-			// The log is written as HTML, so this one goes by its class: the
-			// newest purchase's link is the first (the log runs newest first).
-			selector: '.xp-cost-link',
-			title: 'Spend the experience',
-			body: 'The log records each purchase. Click −3 experience to spend it.',
-			wait: 3000,
-			clickToContinue: true,
-		},
-		{
-			target: 'char-assets',
-			title: 'Two more to go',
-			body: 'Add two more the same way, spending 3 experience on each. That uses up your 9.',
-		},
-		{
 			target: 'char-tab-status',
 			title: 'Your status',
 			body: 'Click Status for what can go wrong, and the bonds you forge.',
@@ -249,7 +170,8 @@ export const createCharacter: Tutorial = {
 				'When you Forge a Bond, mark progress here and note who or where. At the end of your story, your bonds are your legacy.' +
 				(isSourceEnabled('delve')
 					? ' With Delve on, Failures tracks your setbacks, and Learn From Your Failures turns them into experience.'
-					: ''),
+					: '') +
+				' Next, swear your first vow and choose your assets: ☰ → Tutorials → Add your first vow, then Add your assets.',
 			back: true,
 		},
 	],
