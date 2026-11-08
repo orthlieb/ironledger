@@ -5,9 +5,12 @@
  *
  * Create a character: open the switcher, "+ New character…", roll a name,
  * stats and (YRT) a region, leave the rest to be randomized, Create; then
- * on the Background tab, write a bio and add a portrait; initiative; swear
- * a vow; buy a first asset with the starting experience, spending it from
- * the log; and the Status tab.
+ * on the Background tab, write a bio and add a portrait; initiative; and
+ * the Status tab, with the 9 experience a new character starts with.
+ *
+ * Add your first vow: + ⛓, name and rank it, the vow on the Vows tab. Add
+ * your assets: + ◆, find and pick one, Add, and spend its experience from
+ * the log.
  *
  * Create your first foe: open the switcher, "+ New foe…", search, choose a
  * foe, set how many, Add to Foes; then its pills, marking progress and
@@ -83,49 +86,76 @@ async function walkSheet(page: Page, first: number, total: number, tap = false) 
 	await expectStep(page, 'Initiative', n(1));
 	await next(page);
 
-	await expectStep(page, 'Swear your first vow', n(2));
-	await press(target(page, 'char-add-vow'));
-	await expectStep(page, 'Name it and rank it', n(3));
-	await target(page, 'new-vow-dialog').locator('.co-input').fill('Avenge my sister');
-	await press(target(page, 'new-vow-dialog-confirm'));
-	await expectStep(page, 'Your vow', n(4));
-	await expect(target(page, 'char-vows')).toContainText('Avenge my sister');
-	await next(page);
-
-	await expectStep(page, 'Choose three assets', n(5));
-	await press(target(page, 'char-add-asset'));
-	await expectStep(page, 'Find one', n(6));
-	await target(page, 'asset-picker-search').locator('input').first().fill('Hawk');
-	await next(page);
-	await expectStep(page, 'Pick one', n(7));
-	await press(
-		target(page, 'asset-picker-grid').locator('[role="button"]', { hasText: 'Hawk' }).first(),
-	);
-	// A companion comes with nothing marked; its first pick is in its price.
-	await expectStep(page, 'Its first ability', n(8));
-	await press(target(page, 'asset-abilities').locator('.ability-check').first());
-	await next(page);
-	await expectStep(page, 'Take it', n(9));
-	await press(target(page, 'asset-card-add'));
-	await expectStep(page, 'Spend the experience', n(10));
-	await press(page.locator('.xp-cost-link').first());
-	await expectStep(page, 'Two more to go', n(11));
-	await expect(target(page, 'char-assets')).toContainText('Hawk');
-	await next(page);
-
-	await expectStep(page, 'Your status', n(12));
+	await expectStep(page, 'Your status', n(2));
 	await press(target(page, 'char-tab-status'));
-	await expectStep(page, 'Debilities', n(13));
+	await expectStep(page, 'Debilities', n(3));
 	await next(page);
-	await expectStep(page, 'Bonds', n(14));
+	await expectStep(page, 'Bonds', n(4));
+	await expect(page.locator(`${POPOVER} .driver-popover-description`)).toContainText(
+		'Add your first vow, then Add your assets',
+	);
 	await next(page); // Done
 	await expect(page.locator(POPOVER)).toBeHidden();
 
-	// The Hawk, with its pick, cost 3 of the 9 a new character starts with.
+	// A new character starts with 9 experience: its three assets' worth.
 	await press(target(page, 'char-tab-core'));
-	await expect(
-		page.locator('.res-tile', { hasText: 'Experience' }).locator('.res-value'),
-	).toHaveText('6');
+	await expect(experience(page)).toHaveText('9');
+}
+
+/** The character's Experience tile's value. */
+const experience = (page: Page) =>
+	page.locator('.res-tile', { hasText: 'Experience' }).locator('.res-value');
+
+/** Add your first vow, from its + ⛓ step (`first`, `total` and `tap` as
+ *  for walkSheet), to Done. */
+async function swearVow(page: Page, first: number, total: number, tap = false) {
+	const n = (i: number) => `${first + i} of ${total}`;
+	const press = (l: Locator) => (tap ? l.tap() : l.click());
+	await expectStep(page, 'Swear your first vow', n(0));
+	await press(target(page, 'char-add-vow'));
+	await expectStep(page, 'Name it and rank it', n(1));
+	await target(page, 'new-vow-dialog').locator('.co-input').fill('Avenge my sister');
+	await press(target(page, 'new-vow-dialog-confirm'));
+	await expectStep(page, 'Your vow', n(2));
+	await expect(target(page, 'char-vows')).toContainText('Avenge my sister');
+	await next(page); // Done
+	await expect(page.locator(POPOVER)).toBeHidden();
+}
+
+/** Add your assets, from its + ◆ step, to Done: the Hawk (a companion: its
+ *  first pick is in its 3 experience), spent from the log's link. */
+async function takeAsset(page: Page, first: number, total: number, tap = false) {
+	const n = (i: number) => `${first + i} of ${total}`;
+	const press = (l: Locator) => (tap ? l.tap() : l.click());
+	await expectStep(page, 'Choose three assets', n(0));
+	await press(target(page, 'char-add-asset'));
+	await expectStep(page, 'Find one', n(1));
+	await target(page, 'asset-picker-search').locator('input').first().fill('Hawk');
+	await next(page);
+	await expectStep(page, 'Pick one', n(2));
+	await press(
+		target(page, 'asset-picker-grid').locator('[role="button"]', { hasText: 'Hawk' }).first(),
+	);
+	await expectStep(page, 'Its first ability', n(3));
+	await press(target(page, 'asset-abilities').locator('.ability-check').first());
+	await next(page);
+	await expectStep(page, 'Take it', n(4));
+	await press(target(page, 'asset-card-add'));
+	await expectStep(page, 'Spend the experience', n(5));
+	await press(page.locator('.xp-cost-link').first());
+	await expectStep(page, 'Two more to go', n(6));
+	await expect(target(page, 'char-assets')).toContainText('Hawk');
+	await next(page); // Done
+	await expect(page.locator(POPOVER)).toBeHidden();
+	await press(target(page, 'char-tab-core'));
+	await expect(experience(page)).toHaveText('6');
+}
+
+/** Give the active character `xp` experience (a seeded one has none). */
+async function giveExperience(page: Page, xp: number, tap = false) {
+	const more = page.getByRole('button', { name: 'Increase Experience' });
+	for (let i = 0; i < xp; i++) await (tap ? more.tap() : more.click());
+	await expect(experience(page)).toHaveText(String(xp));
 }
 
 /** A 1×1 PNG, for the portrait upload. */
@@ -144,54 +174,54 @@ test.describe('Tutorial — Create a character', () => {
 		const before = await characterCount(page);
 		await startTutorial(page);
 
-		await expectStep(page, 'Open the character list', '1 of 24');
+		await expectStep(page, 'Open the character list', '1 of 14');
 		await target(page, 'char-switcher').click();
-		await expectStep(page, 'Start a new character', '2 of 24');
+		await expectStep(page, 'Start a new character', '2 of 14');
 		await target(page, 'new-char-action').click();
 
-		await expectStep(page, 'Roll a name', '3 of 24');
+		await expectStep(page, 'Roll a name', '3 of 14');
 		await target(page, 'roll-name').click();
 		const name = await target(page, 'new-char-name').locator('input').inputValue();
 		expect(name.trim(), 'a rolled name').not.toBe('');
 		await next(page);
 
-		await expectStep(page, 'Roll your stats', '4 of 24');
+		await expectStep(page, 'Roll your stats', '4 of 14');
 		await target(page, 'roll-stats').click();
 		await next(page);
 
-		await expectStep(page, 'Randomize the rest', '5 of 24');
+		await expectStep(page, 'Randomize the rest', '5 of 14');
 		await next(page);
 
-		await expectStep(page, 'Create your character', '6 of 24');
+		await expectStep(page, 'Create your character', '6 of 14');
 		await target(page, 'new-char-dialog-confirm').click();
 
-		await expectStep(page, 'Meet your character', '7 of 24');
+		await expectStep(page, 'Meet your character', '7 of 14');
 		await expect.poll(() => activeCharacterName(page)).toBe(name);
 		expect(await characterCount(page)).toBe(before + 1);
 		await next(page);
 
 		// The rolled details, rewritten as a bio. Next closes the editor.
-		await expectStep(page, 'Turn the rolls into a bio', '8 of 24');
+		await expectStep(page, 'Turn the rolls into a bio', '8 of 14');
 		const bio = target(page, 'char-bio');
 		await bio.locator('.md-notes-display').click();
 		await bio.locator('textarea').fill('Born in the Havens; left to keep a promise.');
 		await next(page);
 
-		await expectStep(page, 'Add a portrait', '9 of 24');
+		await expectStep(page, 'Add a portrait', '9 of 14');
 		await expect(bio).toContainText('left to keep a promise');
 		await target(page, 'char-portrait')
 			.locator('input[type="file"]')
 			.setInputFiles({ name: 'portrait.png', mimeType: 'image/png', buffer: PNG });
 		await expect(target(page, 'char-portrait').locator('img')).toBeVisible({ timeout: 5_000 });
 		await next(page);
-		await walkSheet(page, 10, 24);
+		await walkSheet(page, 10, 14);
 	});
 
 	test('rolls whatever is skipped, and with YRT covers the region', async ({ page }) => {
 		await openHome(page, true);
 		await startTutorial(page);
 
-		await expectStep(page, 'Open the character list', '1 of 25');
+		await expectStep(page, 'Open the character list', '1 of 15');
 		await target(page, 'char-switcher').click();
 		await expectStep(page, 'Start a new character');
 		// Searching the row out of the list sends the tour back a step;
@@ -207,7 +237,7 @@ test.describe('Tutorial — Create a character', () => {
 		await expectStep(page, 'Roll your stats');
 		expect(await target(page, 'new-char-name').locator('input').inputValue()).not.toBe('');
 		await next(page);
-		await expectStep(page, 'Roll a region of origin', '5 of 25');
+		await expectStep(page, 'Roll a region of origin', '5 of 15');
 		const stats = await target(page, 'new-char-stats')
 			.locator('input')
 			.evaluateAll((els) => els.map((e) => Number((e as HTMLInputElement).value)));
@@ -225,11 +255,11 @@ test.describe('Tutorial — Create a character', () => {
 
 		await expectStep(page, 'Create your character');
 		await target(page, 'new-char-dialog-confirm').click();
-		await expectStep(page, 'Meet your character', '8 of 25');
+		await expectStep(page, 'Meet your character', '8 of 15');
 		await next(page);
 		await expectStep(page, 'Turn the rolls into a bio');
 		await next(page);
-		await expectStep(page, 'Add a portrait', '10 of 25');
+		await expectStep(page, 'Add a portrait', '10 of 15');
 		// ✕ ends it anywhere.
 		await page.locator(`${POPOVER} .driver-popover-close-btn`).click();
 		await expect(page.locator(POPOVER)).toBeHidden();
@@ -246,9 +276,9 @@ test.describe('Tutorial — Create a character, on a phone', () => {
 		await page.locator('.mob-tab', { hasText: 'Foes' }).click();
 		await startTutorial(page);
 
-		await expectStep(page, 'Your characters', '1 of 25');
+		await expectStep(page, 'Your characters', '1 of 15');
 		await target(page, 'tab-characters').click();
-		await expectStep(page, 'Open the character list', '2 of 25');
+		await expectStep(page, 'Open the character list', '2 of 15');
 		await target(page, 'char-switcher').click();
 		await expectStep(page, 'Start a new character');
 		await target(page, 'new-char-action').click();
@@ -271,9 +301,59 @@ test.describe('Tutorial — Create a character, on a phone', () => {
 		await expectStep(page, 'Turn the rolls into a bio');
 		await expect(target(page, 'char-tab-background')).toHaveAttribute('data-state', 'active');
 		await next(page);
-		await expectStep(page, 'Add a portrait', '10 of 25');
+		await expectStep(page, 'Add a portrait', '10 of 15');
 		await next(page);
-		await walkSheet(page, 11, 25, true);
+		await walkSheet(page, 11, 15, true);
+	});
+});
+
+test.describe('Tutorial — Add your first vow, and your assets', () => {
+	test.beforeAll(async () => {
+		await resetCharacters();
+		await resetLog();
+		await seedCharacter('Brand');
+	});
+
+	test('swears a first vow', async ({ page }) => {
+		await openHome(page, false);
+		await startTutorial(page, 'Add your first vow');
+		await swearVow(page, 1, 3);
+	});
+
+	test('takes an asset and spends its experience', async ({ page }) => {
+		await openHome(page, false);
+		await giveExperience(page, 9);
+		await startTutorial(page, 'Add your assets');
+		await takeAsset(page, 1, 7);
+	});
+});
+
+test.describe('Tutorial — Add your first vow, and your assets, on a phone', () => {
+	test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+	test.beforeAll(async () => {
+		await resetCharacters();
+		await resetLog();
+		await seedCharacter('Brand');
+	});
+
+	test('brings up the Characters tab and swears a vow, tapping', async ({ page }) => {
+		await openHome(page, false);
+		await page.locator('.mob-tab', { hasText: 'Foes' }).click();
+		await startTutorial(page, 'Add your first vow');
+		await expectStep(page, 'Your character', '1 of 4');
+		await target(page, 'tab-characters').tap();
+		await swearVow(page, 2, 4, true);
+	});
+
+	test('brings up the Characters tab and takes an asset, tapping', async ({ page }) => {
+		await openHome(page, false);
+		await giveExperience(page, 9, true);
+		await page.locator('.mob-tab', { hasText: 'Foes' }).click();
+		await startTutorial(page, 'Add your assets');
+		await expectStep(page, 'Your character', '1 of 8');
+		await target(page, 'tab-characters').tap();
+		await takeAsset(page, 2, 8, true);
 	});
 });
 
