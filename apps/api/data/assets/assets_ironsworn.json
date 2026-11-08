@@ -865,6 +865,7 @@
       "id": "path/banner-sworn",
       "name": "Banner-Sworn",
       "category": "Path",
+      "icon": "asset-banner-sworn",
       "preamble": "Once you mark a bond with a leader or faction...",
       "abilities": [
         {
