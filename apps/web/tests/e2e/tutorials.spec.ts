@@ -20,6 +20,10 @@
  * the log; a note saying what you do; Strike, and its harm on the foe's
  * progress track; Endure Harm, and it off your health.
  *
+ * Start a journey: + New Journey…, its name and difficulty, a note on how
+ * you set out, Undertake a Journey (a strong hit, its progress left to Next)
+ * and the progress on the journey's track.
+ *
  * Make camp and heal: Heal, and its +2 health; a note saying where you
  * camp; Make Camp, choosing Recuperate and Focus from its links. The dice are loaded, so each roll comes out as
  * the test says.
@@ -31,6 +35,7 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import {
 	resetCharacters,
+	resetExpeditions,
 	resetFoes,
 	resetLog,
 	seedCharacter,
@@ -744,5 +749,87 @@ test.describe('Tutorial — Make camp and heal, on a phone', () => {
 		await target(page, 'tab-characters').tap();
 		// The sheet is on Core already: that step moves itself on.
 		await rest(page, 15, true);
+	});
+});
+
+/**
+ * Start a journey, from its switcher step to Done: "To the Havens" at the
+ * default difficulty (Dangerous: 2 boxes a waypoint), a note, then
+ * Undertake a Journey for a strong hit whose progress Next marks.
+ */
+async function journey(page: Page, first: number, total: number, tap = false) {
+	const n = (i: number) => `${first + i} of ${total}`;
+	const press = (l: Locator) => (tap ? l.tap() : l.click());
+	const tally = target(page, 'exp-progress').locator('.ptp-tally');
+
+	await expectStep(page, 'Plan a journey', n(0));
+	await press(target(page, 'exp-switcher'));
+	await expectStep(page, 'A new journey', n(1));
+	await press(target(page, 'new-journey-action'));
+	await expectStep(page, 'Where are you going?', n(2));
+	await target(page, 'new-journey-dialog').locator('.co-input').fill('To the Havens');
+	await press(target(page, 'new-journey-dialog-confirm'));
+	await expectStep(page, 'Your journey', n(3));
+	await expect(target(page, 'exp-switcher')).toContainText('To the Havens');
+	await expect(tally).toHaveText('');
+	await next(page);
+
+	await expectStep(page, 'Set out', n(4));
+	const bar = target(page, 'log-note').locator('input');
+	await press(bar);
+	await bar.fill('We take the old river road at first light.');
+	await bar.press('Enter');
+	await expectStep(page, 'On the road', n(5));
+	await press(target(page, 'tb-move'));
+	await expectStep(page, 'Undertake a Journey', n(6));
+	await press(target(page, 'move-undertake-a-journey'));
+	await expectStep(page, 'Roll +wits', n(7));
+	await next(page);
+	await expectStep(page, 'Roll', n(8));
+	await roll(page, STRONG, tap);
+
+	// No link clicked: Next marks the waypoint's progress.
+	await expectStep(page, 'Reach a waypoint', n(9));
+	await expect(highlighted(page)).toContainText('Strong Hit');
+	await next(page);
+	await expectStep(page, 'On your way', n(10));
+	await expect(tally).toHaveText('2/10 boxes');
+	await next(page); // Done
+	await expect(page.locator(POPOVER)).toBeHidden();
+}
+
+test.describe('Tutorial — Start a journey', () => {
+	test.beforeAll(async () => {
+		await resetCharacters();
+		await resetExpeditions();
+		await resetLog();
+		await seedCharacter('Brand');
+	});
+
+	test('plans a journey and reaches its first waypoint', async ({ page }) => {
+		await loadDice(page);
+		await openHome(page, false);
+		await startTutorial(page, 'Start a journey');
+		await journey(page, 1, 11);
+	});
+});
+
+test.describe('Tutorial — Start a journey, on a phone', () => {
+	test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+	test.beforeAll(async () => {
+		await resetCharacters();
+		await resetExpeditions();
+		await resetLog();
+		await seedCharacter('Brand');
+	});
+
+	test('brings up the Expeditions tab, tapping', async ({ page }) => {
+		await loadDice(page);
+		await openHome(page, false);
+		await startTutorial(page, 'Start a journey');
+		await expectStep(page, 'Your expeditions', '1 of 12');
+		await target(page, 'tab-expeditions').tap();
+		await journey(page, 2, 12, true);
 	});
 });

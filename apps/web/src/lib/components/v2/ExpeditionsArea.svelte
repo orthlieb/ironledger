@@ -236,7 +236,12 @@
 		scene: SCENE_COLOR,
 	};
 	const expActions = $derived([
-		{ label: '+ New Journey…', value: '+ New Journey', onselect: addJourney },
+		{
+			label: '+ New Journey…',
+			value: '+ New Journey',
+			tour: 'new-journey-action',
+			onselect: addJourney,
+		},
 		...(isSourceEnabled('delve')
 			? [{ label: '+ New Site…', value: '+ New Site', onselect: addSite }]
 			: []),
@@ -743,6 +748,7 @@
 				ariaLabel="Switch or add expedition"
 				filterGroupLabel="Filter by expedition type"
 				class="ea-hdr-combobox"
+				tour="exp-switcher"
 				filters={EXP_PILLS}
 				bind:activeFilters={expTypeFilter}
 				filterOf={(e) => e.type}
@@ -1033,7 +1039,7 @@
 							     surfaced via the rank-coloured pill above. -->
 
 								<!-- Progress track -->
-								<div class="ea-section">
+								<div class="ea-section" data-tour="exp-progress">
 									<ProgressTrackPanel
 										label="Progress track"
 										value={activeExp.ticks}
@@ -1182,6 +1188,7 @@
 <!-- New Journey dialog — name + difficulty (defaults to Dangerous). -->
 <ConfirmDialog
 	bind:this={newJourneyDialogRef}
+	tour="new-journey-dialog"
 	title="New Journey"
 	draggable
 	confirmLabel="Create"

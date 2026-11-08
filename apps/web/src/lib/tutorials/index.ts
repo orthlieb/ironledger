@@ -33,6 +33,11 @@ export const TUTORIALS: readonly TutorialEntry[] = [
 		load: () => import('./addAssets.js').then((m) => m.addAssets),
 	},
 	{
+		id: 'start-journey',
+		title: 'Start a journey',
+		load: () => import('./startJourney.js').then((m) => m.startJourney),
+	},
+	{
 		id: 'create-foe',
 		title: 'Create your first foe',
 		load: () => import('./createFoe.js').then((m) => m.createFoe),
