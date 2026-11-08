@@ -38,6 +38,11 @@ export const TUTORIALS: readonly TutorialEntry[] = [
 		load: () => import('./startJourney.js').then((m) => m.startJourney),
 	},
 	{
+		id: 'add-connections',
+		title: 'Add a settlement and an NPC',
+		load: () => import('./addConnections.js').then((m) => m.addConnections),
+	},
+	{
 		id: 'create-foe',
 		title: 'Create your first foe',
 		load: () => import('./createFoe.js').then((m) => m.createFoe),

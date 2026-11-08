@@ -260,9 +260,15 @@
 		{
 			label: '+ New Settlement…',
 			value: '+ New Settlement',
+			tour: 'new-settlement-action',
 			onselect: () => void addNewCommunity(),
 		},
-		{ label: '+ New NPC…', value: '+ New NPC', onselect: () => void addNewNpc() },
+		{
+			label: '+ New NPC…',
+			value: '+ New NPC',
+			tour: 'new-npc-action',
+			onselect: () => void addNewNpc(),
+		},
 		{ label: '+ New Landmark…', value: '+ New Landmark', onselect: () => void addNewPlace() },
 	];
 
@@ -943,6 +949,7 @@
 				ariaLabel="Switch or add connection"
 				filterGroupLabel="Filter by connection kind"
 				class="cm-hdr-combobox"
+				tour="cm-switcher"
 				filters={CM_PILLS}
 				bind:activeFilters={entryKindFilter}
 				filterOf={(e) => e.kind}
@@ -986,7 +993,7 @@
 						</Tabs.List>
 					</Tabs.Root>
 
-					<div class="deck-card cm-card" role="tabpanel">
+					<div class="deck-card cm-card" role="tabpanel" data-tour="cm-card">
 						{#if activeTab === 'core'}
 							{#if activeEntry.kind === 'community' || activeEntry.kind === 'place'}
 								{@const c = activeEntry.data}
@@ -1328,6 +1335,7 @@
 									<Combobox
 										id="cm-within-{n.id}"
 										class="cm-within-select"
+										tour="npc-within"
 										items={withinItems}
 										getKey={(o) => o.ref}
 										getLabel={(o) => o.label}
@@ -1465,6 +1473,7 @@
      three roll only when checked. Create needs a name. -->
 <ConfirmDialog
 	bind:this={newCommunityDialogRef}
+	tour="new-settlement-dialog"
 	title="New Settlement"
 	draggable
 	confirmLabel="Create"
@@ -1569,6 +1578,7 @@
      class/aspect/features and prepends the outcome into Notes. -->
 <ConfirmDialog
 	bind:this={newNpcDialogRef}
+	tour="new-npc-dialog"
 	title="New NPC"
 	draggable
 	confirmLabel="Create"

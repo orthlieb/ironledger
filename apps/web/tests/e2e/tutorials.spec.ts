@@ -24,6 +24,10 @@
  * you set out, Undertake a Journey (a strong hit, its progress left to Next)
  * and the progress on the journey's track.
  *
+ * Add a settlement and an NPC: + New Settlement… and + New NPC… (names
+ * typed), their cards, the NPC's Within set to the settlement, and the
+ * Forge a Bond pointer.
+ *
  * Make camp and heal: Heal, and its +2 health; a note saying where you
  * camp; Make Camp, choosing Recuperate and Focus from its links. The dice are loaded, so each roll comes out as
  * the test says.
@@ -35,6 +39,7 @@
 import { test, expect, type Locator, type Page } from '@playwright/test';
 import {
 	resetCharacters,
+	resetCommunities,
 	resetExpeditions,
 	resetFoes,
 	resetLog,
@@ -831,5 +836,82 @@ test.describe('Tutorial — Start a journey, on a phone', () => {
 		await expectStep(page, 'Your expeditions', '1 of 12');
 		await target(page, 'tab-expeditions').tap();
 		await journey(page, 2, 12, true);
+	});
+});
+
+/**
+ * Add a settlement and an NPC, from its switcher step to Done: the
+ * settlement `town` and the NPC `who`, named by hand, and the NPC's Within
+ * set to the settlement.
+ */
+async function connect(
+	page: Page,
+	first: number,
+	total: number,
+	town: string,
+	who: string,
+	tap = false,
+) {
+	const n = (i: number) => `${first + i} of ${total}`;
+	const press = (l: Locator) => (tap ? l.tap() : l.click());
+
+	await expectStep(page, 'People and places', n(0));
+	await press(target(page, 'cm-switcher'));
+	await expectStep(page, 'A new settlement', n(1));
+	await press(target(page, 'new-settlement-action'));
+	await expectStep(page, 'Name it', n(2));
+	await target(page, 'new-settlement-dialog').locator('.co-input').first().fill(town);
+	await press(target(page, 'new-settlement-dialog-confirm'));
+	await expectStep(page, 'Your settlement', n(3));
+	await expect(target(page, 'cm-switcher')).toContainText(town);
+	await next(page);
+
+	await expectStep(page, 'Someone who lives there', n(4));
+	await press(target(page, 'cm-switcher'));
+	await expectStep(page, 'A new NPC', n(5));
+	await press(target(page, 'new-npc-action'));
+	await expectStep(page, 'Who are they?', n(6));
+	await target(page, 'new-npc-dialog').locator('.co-input').first().fill(who);
+	await press(target(page, 'new-npc-dialog-confirm'));
+	await expectStep(page, 'Your NPC', n(7));
+	await expect(target(page, 'cm-switcher')).toContainText(who);
+	await next(page);
+
+	// Within: the picker's list opens over the tour, and takes the pick.
+	await expectStep(page, 'Where they live', n(8));
+	await press(target(page, 'npc-within'));
+	await press(page.locator('.cb-popover .cb-item', { hasText: town }).first());
+	await expect(target(page, 'npc-within')).toContainText(town);
+	await next(page);
+	await expectStep(page, 'Forge a bond', n(9));
+	await next(page); // Done
+	await expect(page.locator(POPOVER)).toBeHidden();
+}
+
+test.describe('Tutorial — Add a settlement and an NPC', () => {
+	test.beforeAll(async () => {
+		await resetCommunities();
+	});
+
+	test('makes a settlement and someone who lives there', async ({ page }) => {
+		await openHome(page, false);
+		await startTutorial(page, 'Add a settlement and an NPC');
+		await connect(page, 1, 10, 'Thornhold', 'Edda');
+	});
+});
+
+test.describe('Tutorial — Add a settlement and an NPC, on a phone', () => {
+	test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+	test.beforeAll(async () => {
+		await resetCommunities();
+	});
+
+	test('brings up the Connections tab, tapping', async ({ page }) => {
+		await openHome(page, false);
+		await startTutorial(page, 'Add a settlement and an NPC');
+		await expectStep(page, 'Your connections', '1 of 11');
+		await target(page, 'tab-connections').tap();
+		await connect(page, 2, 11, 'Ashfen', 'Rurik', true);
 	});
 });
