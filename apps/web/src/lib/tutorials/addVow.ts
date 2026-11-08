@@ -34,7 +34,7 @@ export const addVow: Tutorial = {
 			{
 				target: 'char-add-vow',
 				title: 'Swear your first vow',
-				body: `Every Ironsworn is bound by iron vows. Click ${ADD_VOW} to swear your first: the quest that sets your story in motion.`,
+				body: `In the Ironlands, a vow is sacred. When you declare your solemn promise to serve or aid someone, or to complete a personal quest, your honor is bound to that vow. Abandoning or recanting an oath is the worst sort of failure. Click ${ADD_VOW} to swear your first.`,
 				continueWhen: 'new-vow-dialog',
 				wait: 3000,
 			},
