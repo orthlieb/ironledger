@@ -24,12 +24,15 @@ const PNG_1X1 = Buffer.from(
 );
 
 async function waitForHome(page: Page): Promise<void> {
-	// Wait for the top-nav Map button to attach — proxy for the shell
-	// being fully hydrated.
+	// Wait for the top-nav Map button to attach, then for the page to
+	// settle: the button is in the server's HTML before the page hydrates,
+	// and a click before then does nothing (a slow dev server shows it).
+	// The other map specs wait the same way.
 	await page
 		.locator('[aria-label="Open the campaign map"]')
 		.first()
 		.waitFor({ timeout: 12_000, state: 'attached' });
+	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
 }
 
 /** Open the shared MapDialog via the top-nav "Map" button, then upload
