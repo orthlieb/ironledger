@@ -110,7 +110,7 @@ import { place } from './render.js';
  *   workshops
  * @property {boolean} church a full church (nave + bell tower) rather than a lone bell
  *   tower
- * @property {'none' | 'orb' | 'sun' | 'spike' | 'cross' | 'horns' | 'wheel' | 'claw' | 'trident' | 'skull' | 'flame' | 'droplet' | 'diamond' | 'hurricane' | 'oakleaf'} symbol
+ * @property {'none' | 'orb' | 'sun' | 'spike' | 'cross' | 'horns' | 'wheel' | 'claw' | 'trident' | 'skull' | 'flame' | 'droplet' | 'diamond' | 'hurricane' | 'oakleaf' | 'shuriken'} symbol
  *   finial atop temple towers
  * @property {'none' | 'city' | 'town' | 'all'} keep smallest settlement with a castle keep
  * @property {'none' | 'town' | 'all'} market smallest settlement with a market square
@@ -233,6 +233,7 @@ export function makeDesign(seed) {
 			'diamond',
 			'hurricane',
 			'oakleaf',
+			'shuriken',
 			'cross',
 		]),
 		keep: pick(['none', 'city', 'city', 'town', 'all']),
@@ -3010,6 +3011,21 @@ const OAKLEAF = /** @type {Poly} */ (
 );
 
 /**
+ * The `shuriken` symbol (metal): a four-pointed throwing star (SHURIKEN)
+ * with a hole through it (SHURIKEN_HOLE); offsets from the symbol's
+ * point, y up, 5.6 across, its lower point 1.6 up the post. "Shuriken" by
+ * Carl Orthlieb — CC BY 4.0.
+ */
+// prettier-ignore
+const SHURIKEN = /** @type {Poly} */ (
+[[-0.99, 6.04], [-1.36, 5.75], [-1.65, 5.38], [-1.84, 4.94], [-2.68, 4.57], [-2.76, 4.49], [-2.79, 4.39], [-2.76, 4.29], [-2.68, 4.22], [-1.84, 3.84], [-1.65, 3.41], [-1.36, 3.03], [-0.99, 2.74], [-0.55, 2.55], [-0.18, 1.71], [-0.1, 1.63], [0, 1.6], [0.1, 1.63], [0.18, 1.71], [0.55, 2.55], [0.99, 2.74], [1.36, 3.03], [1.65, 3.41], [1.84, 3.84], [2.68, 4.22], [2.76, 4.29], [2.79, 4.39], [2.76, 4.49], [2.68, 4.57], [1.84, 4.94], [1.65, 5.38], [1.36, 5.75], [0.99, 6.04], [0.55, 6.23], [0.18, 7.07], [0.1, 7.15], [0, 7.18], [-0.1, 7.15], [-0.18, 7.07], [-0.55, 6.23]]
+);
+// prettier-ignore
+const SHURIKEN_HOLE = /** @type {Poly} */ (
+[[0, 4.01], [0.15, 4.04], [0.27, 4.12], [0.35, 4.24], [0.38, 4.39], [0.35, 4.54], [0.27, 4.66], [0.15, 4.75], [0, 4.78], [-0.15, 4.75], [-0.27, 4.66], [-0.35, 4.54], [-0.38, 4.39], [-0.35, 4.24], [-0.27, 4.12], [-0.15, 4.04]]
+);
+
+/**
  * @param {Design['symbol']} kind
  * @param {Pt} p
  * @returns {Part[]}
@@ -3088,6 +3104,20 @@ function symbolShape(kind, p) {
 			return [
 				{ solid: [at(DROPLET)], role: 'water', free: [post(1.9)] },
 				{ solid: [at(DROPLET_GLINT)] },
+			];
+		case 'shuriken':
+			// In the roof's colour, as the other forged symbols (trident,
+			// spike), its hole in ink (inked whole, it read as a blob, and a
+			// pale hole was too small to show); sharp, or softening would
+			// round its points away.
+			return [
+				{
+					solid: [at(SHURIKEN)],
+					role: 'roof',
+					fills: [at(SHURIKEN_HOLE)],
+					free: [post(1.8)],
+					sharp: true,
+				},
 			];
 		case 'oakleaf':
 			return [{ solid: [at(OAKLEAF)], role: 'wood', free: [post(1.2)] }];
