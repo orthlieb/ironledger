@@ -255,7 +255,7 @@
 	{/if}
 
 	<div class="sb-main">
-		<div class="sb-knobs">
+		<div class="sb-knobs" data-tour="sb-knobs">
 			{#if isBuilding}
 				<label class="sb-field">
 					<span class="sb-label">Building</span>
@@ -304,7 +304,7 @@
 			{/if}
 		</div>
 
-		<div class="sb-preview">
+		<div class="sb-preview" data-tour="sb-preview">
 			<div class="sb-big" aria-live="polite">
 				{#if icon}
 					<svg viewBox={haloPaddedViewBox(icon)} role="img" aria-label={icon.label}>

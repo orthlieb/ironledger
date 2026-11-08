@@ -38,6 +38,16 @@ export const TUTORIALS: readonly TutorialEntry[] = [
 		load: () => import('./startJourney.js').then((m) => m.startJourney),
 	},
 	{
+		id: 'add-connections',
+		title: 'Add a settlement and an NPC',
+		load: () => import('./addConnections.js').then((m) => m.addConnections),
+	},
+	{
+		id: 'map-settlement',
+		title: 'Put your settlement on the map',
+		load: () => import('./mapSettlement.js').then((m) => m.mapSettlement),
+	},
+	{
 		id: 'create-foe',
 		title: 'Create your first foe',
 		load: () => import('./createFoe.js').then((m) => m.createFoe),
@@ -58,9 +68,14 @@ export const TUTORIALS: readonly TutorialEntry[] = [
 export async function startTutorial(id: string): Promise<void> {
 	const entry = TUTORIALS.find((x) => x.id === id);
 	if (!entry) return;
-	const [t, { runTour, whenRendered }] = await Promise.all([entry.load(), import('./tour.js')]);
+	const [t, { runTour, until, whenRendered }] = await Promise.all([
+		entry.load(),
+		import('./tour.js'),
+	]);
 	if (page.url.pathname !== t.route) await goto(t.route);
-	// Its steps (and their `when` checks) need the page drawn.
+	// Its steps (and their `when` checks) need the page drawn, and what
+	// they read from its stores there.
 	await whenRendered(t.ready);
+	if (t.loaded) await until(t.loaded);
 	await runTour(t.steps());
 }

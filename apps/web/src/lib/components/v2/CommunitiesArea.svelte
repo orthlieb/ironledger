@@ -85,6 +85,7 @@
 	} from '#lib/characterRollups.js';
 	import RandomizeBlock from '#lib/components/RandomizeBlock.svelte';
 	import { appendLog } from '#lib/log.svelte.js';
+	import { stripInline } from '#lib/markdown.js';
 	import { tooltip } from '#lib/actions/tooltip.js';
 
 	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
@@ -260,9 +261,15 @@
 		{
 			label: '+ New Settlement…',
 			value: '+ New Settlement',
+			tour: 'new-settlement-action',
 			onselect: () => void addNewCommunity(),
 		},
-		{ label: '+ New NPC…', value: '+ New NPC', onselect: () => void addNewNpc() },
+		{
+			label: '+ New NPC…',
+			value: '+ New NPC',
+			tour: 'new-npc-action',
+			onselect: () => void addNewNpc(),
+		},
 		{ label: '+ New Landmark…', value: '+ New Landmark', onselect: () => void addNewPlace() },
 	];
 
@@ -619,15 +626,18 @@
 		oracles: ReturnType<typeof getOracles>,
 	): string {
 		if (key === 'type')
-			// settlementType values carry <strong>…</strong> markup for the picker;
-			// strip tags so the plain-text field shows "Outpost — Border or…".
+			// settlementType values are written in markdown ("**Village** — …"),
+			// which reads well in the log and the Oracles dialog; strip it (and
+			// any tags) so the plain-text field shows "Village — Moderate…".
 			// resolveOracleKey picks up YRT's supersession (yrtSettlementType) when
 			// YRT is on, else falls through to Lodestar's settlementType.
-			return (
-				rollOracle(resolveOracleKey('settlementType'), oracles, {
-					stat: tierForRegion(region, oracles),
-				}).value ?? ''
-			).replace(/<[^>]+>/g, '');
+			return stripInline(
+				(
+					rollOracle(resolveOracleKey('settlementType'), oracles, {
+						stat: tierForRegion(region, oracles),
+					}).value ?? ''
+				).replace(/<[^>]+>/g, ''),
+			);
 		if (key === 'condition')
 			return rollOracle(resolveOracleKey('settlementCondition'), oracles).value ?? '';
 		const oracleKey: Record<Exclude<LodestarSettlementFieldKey, 'type' | 'condition'>, string> = {
@@ -943,6 +953,7 @@
 				ariaLabel="Switch or add connection"
 				filterGroupLabel="Filter by connection kind"
 				class="cm-hdr-combobox"
+				tour="cm-switcher"
 				filters={CM_PILLS}
 				bind:activeFilters={entryKindFilter}
 				filterOf={(e) => e.kind}
@@ -986,7 +997,7 @@
 						</Tabs.List>
 					</Tabs.Root>
 
-					<div class="deck-card cm-card" role="tabpanel">
+					<div class="deck-card cm-card" role="tabpanel" data-tour="cm-card">
 						{#if activeTab === 'core'}
 							{#if activeEntry.kind === 'community' || activeEntry.kind === 'place'}
 								{@const c = activeEntry.data}
@@ -1177,7 +1188,7 @@
 								     the store returns refs across all maps, chips wrap
 								     onto new rows via flex-wrap. Coord (x, y) lives in
 								     the tooltip; chip text is the map name only. -->
-								<div class="cm-field-row cm-field-row--map">
+								<div class="cm-field-row cm-field-row--map" data-tour="cm-map">
 									<span class="cm-field-label">Map</span>
 									<div class="cm-mapref-chips">
 										{#if activeEntryMarkers.length === 0}
@@ -1328,6 +1339,7 @@
 									<Combobox
 										id="cm-within-{n.id}"
 										class="cm-within-select"
+										tour="npc-within"
 										items={withinItems}
 										getKey={(o) => o.ref}
 										getLabel={(o) => o.label}
@@ -1465,6 +1477,7 @@
      three roll only when checked. Create needs a name. -->
 <ConfirmDialog
 	bind:this={newCommunityDialogRef}
+	tour="new-settlement-dialog"
 	title="New Settlement"
 	draggable
 	confirmLabel="Create"
@@ -1569,6 +1582,7 @@
      class/aspect/features and prepends the outcome into Notes. -->
 <ConfirmDialog
 	bind:this={newNpcDialogRef}
+	tour="new-npc-dialog"
 	title="New NPC"
 	draggable
 	confirmLabel="Create"

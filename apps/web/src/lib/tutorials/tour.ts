@@ -73,6 +73,9 @@ export interface Tutorial {
 	route: string;
 	/** `data-tour` id that's on the page once the route has rendered. */
 	ready: string;
+	/** True once what `steps` reads is loaded (a store it checks or counts):
+	 *  the page draws before its stores have arrived. */
+	loaded?: () => boolean;
 	steps: () => TourStep[];
 }
 
@@ -85,18 +88,22 @@ export function tourTarget(id: string): HTMLElement | null {
 	return el && el.getClientRects().length > 0 ? el : null;
 }
 
-/** Resolves once an element with this `data-tour` id exists (or after `ms`). */
-export function whenRendered(id: string, ms = 5000): Promise<boolean> {
+/** Resolves once `met` returns true (or after `ms`, with false). */
+export function until(met: () => boolean, ms = 5000): Promise<boolean> {
 	return new Promise((resolve) => {
 		const start = performance.now();
 		const tick = () => {
-			if (document.querySelector(tourSel(id))) resolve(true);
+			if (met()) resolve(true);
 			else if (performance.now() - start > ms) resolve(false);
 			else requestAnimationFrame(tick);
 		};
 		tick();
 	});
 }
+
+/** Resolves once an element with this `data-tour` id exists (or after `ms`). */
+export const whenRendered = (id: string, ms = 5000): Promise<boolean> =>
+	until(() => !!document.querySelector(tourSel(id)), ms);
 
 let active: Driver | null = null;
 

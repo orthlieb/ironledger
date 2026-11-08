@@ -569,6 +569,7 @@
 				class="mp-props-dialog"
 				style="z-index: {contentZ(stackDepth)}"
 				interactOutsideBehavior="ignore"
+				data-tour="marker-dialog"
 			>
 				<DialogHeader
 					title={headingText('Edit Marker')}
@@ -716,6 +717,7 @@
 									emptyText="No matching connections."
 									ariaLabel="Link marker to a connection"
 									class="mp-sel-entity-btn"
+									tour="marker-link"
 									clearItem={{ label: '— No link —', onselect: () => pickDraftEntity('') }}
 								/>
 							</div>
@@ -856,6 +858,7 @@
 								class="mp-sel-icon-btn"
 								onclick={openIconPicker}
 								aria-label="Change icon"
+								data-tour="marker-icon"
 								disabled={!iconActive}
 							>
 								{#if draftIcon}
@@ -905,6 +908,7 @@
 						class="btn btn-primary"
 						disabled={!canSave}
 						use:tooltip={canSave ? '' : 'A marker needs an icon or a label'}
+						data-tour="marker-ok"
 						onclick={commitDraft}>OK</button
 					>
 				</div>

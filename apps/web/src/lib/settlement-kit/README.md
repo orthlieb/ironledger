@@ -287,13 +287,13 @@ below are `DEFAULT_DESIGN` and the playground's sliders.
 
 **Landmarks**
 
-| Knob      | Values (default)                                                      | What it drives                                          |
-| --------- | --------------------------------------------------------------------- | ------------------------------------------------------- |
-| `church`  | **on** / off                                                          | A full church (nave + bell tower) or a lone bell tower. |
-| `steeple` | **square** / round                                                    | Shape of church, cathedral, clock and bell towers.      |
-| `symbol`  | none / **orb** / sun / spike / cross / horns / wheel / claw / trident | Holy-symbol finial on temple towers.                    |
-| `keep`    | none / **city** / town / all                                          | Smallest settlement with a castle keep.                 |
-| `market`  | none / **town** / all                                                 | Smallest settlement with a market square.               |
+| Knob      | Values (default)                                                                                                                                   | What it drives                                          |
+| --------- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| `church`  | **on** / off                                                                                                                                       | A full church (nave + bell tower) or a lone bell tower. |
+| `steeple` | **square** / round                                                                                                                                 | Shape of church, cathedral, clock and bell towers.      |
+| `symbol`  | none / **orb** / sun / spike / cross / horns / wheel / claw (a paw) / trident / skull / flame / droplet / diamond / hurricane / oakleaf / shuriken | Holy-symbol finial on temple towers.                    |
+| `keep`    | none / **city** / town / all                                                                                                                       | Smallest settlement with a castle keep.                 |
+| `market`  | none / **town** / all                                                                                                                              | Smallest settlement with a market square.               |
 
 **Flags**
 

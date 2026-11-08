@@ -2613,6 +2613,7 @@
 			class="mob-tab"
 			class:mob-tab--active={mobileTab === 'communities'}
 			onclick={() => (mobileTab = 'communities')}
+			data-tour="tab-connections"
 		>
 			<span class="mob-tab-icon" aria-hidden="true">{@html appIcon('connections')}</span>Connections
 		</button>
