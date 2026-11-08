@@ -124,6 +124,7 @@ const KNOBS = [
 		'droplet',
 		'diamond',
 		'hurricane',
+		'oakleaf',
 		'cross',
 	]),
 	select('Landmarks', 'keep', 'Castle keep in', ['none', 'city', 'town', 'all']),

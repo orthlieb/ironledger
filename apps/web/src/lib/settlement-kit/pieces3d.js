@@ -110,7 +110,7 @@ import { place } from './render.js';
  *   workshops
  * @property {boolean} church a full church (nave + bell tower) rather than a lone bell
  *   tower
- * @property {'none' | 'orb' | 'sun' | 'spike' | 'cross' | 'horns' | 'wheel' | 'claw' | 'trident' | 'skull' | 'flame' | 'droplet' | 'diamond' | 'hurricane'} symbol
+ * @property {'none' | 'orb' | 'sun' | 'spike' | 'cross' | 'horns' | 'wheel' | 'claw' | 'trident' | 'skull' | 'flame' | 'droplet' | 'diamond' | 'hurricane' | 'oakleaf'} symbol
  *   finial atop temple towers
  * @property {'none' | 'city' | 'town' | 'all'} keep smallest settlement with a castle keep
  * @property {'none' | 'town' | 'all'} market smallest settlement with a market square
@@ -2993,6 +2993,17 @@ const HURRICANE_CORE = /** @type {Poly} */ (
 );
 
 /**
+ * The `oakleaf` symbol (plants): an oak leaf in the culture's wood colour,
+ * its stem running down into the post; offsets from the symbol's point, y
+ * up, 5.3 wide and 6.8 tall, its stem's foot 0.8 up the post. Flattened
+ * from Font Awesome Pro's "leaf-oak" (Fonticons, Inc., commercial licence).
+ */
+// prettier-ignore
+const OAKLEAF = /** @type {Poly} */ (
+[[-0.17, 7.57], [-0.32, 7.5], [-0.45, 7.4], [-0.55, 7.26], [-0.9, 6.88], [-1.17, 6.94], [-1.33, 6.96], [-1.49, 6.94], [-1.63, 6.88], [-1.76, 6.78], [-1.87, 6.62], [-1.93, 6.44], [-1.93, 6.25], [-1.88, 6.06], [-1.72, 5.36], [-1.82, 5.33], [-2.15, 5.33], [-2.34, 5.29], [-2.5, 5.19], [-2.6, 5.03], [-2.64, 4.84], [-2.63, 4.72], [-2.58, 4.61], [-2.52, 4.51], [-2.42, 4.43], [-1.78, 4], [-1.88, 3.63], [-2.04, 3.52], [-2.16, 3.38], [-2.24, 3.2], [-2.27, 3.01], [-2.23, 2.79], [-2.13, 2.6], [-1.97, 2.45], [-1.77, 2.35], [-1.03, 2.13], [-0.85, 2.07], [-0.69, 1.99], [-0.53, 1.89], [-0.38, 1.78], [-0.38, 1.18], [-0.35, 1.03], [-0.27, 0.91], [-0.15, 0.83], [0, 0.8], [0.15, 0.83], [0.27, 0.91], [0.35, 1.03], [0.38, 1.18], [0.38, 1.78], [0.53, 1.89], [0.68, 1.99], [0.85, 2.07], [1.03, 2.13], [1.77, 2.35], [1.97, 2.45], [2.13, 2.6], [2.23, 2.79], [2.27, 3.01], [2.24, 3.21], [2.16, 3.38], [2.04, 3.53], [1.72, 3.92], [1.78, 4], [2.42, 4.43], [2.52, 4.51], [2.58, 4.61], [2.63, 4.72], [2.64, 4.84], [2.6, 5.03], [2.5, 5.19], [2.34, 5.29], [2.15, 5.33], [1.82, 5.33], [1.65, 5.6], [1.88, 6.06], [1.93, 6.25], [1.93, 6.44], [1.87, 6.62], [1.76, 6.78], [1.63, 6.88], [1.49, 6.94], [1.33, 6.96], [1.17, 6.94], [0.69, 6.98], [0.55, 7.26], [0.45, 7.4], [0.32, 7.5], [0.17, 7.57], [0, 7.6]]
+);
+
+/**
  * @param {Design['symbol']} kind
  * @param {Pt} p
  * @returns {Part[]}
@@ -3072,6 +3083,8 @@ function symbolShape(kind, p) {
 				{ solid: [at(DROPLET)], role: 'water', free: [post(1.9)] },
 				{ solid: [at(DROPLET_GLINT)] },
 			];
+		case 'oakleaf':
+			return [{ solid: [at(OAKLEAF)], role: 'wood', free: [post(1.2)] }];
 		case 'diamond':
 			return [{ solid: [at(DIAMOND)], role: 'earth', free: [post(1.8)] }];
 		case 'hurricane':
