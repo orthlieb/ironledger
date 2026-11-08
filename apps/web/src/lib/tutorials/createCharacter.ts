@@ -22,6 +22,7 @@
  */
 import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
 import { tourSel, tourTarget, type Tutorial } from './tour.js';
+import { ADD_ASSET, ADD_VOW } from './keys.js';
 
 /** Click the `data-tour` control `id` inside `root`. */
 function press(root: Element | undefined, id: string) {
@@ -157,7 +158,7 @@ export const createCharacter: Tutorial = {
 		{
 			target: 'char-add-vow',
 			title: 'Swear your first vow',
-			body: 'Every Ironsworn is bound by iron vows. Click + to swear your first: the quest that sets your story in motion.',
+			body: `Every Ironsworn is bound by iron vows. Click ${ADD_VOW} to swear your first: the quest that sets your story in motion.`,
 			continueWhen: 'new-vow-dialog',
 			back: true,
 		},
@@ -177,7 +178,7 @@ export const createCharacter: Tutorial = {
 		{
 			target: 'char-add-asset',
 			title: 'Choose three assets',
-			body: 'You start with three assets: any mix of Companions, Paths, Combat Talents and Rituals. Your 9 experience pays for them, 3 each. Click + to choose your first.',
+			body: `You start with three assets: any mix of Companions, Paths, Combat Talents and Rituals. Your 9 experience pays for them, 3 each. Click ${ADD_ASSET} to choose your first.`,
 			continueWhen: 'asset-picker-search',
 			back: true,
 		},

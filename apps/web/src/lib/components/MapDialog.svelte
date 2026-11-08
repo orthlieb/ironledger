@@ -1897,7 +1897,7 @@
 							? measuring
 								? 'Click the map to add waypoints; Backspace undoes; Enter or double-click commits; Esc cancels'
 								: 'Measure distance — click to arm the ruler'
-							: 'Turn on Scale in Map options to measure distances'}
+							: 'Turn on Scale in Map options (⚙) to measure distances'}
 						aria-label="Measure distance">{@html iconRulerSvg}</button
 					>
 					<span class="mp-tool-divider" aria-hidden="true"></span>

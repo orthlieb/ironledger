@@ -18,6 +18,7 @@
 import { getActiveDiceCtx } from '#lib/diceContext.svelte.js';
 import { closeMoves, logWatch } from './moves.js';
 import { tourTarget, type TourStep, type Tutorial } from './tour.js';
+import { MOVE } from './keys.js';
 
 export const makeCamp: Tutorial = {
 	route: '/home',
@@ -71,7 +72,7 @@ export const makeCamp: Tutorial = {
 			{
 				target: 'tb-move',
 				title: 'Tend your wounds',
-				body: 'Healing is a move too. Click Move.',
+				body: `Healing is a move too. Click ${MOVE}.`,
 				continueWhen: 'moves-search',
 			},
 			{
@@ -120,7 +121,7 @@ export const makeCamp: Tutorial = {
 			{
 				target: 'tb-move',
 				title: 'Make camp',
-				body: 'Resting for a few hours in the wild is Make Camp. Click Move.',
+				body: `Resting for a few hours in the wild is Make Camp. Click ${MOVE}.`,
 				continueWhen: 'moves-search',
 			},
 			{

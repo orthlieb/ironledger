@@ -29,6 +29,7 @@ picked, each tutorial in a chunk of its own.
 | `apps/web/src/lib/tutorials/fightFoe.ts`        | The Fight your foe tutorial                                                                                                                      |
 | `apps/web/src/lib/tutorials/makeCamp.ts`        | The Make camp and heal tutorial                                                                                                                  |
 | `apps/web/src/lib/tutorials/moves.ts`           | What the tutorials that make moves share: the rolls and notes made since the tour began, closing the Moves dialog, searching it, choosing a stat |
+| `apps/web/src/lib/tutorials/keys.ts`            | Controls drawn into a step's text as they look (`MOVE`, `ADD_VOW`, `ADD_ASSET`), for buttons that show an icon, not a word                       |
 | `apps/web/tests/e2e/tutorials.spec.ts`          | E2E tests that follow each tutorial as a player would                                                                                            |
 
 ## Writing a tutorial
@@ -79,6 +80,11 @@ Other step options:
 | `optional`            | Skip the step when its target isn't there (a section only some foes have)                                                         |
 | `back`                | Show Back. Only where the step before is still on screen                                                                          |
 | `side`, `align`       | Where the popover sits                                                                                                            |
+
+Name a control by what it shows. Where it's an icon with no word (the
+header's Move on a phone, the character's + ⛓ and + ◆), draw it into the
+text with `keys.ts`: "Click ${MOVE}" shows the button itself, its label
+hidden on narrow screens as the header hides it.
 
 On a phone a dialog can fill the screen, leaving the popover nowhere to go
 but over the dialog itself. When a step's player must use a button there
