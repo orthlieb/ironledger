@@ -517,7 +517,10 @@ its cached one when offline. The icon is a round tower exported from the
 playground (`scripts/settlement-kit/playground-icon-tower.svg`: default
 culture, crenellated, a cone cap flying a pennant), framed on parchment by
 `npm run build:playground-icons -w apps/web` into
-`scripts/settlement-kit/playground-icons/`. To change it, export another
+`scripts/settlement-kit/playground-icons/`. The manifest lists only its
+PNGs (192 and 512, each also maskable): Chrome picks an SVG listed there,
+and installed on a Mac the app showed no icon with it; the SVG stays the
+page's favicon. To change it, export another
 piece with the playground's SVG button, save it over that file, re-run the
 script (a local one: it needs Playwright's Chromium for the PNGs) and
 commit the output.

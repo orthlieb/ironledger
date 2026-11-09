@@ -1125,8 +1125,8 @@ export function gableHouse(D, o = {}) {
  *                 hoist beam with a hanging crate off the gable;
  *   'workshop'  — a manufactory with tall smoking chimneys;
  *   'church'    — a tall nave with lancet windows and a rose window;
- *   'longhouse' — Norse hall: long, low walls, a steep boat-backed ridge
- *                 and crossed horns at the gable peaks;
+ *   'longhouse' — Norse hall: long, low walls and a steep boat-backed
+ *                 ridge;
  *   'barn'      — plank walls, big braced doors, a hayloft hatch;
  *   'tavern'    — two storeys, a chimney and a hanging sign;
  *   'barracks'  — long stone hall, a row of slit windows, a banner;
@@ -1444,13 +1444,6 @@ export function sideHouse(D, o = {}) {
 	const hoist = [];
 	/** @type {Part[]} */
 	const crate = [];
-	if (long)
-		// Crossed gable horns (barge boards carried past the peak) at both ends.
-		for (const p of [rR, add(rL, [ov * 1.2, 0])])
-			hoist.push(
-				{ pts: [add(p, [-2.6, -2.2]), add(p, [2.2, 3.6])], w: 1.1, round: true },
-				{ pts: [add(p, [2.6, -2.2]), add(p, [-2.2, 3.6])], w: 1.1, round: true },
-			);
 	if (kind === 'warehouse') {
 		// Hoist beam out of the gable peak, a rope, and a crate on it.
 		const top = P.at([w / 2, h + rh * 0.62], 0.5);

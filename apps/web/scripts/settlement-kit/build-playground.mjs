@@ -161,10 +161,13 @@ if (pwa) {
 		display: 'standalone',
 		background_color: BG,
 		theme_color: BG,
+		// PNGs only: Chrome picks an SVG listed here (it fits "any" size),
+		// and installed on a Mac the app showed no icon with ours (a
+		// clipped, nested svg). icon.svg stays the page's favicon.
 		icons: [
-			{ src: 'icon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
 			{ src: 'icon-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
 			{ src: 'icon-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+			{ src: 'icon-maskable-192.png', sizes: '192x192', type: 'image/png', purpose: 'maskable' },
 			{ src: 'icon-maskable-512.png', sizes: '512x512', type: 'image/png', purpose: 'maskable' },
 		],
 	};

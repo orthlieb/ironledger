@@ -10,10 +10,16 @@
 // into scripts/settlement-kit/playground-icons/ (committed;
 // build-playground.mjs --pwa copies them next to the page):
 //
-//   icon.svg                 rounded parchment tile: favicon, "any" icon
-//   icon-192.png, -512.png   the same tile, rasterized
-//   icon-maskable-512.png    full bleed, the tower inside the 80% safe zone
+//   icon.svg                 rounded parchment tile: the page's favicon
+//   icon-192.png, -512.png   the same tile, rasterized: the "any" icons
+//   icon-maskable-192.png,   full bleed, the tower inside the 80% safe zone
+//     -512.png
 //   apple-touch-icon.png     full bleed, 180×180 (iOS rounds the corners)
+//
+// The installed app's icons are PNGs only: Chrome takes an SVG listed in the
+// manifest as its pick (it fits "any" size), and installed on a Mac the app
+// showed no icon with this one (a clipped, nested svg). Every platform's
+// install takes PNGs.
 //
 // To change the icon, export another piece from the playground (its SVG
 // button), save it over playground-icon-tower.svg and re-run this. The
@@ -83,6 +89,7 @@ async function png(svg, px, file) {
 }
 await png(tile, 192, 'icon-192.png');
 await png(tile, 512, 'icon-512.png');
+await png(bleed, 192, 'icon-maskable-192.png');
 await png(bleed, 512, 'icon-maskable-512.png');
 await png(bleed, 180, 'apple-touch-icon.png');
 await browser.close();
