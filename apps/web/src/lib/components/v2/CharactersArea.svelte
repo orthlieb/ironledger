@@ -1268,7 +1268,7 @@
 									<!-- Stats are set in the New Character dialog; here they read out
 									     only, unless the pen (editingStats) opens them for an asset
 									     ability that changes one. -->
-									<div class="ca-stats-row">
+									<div class="ca-stats-row" class:ca-stats-row--editing={editingStats}>
 										<StatControl
 											label="Edge"
 											bind:value={d.edge}
@@ -2103,6 +2103,11 @@
 	}
 	.ca-stats-row > :global(*) {
 		flex: 0 0 auto;
+	}
+	/* Open for editing: each tile outlined, so it reads as a field. */
+	.ca-stats-row--editing > :global(.stat-tile) {
+		outline: 1px dashed var(--text-accent);
+		outline-offset: 1px;
 	}
 	/* The Stats row's edit toggle: a small icon button at its end, as the
 	   app's dice buttons are drawn. */
