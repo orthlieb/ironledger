@@ -399,19 +399,94 @@
 
 	// Stats are set when the character is made; a few path assets change one
 	// by an ability (Battle-Scarred, Shadow-Kin, Lorekeeper, Oathbreaker), so
-	// the Stats row has an edit toggle. Each change is logged, as a
-	// resource's is. Back to read-only on another character.
-	let editingStats = $state(false);
+	// the Stats row's pen opens a draft of them. The check then shows what
+	// changed and asks to apply it (or discard it, or keep editing); applied
+	// changes are logged, as a resource's are. Another character discards it.
+	const STAT_TILES: { key: Stat; label: string; color: string; tooltip: string }[] = [
+		{
+			key: 'edge',
+			label: 'Edge',
+			color: 'var(--color-edge)',
+			tooltip: 'Quickness, agility, and prowess in ranged combat',
+		},
+		{
+			key: 'heart',
+			label: 'Heart',
+			color: 'var(--color-heart)',
+			tooltip: 'Courage, willpower, empathy, sociability, and loyalty',
+		},
+		{
+			key: 'iron',
+			label: 'Iron',
+			color: 'var(--color-iron)',
+			tooltip: 'Physical strength, endurance, and prowess in close combat',
+		},
+		{
+			key: 'shadow',
+			label: 'Shadow',
+			color: 'var(--color-shadow)',
+			tooltip: 'Sneakiness, deceptiveness, and cunning',
+		},
+		{
+			key: 'wits',
+			label: 'Wits',
+			color: 'var(--color-wits)',
+			tooltip: 'Expertise, knowledge, and observation',
+		},
+	];
+	/** The stats being edited, or null when they read out. */
+	let statsDraft = $state<Record<Stat, number> | null>(null);
+	let statsDialogRef = $state<{ open(): void; close(): void } | null>(null);
 	$effect(() => {
 		void activeCharId;
-		editingStats = false;
+		statsDraft = null;
 	});
-	function logStatChange(label: string, old: number, next: number) {
-		const delta = next - old;
+	/** What the draft changes, stat by stat. */
+	const statChanges = $derived.by(() => {
+		const draft = statsDraft;
+		const data = activeData;
+		if (!draft || !data) return [];
+		return STAT_TILES.filter((t) => draft[t.key] !== data[t.key]).map((t) => ({
+			key: t.key,
+			label: t.label,
+			old: data[t.key],
+			next: draft[t.key],
+		}));
+	});
+	/** The pen opens a draft; the check closes it, asking first if it changes anything. */
+	function toggleStatEdit() {
+		const data = activeData;
+		if (!data) return;
+		if (!statsDraft) {
+			statsDraft = {
+				edge: data.edge,
+				heart: data.heart,
+				iron: data.iron,
+				shadow: data.shadow,
+				wits: data.wits,
+			};
+		} else if (statChanges.length === 0) {
+			statsDraft = null;
+		} else {
+			statsDialogRef?.open();
+		}
+	}
+	/** Apply the draft to the character, log it, and read the stats out again. */
+	function applyStatChanges() {
+		const data = activeData;
+		const changes = statChanges;
+		if (!data || changes.length === 0) return;
+		for (const c of changes) data[c.key] = c.next;
 		appendLog(
-			charTitle(label),
-			`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : '−'}${Math.abs(delta)})</div>`,
+			charTitle('Stats'),
+			changes
+				.map((c) => {
+					const delta = c.next - c.old;
+					return `<div>${c.label}: ${c.old} → <strong>${c.next}</strong> (${delta > 0 ? '+' : '−'}${Math.abs(delta)})</div>`;
+				})
+				.join(''),
 		);
+		statsDraft = null;
 	}
 
 	// ── Apply functions invoked by the action bus ─────────────────────────
@@ -1266,72 +1341,42 @@
 								<div class="ca-stats-wrapper">
 									<div class="ca-side-label">Stats</div>
 									<!-- Stats are set in the New Character dialog; here they read out
-									     only, unless the pen (editingStats) opens them for an asset
-									     ability that changes one. -->
-									<div class="ca-stats-row" class:ca-stats-row--editing={editingStats}>
-										<StatControl
-											label="Edge"
-											bind:value={d.edge}
-											color="var(--color-edge)"
-											readonly={!editingStats}
-											min={STAT_MIN}
-											max={STAT_MAX}
-											onchange={(old, next) => logStatChange('Edge', old, next)}
-											tooltip="Quickness, agility, and prowess in ranged combat"
-										/>
-										<StatControl
-											label="Heart"
-											bind:value={d.heart}
-											color="var(--color-heart)"
-											readonly={!editingStats}
-											min={STAT_MIN}
-											max={STAT_MAX}
-											onchange={(old, next) => logStatChange('Heart', old, next)}
-											tooltip="Courage, willpower, empathy, sociability, and loyalty"
-										/>
-										<StatControl
-											label="Iron"
-											bind:value={d.iron}
-											color="var(--color-iron)"
-											readonly={!editingStats}
-											min={STAT_MIN}
-											max={STAT_MAX}
-											onchange={(old, next) => logStatChange('Iron', old, next)}
-											tooltip="Physical strength, endurance, and prowess in close combat"
-										/>
-										<StatControl
-											label="Shadow"
-											bind:value={d.shadow}
-											color="var(--color-shadow)"
-											readonly={!editingStats}
-											min={STAT_MIN}
-											max={STAT_MAX}
-											onchange={(old, next) => logStatChange('Shadow', old, next)}
-											tooltip="Sneakiness, deceptiveness, and cunning"
-										/>
-										<StatControl
-											label="Wits"
-											bind:value={d.wits}
-											color="var(--color-wits)"
-											readonly={!editingStats}
-											min={STAT_MIN}
-											max={STAT_MAX}
-											onchange={(old, next) => logStatChange('Wits', old, next)}
-											tooltip="Expertise, knowledge, and observation"
-										/>
+									     only, unless the pen opens a draft of them for an asset ability
+									     that changes one; the check then asks to apply it. -->
+									<div class="ca-stats-row" class:ca-stats-row--editing={statsDraft}>
+										{#each STAT_TILES as t (t.key)}
+											{#if statsDraft}
+												<StatControl
+													label={t.label}
+													bind:value={statsDraft[t.key]}
+													color={t.color}
+													min={STAT_MIN}
+													max={STAT_MAX}
+													tooltip={t.tooltip}
+												/>
+											{:else}
+												<StatControl
+													label={t.label}
+													value={d[t.key]}
+													color={t.color}
+													readonly
+													tooltip={t.tooltip}
+												/>
+											{/if}
+										{/each}
 									</div>
 									<button
 										type="button"
 										class="ca-stats-edit"
-										class:ca-stats-edit--on={editingStats}
-										aria-pressed={editingStats}
+										class:ca-stats-edit--on={statsDraft}
+										aria-pressed={!!statsDraft}
 										data-tour="char-stats-edit"
-										onclick={() => (editingStats = !editingStats)}
-										use:tooltip={editingStats
+										onclick={toggleStatEdit}
+										use:tooltip={statsDraft
 											? 'Done editing stats'
 											: 'Edit stats, for an asset ability that changes one'}
-										aria-label={editingStats ? 'Done editing stats' : 'Edit stats'}
-										>{@html editingStats ? doneSvg : penSvg}</button
+										aria-label={statsDraft ? 'Done editing stats' : 'Edit stats'}
+										>{@html statsDraft ? doneSvg : penSvg}</button
 									>
 								</div>
 
@@ -1750,6 +1795,28 @@
 
 <!-- New Vow dialog — name + rank (rank is fixed at creation, shown read-only
      on the card afterward). Mirrors New Journey. -->
+<!-- The stats' draft, on the check: apply it, discard it, or (Cancel, ✕)
+     go back to editing. -->
+<ConfirmDialog
+	bind:this={statsDialogRef}
+	title="Change Stats"
+	confirmLabel="Apply"
+	confirmClass="btn-primary"
+	cancelLabel="Cancel"
+	alternateLabel="Discard"
+	accentColor="var(--text-accent)"
+	onconfirm={applyStatChanges}
+	onalternate={() => (statsDraft = null)}
+	tour="stats-dialog"
+>
+	<p>Change {activeData?.name || 'this character'}'s stats?</p>
+	<ul class="ca-stat-changes">
+		{#each statChanges as c (c.key)}
+			<li>{c.label}: {c.old} → <strong>{c.next}</strong></li>
+		{/each}
+	</ul>
+</ConfirmDialog>
+
 <ConfirmDialog
 	bind:this={newVowDialogRef}
 	title="New Vow"
@@ -2103,6 +2170,12 @@
 	}
 	.ca-stats-row > :global(*) {
 		flex: 0 0 auto;
+	}
+	/* The stats dialog's list of changes. */
+	.ca-stat-changes {
+		margin: 6px 0 0;
+		padding-left: 18px;
+		font-size: 0.85rem;
 	}
 	/* Open for editing: each tile outlined, so it reads as a field. */
 	.ca-stats-row--editing > :global(.stat-tile) {

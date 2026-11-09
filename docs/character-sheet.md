@@ -33,9 +33,10 @@ Five `StatControl` components, one per stat. They're set in the New
 Character dialog (a starting array: 0 under Lodestar's Grim, up to 4 under
 its Challenging) and read out on the Core tab. A few path assets change a
 stat by an ability (Battle-Scarred, Shadow-Kin, Lorekeeper, Oathbreaker), so
-the Stats row's pen opens the tiles for editing, 0–4 (`STAT_MIN` /
-`STAT_MAX` in `rules/statArrays.ts`), each change logged; pressing it again,
-or switching character, reads them out again. An action roll's score (action
+the Stats row's pen opens a draft of them, 0–4 (`STAT_MIN` / `STAT_MAX` in
+`rules/statArrays.ts`). Its check then lists what changed and asks to Apply
+it (one log entry), Discard it, or Cancel back to editing; with nothing
+changed it just reads them out again, as switching character does. An action roll's score (action
 die + stat + adds) is capped at 10 (`rules/actionScore.ts`).
 
 | Stat   | Color            | Key      |
