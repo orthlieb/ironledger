@@ -11,6 +11,8 @@
 import { describe, it, expect } from 'vitest';
 import {
 	STATS,
+	STAT_MAX,
+	STAT_MIN,
 	BASE_ARRAY,
 	LODESTAR_ARRAYS,
 	availableStatArrays,
@@ -118,5 +120,16 @@ describe('rollStats', () => {
 			const want = [...array.values].sort((a, b) => a - b);
 			expect(got).toEqual(want);
 		}
+	});
+});
+
+describe('stat range', () => {
+	it('is 0–4, and every starting array fits it', () => {
+		expect([STAT_MIN, STAT_MAX]).toEqual([0, 4]);
+		for (const a of [BASE_ARRAY, ...LODESTAR_ARRAYS])
+			for (const v of a.values) {
+				expect(v).toBeGreaterThanOrEqual(STAT_MIN);
+				expect(v).toBeLessThanOrEqual(STAT_MAX);
+			}
 	});
 });

@@ -3,7 +3,7 @@
 	 * A stat tile with coloured background icon, stat name at top, and value at bottom.
 	 * Used for Edge, Heart, Iron, Shadow, Wits.
 	 * Stats rarely change so ± buttons have been intentionally omitted.
-	 * Standard Ironsworn range: 1–3.
+	 * Range 0–4 by default (STAT_MIN / STAT_MAX).
 	 * Fires onchange(oldVal, newVal) on blur when the value actually changed.
 	 */
 
@@ -13,6 +13,7 @@
 	import rabbitSvg from '#icons/rabbit-running-solid.svg?raw';
 	import heartSvg from '#icons/icon-heart.svg?raw';
 	import { tooltip as tooltipAction } from '#lib/actions/tooltip.js';
+	import { STAT_MAX, STAT_MIN } from '#lib/rules/statArrays.js';
 
 	const STAT_ICONS: Record<string, string> = {
 		Edge: rabbitSvg,
@@ -26,8 +27,8 @@
 		label,
 		value = $bindable(1),
 		color = 'var(--text)',
-		min = 1,
-		max = 3,
+		min = STAT_MIN,
+		max = STAT_MAX,
 		tooltip = '',
 		readonly = false,
 		onchange,

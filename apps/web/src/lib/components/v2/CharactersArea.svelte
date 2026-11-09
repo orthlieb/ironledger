@@ -45,7 +45,9 @@
 	} from '#lib/characterRollups.js';
 	import RandomizeBlock from '#lib/components/RandomizeBlock.svelte';
 	import StatAllocator from '#lib/components/StatAllocator.svelte';
-	import { availableStatArrays, type Stat } from '#lib/rules/statArrays.js';
+	import { STAT_MAX, STAT_MIN, availableStatArrays, type Stat } from '#lib/rules/statArrays.js';
+	import penSvg from '#icons/pen-to-square-solid.svg?raw';
+	import doneSvg from '#icons/circle-check-solid.svg?raw';
 	import Select from '#lib/components/Select.svelte';
 	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
 	import {
@@ -393,6 +395,23 @@
 
 	function charTitle(name: string): string {
 		return `${activeData?.name || 'Unnamed'} — ${name}`;
+	}
+
+	// Stats are set when the character is made; a few path assets change one
+	// by an ability (Battle-Scarred, Shadow-Kin, Lorekeeper, Oathbreaker), so
+	// the Stats row has an edit toggle. Each change is logged, as a
+	// resource's is. Back to read-only on another character.
+	let editingStats = $state(false);
+	$effect(() => {
+		void activeCharId;
+		editingStats = false;
+	});
+	function logStatChange(label: string, old: number, next: number) {
+		const delta = next - old;
+		appendLog(
+			charTitle(label),
+			`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : '−'}${Math.abs(delta)})</div>`,
+		);
 	}
 
 	// ── Apply functions invoked by the action bus ─────────────────────────
@@ -1246,47 +1265,74 @@
 								     Wrapped with a vertical "STATS" side label on the LHS (V1 stats-row-wrapper pattern). -->
 								<div class="ca-stats-wrapper">
 									<div class="ca-side-label">Stats</div>
-									<!-- Stats are fixed once the character is created — the values
-									     live behind the New Character dialog's roll/allocator. The Core
-									     panel tiles read them out only, hover tooltips + colour tokens
-									     unchanged. -->
+									<!-- Stats are set in the New Character dialog; here they read out
+									     only, unless the pen (editingStats) opens them for an asset
+									     ability that changes one. -->
 									<div class="ca-stats-row">
 										<StatControl
 											label="Edge"
 											bind:value={d.edge}
 											color="var(--color-edge)"
-											readonly
+											readonly={!editingStats}
+											min={STAT_MIN}
+											max={STAT_MAX}
+											onchange={(old, next) => logStatChange('Edge', old, next)}
 											tooltip="Quickness, agility, and prowess in ranged combat"
 										/>
 										<StatControl
 											label="Heart"
 											bind:value={d.heart}
 											color="var(--color-heart)"
-											readonly
+											readonly={!editingStats}
+											min={STAT_MIN}
+											max={STAT_MAX}
+											onchange={(old, next) => logStatChange('Heart', old, next)}
 											tooltip="Courage, willpower, empathy, sociability, and loyalty"
 										/>
 										<StatControl
 											label="Iron"
 											bind:value={d.iron}
 											color="var(--color-iron)"
-											readonly
+											readonly={!editingStats}
+											min={STAT_MIN}
+											max={STAT_MAX}
+											onchange={(old, next) => logStatChange('Iron', old, next)}
 											tooltip="Physical strength, endurance, and prowess in close combat"
 										/>
 										<StatControl
 											label="Shadow"
 											bind:value={d.shadow}
 											color="var(--color-shadow)"
-											readonly
+											readonly={!editingStats}
+											min={STAT_MIN}
+											max={STAT_MAX}
+											onchange={(old, next) => logStatChange('Shadow', old, next)}
 											tooltip="Sneakiness, deceptiveness, and cunning"
 										/>
 										<StatControl
 											label="Wits"
 											bind:value={d.wits}
 											color="var(--color-wits)"
-											readonly
+											readonly={!editingStats}
+											min={STAT_MIN}
+											max={STAT_MAX}
+											onchange={(old, next) => logStatChange('Wits', old, next)}
 											tooltip="Expertise, knowledge, and observation"
 										/>
 									</div>
+									<button
+										type="button"
+										class="ca-stats-edit"
+										class:ca-stats-edit--on={editingStats}
+										aria-pressed={editingStats}
+										data-tour="char-stats-edit"
+										onclick={() => (editingStats = !editingStats)}
+										use:tooltip={editingStats
+											? 'Done editing stats'
+											: 'Edit stats, for an asset ability that changes one'}
+										aria-label={editingStats ? 'Done editing stats' : 'Edit stats'}
+										>{@html editingStats ? doneSvg : penSvg}</button
+									>
 								</div>
 
 								<!-- Vitals — Momentum + Health/Spirit/Supply + Experience. Spinners on every tile;
@@ -2057,6 +2103,37 @@
 	}
 	.ca-stats-row > :global(*) {
 		flex: 0 0 auto;
+	}
+	/* The Stats row's edit toggle: a small icon button at its end, as the
+	   app's dice buttons are drawn. */
+	.ca-stats-edit {
+		all: unset;
+		box-sizing: border-box;
+		align-self: flex-start;
+		flex-shrink: 0;
+		width: 24px;
+		height: 24px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid var(--border-mid);
+		border-radius: 3px;
+		color: var(--text-dimmer);
+		cursor: pointer;
+		transition:
+			color 0.12s,
+			border-color 0.12s;
+	}
+	.ca-stats-edit:hover,
+	.ca-stats-edit:focus-visible,
+	.ca-stats-edit--on {
+		color: var(--text-accent);
+		border-color: var(--text-accent);
+	}
+	.ca-stats-edit :global(svg) {
+		width: 12px;
+		height: 12px;
+		fill: currentColor;
 	}
 
 	.ca-vitals-row {

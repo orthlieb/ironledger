@@ -20,7 +20,7 @@
       "strong": "Choose one:\n- Shake it off: If your health is greater than 0, suffer [−1 momentum](resource:momentum?value=-1) in exchange for [+1 health](resource:health?value=+1).\n- Embrace the pain: Take [+1 momentum](resource:momentum?value=+1).",
       "weak": "You press on. No additional penalty.",
       "miss": "Also suffer [−1 momentum](resource:momentum?value=-1). If you are at 0 health, you must mark [wounded](debility:wounded?value=1) or [maimed](debility:maimed?value=1) (if currently unmarked) or roll on the [Endure Extreme Harm oracle](oracle:endureExtremeHarm).",
-      "notes": "Triggered every time you take harm — not just in combat. If health hits 0 on a miss, mark Wounded or Maimed (if unmarked) or roll on the Endure Extreme Harm oracle. Debilities reduce your stats. This is how characters die.",
+      "notes": "Triggered every time you take harm — not just in combat. If health hits 0 on a miss, mark Wounded or Maimed (if unmarked) or roll on the Endure Extreme Harm oracle. Debilities lower your max momentum and momentum reset. This is how characters die.",
       "references": ["foe"],
       "preconditions": [
         {

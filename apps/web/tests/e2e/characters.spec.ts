@@ -257,6 +257,43 @@ test.describe('Characters area (v2)', () => {
 		expect(nums.some((v) => v > 0)).toBe(true);
 	});
 
+	test('Core tab: the pen opens the stats for editing, 0–4, and logs each change', async ({
+		page,
+	}) => {
+		// Stats read out only until the pen is pressed (a few path assets
+		// change one by an ability); then each is a 0–4 field, a change is
+		// logged, and pressing it again reads them out again.
+		await ensureCharacterSelected(page);
+		await switchCharTab(page, 'Core');
+		const edge = page.locator(`${CHAR_AREA} .ca-stats-row input[aria-label="Edge stat value"]`);
+		const pen = page.locator(`${CHAR_AREA} [data-tour="char-stats-edit"]`);
+		await expect(edge).toHaveCount(0);
+
+		await pen.click();
+		await expect(pen).toHaveAttribute('aria-pressed', 'true');
+		await expect(edge).toBeVisible();
+		const before = Number(await edge.inputValue());
+		const next = before >= 4 ? 3 : before + 1;
+		await edge.fill(String(next));
+		await edge.blur();
+		await expect(page.locator('.log-entry').first()).toContainText(`Edge: ${before} → ${next}`);
+
+		// Above the range clamps to 4.
+		await edge.fill('9');
+		await edge.blur();
+		await expect(edge).toHaveValue('4');
+
+		// Back to the start, then read-only again.
+		await edge.fill(String(before));
+		await edge.blur();
+		await pen.click();
+		await expect(pen).toHaveAttribute('aria-pressed', 'false');
+		await expect(edge).toHaveCount(0);
+		await expect(
+			page.locator(`${CHAR_AREA} .ca-stats-row [aria-label="Edge stat value"]`),
+		).toHaveText(String(before));
+	});
+
 	// ── Character stage sections ──────────────────────────────────────────────
 
 	test('selected character shows stats and vitals on the Core tab', async ({ page }) => {
