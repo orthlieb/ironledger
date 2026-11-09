@@ -399,9 +399,10 @@
 
 	// Stats are set when the character is made; a few path assets change one
 	// by an ability (Battle-Scarred, Shadow-Kin, Lorekeeper, Oathbreaker), so
-	// the Stats row's pen opens a draft of them. The check then shows what
-	// changed and asks to apply it (or discard it, or keep editing); applied
-	// changes are logged, as a resource's are. Another character discards it.
+	// the Stats row's pen, after a warning that this is unusual, opens a
+	// draft of them. The check then shows what changed and asks to apply it
+	// (or discard it, or keep editing); applied changes are logged, as a
+	// resource's are. Another character discards it.
 	const STAT_TILES: { key: Stat; label: string; color: string; tooltip: string }[] = [
 		{
 			key: 'edge',
@@ -437,6 +438,8 @@
 	/** The stats being edited, or null when they read out. */
 	let statsDraft = $state<Record<Stat, number> | null>(null);
 	let statsDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	/** The pen's warning: editing stats after creation is unusual. */
+	let statsWarningRef = $state<{ open(): void; close(): void } | null>(null);
 	$effect(() => {
 		void activeCharId;
 		statsDraft = null;
@@ -453,18 +456,24 @@
 			next: draft[t.key],
 		}));
 	});
-	/** The pen opens a draft; the check closes it, asking first if it changes anything. */
-	function toggleStatEdit() {
+	/** Open a draft of the active character's stats. */
+	function openStatsDraft() {
 		const data = activeData;
 		if (!data) return;
+		statsDraft = {
+			edge: data.edge,
+			heart: data.heart,
+			iron: data.iron,
+			shadow: data.shadow,
+			wits: data.wits,
+		};
+	}
+	/** The pen warns, then opens a draft; the check closes it, asking first
+	 *  if it changes anything. */
+	function toggleStatEdit() {
+		if (!activeData) return;
 		if (!statsDraft) {
-			statsDraft = {
-				edge: data.edge,
-				heart: data.heart,
-				iron: data.iron,
-				shadow: data.shadow,
-				wits: data.wits,
-			};
+			statsWarningRef?.open();
 		} else if (statChanges.length === 0) {
 			statsDraft = null;
 		} else {
@@ -1795,6 +1804,22 @@
 
 <!-- New Vow dialog — name + rank (rank is fixed at creation, shown read-only
      on the card afterward). Mirrors New Journey. -->
+<!-- The pen: stats are set at creation, so editing them is unusual. -->
+<ConfirmDialog
+	bind:this={statsWarningRef}
+	title="Edit Stats"
+	confirmLabel="Yes"
+	confirmClass="btn-primary"
+	cancelLabel="No"
+	onconfirm={openStatsDraft}
+	tour="stats-warning"
+>
+	<p>
+		Editing your stats post character creation is an unusual event (some assets allow this).
+		Proceed?
+	</p>
+</ConfirmDialog>
+
 <!-- The stats' draft, on the check: apply it, discard it, or (Cancel, ✕)
      go back to editing. -->
 <ConfirmDialog
