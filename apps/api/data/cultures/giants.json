@@ -2,7 +2,7 @@
   "key": "giants",
   "name": "Giants",
   "source": "base",
-  "note": "The Jokul: herders of oxen, goats and sheep in hard winters — a few huge Norse longhouses with crossed horn-gables, round huts among them, no walls, keeps or markets.",
+  "note": "The Jokul: herders of oxen, goats and sheep in hard winters — a few huge Norse longhouses, round huts among them, no walls, keeps or markets.",
   "design": {
     "houseForm": "timber",
     "longhouse": 0.75,
