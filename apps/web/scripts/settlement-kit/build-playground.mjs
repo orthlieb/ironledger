@@ -152,7 +152,11 @@ if (pwa) {
 	const icons = readdirSync(ICONS).sort();
 	for (const f of icons) copyFileSync(join(ICONS, f), join(dir, f));
 	const manifest = {
-		name: 'Settlement Playground',
+		// Short enough for an iPhone's home-screen label, which takes this
+		// name (not short_name, nor the page's apple-mobile-web-app-title)
+		// and squeezes the spaces out of one longer than about 12
+		// characters: "Settlement Playground" came out "SettlementPlayground".
+		name: 'Settlements',
 		short_name: 'Settlements',
 		description:
 			"Iron Ledger's settlement kit: design settlement icons and cultures, and export them.",
