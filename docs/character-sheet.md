@@ -27,9 +27,18 @@ Full character editor rendered in the "Characters" tab of the character detail p
 - **Background** — textarea for backstory/notes.
 - **Portrait** — click to upload a JPEG; uploaded to the content-addressed blob store via `PUT /api/characters/:id/portrait`. `data.portraitEtag` holds the content hash and the bytes are no longer inlined. See [Portraits in import-schema.md](import-schema.md#portraits).
 
-### Core Stats (1–4, rarely 5)
+### Core Stats (0–4)
 
-Five `StatControl` components, one per stat:
+Five `StatControl` components, one per stat. They're set in the New
+Character dialog (a starting array: 0 under Lodestar's Grim, up to 4 under
+its Challenging) and read out on the Core tab. A few path assets change a
+stat by an ability (Battle-Scarred, Shadow-Kin, Lorekeeper, Oathbreaker), so
+the Stats row's pen, after a warning that editing stats after creation is
+unusual (Yes / No), opens a draft of them, 0–4 (`STAT_MIN` / `STAT_MAX` in
+`rules/statArrays.ts`). Its check then lists what changed and asks to Apply
+it (one log entry), Discard it, or Cancel back to editing; with nothing
+changed it just reads them out again, as switching character does. An action roll's score (action
+die + stat + adds) is capped at 10 (`rules/actionScore.ts`).
 
 | Stat   | Color            | Key      |
 | ------ | ---------------- | -------- |

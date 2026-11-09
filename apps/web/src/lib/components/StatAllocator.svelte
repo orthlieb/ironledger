@@ -30,7 +30,13 @@
 	import { DropdownMenu } from 'bits-ui';
 	import { tooltip } from '#lib/actions/tooltip.js';
 	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
-	import { rollStats, type Stat, type StatArray } from '#lib/rules/statArrays.js';
+	import {
+		STAT_MAX,
+		STAT_MIN,
+		rollStats,
+		type Stat,
+		type StatArray,
+	} from '#lib/rules/statArrays.js';
 
 	let {
 		stats = $bindable(),
@@ -137,40 +143,40 @@
 			label="Edge"
 			bind:value={stats.edge}
 			color="var(--color-edge)"
-			min={0}
-			max={5}
+			min={STAT_MIN}
+			max={STAT_MAX}
 			tooltip="Quickness, agility, and prowess in ranged combat"
 		/>
 		<StatControl
 			label="Heart"
 			bind:value={stats.heart}
 			color="var(--color-heart)"
-			min={0}
-			max={5}
+			min={STAT_MIN}
+			max={STAT_MAX}
 			tooltip="Courage, willpower, empathy, sociability, and loyalty"
 		/>
 		<StatControl
 			label="Iron"
 			bind:value={stats.iron}
 			color="var(--color-iron)"
-			min={0}
-			max={5}
+			min={STAT_MIN}
+			max={STAT_MAX}
 			tooltip="Physical strength, endurance, and prowess in close combat"
 		/>
 		<StatControl
 			label="Shadow"
 			bind:value={stats.shadow}
 			color="var(--color-shadow)"
-			min={0}
-			max={5}
+			min={STAT_MIN}
+			max={STAT_MAX}
 			tooltip="Sneakiness, deceptiveness, and cunning"
 		/>
 		<StatControl
 			label="Wits"
 			bind:value={stats.wits}
 			color="var(--color-wits)"
-			min={0}
-			max={5}
+			min={STAT_MIN}
+			max={STAT_MAX}
 			tooltip="Expertise, knowledge, and observation"
 		/>
 	</div>

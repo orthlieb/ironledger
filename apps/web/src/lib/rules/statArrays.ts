@@ -18,6 +18,13 @@ export const STATS = ['edge', 'heart', 'iron', 'shadow', 'wits'] as const;
 /** Stat key type — one of `STATS`. */
 export type Stat = (typeof STATS)[number];
 
+/** A stat's range: a starting array gives 0 (Lodestar's Grim) to 4
+ *  (Lodestar's Challenging), and the path assets that change a stat in
+ *  play (Battle-Scarred, Shadow-Kin, Lorekeeper, Oathbreaker) go no higher
+ *  than 4. */
+export const STAT_MIN = 0;
+export const STAT_MAX = 4;
+
 /** A chosen bag of five stat values to distribute across the five stats. */
 export interface StatArray {
 	/** Stable id — the value the array picker binds to. */

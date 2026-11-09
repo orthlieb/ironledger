@@ -151,6 +151,12 @@ that follows it through using the real controls. Don't import a tutorial or
 - **The 3D dice roll above the tour's overlay**, not dimmed under it.
 - **A tap on the dimmed page doesn't end the tour.** It ends with ✕, Escape
   or Done.
+- **A phone's keyboard doesn't throw the highlight off.** A text field
+  left focused outside the new step's target (a stat typed in on the step
+  before) is blurred as the step starts, so its keyboard closes; the
+  overlay is drawn one unit to the CSS pixel (Driver scaled it to cover
+  the screen, and with a keyboard up the cut-out landed off its target);
+  and it's measured again whenever the visual viewport changes size.
 - **The tour's own buttons don't take focus.** Driver swallows their
   mouse-down, so Next doesn't blur a field the player is typing in. A step
   that needs the field closed first (the bio editor) blurs it in its

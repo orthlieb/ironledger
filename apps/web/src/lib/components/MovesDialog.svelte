@@ -19,6 +19,7 @@
 	import { moveCategoryIcon } from '#lib/iconRegistry.js';
 	import { moveCategoryMeta } from '#lib/extensionCategories.svelte.js';
 	import { matchNoteHtml } from '#lib/rollMatch.js';
+	import { actionScore, actionScoreHtml } from '#lib/rules/actionScore.js';
 	import {
 		loadMoves,
 		getVisibleMoves,
@@ -559,7 +560,8 @@
 		// Momentum cancellation
 		const cancelled = mom < 0 && Math.abs(mom) === aDie;
 		const effective = cancelled ? 0 : aDie;
-		const total = effective + sVal + adds;
+		const action = actionScore(effective, sVal, adds);
+		const total = action.score;
 
 		const hits1 = total > c1;
 		const hits2 = total > c2;
@@ -584,7 +586,7 @@
 		parts.push(
 			`<div class="roll-line">` +
 				`1d6 [${dieStr}] + ${statLabel.toLowerCase()}[${sVal}]${addsStr}` +
-				` = <strong>${total}</strong> vs 2d10 [${c1}] [${c2}]` +
+				` = ${actionScoreHtml(action)} vs 2d10 [${c1}] [${c2}]` +
 				`</div>`,
 		);
 

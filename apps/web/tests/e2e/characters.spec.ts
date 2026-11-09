@@ -257,6 +257,77 @@ test.describe('Characters area (v2)', () => {
 		expect(nums.some((v) => v > 0)).toBe(true);
 	});
 
+	test('Core tab: the pen warns, then opens a draft of the stats, 0–4; the check asks to apply it', async ({
+		page,
+	}) => {
+		// Stats read out only until the pen is pressed (a few path assets
+		// change one by an ability), and it warns first: No leaves them be.
+		// Yes makes each a 0–4 field on a draft; the check shows what
+		// changed and asks to apply it (logged) or discard it; with nothing
+		// changed, it just reads them out again.
+		await ensureCharacterSelected(page);
+		await switchCharTab(page, 'Core');
+		const edge = page.locator(`${CHAR_AREA} .ca-stats-row input[aria-label="Edge stat value"]`);
+		const shown = page.locator(`${CHAR_AREA} .ca-stats-row [aria-label="Edge stat value"]`);
+		const pen = page.locator(`${CHAR_AREA} [data-tour="char-stats-edit"]`);
+		const dialog = page.locator('[data-tour="stats-dialog"]');
+		const warning = page.locator('[data-tour="stats-warning"]');
+		/** The pen, and Yes to its warning. */
+		const edit = async () => {
+			await pen.click();
+			await expect(warning).toContainText('an unusual event (some assets allow this)');
+			await page.locator('[data-tour="stats-warning-confirm"]').click();
+			await expect(edge).toBeVisible();
+		};
+		await expect(edge).toHaveCount(0);
+		const before = Number((await shown.textContent())?.trim());
+		const next = before >= 4 ? 3 : before + 1;
+
+		// No leaves them read out.
+		await pen.click();
+		await warning.getByRole('button', { name: 'No' }).click();
+		await expect(warning).toHaveCount(0);
+		await expect(edge).toHaveCount(0);
+
+		// Unchanged: the check closes it without asking.
+		await edit();
+		await expect(pen).toHaveAttribute('aria-pressed', 'true');
+		await pen.click();
+		await expect(dialog).toHaveCount(0);
+		await expect(edge).toHaveCount(0);
+
+		// Above the range clamps to 4; a change is only a draft until applied.
+		await edit();
+		await edge.fill('9');
+		await edge.blur();
+		await expect(edge).toHaveValue('4');
+		await edge.fill(String(next));
+		await edge.blur();
+		await pen.click();
+		await expect(dialog).toBeVisible();
+		await expect(dialog).toContainText(`Edge: ${before} → ${next}`);
+		await page.locator('[data-tour="stats-dialog-confirm"]').click();
+		await expect(dialog).toHaveCount(0);
+		await expect(shown).toHaveText(String(next));
+		await expect(page.locator('.log-entry').first()).toContainText(`Edge: ${before} → ${next}`);
+
+		// Discard throws a draft away.
+		await edit();
+		await edge.fill(String(before));
+		await edge.blur();
+		await pen.click();
+		await dialog.getByRole('button', { name: 'Discard' }).click();
+		await expect(shown).toHaveText(String(next));
+
+		// Back to the start, applied.
+		await edit();
+		await edge.fill(String(before));
+		await edge.blur();
+		await pen.click();
+		await page.locator('[data-tour="stats-dialog-confirm"]').click();
+		await expect(shown).toHaveText(String(before));
+	});
+
 	// ── Character stage sections ──────────────────────────────────────────────
 
 	test('selected character shows stats and vitals on the Core tab', async ({ page }) => {

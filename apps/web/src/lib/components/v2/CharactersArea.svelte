@@ -45,7 +45,9 @@
 	} from '#lib/characterRollups.js';
 	import RandomizeBlock from '#lib/components/RandomizeBlock.svelte';
 	import StatAllocator from '#lib/components/StatAllocator.svelte';
-	import { availableStatArrays, type Stat } from '#lib/rules/statArrays.js';
+	import { STAT_MAX, STAT_MIN, availableStatArrays, type Stat } from '#lib/rules/statArrays.js';
+	import penSvg from '#icons/pen-to-square-solid.svg?raw';
+	import doneSvg from '#icons/circle-check-solid.svg?raw';
 	import Select from '#lib/components/Select.svelte';
 	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
 	import {
@@ -393,6 +395,107 @@
 
 	function charTitle(name: string): string {
 		return `${activeData?.name || 'Unnamed'} — ${name}`;
+	}
+
+	// Stats are set when the character is made; a few path assets change one
+	// by an ability (Battle-Scarred, Shadow-Kin, Lorekeeper, Oathbreaker), so
+	// the Stats row's pen, after a warning that this is unusual, opens a
+	// draft of them. The check then shows what changed and asks to apply it
+	// (or discard it, or keep editing); applied changes are logged, as a
+	// resource's are. Another character discards it.
+	const STAT_TILES: { key: Stat; label: string; color: string; tooltip: string }[] = [
+		{
+			key: 'edge',
+			label: 'Edge',
+			color: 'var(--color-edge)',
+			tooltip: 'Quickness, agility, and prowess in ranged combat',
+		},
+		{
+			key: 'heart',
+			label: 'Heart',
+			color: 'var(--color-heart)',
+			tooltip: 'Courage, willpower, empathy, sociability, and loyalty',
+		},
+		{
+			key: 'iron',
+			label: 'Iron',
+			color: 'var(--color-iron)',
+			tooltip: 'Physical strength, endurance, and prowess in close combat',
+		},
+		{
+			key: 'shadow',
+			label: 'Shadow',
+			color: 'var(--color-shadow)',
+			tooltip: 'Sneakiness, deceptiveness, and cunning',
+		},
+		{
+			key: 'wits',
+			label: 'Wits',
+			color: 'var(--color-wits)',
+			tooltip: 'Expertise, knowledge, and observation',
+		},
+	];
+	/** The stats being edited, or null when they read out. */
+	let statsDraft = $state<Record<Stat, number> | null>(null);
+	let statsDialogRef = $state<{ open(): void; close(): void } | null>(null);
+	/** The pen's warning: editing stats after creation is unusual. */
+	let statsWarningRef = $state<{ open(): void; close(): void } | null>(null);
+	$effect(() => {
+		void activeCharId;
+		statsDraft = null;
+	});
+	/** What the draft changes, stat by stat. */
+	const statChanges = $derived.by(() => {
+		const draft = statsDraft;
+		const data = activeData;
+		if (!draft || !data) return [];
+		return STAT_TILES.filter((t) => draft[t.key] !== data[t.key]).map((t) => ({
+			key: t.key,
+			label: t.label,
+			old: data[t.key],
+			next: draft[t.key],
+		}));
+	});
+	/** Open a draft of the active character's stats. */
+	function openStatsDraft() {
+		const data = activeData;
+		if (!data) return;
+		statsDraft = {
+			edge: data.edge,
+			heart: data.heart,
+			iron: data.iron,
+			shadow: data.shadow,
+			wits: data.wits,
+		};
+	}
+	/** The pen warns, then opens a draft; the check closes it, asking first
+	 *  if it changes anything. */
+	function toggleStatEdit() {
+		if (!activeData) return;
+		if (!statsDraft) {
+			statsWarningRef?.open();
+		} else if (statChanges.length === 0) {
+			statsDraft = null;
+		} else {
+			statsDialogRef?.open();
+		}
+	}
+	/** Apply the draft to the character, log it, and read the stats out again. */
+	function applyStatChanges() {
+		const data = activeData;
+		const changes = statChanges;
+		if (!data || changes.length === 0) return;
+		for (const c of changes) data[c.key] = c.next;
+		appendLog(
+			charTitle('Stats'),
+			changes
+				.map((c) => {
+					const delta = c.next - c.old;
+					return `<div>${c.label}: ${c.old} → <strong>${c.next}</strong> (${delta > 0 ? '+' : '−'}${Math.abs(delta)})</div>`;
+				})
+				.join(''),
+		);
+		statsDraft = null;
 	}
 
 	// ── Apply functions invoked by the action bus ─────────────────────────
@@ -1246,47 +1349,44 @@
 								     Wrapped with a vertical "STATS" side label on the LHS (V1 stats-row-wrapper pattern). -->
 								<div class="ca-stats-wrapper">
 									<div class="ca-side-label">Stats</div>
-									<!-- Stats are fixed once the character is created — the values
-									     live behind the New Character dialog's roll/allocator. The Core
-									     panel tiles read them out only, hover tooltips + colour tokens
-									     unchanged. -->
-									<div class="ca-stats-row">
-										<StatControl
-											label="Edge"
-											bind:value={d.edge}
-											color="var(--color-edge)"
-											readonly
-											tooltip="Quickness, agility, and prowess in ranged combat"
-										/>
-										<StatControl
-											label="Heart"
-											bind:value={d.heart}
-											color="var(--color-heart)"
-											readonly
-											tooltip="Courage, willpower, empathy, sociability, and loyalty"
-										/>
-										<StatControl
-											label="Iron"
-											bind:value={d.iron}
-											color="var(--color-iron)"
-											readonly
-											tooltip="Physical strength, endurance, and prowess in close combat"
-										/>
-										<StatControl
-											label="Shadow"
-											bind:value={d.shadow}
-											color="var(--color-shadow)"
-											readonly
-											tooltip="Sneakiness, deceptiveness, and cunning"
-										/>
-										<StatControl
-											label="Wits"
-											bind:value={d.wits}
-											color="var(--color-wits)"
-											readonly
-											tooltip="Expertise, knowledge, and observation"
-										/>
+									<!-- Stats are set in the New Character dialog; here they read out
+									     only, unless the pen opens a draft of them for an asset ability
+									     that changes one; the check then asks to apply it. -->
+									<div class="ca-stats-row" class:ca-stats-row--editing={statsDraft}>
+										{#each STAT_TILES as t (t.key)}
+											{#if statsDraft}
+												<StatControl
+													label={t.label}
+													bind:value={statsDraft[t.key]}
+													color={t.color}
+													min={STAT_MIN}
+													max={STAT_MAX}
+													tooltip={t.tooltip}
+												/>
+											{:else}
+												<StatControl
+													label={t.label}
+													value={d[t.key]}
+													color={t.color}
+													readonly
+													tooltip={t.tooltip}
+												/>
+											{/if}
+										{/each}
 									</div>
+									<button
+										type="button"
+										class="ca-stats-edit"
+										class:ca-stats-edit--on={statsDraft}
+										aria-pressed={!!statsDraft}
+										data-tour="char-stats-edit"
+										onclick={toggleStatEdit}
+										use:tooltip={statsDraft
+											? 'Done editing stats'
+											: 'Edit stats, for an asset ability that changes one'}
+										aria-label={statsDraft ? 'Done editing stats' : 'Edit stats'}
+										>{@html statsDraft ? doneSvg : penSvg}</button
+									>
 								</div>
 
 								<!-- Vitals — Momentum + Health/Spirit/Supply + Experience. Spinners on every tile;
@@ -1704,6 +1804,44 @@
 
 <!-- New Vow dialog — name + rank (rank is fixed at creation, shown read-only
      on the card afterward). Mirrors New Journey. -->
+<!-- The pen: stats are set at creation, so editing them is unusual. -->
+<ConfirmDialog
+	bind:this={statsWarningRef}
+	title="Edit Stats"
+	confirmLabel="Yes"
+	confirmClass="btn-primary"
+	cancelLabel="No"
+	onconfirm={openStatsDraft}
+	tour="stats-warning"
+>
+	<p>
+		Editing your stats post character creation is an unusual event (some assets allow this).
+		Proceed?
+	</p>
+</ConfirmDialog>
+
+<!-- The stats' draft, on the check: apply it, discard it, or (Cancel, ✕)
+     go back to editing. -->
+<ConfirmDialog
+	bind:this={statsDialogRef}
+	title="Change Stats"
+	confirmLabel="Apply"
+	confirmClass="btn-primary"
+	cancelLabel="Cancel"
+	alternateLabel="Discard"
+	accentColor="var(--text-accent)"
+	onconfirm={applyStatChanges}
+	onalternate={() => (statsDraft = null)}
+	tour="stats-dialog"
+>
+	<p>Change {activeData?.name || 'this character'}'s stats?</p>
+	<ul class="ca-stat-changes">
+		{#each statChanges as c (c.key)}
+			<li>{c.label}: {c.old} → <strong>{c.next}</strong></li>
+		{/each}
+	</ul>
+</ConfirmDialog>
+
 <ConfirmDialog
 	bind:this={newVowDialogRef}
 	title="New Vow"
@@ -2057,6 +2195,48 @@
 	}
 	.ca-stats-row > :global(*) {
 		flex: 0 0 auto;
+	}
+	/* The stats dialog's list of changes. */
+	.ca-stat-changes {
+		margin: 6px 0 0;
+		padding-left: 18px;
+		font-size: 0.85rem;
+	}
+	/* Open for editing: each tile outlined, so it reads as a field. */
+	.ca-stats-row--editing > :global(.stat-tile) {
+		outline: 1px dashed var(--text-accent);
+		outline-offset: 1px;
+	}
+	/* The Stats row's edit toggle: a small icon button at its end, as the
+	   app's dice buttons are drawn. */
+	.ca-stats-edit {
+		all: unset;
+		box-sizing: border-box;
+		align-self: flex-start;
+		flex-shrink: 0;
+		width: 24px;
+		height: 24px;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		border: 1px solid var(--border-mid);
+		border-radius: 3px;
+		color: var(--text-dimmer);
+		cursor: pointer;
+		transition:
+			color 0.12s,
+			border-color 0.12s;
+	}
+	.ca-stats-edit:hover,
+	.ca-stats-edit:focus-visible,
+	.ca-stats-edit--on {
+		color: var(--text-accent);
+		border-color: var(--text-accent);
+	}
+	.ca-stats-edit :global(svg) {
+		width: 12px;
+		height: 12px;
+		fill: currentColor;
 	}
 
 	.ca-vitals-row {

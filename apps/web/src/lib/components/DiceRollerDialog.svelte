@@ -11,6 +11,7 @@
 	 */
 	import { appendLog } from '#lib/log.svelte.js';
 	import { matchNoteHtml } from '#lib/rollMatch.js';
+	import { actionScore, actionScoreHtml } from '#lib/rules/actionScore.js';
 	import { rollDie, rollD100, animateDice, DIE_BLACK, DIE_WHITE } from '#lib/dice.js';
 	import type { DiceCtx } from '#lib/diceContext.svelte.js';
 	import { headingText } from '#lib/fontStore.svelte.js';
@@ -137,7 +138,8 @@
 		// Momentum cancellation: if momentum < 0 and |momentum| = action die, negate it
 		const cancelled = momentum < 0 && Math.abs(momentum) === actionDie;
 		const actionDieEffective = cancelled ? 0 : actionDie;
-		const total = actionDieEffective + statVal + adds;
+		const action = actionScore(actionDieEffective, statVal, adds);
+		const total = action.score;
 
 		const hits1 = total > c1;
 		const hits2 = total > c2;
@@ -158,7 +160,7 @@
 		parts.push(
 			`<div class="roll-line">` +
 				`1d6 [${dieStr}]${statStr}${addsStr}` +
-				` = <strong>${total}</strong> vs 2d10 [${c1}] [${c2}]` +
+				` = ${actionScoreHtml(action)} vs 2d10 [${c1}] [${c2}]` +
 				`</div>`,
 		);
 		const matchSpan = isMatch ? ' <span class="roll-match">with a match!</span>' : '';
