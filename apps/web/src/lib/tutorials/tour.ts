@@ -170,6 +170,7 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 			onHighlightStarted: (el) => {
 				stopWatch();
 				settled = false;
+				blurOutside(el);
 				// Before driver scrolls to the target, so it scrolls by the room made.
 				if (s.pageClass) {
 					const c = s.pageClass;
@@ -188,12 +189,39 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 			// on the way (a list still loading), whose resize was held back.
 			onHighlighted: () => {
 				settled = true;
+				fitOverlay();
 				active?.refresh();
 			},
 			onDeselected: stopWatch,
 			popover,
 		};
 	};
+
+	/** A text field left focused outside the step's target (a stat typed in
+	 *  on the step before) keeps a phone's keyboard up, which squeezes the
+	 *  viewport the overlay is drawn in: take focus off it, and the keyboard
+	 *  goes. In a dialog, onto the dialog itself, since its focus trap puts a
+	 *  plain blur straight back. A field inside the target (the one the step
+	 *  asks you to type in) keeps it. */
+	function blurOutside(el: Element | undefined) {
+		const f = document.activeElement;
+		if (!(f instanceof HTMLElement) || el?.contains(f)) return;
+		if (!f.matches('input, textarea, select, [contenteditable="true"]')) return;
+		const dialog = f.closest<HTMLElement>('[role="dialog"], [role="alertdialog"]');
+		if (!dialog) return f.blur();
+		if (!dialog.hasAttribute('tabindex')) dialog.tabIndex = -1;
+		dialog.focus({ preventScroll: true });
+	}
+
+	/** Draw the overlay one unit to the CSS pixel. Driver sizes its viewBox to
+	 *  the window's inner size and scales it to cover the screen ("slice");
+	 *  with a phone's keyboard up that inner size shrinks, and the cut-out
+	 *  was scaled off its target (the popover, placed in pixels, stayed). */
+	function fitOverlay() {
+		document
+			.querySelector('svg.driver-overlay')
+			?.setAttribute('preserveAspectRatio', 'xMinYMin meet');
+	}
 
 	/** Keep the highlight on `el` as it moves or changes size — a field
 	 *  switching to its editor, a list scrolled to it, a log entry pushed
@@ -304,9 +332,19 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 		smoothScroll: true,
 		onDestroyed: () => {
 			stopWatch();
+			window.visualViewport?.removeEventListener('resize', onViewport);
+			window.visualViewport?.removeEventListener('scroll', onViewport);
 			if (active === d) active = null;
 		},
 	});
+	// A phone's keyboard opening or closing resizes the visual viewport,
+	// which doesn't always fire the window resize driver re-measures on.
+	function onViewport() {
+		fitOverlay();
+		if (active === d) d.refresh();
+	}
+	window.visualViewport?.addEventListener('resize', onViewport);
+	window.visualViewport?.addEventListener('scroll', onViewport);
 	active = d;
 	d.drive();
 }
