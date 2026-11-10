@@ -48,12 +48,14 @@ import {
 	fetchMaps,
 	resetCharacters,
 	resetCommunities,
+	resetExpansions,
 	resetExpeditions,
 	resetFoes,
 	resetLog,
 	seedCharacter,
 	seedCommunity,
 	seedFoeEncounter,
+	setExpansions,
 } from './helpers/reset';
 import { settleHome, characterCount, activeCharacterName } from './helpers/home';
 
@@ -62,14 +64,18 @@ const POPOVER = '.driver-popover';
 /** A tutorial target, by `data-tour` id. */
 const target = (page: Page, id: string) => page.locator(`[data-tour="${id}"]`).first();
 
-/** Open /home with the YRT extension on or off (it adds the region step). */
+/** Open /home with the YRT extension on or off (it adds the region step):
+ *  set on the account, which the page reads as it loads. */
 async function openHome(page: Page, yrt: boolean) {
-	await page.addInitScript((on) => {
-		localStorage.setItem('ironledger:expansion:yrt', on ? 'on' : 'off');
-	}, yrt);
+	await setExpansions({ yrt });
 	await page.goto('/home');
 	await settleHome(page);
 }
+
+// The choice outlasts the spec: back to the default for the specs after.
+test.afterAll(async () => {
+	await resetExpansions();
+});
 
 /** ☰ → Tutorials → `name`. */
 async function startTutorial(page: Page, name = 'Create a character') {

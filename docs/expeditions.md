@@ -94,7 +94,7 @@ The Expeditions tab contains:
 
 ## Expansion Toggle (Delve)
 
-Sites are Delve content. When the **Delve** expansion toggle is off (per-browser, see [expansion-toggles.md](expansion-toggles.md)):
+Sites are Delve content. When the **Delve** expansion toggle is off (per user, see [expansion-toggles.md](expansion-toggles.md)):
 
 - The **+ New Site** button is hidden (Journey creation still works).
 - The GCB Delve action buttons (feature/danger rolls, Roll Denizen) are hidden.

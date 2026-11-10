@@ -10,12 +10,10 @@
  * itself, independent of whatever real overrides ship in foes_overrides_yrt.json.
  */
 import { test, expect, type Page, type Route } from '@playwright/test';
+import { resetExpansions, setExpansions } from './helpers/reset';
 
 const FOE_AREA = '.home-area--foes';
 const FOE_HEADER = `${FOE_AREA} .fa-header`;
-
-const DELVE_KEY = 'ironledger:expansion:delve';
-const YRT_KEY = 'ironledger:expansion:yrt';
 
 const BASE_FOE_A = {
 	id: 'ironsworn/test-excluded',
@@ -69,28 +67,19 @@ async function waitForHome(page: Page) {
 }
 
 /** Reset toggles for E2E: Delve to its default (on), YRT forced on. Production
- *  ships YRT with defaultEnabled:false, so removing the key would leave it off;
- *  the "YRT on:" tests need it enabled, and the store reads 'on' as enabled. */
-async function resetToggles(page: Page): Promise<void> {
-	await page.evaluate(
-		({ d, y }) => {
-			localStorage.removeItem(d);
-			localStorage.setItem(y, 'on');
-		},
-		{ d: DELVE_KEY, y: YRT_KEY },
-	);
+ *  ships YRT with defaultEnabled:false; the "YRT on:" tests need it enabled.
+ *  Kept on the account, so the page loaded (or reloaded) after reads it. */
+async function resetToggles(): Promise<void> {
+	await setExpansions({ delve: null, yrt: true });
 }
 
-/** Set toggles via localStorage (reload afterwards so stores re-hydrate). */
-async function setToggles(page: Page, opts: { delve?: boolean; yrt?: boolean }): Promise<void> {
-	await page.evaluate(
-		({ d, y, delve, yrt }) => {
-			if (delve === true) localStorage.removeItem(d);
-			else if (delve === false) localStorage.setItem(d, 'off');
-			if (yrt === true) localStorage.removeItem(y);
-			else if (yrt === false) localStorage.setItem(y, 'off');
-		},
-		{ d: DELVE_KEY, y: YRT_KEY, delve: opts.delve, yrt: opts.yrt },
+/** Set toggles on the account (reload afterwards so stores re-hydrate). */
+async function setToggles(opts: { delve?: boolean; yrt?: boolean }): Promise<void> {
+	await setExpansions(
+		Object.fromEntries(Object.entries(opts).filter(([, v]) => v !== undefined)) as Record<
+			string,
+			boolean
+		>,
 	);
 }
 
@@ -134,13 +123,18 @@ async function openFoePicker(page: Page): Promise<void> {
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
 test.describe('Foe overrides — expansion exclusion + addendum', () => {
+	// The choices outlast the spec: back to the defaults for the specs after.
+	test.afterAll(async () => {
+		await resetExpansions();
+	});
+
 	test.beforeEach(async ({ page }) => {
 		// Install the intercept BEFORE the initial navigation so loadFoes sees
 		// the fixture, not real data.
 		await stubFoesEndpoint(page);
 		await page.goto('/home');
 		await waitForHome(page);
-		await resetToggles(page);
+		await resetToggles();
 		await page.reload();
 		await waitForHome(page);
 	});
@@ -157,7 +151,7 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 	});
 
 	test('YRT off: previously excluded foe reappears in the picker', async ({ page }) => {
-		await setToggles(page, { yrt: false });
+		await setToggles({ yrt: false });
 		await page.reload();
 		await waitForHome(page);
 
@@ -185,7 +179,7 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 	});
 
 	test('YRT off: addendum is NOT shown even though the data is loaded', async ({ page }) => {
-		await setToggles(page, { yrt: false });
+		await setToggles({ yrt: false });
 		await page.reload();
 		await waitForHome(page);
 

@@ -8,7 +8,8 @@
  *   • Disabling YRT hides YRT moves, oracles, and foes.
  *   • find*-style resolution is NEVER filtered — a log link to a disabled-expansion
  *     move still opens in the MovesDialog (render-time resolution contract).
- *   • Toggles persist across page reloads (localStorage).
+ *   • Toggles persist across page reloads, and follow the user to another
+ *     browser: they're kept on the account (/api/session/extensions).
  *   • Re-enabling restores visibility.
  *
  * v2 changes: the Move / Ask / Roll / Note buttons are in `.app-nav`, not the
@@ -16,7 +17,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { ensureCharacter } from './helpers/home';
-import { resetCommunities } from './helpers/reset';
+import { resetCommunities, resetExpansions, setExpansions } from './helpers/reset';
 
 const CHAR_AREA = '.home-area--characters';
 const FOE_AREA = '.home-area--foes';
@@ -27,51 +28,38 @@ const CM_AREA = '.home-area--communities';
 const CM_HEADER = `${CM_AREA} .cm-header`;
 const APP_NAV = '.app-nav';
 
-const DELVE_KEY = 'ironledger:expansion:delve';
-const YRT_KEY = 'ironledger:expansion:yrt';
-const LODESTAR_KEY = 'ironledger:expansion:lodestar';
-
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-async function resetExpansionToggles(page: Page): Promise<void> {
-	await page.evaluate(
-		({ delveKey, yrtKey, lodestarKey }) => {
-			localStorage.removeItem(delveKey);
-			// Production ships YRT with defaultEnabled:false, but these toggle tests
-			// exercise it as an enabled expansion — force it ON for E2E only. (The
-			// store reads 'on'/'off' from localStorage, falling back to the manifest
-			// default only when the key is absent.)
-			localStorage.setItem(yrtKey, 'on');
-			localStorage.removeItem(lodestarKey);
-		},
-		{ delveKey: DELVE_KEY, yrtKey: YRT_KEY, lodestarKey: LODESTAR_KEY },
-	);
+/** Delve and Lodestar at their defaults (on), YRT on: production ships YRT
+ *  with defaultEnabled:false, but these toggle tests exercise it as an
+ *  enabled expansion. Kept on the account, so a page loaded after reads it. */
+async function resetExpansionToggles(): Promise<void> {
+	await setExpansions({ delve: null, yrt: true, lodestar: null });
 }
 
-async function setExpansionsViaStorage(
+/** Set choices on the account, then reload so the stores re-hydrate. */
+async function setExpansionsOnAccount(
 	page: Page,
 	opts: { delve?: boolean; yrt?: boolean; lodestar?: boolean },
 ): Promise<void> {
-	await page.evaluate(
-		({ delveKey, yrtKey, lodestarKey, delve, yrt, lodestar }) => {
-			if (delve === true) localStorage.removeItem(delveKey);
-			else if (delve === false) localStorage.setItem(delveKey, 'off');
-			if (yrt === true) localStorage.removeItem(yrtKey);
-			else if (yrt === false) localStorage.setItem(yrtKey, 'off');
-			if (lodestar === true) localStorage.removeItem(lodestarKey);
-			else if (lodestar === false) localStorage.setItem(lodestarKey, 'off');
-		},
-		{
-			delveKey: DELVE_KEY,
-			yrtKey: YRT_KEY,
-			lodestarKey: LODESTAR_KEY,
-			delve: opts.delve,
-			yrt: opts.yrt,
-			lodestar: opts.lodestar,
-		},
+	await setExpansions(
+		Object.fromEntries(Object.entries(opts).filter(([, v]) => v !== undefined)) as Record<
+			string,
+			boolean
+		>,
 	);
 	await page.reload();
 	await waitForHome(page);
+}
+
+/** Click a Settings toggle, and wait for its choice to reach the account. */
+async function toggleAndSave(page: Page, label: string, state: 'On' | 'Off'): Promise<void> {
+	await Promise.all([
+		page.waitForResponse(
+			(r) => r.url().includes('/api/session/extensions') && r.request().method() === 'PATCH',
+		),
+		settingsToggleButton(page, label, state).click(),
+	]);
 }
 
 async function openSettings(page: Page): Promise<void> {
@@ -135,10 +123,13 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		// card. The other tests in this describe don't create NPCs, so
 		// clearing the collection is a no-op for them.
 		await resetCommunities();
+		await resetExpansionToggles();
 		await goHome(page);
-		await resetExpansionToggles(page);
-		await page.reload();
-		await waitForHome(page);
+	});
+
+	// The choices outlast the spec: back to the defaults for the specs after.
+	test.afterAll(async () => {
+		await resetExpansions();
 	});
 
 	// ── 1. Defaults ───────────────────────────────────────────────────────────
@@ -166,7 +157,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	// ── 2. Disabling Delve ────────────────────────────────────────────────────
 
 	test('Delve off: Delve moves hidden from Moves picker', async ({ page }) => {
-		await setExpansionsViaStorage(page, { delve: false });
+		await setExpansionsOnAccount(page, { delve: false });
 		await openMovesDialog(page);
 		await expect(
 			page.locator('.moves-dialog .md-tile-name', { hasText: /^Discover a Site$/ }),
@@ -180,7 +171,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	});
 
 	test('Delve off: Delve oracles hidden from Oracles picker', async ({ page }) => {
-		await setExpansionsViaStorage(page, { delve: false });
+		await setExpansionsOnAccount(page, { delve: false });
 		await openOraclesDialog(page);
 		await expect(
 			page.locator('.oracles-dialog .od-tile-name', { hasText: /Site Nature: Theme/i }),
@@ -191,7 +182,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	});
 
 	test('Delve off: "+ New Site…" hidden in the Expeditions switcher', async ({ page }) => {
-		await setExpansionsViaStorage(page, { delve: false });
+		await setExpansionsOnAccount(page, { delve: false });
 		// The switcher still offers "+ New Journey…" but not "+ New Site…".
 		await page.locator(`${EXP_HEADER} .ea-hdr-combobox`).click();
 		await expect(page.locator('.cb-item--action', { hasText: /New Journey/i })).toBeVisible({
@@ -204,7 +195,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	});
 
 	test('Delve off: Delve foes hidden from Foe picker', async ({ page }) => {
-		await setExpansionsViaStorage(page, { delve: false });
+		await setExpansionsOnAccount(page, { delve: false });
 		await page.locator(`${FOE_HEADER} .fa-hdr-combobox`).click();
 		await page.locator('.cb-item--action', { hasText: /New foe/i }).click();
 		await expect(page.locator('.foe-dialog')).toBeVisible({ timeout: 8_000 });
@@ -222,7 +213,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	// ── 3. Disabling YRT ──────────────────────────────────────────────────────
 
 	test('YRT off: YRT moves hidden from Moves picker', async ({ page }) => {
-		await setExpansionsViaStorage(page, { yrt: false });
+		await setExpansionsOnAccount(page, { yrt: false });
 		await openMovesDialog(page);
 		await expect(
 			page.locator('.moves-dialog .md-tile-name', { hasText: /Cast Conclave Ritual/i }),
@@ -230,7 +221,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	});
 
 	test('YRT off: YRT oracles hidden from Oracles picker', async ({ page }) => {
-		await setExpansionsViaStorage(page, { yrt: false });
+		await setExpansionsOnAccount(page, { yrt: false });
 		await openOraclesDialog(page);
 		await expect(
 			page.locator('.oracles-dialog .od-tile-name', { hasText: /Mana Backlash/ }),
@@ -248,7 +239,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	// ── 4. Render-time resolution (find* is never filtered) ──────────────────
 
 	test('Delve off: log link to a Delve move still opens the move', async ({ page }) => {
-		await setExpansionsViaStorage(page, { delve: false });
+		await setExpansionsOnAccount(page, { delve: false });
 
 		// Ensure a character exists so the log can attach entries.
 		await ensureCharacter(page);
@@ -290,8 +281,8 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 
 	test('toggles persist across page reload', async ({ page }) => {
 		await openSettings(page);
-		await settingsToggleButton(page, 'Delve', 'Off').click();
-		await settingsToggleButton(page, 'YRT', 'Off').click();
+		await toggleAndSave(page, 'Delve', 'Off');
+		await toggleAndSave(page, 'YRT', 'Off');
 		await page.keyboard.press('Escape');
 		await page.reload();
 		await waitForHome(page);
@@ -301,10 +292,29 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		await expect(settingsToggleButton(page, 'YRT', 'Off')).toHaveAttribute('data-state', 'on');
 	});
 
+	test('toggles follow the user to another browser', async ({ page, browser }, testInfo) => {
+		// Made in this browser…
+		await openSettings(page);
+		await toggleAndSave(page, 'Delve', 'Off');
+		await page.keyboard.press('Escape');
+
+		// …and seen in a fresh one (the same sign-in, nothing in its storage).
+		const other = await browser.newContext({ storageState: testInfo.project.use.storageState });
+		try {
+			const page2 = await other.newPage();
+			await goHome(page2);
+			await openSettings(page2);
+			await expect(settingsToggleButton(page2, 'Delve', 'Off')).toHaveAttribute('data-state', 'on');
+			await expect(settingsToggleButton(page2, 'YRT', 'On')).toHaveAttribute('data-state', 'on');
+		} finally {
+			await other.close();
+		}
+	});
+
 	// ── 6. Re-enable restores visibility ──────────────────────────────────────
 
 	test('re-enabling Delve restores picker visibility', async ({ page }) => {
-		await setExpansionsViaStorage(page, { delve: false });
+		await setExpansionsOnAccount(page, { delve: false });
 		await openMovesDialog(page);
 		await expect(page.locator('.moves-dialog').getByText(/Discover a Site/i)).toHaveCount(0, {
 			timeout: 5_000,
@@ -358,7 +368,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	});
 
 	test('NewNPC with Lodestar off: First Look checkbox absent, others remain', async ({ page }) => {
-		await setExpansionsViaStorage(page, { lodestar: false });
+		await setExpansionsOnAccount(page, { lodestar: false });
 		await openNewNpc(page);
 		await expect(checkboxLabel(page, 'First Look')).toHaveCount(0);
 		// Activity + Disposition still present (Delve still on; disposition falls back to base charDisposition).
@@ -371,7 +381,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	test('NewNPC with Delve + Lodestar off: only the three base checkboxes remain', async ({
 		page,
 	}) => {
-		await setExpansionsViaStorage(page, { delve: false, lodestar: false });
+		await setExpansionsOnAccount(page, { delve: false, lodestar: false });
 		await openNewNpc(page);
 		for (const absent of ['First Look', 'Activity', 'Disposition']) {
 			await expect(checkboxLabel(page, absent)).toHaveCount(0);
@@ -408,7 +418,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		// assertion below is testing nothing (element-not-found rather than
 		// element-with-empty-value).
 		await waitForHome(page);
-		await setExpansionsViaStorage(page, { lodestar: false });
+		await setExpansionsOnAccount(page, { lodestar: false });
 
 		// After reload the same NPC is still the active card.
 		await expect(firstLookRow).toBeVisible({ timeout: 5_000 });
