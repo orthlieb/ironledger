@@ -536,9 +536,10 @@ namespaced keys, never in `CharacterData` or on the server.
 | `il:gc:foeInfo:{activeFoeId}`         | `GlobalContextBar.svelte` | per-foe info section         |
 
 Other UI preferences also live in `localStorage` under the `ironledger:` or `il:`
-prefix — see [expansion-toggles.md](expansion-toggles.md) (`ironledger:expansion:delve` / `:yrt`),
-[mobile.md](mobile.md) (`il:adventure:split:mobile`), and [log.md](log.md)
-(`ironledger.adventureSplit`).
+prefix — see [mobile.md](mobile.md) (`il:adventure:split:mobile`) and
+[log.md](log.md) (`ironledger.adventureSplit`). The extension toggles used to
+(`ironledger:expansion:<id>`) but are now kept per user on the server — see
+[expansion-toggles.md](expansion-toggles.md).
 
 **Why per-entity:** card collapse is a personal-display preference, not a
 modelled property of the entity. Collapsing a foe on one device shouldn't push

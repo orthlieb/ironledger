@@ -8,14 +8,16 @@ Iron Ledger ships content from three sources:
 | `delve` | Ironsworn: Delve supplement (sites, themes, domains, rarities, monstrosity & feature/danger oracles, Delve foes) |
 | `yrt`   | Yrt homebrew expansion (Touched assets, mana, Conclave rituals, freeport denizens, YRT foes & oracles)           |
 
-Each user can toggle the **Delve** and **YRT** sources independently. The toggles live in **browser `localStorage`** — they are not stored in `CharacterData` and do not sync between devices or browsers.
+Each user can toggle every extension (Delve, Lodestar, YRT, …) independently. The choices are kept **on the user's account**, so every device and browser they sign in on agrees: in `user_data.session_state.extensions`, a map of extension id → `true` / `false`, read and written through
 
 ```
-ironledger:expansion:delve
-ironledger:expansion:yrt
+GET   /api/v1/session/extensions   → { extensions: { yrt: true, delve: false } }
+PATCH /api/v1/session/extensions   { extensions: { yrt: true, lodestar: null } }
 ```
 
-A missing key is treated as **enabled** (default ON). Setting either to `'off'` disables that source. There is no toggle for `base`.
+An extension with no choice takes its manifest `defaultEnabled` (Delve and Lodestar on, YRT off). A PATCH sets only the ids it carries; `null` clears one back to its default. `PATCH /session/state` (the active selection, the open map) merges into the same column, so it never wipes the choices. There is no toggle for `base`.
+
+Choices made before they moved to the account were kept per browser in `localStorage` (`ironledger:expansion:<id>`, `'on'` / `'off'`). On its first load signed in, a browser carries any of those up for extensions the account has no choice for, then removes them. Signed out (or the API unreachable), a browser still holding them uses them for that page.
 
 > **Where is the UI?** Settings dialog → **Expansions** section, alongside the 3D Dice toggle.
 
@@ -28,7 +30,7 @@ The toggles are a **picker filter**, not a content firewall.
 1. **Pickers and catalogues** filter by enabled source. Disabled-source items don't appear in `MovesDialog`, `OraclesDialog`, `FoePickerDialog`, `AssetPicker`, or the rarity slot.
 2. **Render-time `findX(id)` lookups are never filtered.** A log entry, owned asset, populated denizen, or active site referencing a now-disabled source still resolves and displays.
 3. **User-created data is never deleted** when a toggle flips. Existing sites, encounters, communities, NPCs, and assets remain untouched. The toggle gates _new_ acquisitions and _new_ picker visibility only.
-4. **Defaults are both ON** — existing users see no change on first load.
+4. **Defaults come from each extension's manifest** (`defaultEnabled`: Delve and Lodestar on, YRT off) until the user makes a choice.
 
 This means a player can disable YRT before a session, run an Ironsworn-only game without distraction in the pickers, and re-enable YRT later with all of their prior YRT data intact.
 
@@ -46,7 +48,9 @@ import type { CatalogueSource } from '#lib/types.js';
  *  extension id ('delve', 'yrt', 'lodestar', or a third-party id). */
 export function isSourceEnabled(source: CatalogueSource | string | undefined): boolean;
 
-/** Set the on/off state for one extension by id. Persists to localStorage. */
+/** Set the on/off state for one extension by id. Stored on the user's
+ *  account (PATCH /api/session/extensions, sent keepalive so a reload
+ *  right after still saves). */
 export function setExtensionEnabled(id: string, on: boolean): void;
 
 /** Human-readable label for a source — 'base' → 'Core', otherwise the

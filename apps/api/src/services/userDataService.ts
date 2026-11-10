@@ -23,7 +23,15 @@ export interface SessionState {
    *  so the same map opens on every device. Null/absent = "open the
    *  first map" fallback. */
   activeMapId?: string | null;
+  /** The user's extension choices (see ExtensionChoices). Written only
+   *  through patchExtensions, so a session-state save leaves it alone. */
+  extensions?: ExtensionChoices;
 }
+
+/** Which extensions a user has turned on or off, by extension id. An id
+ *  missing from the map takes the extension's own `defaultEnabled`. Kept
+ *  per user (in user_data.session_state), so every device agrees. */
+export type ExtensionChoices = Record<string, boolean>;
 
 export interface UserDataPayload {
   encounters: unknown[];
@@ -227,8 +235,11 @@ export async function upsert(
           CASE WHEN ${patch.npcs !== undefined} THEN ${JSON.stringify(patch.npcs ?? [])}::jsonb END,
           user_data.npcs
         ),
+        -- Merged, not replaced: the keys a save carries win, and the
+        -- rest (the extension choices) stay.
         session_state = COALESCE(
-          CASE WHEN ${patch.sessionState !== undefined} THEN ${JSON.stringify(patch.sessionState ?? {})}::jsonb END,
+          CASE WHEN ${patch.sessionState !== undefined}
+            THEN user_data.session_state || ${JSON.stringify(patch.sessionState ?? {})}::jsonb END,
           user_data.session_state
         ),
         updated_at    = now()
@@ -236,4 +247,63 @@ export async function upsert(
   });
 
   return get(userId);
+}
+
+// ---------------------------------------------------------------------------
+// Extension choices — session_state.extensions, read and written on their own
+// so the toggles follow the user rather than the browser.
+// ---------------------------------------------------------------------------
+
+/** Only string keys with boolean values: anything else in the column (a
+ *  hand edit, an older shape) is dropped rather than trusted. */
+function cleanChoices(v: unknown): ExtensionChoices {
+  const out: ExtensionChoices = {};
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return out;
+  for (const [k, on] of Object.entries(v as Record<string, unknown>))
+    if (typeof on === 'boolean') out[k] = on;
+  return out;
+}
+
+/** The user's extension choices; {} before they've made any. */
+export async function getExtensions(userId: string): Promise<ExtensionChoices> {
+  const rows = await withUserContext(userId, async (tx) =>
+    tx.execute(sql`
+      SELECT session_state->'extensions' AS ext FROM user_data
+      WHERE user_id = ${userId}::uuid
+    `),
+  );
+  return cleanChoices((rows as unknown as Array<{ ext: unknown }>)[0]?.ext);
+}
+
+/**
+ * Set some of the user's extension choices: true / false sets one, null
+ * clears it back to the extension's default. Ids not in `patch` keep
+ * their choice, so two devices toggling different extensions don't undo
+ * each other. Returns the choices after the write.
+ */
+export async function patchExtensions(
+  userId: string,
+  patch: Record<string, boolean | null>,
+): Promise<ExtensionChoices> {
+  const json = JSON.stringify(patch);
+  await withUserContext(userId, async (tx) => {
+    await tx.execute(sql`
+      INSERT INTO user_data (user_id, session_state, updated_at)
+      VALUES (
+        ${userId}::uuid,
+        jsonb_build_object('extensions', jsonb_strip_nulls(${json}::jsonb)),
+        now()
+      )
+      ON CONFLICT (user_id) DO UPDATE SET
+        session_state = jsonb_set(
+          user_data.session_state,
+          '{extensions}',
+          jsonb_strip_nulls(
+            COALESCE(user_data.session_state->'extensions', '{}'::jsonb) || ${json}::jsonb
+          )
+        ),
+        updated_at = now()
+    `);
+  });
+  return getExtensions(userId);
 }

@@ -313,7 +313,8 @@ extensions/<id>/            scripts/gen-extensions-manifest.mjs      apps/api/sr
 - **Registry** (`apps/web/src/lib/expansionStore.svelte.ts`) hydrates from
   `/catalogue/extensions` on load. `isSourceEnabled(id)` gates content; the
   Settings Expansions tab renders one toggle per registered extension; the
-  per-browser choice persists to `localStorage['ironledger:expansion:<id>']`.
+  choice is kept on the user's account (`/api/session/extensions`), so it
+  follows them across devices — see [expansion-toggles.md](expansion-toggles.md).
 
 ---
 

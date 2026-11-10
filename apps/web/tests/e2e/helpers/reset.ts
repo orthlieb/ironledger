@@ -291,7 +291,39 @@ export async function resetAll(token?: string): Promise<void> {
 	// Characters are deleted sequentially to smooth the write burst (Postgres).
 	await resetCharacters(tok);
 	// Session collections and log are each a single atomic write — safe to parallelize.
-	await Promise.all([resetFoes(tok), resetExpeditions(tok), resetCommunities(tok), resetLog(tok)]);
+	await Promise.all([
+		resetFoes(tok),
+		resetExpeditions(tok),
+		resetCommunities(tok),
+		resetLog(tok),
+		resetExpansions(tok),
+	]);
 	// Maps are their own resource (background + markers) — clear last.
 	await clearAllMaps(tok);
+}
+
+// ── Extension choices ─────────────────────────────────────────────────────────
+
+/**
+ * Set the test user's extension choices, kept on their account (not in the
+ * browser): true / false sets one, null clears it back to the extension's
+ * default. A page loaded (or reloaded) after this reads them. They outlast
+ * the test, so a spec that sets them puts them back with resetExpansions.
+ */
+export async function setExpansions(
+	choices: Record<string, boolean | null>,
+	token?: string,
+): Promise<void> {
+	const tok = token ?? (await getTestToken());
+	const res = await fetch(`${API}/session/extensions`, {
+		method: 'PATCH',
+		headers: json(tok),
+		body: JSON.stringify({ extensions: choices }),
+	});
+	if (!res.ok) throw new Error(`set extensions failed: ${res.status} ${await res.text()}`);
+}
+
+/** Every extension back to its default: Delve and Lodestar on, YRT off. */
+export async function resetExpansions(token?: string): Promise<void> {
+	await setExpansions({ delve: null, yrt: null, lodestar: null, sample: null }, token);
 }

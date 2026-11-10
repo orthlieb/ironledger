@@ -3,6 +3,8 @@
  *
  * GET    /api/v1/session                 → { encounters, expeditions, communities, npcs, sessionState }
  * PATCH  /api/v1/session/state           → update active-selection state
+ * GET    /api/v1/session/extensions      → { extensions }: the user's extension choices
+ * PATCH  /api/v1/session/extensions      → set some ({ id: true | false | null }; null = default)
  *
  * The four session collections are stored one row per entity (migration 0013).
  * `:kind` is the plural segment (encounters | expeditions | communities | npcs):
@@ -49,6 +51,14 @@ const patchSessionStateBody = z.object({
     activeTab: z.string().optional(),
     activeMapId: z.string().nullish(),
   }),
+});
+
+/** Extension choices: on / off, or null to fall back to the extension's
+ *  default. Ids are an extension manifest's (`yrt`, `delve`, …). */
+const patchExtensionsBody = z.object({
+  extensions: z
+    .record(z.string().regex(/^[a-z0-9][a-z0-9-]{0,39}$/), z.boolean().nullable())
+    .refine((m) => Object.keys(m).length <= 50, 'Too many extensions'),
 });
 
 // ---------------------------------------------------------------------------
@@ -302,6 +312,22 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
     } catch (err) {
       return handleError(reply)(err);
     }
+  });
+
+  // ── GET /session/extensions — the user's extension choices ─────────────────
+  server.get('/extensions', async (req, reply) => {
+    const extensions = await ud.getExtensions(req.user!.id).catch(handleError(reply));
+    if (!extensions || reply.sent) return;
+    return reply.send({ extensions });
+  });
+
+  // ── PATCH /session/extensions — set some (null = back to the default) ──────
+  server.patch('/extensions', { schema: { body: patchExtensionsBody } }, async (req, reply) => {
+    const extensions = await ud
+      .patchExtensions(req.user!.id, req.body.extensions)
+      .catch(handleError(reply));
+    if (!extensions || reply.sent) return;
+    return reply.send({ extensions });
   });
 
   // ── PATCH /session/state ──────────────────────────────────────────────────
