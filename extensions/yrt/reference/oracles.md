@@ -39,7 +39,7 @@ Shares are of resident population, not of worshippers. Every faith keeps at leas
 | 86 | 58 | 4 | 1 | 1 | **Puritan**: Holds that humanity was sentenced to be mixed with the beasts, and that the sentence is carried in the body. Grades people Pure through Feral, keeps a third of the year free of anything that had blood or a face, and takes its miracles from mana the Conclave sells it. |
 | 90 | 73 | 89 | 2 | 2 | **Optime**: Worships YRT, the same god, and holds only that the fall was something other than the Puritans say. Does not grade people. Keeps the abstinence loosely, as a discipline rather than a purity law. |
 | 91 | 83 | 92 | 95 | 3 | **Wildens**: The twelve feral gods, and under them the local lesser god their people brought in. Underground in Nysis. Tolerated but not legal in Freeport, where Kroduk's house is still kept outside the chains. The ordinary faith of Buralia. |
-| 100 | 100 | 100 | 100 | 100 | **None, or their own**: No faith at all, as is common in the Stews and among the Touched, or a practice outside the three: Seka lineage and herd reckoning, Verdani green lore, or whatever a crew off the Sea of Bees keeps and has never been asked about. |
+| 100 | 100 | 100 | 100 | 100 | **None, or their own**: No faith at all, as is common in the Stews and among the Touched, or a practice outside the three: Seka lineage and herd reckoning, Verdani green lore, or whatever a crew off the Sea of Bees keeps. |
 
 ## Character: Touched
 
