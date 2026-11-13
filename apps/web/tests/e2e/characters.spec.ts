@@ -257,73 +257,86 @@ test.describe('Characters area (v2)', () => {
 		expect(nums.some((v) => v > 0)).toBe(true);
 	});
 
-	test('Core tab: the pen warns, then opens a draft of the stats, 0–4; the check asks to apply it', async ({
+	test('Core tab: a double-click on a stat warns, then opens it, 0–4; leaving it asks to apply', async ({
 		page,
 	}) => {
-		// Stats read out only until the pen is pressed (a few path assets
-		// change one by an ability), and it warns first: No leaves them be.
-		// Yes makes each a 0–4 field on a draft; the check shows what
-		// changed and asks to apply it (logged) or discard it; with nothing
-		// changed, it just reads them out again.
+		// Stats read out only until one is double-clicked (a few path assets
+		// change one by an ability), and that warns first: No leaves them be.
+		// Yes makes that stat a 0–4 field; leaving it shows what changed and
+		// asks to apply it (logged), discard it, or go back to it; with
+		// nothing changed, it just reads out again.
 		await ensureCharacterSelected(page);
 		await switchCharTab(page, 'Core');
 		const edge = page.locator(`${CHAR_AREA} .ca-stats-row input[aria-label="Edge stat value"]`);
 		const shown = page.locator(`${CHAR_AREA} .ca-stats-row [aria-label="Edge stat value"]`);
-		const pen = page.locator(`${CHAR_AREA} [data-tour="char-stats-edit"]`);
+		const tile = page.locator(`${CHAR_AREA} [data-stat="edge"] .stat-tile`);
+		const fields = page.locator(`${CHAR_AREA} .ca-stats-row input`);
 		const dialog = page.locator('[data-tour="stats-dialog"]');
 		const warning = page.locator('[data-tour="stats-warning"]');
-		/** The pen, and Yes to its warning. */
+		/** A double-click on Edge, and Yes to its warning. */
 		const edit = async () => {
-			await pen.click();
+			await tile.dblclick();
 			await expect(warning).toContainText('an unusual event (some assets allow this)');
 			await page.locator('[data-tour="stats-warning-confirm"]').click();
-			await expect(edge).toBeVisible();
+			await expect(edge).toBeFocused();
+			// Only the stat double-clicked is a field.
+			await expect(fields).toHaveCount(1);
 		};
 		await expect(edge).toHaveCount(0);
 		const before = Number((await shown.textContent())?.trim());
 		const next = before >= 4 ? 3 : before + 1;
 
+		// A single click does nothing.
+		await tile.click();
+		await page.waitForTimeout(600);
+		await expect(warning).toHaveCount(0);
+
 		// No leaves them read out.
-		await pen.click();
+		await tile.dblclick();
 		await warning.getByRole('button', { name: 'No' }).click();
 		await expect(warning).toHaveCount(0);
 		await expect(edge).toHaveCount(0);
 
-		// Unchanged: the check closes it without asking.
+		// Unchanged: leaving it reads it out without asking.
 		await edit();
-		await expect(pen).toHaveAttribute('aria-pressed', 'true');
-		await pen.click();
+		await edge.press('Enter');
 		await expect(dialog).toHaveCount(0);
 		await expect(edge).toHaveCount(0);
 
-		// Above the range clamps to 4; a change is only a draft until applied.
+		// Above the range clamps to 4; Cancel goes back to the field.
 		await edit();
 		await edge.fill('9');
-		await edge.blur();
+		await edge.press('Enter');
+		await expect(dialog).toContainText(`Edge: ${before} → 4`);
+		await dialog.getByRole('button', { name: 'Cancel' }).click();
+		await expect(edge).toBeFocused();
 		await expect(edge).toHaveValue('4');
+
+		// A change is only a draft until applied.
 		await edge.fill(String(next));
 		await edge.blur();
-		await pen.click();
-		await expect(dialog).toBeVisible();
 		await expect(dialog).toContainText(`Edge: ${before} → ${next}`);
 		await page.locator('[data-tour="stats-dialog-confirm"]').click();
 		await expect(dialog).toHaveCount(0);
 		await expect(shown).toHaveText(String(next));
 		await expect(page.locator('.log-entry').first()).toContainText(`Edge: ${before} → ${next}`);
 
-		// Discard throws a draft away.
+		// Discard throws a draft away; so does Escape, without asking.
 		await edit();
 		await edge.fill(String(before));
-		await edge.blur();
-		await pen.click();
+		await edge.press('Enter');
 		await dialog.getByRole('button', { name: 'Discard' }).click();
+		await expect(shown).toHaveText(String(next));
+		await edit();
+		await edge.fill(String(before));
+		await edge.press('Escape');
+		await expect(dialog).toHaveCount(0);
 		await expect(shown).toHaveText(String(next));
 
 		// Back to the start, applied.
 		await edit();
 		await edge.fill(String(before));
-		await edge.blur();
-		await pen.click();
+		await edge.press('Enter');
 		await page.locator('[data-tour="stats-dialog-confirm"]').click();
 		await expect(shown).toHaveText(String(before));
 	});

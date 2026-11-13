@@ -58,8 +58,6 @@
 	} from '#lib/characterFields.svelte.js';
 	import StatAllocator from '#lib/components/StatAllocator.svelte';
 	import { STAT_MAX, STAT_MIN, availableStatArrays, type Stat } from '#lib/rules/statArrays.js';
-	import penSvg from '#icons/pen-to-square-solid.svg?raw';
-	import doneSvg from '#icons/circle-check-solid.svg?raw';
 	import Select from '#lib/components/Select.svelte';
 	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
 	import {
@@ -449,14 +447,25 @@
 			tooltip: 'Expertise, knowledge, and observation',
 		},
 	];
-	/** The stats being edited, or null when they read out. */
+	/** A draft of the stats while one is edited, or null when they read out. */
 	let statsDraft = $state<Record<Stat, number> | null>(null);
+	/** The stat being edited: its tile is a field. */
+	let editingStat = $state<Stat | null>(null);
+	/** The stat a double-click asked to edit, while the warning is up. */
+	let askedStat: Stat | null = null;
+	let statsRowEl = $state<HTMLElement | null>(null);
 	let statsDialogRef = $state<{ open(): void; close(): void } | null>(null);
-	/** The pen's warning: editing stats after creation is unusual. */
+	/** The double-click's warning: editing stats after creation is unusual. */
 	let statsWarningRef = $state<{ open(): void; close(): void } | null>(null);
+	/** How the stat tiles' tooltip says to edit one. */
+	const statEditHint =
+		typeof window !== 'undefined' && window.matchMedia?.('(hover: none)').matches
+			? 'Double-tap to edit'
+			: 'Double-click to edit';
 	$effect(() => {
 		void activeCharId;
 		statsDraft = null;
+		editingStat = null;
 	});
 	/** What the draft changes, stat by stat. */
 	const statChanges = $derived.by(() => {
@@ -470,10 +479,24 @@
 			next: draft[t.key],
 		}));
 	});
-	/** Open a draft of the active character's stats. */
+	/** The last click on a stat tile, to spot a double-click or double-tap. */
+	let lastStatTap = { key: '', at: 0 };
+	/** A double-click, or a double-tap (which iOS doesn't report as one), on
+	 *  a stat warns, then opens it. */
+	function onStatsClick(e: MouseEvent) {
+		if (statsDraft || !activeData) return;
+		const key = (e.target as HTMLElement).closest<HTMLElement>('[data-stat]')?.dataset.stat;
+		if (!key) return;
+		const twice = e.detail === 2 || (lastStatTap.key === key && e.timeStamp - lastStatTap.at < 500);
+		lastStatTap = twice ? { key: '', at: 0 } : { key, at: e.timeStamp };
+		if (!twice) return;
+		askedStat = key as Stat;
+		statsWarningRef?.open();
+	}
+	/** Yes to the warning: a draft of the stats, with the asked one a field. */
 	function openStatsDraft() {
 		const data = activeData;
-		if (!data) return;
+		if (!data || !askedStat) return;
 		statsDraft = {
 			edge: data.edge,
 			heart: data.heart,
@@ -481,17 +504,42 @@
 			shadow: data.shadow,
 			wits: data.wits,
 		};
+		editingStat = askedStat;
+		focusStatField();
 	}
-	/** The pen warns, then opens a draft; the check closes it, asking first
-	 *  if it changes anything. */
-	function toggleStatEdit() {
-		if (!activeData) return;
-		if (!statsDraft) {
-			statsWarningRef?.open();
-		} else if (statChanges.length === 0) {
-			statsDraft = null;
-		} else {
-			statsDialogRef?.open();
+	/** Into the stat's field, once the dialog has closed and handed focus back. */
+	function focusStatField() {
+		setTimeout(() => {
+			const field = statsRowEl?.querySelector<HTMLInputElement>('input');
+			field?.focus();
+			field?.select();
+		}, 0);
+	}
+	function closeStatsDraft() {
+		statsDraft = null;
+		editingStat = null;
+	}
+	/** Leaving the field ends the edit, asking first if it changed the stat.
+	 *  The window losing focus (another tab or app) keeps it open. */
+	function onStatsFocusOut() {
+		if (!statsDraft) return;
+		setTimeout(() => {
+			if (!statsDraft || !document.hasFocus()) return;
+			if (statsRowEl?.contains(document.activeElement)) return;
+			if (statChanges.length === 0) closeStatsDraft();
+			else statsDialogRef?.open();
+		}, 0);
+	}
+	/** In the field, Enter leaves it (asking to apply); Escape drops the edit. */
+	function onStatsKeydown(e: KeyboardEvent) {
+		if (!statsDraft) return;
+		if (e.key === 'Enter') {
+			e.preventDefault();
+			(e.target as HTMLElement).blur();
+		} else if (e.key === 'Escape') {
+			e.preventDefault();
+			e.stopPropagation();
+			closeStatsDraft();
 		}
 	}
 	/** Apply the draft to the character, log it, and read the stats out again. */
@@ -509,7 +557,7 @@
 				})
 				.join(''),
 		);
-		statsDraft = null;
+		closeStatsDraft();
 	}
 
 	/** Why an owned asset can't be used now (its preconditions fail, e.g. a
@@ -1457,43 +1505,41 @@
 								<div class="ca-stats-wrapper">
 									<div class="ca-side-label">Stats</div>
 									<!-- Stats are set in the New Character dialog; here they read out
-									     only, unless the pen opens a draft of them for an asset ability
-									     that changes one; the check then asks to apply it. -->
-									<div class="ca-stats-row" class:ca-stats-row--editing={statsDraft}>
+									     only, unless a double-click (or double-tap) on one opens it
+									     for an asset ability that changes it. Leaving the field asks
+									     to apply the change. -->
+									<!-- svelte-ignore a11y_click_events_have_key_events -->
+									<!-- svelte-ignore a11y_no_static_element_interactions -->
+									<div
+										class="ca-stats-row"
+										bind:this={statsRowEl}
+										onclick={onStatsClick}
+										onkeydown={onStatsKeydown}
+										onfocusout={onStatsFocusOut}
+									>
 										{#each STAT_TILES as t (t.key)}
-											{#if statsDraft}
-												<StatControl
-													label={t.label}
-													bind:value={statsDraft[t.key]}
-													color={t.color}
-													min={STAT_MIN}
-													max={STAT_MAX}
-													tooltip={t.tooltip}
-												/>
-											{:else}
-												<StatControl
-													label={t.label}
-													value={d[t.key]}
-													color={t.color}
-													readonly
-													tooltip={t.tooltip}
-												/>
-											{/if}
+											<div class="ca-stat" data-stat={t.key}>
+												{#if statsDraft && editingStat === t.key}
+													<StatControl
+														label={t.label}
+														bind:value={statsDraft[t.key]}
+														color={t.color}
+														min={STAT_MIN}
+														max={STAT_MAX}
+														tooltip={t.tooltip}
+													/>
+												{:else}
+													<StatControl
+														label={t.label}
+														value={d[t.key]}
+														color={t.color}
+														readonly
+														tooltip={statsDraft ? t.tooltip : `${t.tooltip}. ${statEditHint}.`}
+													/>
+												{/if}
+											</div>
 										{/each}
 									</div>
-									<button
-										type="button"
-										class="ca-stats-edit"
-										class:ca-stats-edit--on={statsDraft}
-										aria-pressed={!!statsDraft}
-										data-tour="char-stats-edit"
-										onclick={toggleStatEdit}
-										use:tooltip={statsDraft
-											? 'Done editing stats'
-											: 'Edit stats, for an asset ability that changes one'}
-										aria-label={statsDraft ? 'Done editing stats' : 'Edit stats'}
-										>{@html statsDraft ? doneSvg : penSvg}</button
-									>
 								</div>
 
 								<!-- Vitals — Momentum + Health/Spirit/Supply + Experience. Spinners on every tile;
@@ -1936,7 +1982,8 @@
 
 <!-- New Vow dialog — name + rank (rank is fixed at creation, shown read-only
      on the card afterward). Mirrors New Journey. -->
-<!-- The pen: stats are set at creation, so editing them is unusual. -->
+<!-- A double-click on a stat: stats are set at creation, so editing one is
+     unusual. -->
 <ConfirmDialog
 	bind:this={statsWarningRef}
 	title="Edit Stats"
@@ -1952,8 +1999,8 @@
 	</p>
 </ConfirmDialog>
 
-<!-- The stats' draft, on the check: apply it, discard it, or (Cancel, ✕)
-     go back to editing. -->
+<!-- A changed stat, on leaving its field: apply it, discard it, or (Cancel,
+     ✕) go back to editing. -->
 <ConfirmDialog
 	bind:this={statsDialogRef}
 	title="Change Stats"
@@ -1963,7 +2010,8 @@
 	alternateLabel="Discard"
 	accentColor="var(--text-accent)"
 	onconfirm={applyStatChanges}
-	onalternate={() => (statsDraft = null)}
+	onalternate={closeStatsDraft}
+	oncancel={focusStatField}
 	tour="stats-dialog"
 >
 	<p>Change {activeData?.name || 'this character'}'s stats?</p>
@@ -2316,27 +2364,35 @@
 		padding-right: 2px;
 	}
 
-	/* Chit rows: fixed-width chits packed against the left. The five stats
-	   stay on one row: on a phone, where the row plus the edit pen run out
-	   of width, the tiles narrow to fit instead of Wits wrapping. */
+	/* Chit rows: fixed-width chits packed against the left. */
 	.ca-stats-row {
 		display: flex;
 		justify-content: flex-start;
 		align-items: stretch;
 		gap: 8px;
-		flex-wrap: nowrap;
+		flex-wrap: wrap;
 		flex: 1;
-		min-width: 0;
 	}
-	.ca-stats-row > :global(*) {
-		flex: 0 1 auto;
-		min-width: 0;
+	/* Each tile's wrapper only names its stat (for the double-click), so it
+	   adds no box: the tiles stay the row's flex items. */
+	.ca-stat {
+		display: contents;
 	}
-	/* The narrowest phones (320px): a tighter gap leaves each tile room for
-	   SHADOW. */
-	@media (max-width: 359px) {
+	.ca-stats-row :global(.stat-tile) {
+		flex: 0 0 auto;
+		/* Both taps of a double-tap land as clicks, with no zoom between. */
+		touch-action: manipulation;
+	}
+	/* A double-click doesn't select the stat's name. Read-out tiles only:
+	   Safari won't type into a field under user-select: none. */
+	.ca-stats-row :global(.stat-tile:not(:has(input))) {
+		user-select: none;
+		-webkit-user-select: none;
+	}
+	/* A 375px phone: a slightly tighter gap keeps all five on one row. */
+	@media (max-width: 389px) {
 		.ca-stats-row {
-			gap: 4px;
+			gap: 6px;
 		}
 	}
 	/* The stats dialog's list of changes. */
@@ -2345,41 +2401,10 @@
 		padding-left: 18px;
 		font-size: 0.85rem;
 	}
-	/* Open for editing: each tile outlined, so it reads as a field. */
-	.ca-stats-row--editing > :global(.stat-tile) {
+	/* The stat being edited: outlined, so it reads as a field. */
+	.ca-stats-row :global(.stat-tile:has(input)) {
 		outline: 1px dashed var(--text-accent);
 		outline-offset: 1px;
-	}
-	/* The Stats row's edit toggle: a small icon button at its end, as the
-	   app's dice buttons are drawn. */
-	.ca-stats-edit {
-		all: unset;
-		box-sizing: border-box;
-		align-self: flex-start;
-		flex-shrink: 0;
-		width: 24px;
-		height: 24px;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		border: 1px solid var(--border-mid);
-		border-radius: 3px;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		transition:
-			color 0.12s,
-			border-color 0.12s;
-	}
-	.ca-stats-edit:hover,
-	.ca-stats-edit:focus-visible,
-	.ca-stats-edit--on {
-		color: var(--text-accent);
-		border-color: var(--text-accent);
-	}
-	.ca-stats-edit :global(svg) {
-		width: 12px;
-		height: 12px;
-		fill: currentColor;
 	}
 
 	.ca-vitals-row {
