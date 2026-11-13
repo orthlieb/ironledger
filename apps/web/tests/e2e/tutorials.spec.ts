@@ -5,8 +5,9 @@
  *
  * Create a character: open the switcher, "+ New character…", roll a name,
  * stats and (YRT) its fields, leave the rest to be randomized, Create; then
- * on the Background tab, write a bio and add a portrait; initiative; and
- * the Status tab, with the 9 experience a new character starts with.
+ * on the Background tab, write a bio and add a portrait; initiative; the
+ * stats (a double-click edits one); and the Status tab, with the 9
+ * experience a new character starts with.
  *
  * Add your first vow: + ⛓, name and rank it, the vow on the Vows tab. Add
  * your assets: + ◆, find and pick one, Add, and spend its experience from
@@ -110,12 +111,17 @@ async function walkSheet(page: Page, first: number, total: number, tap = false) 
 	await press(target(page, 'char-tab-core'));
 	await expectStep(page, 'Initiative', n(1));
 	await next(page);
-
-	await expectStep(page, 'Your status', n(2));
-	await press(target(page, 'char-tab-status'));
-	await expectStep(page, 'Debilities', n(3));
+	await expectStep(page, 'Your stats', n(2));
+	await expect(page.locator(`${POPOVER} .driver-popover-description`)).toContainText(
+		'double-click that stat',
+	);
 	await next(page);
-	await expectStep(page, 'Bonds', n(4));
+
+	await expectStep(page, 'Your status', n(3));
+	await press(target(page, 'char-tab-status'));
+	await expectStep(page, 'Debilities', n(4));
+	await next(page);
+	await expectStep(page, 'Bonds', n(5));
 	await expect(page.locator(`${POPOVER} .driver-popover-description`)).toContainText(
 		'Add your first vow, then Add your assets',
 	);
@@ -199,61 +205,61 @@ test.describe('Tutorial — Create a character', () => {
 		const before = await characterCount(page);
 		await startTutorial(page);
 
-		await expectStep(page, 'Open the character list', '1 of 15');
+		await expectStep(page, 'Open the character list', '1 of 16');
 		await target(page, 'char-switcher').click();
-		await expectStep(page, 'Start a new character', '2 of 15');
+		await expectStep(page, 'Start a new character', '2 of 16');
 		await target(page, 'new-char-action').click();
 
-		await expectStep(page, 'Roll a name', '3 of 15');
+		await expectStep(page, 'Roll a name', '3 of 16');
 		await target(page, 'roll-name').click();
 		const name = await target(page, 'new-char-name').locator('input').inputValue();
 		expect(name.trim(), 'a rolled name').not.toBe('');
 		await next(page);
 
-		await expectStep(page, 'Roll your stats', '4 of 15');
+		await expectStep(page, 'Roll your stats', '4 of 16');
 		await target(page, 'roll-stats').click();
 		await next(page);
 
 		// Region of origin is a core field: the step shows without YRT too.
-		await expectStep(page, 'Roll their details', '5 of 15');
+		await expectStep(page, 'Roll their details', '5 of 16');
 		await expect(page.locator(`${POPOVER} .driver-popover-description`)).toContainText(
 			'Set their Region of origin:',
 		);
 		await next(page);
 
-		await expectStep(page, 'Randomize the rest', '6 of 15');
+		await expectStep(page, 'Randomize the rest', '6 of 16');
 		await next(page);
 
-		await expectStep(page, 'Create your character', '7 of 15');
+		await expectStep(page, 'Create your character', '7 of 16');
 		await target(page, 'new-char-dialog-confirm').click();
 
-		await expectStep(page, 'Meet your character', '8 of 15');
+		await expectStep(page, 'Meet your character', '8 of 16');
 		await expect.poll(() => activeCharacterName(page)).toBe(name);
 		expect(await characterCount(page)).toBe(before + 1);
 		await next(page);
 
 		// The rolled details, rewritten as a bio. Next closes the editor.
-		await expectStep(page, 'Turn the rolls into a bio', '9 of 15');
+		await expectStep(page, 'Turn the rolls into a bio', '9 of 16');
 		const bio = target(page, 'char-bio');
 		await bio.locator('.md-notes-display').click();
 		await bio.locator('textarea').fill('Born in the Havens; left to keep a promise.');
 		await next(page);
 
-		await expectStep(page, 'Add a portrait', '10 of 15');
+		await expectStep(page, 'Add a portrait', '10 of 16');
 		await expect(bio).toContainText('left to keep a promise');
 		await target(page, 'char-portrait')
 			.locator('input[type="file"]')
 			.setInputFiles({ name: 'portrait.png', mimeType: 'image/png', buffer: PNG });
 		await expect(target(page, 'char-portrait').locator('img')).toBeVisible({ timeout: 5_000 });
 		await next(page);
-		await walkSheet(page, 11, 15);
+		await walkSheet(page, 11, 16);
 	});
 
 	test('rolls whatever is skipped, and with YRT covers its fields', async ({ page }) => {
 		await openHome(page, true);
 		await startTutorial(page);
 
-		await expectStep(page, 'Open the character list', '1 of 15');
+		await expectStep(page, 'Open the character list', '1 of 16');
 		await target(page, 'char-switcher').click();
 		await expectStep(page, 'Start a new character');
 		// Searching the row out of the list sends the tour back a step;
@@ -269,7 +275,7 @@ test.describe('Tutorial — Create a character', () => {
 		await expectStep(page, 'Roll your stats');
 		expect(await target(page, 'new-char-name').locator('input').inputValue()).not.toBe('');
 		await next(page);
-		await expectStep(page, 'Roll their details', '5 of 15');
+		await expectStep(page, 'Roll their details', '5 of 16');
 		await expect(page.locator(`${POPOVER} .driver-popover-description`)).toContainText(
 			'Region of origin, Religion and Touched',
 		);
@@ -286,7 +292,7 @@ test.describe('Tutorial — Create a character', () => {
 
 		await expectStep(page, 'Create your character');
 		await target(page, 'new-char-dialog-confirm').click();
-		await expectStep(page, 'Meet your character', '8 of 15');
+		await expectStep(page, 'Meet your character', '8 of 16');
 		// The fields left empty were rolled on Create.
 		await expect(page.locator('.log-entry', { hasText: 'New Character' }).first()).toContainText(
 			'Region of origin:',
@@ -294,7 +300,7 @@ test.describe('Tutorial — Create a character', () => {
 		await next(page);
 		await expectStep(page, 'Turn the rolls into a bio');
 		await next(page);
-		await expectStep(page, 'Add a portrait', '10 of 15');
+		await expectStep(page, 'Add a portrait', '10 of 16');
 		// ✕ ends it anywhere.
 		await page.locator(`${POPOVER} .driver-popover-close-btn`).click();
 		await expect(page.locator(POPOVER)).toBeHidden();
@@ -311,9 +317,9 @@ test.describe('Tutorial — Create a character, on a phone', () => {
 		await page.locator('.mob-tab', { hasText: 'Foes' }).click();
 		await startTutorial(page);
 
-		await expectStep(page, 'Your characters', '1 of 16');
+		await expectStep(page, 'Your characters', '1 of 17');
 		await target(page, 'tab-characters').click();
-		await expectStep(page, 'Open the character list', '2 of 16');
+		await expectStep(page, 'Open the character list', '2 of 17');
 		await target(page, 'char-switcher').click();
 		await expectStep(page, 'Start a new character');
 		await target(page, 'new-char-action').click();
@@ -338,9 +344,9 @@ test.describe('Tutorial — Create a character, on a phone', () => {
 		await expectStep(page, 'Turn the rolls into a bio');
 		await expect(target(page, 'char-tab-background')).toHaveAttribute('data-state', 'active');
 		await next(page);
-		await expectStep(page, 'Add a portrait', '11 of 16');
+		await expectStep(page, 'Add a portrait', '11 of 17');
 		await next(page);
-		await walkSheet(page, 12, 16, true);
+		await walkSheet(page, 12, 17, true);
 	});
 });
 

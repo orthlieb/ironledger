@@ -1502,7 +1502,7 @@
 
 								<!-- Stats — same StatControl tiles as v1, with the same color vars and stat-icon mapping.
 								     Wrapped with a vertical "STATS" side label on the LHS (V1 stats-row-wrapper pattern). -->
-								<div class="ca-stats-wrapper">
+								<div class="ca-stats-wrapper" data-tour="char-stats">
 									<div class="ca-side-label">Stats</div>
 									<!-- Stats are set in the New Character dialog; here they read out
 									     only, unless a double-click (or double-tap) on one opens it
