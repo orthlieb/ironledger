@@ -206,10 +206,18 @@ screen and one to a row on a phone. An unset dropdown shows "—"; an unset
 radio has no button pressed. Each field carries
 `data-tour="char-field-<id>"`.
 
-An extension's fields sit under a small heading with its `name` ("YRT"),
-unless its `extension.json` sets `"characterFieldsHeading": false`. Delve and
-Lodestar set it, so when they add fields (Delve's Failures track, in the
-catalogue below, would be one), those fields carry no heading.
+An extension's fields sit under a small heading, set by
+`characterFieldsHeading` in its `extension.json`:
+
+- left out: the extension's `name`, the label on its Settings toggle
+  ("YRT");
+- text: that text instead, for a name that reads well on a toggle but not as
+  a heading;
+- `false`: no heading. Delve and Lodestar set it, so when they add fields
+  (Delve's Failures track, in the catalogue below, would be one), those
+  fields carry no heading.
+
+`npm run gen:manifest` fails on any other value, such as an empty string.
 
 A field's hover hint is its `tooltip`. An `optionsFrom` dropdown or radio
 adds the
