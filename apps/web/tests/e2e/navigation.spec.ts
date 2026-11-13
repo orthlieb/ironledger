@@ -8,9 +8,13 @@
  * file exercise that switch.
  */
 import { test, expect } from '@playwright/test';
+import { settleHome } from './helpers/home';
 
 test.beforeEach(async ({ page }) => {
 	await page.goto('/home');
+	// Let the page hydrate first: on the dev server a click that lands before
+	// it does is lost (the Settings menu never opens).
+	await settleHome(page);
 	// Wait for the Characters area to finish initial load — proves the home
 	// page hydrated. The other areas finish around the same time.
 	await expect(page.locator('.home-area--characters .ca-loading')).not.toBeVisible({
