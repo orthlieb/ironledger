@@ -48,9 +48,10 @@ die + stat + adds) is capped at 10 (`rules/actionScore.ts`).
 | Shadow | `#a855f7` purple | `shadow` |
 | Wits   | `#f59e0b` amber  | `wits`   |
 
-Extensions can add fields to a character, shown at the bottom of the Core
-tab, below Vitals, under each extension's heading: with YRT, Region of
-origin, Religion, Touched and Animal (Animal hidden while Touched is Pure).
+The core rules and extensions can add fields to a character, shown at the
+bottom of the Core tab, below Vitals: Region of origin (core, no heading),
+and with YRT, under a YRT heading, Religion, Touched and Animal (Animal
+hidden while Touched is Pure).
 Changing one is logged (`Touched: Prime → Second`), and lowering Touched
 unmarks a Touched asset's abilities above the new limit. They're stored in
 `data.fields`; see [character-fields.md](character-fields.md).
@@ -125,7 +126,7 @@ interface CharacterData {
   iron: number;
   shadow: number;
   wits: number;
-  /** Extension fields (YRT: origin, religion, touched, touchedAnimal),
+  /** Extension fields (core: origin; YRT: religion, touched, touchedAnimal),
    *  keyed by field id: an option id or text. */
   fields?: Record<string, string>;
   momentum: number;

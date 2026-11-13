@@ -1,7 +1,8 @@
 <script lang="ts">
 	/**
-	 * The fields enabled extensions add to a character (YRT's region of origin,
-	 * religion, touched level and animal), each under its extension's heading,
+	 * The fields the core rules and enabled extensions add to a character
+	 * (Region of origin; YRT's religion, touched level and animal), each under
+	 * its extension's heading (the core rules have none),
 	 * in extension order then declaration order. See docs/character-fields.md.
 	 *
 	 * mode "sheet": the Core tab, below Vitals. Values read through to each

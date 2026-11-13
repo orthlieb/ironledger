@@ -276,12 +276,13 @@ from there.
 An extension can add fields to every character: a dropdown, a radio or a
 line of text, shown at the bottom of the sheet's Core tab and in New
 Character (with a d6 when it rolls from an oracle), stored in
-`character.fields`, and readable as precondition keys. YRT declares four:
-Region of origin, Religion, Touched and Animal, and its Touched assets need
-`{ "key": "touched", "min": 1 }`. The fields sort by extension `order`, then
+`character.fields`, and readable as precondition keys. The core rules declare
+Region of origin (from the Region oracle, which YRT supersedes with its own
+regions); YRT declares Religion, Touched and Animal, and its Touched assets
+need `{ "key": "touched", "min": 1 }`. The fields sort by extension `order`, then
 in the order declared, under a heading: the extension's `name`, the
-`characterFieldsHeading` text, or none when it's `false` (Delve and
-Lodestar). The build checks every field (ids unique across extensions and
+`characterFieldsHeading` text, or none when it's `false` (the core rules,
+Delve and Lodestar). The build checks every field (ids unique across extensions and
 clear of built-in precondition keys, options, defaults, the oracles named).
 The full reference is [character-fields.md](character-fields.md).
 

@@ -1,14 +1,16 @@
 # Character fields from extensions
 
-An extension can add fields to a character: values the character has, shown
-on the sheet, rolled at creation, and checked by preconditions. YRT's region
-of origin, religion, touched level and touched animal are the first four.
+An extension, the core rules included, can add fields to a character: values
+the character has, shown on the sheet, rolled at creation, and checked by
+preconditions. The core rules add a region of origin; YRT adds a religion, a
+touched level and a touched animal.
 
 ## Why
 
-Before this, YRT gave every character a region of origin, a religion, a touched level
-(Pure, Prime, Second, Third or Feral) and, unless they're Pure, an animal
-(Bear, Wolf, Cat (domestic), …), and none of them was stored as a value:
+Before this, YRT gave every character a region of origin, a religion, a
+touched level (Pure, Prime, Second, Third or Feral) and, unless they're Pure,
+an animal (Bear, Wolf, Cat (domestic), …), and none of them was stored as a
+value:
 
 - New Character wrote them into the background as prose
   (`**Region of origin:** Piscis`, `**Religion:** **Puritan**: Holds that…`,
@@ -23,19 +25,39 @@ The Character: Touched oracle (`yrtTouched`) says of Pure: "Cannot use
 Touched Assets." The app couldn't check that: a character who rolled Pure
 could add any Touched asset, and the asset made them Prime.
 
-## YRT's four fields
+## The fields today
+
+Region of origin belongs to the core rules, so every game has it:
 
 ```jsonc
-// extensions/yrt/extension.json
+// extensions/base/extension.json
+"characterFieldsHeading": false,
 "characterFields": [
   {
     "id": "origin",
     "label": "Region of origin",
     "type": "dropdown",
-    "optionsFrom": { "oracle": "yrtRegion" },
+    "optionsFrom": { "oracle": "region" },
     "default": "",
-    "roll": { "oracle": "yrtRegion" }
-  },
+    "roll": { "oracle": "region" },
+    "tooltip": "Where your character was born, from the Location: Region oracle."
+  }
+]
+```
+
+Without YRT its options and its d6 are the Ironlands, from the core Region
+oracle: Barrier Islands, Ragged Coast, The Hinterlands and so on. YRT already
+supersedes that oracle (`"supersedesOracles": { "region": "yrtRegion" }`),
+and a field's options and rolls both go through supersession, so with YRT on
+the same field lists and rolls YRT's 25 regions. Turning YRT on or off
+changes the list; a character whose stored region isn't in it shows the
+stored id until a region is picked again.
+
+YRT adds three more:
+
+```jsonc
+// extensions/yrt/extension.json
+"characterFields": [
   {
     "id": "religion",
     "label": "Religion",
@@ -76,49 +98,50 @@ could add any Touched asset, and the asset made them Prime.
 ]
 ```
 
-On the sheet that's four fields under a YRT heading, at the bottom of the
-Core tab:
+On the sheet, at the bottom of the Core tab, that's Region of origin with no
+heading, then a YRT heading over:
 
-- **Region of origin:** a dropdown of the 25 regions on the Region oracle.
 - **Religion:** a dropdown of Puritan, Optime, Wildens and None, or their
   own. Hovering it shows the chosen religion's text from the oracle.
 - **Touched:** a dropdown of the five levels.
 - **Animal:** one line of text, hidden while Touched is Pure.
 
-New Character shows the same four, each with a d6. Religion is rolled on the
-column for the origin's country, as now, so its d6 waits for an origin.
+New Character shows the same fields, each with a d6. Religion is rolled on
+the column for the origin's country (a property of YRT's region rows), so
+its d6 waits for an origin. Religion depends on a core field, which is
+allowed: the core rules can't be turned off.
 
 The religion rows on `yrtReligion` gain a `name` (`"Puritan"`, `"Optime"`,
 `"Wildens"`, `"None, or their own"`), since their `value` is the whole
-description. The Region rows already have the name as their `value`, and the
+description. The region rows already have the name as their `value`, and the
 Touched rows as their `className`.
 
 ## Declaring a field
 
-| Field         | Type   | Required        | Description                                                                                                                                                             |
-| ------------- | ------ | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`          | string | yes             | camelCase key, unique across all extensions. Stores the value, and a precondition names the field by it.                                                                |
-| `label`       | string | yes             | Shown on the sheet, in New Character, and in log lines.                                                                                                                 |
-| `type`        | string | yes             | `"dropdown"`, `"radio"` (the same kind of choice, shown as a row of buttons), or `"text"` for one line of free text.                                                    |
-| `options`     | array  | dropdown, radio | `{ id, label }` in order. A precondition compares positions, so order them from lowest to highest.                                                                      |
-| `optionsFrom` | object | dropdown, radio | Instead of `options`: one option per row of an oracle. `oracle`: its key. `label`: the row property to show (default `value`).                                          |
-| `default`     | string | yes             | The value of a character made before the field existed, or with the extension off: an option `id`, `""` for no choice, or text. New Character starts every field empty. |
-| `placeholder` | string | no              | Hint shown in an empty text box.                                                                                                                                        |
-| `if`          | array  | no              | Preconditions on fields declared above it in the same extension. While they fail, the field is hidden, in New Character and on the sheet; its value is kept.            |
-| `roll`        | object | no              | The oracle New Character rolls for the field; see below.                                                                                                                |
-| `tooltip`     | string | no              | Hover hint on the sheet's control.                                                                                                                                      |
+| Field         | Type   | Required        | Description                                                                                                                                                                        |
+| ------------- | ------ | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`          | string | yes             | camelCase key, unique across all extensions. Stores the value, and a precondition names the field by it.                                                                           |
+| `label`       | string | yes             | Shown on the sheet, in New Character, and in log lines.                                                                                                                            |
+| `type`        | string | yes             | `"dropdown"`, `"radio"` (the same kind of choice, shown as a row of buttons), or `"text"` for one line of free text.                                                               |
+| `options`     | array  | dropdown, radio | `{ id, label }` in order. A precondition compares positions, so order them from lowest to highest.                                                                                 |
+| `optionsFrom` | object | dropdown, radio | Instead of `options`: one option per row of an oracle. `oracle`: its key. `label`: the row property to show (default `value`).                                                     |
+| `default`     | string | yes             | The value of a character made before the field existed, or with the extension off: an option `id`, `""` for no choice, or text. New Character starts every field empty.            |
+| `placeholder` | string | no              | Hint shown in an empty text box.                                                                                                                                                   |
+| `if`          | array  | no              | Preconditions on fields declared above it in the same extension, or in the core rules. While they fail, the field is hidden, in New Character and on the sheet; its value is kept. |
+| `roll`        | object | no              | The oracle New Character rolls for the field; see below.                                                                                                                           |
+| `tooltip`     | string | no              | Hover hint on the sheet's control.                                                                                                                                                 |
 
 `roll` holds:
 
-| Field    | Description                                                                                                                                                                                                                                            |
-| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `oracle` | The oracle's key (`yrtAnimal`), not its title, which can change. Rolls go through `resolveOracleKey`, so an extension that supersedes the oracle supplies the roll, as it does everywhere else.                                                        |
-| `from`   | The property to read when the rolled row is an object (default: the row's `value`).                                                                                                                                                                    |
-| `column` | For an oracle rolled on a column (`tableType: "columnSelect"`): `field` names a dropdown or radio field declared above it in the same extension, `from` a property of its chosen option's row. The column is the one whose label equals that property. |
+| Field    | Description                                                                                                                                                                                                                                                                 |
+| -------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `oracle` | The oracle's key (`yrtAnimal`), not its title, which can change. Rolls go through `resolveOracleKey`, so an extension that supersedes the oracle supplies the roll, as it does everywhere else.                                                                             |
+| `from`   | The property to read when the rolled row is an object (default: the row's `value`).                                                                                                                                                                                         |
+| `column` | For an oracle rolled on a column (`tableType: "columnSelect"`): `field` names a dropdown or radio field declared above it in the same extension or in the core rules, `from` a property of its chosen option's row. The column is the one whose label equals that property. |
 
 Fields are rolled in the order they're declared, so a field's `if` or
-`roll.column` can only use a field declared above it, and only in the same
-extension: another extension's field may be turned off.
+`roll.column` can only use a field declared above it in the same extension,
+or a core field: another extension may be turned off, the core rules can't.
 
 A radio is a dropdown drawn as a row of buttons (`SegmentedRadio`, as
 Initiative uses), which suits a few short options; a long list suits a
@@ -145,7 +168,7 @@ properties. Adding a row to the oracle adds an option.
   them nor `""`.
 - an oracle it names (`optionsFrom.oracle`, `roll.oracle`) isn't one the
   extension, or `base`, provides, or an `if` or `roll.column` names a field
-  that isn't declared above it in the same extension.
+  that isn't declared above it in the same extension or in the core rules.
 
 The manifest copies `characterFields` into the extension's registry entry, so
 `/catalogue/extensions` serves it with the rest of the metadata and the web

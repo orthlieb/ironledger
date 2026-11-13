@@ -38,14 +38,20 @@ export function optionId(label: string): string {
 }
 
 /** A field's options: as declared, or one per row of its `optionsFrom`
- *  oracle (none until the oracles load). */
-export function fieldOptions(def: CharacterFieldDef, oracles: OracleFile[]): FieldOption[] {
+ *  oracle (none until the oracles load). The oracle goes through
+ *  `resolveKey`, so an extension that supersedes it supplies the options:
+ *  YRT's regions replace the core Region of origin list. */
+export function fieldOptions(
+	def: CharacterFieldDef,
+	oracles: OracleFile[],
+	resolveKey: (key: string) => string = (k) => k,
+): FieldOption[] {
 	if (def.type === 'text') return [];
 	if (def.options) return def.options.map((o) => ({ id: o.id, label: o.label }));
 	const from = def.optionsFrom;
 	if (!from) return [];
 	const prop = from.label ?? 'value';
-	const oracle = oracles.find((o) => o.key === from.oracle);
+	const oracle = oracles.find((o) => o.key === resolveKey(from.oracle));
 	return (oracle?.data ?? [])
 		.map((row) => {
 			const label = typeof row[prop] === 'string' ? (row[prop] as string) : '';
@@ -59,8 +65,9 @@ export function resolveField(
 	def: CharacterFieldDef,
 	source: string,
 	oracles: OracleFile[],
+	resolveKey: (key: string) => string = (k) => k,
 ): ResolvedField {
-	return { ...def, source, options: fieldOptions(def, oracles) };
+	return { ...def, source, options: fieldOptions(def, oracles, resolveKey) };
 }
 
 /** The character's value for a field: what's stored, else the default. */

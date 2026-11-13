@@ -1,11 +1,12 @@
 /**
  * Tutorial: create a character — open the New Character dialog from the
- * Characters panel's switcher, roll a name, roll stats, roll the fields
- * extensions add (YRT: region of origin, religion, touched), leave everything
- * else to be randomized, and create; then, on the sheet's Background tab, rewrite the rolled details as a bio and
- * add a portrait; on Core, initiative; and on Status, the debilities and
- * bonds. Its first vow and its assets have tutorials of their own (addVow,
- * addAssets), which its last step points to.
+ * Characters panel's switcher, roll a name, roll stats, roll the fields the
+ * core rules and extensions add (Region of origin; YRT: Religion, Touched),
+ * leave everything else to be randomized, and create; then, on the sheet's
+ * Background tab, rewrite the rolled details as a bio and add a portrait; on
+ * Core, initiative; and on Status, the debilities and bonds. Its first vow and
+ * its assets have tutorials of their own (addVow, addAssets), which its last
+ * step points to.
  *
  * Targets (`data-tour`): tab-characters (home's mobile tab bar),
  * char-switcher + new-char-action (CharactersArea's switcher and its
@@ -30,7 +31,7 @@ function fieldList(): string {
 	const labels = characterFieldGroups()
 		.flatMap((g) => g.fields)
 		.filter((f) => !f.if?.length)
-		.map((f) => f.label.toLowerCase());
+		.map((f) => f.label);
 	if (labels.length < 2) return labels.join('') || 'a few details';
 	return `${labels.slice(0, -1).join(', ')} and ${labels.at(-1)}`;
 }
@@ -88,13 +89,13 @@ export const createCharacter: Tutorial = {
 			},
 		},
 		{
-			// Fields an extension adds to a character (YRT's region of origin,
-			// religion, touched level): shown only when one is on.
+			// The fields the core rules and extensions add to a character
+			// (Region of origin; with YRT, Religion and Touched).
 			when: () => characterFieldGroups().length > 0,
 			target: 'new-char-fields',
 			title: 'Roll their details',
 			backIfGone: true,
-			body: `Your extensions add ${fieldList()}. Click a die to roll one on its oracle, or pick it yourself. Whatever you leave empty is rolled when you click Create.`,
+			body: `Set their ${fieldList()}: click a die to roll one on its oracle, or pick it yourself. Whatever you leave empty is rolled when you click Create.`,
 			back: true,
 		},
 		{

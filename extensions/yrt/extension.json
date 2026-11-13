@@ -17,15 +17,6 @@
   ],
   "characterFields": [
     {
-      "id": "origin",
-      "label": "Region of origin",
-      "type": "dropdown",
-      "optionsFrom": { "oracle": "yrtRegion" },
-      "default": "",
-      "roll": { "oracle": "yrtRegion" },
-      "tooltip": "Where your character was born, from the YRT Region oracle. Their religion is rolled for its country."
-    },
-    {
       "id": "religion",
       "label": "Religion",
       "type": "dropdown",

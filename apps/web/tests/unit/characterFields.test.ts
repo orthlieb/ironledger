@@ -26,26 +26,56 @@ import type { OracleFile } from '../../src/lib/oracleStore.svelte.js';
 import type { CharacterFieldDef } from '../../src/lib/types.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
-const YRT = path.resolve(here, '../../../../extensions/yrt');
-const read = (rel: string) => JSON.parse(readFileSync(path.join(YRT, rel), 'utf-8'));
+const REPO = path.resolve(here, '../../../..');
+const read = (rel: string) => JSON.parse(readFileSync(path.join(REPO, rel), 'utf-8'));
+const declared = (ext: string) =>
+	read(`extensions/${ext}/extension.json`).characterFields as CharacterFieldDef[];
 
-const defs = read('extension.json').characterFields as CharacterFieldDef[];
-const oracles: OracleFile[] = ['region', 'religion', 'touched', 'animal'].map((n) =>
-	read(`oracles/${n}.json`),
-);
-
-const fields = defs.map((d) => resolveField(d, 'yrt', oracles));
+// The core Region of origin, then YRT's three, against both region oracles.
+const oracles: OracleFile[] = [
+	read('apps/api/data/oracles/region.json'),
+	...['region', 'religion', 'touched', 'animal'].map((n) =>
+		read(`extensions/yrt/oracles/${n}.json`),
+	),
+];
+/** YRT on: its supersession of the core Region oracle. */
+const yrtOn = (k: string) => (k === 'region' ? 'yrtRegion' : k);
+const fields = [
+	...declared('base').map((d) => resolveField(d, 'base', oracles, yrtOn)),
+	...declared('yrt').map((d) => resolveField(d, 'yrt', oracles, yrtOn)),
+];
 const byId = (id: string) => fields.find((f) => f.id === id);
 const field = (id: string) => byId(id) as ResolvedField;
 /** An rng that lands the d100 on `n`. */
 const d100 = (n: number) => () => (n - 0.5) / 100;
 
-describe('YRT field declarations', () => {
-	it('declares origin, religion, touched and animal, in that order', () => {
-		expect(fields.map((f) => f.id)).toEqual(['origin', 'religion', 'touched', 'touchedAnimal']);
+describe('field declarations', () => {
+	it('declares origin in the core rules, then religion, touched and animal in YRT', () => {
+		expect(fields.map((f) => [f.source, f.id])).toEqual([
+			['base', 'origin'],
+			['yrt', 'religion'],
+			['yrt', 'touched'],
+			['yrt', 'touchedAnimal'],
+		]);
 	});
 
-	it('builds origin and religion options from their oracles', () => {
+	it('lists the Ironlands for Region of origin without YRT', () => {
+		const core = resolveField(declared('base')[0]!, 'base', oracles);
+		expect(core.options.map((o) => o.label)).toContain('Barrier Islands');
+		expect(core.options).toHaveLength(10);
+		expect(
+			rollField(
+				core,
+				{},
+				oracles,
+				() => undefined,
+				undefined,
+				() => 0,
+			)?.value,
+		).toBe('barrier-islands');
+	});
+
+	it("builds origin (YRT's regions, through the supersession) and religion options", () => {
 		expect(field('origin').options).toHaveLength(25);
 		expect(field('origin').options[0]).toMatchObject({ id: 'piscis', label: 'Piscis' });
 		expect(field('origin').options.map((o) => o.id)).toContain('oray-hills');
@@ -112,7 +142,7 @@ describe('rollField', () => {
 	});
 
 	it('rolls a region, and an animal as text', () => {
-		expect(rollField(field('origin'), {}, oracles, byId, undefined, d100(1))?.value).toBe('piscis');
+		expect(rollField(field('origin'), {}, oracles, byId, yrtOn, d100(1))?.value).toBe('piscis');
 		const animal = rollField(field('touchedAnimal'), {}, oracles, byId, undefined, d100(1));
 		expect(animal?.value).toBeTruthy();
 		expect(typeof animal?.value).toBe('string');

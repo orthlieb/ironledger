@@ -381,8 +381,9 @@ export interface CharacterData {
 	shadow: number;
 	wits: number;
 
-	/** Values of the fields extensions add to a character (YRT's region of
-	 *  origin, religion, touched level and animal), keyed by field id: an
+	/** Values of the fields the core rules and extensions add to a character
+	 *  (Region of origin; YRT's religion, touched level and animal), keyed by
+	 *  field id: an
 	 *  option id, or text. A missing key reads as the field's default. See
 	 *  characterFields.svelte.ts. */
 	fields?: Record<string, string>;

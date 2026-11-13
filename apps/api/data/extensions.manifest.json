@@ -125,6 +125,22 @@
         "label": "Ironsworn",
         "url": "https://ironsworn-rpg.fandom.com/wiki/Special:AllPages"
       },
+      "characterFields": [
+        {
+          "id": "origin",
+          "label": "Region of origin",
+          "type": "dropdown",
+          "optionsFrom": {
+            "oracle": "region"
+          },
+          "default": "",
+          "roll": {
+            "oracle": "region"
+          },
+          "tooltip": "Where your character was born, from the Location: Region oracle."
+        }
+      ],
+      "characterFieldsHeading": false,
       "root": "apps/api/data",
       "provides": {
         "assets": [
@@ -363,19 +379,6 @@
         "url": "http://yrt.iron-ledger.org"
       },
       "characterFields": [
-        {
-          "id": "origin",
-          "label": "Region of origin",
-          "type": "dropdown",
-          "optionsFrom": {
-            "oracle": "yrtRegion"
-          },
-          "default": "",
-          "roll": {
-            "oracle": "yrtRegion"
-          },
-          "tooltip": "Where your character was born, from the YRT Region oracle. Their religion is rolled for its country."
-        },
         {
           "id": "religion",
           "label": "Religion",

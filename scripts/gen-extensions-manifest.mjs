@@ -94,15 +94,17 @@ const optionId = (label) =>
 /**
  * Check each extension's `characterFields` and `characterFieldsHeading`
  * (docs/character-fields.md); throws on the first problem. `oracles` maps an
- * oracle key to its owning extension and file contents.
+ * oracle key to its owning extension and file contents; `core` holds base's
+ * fields, which any extension's fields may depend on, since base is always
+ * on. Returns this extension's fields by id.
  */
-function validateCharacterFields(id, m, oracles) {
+function validateCharacterFields(id, m, oracles, core = new Map()) {
   const where = `extensions/${id}/extension.json`;
   const h = m.characterFieldsHeading;
   if (h !== undefined && h !== false && !(typeof h === 'string' && h.trim()))
     throw new Error(`${where}: characterFieldsHeading must be false or a non-empty string`);
   const fields = m.characterFields;
-  if (fields === undefined) return [];
+  if (fields === undefined) return new Map();
   if (!Array.isArray(fields)) throw new Error(`${where}: characterFields must be an array`);
   /** An oracle this extension may use: its own, or base's. */
   const oracle = (key, what) => {
@@ -152,11 +154,13 @@ function validateCharacterFields(id, m, oracles) {
       if (f.default !== '' && !ids.includes(f.default))
         throw new Error(`${at}: default "${f.default}" is neither an option id nor ""`);
     }
-    /** A choice field declared above this one, in this extension. */
+    /** A choice field declared above this one, in this extension or base. */
     const above = (key, what) => {
-      const d = declared.get(key);
+      const d = declared.get(key) ?? core.get(key);
       if (!d)
-        throw new Error(`${at}: ${what} names "${key}", which isn't declared above it in ${id}`);
+        throw new Error(
+          `${at}: ${what} names "${key}", which isn't declared above it in ${id} or in base`,
+        );
       if (d.type === 'text') throw new Error(`${at}: ${what} names "${key}", a text field`);
       return d;
     };
@@ -176,7 +180,7 @@ function validateCharacterFields(id, m, oracles) {
     }
     declared.set(f.id, f);
   }
-  return [...declared.keys()];
+  return declared;
 }
 const listJson = async (dir) =>
   existsSync(dir) ? (await readdir(dir)).filter((f) => f.endsWith('.json')).sort() : [];
@@ -367,14 +371,18 @@ async function build() {
       if (data.key) oracles.set(data.key, { owner: e.id, data });
     }
   const fieldOwner = new Map();
-  for (const e of entries)
-    for (const fid of validateCharacterFields(e.id, meta[e.id], oracles)) {
+  let core = new Map();
+  for (const e of entries) {
+    const declared = validateCharacterFields(e.id, meta[e.id], oracles, core);
+    if (e.id === 'base') core = declared;
+    for (const fid of declared.keys()) {
       if (fieldOwner.has(fid))
         throw new Error(
           `character field "${fid}" is declared by both ${fieldOwner.get(fid)} and ${e.id}`,
         );
       fieldOwner.set(fid, e.id);
     }
+  }
 
   return {
     $comment:

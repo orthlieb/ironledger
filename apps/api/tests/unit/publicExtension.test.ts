@@ -167,12 +167,13 @@ describe('toPublicExtension — /catalogue/extensions contract', () => {
       );
     expect(project(publicList)).toEqual(project(manifest.extensions));
     const byId = Object.fromEntries(publicList.map((e) => [e.id, e]));
+    expect(byId.base?.characterFields?.map((f) => f.id)).toEqual(['origin']);
     expect(byId.yrt?.characterFields?.map((f) => f.id)).toEqual([
-      'origin',
       'religion',
       'touched',
       'touchedAnimal',
     ]);
+    expect(byId.base?.characterFieldsHeading).toBe(false);
     expect(byId.delve?.characterFieldsHeading).toBe(false);
     expect(byId.lodestar?.characterFieldsHeading).toBe(false);
   });

@@ -39,7 +39,7 @@ export interface FieldGroup {
 export function allCharacterFields(): ResolvedField[] {
 	const oracles = getOracles();
 	return getExtensions().flatMap((e) =>
-		(e.characterFields ?? []).map((f) => resolveField(f, e.id, oracles)),
+		(e.characterFields ?? []).map((f) => resolveField(f, e.id, oracles, resolveOracleKey)),
 	);
 }
 
@@ -57,7 +57,9 @@ export function characterFieldGroups(): FieldGroup[] {
 		.map((e) => ({
 			source: e.id,
 			heading: e.characterFieldsHeading === false ? null : (e.characterFieldsHeading ?? e.name),
-			fields: (e.characterFields ?? []).map((f) => resolveField(f, e.id, oracles)),
+			fields: (e.characterFields ?? []).map((f) =>
+				resolveField(f, e.id, oracles, resolveOracleKey),
+			),
 		}));
 }
 

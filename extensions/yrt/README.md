@@ -26,17 +26,19 @@ wherever resource links appear.
 
 ## Character fields
 
-YRT adds four fields to every character (`characterFields` in
+YRT adds three fields to every character (`characterFields` in
 `extension.json`; see [character-fields.md](../../docs/character-fields.md)),
 shown under a YRT heading at the bottom of the sheet's Core tab and in New
-Character, each with a d6:
+Character, each with a d6. They follow the core rules' Region of origin,
+whose options and roll YRT replaces with its own regions through its
+`supersedesOracles` entry (`region` → `yrtRegion`); Religion rolls on the
+column for that region's country.
 
-| Field            | Id              | Kind     | Rolled from                                                                                               |
-| ---------------- | --------------- | -------- | --------------------------------------------------------------------------------------------------------- |
-| Region of origin | `origin`        | dropdown | Location: Region (`yrtRegion`); its options are the oracle's rows                                         |
-| Religion         | `religion`      | dropdown | Character: Religion (`yrtReligion`), on the column for the origin's country; options are the rows' `name` |
-| Touched          | `touched`       | dropdown | Character: Touched (`yrtTouched`), its `className`: Pure, Prime, Second, Third or Feral                   |
-| Animal           | `touchedAnimal` | text     | Character: Touched Aspect (`yrtAnimal`); hidden while Touched is Pure                                     |
+| Field    | Id              | Kind     | Rolled from                                                                                                         |
+| -------- | --------------- | -------- | ------------------------------------------------------------------------------------------------------------------- |
+| Religion | `religion`      | dropdown | Character: Religion (`yrtReligion`), on the column for the Region of origin's country; options are the rows' `name` |
+| Touched  | `touched`       | dropdown | Character: Touched (`yrtTouched`), its `className`: Pure, Prime, Second, Third or Feral                             |
+| Animal   | `touchedAnimal` | text     | Character: Touched Aspect (`yrtAnimal`); hidden while Touched is Pure                                               |
 
 New Character rolls whichever are left empty when the player clicks Create,
 and writes none of them into the background. The Touched features are still
