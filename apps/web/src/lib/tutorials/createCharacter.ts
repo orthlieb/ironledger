@@ -4,9 +4,9 @@
  * core rules and extensions add (Region of origin; YRT: Religion, Touched),
  * leave everything else to be randomized, and create; then, on the sheet's
  * Background tab, rewrite the rolled details as a bio and add a portrait; on
- * Core, initiative; and on Status, the debilities and bonds. Its first vow and
- * its assets have tutorials of their own (addVow, addAssets), which its last
- * step points to.
+ * Core, initiative and the stats (a double-click edits one); and on Status,
+ * the debilities and bonds. Its first vow and its assets have tutorials of
+ * their own (addVow, addAssets), which its last step points to.
  *
  * Targets (`data-tour`): tab-characters (home's mobile tab bar),
  * char-switcher + new-char-action (CharactersArea's switcher and its
@@ -14,7 +14,8 @@
  * roll-stats (StatAllocator), new-char-fields (CharacterFields) and
  * randomize-also (RandomizeBlock), new-char-dialog-confirm (Create),
  * char-tab-background, char-bio (MarkdownNotes) and char-portrait
- * (PortraitUploader), char-tab-core / char-initiative, and char-tab-status
+ * (PortraitUploader), char-tab-core / char-initiative / char-stats, and
+ * char-tab-status
  * / char-debilities / char-tracks.
  */
 import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
@@ -158,6 +159,12 @@ export const createCharacter: Tutorial = {
 			target: 'char-initiative',
 			title: 'Initiative',
 			body: 'In a fight, whoever has initiative is in control. Set Character when you have it, Foe when your foe does, and None out of combat. Your moves tell you when it changes hands.',
+			back: true,
+		},
+		{
+			target: 'char-stats',
+			title: 'Your stats',
+			body: 'The stats you rolled. A move tells you which one to add to its roll. They stay as they are unless an asset changes one; then double-click that stat (double-tap on a phone) to edit it.',
 			back: true,
 		},
 		{
