@@ -526,7 +526,7 @@
 	): { text: string; custom: boolean } | null {
 		for (const id of def?.characterFields ?? []) {
 			const f = findCharacterField(id);
-			if (f?.type !== 'text' || !fieldShown(f, activeData?.fields, findCharacterField)) continue;
+			if (f?.type !== 'string' || !fieldShown(f, activeData?.fields, findCharacterField)) continue;
 			const v = fieldValue(f, activeData?.fields);
 			if (v) return { text: v, custom: true };
 		}
@@ -566,6 +566,8 @@
 				notes.push(`unmarked ${dropped} ${dropped === 1 ? 'ability' : 'abilities'} on ${def.name}`);
 			}
 		}
+		// Notes aren't logged as they're typed, as the background isn't.
+		if (field.type === 'markdown') return;
 		const show = (v: string) => escHtml(valueLabel(field, v) || '—');
 		appendLog(
 			charTitle(field.label),
@@ -1189,7 +1191,7 @@
 				}
 			for (const g of characterFieldGroups())
 				for (const f of g.fields)
-					if (fields[f.id] && fieldShown(f, fields, findCharacterField))
+					if (fields[f.id] && f.type !== 'markdown' && fieldShown(f, fields, findCharacterField))
 						r.rolled.push([f.label, valueLabel(f, fields[f.id]!)]);
 			logCreateRolls(`New Character — ${nameToUse}`, r.rolled);
 			let md = randomizationsAsMarkdown(r, nameToUse);

@@ -38,7 +38,7 @@ column for that region's country.
 | -------- | --------------- | -------- | ------------------------------------------------------------------------------------------------------------------- |
 | Religion | `religion`      | dropdown | Character: Religion (`yrtReligion`), on the column for the Region of origin's country; options are the rows' `name` |
 | Touched  | `touched`       | dropdown | Character: Touched (`yrtTouched`), its `className`: Pure, Prime, Second, Third or Feral                             |
-| Animal   | `touchedAnimal` | text     | Character: Touched Aspect (`yrtAnimal`); hidden while Touched is Pure                                               |
+| Animal   | `touchedAnimal` | string   | Character: Touched Aspect (`yrtAnimal`); hidden while Touched is Pure                                               |
 
 New Character rolls whichever are left empty when the player clicks Create,
 and writes none of them into the background. The Touched features are still

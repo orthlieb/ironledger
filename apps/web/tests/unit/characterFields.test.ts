@@ -9,7 +9,9 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import {
+	counterValue,
 	fieldHint,
+	fieldNumber,
 	fieldRequirement,
 	fieldShown,
 	fieldValue,
@@ -239,5 +241,53 @@ describe('moveLegacyYrtFields', () => {
 		const blank: Record<string, unknown> = { assets: [], background: 'Grew up by the sea.' };
 		moveLegacyYrtFields(blank);
 		expect(blank.fields).toEqual({});
+	});
+});
+
+describe('the asset field types', () => {
+	const sample = declared('sample').map((d) => resolveField(d, 'sample', oracles));
+	const sf = (id: string) => sample.find((f) => f.id === id) as ResolvedField;
+
+	it('the sample extension declares one of each', () => {
+		expect(sample.map((f) => f.type)).toEqual(['radio', 'counter', 'switch', 'markdown']);
+	});
+
+	it('reads a counter as its count, held to 0..maxValue', () => {
+		const resolve = sf('sampleResolve');
+		expect(fieldNumber(resolve, fieldValue(resolve, {}))).toBe(2);
+		expect(counterValue(resolve, '9')).toBe(5);
+		expect(counterValue(resolve, '-1')).toBe(0);
+		expect(counterValue(resolve, 'x')).toBe(0);
+		expect(valueLabel(resolve, '4')).toBe('4');
+		expect(fieldRequirement(resolve, { min: 3 })).toBe('Requires Resolve 3 or more');
+	});
+
+	it('reads a switch as 1 or 0', () => {
+		const sworn = sf('sampleSworn');
+		expect(fieldNumber(sworn, '1')).toBe(1);
+		expect(fieldNumber(sworn, '0')).toBe(0);
+		expect(valueLabel(sworn, '1')).toBe('on');
+		expect(fieldRequirement(sworn, { eq: 1 })).toBe('Requires Sworn');
+		expect(fieldRequirement(sworn, { eq: 0 })).toBe('Requires no Sworn');
+	});
+
+	it("keeps text out of preconditions, and a radio's options in order", () => {
+		expect(Number.isNaN(fieldNumber(sf('sampleNotes'), 'anything'))).toBe(true);
+		expect(Number.isNaN(fieldNumber(field('touchedAnimal'), 'Wolf'))).toBe(true);
+		expect(fieldNumber(sf('sampleRank'), 'master')).toBe(2);
+	});
+
+	it('shows a field whose if names a counter only while it passes', () => {
+		const gated = { ...sf('sampleNotes'), if: [{ key: 'sampleResolve', min: 3 }] };
+		const by = (id: string) => sample.find((f) => f.id === id);
+		expect(fieldShown(gated, {}, by)).toBe(false);
+		expect(fieldShown(gated, { sampleResolve: '3' }, by)).toBe(true);
+	});
+
+	it('rolls a counter as the number in the result', () => {
+		const counted = { ...sf('sampleResolve'), roll: { oracle: 'yrtTouched', from: 'socialRank' } };
+		// Pure's social rank is 1, Feral's 5 (held to maxValue 5).
+		expect(rollField(counted, {}, oracles, byId, undefined, d100(1))?.value).toBe('1');
+		expect(rollField(counted, {}, oracles, byId, undefined, d100(100))?.value).toBe('5');
 	});
 });

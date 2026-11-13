@@ -49,6 +49,37 @@ test.afterAll(async () => {
 	await resetExpansions();
 });
 
+test('The asset field types: a radio, a counter, a switch and notes (the sample extension)', async ({
+	page,
+}) => {
+	await setExpansions({ yrt: true, sample: true });
+	await seedCharacter('Sampla', undefined, { fields: { touched: 'prime' } });
+	await openSheet(page, 'Sampla');
+	await expect(page.locator('.cf-side', { hasText: 'Sample' })).toBeVisible();
+	await expect(field(page, 'sampleRank').getByRole('radio', { name: 'Novice' })).toHaveAttribute(
+		'aria-checked',
+		'true',
+	);
+	await field(page, 'sampleRank').getByRole('radio', { name: 'Master' }).click();
+	await expect(page.locator('.log-entry').first()).toContainText('Rank: Novice → Master');
+
+	await expect(field(page, 'sampleResolve').locator('.cf-count')).toHaveText('2/5');
+	await field(page, 'sampleResolve').getByRole('button', { name: 'Resolve 4' }).click();
+	await expect(field(page, 'sampleResolve').locator('.cf-count')).toHaveText('4/5');
+	await expect(page.locator('.log-entry').first()).toContainText('Resolve: 2 → 4');
+
+	await field(page, 'sampleSworn').getByRole('checkbox').click();
+	await expect(page.locator('.log-entry').first()).toContainText('Sworn: off → on');
+
+	// Notes: typed in place, and not logged.
+	await field(page, 'sampleNotes').locator('.md-notes-display').click();
+	await field(page, 'sampleNotes').locator('textarea').fill('Owes the ferryman.');
+	await field(page, 'sampleNotes').locator('textarea').blur();
+	await expect(field(page, 'sampleNotes')).toContainText('Owes the ferryman.');
+	await expect(page.locator('.log-entry').first()).toContainText('Sworn: off → on');
+	await setExpansions({ yrt: true, sample: null });
+});
+
 test('New Character: each field has a die, and Create rolls the ones left empty', async ({
 	page,
 }) => {

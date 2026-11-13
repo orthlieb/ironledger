@@ -16,10 +16,11 @@
 import type { CharacterData } from './types.js';
 import { findAsset } from './assetStore.svelte.js';
 import {
+	fieldNumber,
 	fieldRequirement,
 	fieldValue,
 	findCharacterField,
-	optionIndex,
+	isText,
 } from './characterFields.svelte.js';
 
 // ---------------------------------------------------------------------------
@@ -224,12 +225,12 @@ export function checkPrecondition(
 	}
 
 	// ---- Character fields an extension declares (YRT's touched level, …) ----
-	// A dropdown or radio field reads as its option's position, from 0; −1
-	// when unset. Checked before the asset-name fallback below, so a field is
+	// A dropdown or radio reads as its option's position, from 0 (−1 unset),
+	// a counter as its count, a switch as 1 or 0; text can't be compared. Checked before the asset-name fallback below, so a field is
 	// never mistaken for an asset. See docs/character-fields.md.
 	const field = findCharacterField(key);
-	if (field && field.type !== 'text') {
-		const v = optionIndex(field, fieldValue(field, charData.fields));
+	if (field && !isText(field)) {
+		const v = fieldNumber(field, fieldValue(field, charData.fields));
 		return passes(v, pre) ? null : fieldRequirement(field, pre);
 	}
 

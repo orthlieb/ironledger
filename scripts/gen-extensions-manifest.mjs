@@ -83,6 +83,9 @@ const BUILTIN_PRECONDITION_KEYS = new Set([
   'tormented',
 ]);
 
+/** The character field types: the same as an asset's custom fields. */
+const FIELD_TYPES = ['dropdown', 'radio', 'string', 'counter', 'switch', 'markdown'];
+
 /** An option id from its label: lower case, each run of other characters a
  *  `-` ("Oray Hills" → "oray-hills"). Same rule as the web's optionId(). */
 const optionId = (label) =>
@@ -126,13 +129,26 @@ function validateCharacterFields(id, m, oracles, core = new Map()) {
     if (declared.has(f.id)) throw new Error(`${at}: declared twice`);
     if (typeof f.label !== 'string' || !f.label.trim())
       throw new Error(`${at}: label must be a non-empty string`);
-    if (!['dropdown', 'radio', 'text'].includes(f.type))
-      throw new Error(`${at}: type must be "dropdown", "radio" or "text"`);
+    // The asset custom field types (docs/data-schema.md, Custom Fields).
+    if (!FIELD_TYPES.includes(f.type))
+      throw new Error(`${at}: type must be one of ${FIELD_TYPES.map((t) => `"${t}"`).join(', ')}`);
     if (typeof f.default !== 'string') throw new Error(`${at}: default must be a string`);
-    if (f.type === 'text') {
-      if (f.options !== undefined || f.optionsFrom !== undefined)
-        throw new Error(`${at}: a text field has no options`);
-    } else {
+    const choice = f.type === 'dropdown' || f.type === 'radio';
+    if (!choice && (f.options !== undefined || f.optionsFrom !== undefined))
+      throw new Error(`${at}: only a dropdown or radio has options`);
+    if (f.maxValue !== undefined && f.type !== 'counter')
+      throw new Error(`${at}: only a counter has a maxValue`);
+    if (f.type === 'counter') {
+      if (!Number.isInteger(f.maxValue) || f.maxValue < 1)
+        throw new Error(`${at}: a counter needs a whole maxValue of 1 or more`);
+      const n = Number(f.default);
+      if (f.default === '' || !Number.isInteger(n) || n < 0 || n > f.maxValue)
+        throw new Error(`${at}: a counter's default must be a whole number from 0 to maxValue`);
+    } else if (f.type === 'switch') {
+      if (f.default !== '0' && f.default !== '1')
+        throw new Error(`${at}: a switch's default must be "0" or "1"`);
+      if (f.roll !== undefined) throw new Error(`${at}: a switch can't roll`);
+    } else if (choice) {
       if ((f.options === undefined) === (f.optionsFrom === undefined))
         throw new Error(`${at}: give options or optionsFrom, not both or neither`);
       let ids;
@@ -154,14 +170,16 @@ function validateCharacterFields(id, m, oracles, core = new Map()) {
       if (f.default !== '' && !ids.includes(f.default))
         throw new Error(`${at}: default "${f.default}" is neither an option id nor ""`);
     }
-    /** A choice field declared above this one, in this extension or base. */
+    /** A field a condition can read (not text), declared above this one, in
+     *  this extension or base. */
     const above = (key, what) => {
       const d = declared.get(key) ?? core.get(key);
       if (!d)
         throw new Error(
           `${at}: ${what} names "${key}", which isn't declared above it in ${id} or in base`,
         );
-      if (d.type === 'text') throw new Error(`${at}: ${what} names "${key}", a text field`);
+      if (d.type === 'string' || d.type === 'markdown')
+        throw new Error(`${at}: ${what} names "${key}", a text field`);
       return d;
     };
     if (f.if !== undefined) {
@@ -171,7 +189,9 @@ function validateCharacterFields(id, m, oracles, core = new Map()) {
     if (f.roll !== undefined) {
       const rolled = oracle(f.roll?.oracle, 'roll');
       if (f.roll.column !== undefined) {
-        above(f.roll.column?.field, 'roll.column');
+        const by = above(f.roll.column?.field, 'roll.column');
+        if (by.type !== 'dropdown' && by.type !== 'radio')
+          throw new Error(`${at}: roll.column names "${by.id}", which isn't a dropdown or radio`);
         if (typeof f.roll.column.from !== 'string' || !f.roll.column.from)
           throw new Error(`${at}: roll.column.from must name a property`);
         if (rolled.tableType !== 'columnSelect')

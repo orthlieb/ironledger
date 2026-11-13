@@ -46,7 +46,7 @@
     {
       "id": "touchedAnimal",
       "label": "Animal",
-      "type": "text",
+      "type": "string",
       "default": "",
       "placeholder": "Animal…",
       "if": [{ "key": "touched", "min": 1 }],

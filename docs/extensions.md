@@ -273,8 +273,9 @@ from there.
 
 ### Character fields — `characterFields` / `characterFieldsHeading`
 
-An extension can add fields to every character: a dropdown, a radio or a
-line of text, shown at the bottom of the sheet's Core tab and in New
+An extension can add fields to every character, of the same types as an
+asset's custom fields (dropdown, radio, counter, switch, string, markdown),
+shown at the bottom of the sheet's Core tab and in New
 Character (with a d6 when it rolls from an oracle), stored in
 `character.fields`, and readable as precondition keys. The core rules declare
 Region of origin (from the Region oracle, which YRT supersedes with its own

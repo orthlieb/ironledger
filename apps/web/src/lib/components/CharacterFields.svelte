@@ -5,8 +5,12 @@
 	 * its extension's heading (the core rules have none),
 	 * in extension order then declaration order. See docs/character-fields.md.
 	 *
+	 * The types are an asset's custom field types: dropdown, radio, counter
+	 * (pips), switch, string (one line) and markdown (notes, the full width).
+	 *
 	 * mode "sheet": the Core tab, below Vitals. Values read through to each
-	 * field's default; a text box reports its change when it loses focus.
+	 * field's default; a text box reports its change when it loses focus, and
+	 * notes as they're typed.
 	 * mode "create": New Character. Every field starts empty and has a d6 when
 	 * it rolls from an oracle; Create rolls whatever is still empty.
 	 *
@@ -15,10 +19,13 @@
 	 */
 	import Select from '#lib/components/Select.svelte';
 	import SegmentedRadio from '#lib/components/SegmentedRadio.svelte';
+	import Checkbox from '#lib/components/Checkbox.svelte';
+	import MarkdownNotes from '#lib/components/MarkdownNotes.svelte';
 	import { tooltip } from '#lib/actions/tooltip.js';
 	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
 	import {
 		characterFieldGroups,
+		counterValue,
 		fieldHint,
 		fieldShown,
 		fieldValue,
@@ -83,6 +90,7 @@
 							{@const waits = mode === 'create' ? waitingFor(f) : null}
 							<div
 								class="cf-field co-field"
+								class:cf-field--wide={f.type === 'markdown'}
 								data-tour={mode === 'sheet' ? `char-field-${f.id}` : `randomize-${f.id}`}
 							>
 								<span class="cf-label co-field-label" use:tooltip={hint}>{f.label}</span>
@@ -107,6 +115,47 @@
 											}))}
 											onchange={(nv) => onset(f, nv)}
 										/>
+									{:else if f.type === 'counter'}
+										{@const n = counterValue(f, v)}
+										{@const max = f.maxValue ?? 0}
+										<div class="cf-pips" role="group" aria-label={f.label}>
+											{#each { length: max } as _, j (j)}
+												<button
+													type="button"
+													class="cf-pip"
+													class:cf-pip--on={j < n}
+													aria-label={`${f.label} ${j + 1}`}
+													aria-pressed={j < n}
+													onclick={() => onset(f, String(j < n ? j : j + 1))}
+												></button>
+											{/each}
+											<span class="cf-count">{n}/{max}</span>
+										</div>
+									{:else if f.type === 'switch'}
+										<Checkbox
+											variant="switch"
+											checked={v === '1'}
+											ariaLabel={f.label}
+											onCheckedChange={(c) => onset(f, c ? '1' : '0')}
+										/>
+									{:else if f.type === 'markdown'}
+										{#if mode === 'sheet'}
+											<MarkdownNotes
+												value={v}
+												placeholder={f.placeholder ?? 'Click to edit (markdown supported)'}
+												rows={3}
+												oninput={(nv) => onset(f, nv)}
+											/>
+										{:else}
+											<textarea
+												class="co-input cf-input"
+												rows="3"
+												value={v}
+												placeholder={f.placeholder ?? ''}
+												aria-label={f.label}
+												oninput={(e) => onset(f, (e.currentTarget as HTMLTextAreaElement).value)}
+											></textarea>
+										{/if}
 									{:else}
 										<input
 											class="co-input cf-input"
@@ -180,6 +229,41 @@
 	.cf-input {
 		flex: 1;
 		min-width: 0;
+	}
+	.cf-field--wide {
+		grid-column: 1 / -1;
+	}
+	.cf-field--wide .cf-row {
+		display: block;
+	}
+	/* A counter: pips like an asset card's, with the count beside them. */
+	.cf-pips {
+		display: flex;
+		align-items: center;
+		gap: 4px;
+		flex-wrap: wrap;
+	}
+	.cf-pip {
+		all: unset;
+		box-sizing: border-box;
+		width: 16px;
+		height: 16px;
+		border: 1.5px solid var(--text-accent);
+		border-radius: 50%;
+		cursor: pointer;
+	}
+	.cf-pip--on {
+		background: var(--text-accent);
+	}
+	.cf-pip:focus-visible {
+		outline: 2px solid var(--text-accent);
+		outline-offset: 2px;
+	}
+	.cf-count {
+		margin-left: 4px;
+		font-family: var(--font-ui);
+		font-size: 0.8rem;
+		color: var(--text-muted);
 	}
 
 	/* On the sheet: a row like Stats and Vitals, with the heading as the

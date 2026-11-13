@@ -88,7 +88,7 @@ YRT adds three more:
   {
     "id": "touchedAnimal",
     "label": "Animal",
-    "type": "text",
+    "type": "string",
     "default": "",
     "placeholder": "Animal…",
     "if": [{ "key": "touched", "min": 1 }],
@@ -118,18 +118,19 @@ Touched rows as their `className`.
 
 ## Declaring a field
 
-| Field         | Type   | Required        | Description                                                                                                                                                                        |
-| ------------- | ------ | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`          | string | yes             | camelCase key, unique across all extensions. Stores the value, and a precondition names the field by it.                                                                           |
-| `label`       | string | yes             | Shown on the sheet, in New Character, and in log lines.                                                                                                                            |
-| `type`        | string | yes             | `"dropdown"`, `"radio"` (the same kind of choice, shown as a row of buttons), or `"text"` for one line of free text.                                                               |
-| `options`     | array  | dropdown, radio | `{ id, label }` in order. A precondition compares positions, so order them from lowest to highest.                                                                                 |
-| `optionsFrom` | object | dropdown, radio | Instead of `options`: one option per row of an oracle. `oracle`: its key. `label`: the row property to show (default `value`).                                                     |
-| `default`     | string | yes             | The value of a character made before the field existed, or with the extension off: an option `id`, `""` for no choice, or text. New Character starts every field empty.            |
-| `placeholder` | string | no              | Hint shown in an empty text box.                                                                                                                                                   |
-| `if`          | array  | no              | Preconditions on fields declared above it in the same extension, or in the core rules. While they fail, the field is hidden, in New Character and on the sheet; its value is kept. |
-| `roll`        | object | no              | The oracle New Character rolls for the field; see below.                                                                                                                           |
-| `tooltip`     | string | no              | Hover hint on the sheet's control.                                                                                                                                                 |
+| Field         | Type   | Required        | Description                                                                                                                                                                                                                                                             |
+| ------------- | ------ | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`          | string | yes             | camelCase key, unique across all extensions. Stores the value, and a precondition names the field by it.                                                                                                                                                                |
+| `label`       | string | yes             | Shown on the sheet, in New Character, and in log lines.                                                                                                                                                                                                                 |
+| `type`        | string | yes             | One of the asset custom field types: `"dropdown"`, `"radio"` (the same kind of choice, shown as a row of buttons), `"counter"` (pips from 0 to `maxValue`), `"switch"` (on or off), `"string"` (one line of text) or `"markdown"` (notes, the full width of the sheet). |
+| `options`     | array  | dropdown, radio | `{ id, label }` in order. A precondition compares positions, so order them from lowest to highest.                                                                                                                                                                      |
+| `optionsFrom` | object | dropdown, radio | Instead of `options`: one option per row of an oracle. `oracle`: its key. `label`: the row property to show (default `value`).                                                                                                                                          |
+| `maxValue`    | number | counter         | The most pips: a whole number, 1 or more.                                                                                                                                                                                                                               |
+| `default`     | string | yes             | The value of a character made before the field existed, or with the extension off: an option `id` or `""` for no choice, a whole number from 0 to `maxValue` for a counter, `"0"` or `"1"` for a switch, or text. New Character starts every field empty.               |
+| `placeholder` | string | no              | Hint shown in an empty text box.                                                                                                                                                                                                                                        |
+| `if`          | array  | no              | Preconditions on fields declared above it in the same extension, or in the core rules. While they fail, the field is hidden, in New Character and on the sheet; its value is kept.                                                                                      |
+| `roll`        | object | no              | The oracle New Character rolls for the field; see below.                                                                                                                                                                                                                |
+| `tooltip`     | string | no              | Hover hint on the sheet's control.                                                                                                                                                                                                                                      |
 
 `roll` holds:
 
@@ -196,7 +197,8 @@ Values live in a new map on the character, `fields`, keyed by field id:
 }
 ```
 
-A dropdown or radio stores the option id; a text field stores the text. A missing key
+A dropdown or radio stores the option id, a counter its count (`"3"`), a
+switch `"1"` or `"0"`, and a string or markdown field the text. A missing key
 reads as the field's `default`. The server keeps character data as untyped
 JSON, so it needs no change.
 
@@ -243,8 +245,15 @@ adds the chosen row's `description`, or its `value` when that differs from the l
 as plain text: for Religion, the religion's description.
 
 Changing a field writes a log entry titled `<character> — Touched`, reading
-`Touched: Prime → Second`, as editing a stat does. A text field logs when the
-box loses focus, not on every keystroke.
+`Touched: Prime → Second`, as editing a stat does; a counter reads
+`Resolve: 2 → 4` and a switch `Sworn: off → on`. A string field logs when the
+box loses focus, not on every keystroke, and notes (markdown) aren't logged,
+as the background isn't.
+
+The controls follow the asset card's: a `<Select>` for a dropdown, a row of
+buttons for a radio, pips with the count beside them for a counter, a switch,
+a one-line box for a string, and click-to-edit notes for markdown, which takes
+a whole row.
 
 ## At creation
 
@@ -268,8 +277,10 @@ origin first").
 On Create, each visible field still empty is rolled, in order, so a player in
 a hurry can press Create at once, as with the name. Origin is rolled before
 Religion needs its column, and Touched before Animal's `if` is checked. A
-rolled value is stored as it comes for a text field; a dropdown or radio
-matches it to an option by id or label, ignoring case. A field with no
+rolled value is stored as it comes for a string or markdown field; a counter
+takes the first whole number in it, held to 0..`maxValue`; a dropdown or
+radio matches it to an option by id or label, ignoring case. A switch can't
+roll. A field with no
 `roll` left empty keeps its default, as does a dropdown value that matches
 no option, and the player sets it on the sheet.
 
@@ -293,13 +304,18 @@ notes as prose, since NPCs have no fields.
 
 ## Preconditions
 
-A precondition key that names a declared dropdown or radio field reads the
-character's value as the option's position, counting from 0, or −1 when it's
-unset. For the touched level that's Pure 0, Prime 1, Second 2, Third 3,
+A precondition key that names a declared field reads it as a number: a
+dropdown or radio as the option's position, counting from 0, or −1 when it's
+unset; a counter as its count; a switch as 1 or 0. For the touched level that's Pure 0, Prime 1, Second 2, Third 3,
 Feral 4; `{ "key": "origin", "min": 0 }` means "an origin is set". The
 failure message uses the option labels: "Requires Touched: Prime or higher",
-"Requires Touched: Third or lower", "Requires Touched: Pure". Text fields
-can't be used in preconditions, which compare numbers.
+"Requires Touched: Third or lower", "Requires Touched: Pure"; for a counter
+"Requires Resolve 3 or more", for a switch "Requires Sworn". String and
+markdown fields can't be used in preconditions, which compare numbers.
+
+The dev-only `sample` extension declares one field of each other type (Rank,
+a radio; Resolve, a counter; Sworn, a switch; Notes, markdown), which the
+E2E suite exercises.
 
 The check runs before the asset-name fallback, so a field is never mistaken
 for an asset. The hard-coded `touched` branch in `preconditions.ts`, with its

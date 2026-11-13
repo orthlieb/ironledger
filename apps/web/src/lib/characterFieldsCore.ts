@@ -28,6 +28,11 @@ export interface ResolvedField extends CharacterFieldDef {
 type Values = Record<string, string> | undefined;
 type Condition = NonNullable<CharacterFieldDef['if']>[number];
 
+/** A dropdown or radio: a choice among options, stored as the option id. */
+export const isChoice = (f: { type: string }) => f.type === 'dropdown' || f.type === 'radio';
+/** A string or markdown field: free text, which preconditions can't read. */
+export const isText = (f: { type: string }) => f.type === 'string' || f.type === 'markdown';
+
 /** An option id from its label: lower case, each run of other characters a
  *  `-` ("Oray Hills" → "oray-hills"). Same rule as gen-extensions-manifest. */
 export function optionId(label: string): string {
@@ -46,7 +51,7 @@ export function fieldOptions(
 	oracles: OracleFile[],
 	resolveKey: (key: string) => string = (k) => k,
 ): FieldOption[] {
-	if (def.type === 'text') return [];
+	if (!isChoice(def)) return [];
 	if (def.options) return def.options.map((o) => ({ id: o.id, label: o.label }));
 	const from = def.optionsFrom;
 	if (!from) return [];
@@ -82,11 +87,31 @@ export function optionIndex(field: ResolvedField, value: string): number {
 	return field.options.findIndex((o) => o.id === value);
 }
 
-/** What the sheet shows for a value: the option's label, the stored id when
- *  no option matches (a renamed oracle row), or the text itself. */
+/** A counter's value as a whole number, 0 to its `maxValue`. */
+export function counterValue(field: CharacterFieldDef, value: string): number {
+	const n = Math.floor(Number(value));
+	const max = field.maxValue ?? Infinity;
+	return Number.isFinite(n) ? Math.max(0, Math.min(max, n)) : 0;
+}
+
+/** A field's value as the number a precondition compares: a choice's option
+ *  position (−1 unset), a counter's count, a switch's 1 or 0. NaN for text,
+ *  which preconditions can't read. */
+export function fieldNumber(field: ResolvedField, value: string): number {
+	if (isChoice(field)) return optionIndex(field, value);
+	if (field.type === 'counter') return counterValue(field, value);
+	if (field.type === 'switch') return value === '1' ? 1 : 0;
+	return NaN;
+}
+
+/** What the sheet and log show for a value: a choice's label (or the stored
+ *  id when no option matches, a renamed oracle row), a count, on or off, or
+ *  the text itself. */
 export function valueLabel(field: ResolvedField, value: string): string {
-	if (field.type === 'text') return value;
-	return field.options.find((o) => o.id === value)?.label ?? value;
+	if (isChoice(field)) return field.options.find((o) => o.id === value)?.label ?? value;
+	if (field.type === 'counter') return String(counterValue(field, value));
+	if (field.type === 'switch') return value === '1' ? 'on' : 'off';
+	return value;
 }
 
 /** Whether a number passes a precondition's operators. */
@@ -108,7 +133,7 @@ export function fieldShown(
 	for (const c of field.if ?? []) {
 		const other = byId(c.key);
 		if (!other) continue;
-		if (!passes(optionIndex(other, fieldValue(other, values)), c)) return false;
+		if (!passes(fieldNumber(other, fieldValue(other, values)), c)) return false;
 	}
 	return true;
 }
@@ -201,15 +226,37 @@ export function rollField(
 	}
 	const text = typeof raw === 'string' ? raw : raw == null ? '' : String(raw);
 	if (!text) return null;
-	if (field.type === 'text') return { value: text, roll, display: text };
+	if (isText(field)) return { value: text, roll, display: text };
+	if (field.type === 'counter') {
+		const n = text.match(/-?\d+/)?.[0];
+		if (n === undefined) return null;
+		const v = String(counterValue(field, n));
+		return { value: v, roll, display: v };
+	}
+	if (!isChoice(field)) return null;
 	const id = matchOption(field, text);
 	if (!id) return null;
 	return { value: id, roll, display: valueLabel(field, id) };
 }
 
-/** A precondition's failure message for a choice field, in the option
- *  labels: "Requires Touched: Prime or higher". */
+/** A precondition's failure message: for a choice, in the option labels
+ *  ("Requires Touched: Prime or higher"); for a counter, in numbers
+ *  ("Requires Resolve 2 or more"); for a switch, on or off ("Requires Sworn",
+ *  "Requires no Sworn"). */
 export function fieldRequirement(field: ResolvedField, c: Omit<Condition, 'key'>): string {
+	if (field.type === 'switch') {
+		const wantsOn = c.eq === 1 || c.ne === 0 || (c.min !== undefined && c.min >= 1);
+		return wantsOn ? `Requires ${field.label}` : `Requires no ${field.label}`;
+	}
+	if (field.type === 'counter') {
+		if (c.min !== undefined && c.max === undefined)
+			return `Requires ${field.label} ${c.min} or more`;
+		if (c.max !== undefined && c.min === undefined)
+			return `Requires ${field.label} ${c.max} or less`;
+		if (c.eq !== undefined) return `Requires ${field.label} ${c.eq}`;
+		if (c.ne !== undefined) return `Requires ${field.label} other than ${c.ne}`;
+		return `${field.label} requirement not met`;
+	}
 	const at = (i: number) => field.options[i]?.label ?? String(i);
 	if (c.min !== undefined && c.max === undefined)
 		return c.min <= 0

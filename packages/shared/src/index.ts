@@ -186,8 +186,12 @@ export interface CharacterFieldDef {
    *  the precondition key. */
   id: string;
   label: string;
-  type: 'dropdown' | 'radio' | 'text';
+  /** The asset custom field types: dropdown, radio, counter (pips 0 to
+   *  maxValue), switch, string (one line) and markdown (notes). */
+  type: 'dropdown' | 'radio' | 'string' | 'counter' | 'switch' | 'markdown';
   options?: CharacterFieldOption[];
+  /** counter only: the most pips. */
+  maxValue?: number;
   /** Instead of `options`: one option per row of an oracle, labelled by the
    *  row's `label` property (default `value`). */
   optionsFrom?: { oracle: string; label?: string };
