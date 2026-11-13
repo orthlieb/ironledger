@@ -38,7 +38,6 @@ add any Touched asset, and the asset makes them Prime.
     "type": "dropdown",
     "optionsFrom": { "oracle": "yrtRegion" },
     "default": "",
-    "creation": "pick",
     "roll": { "oracle": "yrtRegion" }
   },
   {
@@ -50,8 +49,7 @@ add any Touched asset, and the asset makes them Prime.
     "roll": {
       "oracle": "yrtReligion",
       "from": "name",
-      "column": { "field": "origin", "from": "country" },
-      "if": [{ "key": "origin", "min": 0 }]
+      "column": { "field": "origin", "from": "country" }
     }
   },
   {
@@ -75,7 +73,8 @@ add any Touched asset, and the asset makes them Prime.
     "type": "text",
     "default": "",
     "placeholder": "Animal…",
-    "roll": { "oracle": "yrtAnimal", "if": [{ "key": "touched", "min": 1 }] },
+    "if": [{ "key": "touched", "min": 1 }],
+    "roll": { "oracle": "yrtAnimal" },
     "tooltip": "From the Character: Touched Aspect oracle."
   }
 ]
@@ -88,10 +87,10 @@ Core tab:
 - **Religion:** a dropdown of Puritan, Optime, Wildens and None, or their
   own. Hovering it shows the chosen religion's text from the oracle.
 - **Touched:** a dropdown of the five levels.
-- **Animal:** one line of text.
+- **Animal:** one line of text, hidden while Touched is Pure.
 
-Religion is rolled on the column for the origin's country, as now, and only
-once an origin is set. The animal is rolled only for Prime or higher.
+New Character shows the same four, each with a d6. Religion is rolled on the
+column for the origin's country, as now, so its d6 waits for an origin.
 
 The religion rows on `yrtReligion` gain a `name` (`"Puritan"`, `"Optime"`,
 `"Wildens"`, `"None, or their own"`), since their `value` is the whole
@@ -100,18 +99,18 @@ Touched rows as their `className`.
 
 ## Declaring a field
 
-| Field         | Type   | Required        | Description                                                                                                                                            |
-| ------------- | ------ | --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `id`          | string | yes             | camelCase key, unique across all extensions. Stores the value, and a precondition names the field by it.                                               |
-| `label`       | string | yes             | Shown on the sheet, in New Character, and in log lines.                                                                                                |
-| `type`        | string | yes             | `"dropdown"`, `"radio"` (the same kind of choice, shown as a row of buttons), or `"text"` for one line of free text.                                   |
-| `options`     | array  | dropdown, radio | `{ id, label }` in order. A precondition compares positions, so order them from lowest to highest.                                                     |
-| `optionsFrom` | object | dropdown, radio | Instead of `options`: one option per row of an oracle. `oracle`: its key. `label`: the row property to show (default `value`).                         |
-| `default`     | string | yes             | The value a character has until one is set: an option `id`, `""` for no choice yet, or text.                                                           |
-| `placeholder` | string | no              | Hint shown in an empty text box.                                                                                                                       |
-| `creation`    | string | no              | How New Character offers the field: `"roll"` (default), a checkbox in "Randomize the rest"; or `"pick"`, the field's own dropdown or radio with a die. |
-| `roll`        | object | no              | Rolls the field in New Character; see below.                                                                                                           |
-| `tooltip`     | string | no              | Hover hint on the sheet's control.                                                                                                                     |
+| Field         | Type   | Required        | Description                                                                                                                                                             |
+| ------------- | ------ | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`          | string | yes             | camelCase key, unique across all extensions. Stores the value, and a precondition names the field by it.                                                                |
+| `label`       | string | yes             | Shown on the sheet, in New Character, and in log lines.                                                                                                                 |
+| `type`        | string | yes             | `"dropdown"`, `"radio"` (the same kind of choice, shown as a row of buttons), or `"text"` for one line of free text.                                                    |
+| `options`     | array  | dropdown, radio | `{ id, label }` in order. A precondition compares positions, so order them from lowest to highest.                                                                      |
+| `optionsFrom` | object | dropdown, radio | Instead of `options`: one option per row of an oracle. `oracle`: its key. `label`: the row property to show (default `value`).                                          |
+| `default`     | string | yes             | The value of a character made before the field existed, or with the extension off: an option `id`, `""` for no choice, or text. New Character starts every field empty. |
+| `placeholder` | string | no              | Hint shown in an empty text box.                                                                                                                                        |
+| `if`          | array  | no              | Preconditions on fields declared above it in the same extension. While they fail, the field is hidden, in New Character and on the sheet; its value is kept.            |
+| `roll`        | object | no              | The oracle New Character rolls for the field; see below.                                                                                                                |
+| `tooltip`     | string | no              | Hover hint on the sheet's control.                                                                                                                                      |
 
 `roll` holds:
 
@@ -120,11 +119,10 @@ Touched rows as their `className`.
 | `oracle` | The oracle to roll.                                                                                                                                                                                                                                    |
 | `from`   | The property to read when the rolled row is an object (default: the row's `value`).                                                                                                                                                                    |
 | `column` | For an oracle rolled on a column (`tableType: "columnSelect"`): `field` names a dropdown or radio field declared above it in the same extension, `from` a property of its chosen option's row. The column is the one whose label equals that property. |
-| `if`     | Preconditions, checked first. A field whose `if` fails isn't rolled and keeps its default.                                                                                                                                                             |
 
-Fields roll in the order they're declared, so a `roll.if` or `roll.column`
-can only use a field declared above it, and only in the same extension:
-another extension's field may be turned off.
+Fields are rolled in the order they're declared, so a field's `if` or
+`roll.column` can only use a field declared above it, and only in the same
+extension: another extension's field may be turned off.
 
 A radio is a dropdown drawn as a row of buttons (`SegmentedRadio`, as
 Initiative uses), which suits a few short options; a long list suits a
@@ -150,8 +148,8 @@ properties. Adding a row to the oracle adds an option.
   two options; repeats an option id; or has a `default` that's neither one of
   them nor `""`.
 - an oracle it names (`optionsFrom.oracle`, `roll.oracle`) isn't one the
-  extension, or `base`, provides, or a `roll.if` or `roll.column` names a
-  field that isn't declared above it in the same extension.
+  extension, or `base`, provides, or an `if` or `roll.column` names a field
+  that isn't declared above it in the same extension.
 
 The manifest copies `characterFields` into the extension's registry entry, so
 `/catalogue/extensions` serves it with the rest of the metadata and the web
@@ -203,7 +201,9 @@ the stats and vitals stay at the top however many there are. Each field is a
 label and its control: a `<Select>` for a dropdown, a `SegmentedRadio` for a
 radio, a one-line text input for text. They sit two to a row on a wide
 screen and one to a row on a phone. An unset dropdown shows "—"; an unset
-radio has no button pressed. Each field carries
+radio has no button pressed. A field whose `if` fails is hidden, and keeps
+its value: Animal disappears for a Pure character and comes back, with the
+animal it had, if they're raised to Prime. Each field carries
 `data-tour="char-field-<id>"`.
 
 An extension's fields sit under a small heading, set by
@@ -220,8 +220,7 @@ An extension's fields sit under a small heading, set by
 `npm run gen:manifest` fails on any other value, such as an empty string.
 
 A field's hover hint is its `tooltip`. An `optionsFrom` dropdown or radio
-adds the
-chosen row's `description`, or its `value` when that differs from the label,
+adds the chosen row's `description`, or its `value` when that differs from the label,
 as plain text: for Religion, the religion's description.
 
 Changing a field writes a log entry titled `<character> — Touched`, reading
@@ -230,27 +229,32 @@ box loses focus, not on every keystroke.
 
 ## At creation
 
-A `"roll"` field gets a checkbox in New Character's "Randomize the rest",
-labelled with the field's `label` and ticked by default. A `"pick"` field
-gets its own dropdown or radio with a die, as Region of origin has now,
-carrying
-`data-tour="randomize-<id>"` and `data-tour="roll-<id>"` (for Region of
-origin, the `randomize-origin` and `roll-origin` the Create a character
-tutorial already uses). A checkbox whose `roll.if` depends on a `"pick"`
-field is ticked when that field is set and unticked when it's cleared, as
-Religion's is now.
+New Character shows every field of the enabled extensions, in the same order
+and under the same headings as the sheet, below the stats. Each shows its
+control, with a d6 beside it when it has a `roll`; the die rolls the oracle
+(on the column `roll.column` names, if any) and fills the control, and the
+player can roll again or pick by hand. A field's controls carry
+`data-tour="randomize-<id>"` and its die `data-tour="roll-<id>"`, so Region
+of origin keeps the `randomize-origin` and `roll-origin` the Create a
+character tutorial already uses.
 
-On Create, each ticked field whose `roll.if` passes rolls its oracle (on the
-column `roll.column` names, if any), takes the value (or its `from`
-property), and stores it: a dropdown or radio matches it to an option by id
-or label,
-ignoring case; a text field stores it as it is. A `"pick"` field stores what
-was picked. An unticked field, a failed `if`, or a dropdown value that
-matches no option leaves the default, and the player can set the field on
-the sheet.
+Every field starts empty, so the die is the obvious thing to press, and
+Touched doesn't show a preselected "Pure" for the player to skip past. A
+field hides while its `if` fails: Animal appears once Touched is Prime or
+higher, and hides again if it goes back to Pure. A die whose `roll.column`
+field is still empty waits, with a hover hint naming it ("Pick a Region of
+origin first").
+
+On Create, each visible field still empty is rolled, in order, so a player in
+a hurry can press Create at once, as with the name. Origin is rolled before
+Religion needs its column, and Touched before Animal's `if` is checked. A
+rolled value is stored as it comes for a text field; a dropdown or radio
+matches it to an option by id or label, ignoring case. A field with no
+`roll` left empty keeps its default, as does a dropdown value that matches
+no option, and the player sets it on the sheet.
 
 The fields join the "New Character — <name>" log entry as lines like the
-other randomized details (`Region of origin: Piscis`, `Religion: Puritan`,
+randomized details (`Region of origin: Piscis`, `Religion: Puritan`,
 `Touched: Second`, `Animal: Wolf`), and they don't go into the background.
 The background no longer gets the origin and religion lines or the touched
 sentence.
@@ -260,7 +264,9 @@ level: one at Prime, one to three at Second, four to six at Third, and
 narrative at Feral. `rollYrtTouchedStructured` in `characterRollups.ts` stops
 rolling the level and the animal; it reads `fields.touched`, rolls the
 features, and writes them into the background as a list under **Touched
-features**, with its own log entry as now.
+features**, with its own log entry as now. That stays a checkbox in
+"Randomize the rest", which keeps the prose details (First Look, Activity,
+and so on) and loses its Touched and Religion boxes.
 
 NPCs keep today's behaviour: their Touched and religion rolls go into their
 notes as prose, since NPCs have no fields.
@@ -344,7 +350,7 @@ work can pick it up.
 | Code                                                                                                                                                                                     | Does                                                   | Becomes                                                                                        | When      |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------- | --------- |
 | `characterRollups.ts` `rollYrtTouchedStructured`, `RandomizeBlock.svelte` Touched checkbox, `CharactersArea.svelte` `_commitNewCharacter`, `characterRollupsFormat.ts` `formatTouchedMd` | Rolls the touched level and animal into the background | The `touched` and `touchedAnimal` fields and their `roll`                                      | This work |
-| `RandomizeBlock.svelte` region picker (`regionOriginOptions`), `characterRollups.ts` `religionColumnForOrigin`, `randomizationsAsMarkdown`                                               | Region of origin and religion, into the background     | The `origin` (`creation: "pick"`) and `religion` fields; `roll.column`                         | This work |
+| `RandomizeBlock.svelte` region picker (`regionOriginOptions`), `characterRollups.ts` `religionColumnForOrigin`, `randomizationsAsMarkdown`                                               | Region of origin and religion, into the background     | The `origin` and `religion` fields; `roll.column`                                              | This work |
 | `preconditions.ts` `touched` branch, `TOUCHED_LEVEL`, `TOUCHED_LABEL`                                                                                                                    | The `touched` precondition key                         | The generic field branch                                                                       | This work |
 | The ten Touched assets' `touchedLevel` / `animalName` custom fields; `types.ts` `touched` / `touchedAnimal`                                                                              | Per-asset and legacy copies of the level and animal    | Read from `fields`; removed                                                                    | This work |
 | `tutorials/createCharacter.ts` region step (`isSourceEnabled('yrt')`)                                                                                                                    | Shows the Region of origin step only with YRT on       | Shown when the `randomize-origin` control exists                                               | This work |
@@ -392,18 +398,20 @@ them on, as `expeditionKinds` would, but the screens themselves stay code.
     extension `order` then declaration, with their headings and with
     `optionsFrom` options built from the loaded oracles.
   - `preconditions.ts`: the field branch, and the `touched` branch removed.
-  - `CharactersArea.svelte`: the fields below Vitals, their log entries, the
-    level change unmarking abilities, and the creation rolls.
-  - `RandomizeBlock.svelte`: a checkbox per `"roll"` field and the field's
-    own control with a die per `"pick"` field, replacing the Touched checkbox, the Religion checkbox and
-    the region picker.
+  - `CharactersArea.svelte`: the fields below Vitals (Animal hidden for
+    Pure), their log entries, and the level change unmarking abilities.
+  - New Character (`CharactersArea.svelte`, `RandomizeBlock.svelte`): each
+    field's control and d6 below the stats, hidden by its `if`, replacing the
+    region picker and the Touched and Religion checkboxes; Create rolling the
+    fields left empty.
   - `characterRollups.ts` / `characterRollupsFormat.ts`: the generic field
     roll; YRT's features roll reading `fields.touched` and writing a list;
     the origin, religion and touched prose dropped from the background.
   - `AssetCard.svelte`: `abilityMaxByField` against character fields, the
     level and animal as text, the animal in the title.
   - `character.ts`: the load-time move into `fields`.
-  - `tutorials/createCharacter.ts`: the region step keyed on its control.
+  - `tutorials/createCharacter.ts`: the "Roll a region of origin" step
+    becomes one step over the YRT fields, shown when they're there.
 - **YRT data:** the four fields in `extension.json`; a `name` on each
   `yrtReligion` row; the ten Touched assets lose `touchedLevel` and
   `animalName` and gain the precondition and the new `abilityMaxByField`.
@@ -411,13 +419,14 @@ them on, as `expeditionKinds` would, but the screens themselves stay code.
   reference pages.
 - **Tests:**
   - Unit: the precondition branch, the manifest's validation, `optionsFrom`
-    ids, the field rolls (Pure skips the animal; religion uses the origin's
-    column, and isn't rolled without an origin), the move into `fields`.
+    ids, the Create rolls (only empty fields; origin before religion, on the
+    origin's column; no animal for Pure), the move into `fields`.
   - E2E: a Pure character sees the Touched assets faded; setting Prime lets
-    them add one; lowering the level unmarks an ability; New Character fills
-    all four fields and leaves them out of the background.
-  - `tutorials.spec.ts`, since the Create a character tutorial walks through
-    Region of origin and "Randomize the rest".
+    them add one; lowering the level unmarks an ability; Animal hides for Pure
+    on the sheet and in New Character; Create rolls the fields left empty
+    and keeps the ones rolled or picked, and none goes into the background.
+  - `tutorials.spec.ts`, for the Create a character tutorial's new YRT step
+    and its shorter "Randomize the rest".
 - **Docs:** `extensions.md` (the new `extension.json` key, and its stale
   table of current extensions), `data-schema.md` (character fields as
   precondition keys; the Touched row), the YRT README (Touched assets,
