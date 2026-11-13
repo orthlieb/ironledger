@@ -2316,17 +2316,28 @@
 		padding-right: 2px;
 	}
 
-	/* Chit rows: fixed-width chits packed against the left. */
+	/* Chit rows: fixed-width chits packed against the left. The five stats
+	   stay on one row: on a phone, where the row plus the edit pen run out
+	   of width, the tiles narrow to fit instead of Wits wrapping. */
 	.ca-stats-row {
 		display: flex;
 		justify-content: flex-start;
 		align-items: stretch;
 		gap: 8px;
-		flex-wrap: wrap;
+		flex-wrap: nowrap;
 		flex: 1;
+		min-width: 0;
 	}
 	.ca-stats-row > :global(*) {
-		flex: 0 0 auto;
+		flex: 0 1 auto;
+		min-width: 0;
+	}
+	/* The narrowest phones (320px): a tighter gap leaves each tile room for
+	   SHADOW. */
+	@media (max-width: 359px) {
+		.ca-stats-row {
+			gap: 4px;
+		}
 	}
 	/* The stats dialog's list of changes. */
 	.ca-stat-changes {
