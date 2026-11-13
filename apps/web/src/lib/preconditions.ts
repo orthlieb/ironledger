@@ -7,10 +7,20 @@
  * Every precondition object has a `key` and at least one comparison operator.
  * Multiple operators on one object are AND'd. All preconditions in an array
  * are AND'd — the first failure reason is returned for concise UI feedback.
+ *
+ * A key an extension declares as a character field reads that field. Keep the
+ * keys answered here in step with BUILTIN_PRECONDITION_KEYS in
+ * scripts/gen-extensions-manifest.mjs, which stops a field from taking one.
  */
 
 import type { CharacterData } from './types.js';
 import { findAsset } from './assetStore.svelte.js';
+import {
+	fieldRequirement,
+	fieldValue,
+	findCharacterField,
+	optionIndex,
+} from './characterFields.svelte.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -66,16 +76,6 @@ export interface PreconditionContext {
 // ---------------------------------------------------------------------------
 // Constants
 // ---------------------------------------------------------------------------
-
-const TOUCHED_LEVEL: Record<string, number> = {
-	pure: 0,
-	prime: 1,
-	second: 2,
-	third: 3,
-	feral: 4,
-};
-
-const TOUCHED_LABEL = ['Pure', 'Prime', 'Second', 'Third', 'Feral'];
 
 const DEBILITY_KEYS = new Set([
 	'wounded',
@@ -223,24 +223,14 @@ export function checkPrecondition(
 		return `${label} requirement not met`;
 	}
 
-	// ---- Touched level ----
-	if (key === 'touched') {
-		// Prefer the value stored in the Touched asset card's customValues; fall back to
-		// the legacy charData.touched field for old saves that haven't migrated yet.
-		const touchedAsset = charData.assets.find((a) => findAsset(a.assetId)?.category === 'Touched');
-		const touchedLevelStr =
-			touchedAsset?.customValues?.['touchedLevel'] ?? charData.touched ?? 'pure';
-		const level = TOUCHED_LEVEL[touchedLevelStr] ?? 0;
-		if (passes(level, pre)) return null;
-		if (pre.min !== undefined) {
-			const needed = TOUCHED_LABEL[pre.min] ?? String(pre.min);
-			return `Requires Touched: ${needed} or higher`;
-		}
-		if (pre.max !== undefined) {
-			const max = TOUCHED_LABEL[pre.max] ?? String(pre.max);
-			return `Requires Touched: ${max} or lower`;
-		}
-		return 'Touched requirement not met';
+	// ---- Character fields an extension declares (YRT's touched level, …) ----
+	// A dropdown or radio field reads as its option's position, from 0; −1
+	// when unset. Checked before the asset-name fallback below, so a field is
+	// never mistaken for an asset. See docs/character-fields.md.
+	const field = findCharacterField(key);
+	if (field && field.type !== 'text') {
+		const v = optionIndex(field, fieldValue(field, charData.fields));
+		return passes(v, pre) ? null : fieldRequirement(field, pre);
 	}
 
 	// ---- Any-of asset list (OR: character owns at least one of the listed asset ids) ----

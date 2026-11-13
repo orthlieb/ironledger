@@ -48,10 +48,12 @@ die + stat + adds) is capped at 10 (`rules/actionScore.ts`).
 | Shadow | `#a855f7` purple | `shadow` |
 | Wits   | `#f59e0b` amber  | `wits`   |
 
-With YRT, a character's touched level (Pure, Prime, Second, Third, Feral) is
-rolled at creation and written into the background and the log; the sheet
-has no field for it. A character whose touched level is Pure cannot use a
-Touched asset; one who can holds the level in that asset's Level dropdown.
+Extensions can add fields to a character, shown at the bottom of the Core
+tab, below Vitals, under each extension's heading: with YRT, Region of
+origin, Religion, Touched and Animal (Animal hidden while Touched is Pure).
+Changing one is logged (`Touched: Prime → Second`), and lowering Touched
+unmarks a Touched asset's abilities above the new limit. They're stored in
+`data.fields`; see [character-fields.md](character-fields.md).
 
 ### Resources (`MeterControl` components)
 
@@ -123,10 +125,9 @@ interface CharacterData {
   iron: number;
   shadow: number;
   wits: number;
-  /** @deprecated migrated to Touched asset's customValues.touchedLevel */
-  touched?: TouchedLevel;
-  /** @deprecated migrated to Touched asset's customValues.animalName */
-  touchedAnimal?: string;
+  /** Extension fields (YRT: origin, religion, touched, touchedAnimal),
+   *  keyed by field id: an option id or text. */
+  fields?: Record<string, string>;
   momentum: number;
   health: number;
   spirit: number;
@@ -154,7 +155,6 @@ interface CharacterData {
   initiative?: number;
 }
 
-type TouchedLevel = 'pure' | 'prime' | 'second' | 'third' | 'feral';
 type VowDifficulty = 'troublesome' | 'dangerous' | 'formidable' | 'extreme' | 'epic';
 ```
 

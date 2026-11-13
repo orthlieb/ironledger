@@ -75,6 +75,13 @@ and everything filters out — nothing else changes.
     "label": "Sample",
     "url": "https://example.com/wiki",
   },
+
+  // Optional — fields this extension adds to every character, and the
+  // heading over them on the sheet. See "Character fields" below.
+  "characterFields": [
+    { "id": "sampleRank", "label": "Rank", "type": "radio", "options": [ … ], "default": "" },
+  ],
+  "characterFieldsHeading": "Sample", // or false for none; left out: `name`
 }
 ```
 
@@ -264,6 +271,20 @@ per-extension "menu" and the UI budget doesn't have room for that. If
 a pack really needs a hub, point `url` at a landing page and branch
 from there.
 
+### Character fields — `characterFields` / `characterFieldsHeading`
+
+An extension can add fields to every character: a dropdown, a radio or a
+line of text, shown at the bottom of the sheet's Core tab and in New
+Character (with a d6 when it rolls from an oracle), stored in
+`character.fields`, and readable as precondition keys. YRT declares four:
+Region of origin, Religion, Touched and Animal, and its Touched assets need
+`{ "key": "touched", "min": 1 }`. The fields sort by extension `order`, then
+in the order declared, under a heading: the extension's `name`, the
+`characterFieldsHeading` text, or none when it's `false` (Delve and
+Lodestar). The build checks every field (ids unique across extensions and
+clear of built-in precondition keys, options, defaults, the oracles named).
+The full reference is [character-fields.md](character-fields.md).
+
 ---
 
 ## IDs — authored, never derived
@@ -348,12 +369,13 @@ harmless unused artifacts. Use it for reference/fixture extensions (like
 
 ## Current extensions
 
-| id       | Layout                                | Notes                                                                         |
-| -------- | ------------------------------------- | ----------------------------------------------------------------------------- |
-| `base`   | legacy (`apps/api/data`)              | Core Ironsworn. Always on, not toggleable.                                    |
-| `delve`  | legacy (`apps/api/data`)              | Ironsworn: Delve. Drives some bespoke UI, so it stays type-organised for now. |
-| `yrt`    | self-contained (`extensions/yrt/`)    | Yrt homebrew — the first fully-relocated extension.                           |
-| `sample` | self-contained (`extensions/sample/`) | **Dev-only** reference extension exercising every surface; not in production. |
+| id         | Layout                                  | Notes                                                                         |
+| ---------- | --------------------------------------- | ----------------------------------------------------------------------------- |
+| `base`     | legacy (`apps/api/data`)                | Core Ironsworn. Always on, not toggleable.                                    |
+| `delve`    | self-contained (`extensions/delve/`)    | Ironsworn: Delve. Also drives some bespoke UI (sites, themes, domains).       |
+| `lodestar` | self-contained (`extensions/lodestar/`) | The Lodestar guide: bonus moves, scenes, settlement oracles.                  |
+| `yrt`      | self-contained (`extensions/yrt/`)      | Yrt homebrew: mana, Touched, cantrips, its bestiary and character fields.     |
+| `sample`   | self-contained (`extensions/sample/`)   | **Dev-only** reference extension exercising every surface; not in production. |
 
-`base` and `delve` still live under `apps/api/data/` (the loader reads them via
-their `apps/api/data` root); relocating them is future work.
+Only `base` still lives under `apps/api/data/` (the loader reads it via that
+root); relocating it is future work.

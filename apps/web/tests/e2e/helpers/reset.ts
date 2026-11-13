@@ -177,12 +177,17 @@ export async function fetchMaps(token?: string): Promise<MapDetail[]> {
  * Call after resetCharacters() so specs that need a character can skip the
  * slow UI-based creation path in beforeEach.
  */
-export async function seedCharacter(name = 'Test Character', token?: string): Promise<void> {
+export async function seedCharacter(
+	name = 'Test Character',
+	token?: string,
+	/** Character data to start with (fields, assets, background, …). */
+	data?: Record<string, unknown>,
+): Promise<void> {
 	const tok = token ?? (await getTestToken());
 	const res = await fetch(`${API}/characters`, {
 		method: 'POST',
 		headers: json(tok),
-		body: JSON.stringify({ name }),
+		body: JSON.stringify(data ? { name, data: { name, ...data } } : { name }),
 	});
 	if (!res.ok) throw new Error(`POST /characters failed: ${res.status} ${await res.text()}`);
 }

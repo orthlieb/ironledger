@@ -15,6 +15,54 @@
   "moveCategories": [
     { "key": "Yrt", "icon": "yrt-tree", "color": "var(--color-touched)", "order": 200 }
   ],
+  "characterFields": [
+    {
+      "id": "origin",
+      "label": "Region of origin",
+      "type": "dropdown",
+      "optionsFrom": { "oracle": "yrtRegion" },
+      "default": "",
+      "roll": { "oracle": "yrtRegion" },
+      "tooltip": "Where your character was born, from the YRT Region oracle. Their religion is rolled for its country."
+    },
+    {
+      "id": "religion",
+      "label": "Religion",
+      "type": "dropdown",
+      "optionsFrom": { "oracle": "yrtReligion", "label": "name" },
+      "default": "",
+      "roll": {
+        "oracle": "yrtReligion",
+        "from": "name",
+        "column": { "field": "origin", "from": "country" }
+      }
+    },
+    {
+      "id": "touched",
+      "label": "Touched",
+      "type": "dropdown",
+      "options": [
+        { "id": "pure", "label": "Pure" },
+        { "id": "prime", "label": "Prime" },
+        { "id": "second", "label": "Second" },
+        { "id": "third", "label": "Third" },
+        { "id": "feral", "label": "Feral" }
+      ],
+      "default": "pure",
+      "roll": { "oracle": "yrtTouched", "from": "className" },
+      "tooltip": "From the Character: Touched oracle. A Pure character cannot use a Touched asset."
+    },
+    {
+      "id": "touchedAnimal",
+      "label": "Animal",
+      "type": "text",
+      "default": "",
+      "placeholder": "Animal…",
+      "if": [{ "key": "touched", "min": 1 }],
+      "roll": { "oracle": "yrtAnimal" },
+      "tooltip": "From the Character: Touched Aspect oracle."
+    }
+  ],
   "infoLink": {
     "label": "YRT",
     "url": "http://yrt.iron-ledger.org"

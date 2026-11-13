@@ -11,6 +11,12 @@
 	import { computeAssetXpDiff } from '#lib/character.js';
 	import { assetIcon } from '#lib/iconRegistry.js';
 	import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
+	import {
+		fieldShown,
+		fieldValue,
+		findCharacterField,
+		valueLabel,
+	} from '#lib/characterFields.svelte.js';
 	import { renderNote } from '#lib/markdown.js';
 	import { renderRich } from '#lib/dsl.js';
 	import { draggable } from '#lib/actions/draggable.js';
@@ -67,6 +73,7 @@
 		onOracleLink,
 		onCommit,
 		onClose,
+		characterFields,
 	}: {
 		asset: CharacterAsset;
 		definition: AssetDefinition;
@@ -91,7 +98,30 @@
 		onCommit?: () => void;
 		/** X close button. Discards the draft without committing. */
 		onClose?: () => void;
+		/** The character's extension field values (`character.fields`): what
+		 *  a Touched asset's ability limit and level line read. */
+		characterFields?: Record<string, string>;
 	} = $props();
+
+	/** An `abilityMaxByField` key's current value: the asset's own custom
+	 *  field if it has one, else the character field of that id. */
+	function limitValue(fieldId: string): string {
+		const own = asset.customValues?.[fieldId];
+		if (own !== undefined) return own;
+		const f = findCharacterField(fieldId);
+		return f ? fieldValue(f, characterFields) : '';
+	}
+
+	/** The character fields this asset shows (`definition.characterFields`),
+	 *  as text where its inputs used to be: "Second · Wolf". */
+	const fieldLine = $derived(
+		((definition.characterFields as string[] | undefined) ?? [])
+			.map((id) => findCharacterField(id))
+			.filter((f) => !!f && fieldShown(f, characterFields, findCharacterField))
+			.map((f) => valueLabel(f!, fieldValue(f!, characterFields)))
+			.filter(Boolean)
+			.join(' · '),
+	);
 
 	// Selectable-list item shape used by cantrips (and any future similar lists)
 	type SelectableItem = { key: string; name: string; desc: string };
@@ -140,7 +170,7 @@
 		if (!abmf) return Infinity;
 		let cap = Infinity;
 		for (const [fieldId, levelMap] of Object.entries(abmf)) {
-			const currentVal = asset.customValues?.[fieldId] ?? '';
+			const currentVal = limitValue(fieldId);
 			if (currentVal in levelMap) {
 				cap = Math.min(cap, levelMap[currentVal]!);
 			}
@@ -326,6 +356,12 @@
 		<div class="asset-cat-row">
 			<span class="asset-cat">{definition.category}</span>
 		</div>
+
+		{#if fieldLine}
+			<p class="asset-char-fields" use:tooltip={"Set on the character's Core tab"}>
+				{fieldLine}
+			</p>
+		{/if}
 
 		<!-- Top custom fields (position !== 'bottom') rendered above preamble -->
 		{#each (definition.customFields ?? []).filter((f) => f.position !== 'bottom') as field}
@@ -945,6 +981,15 @@
 		opacity: 0.8;
 	}
 
+	/* A Touched asset's line of the character's own values ("Second · Wolf"),
+	   which are set on the sheet, not here. */
+	.asset-char-fields {
+		margin: 0 0 6px;
+		font-family: var(--font-ui);
+		font-size: 0.8rem;
+		font-weight: 700;
+		color: var(--text-accent);
+	}
 	.asset-description {
 		font-family: var(--font-ui);
 		font-size: 0.75rem;

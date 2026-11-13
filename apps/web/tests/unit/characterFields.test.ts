@@ -1,0 +1,213 @@
+/**
+ * Character fields from extensions (docs/character-fields.md): YRT's region
+ * of origin, religion, touched level and animal, resolved against YRT's real
+ * oracle files, and the load-time move of older characters' values into
+ * `character.fields`.
+ */
+import { describe, it, expect } from 'vitest';
+import { readFileSync } from 'fs';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import {
+	fieldHint,
+	fieldRequirement,
+	fieldShown,
+	fieldValue,
+	matchOption,
+	optionId,
+	optionIndex,
+	resolveField,
+	rollField,
+	valueLabel,
+	type ResolvedField,
+} from '../../src/lib/characterFieldsCore.js';
+import { moveLegacyYrtFields } from '../../src/lib/character.js';
+import type { OracleFile } from '../../src/lib/oracleStore.svelte.js';
+import type { CharacterFieldDef } from '../../src/lib/types.js';
+
+const here = path.dirname(fileURLToPath(import.meta.url));
+const YRT = path.resolve(here, '../../../../extensions/yrt');
+const read = (rel: string) => JSON.parse(readFileSync(path.join(YRT, rel), 'utf-8'));
+
+const defs = read('extension.json').characterFields as CharacterFieldDef[];
+const oracles: OracleFile[] = ['region', 'religion', 'touched', 'animal'].map((n) =>
+	read(`oracles/${n}.json`),
+);
+
+const fields = defs.map((d) => resolveField(d, 'yrt', oracles));
+const byId = (id: string) => fields.find((f) => f.id === id);
+const field = (id: string) => byId(id) as ResolvedField;
+/** An rng that lands the d100 on `n`. */
+const d100 = (n: number) => () => (n - 0.5) / 100;
+
+describe('YRT field declarations', () => {
+	it('declares origin, religion, touched and animal, in that order', () => {
+		expect(fields.map((f) => f.id)).toEqual(['origin', 'religion', 'touched', 'touchedAnimal']);
+	});
+
+	it('builds origin and religion options from their oracles', () => {
+		expect(field('origin').options).toHaveLength(25);
+		expect(field('origin').options[0]).toMatchObject({ id: 'piscis', label: 'Piscis' });
+		expect(field('origin').options.map((o) => o.id)).toContain('oray-hills');
+		expect(field('religion').options.map((o) => o.id)).toEqual([
+			'puritan',
+			'optime',
+			'wildens',
+			'none-or-their-own',
+		]);
+	});
+
+	it('reads the touched level as a position, Pure 0 to Feral 4, unset −1', () => {
+		const t = field('touched');
+		expect(optionIndex(t, 'pure')).toBe(0);
+		expect(optionIndex(t, 'feral')).toBe(4);
+		expect(optionIndex(field('origin'), '')).toBe(-1);
+		expect(fieldValue(t, {})).toBe('pure');
+		expect(fieldValue(t, { touched: 'second' })).toBe('second');
+	});
+});
+
+describe('optionId', () => {
+	it('lower-cases and dashes runs of other characters', () => {
+		expect(optionId('Oray Hills')).toBe('oray-hills');
+		expect(optionId('None, or their own')).toBe('none-or-their-own');
+		expect(optionId('Mountain Lion / Puma')).toBe('mountain-lion-puma');
+	});
+});
+
+describe('fieldShown', () => {
+	it('hides Animal while Touched is Pure, and shows it from Prime', () => {
+		const animal = field('touchedAnimal');
+		expect(fieldShown(animal, {}, byId)).toBe(false);
+		expect(fieldShown(animal, { touched: 'pure' }, byId)).toBe(false);
+		expect(fieldShown(animal, { touched: 'prime' }, byId)).toBe(true);
+		expect(fieldShown(field('religion'), {}, byId)).toBe(true);
+	});
+});
+
+describe('matchOption and labels', () => {
+	it('matches by id or label, ignoring case', () => {
+		expect(matchOption(field('touched'), 'Second')).toBe('second');
+		expect(matchOption(field('origin'), 'oray hills')).toBe('oray-hills');
+		expect(matchOption(field('touched'), 'Mythic')).toBeNull();
+		expect(valueLabel(field('religion'), 'none-or-their-own')).toBe('None, or their own');
+		expect(valueLabel(field('origin'), 'atlantis')).toBe('atlantis');
+	});
+
+	it("shows the chosen religion's text as its hint, and nothing extra for a region", () => {
+		expect(fieldHint(field('religion'), 'puritan')).toMatch(/^Puritan: Holds that humanity/);
+		expect(fieldHint(field('origin'), 'piscis')).toBe(field('origin').tooltip);
+	});
+});
+
+describe('rollField', () => {
+	it('rolls the touched class from the row value', () => {
+		expect(rollField(field('touched'), {}, oracles, byId, undefined, d100(3))).toMatchObject({
+			value: 'pure',
+			roll: 3,
+		});
+		expect(rollField(field('touched'), {}, oracles, byId, undefined, d100(70))?.value).toBe(
+			'second',
+		);
+	});
+
+	it('rolls a region, and an animal as text', () => {
+		expect(rollField(field('origin'), {}, oracles, byId, undefined, d100(1))?.value).toBe('piscis');
+		const animal = rollField(field('touchedAnimal'), {}, oracles, byId, undefined, d100(1));
+		expect(animal?.value).toBeTruthy();
+		expect(typeof animal?.value).toBe('string');
+	});
+
+	it("rolls religion on the origin country's column, and not without an origin", () => {
+		expect(rollField(field('religion'), {}, oracles, byId)).toBeNull();
+		// Buralia: Puritan 1, Optime 2, Wildens 3–95. Mons is in Buralia.
+		expect(
+			rollField(field('religion'), { origin: 'mons' }, oracles, byId, undefined, d100(50))?.value,
+		).toBe('wildens');
+		// Nysis: Puritan 1–86. Piscis is in Nysis.
+		expect(
+			rollField(field('religion'), { origin: 'piscis' }, oracles, byId, undefined, d100(50))?.value,
+		).toBe('puritan');
+	});
+
+	it('follows a supersession through resolveKey', () => {
+		const swapped = rollField(
+			field('touchedAnimal'),
+			{},
+			oracles,
+			byId,
+			(k) => (k === 'yrtAnimal' ? 'yrtRegion' : k),
+			d100(1),
+		);
+		expect(swapped?.value).toBe('Piscis');
+	});
+});
+
+describe('fieldRequirement', () => {
+	it('names the options a precondition needs', () => {
+		const t = field('touched');
+		expect(fieldRequirement(t, { min: 1 })).toBe('Requires Touched: Prime or higher');
+		expect(fieldRequirement(t, { max: 3 })).toBe('Requires Touched: Third or lower');
+		expect(fieldRequirement(t, { eq: 0 })).toBe('Requires Touched: Pure');
+		expect(fieldRequirement(field('origin'), { min: 0 })).toBe('Requires Region of origin');
+	});
+});
+
+describe('moveLegacyYrtFields', () => {
+	it("takes the level and animal from the Touched asset, and drops the asset's copies", () => {
+		const d: Record<string, unknown> = {
+			background: '',
+			assets: [
+				{
+					assetId: 'path/yrt-touched-lupine',
+					customValues: { touchedLevel: 'third', animalName: 'Wolf' },
+				},
+			],
+		};
+		moveLegacyYrtFields(d);
+		expect(d.fields).toEqual({ touched: 'third', touchedAnimal: 'Wolf' });
+		expect((d.assets as Array<{ customValues: object }>)[0]!.customValues).toEqual({});
+	});
+
+	it('falls back to the old fields, then to what New Character wrote in the background', () => {
+		const old: Record<string, unknown> = { touched: 'prime', touchedAnimal: 'Fox', assets: [] };
+		moveLegacyYrtFields(old);
+		expect(old.fields).toEqual({ touched: 'prime', touchedAnimal: 'Fox' });
+		expect('touched' in old).toBe(false);
+
+		const prose: Record<string, unknown> = {
+			assets: [],
+			background:
+				'**Region of origin:** Oray Hills\n\n**Religion:** **None, or their own**: No faith at all…\n\n' +
+				'Fanir is a **Second with 2** features of a Mountain Lion / Puma.\n- Claws\n- Eyes',
+		};
+		moveLegacyYrtFields(prose);
+		expect(prose.fields).toEqual({
+			origin: 'oray-hills',
+			religion: 'none-or-their-own',
+			touched: 'second',
+			touchedAnimal: 'Mountain Lion / Puma',
+		});
+		expect(prose.background).toMatch(/^\*\*Region of origin:\*\* Oray Hills/);
+
+		const pure: Record<string, unknown> = {
+			assets: [],
+			background: 'Ada is **Pure with no touched features**.',
+		};
+		moveLegacyYrtFields(pure);
+		expect(pure.fields).toEqual({ touched: 'pure' });
+	});
+
+	it("keeps a field that's already set, and leaves a rewritten background alone", () => {
+		const d: Record<string, unknown> = {
+			fields: { touched: 'feral' },
+			assets: [],
+			background: 'Grew up by the sea. Is a **Second with 2** features of a cat.',
+		};
+		moveLegacyYrtFields(d);
+		expect(d.fields).toEqual({ touched: 'feral', touchedAnimal: 'cat' });
+		const blank: Record<string, unknown> = { assets: [], background: 'Grew up by the sea.' };
+		moveLegacyYrtFields(blank);
+		expect(blank.fields).toEqual({});
+	});
+});

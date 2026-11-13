@@ -4,7 +4,7 @@
  * each step's control used for real.
  *
  * Create a character: open the switcher, "+ New character…", roll a name,
- * stats and (YRT) a region, leave the rest to be randomized, Create; then
+ * stats and (YRT) its fields, leave the rest to be randomized, Create; then
  * on the Background tab, write a bio and add a portrait; initiative; and
  * the Status tab, with the 9 experience a new character starts with.
  *
@@ -242,7 +242,7 @@ test.describe('Tutorial — Create a character', () => {
 		await walkSheet(page, 10, 14);
 	});
 
-	test('rolls whatever is skipped, and with YRT covers the region', async ({ page }) => {
+	test('rolls whatever is skipped, and with YRT covers its fields', async ({ page }) => {
 		await openHome(page, true);
 		await startTutorial(page);
 
@@ -262,7 +262,10 @@ test.describe('Tutorial — Create a character', () => {
 		await expectStep(page, 'Roll your stats');
 		expect(await target(page, 'new-char-name').locator('input').inputValue()).not.toBe('');
 		await next(page);
-		await expectStep(page, 'Roll a region of origin', '5 of 15');
+		await expectStep(page, 'Roll their details', '5 of 15');
+		await expect(page.locator(`${POPOVER} .driver-popover-description`)).toContainText(
+			'region of origin, religion and touched',
+		);
 		const stats = await target(page, 'new-char-stats')
 			.locator('input')
 			.evaluateAll((els) => els.map((e) => Number((e as HTMLInputElement).value)));
@@ -272,15 +275,15 @@ test.describe('Tutorial — Create a character', () => {
 		).toBe(true);
 		await next(page);
 		await expectStep(page, 'Randomize the rest');
-		await expect(
-			target(page, 'randomize-origin').locator('.bui-select-value--placeholder'),
-			'a region rolled',
-		).toHaveCount(0);
 		await next(page);
 
 		await expectStep(page, 'Create your character');
 		await target(page, 'new-char-dialog-confirm').click();
 		await expectStep(page, 'Meet your character', '8 of 15');
+		// The fields left empty were rolled on Create.
+		await expect(page.locator('.log-entry', { hasText: 'New Character' }).first()).toContainText(
+			'Region of origin:',
+		);
 		await next(page);
 		await expectStep(page, 'Turn the rolls into a bio');
 		await next(page);

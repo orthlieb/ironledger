@@ -45,6 +45,139 @@ const ALIAS = { ironsworn: 'base', delve: 'delve', yrt: 'yrt' };
 const CONTENT_DIRS = ['moves', 'oracles', 'foes', 'assets', 'delve', 'cultures'];
 
 const readJson = async (p) => JSON.parse(await readFile(p, 'utf-8'));
+
+/** Precondition keys preconditions.ts answers itself; a character field can't
+ *  take one as its id. Keep in step with apps/web/src/lib/preconditions.ts. */
+const BUILTIN_PRECONDITION_KEYS = new Set([
+  'hasCharacter',
+  'hasSite',
+  'hasJourney',
+  'hasScene',
+  'hasFoe',
+  'hasAnyAsset',
+  'initiative',
+  'momentum',
+  'health',
+  'spirit',
+  'supply',
+  'mana',
+  'experience',
+  'edge',
+  'heart',
+  'iron',
+  'shadow',
+  'wits',
+  'bonds',
+  'failures',
+  'vowCount',
+  'assetCount',
+  'companionCount',
+  'rarityCount',
+  'wounded',
+  'shaken',
+  'unprepared',
+  'encumbered',
+  'maimed',
+  'corrupted',
+  'cursed',
+  'tormented',
+]);
+
+/** An option id from its label: lower case, each run of other characters a
+ *  `-` ("Oray Hills" → "oray-hills"). Same rule as the web's optionId(). */
+const optionId = (label) =>
+  String(label)
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+/**
+ * Check each extension's `characterFields` and `characterFieldsHeading`
+ * (docs/character-fields.md); throws on the first problem. `oracles` maps an
+ * oracle key to its owning extension and file contents.
+ */
+function validateCharacterFields(id, m, oracles) {
+  const where = `extensions/${id}/extension.json`;
+  const h = m.characterFieldsHeading;
+  if (h !== undefined && h !== false && !(typeof h === 'string' && h.trim()))
+    throw new Error(`${where}: characterFieldsHeading must be false or a non-empty string`);
+  const fields = m.characterFields;
+  if (fields === undefined) return [];
+  if (!Array.isArray(fields)) throw new Error(`${where}: characterFields must be an array`);
+  /** An oracle this extension may use: its own, or base's. */
+  const oracle = (key, what) => {
+    const o = oracles.get(key);
+    if (!o || (o.owner !== id && o.owner !== 'base'))
+      throw new Error(
+        `${where}: ${what} names oracle "${key}", which neither ${id} nor base provides`,
+      );
+    return o.data;
+  };
+  const declared = new Map();
+  for (const f of fields) {
+    if (!f || typeof f !== 'object') throw new Error(`${where}: each character field is an object`);
+    const at = `${where}: character field "${f.id}"`;
+    if (typeof f.id !== 'string' || !/^[a-z][a-zA-Z0-9]*$/.test(f.id))
+      throw new Error(`${where}: character field id "${f.id}" must be camelCase`);
+    if (BUILTIN_PRECONDITION_KEYS.has(f.id))
+      throw new Error(`${at}: the id is a built-in precondition key`);
+    if (declared.has(f.id)) throw new Error(`${at}: declared twice`);
+    if (typeof f.label !== 'string' || !f.label.trim())
+      throw new Error(`${at}: label must be a non-empty string`);
+    if (!['dropdown', 'radio', 'text'].includes(f.type))
+      throw new Error(`${at}: type must be "dropdown", "radio" or "text"`);
+    if (typeof f.default !== 'string') throw new Error(`${at}: default must be a string`);
+    if (f.type === 'text') {
+      if (f.options !== undefined || f.optionsFrom !== undefined)
+        throw new Error(`${at}: a text field has no options`);
+    } else {
+      if ((f.options === undefined) === (f.optionsFrom === undefined))
+        throw new Error(`${at}: give options or optionsFrom, not both or neither`);
+      let ids;
+      if (f.options !== undefined) {
+        if (!Array.isArray(f.options)) throw new Error(`${at}: options must be an array`);
+        for (const o of f.options)
+          if (typeof o?.id !== 'string' || !o.id || typeof o?.label !== 'string' || !o.label)
+            throw new Error(`${at}: each option needs a non-empty id and label`);
+        ids = f.options.map((o) => o.id);
+      } else {
+        const prop = f.optionsFrom?.label ?? 'value';
+        const rows = oracle(f.optionsFrom?.oracle, 'optionsFrom').data ?? [];
+        ids = rows.map((r) => optionId(typeof r[prop] === 'string' ? r[prop] : ''));
+        if (ids.some((i) => !i))
+          throw new Error(`${at}: a row of "${f.optionsFrom.oracle}" has no "${prop}" to label it`);
+      }
+      if (ids.length < 2) throw new Error(`${at}: needs at least two options`);
+      if (new Set(ids).size !== ids.length) throw new Error(`${at}: repeats an option id`);
+      if (f.default !== '' && !ids.includes(f.default))
+        throw new Error(`${at}: default "${f.default}" is neither an option id nor ""`);
+    }
+    /** A choice field declared above this one, in this extension. */
+    const above = (key, what) => {
+      const d = declared.get(key);
+      if (!d)
+        throw new Error(`${at}: ${what} names "${key}", which isn't declared above it in ${id}`);
+      if (d.type === 'text') throw new Error(`${at}: ${what} names "${key}", a text field`);
+      return d;
+    };
+    if (f.if !== undefined) {
+      if (!Array.isArray(f.if)) throw new Error(`${at}: if must be an array of preconditions`);
+      for (const c of f.if) above(c?.key, 'if');
+    }
+    if (f.roll !== undefined) {
+      const rolled = oracle(f.roll?.oracle, 'roll');
+      if (f.roll.column !== undefined) {
+        above(f.roll.column?.field, 'roll.column');
+        if (typeof f.roll.column.from !== 'string' || !f.roll.column.from)
+          throw new Error(`${at}: roll.column.from must name a property`);
+        if (rolled.tableType !== 'columnSelect')
+          throw new Error(`${at}: roll.column needs a columnSelect oracle`);
+      }
+    }
+    declared.set(f.id, f);
+  }
+  return [...declared.keys()];
+}
 const listJson = async (dir) =>
   existsSync(dir) ? (await readdir(dir)).filter((f) => f.endsWith('.json')).sort() : [];
 
@@ -209,6 +342,12 @@ async function build() {
       // Consumed by the Hamburger → Info submenu (HamburgerMenu.svelte): one
       // link per enabled extension carrying an infoLink.
       ...(meta[id].infoLink ? { infoLink: meta[id].infoLink } : {}),
+      // Fields this extension adds to a character, and the heading over them
+      // on the sheet (docs/character-fields.md). Checked below.
+      ...(meta[id].characterFields?.length ? { characterFields: meta[id].characterFields } : {}),
+      ...(meta[id].characterFieldsHeading !== undefined
+        ? { characterFieldsHeading: meta[id].characterFieldsHeading }
+        : {}),
       root,
       provides: Object.fromEntries(
         Object.entries(provides)
@@ -218,6 +357,24 @@ async function build() {
     });
   }
   entries.sort((a, b) => a.order - b.order);
+
+  // Character fields: each checked against the oracles its extension (or
+  // base) provides; a field id is unique across all extensions.
+  const oracles = new Map();
+  for (const e of entries)
+    for (const rel of e.provides.oracles ?? []) {
+      const data = await readJson(path.join(REPO, e.root, rel));
+      if (data.key) oracles.set(data.key, { owner: e.id, data });
+    }
+  const fieldOwner = new Map();
+  for (const e of entries)
+    for (const fid of validateCharacterFields(e.id, meta[e.id], oracles)) {
+      if (fieldOwner.has(fid))
+        throw new Error(
+          `character field "${fid}" is declared by both ${fieldOwner.get(fid)} and ${e.id}`,
+        );
+      fieldOwner.set(fid, e.id);
+    }
 
   return {
     $comment:

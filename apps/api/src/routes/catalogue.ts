@@ -115,6 +115,11 @@ interface ExtensionManifestEntry {
    *  Carried through to the public payload — the Hamburger → Info submenu
    *  renders one item per enabled extension that declares this. */
   infoLink?: { label: string; url: string };
+  /** Fields this extension adds to a character, and the heading over them.
+   *  Carried through as declared (gen-extensions-manifest checks them); the
+   *  shape is CharacterFieldDef in @ironledger/shared, kept loose here. */
+  characterFields?: Array<Record<string, unknown>>;
+  characterFieldsHeading?: string | false;
   /** Repo-relative content root (e.g. `apps/api/data` or `extensions/yrt`). */
   root: string;
   /** Content files this extension provides, relative to `root`. */
@@ -137,6 +142,9 @@ export interface PublicExtension {
   supersedesCultures?: Record<string, string>;
   moveCategories?: CategoryMeta[];
   oracleCategories?: CategoryMeta[];
+  infoLink?: { label: string; url: string };
+  characterFields?: Array<Record<string, unknown>>;
+  characterFieldsHeading?: string | false;
 }
 
 /**
@@ -168,6 +176,12 @@ export function toPublicExtension(e: ExtensionManifestEntry): PublicExtension {
     ...(e.moveCategories?.length ? { moveCategories: e.moveCategories } : {}),
     ...(e.oracleCategories?.length ? { oracleCategories: e.oracleCategories } : {}),
     ...(e.infoLink ? { infoLink: e.infoLink } : {}),
+    // The sheet, New Character and preconditions read these; without them a
+    // YRT character loses its Touched level and the Touched assets' gate.
+    ...(e.characterFields?.length ? { characterFields: e.characterFields } : {}),
+    ...(e.characterFieldsHeading !== undefined
+      ? { characterFieldsHeading: e.characterFieldsHeading }
+      : {}),
   };
 }
 

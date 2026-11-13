@@ -82,6 +82,67 @@ export function hydrateCharacterInPlace(d: Record<string, unknown>): void {
 	for (const [k, v] of Object.entries(DEFAULT_CHARACTER as unknown as Record<string, unknown>)) {
 		if (d[k] === undefined) d[k] = v;
 	}
+	moveLegacyYrtFields(d);
+}
+
+/** The id of an option from its label, as characterFields.optionId does. */
+const toOptionId = (label: string) =>
+	label
+		.toLowerCase()
+		.replace(/[^a-z0-9]+/g, '-')
+		.replace(/^-+|-+$/g, '');
+
+/**
+ * YRT's region of origin, religion, touched level and animal were kept as
+ * prose in the background, and the level and animal also on the Touched asset
+ * (`customValues.touchedLevel` / `animalName`) or, in older saves, as
+ * `data.touched` / `data.touchedAnimal`. They're character fields now
+ * (docs/character-fields.md). Fill each field the character doesn't have yet
+ * from the first copy found, then drop the asset and legacy copies; the
+ * background is left as written. Only the exact wording New Character wrote
+ * is read. Runs on every load; once a field is set it's skipped.
+ */
+export function moveLegacyYrtFields(d: Record<string, unknown>): void {
+	const fields = (d.fields ?? {}) as Record<string, string>;
+	const bg = typeof d.background === 'string' ? d.background : '';
+	const assets = (Array.isArray(d.assets) ? d.assets : []) as Array<{
+		customValues?: Record<string, string>;
+	}>;
+	const onAsset = (key: string) =>
+		assets.map((a) => a.customValues?.[key]).find((v) => typeof v === 'string' && v) ?? '';
+	const set = (id: string, value: string | undefined) => {
+		if (fields[id] === undefined && value) fields[id] = value;
+	};
+
+	set('origin', toOptionId(bg.match(/\*\*Region of origin:\*\*[ \t]*([^\n]+)/)?.[1]?.trim() ?? ''));
+	set('religion', toOptionId(bg.match(/\*\*Religion:\*\*[ \t]*\*\*([^*\n]+)\*\*/)?.[1] ?? ''));
+	const level =
+		onAsset('touchedLevel') ||
+		(typeof d.touched === 'string' ? d.touched : '') ||
+		(bg
+			.match(
+				/\*\*(Pure) with no touched features\*\*|\*\*(Prime|Second|Third) with \d+\*\*|\*\*(Feral) with many\*\*/,
+			)
+			?.slice(1)
+			.find(Boolean) ??
+			'');
+	set('touched', level.toLowerCase());
+	const animal =
+		onAsset('animalName') ||
+		(typeof d.touchedAnimal === 'string' ? d.touchedAnimal : '') ||
+		(bg.match(/ features? of an? ([^.\n]+)\./)?.[1]?.trim() ?? '');
+	set('touchedAnimal', animal);
+
+	for (const a of assets) {
+		if (a.customValues && ('touchedLevel' in a.customValues || 'animalName' in a.customValues)) {
+			delete a.customValues.touchedLevel;
+			delete a.customValues.animalName;
+		}
+	}
+	// Only touch what's there: each write to a live character schedules a save.
+	if ('touched' in d) delete d.touched;
+	if ('touchedAnimal' in d) delete d.touchedAnimal;
+	if (d.fields !== fields) d.fields = fields;
 }
 
 /**

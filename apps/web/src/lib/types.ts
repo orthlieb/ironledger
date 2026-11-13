@@ -3,8 +3,6 @@
 // Mirrors the YRT character model (stored as JSONB in PostgreSQL)
 // =============================================================================
 
-export type TouchedLevel = 'pure' | 'prime' | 'second' | 'third' | 'feral';
-
 export type VowDifficulty = 'troublesome' | 'dangerous' | 'formidable' | 'extreme' | 'epic';
 
 /** A vow's lifecycle state. Active → in progress; Fulfilled → completed;
@@ -99,6 +97,40 @@ export interface ExtensionInfo {
 	 *  adds one item that opens `url` in a new tab, labelled `label`. Mirrors
 	 *  ExtensionInfo in @ironledger/shared. */
 	infoLink?: { label: string; url: string };
+	/** Fields this extension adds to a character, in declaration order (see
+	 *  characterFields.svelte.ts and docs/character-fields.md). */
+	characterFields?: CharacterFieldDef[];
+	/** The heading over those fields: left out, `name`; text, that text;
+	 *  `false`, none. */
+	characterFieldsHeading?: string | false;
+}
+
+/** One choice of a dropdown or radio character field. */
+export interface CharacterFieldOption {
+	id: string;
+	label: string;
+}
+
+/** A field an extension adds to every character. Mirrors CharacterFieldDef in
+ *  @ironledger/shared. */
+export interface CharacterFieldDef {
+	/** camelCase, unique across extensions: the key in `character.fields`
+	 *  and the precondition key. */
+	id: string;
+	label: string;
+	type: 'dropdown' | 'radio' | 'text';
+	options?: CharacterFieldOption[];
+	/** Instead of `options`: one option per row of an oracle. */
+	optionsFrom?: { oracle: string; label?: string };
+	/** The value of a character made before the field existed; `""` is no
+	 *  choice. New Character starts every field empty. */
+	default: string;
+	placeholder?: string;
+	/** While these fail, the field is hidden (and keeps its value). */
+	if?: Array<{ key: string; min?: number; max?: number; eq?: number; ne?: number }>;
+	/** The oracle New Character's die rolls, by key. */
+	roll?: { oracle: string; from?: string; column?: { field: string; from: string } };
+	tooltip?: string;
 }
 
 export interface FoeDef {
@@ -349,11 +381,11 @@ export interface CharacterData {
 	shadow: number;
 	wits: number;
 
-	// YRT homebrew
-	/** @deprecated Moved to the Touched asset card's customValues.touchedLevel — kept for old-save migration. */
-	touched?: TouchedLevel;
-	/** @deprecated Moved to the Touched asset card's customValues.animalName — kept for old-save migration. */
-	touchedAnimal?: string;
+	/** Values of the fields extensions add to a character (YRT's region of
+	 *  origin, religion, touched level and animal), keyed by field id: an
+	 *  option id, or text. A missing key reads as the field's default. See
+	 *  characterFields.svelte.ts. */
+	fields?: Record<string, string>;
 
 	// Resources
 	momentum: number; // –6 to dynamic max (10 − debilityCount)
@@ -473,6 +505,10 @@ export interface AssetDefinition {
 	 * When the selected level changes downward the excess abilities are cleared.
 	 */
 	abilityMaxByField?: Record<string, Record<string, number>>;
+	/** Character fields (ids) the card shows as a line of text, e.g. a Touched
+	 *  asset's ["touched", "touchedAnimal"] → "Second · Wolf". The first text
+	 *  one with a value also names the asset's chit on the sheet. */
+	characterFields?: string[];
 	[key: string]: unknown;
 }
 
@@ -499,6 +535,7 @@ export const DEFAULT_CHARACTER: CharacterData = {
 	spirit: 5,
 	supply: 5,
 	globalValues: {},
+	fields: {},
 	xp: 0,
 	bonds: 0,
 	failures: 0,

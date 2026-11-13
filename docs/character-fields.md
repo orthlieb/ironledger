@@ -1,31 +1,27 @@
 # Character fields from extensions
 
-**Status: proposed.** Nothing here is built yet. This is the spec the work
-will follow; when it lands, this page becomes the feature's documentation.
-
 An extension can add fields to a character: values the character has, shown
 on the sheet, rolled at creation, and checked by preconditions. YRT's region
 of origin, religion, touched level and touched animal are the first four.
 
-## The problem
+## Why
 
-YRT gives every character a region of origin, a religion, a touched level
+Before this, YRT gave every character a region of origin, a religion, a touched level
 (Pure, Prime, Second, Third or Feral) and, unless they're Pure, an animal
-(Bear, Wolf, Cat (domestic), …). None of them is stored as a value:
+(Bear, Wolf, Cat (domestic), …), and none of them was stored as a value:
 
-- New Character writes them into the background as prose
+- New Character wrote them into the background as prose
   (`**Region of origin:** Piscis`, `**Religion:** **Puritan**: Holds that…`,
   "Fanir is a **Second with 2** features of a wolf.") and the log.
-- Each Touched asset keeps its own copies of the level and animal: a Level
-  dropdown (`touchedLevel`), which starts at Prime and has no Pure, and an
+- Each Touched asset kept its own copies of the level and animal: a Level
+  dropdown (`touchedLevel`), which started at Prime and had no Pure, and an
   Animal text box (`animalName`).
-- The `touched` precondition key is written into `preconditions.ts`, reads
-  the asset's dropdown, and treats a character without a Touched asset as
-  Pure. No asset uses it.
+- The `touched` precondition key was written into `preconditions.ts` and
+  read the asset's dropdown. No asset used it.
 
 The Character: Touched oracle (`yrtTouched`) says of Pure: "Cannot use
-Touched Assets." The app can't check that: a character who rolled Pure can
-add any Touched asset, and the asset makes them Prime.
+Touched Assets." The app couldn't check that: a character who rolled Pure
+could add any Touched asset, and the asset made them Prime.
 
 ## YRT's four fields
 
@@ -308,12 +304,13 @@ keeping copies:
   in the character's fields.
 - Where the two inputs were, the card shows the character's values as text
   ("Second · Wolf"), so the limit on marked abilities still explains itself.
-- The asset chit and the card title use the animal where they used
-  `animalName`.
+- The asset lists the fields it shows in `characterFields`
+  (`["touched", "touchedAnimal"]`), and its chit on the sheet is named for
+  the animal, as it was for `animalName`.
 
 Lowering the level on the sheet below what the character's Touched asset has
 marked unmarks the extra abilities, keeping the first ones, as lowering the
-card's dropdown does now. The log line says so: `Touched: Second → Prime;
+card's dropdown used to. The log line says so: `Touched: Second → Prime;
 unmarked 1 ability on Touched, Feline`. No XP comes back, as when an ability
 is unmarked by hand.
 
@@ -343,7 +340,7 @@ read, and `touched` / `touchedAnimal` come off the `CharacterData` type.
 ## Extension logic still in code
 
 Code that knows about one extension by name, and what each piece would
-become. "This work" marks what this spec moves; the rest is listed so later
+become. "This work" marks what moved with character fields; the rest is listed so later
 work can pick it up.
 
 ### Character fields (`characterFields`)
@@ -354,7 +351,7 @@ work can pick it up.
 | `RandomizeBlock.svelte` region picker (`regionOriginOptions`), `characterRollups.ts` `religionColumnForOrigin`, `randomizationsAsMarkdown`                                               | Region of origin and religion, into the background     | The `origin` and `religion` fields; `roll.column`                                              | This work |
 | `preconditions.ts` `touched` branch, `TOUCHED_LEVEL`, `TOUCHED_LABEL`                                                                                                                    | The `touched` precondition key                         | The generic field branch                                                                       | This work |
 | The ten Touched assets' `touchedLevel` / `animalName` custom fields; `types.ts` `touched` / `touchedAnimal`                                                                              | Per-asset and legacy copies of the level and animal    | Read from `fields`; removed                                                                    | This work |
-| `tutorials/createCharacter.ts` region step (`isSourceEnabled('yrt')`)                                                                                                                    | Shows the Region of origin step only with YRT on       | Shown when the `randomize-origin` control exists                                               | This work |
+| `tutorials/createCharacter.ts` region step (`isSourceEnabled('yrt')`)                                                                                                                    | Shows the Region of origin step only with YRT on       | A "Roll their details" step, shown when an enabled extension declares fields                   | This work |
 | `CharactersArea.svelte` Status tab `isSourceEnabled('delve')`: Failures track, Lessons Learned; `MovesDialog.svelte` `+1 failure` link on a miss                                         | Delve's failures track on the character                | A `track` field type, and a move-outcome hook for the `+1 failure` link                        | Later     |
 | `CharactersArea.svelte` `applyResourceChange` `mana` branch; `preconditions.ts` `mana` in the stat map; `MovesDialog.svelte` mana commit                                                 | YRT's mana as a resource with a 0–10 range             | A `counter` field type with a range and colour, which `resource:` links and preconditions read | Later     |
 
@@ -387,7 +384,7 @@ and delve tables; Lodestar's scenes; YRT's Conclave ritual casting in the
 Moves dialog (mana commit and inspection factors). Declarations can switch
 them on, as `expeditionKinds` would, but the screens themselves stay code.
 
-## The work
+## Where it lives
 
 - **Manifest:** `scripts/gen-extensions-manifest.mjs` validates and passes
   `characterFields` and `characterFieldsHeading` through; `ExtensionInfo`
@@ -409,7 +406,7 @@ them on, as `expeditionKinds` would, but the screens themselves stay code.
     roll; YRT's features roll reading `fields.touched` and writing a list;
     the origin, religion and touched prose dropped from the background.
   - `AssetCard.svelte`: `abilityMaxByField` against character fields, the
-    level and animal as text, the animal in the title.
+    level and animal as text; the chit named for the animal.
   - `character.ts`: the load-time move into `fields`.
   - `tutorials/createCharacter.ts`: the "Roll a region of origin" step
     becomes one step over the YRT fields, shown when they're there.
@@ -419,15 +416,19 @@ them on, as `expeditionKinds` would, but the screens themselves stay code.
   Assets and oracles change, so `npm run gen:yrt-ref` regenerates the
   reference pages.
 - **Tests:**
-  - Unit: the precondition branch, the manifest's validation, `optionsFrom`
-    ids, the Create rolls (only empty fields; origin before religion, on the
-    origin's column; no animal for Pure), the move into `fields`.
-  - E2E: a Pure character sees the Touched assets faded; setting Prime lets
-    them add one; lowering the level unmarks an ability; Animal hides for Pure
-    on the sheet and in New Character; Create rolls the fields left empty
-    and keeps the ones rolled or picked, and none goes into the background.
-  - `tutorials.spec.ts`, for the Create a character tutorial's new YRT step
-    and its shorter "Randomize the rest".
+  - `apps/web/tests/unit/characterFields.test.ts`: YRT's declarations
+    against its real oracles, `optionsFrom` ids, visibility (no Animal for
+    Pure), rolls (religion on the origin's column, none without an origin;
+    supersession), precondition messages, and the move into `fields`.
+  - `apps/api/tests/unit/publicExtension.test.ts`: the fields reach the
+    client.
+  - `apps/web/tests/e2e/character-fields.spec.ts`: New Character's dice and
+    Create's rolls (kept out of the background); Animal hiding for Pure; a
+    change logged; the Touched assets faded for Pure and open at Prime;
+    lowering the level unmarking abilities; an older character's values
+    moved in.
+  - `apps/web/tests/e2e/tutorials.spec.ts`: the Create a character
+    tutorial's "Roll their details" step.
 - **Docs:** `extensions.md` (the new `extension.json` key, and its stale
   table of current extensions), `data-schema.md` (character fields as
   precondition keys; the Touched row), the YRT README (Touched assets,
