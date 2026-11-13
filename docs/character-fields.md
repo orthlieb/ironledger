@@ -116,7 +116,7 @@ Touched rows as their `className`.
 
 | Field    | Description                                                                                                                                                                                                                                            |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `oracle` | The oracle to roll.                                                                                                                                                                                                                                    |
+| `oracle` | The oracle's key (`yrtAnimal`), not its title, which can change. Rolls go through `resolveOracleKey`, so an extension that supersedes the oracle supplies the roll, as it does everywhere else.                                                        |
 | `from`   | The property to read when the rolled row is an object (default: the row's `value`).                                                                                                                                                                    |
 | `column` | For an oracle rolled on a column (`tableType: "columnSelect"`): `field` names a dropdown or radio field declared above it in the same extension, `from` a property of its chosen option's row. The column is the one whose label equals that property. |
 
@@ -233,7 +233,8 @@ New Character shows every field of the enabled extensions, in the same order
 and under the same headings as the sheet, below the stats. Each shows its
 control, with a d6 beside it when it has a `roll`; the die rolls the oracle
 (on the column `roll.column` names, if any) and fills the control, and the
-player can roll again or pick by hand. A field's controls carry
+player can roll again or pick by hand. The die's hover hint names the
+oracle by its title ("Roll on Character: Touched Aspect"). A field's controls carry
 `data-tour="randomize-<id>"` and its die `data-tour="roll-<id>"`, so Region
 of origin keeps the `randomize-origin` and `roll-origin` the Create a
 character tutorial already uses.
