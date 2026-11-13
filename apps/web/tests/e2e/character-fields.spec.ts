@@ -138,6 +138,24 @@ test('Lowering Touched unmarks the abilities above the new limit', async ({ page
 	);
 });
 
+test('A Pure character keeps a Touched asset faded, and can still delete it', async ({ page }) => {
+	await seedCharacter('Purged', undefined, {
+		fields: { touched: 'pure' },
+		assets: [{ assetId: 'path/yrt-touched-feline', abilities: [false, false, false] }],
+	});
+	await openSheet(page, 'Purged');
+	await page.locator(`${CHAR_AREA} [data-tour="char-tab-assets"]`).click();
+	const chit = page.locator('.ca-asset-card', { hasText: 'Touched, Feline' });
+	await expect(chit).toHaveClass(/ca-asset-card--blocked/);
+	await chit.locator('.ca-asset-card-main').click();
+	await expect(page.locator('.asset-blocked')).toContainText(
+		"Can't be used: Requires Touched: Prime or higher",
+	);
+	await page.getByRole('button', { name: 'Delete Touched, Feline' }).click();
+	await page.locator('.confirm-modal').getByRole('button', { name: 'DELETE' }).click();
+	await expect(page.locator('.ca-asset-card', { hasText: 'Touched, Feline' })).toHaveCount(0);
+});
+
 test("An older character's level, animal and origin move into its fields", async ({ page }) => {
 	await seedCharacter('Oldie', undefined, {
 		background: '**Region of origin:** Oray Hills\n\nGrew up near the hills.',

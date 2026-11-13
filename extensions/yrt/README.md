@@ -77,7 +77,7 @@ The Touched are characters physically altered by manite exposure. Touched assets
 - `preamble` — shown **before** the ability checkboxes (prerequisite or flavour note)
 - `postamble` — shown **after** the ability checkboxes (used for the "how many abilities you may use" note, since it belongs logically after the list)
 
-**Level-gated abilities:** A Prime character may use one ability, Second two, Third or Feral all three. A character whose touched level is Pure cannot use a Touched asset. The UI disables unchecked boxes when the character is at their level cap and shows a tooltip explaining why.
+**Level-gated abilities:** A Prime character may use one ability, Second two, Third or Feral all three. A character whose touched level is Pure cannot use a Touched asset: setting a character to Pure keeps their Touched asset, with every ability unmarked, faded on the sheet and marked as unusable on its card, where they can delete it. The UI disables unchecked boxes when the character is at their level cap and shows a tooltip explaining why.
 
 **Exclusive group:** Only one Touched asset may be active at a time. Adding a second Touched asset while one is already owned shows an error message directing the player to remove the existing one first.
 

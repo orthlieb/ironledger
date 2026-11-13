@@ -337,6 +337,12 @@ card's dropdown used to. The log line says so: `Touched: Second → Prime;
 unmarked 1 ability on Touched, Feline`. No XP comes back, as when an ability
 is unmarked by hand.
 
+Setting the level to Pure keeps the Touched asset, with every ability
+unmarked (its limit at Pure is 0). The asset's requirement no longer holds,
+so the sheet shows it faded with the reason on hover, and its card says it
+can't be used; Delete still works. That's general: any owned asset whose
+`preconditions` fail is shown the same way.
+
 ## Existing characters
 
 When a character loads (next to `hydrateCharacterInPlace` in `character.ts`),

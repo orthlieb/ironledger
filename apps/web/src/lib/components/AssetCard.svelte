@@ -74,6 +74,7 @@
 		onCommit,
 		onClose,
 		characterFields,
+		blockedReason = null,
 	}: {
 		asset: CharacterAsset;
 		definition: AssetDefinition;
@@ -101,6 +102,9 @@
 		/** The character's extension field values (`character.fields`): what
 		 *  a Touched asset's ability limit and level line read. */
 		characterFields?: Record<string, string>;
+		/** Why this owned asset can't be used now (its requirement fails), shown
+		 *  at the top of the card; Delete still works. */
+		blockedReason?: string | null;
 	} = $props();
 
 	/** An `abilityMaxByField` key's current value: the asset's own custom
@@ -356,6 +360,10 @@
 		<div class="asset-cat-row">
 			<span class="asset-cat">{definition.category}</span>
 		</div>
+
+		{#if blockedReason}
+			<p class="asset-blocked" role="note">Can't be used: {blockedReason}.</p>
+		{/if}
 
 		{#if fieldLine}
 			<p class="asset-char-fields" use:tooltip={"Set on the character's Core tab"}>
@@ -983,6 +991,16 @@
 
 	/* A Touched asset's line of the character's own values ("Second · Wolf"),
 	   which are set on the sheet, not here. */
+	.asset-blocked {
+		margin: 0 0 6px;
+		padding: 4px 8px;
+		font-family: var(--font-ui);
+		font-size: 0.8rem;
+		color: var(--text);
+		background: color-mix(in srgb, var(--color-danger, #ef4444) 12%, transparent);
+		border-left: 3px solid var(--color-danger, #ef4444);
+		border-radius: 3px;
+	}
 	.asset-char-fields {
 		margin: 0 0 6px;
 		font-family: var(--font-ui);

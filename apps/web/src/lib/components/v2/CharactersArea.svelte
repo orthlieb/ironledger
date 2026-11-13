@@ -80,8 +80,9 @@
 	} from '#lib/character.js';
 	import hornedHelmSvg from '#icons/horned-helm.svg?raw';
 	import { appIcon } from '#lib/liveryIcons.js';
-	import type { CharacterData, CharacterAsset } from '#lib/types.js';
+	import type { AssetDefinition, CharacterData, CharacterAsset } from '#lib/types.js';
 	import { escHtml } from '#lib/markdown.js';
+	import { firstPreconditionFailure, type Precondition } from '#lib/preconditions.js';
 	import AssetCard from '#lib/components/AssetCard.svelte';
 	import SegmentedRadio from '#lib/components/SegmentedRadio.svelte';
 	import AssetPicker from '#lib/components/AssetPicker.svelte';
@@ -509,6 +510,13 @@
 				.join(''),
 		);
 		statsDraft = null;
+	}
+
+	/** Why an owned asset can't be used now (its preconditions fail, e.g. a
+	 *  Touched asset on a Pure character), or null. */
+	function assetBlocked(def: AssetDefinition | undefined): string | null {
+		if (!def || !activeData) return null;
+		return firstPreconditionFailure(def.preconditions as Precondition[] | undefined, activeData);
 	}
 
 	/** An asset's chit name from the character fields it shows (a Touched
@@ -1586,11 +1594,23 @@
 											{@const catColor = CAT_COLOR[def?.category ?? ''] ?? 'var(--text-muted)'}
 											{@const counter = assetCounter(a, d.globalValues)}
 											{@const display = assetFieldName(def) ?? assetDisplayName(a, def)}
-											<div class="ca-asset-card" style="--cat-color: {catColor}">
+											{@const blocked = assetBlocked(def)}
+											<!-- An asset whose requirement no longer holds (a Touched asset on a
+											     Pure character) stays, faded, with the reason on hover; its
+											     card still opens, so it can be deleted. -->
+											<div
+												class="ca-asset-card"
+												class:ca-asset-card--blocked={!!blocked}
+												style="--cat-color: {catColor}"
+											>
 												<button
 													class="ca-asset-card-main"
 													onclick={(e) => openAssetDialog(a.assetId, e)}
-													use:tooltip={def ? `${def.name} · ${def.category}` : a.assetId}
+													use:tooltip={blocked
+														? `${def?.name}: can't be used. ${blocked}`
+														: def
+															? `${def.name} · ${def.category}`
+															: a.assetId}
 												>
 													<span class="ca-asset-card-meta">
 														<span class="ca-asset-card-cat">{def?.category ?? ''}</span>
@@ -1789,6 +1809,7 @@
 						onCommit={commitAssetDialog}
 						onClose={closeAssetDialog}
 						characterFields={activeData.fields}
+						blockedReason={dialogMode === 'edit' ? assetBlocked(def) : null}
 					/>
 				</Dialog.Content>
 			</Dialog.Portal>
@@ -2470,6 +2491,12 @@
 	   counter tile on the right. Hover state is on the inner main-button
 	   area only — putting it on the outer card caused the whole chit to
 	   lift when the cursor moved onto the counter ± buttons. */
+	/* An owned asset whose requirement no longer holds: still there, and
+	   still opens (to delete it), but plainly out of use. */
+	.ca-asset-card--blocked {
+		opacity: 0.5;
+		border-left-style: dashed;
+	}
 	.ca-asset-card {
 		display: flex;
 		align-items: stretch;
