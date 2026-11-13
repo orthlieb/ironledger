@@ -48,7 +48,10 @@ die + stat + adds) is capped at 10 (`rules/actionScore.ts`).
 | Shadow | `#a855f7` purple | `shadow` |
 | Wits   | `#f59e0b` amber  | `wits`   |
 
-Also shows **Touched** level (`pure / prime / second / third / feral`) and **Touched Animal** name (YRT homebrew).
+With YRT, a character's touched level (Pure, Prime, Second, Third, Feral) is
+rolled at creation and written into the background and the log; the sheet
+has no field for it. A character whose touched level is Pure cannot use a
+Touched asset; one who can holds the level in that asset's Level dropdown.
 
 ### Resources (`MeterControl` components)
 

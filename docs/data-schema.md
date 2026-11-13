@@ -102,16 +102,16 @@ Multiple operators on one precondition are AND'd (e.g., `min: 2, max: 8` means "
 
 #### Key Categories
 
-| Category             | Valid Keys                                                                                                | Values                                       | Notes                                                                           |
-| -------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| **Global Selection** | `hasCharacter`, `hasSite`, `hasJourney`, `hasFoe`                                                         | `eq: 1` (selected) or `eq: 0` (not selected) | Whether the corresponding dropdown has an active selection                      |
-| **Character Values** | `momentum`, `health`, `spirit`, `supply`, `mana`, `experience`, `edge`, `heart`, `iron`, `shadow`, `wits` | Numeric, use `min`/`max`/`eq`/`ne`           | Direct character stat or resource read                                          |
-| **Progress Tracks**  | `bonds`, `failures`                                                                                       | 1–10 (boxes)                                 | Stored as ticks internally; divided by 4 for comparison                         |
-| **Computed Counts**  | `vowCount`, `assetCount`, `companionCount`, `rarityCount`                                                 | Numeric                                      | Count of active vows, total assets, companion assets, or assets with a rarity   |
-| **Initiative**       | `initiative`                                                                                              | 0=none, 1=character, 2=foe                   | Combat initiative state; use `eq` to gate on who has initiative                 |
-| **Debilities**       | `wounded`, `shaken`, `unprepared`, `encumbered`, `maimed`, `corrupted`, `cursed`, `tormented`             | `eq: 0` (off) or `eq: 1` (on)                | Boolean debility flags                                                          |
-| **Touched**          | `touched`                                                                                                 | 0=pure, 1=prime, 2=second, 3=third, 4=feral  | Numeric scale; use `min`/`max` for thresholds (e.g., `min: 1` = prime or worse) |
-| **Assets**           | Any asset name (e.g., `"Ritualist"`)                                                                      | `eq: 0` (lacks) or `eq: 1` (has)             | Checks character's asset list by name                                           |
+| Category             | Valid Keys                                                                                                | Values                                                         | Notes                                                                           |
+| -------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------- |
+| **Global Selection** | `hasCharacter`, `hasSite`, `hasJourney`, `hasFoe`                                                         | `eq: 1` (selected) or `eq: 0` (not selected)                   | Whether the corresponding dropdown has an active selection                      |
+| **Character Values** | `momentum`, `health`, `spirit`, `supply`, `mana`, `experience`, `edge`, `heart`, `iron`, `shadow`, `wits` | Numeric, use `min`/`max`/`eq`/`ne`                             | Direct character stat or resource read                                          |
+| **Progress Tracks**  | `bonds`, `failures`                                                                                       | 1–10 (boxes)                                                   | Stored as ticks internally; divided by 4 for comparison                         |
+| **Computed Counts**  | `vowCount`, `assetCount`, `companionCount`, `rarityCount`                                                 | Numeric                                                        | Count of active vows, total assets, companion assets, or assets with a rarity   |
+| **Initiative**       | `initiative`                                                                                              | 0=none, 1=character, 2=foe                                     | Combat initiative state; use `eq` to gate on who has initiative                 |
+| **Debilities**       | `wounded`, `shaken`, `unprepared`, `encumbered`, `maimed`, `corrupted`, `cursed`, `tormented`             | `eq: 0` (off) or `eq: 1` (on)                                  | Boolean debility flags                                                          |
+| **Touched**          | `touched`                                                                                                 | 0=pure (no Touched asset), 1=prime, 2=second, 3=third, 4=feral | Numeric scale; use `min`/`max` for thresholds (e.g., `min: 1` = prime or worse) |
+| **Assets**           | Any asset name (e.g., `"Ritualist"`)                                                                      | `eq: 0` (lacks) or `eq: 1` (has)                               | Checks character's asset list by name                                           |
 
 #### Examples
 
@@ -668,7 +668,8 @@ Per the Ironsworn printable asset sheet: Paths, Rituals, and Combat Talents incl
 
 Touched assets also start with none marked: how many can be marked follows
 the card's Level dropdown (`abilityMaxByField`), one at Prime (the default),
-two at Second, all three at Third and Feral.
+two at Second, all three at Third and Feral. The dropdown has no Pure: a
+character whose touched level is Pure cannot use a Touched asset.
 
 ### XP Cost and Gating
 
