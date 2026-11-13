@@ -98,9 +98,11 @@ const toOptionId = (label: string) =>
  * (`customValues.touchedLevel` / `animalName`) or, in older saves, as
  * `data.touched` / `data.touchedAnimal`. They're character fields now
  * (docs/character-fields.md). Fill each field the character doesn't have yet
- * from the first copy found, then drop the asset and legacy copies; the
- * background is left as written. Only the exact wording New Character wrote
- * is read. Runs on every load; once a field is set it's skipped.
+ * from the first copy found, then drop the asset and legacy copies. The
+ * background's `**Region of origin:**` line goes too, once the field holds
+ * the region; the rest of the background is left as written. Only the exact
+ * wording New Character wrote is read. Runs on every load; once a field is
+ * set it's skipped.
  */
 export function moveLegacyYrtFields(d: Record<string, unknown>): void {
 	const fields = (d.fields ?? {}) as Record<string, string>;
@@ -114,7 +116,11 @@ export function moveLegacyYrtFields(d: Record<string, unknown>): void {
 		if (fields[id] === undefined && value) fields[id] = value;
 	};
 
-	set('origin', toOptionId(bg.match(/\*\*Region of origin:\*\*[ \t]*([^\n]+)/)?.[1]?.trim() ?? ''));
+	const originLine = /^\*\*Region of origin:\*\*[ \t]*([^\n]+)\n?\n?/m;
+	set('origin', toOptionId(bg.match(originLine)?.[1]?.trim() ?? ''));
+	// The field holds the region now: drop the background's copy of it, and
+	// the blank line after it.
+	if (fields.origin && originLine.test(bg)) d.background = bg.replace(originLine, '').trimEnd();
 	set('religion', toOptionId(bg.match(/\*\*Religion:\*\*[ \t]*\*\*([^*\n]+)\*\*/)?.[1] ?? ''));
 	const level =
 		onAsset('touchedLevel') ||

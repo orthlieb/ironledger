@@ -203,4 +203,8 @@ test("An older character's level, animal and origin move into its fields", async
 	await expect(field(page, 'touched').locator('.bui-select-trigger')).toHaveText('Second');
 	await expect(field(page, 'touchedAnimal').locator('input')).toHaveValue('Wolf');
 	await expect(field(page, 'religion').locator('.bui-select-trigger')).toHaveText('—');
+	// The region moved into the field, so the background no longer repeats it.
+	await page.locator(`${CHAR_AREA} [data-tour="char-tab-background"]`).click();
+	await expect(page.locator('[data-tour="char-bio"]')).toContainText('Grew up near the hills.');
+	await expect(page.locator('[data-tour="char-bio"]')).not.toContainText('Region of origin');
 });

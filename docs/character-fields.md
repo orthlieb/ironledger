@@ -373,9 +373,11 @@ it finds:
 | `touchedAnimal` | The Touched asset's `customValues.animalName`; the old `data.touchedAnimal`; the background's "features of a <animal>"                                         |
 
 Only the wording New Character wrote is read; a background the player has
-rewritten is left alone, and the field keeps its default. Nothing is removed
-from the background. The asset copies and the old fields are deleted once
-read, and `touched` / `touchedAnimal` come off the `CharacterData` type.
+rewritten is left alone, and the field keeps its default. Once Region of
+origin is set, the background's `**Region of origin:**` line is removed, so
+the region isn't shown twice; the rest of the background, religion and
+touched prose included, stays as written. The asset copies and the old
+fields are deleted once read, and `touched` / `touchedAnimal` come off the `CharacterData` type.
 
 ## Not covered here
 

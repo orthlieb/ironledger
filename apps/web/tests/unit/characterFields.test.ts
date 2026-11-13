@@ -220,7 +220,9 @@ describe('moveLegacyYrtFields', () => {
 			touched: 'second',
 			touchedAnimal: 'Mountain Lion / Puma',
 		});
-		expect(prose.background).toMatch(/^\*\*Region of origin:\*\* Oray Hills/);
+		// The region line goes (the field holds it); the rest stays.
+		expect(prose.background).toMatch(/^\*\*Religion:\*\* \*\*None, or their own\*\*/);
+		expect(prose.background).not.toContain('Region of origin');
 
 		const pure: Record<string, unknown> = {
 			assets: [],
@@ -228,6 +230,17 @@ describe('moveLegacyYrtFields', () => {
 		};
 		moveLegacyYrtFields(pure);
 		expect(pure.fields).toEqual({ touched: 'pure' });
+	});
+
+	it('drops a region line at the end of a background, with the gap before it', () => {
+		const d: Record<string, unknown> = {
+			fields: { origin: 'piscis' },
+			assets: [],
+			background: 'Grew up by the sea.\n\n**Region of origin:** Piscis',
+		};
+		moveLegacyYrtFields(d);
+		expect(d.background).toBe('Grew up by the sea.');
+		expect(d.fields).toEqual({ origin: 'piscis' });
 	});
 
 	it("keeps a field that's already set, and leaves a rewritten background alone", () => {
