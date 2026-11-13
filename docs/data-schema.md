@@ -27,6 +27,7 @@ For Yrt homebrew extensions (mana, Touched assets, cantrips, Yrt-specific oracle
   - [XP Cost and Gating](#xp-cost-and-gating)
   - [Asset dialog: draft/snapshot model and consolidated log entries](#asset-dialog-draftsnapshot-model-and-consolidated-log-entries)
   - [Asset log entry format](#asset-log-entry-format)
+  - [Ability log links (`log`)](#ability-log-links-log)
   - [Custom Fields](#custom-fields)
   - [Counter Icons](#counter-icons)
   - [Companion Assets](#companion-assets)
@@ -272,24 +273,40 @@ compiles to:
 <a class="resource-link" data-resource="health" data-value="-2">−2 health</a>
 ```
 
-| Part              | Description                                                                                                                                   |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
-| `resource:<name>` | One of: `momentum`, `health`, `spirit`, `supply`, `bonds`, `failures`, `xp` (plus `mana` in [Yrt](../extensions/yrt/README.md#mana-resource)) |
-| `?value=<signed>` | Signed integer: `+1`, `+2`, `-1`, `-2`, etc. (`+` is kept literal)                                                                            |
+| Part              | Description                                                                                                                                                                                                     |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `resource:<name>` | One of: `momentum`, `health`, `spirit`, `supply`, `bonds`, `failures`, `xp` (plus `mana` in [Yrt](../extensions/yrt/README.md#mana-resource)), or _(planned)_ a stat: `edge`, `heart`, `iron`, `shadow`, `wits` |
+| `?value=<signed>` | Signed integer: `+1`, `+2`, `-1`, `-2`, etc. (`+` is kept literal)                                                                                                                                              |
+| `&pick=<name>`    | _(optional, planned)_ A choice group: of the links in one log entry with the same `pick` name, the player takes one. See below.                                                                                 |
 
 Resources are clamped to their valid ranges:
 
-| Resource   | Range             | Log Color          |
-| ---------- | ----------------- | ------------------ |
-| `momentum` | −6 to dynamic max | blue (`#60a5fa`)   |
-| `health`   | 0–5               | red (`#f87171`)    |
-| `spirit`   | 0–5               | purple (`#a78bfa`) |
-| `supply`   | 0–5               | green (`#34d399`)  |
-| `bonds`    | 0–40              | blue (`#60a5fa`)   |
-| `failures` | 0–40              | red (`#f87171`)    |
-| `xp`       | 0–30              | yellow (`#facc15`) |
+| Resource         | Range             | Log Color                             |
+| ---------------- | ----------------- | ------------------------------------- |
+| `momentum`       | −6 to dynamic max | blue (`#60a5fa`)                      |
+| `health`         | 0–5               | red (`#f87171`)                       |
+| `spirit`         | 0–5               | purple (`#a78bfa`)                    |
+| `supply`         | 0–5               | green (`#34d399`)                     |
+| `bonds`          | 0–40              | blue (`#60a5fa`)                      |
+| `failures`       | 0–40              | red (`#f87171`)                       |
+| `xp`             | 0–30              | yellow (`#facc15`)                    |
+| a stat (planned) | 0–4               | the stat's colour (`--color-edge`, …) |
 
 See [Yrt extensions](../extensions/yrt/README.md#mana-resource) for the `mana` resource (0–10, amber `#f59e0b`).
+
+_(Planned.)_ A stat link is held to 0–4 (`STAT_MIN` / `STAT_MAX` in `rules/statArrays.ts`)
+differently from the other resources: a click that would take the stat past
+either end changes nothing and leaves the link live, with a tooltip saying
+why ("Wits is already 4"), instead of spending it. Like the other resource
+links, a click logs the change (`Edge: 2 → 1 (−1)`).
+
+**Choice groups (`pick`)**, planned. Some effects offer a choice ("reduce your edge
+or iron by 1"). Give each option's link the same `pick` name; clicking one
+spends it as usual and strikes the others in that group as not taken. The
+group is per log entry, so two entries can use the same name. A link without
+`pick` stands alone. Groups are for stateful links (`resource:`,
+`debility:`, …); a `move:` or `oracle:` link only opens a dialog and has
+nothing to spend, so leave it out of a group.
 
 Asset purchases don't use `resource:xp`: the asset dialog writes one
 `xp-cost-link` for the whole purchase (see
@@ -620,6 +637,8 @@ Each ability object:
 | `text`    | string (md+DSL) | yes      | Ability description: markdown + the link DSL, with each move it names written as a `move:` link (see [Move Links in Ability Text](#move-links-in-ability-text)).                                                                                                       |
 | `name`    | string          | no       | Named ability (companions only, e.g., `"Scout"`, `"Bonded"`)                                                                                                                                                                                                           |
 | `moves`   | string[]        | no       | The moves the `text` links, as full ids (`"move/strike"`), in order of first appearance, without repeats. Omitted when the text links none. The Move dialog's **Relevant Assets** panel reads it. Nothing checks it against the text, so keep the two in step by hand. |
+| `log`     | string (md+DSL) | no       | _(Planned.)_ What the ability does to the character once, as one-time log links: written to the asset's log entry when the ability is marked. See [Ability log links](#ability-log-links-log).                                                                         |
+| `free`    | boolean         | no       | _(Planned.)_ `true` when the rules grant the ability rather than selling it, so marking it costs no XP (Oathbreaker's third ability, at redemption). See [Cost formula](#cost-formula).                                                                                |
 
 ### Move Links in Ability Text
 
@@ -681,11 +700,11 @@ through Advance, 3 XP each, spending each from its log link.
 
 The UI enforces XP requirements for asset-related actions:
 
-| Action                        | XP Cost            | Gate                                                                |
-| ----------------------------- | ------------------ | ------------------------------------------------------------------- |
-| Acquire a new asset           | 3 XP               | None: `+ Asset` and the card's Add are always enabled               |
-| Enable a new ability checkbox | 2 XP               | Ability checkbox disabled when the dialog's total would exceed `xp` |
-| Unlock a rarity               | `rarity.xpCost` XP | Rarity checkbox disabled when the dialog's total would exceed `xp`  |
+| Action                        | XP Cost                     | Gate                                                                |
+| ----------------------------- | --------------------------- | ------------------------------------------------------------------- |
+| Acquire a new asset           | 3 XP                        | None: `+ Asset` and the card's Add are always enabled               |
+| Enable a new ability checkbox | 2 XP (0 if `free`, planned) | Ability checkbox disabled when the dialog's total would exceed `xp` |
+| Unlock a rarity               | `rarity.xpCost` XP          | Rarity checkbox disabled when the dialog's total would exceed `xp`  |
 
 "The dialog's total" is the whole diff for the open card (purchase, new
 abilities and rarity together; see the cost formula below), so a companion's
@@ -713,8 +732,10 @@ pattern:
    (see `computeAssetXpDiff` in `character.ts`), persists the draft
    over the live asset, copies `dialogGlobals` into
    `character.globalValues`, and emits ONE consolidated log entry with
-   ONE clickable XP-cost-link for the total. If the diff is 0, **no
-   log entry is written**.
+   ONE clickable XP-cost-link for the total, followed (once built) by the
+   `log` of each newly marked ability (see
+   [Ability log links](#ability-log-links-log)). With no XP due and no
+   `log` to write, **no log entry is written**.
 4. **On X / Cancel** — the draft is discarded; live character state is
    untouched.
 
@@ -727,7 +748,7 @@ double-use.
 
 ```
 purchaseCost    = mode === 'add' ? 3 : 0
-newEnables      = count of indices where snapshot=false AND draft=true
+newEnables      = count of indices where snapshot=false AND draft=true AND NOT ability.free  (free: planned)
 includedPick    = (purchaseCost > 0 && no ability marked in snapshot) ? 1 : 0
 rarityXp        = (draft.rarityId !== snapshot.rarityId && draft.rarityId) ? newRarity.xpCost : 0
 totalCost       = purchaseCost + max(0, newEnables - includedPick) * 2 + rarityXp
@@ -747,15 +768,78 @@ All asset log entries are titled `{characterName} — Assets` (e.g.,
 `Porcius Mona — Assets`). The body format is:
 
 - **Asset added** (mode = add): `Asset added: **Name** −N experience`
-  (XP link only present when `totalCost > 0`).
+  (XP link only present when `totalCost > 0`), then (planned) the `log` of
+  each ability it comes with.
 - **Asset modified** (mode = edit): `Asset modified: **Name** −N experience`
-  (XP link only present when `totalCost > 0`).
+  (XP link only present when `totalCost > 0`), then (planned) the `log` of
+  each ability newly marked.
 - **Asset removed** (Delete button in edit mode): `Asset removed:
 **Name** _(Category)_` — no XP charge or refund.
 
 Rarity names are always displayed with the `RARITY:` prefix in the
 asset card UI when expanded; the consolidated log entry shows the
 asset name only.
+
+### Ability log links (`log`)
+
+> **Planned, not built yet.** This is how stat-changing abilities will work.
+> Until the code lands, the asset dialog writes no `log`, `free` isn't read,
+> `resource:` links take no stat, and `pick` groups do nothing. Change a stat
+> by double-clicking it on the sheet meanwhile.
+
+A few abilities change the character once, when you take them: four Path
+assets in base Ironsworn change a stat. An ability's `log` holds that change
+as one-time log links, in the same markdown + link DSL as `text` (rendered by
+`renderRich`). The asset dialog writes it into the asset's log entry, after
+the XP link:
+
+- **Asset added:** the `log` of every ability marked when the asset is added
+  (for a Path, its first ability).
+- **Asset modified:** the `log` of every ability marked since the dialog
+  opened (snapshot unmarked, draft marked).
+
+Each ability's `log` gets its own line. Unmarking an ability doesn't take
+its links back, and marking it again writes them again: nothing remembers
+that they were used, so that's the player's call.
+
+`text` stays the rules text shown on the card; `log` is only what goes in the
+log. Its links are usually `resource:` links on a stat, with `pick` groups
+for the choices (see [Resource Links](#resource-links)). Any DSL link works:
+`debility:` to mark one, `move:` to open the move the ability sends you to.
+
+The four stat-changing abilities:
+
+```jsonc
+// path/battle-scarred, ability 1 (comes with the asset)
+"log": "You focus your energies: [−1 edge](resource:edge?value=-1&pick=lose) or [−1 iron](resource:iron?value=-1&pick=lose); then one point to [+1 wits](resource:wits?value=+1&pick=first) or [+1 heart](resource:heart?value=+1&pick=first), and another to [+1 wits](resource:wits?value=+1&pick=second) or [+1 heart](resource:heart?value=+1&pick=second) (to a maximum of +4)."
+
+// path/shadow-kin, ability 1 (comes with the asset)
+"log": "You harden your heart: [−1 heart](resource:heart?value=-1), then up to +2 shadow: [+1 shadow](resource:shadow?value=+1) [+1 shadow](resource:shadow?value=+1) (to a maximum of +4)."
+
+// path/lorekeeper, ability 3
+"log": "When you browse the archive's forbidden depths: [+1 wits](resource:wits?value=+1), and roll an action die. On 1–3, also [mark corrupted](debility:corrupted?value=1) or [Face Desolation](move:face-desolation) (ignoring momentum)."
+
+// path/oathbreaker, ability 3
+"free": true,
+"log": "You find redemption. Improve one stat: [+1 edge](resource:edge?value=+1&pick=stat), [+1 heart](resource:heart?value=+1&pick=stat), [+1 iron](resource:iron?value=+1&pick=stat), [+1 shadow](resource:shadow?value=+1&pick=stat) or [+1 wits](resource:wits?value=+1&pick=stat); then discard Oathbreaker (Delete on its card)."
+```
+
+Battle-Scarred's "+2 to wits or heart, or +1 to each" is two single points,
+each to wits or heart, so three outcomes (+2 wits, +2 heart, +1 each) need
+no link that changes two stats at once.
+
+Lorekeeper's ability is "one time only, you may": its links are written
+when the ability is bought and wait in the log until the player browses.
+
+Oathbreaker's third ability activates itself, at no cost, on a hit when you
+Fulfill Your Vow on the marked quest. The app doesn't record which vow is
+marked, so the player marks the ability then; `free` keeps it from costing
+2 XP.
+
+Stats stay 0–4 whatever the asset says: Lorekeeper's and Oathbreaker's +1
+don't state a maximum, but a stat link at 4 waits rather than going to 5.
+For a change the links can't make, the player can double-click a stat on
+the sheet to edit it (see [character-sheet.md](character-sheet.md)).
 
 ### Custom Fields
 
