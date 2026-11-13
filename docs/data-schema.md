@@ -25,12 +25,13 @@ For Yrt homebrew extensions (mana, Touched assets, cantrips, Yrt-specific oracle
   - [Move Links in Ability Text](#move-links-in-ability-text)
   - [Auto-Enabled Abilities](#auto-enabled-abilities)
   - [XP Cost and Gating](#xp-cost-and-gating)
-  - [Asset Log Entry Titles](#asset-log-entry-titles)
-  - [Companion Assets](#companion-assets)
+  - [Asset dialog: draft/snapshot model and consolidated log entries](#asset-dialog-draftsnapshot-model-and-consolidated-log-entries)
+  - [Asset log entry format](#asset-log-entry-format)
+  - [Custom Fields](#custom-fields)
   - [Counter Icons](#counter-icons)
-  - [Assets with Optional Fields — Examples](#assets-with-optional-fields--examples)
+  - [Companion Assets](#companion-assets)
+  - [Assets with Custom Fields — Examples](#assets-with-custom-fields--examples)
   - [Rarities](#rarities)
-  - [Asset Move References (asset-move-refs.json)](#asset-move-references-asset-move-refsjson)
 - [Oracles](#oracles)
   - [Oracle Object Fields](#oracle-object-fields)
   - [Special Oracle Types](#special-oracle-types)
@@ -101,16 +102,16 @@ Multiple operators on one precondition are AND'd (e.g., `min: 2, max: 8` means "
 
 #### Key Categories
 
-| Category             | Valid Keys                                                                                                | Values                                       | Notes                                                                           |
-| -------------------- | --------------------------------------------------------------------------------------------------------- | -------------------------------------------- | ------------------------------------------------------------------------------- |
-| **Global Selection** | `hasCharacter`, `hasSite`, `hasJourney`, `hasFoe`                                                         | `eq: 1` (selected) or `eq: 0` (not selected) | Whether the corresponding dropdown has an active selection                      |
-| **Character Values** | `momentum`, `health`, `spirit`, `supply`, `mana`, `experience`, `edge`, `heart`, `iron`, `shadow`, `wits` | Numeric, use `min`/`max`/`eq`/`ne`           | Direct character stat or resource read                                          |
-| **Progress Tracks**  | `bonds`, `failures`                                                                                       | 1–10 (boxes)                                 | Stored as ticks internally; divided by 4 for comparison                         |
-| **Computed Counts**  | `vowCount`, `assetCount`, `companionCount`, `rarityCount`                                                 | Numeric                                      | Count of active vows, total assets, companion assets, or assets with a rarity   |
-| **Initiative**       | `initiative`                                                                                              | 0=none, 1=character, 2=foe                   | Combat initiative state; use `eq` to gate on who has initiative                 |
-| **Debilities**       | `wounded`, `shaken`, `unprepared`, `encumbered`, `maimed`, `corrupted`, `cursed`, `tormented`             | `eq: 0` (off) or `eq: 1` (on)                | Boolean debility flags                                                          |
-| **Touched**          | `touched`                                                                                                 | 0=pure, 1=prime, 2=second, 3=third, 4=feral  | Numeric scale; use `min`/`max` for thresholds (e.g., `min: 1` = prime or worse) |
-| **Assets**           | Any asset name (e.g., `"Ritualist"`)                                                                      | `eq: 0` (lacks) or `eq: 1` (has)             | Checks character's asset list by name                                           |
+| Category             | Valid Keys                                                                                                | Values                                                                    | Notes                                                                                                                                     |
+| -------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Global Selection** | `hasCharacter`, `hasSite`, `hasJourney`, `hasFoe`                                                         | `eq: 1` (selected) or `eq: 0` (not selected)                              | Whether the corresponding dropdown has an active selection                                                                                |
+| **Character Values** | `momentum`, `health`, `spirit`, `supply`, `mana`, `experience`, `edge`, `heart`, `iron`, `shadow`, `wits` | Numeric, use `min`/`max`/`eq`/`ne`                                        | Direct character stat or resource read                                                                                                    |
+| **Progress Tracks**  | `bonds`, `failures`                                                                                       | 1–10 (boxes)                                                              | Stored as ticks internally; divided by 4 for comparison                                                                                   |
+| **Computed Counts**  | `vowCount`, `assetCount`, `companionCount`, `rarityCount`                                                 | Numeric                                                                   | Count of active vows, total assets, companion assets, or assets with a rarity                                                             |
+| **Initiative**       | `initiative`                                                                                              | 0=none, 1=character, 2=foe                                                | Combat initiative state; use `eq` to gate on who has initiative                                                                           |
+| **Debilities**       | `wounded`, `shaken`, `unprepared`, `encumbered`, `maimed`, `corrupted`, `cursed`, `tormented`             | `eq: 0` (off) or `eq: 1` (on)                                             | Boolean debility flags                                                                                                                    |
+| **Character fields** | Any dropdown or radio field an extension declares (e.g. YRT's `touched`)                                  | The option's position from 0; −1 when unset (`touched`: 0=pure … 4=feral) | Use `min`/`max` for thresholds (e.g. `{ "key": "touched", "min": 1 }` = Prime or higher). See [character-fields.md](character-fields.md). |
+| **Assets**           | Any asset name (e.g., `"Ritualist"`)                                                                      | `eq: 0` (lacks) or `eq: 1` (has)                                          | Checks character's asset list by name                                                                                                     |
 
 #### Examples
 
@@ -290,7 +291,9 @@ Resources are clamped to their valid ranges:
 
 See [Yrt extensions](../extensions/yrt/README.md#mana-resource) for the `mana` resource (0–10, amber `#f59e0b`).
 
-The `xp` resource is used in log entries generated by the asset system: −3 experience when acquiring a new asset, −2 experience when upgrading an ability slot. These links are created in JavaScript, not in the JSON data files.
+Asset purchases don't use `resource:xp`: the asset dialog writes one
+`xp-cost-link` for the whole purchase (see
+[Asset dialog](#asset-dialog-draftsnapshot-model-and-consolidated-log-entries)).
 
 Use the `−` character (U+2212, minus sign) in the display text for negative values, not a plain hyphen.
 
@@ -556,41 +559,67 @@ Moves with no `strong`/`weak`/`miss`, no `tableRoll`, and no `rarityRoll` are lo
 
 ## Assets
 
-**Location:** `data/assets/*.json` (3 source files)
+**Location:** one file per content pack:
 
-Each file contains an `assets` array and an optional `rarities` array:
+| Pack  | File                                         | Holds                                      |
+| ----- | -------------------------------------------- | ------------------------------------------ |
+| base  | `apps/api/data/assets/assets_ironsworn.json` | The Ironsworn assets (`rarities` is empty) |
+| Delve | `extensions/delve/assets/assets_delve.json`  | Rarities only (`assets` is empty)          |
+| Yrt   | `extensions/yrt/assets/assets.json`          | Touched, ritual and path assets; a rarity  |
+
+(The dev-only `sample` extension's `extensions/sample/assets/assets.json` is
+stripped from `core`.) Each file is an object with an `assets` array, a
+`rarities` array, and the pack's `source` id:
 
 ```json
 {
   "assets": [ ... ],
-  "rarities": [ ... ]
+  "rarities": [ ... ],
+  "source": "base"
 }
 ```
 
+The merged totals are pinned in
+`apps/api/tests/unit/extensionsManifest.test.ts` (see CLAUDE.md, "bump
+catalogue count tests"), so adding or removing an asset or rarity means
+bumping its count there.
+
 ### Asset Object Fields
 
-| Field               | Type             | Required | Description                                                                                                                                                                                                                                                                                                                            |
-| ------------------- | ---------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`                | string           | yes      | Unique identifier: `category-type/kebab-case-name` (e.g., `combat/archer`)                                                                                                                                                                                                                                                             |
-| `name`              | string           | yes      | Display name                                                                                                                                                                                                                                                                                                                           |
-| `category`          | string           | yes      | One of: `"Combat Talent"`, `"Companion"`, `"Path"`, `"Ritual"` (plus `"Touched"` in [Yrt](../extensions/yrt/README.md#touched-assets))                                                                                                                                                                                                 |
-| `summary`           | string           | yes      | One-line plain-text summary shown in the picker tile. Preferred over `preamble` for the tile.                                                                                                                                                                                                                                          |
-| `preamble`          | string or null   | no       | Prerequisite or flavour text (e.g., `"If you wield a bow."`) — displayed on the asset card **before** the ability list. Rendered as markdown + the link DSL (same as ability `text`).                                                                                                                                                  |
-| `postamble`         | string or null   | no       | Explanatory text displayed on the asset card **after** the ability list (e.g., asset-specific constraints, Touched feature-use note)                                                                                                                                                                                                   |
-| `preconditions`     | array of objects | no       | Conditions that must be met to add this asset. Same schema as move [Preconditions](#preconditions). Assets failing preconditions are faded and non-clickable in the picker.                                                                                                                                                            |
-| `abilities`         | array            | yes      | Exactly 3 ability objects                                                                                                                                                                                                                                                                                                              |
-| `customFields`      | CustomFieldDef[] | no       | Array of custom input fields rendered in the asset card body. Values stored in `CharacterAsset.customValues` keyed by `field.id`. See [Custom Fields](#custom-fields).                                                                                                                                                                 |
-| `exclusiveGroup`    | string           | no       | If set, the character may own at most one asset whose `exclusiveGroup` matches this value at a time. Attempting to add a second triggers a user-facing error. Example: `"touched"` (only one Touched variant active at once).                                                                                                          |
-| `abilityMaxByField` | object           | no       | Maps a `customField.id` → option value → maximum number of enabled abilities. Used to gate ability checkboxes based on a dropdown selection. When the player selects a lower level, excess enabled abilities are automatically cleared. Example: `{ "touchedLevel": { "pure": 0, "prime": 1, "second": 2, "third": 3, "feral": 3 } }`. |
-| `html`              | boolean          | no       | Escape hatch: when `true`, this asset's `preamble` / `description` / ability `text` are treated as **raw legacy HTML** and bypass `renderRich`. Omit for normal assets — prose is markdown + the link DSL by default. The DSL lint skips `html: true` assets.                                                                          |
+| Field               | Type             | Required | Description                                                                                                                                                                                                                                                                                                                                                                          |
+| ------------------- | ---------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`                | string           | yes      | Unique identifier: `category-type/kebab-case-name` (e.g., `combat/archer`)                                                                                                                                                                                                                                                                                                           |
+| `name`              | string           | yes      | Display name                                                                                                                                                                                                                                                                                                                                                                         |
+| `category`          | string           | yes      | One of: `"Combat Talent"`, `"Companion"`, `"Path"`, `"Ritual"` (plus `"Touched"` in [Yrt](../extensions/yrt/README.md#touched-assets))                                                                                                                                                                                                                                               |
+| `source`            | string           | yes      | Owning content pack (`"base"`, `"yrt"`, …), the same as the file's top-level `source`. Drives the picker's source chip and the expansion toggles.                                                                                                                                                                                                                                    |
+| `icon`              | string           | no       | Icon slug (an SVG in `#lib/icons/` or the extension's `icons/`, filename without `.svg`) for the card and picker tile. Falls back to the category's icon.                                                                                                                                                                                                                            |
+| `description`       | string           | no       | Markdown + the link DSL, shown on the card after the preamble. Used by Yrt's rituals.                                                                                                                                                                                                                                                                                                |
+| `summary`           | string           | yes      | One-line plain-text summary shown in the picker tile. Preferred over `preamble` for the tile.                                                                                                                                                                                                                                                                                        |
+| `preamble`          | string or null   | no       | Prerequisite or flavour text (e.g., `"If you wield a bow."`) — displayed on the asset card **before** the ability list. Rendered as markdown + the link DSL (same as ability `text`).                                                                                                                                                                                                |
+| `postamble`         | string or null   | no       | Explanatory text displayed on the asset card **after** the ability list (e.g., asset-specific constraints, Touched feature-use note)                                                                                                                                                                                                                                                 |
+| `preconditions`     | array of objects | no       | Conditions that must be met to add this asset. Same schema as move [Preconditions](#preconditions). Assets failing preconditions are faded and non-clickable in the picker. An owned asset whose preconditions stop holding (a Touched asset on a character set to Pure) stays on the sheet faded, with the reason on hover; its card says it can't be used, and Delete still works. |
+| `abilities`         | array            | yes      | Exactly 3 ability objects                                                                                                                                                                                                                                                                                                                                                            |
+| `customFields`      | CustomFieldDef[] | no       | Array of custom input fields rendered in the asset card body. Values stored in `CharacterAsset.customValues` keyed by `field.id`. See [Custom Fields](#custom-fields).                                                                                                                                                                                                               |
+| `exclusiveGroup`    | string           | no       | If set, the character may own at most one asset whose `exclusiveGroup` matches this value at a time. Attempting to add a second triggers a user-facing error. Example: `"touched"` (only one Touched variant active at once).                                                                                                                                                        |
+| `abilityMaxByField` | object           | no       | Maps a field id → option id → the most abilities that may be marked. The id names a `customField` of the asset, or a character field ([character-fields.md](character-fields.md)). A lower value unmarks the extra abilities, keeping the first ones. Example (the Touched assets): `{ "touched": { "pure": 0, "prime": 1, "second": 2, "third": 3, "feral": 3 } }`.                 |
+| `characterFields`   | string[]         | no       | Character field ids the card shows as a line of text, read-only (a Touched asset's `["touched", "touchedAnimal"]` → "Second · Wolf"). The first text field with a value also names the asset's chit on the sheet.                                                                                                                                                                    |
+| `html`              | boolean          | no       | Lint escape hatch: `npm run lint:dsl` skips an asset with `html: true`. Unlike a move's `html` flag, it does not change rendering: the asset card always renders its prose through `renderRich`. No asset uses it.                                                                                                                                                                   |
+
+Yrt's assets use a few more fields, read by `AssetCard` and documented in
+[the Yrt extension docs](../extensions/yrt/README.md#touched-assets): a pool
+of selectable items with slots unlocked per ability (`cantrips` /
+`cantripSlots`, or the generic `selectableItems` / `selectableSlots` /
+`selectableLabel`) and a ritual's difficulty factors (`inspectionFactors` /
+`inspectionExample`).
 
 Each ability object:
 
-| Field     | Type            | Required | Description                                                                                                                                                              |
-| --------- | --------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `enabled` | boolean         | yes      | `true` if the ability starts checked when the asset is first acquired (see [Auto-Enabled Abilities](#auto-enabled-abilities))                                            |
-| `text`    | string (md+DSL) | yes      | Ability description. Move names that appear in the text are decorated with `<a class="move-link">` tags (see [Move Links in Ability Text](#move-links-in-ability-text)). |
-| `name`    | string          | no       | Named ability (companions only, e.g., `"Scout"`, `"Bonded"`)                                                                                                             |
+| Field     | Type            | Required | Description                                                                                                                                                                                                                                                            |
+| --------- | --------------- | -------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled` | boolean         | yes      | `true` if the ability starts checked when the asset is first acquired (see [Auto-Enabled Abilities](#auto-enabled-abilities))                                                                                                                                          |
+| `text`    | string (md+DSL) | yes      | Ability description: markdown + the link DSL, with each move it names written as a `move:` link (see [Move Links in Ability Text](#move-links-in-ability-text)).                                                                                                       |
+| `name`    | string          | no       | Named ability (companions only, e.g., `"Scout"`, `"Bonded"`)                                                                                                                                                                                                           |
+| `moves`   | string[]        | no       | The moves the `text` links, as full ids (`"move/strike"`), in order of first appearance, without repeats. Omitted when the text links none. The Move dialog's **Relevant Assets** panel reads it. Nothing checks it against the text, so keep the two in step by hand. |
 
 ### Move Links in Ability Text
 
@@ -616,8 +645,13 @@ each `move:` link compiling to `<a class="move-link" data-id="move/…">…</a>`
 - One `[label](move:<id>)` per move reference; `<id>` is the move's `id` **without** the `move/` prefix (e.g. `secure-an-advantage`).
 - The label preserves the original capitalisation from the source text.
 - Ability text that does not reference any move is plain markdown.
+- List the same moves in the ability's `moves` array, which the Move dialog's
+  **Relevant Assets** panel reads to show the character's marked abilities
+  that mention the move being rolled.
 
-A companion index file (`asset-move-refs.json`) lists every move ID that each asset and ability references — see [Asset Move References](#asset-move-references-asset-move-refsjson).
+`moves` replaced a separate index of the same lists,
+`apps/api/data/assets/asset-move-refs.json`, written by
+`generate_move_refs.py` in the same folder. Nothing reads either any more.
 
 ### Auto-Enabled Abilities
 
@@ -629,9 +663,15 @@ When a character acquires an asset, each ability checkbox is pre-set to `ability
 | **Ritual**        | ✓ Enabled            | ✗ Unchecked           |
 | **Combat Talent** | ✓ Enabled            | ✗ Unchecked           |
 | **Companion**     | ✗ Unchecked          | ✗ Unchecked           |
-| **Touched** (Yrt) | ✓ Enabled            | ✗ Unchecked           |
+| **Touched** (Yrt) | ✗ Unchecked          | ✗ Unchecked           |
 
 Per the Ironsworn printable asset sheet: Paths, Rituals, and Combat Talents include their first ability when acquired (filled circle on the card). Companions start with no abilities pre-enabled: you choose the one yours starts with, and that first pick comes with the 3 XP purchase, as the first ability does for any other asset. Each ability after it costs 2 XP.
+
+Touched assets also start with none marked: how many can be marked follows
+the character's Touched field on the Core tab (`abilityMaxByField`), one at
+Prime, two at Second, all three at Third and Feral. A character whose touched
+level is Pure cannot use a Touched asset: each requires
+`{ "key": "touched", "min": 1 }`.
 
 ### XP Cost and Gating
 
@@ -711,7 +751,7 @@ All asset log entries are titled `{characterName} — Assets` (e.g.,
 - **Asset modified** (mode = edit): `Asset modified: **Name** −N experience`
   (XP link only present when `totalCost > 0`).
 - **Asset removed** (Delete button in edit mode): `Asset removed:
-**Name** (Category, N marked)` — no XP charge or refund.
+**Name** _(Category)_` — no XP charge or refund.
 
 Rarity names are always displayed with the `RARITY:` prefix in the
 asset card UI when expanded; the consolidated log entry shows the
@@ -776,7 +816,8 @@ Companions use `customFields` for the companion name and health track:
       "position": "bottom",
       "maxValue": 3,
       "default": 3,
-      "icon": "heart"
+      "icon": "heart",
+      "shortLabel": "Hawk"
     }
   ],
   "abilities": [
@@ -854,7 +895,8 @@ The companion name is stored in `customValues["companion-name"]` and health in `
       "position": "bottom",
       "maxValue": [3, 6, 6],
       "default": 3,
-      "icon": "rock-golem"
+      "icon": "rock-golem",
+      "shortLabel": "Servant"
     }
   ]
 }
@@ -864,55 +906,27 @@ Yrt adds Touched assets and ritual cantrips — see [the Yrt extension docs](../
 
 ### Rarities
 
-Rarity enhancements for existing assets:
+Rarity enhancements for existing assets, from Delve (and one from Yrt):
 
 ```json
 {
-  "id": "rarity/hawks-eye-bow",
-  "name": "Hawk's Eye Bow",
+  "id": "rarity/farsight-quiver",
+  "name": "Farsight Quiver",
   "assetId": "combat/archer",
-  "xpCost": 3,
-  "description": "A bow crafted with uncanny precision..."
+  "xpCost": 4,
+  "description": "This quiver is fashioned from tanned leather, and carved with elaborate, spiraling runes. …",
+  "source": "delve"
 }
 ```
 
-| Field         | Type   | Description                                 |
-| ------------- | ------ | ------------------------------------------- |
-| `id`          | string | Unique identifier: `rarity/kebab-case-name` |
-| `name`        | string | Display name                                |
-| `assetId`     | string | The `id` of the asset this rarity enhances  |
-| `xpCost`      | number | Experience cost to unlock                   |
-| `description` | string | Narrative description                       |
-
-### Asset Move References (asset-move-refs.json)
-
-**Location:** `data/assets/asset-move-refs.json`
-
-A pre-computed index mapping each asset (and each of its abilities) to the set of move IDs referenced in its ability text. Generated from the decorated ability text in the three source files. Only assets that reference at least one move are included.
-
-```json
-[
-  {
-    "id": "combat/archer",
-    "abilities": [
-      { "index": 0, "moves": ["move/secure-an-advantage"] },
-      { "index": 1, "moves": ["move/strike", "move/clash"] },
-      { "index": 2, "moves": ["move/resupply"] }
-    ],
-    "allMoves": ["move/secure-an-advantage", "move/strike", "move/clash", "move/resupply"]
-  }
-]
-```
-
-| Field               | Type             | Description                                                                  |
-| ------------------- | ---------------- | ---------------------------------------------------------------------------- |
-| `id`                | string           | Asset ID (matches the asset's `id` field)                                    |
-| `abilities`         | array            | Per-ability move lists (only abilities with ≥ 1 move reference are included) |
-| `abilities[].index` | number           | 0-based index of the ability within the asset's `abilities` array            |
-| `abilities[].moves` | array of strings | Move IDs referenced in this ability's `text`, in order of appearance         |
-| `allMoves`          | array of strings | Deduplicated union of all move IDs across all abilities                      |
-
-**Usage:** The MovesDialog "Relevant Assets" panel reads this index at dialog-open time to find which of the character's enabled abilities mention the currently-selected move, then surfaces those abilities as contextual suggestions without auto-applying any modifier.
+| Field         | Type   | Description                                            |
+| ------------- | ------ | ------------------------------------------------------ |
+| `id`          | string | Unique identifier: `rarity/kebab-case-name`            |
+| `name`        | string | Display name                                           |
+| `assetId`     | string | The `id` of the asset this rarity enhances             |
+| `xpCost`      | number | Experience cost to unlock                              |
+| `description` | string | Narrative description                                  |
+| `source`      | string | Owning content pack (`"delve"`, `"yrt"`), as on assets |
 
 ---
 
@@ -1296,7 +1310,7 @@ All IDs follow a `prefix/kebab-case-name` format for consistency and future loca
 | --------- | -------------------------- | -------------------------------------- |
 | Moves     | `move/kebab-case-name`     | `move/face-danger`, `move/endure-harm` |
 | Assets    | `category/kebab-case-name` | `combat/archer`, `companion/hawk`      |
-| Rarities  | `rarity/kebab-case-name`   | `rarity/hawks-eye-bow`                 |
+| Rarities  | `rarity/kebab-case-name`   | `rarity/farsight-quiver`               |
 | Foes      | `source/kebab-case-name`   | `ironsworn/broken`, `yrt/mana-wraith`  |
 | Oracles   | camelCase `key` field      | `action`, `settlementName`             |
 

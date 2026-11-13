@@ -24,9 +24,31 @@ wherever resource links appear.
 
 ---
 
+## Character fields
+
+YRT adds three fields to every character (`characterFields` in
+`extension.json`; see [character-fields.md](../../docs/character-fields.md)),
+shown under a YRT heading at the bottom of the sheet's Core tab and in New
+Character, each with a d6. They follow the core rules' Region of origin,
+whose options and roll YRT replaces with its own regions through its
+`supersedesOracles` entry (`region` → `yrtRegion`); Religion rolls on the
+column for that region's country.
+
+| Field    | Id              | Kind     | Rolled from                                                                                                         |
+| -------- | --------------- | -------- | ------------------------------------------------------------------------------------------------------------------- |
+| Religion | `religion`      | dropdown | Character: Religion (`yrtReligion`), on the column for the Region of origin's country; options are the rows' `name` |
+| Touched  | `touched`       | dropdown | Character: Touched (`yrtTouched`), its `className`: Pure, Prime, Second, Third or Feral                             |
+| Animal   | `touchedAnimal` | string   | Character: Touched Aspect (`yrtAnimal`); hidden while Touched is Pure                                               |
+
+New Character rolls whichever are left empty when the player clicks Create,
+and writes none of them into the background. The Touched features are still
+rolled into the background (as a list under **Touched features**) when that
+box in "Randomize the rest" is ticked, since how many depends on the level.
+NPCs roll Touched and religion into their notes as before.
+
 ## Touched Assets
 
-The Touched are characters physically altered by manite exposure. Touched assets use the `"Touched"` category and include a boolean flag for UI grouping:
+The Touched are characters physically altered by manite exposure. Touched assets use the `"Touched"` category, share an exclusive group, need a touched level of Prime or higher, and gate their abilities by the character's Touched field:
 
 ```json
 {
@@ -34,30 +56,34 @@ The Touched are characters physically altered by manite exposure. Touched assets
   "name": "Touched, Feline",
   "category": "Touched",
   "summary": "One-line summary shown in the picker tile.",
-  "postamble": "Your touched value determines how many abilities you may use: Pure — none; Prime — 1; ...",
-  "touchedFeatures": true,
+  "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
+  "preconditions": [{ "key": "touched", "min": 1 }],
   "exclusiveGroup": "touched",
-  "abilityMaxByField": { "touchedLevel": { "pure": 0, "prime": 1, "second": 2, "third": 3, "feral": 3 } },
+  "abilityMaxByField": { "touched": { "pure": 0, "prime": 1, "second": 2, "third": 3, "feral": 3 } },
+  "characterFields": ["touched", "touchedAnimal"],
   "abilities": [ ... ]
 }
 ```
 
-| Field               | Type    | Description                                                                                                                                                                                                                                                                   |
-| ------------------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `touchedFeatures`   | boolean | When `true`, the UI shows the character's Touched feature list alongside this asset                                                                                                                                                                                           |
-| `exclusiveGroup`    | string  | Limits the character to owning one asset of this group at a time. All Touched assets set this to `"touched"`. Attempting to add a second Touched asset shows a user-facing error.                                                                                             |
-| `abilityMaxByField` | object  | Maps a `customField.id` → option value → maximum enabled abilities. For Touched assets this enforces the level-gated ability rules: Pure = 0, Prime = 1, Second = 2, Third/Feral = 3. When the player lowers their level, excess checked abilities are automatically cleared. |
+| Field               | Type   | Description                                                                                                                                                                                       |
+| ------------------- | ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `preconditions`     | array  | `touched` at least 1: the picker fades every Touched asset for a Pure character ("Requires Touched: Prime or higher").                                                                            |
+| `exclusiveGroup`    | string | Limits the character to owning one asset of this group at a time. All Touched assets set this to `"touched"`. Attempting to add a second Touched asset shows a user-facing error.                 |
+| `abilityMaxByField` | object | Keyed by the character's `touched` field: Prime = 1, Second = 2, Third/Feral = 3. Lowering the level on the sheet unmarks the abilities above the new limit, keeping the first ones, and logs it. |
+| `characterFields`   | array  | The card shows the character's level and animal as a line of text ("Second · Wolf"); the chit on the sheet is named for the animal.                                                               |
 
 **Preamble / postamble placement for Touched assets:**
 
 - `preamble` — shown **before** the ability checkboxes (prerequisite or flavour note)
 - `postamble` — shown **after** the ability checkboxes (used for the "how many abilities you may use" note, since it belongs logically after the list)
 
-**Level-gated abilities:** The `abilityMaxByField` field enforces the rule that a Pure character may use no abilities, Prime one, Second two, Third or Feral all three. The UI disables unchecked boxes when the character is at their level cap and shows a tooltip explaining why. Lowering the level automatically clears any abilities beyond the new cap.
+**Level-gated abilities:** A Prime character may use one ability, Second two, Third or Feral all three. A character whose touched level is Pure cannot use a Touched asset: setting a character to Pure keeps their Touched asset, with every ability unmarked, faded on the sheet and marked as unusable on its card, where they can delete it. The UI disables unchecked boxes when the character is at their level cap and shows a tooltip explaining why.
 
 **Exclusive group:** Only one Touched asset may be active at a time. Adding a second Touched asset while one is already owned shows an error message directing the player to remove the existing one first.
 
-Touched assets follow the same auto-enable convention as Paths (see [data-schema.md — Auto-Enabled Abilities](../../docs/data-schema.md#auto-enabled-abilities)): the first ability starts checked on acquisition; others start unchecked.
+Unlike Paths, Touched assets start with no ability checked (see [data-schema.md — Auto-Enabled Abilities](../../docs/data-schema.md#auto-enabled-abilities)): the player marks the ones their level allows.
+
+The level and animal used to live on each Touched asset (a Level dropdown and an Animal box). Characters saved before the move get them copied into their fields on load.
 
 Touched assets are defined in `assets/assets.json`.
 
@@ -69,16 +95,17 @@ Some Yrt ritual assets include a cantrip system — minor magical effects that d
 
 ```json
 {
-  "id": "ritual/yrt-hedge-magic",
-  "name": "Hedge Magic",
+  "id": "ritual/yrt-cantrip",
+  "name": "Cantrip",
   "category": "Ritual",
   "description": "Optional narrative text shown on the asset card between preamble and the ability list.",
   "cantrips": [
-    { "key": "tidy-clean",    "name": "Tidy/Clean",    "desc": "clean or create a minor mess on a surface" },
-    { "key": "mark-unmark",   "name": "Mark/Unmark",   "desc": "place or remove a small symbol or mark" },
-    { "key": "mute-amplify",  "name": "Mute/Amplify",  "desc": "mute or amplify a small sound" },
-    { "key": "freshen-spoil", "name": "Freshen/Spoil", "desc": "freshen or spoil a small quantity of food/drink" },
-    { "key": "warm-chill",    "name": "Warm/Chill",    "desc": "warm or cool a small object or liquid" }
+    { "key": "tidy-clean",    "name": "Tidy/Clean",    "desc": "Clean or create a minor mess on a surface." },
+    { "key": "mark-unmark",   "name": "Mark/Unmark",   "desc": "Place or remove a small symbol or mark." },
+    { "key": "mute-amplify",  "name": "Mute/Amplify",  "desc": "Mute or amplify a small sound." },
+    { "key": "freshen-spoil", "name": "Freshen/Spoil", "desc": "Freshen or spoil a small quantity of food/drink." },
+    { "key": "warm-chill",    "name": "Warm/Chill",    "desc": "Warm or cool a small object or liquid." },
+    …
   ],
   "cantripSlots": [2, 2, 2],
   "abilities": [ ... ]

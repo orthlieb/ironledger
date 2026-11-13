@@ -32,9 +32,15 @@
 	let {
 		flags = $bindable(),
 		origin = $bindable(''),
+		characterFields = false,
 	}: {
 		flags: CharacterRandomizeFlags;
 		origin?: string;
+		/** New Character: the region of origin, religion and touched level are
+		 *  character fields there (CharacterFields), so this block drops the
+		 *  region picker and the Religion box, and its Touched box rolls only
+		 *  the features. New NPC leaves it off. */
+		characterFields?: boolean;
 	} = $props();
 
 	const yrt = $derived(isSourceEnabled('yrt'));
@@ -67,7 +73,7 @@
 	const originOpts = $derived(regionOriginOptions());
 </script>
 
-{#if yrt}
+{#if yrt && !characterFields}
 	<div class="co-field" data-tour="randomize-origin">
 		<span class="co-field-label">Region of origin (optional — where they were born)</span>
 		<div class="co-name-row">
@@ -132,17 +138,24 @@
 			checked={flags.touched}
 			onCheckedChange={(v) => (flags.touched = !!v)}
 		>
-			<span class="nn-check-label">Touched</span>
+			<span
+				class="nn-check-label"
+				use:tooltip={characterFields
+					? 'Roll the features of a Prime, Second or Third character into their background'
+					: ''}>{characterFields ? 'Touched features' : 'Touched'}</span
+			>
 		</Checkbox>
-		<Checkbox
-			class="nn-check"
-			checked={flags.religion}
-			disabled={!origin}
-			onCheckedChange={(v) => (flags.religion = !!v)}
-		>
-			<span class="nn-check-label" use:tooltip={origin ? '' : 'Choose a region of origin first'}>
-				Religion
-			</span>
-		</Checkbox>
+		{#if !characterFields}
+			<Checkbox
+				class="nn-check"
+				checked={flags.religion}
+				disabled={!origin}
+				onCheckedChange={(v) => (flags.religion = !!v)}
+			>
+				<span class="nn-check-label" use:tooltip={origin ? '' : 'Choose a region of origin first'}>
+					Religion
+				</span>
+			</Checkbox>
+		{/if}
 	{/if}
 </div>

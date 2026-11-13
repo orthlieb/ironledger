@@ -48,7 +48,13 @@ die + stat + adds) is capped at 10 (`rules/actionScore.ts`).
 | Shadow | `#a855f7` purple | `shadow` |
 | Wits   | `#f59e0b` amber  | `wits`   |
 
-Also shows **Touched** level (`pure / prime / second / third / feral`) and **Touched Animal** name (YRT homebrew).
+The core rules and extensions can add fields to a character, shown at the
+bottom of the Core tab, below Vitals: Region of origin (core, no heading),
+and with YRT, under a YRT heading, Religion, Touched and Animal (Animal
+hidden while Touched is Pure).
+Changing one is logged (`Touched: Prime → Second`), and lowering Touched
+unmarks a Touched asset's abilities above the new limit. They're stored in
+`data.fields`; see [character-fields.md](character-fields.md).
 
 ### Resources (`MeterControl` components)
 
@@ -120,10 +126,9 @@ interface CharacterData {
   iron: number;
   shadow: number;
   wits: number;
-  /** @deprecated migrated to Touched asset's customValues.touchedLevel */
-  touched?: TouchedLevel;
-  /** @deprecated migrated to Touched asset's customValues.animalName */
-  touchedAnimal?: string;
+  /** Extension fields (core: origin; YRT: religion, touched, touchedAnimal),
+   *  keyed by field id: an option id or text. */
+  fields?: Record<string, string>;
   momentum: number;
   health: number;
   spirit: number;
@@ -151,7 +156,6 @@ interface CharacterData {
   initiative?: number;
 }
 
-type TouchedLevel = 'pure' | 'prime' | 'second' | 'third' | 'feral';
 type VowDifficulty = 'troublesome' | 'dangerous' | 'formidable' | 'extreme' | 'epic';
 ```
 

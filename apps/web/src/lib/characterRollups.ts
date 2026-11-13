@@ -33,6 +33,8 @@ import {
 	formatTouchedMd,
 	randomizationsAsMarkdown,
 	touchedLogHtml,
+	touchedFeaturesLogHtml,
+	touchedFeaturesMd,
 	type CharacterRandomizeFlags,
 	type RandomizeResult,
 	type TouchedRoll,
@@ -44,6 +46,8 @@ export {
 	formatTouchedMd,
 	randomizationsAsMarkdown,
 	touchedLogHtml,
+	touchedFeaturesLogHtml,
+	touchedFeaturesMd,
 	type CharacterRandomizeFlags,
 	type RandomizeResult,
 	type TouchedRoll,
@@ -134,12 +138,23 @@ export function rollYrtTouchedStructured(): TouchedRoll | null {
 	const aRes = animalOracle ? rollFromRangeTable(animalOracle.data) : { roll: 0, value: '' };
 	r.animal = (aRes.value as string) ?? '';
 	r.animalRoll = aRes.roll;
-	if (cls.featureCount === null) return r; // Feral — animal, narrative features
+	fillTouchedFeatures(r, cls.featureCount);
+	return r;
+}
+
+/** Roll a Touched character's features onto `r`, as many as its class takes:
+ *  one at Prime, 1–3 at Second, 4–6 at Third; none at Pure, and at Feral
+ *  none to roll (they're narrative). */
+function fillTouchedFeatures(
+	r: TouchedRoll,
+	featureCount: number | { min: number; max: number } | null,
+): void {
+	if (!featureCount) return; // Pure (0) or Feral (null)
 	let count: number;
-	if (typeof cls.featureCount === 'number') {
-		count = cls.featureCount; // Prime — exactly 1
+	if (typeof featureCount === 'number') {
+		count = featureCount; // Prime — exactly 1
 	} else {
-		const { min } = cls.featureCount;
+		const { min } = featureCount;
 		// Second / Third: d6 % 3 + min → 1..3 or 4..6.
 		count = (Math.floor(Math.random() * 6) % 3) + min;
 		r.countRange = min === 1 ? '1–3' : '4–6';
@@ -157,6 +172,33 @@ export function rollYrtTouchedStructured(): TouchedRoll | null {
 			}
 		}
 	}
+}
+
+/** Roll the features for a character whose touched level is already set (the
+ *  `touched` character field): `className` is its label ("Second"). Null when
+ *  the YRT oracles aren't loaded, the class is unknown, or it's Pure. */
+export function rollYrtTouchedFeatures(className: string): TouchedRoll | null {
+	const touched = findOracle('yrtTouched');
+	const row = touched?.data.find(
+		(e) =>
+			(e.value as { className?: string } | undefined)?.className?.toLowerCase() ===
+			className.toLowerCase(),
+	);
+	if (!row) return null;
+	const cls = row.value as {
+		className: TouchedRoll['className'];
+		featureCount: number | { min: number; max: number } | null;
+	};
+	if (cls.featureCount === 0) return null;
+	const r: TouchedRoll = {
+		className: cls.className,
+		classRoll: 0,
+		animal: '',
+		animalRoll: 0,
+		countRange: '',
+		features: [],
+	};
+	fillTouchedFeatures(r, cls.featureCount);
 	return r;
 }
 

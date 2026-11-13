@@ -125,6 +125,22 @@
         "label": "Ironsworn",
         "url": "https://ironsworn-rpg.fandom.com/wiki/Special:AllPages"
       },
+      "characterFields": [
+        {
+          "id": "origin",
+          "label": "Region of origin",
+          "type": "dropdown",
+          "optionsFrom": {
+            "oracle": "region"
+          },
+          "default": "",
+          "roll": {
+            "oracle": "region"
+          },
+          "tooltip": "Where your character was born, from the Location: Region oracle."
+        }
+      ],
+      "characterFieldsHeading": false,
       "root": "apps/api/data",
       "provides": {
         "assets": [
@@ -209,6 +225,7 @@
           "color": "#C0392B"
         }
       ],
+      "characterFieldsHeading": false,
       "root": "extensions/delve",
       "provides": {
         "assets": [
@@ -298,6 +315,7 @@
           "color": "#2A9D8F"
         }
       ],
+      "characterFieldsHeading": false,
       "root": "extensions/lodestar",
       "provides": {
         "moves": [
@@ -360,6 +378,76 @@
         "label": "YRT",
         "url": "http://yrt.iron-ledger.org"
       },
+      "characterFields": [
+        {
+          "id": "religion",
+          "label": "Religion",
+          "type": "dropdown",
+          "optionsFrom": {
+            "oracle": "yrtReligion",
+            "label": "name"
+          },
+          "default": "",
+          "roll": {
+            "oracle": "yrtReligion",
+            "from": "name",
+            "column": {
+              "field": "origin",
+              "from": "country"
+            }
+          }
+        },
+        {
+          "id": "touched",
+          "label": "Touched",
+          "type": "dropdown",
+          "options": [
+            {
+              "id": "pure",
+              "label": "Pure"
+            },
+            {
+              "id": "prime",
+              "label": "Prime"
+            },
+            {
+              "id": "second",
+              "label": "Second"
+            },
+            {
+              "id": "third",
+              "label": "Third"
+            },
+            {
+              "id": "feral",
+              "label": "Feral"
+            }
+          ],
+          "default": "pure",
+          "roll": {
+            "oracle": "yrtTouched",
+            "from": "className"
+          },
+          "tooltip": "From the Character: Touched oracle. A Pure character cannot use a Touched asset."
+        },
+        {
+          "id": "touchedAnimal",
+          "label": "Animal",
+          "type": "string",
+          "default": "",
+          "placeholder": "Animal…",
+          "if": [
+            {
+              "key": "touched",
+              "min": 1
+            }
+          ],
+          "roll": {
+            "oracle": "yrtAnimal"
+          },
+          "tooltip": "From the Character: Touched Aspect oracle."
+        }
+      ],
       "root": "extensions/yrt",
       "provides": {
         "assets": [
@@ -402,7 +490,7 @@
     {
       "id": "sample",
       "name": "Sample",
-      "description": "A reference extension that exercises every pluggable surface: a move, an oracle, a foe (with a bundled portrait), an override patching a base foe, an asset (with a bundled icon), a roll-table (resolver oracle), and a settlement culture. Off by default; enable it in Settings → Expansions to see everything appear.",
+      "description": "A reference extension that exercises every pluggable surface: a move, an oracle, a foe (with a bundled portrait), an override patching a base foe, an asset (with a bundled icon), a roll-table (resolver oracle), a settlement culture, and a character field of each kind (radio, counter, switch, notes). Off by default; enable it in Settings → Expansions to see everything appear.",
       "defaultEnabled": false,
       "order": 99,
       "dev": true,
@@ -412,6 +500,48 @@
           "icon": "dice-d100-solid",
           "color": "var(--text-muted)",
           "order": 900
+        }
+      ],
+      "characterFields": [
+        {
+          "id": "sampleRank",
+          "label": "Rank",
+          "type": "radio",
+          "options": [
+            {
+              "id": "novice",
+              "label": "Novice"
+            },
+            {
+              "id": "adept",
+              "label": "Adept"
+            },
+            {
+              "id": "master",
+              "label": "Master"
+            }
+          ],
+          "default": "novice"
+        },
+        {
+          "id": "sampleResolve",
+          "label": "Resolve",
+          "type": "counter",
+          "maxValue": 5,
+          "default": "2"
+        },
+        {
+          "id": "sampleSworn",
+          "label": "Sworn",
+          "type": "switch",
+          "default": "0"
+        },
+        {
+          "id": "sampleNotes",
+          "label": "Notes",
+          "type": "markdown",
+          "default": "",
+          "placeholder": "Anything the other fields don't hold…"
         }
       ],
       "root": "extensions/sample",

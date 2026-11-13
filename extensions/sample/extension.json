@@ -1,11 +1,33 @@
 {
   "id": "sample",
   "name": "Sample",
-  "description": "A reference extension that exercises every pluggable surface: a move, an oracle, a foe (with a bundled portrait), an override patching a base foe, an asset (with a bundled icon), a roll-table (resolver oracle), and a settlement culture. Off by default; enable it in Settings → Expansions to see everything appear.",
+  "description": "A reference extension that exercises every pluggable surface: a move, an oracle, a foe (with a bundled portrait), an override patching a base foe, an asset (with a bundled icon), a roll-table (resolver oracle), a settlement culture, and a character field of each kind (radio, counter, switch, notes). Off by default; enable it in Settings → Expansions to see everything appear.",
   "defaultEnabled": false,
   "order": 99,
   "dev": true,
   "moveCategories": [
     { "key": "Sample", "icon": "dice-d100-solid", "color": "var(--text-muted)", "order": 900 }
+  ],
+  "characterFields": [
+    {
+      "id": "sampleRank",
+      "label": "Rank",
+      "type": "radio",
+      "options": [
+        { "id": "novice", "label": "Novice" },
+        { "id": "adept", "label": "Adept" },
+        { "id": "master", "label": "Master" }
+      ],
+      "default": "novice"
+    },
+    { "id": "sampleResolve", "label": "Resolve", "type": "counter", "maxValue": 5, "default": "2" },
+    { "id": "sampleSworn", "label": "Sworn", "type": "switch", "default": "0" },
+    {
+      "id": "sampleNotes",
+      "label": "Notes",
+      "type": "markdown",
+      "default": "",
+      "placeholder": "Anything the other fields don't hold…"
+    }
   ]
 }

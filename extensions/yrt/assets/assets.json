@@ -7,16 +7,23 @@
       "summary": "Salamandrine-touched: wounds that knit closed, skin that breathes underwater, and a slowed body that outlasts cold and hunger.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [],
+      "preconditions": [
+        {
+          "key": "touched",
+          "min": 1
+        }
+      ],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
-        "touchedLevel": {
+        "touched": {
+          "pure": 0,
           "prime": 1,
           "second": 2,
           "third": 3,
           "feral": 3
         }
       },
+      "characterFields": ["touched", "touchedAnimal"],
       "abilities": [
         {
           "enabled": false,
@@ -34,39 +41,6 @@
           "moves": ["move/face-danger"]
         }
       ],
-      "customFields": [
-        {
-          "id": "touchedLevel",
-          "type": "dropdown",
-          "label": "Level",
-          "shortLabel": "Touched",
-          "default": "prime",
-          "options": [
-            {
-              "id": "prime",
-              "label": "Prime"
-            },
-            {
-              "id": "second",
-              "label": "Second"
-            },
-            {
-              "id": "third",
-              "label": "Third"
-            },
-            {
-              "id": "feral",
-              "label": "Feral"
-            }
-          ]
-        },
-        {
-          "id": "animalName",
-          "type": "string",
-          "label": "Animal",
-          "placeholder": "Animal…"
-        }
-      ],
       "source": "yrt",
       "icon": "asset-touched-salamandrine"
     },
@@ -77,16 +51,23 @@
       "summary": "Feline-touched: night hunter’s senses, impossible leaps, and predator stealth.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [],
+      "preconditions": [
+        {
+          "key": "touched",
+          "min": 1
+        }
+      ],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
-        "touchedLevel": {
+        "touched": {
+          "pure": 0,
           "prime": 1,
           "second": 2,
           "third": 3,
           "feral": 3
         }
       },
+      "characterFields": ["touched", "touchedAnimal"],
       "abilities": [
         {
           "enabled": false,
@@ -104,39 +85,6 @@
           "moves": ["move/secure-an-advantage"]
         }
       ],
-      "customFields": [
-        {
-          "id": "touchedLevel",
-          "type": "dropdown",
-          "label": "Level",
-          "shortLabel": "Touched",
-          "default": "prime",
-          "options": [
-            {
-              "id": "prime",
-              "label": "Prime"
-            },
-            {
-              "id": "second",
-              "label": "Second"
-            },
-            {
-              "id": "third",
-              "label": "Third"
-            },
-            {
-              "id": "feral",
-              "label": "Feral"
-            }
-          ]
-        },
-        {
-          "id": "animalName",
-          "type": "string",
-          "label": "Animal",
-          "placeholder": "Animal…"
-        }
-      ],
       "source": "yrt",
       "icon": "asset-touched-feline"
     },
@@ -147,16 +95,23 @@
       "summary": "Porcine-touched: unerring nose for hidden threats, iron constitution, and an instinct for finding sustenance.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [],
+      "preconditions": [
+        {
+          "key": "touched",
+          "min": 1
+        }
+      ],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
-        "touchedLevel": {
+        "touched": {
+          "pure": 0,
           "prime": 1,
           "second": 2,
           "third": 3,
           "feral": 3
         }
       },
+      "characterFields": ["touched", "touchedAnimal"],
       "abilities": [
         {
           "enabled": false,
@@ -174,39 +129,6 @@
           "moves": ["move/resupply"]
         }
       ],
-      "customFields": [
-        {
-          "id": "touchedLevel",
-          "type": "dropdown",
-          "label": "Level",
-          "shortLabel": "Touched",
-          "default": "prime",
-          "options": [
-            {
-              "id": "prime",
-              "label": "Prime"
-            },
-            {
-              "id": "second",
-              "label": "Second"
-            },
-            {
-              "id": "third",
-              "label": "Third"
-            },
-            {
-              "id": "feral",
-              "label": "Feral"
-            }
-          ]
-        },
-        {
-          "id": "animalName",
-          "type": "string",
-          "label": "Animal",
-          "placeholder": "Animal…"
-        }
-      ],
       "source": "yrt",
       "icon": "asset-touched-porcine"
     },
@@ -217,16 +139,23 @@
       "summary": "Bovine-touched: an unstoppable charge, an unbreakable will, and a voice that bends a room to silence.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [],
+      "preconditions": [
+        {
+          "key": "touched",
+          "min": 1
+        }
+      ],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
-        "touchedLevel": {
+        "touched": {
+          "pure": 0,
           "prime": 1,
           "second": 2,
           "third": 3,
           "feral": 3
         }
       },
+      "characterFields": ["touched", "touchedAnimal"],
       "abilities": [
         {
           "enabled": false,
@@ -244,39 +173,6 @@
           "moves": ["move/compel"]
         }
       ],
-      "customFields": [
-        {
-          "id": "touchedLevel",
-          "type": "dropdown",
-          "label": "Level",
-          "shortLabel": "Touched",
-          "default": "prime",
-          "options": [
-            {
-              "id": "prime",
-              "label": "Prime"
-            },
-            {
-              "id": "second",
-              "label": "Second"
-            },
-            {
-              "id": "third",
-              "label": "Third"
-            },
-            {
-              "id": "feral",
-              "label": "Feral"
-            }
-          ]
-        },
-        {
-          "id": "animalName",
-          "type": "string",
-          "label": "Animal",
-          "placeholder": "Animal…"
-        }
-      ],
       "source": "yrt",
       "icon": "asset-touched-bovine"
     },
@@ -287,16 +183,23 @@
       "summary": "Ursine-touched: looming presence that bends nerve, crushing strength behind every blow, and a body built to weather the longest winter.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [],
+      "preconditions": [
+        {
+          "key": "touched",
+          "min": 1
+        }
+      ],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
-        "touchedLevel": {
+        "touched": {
+          "pure": 0,
           "prime": 1,
           "second": 2,
           "third": 3,
           "feral": 3
         }
       },
+      "characterFields": ["touched", "touchedAnimal"],
       "abilities": [
         {
           "enabled": false,
@@ -314,39 +217,6 @@
           "moves": ["move/make-camp"]
         }
       ],
-      "customFields": [
-        {
-          "id": "touchedLevel",
-          "type": "dropdown",
-          "label": "Level",
-          "shortLabel": "Touched",
-          "default": "prime",
-          "options": [
-            {
-              "id": "prime",
-              "label": "Prime"
-            },
-            {
-              "id": "second",
-              "label": "Second"
-            },
-            {
-              "id": "third",
-              "label": "Third"
-            },
-            {
-              "id": "feral",
-              "label": "Feral"
-            }
-          ]
-        },
-        {
-          "id": "animalName",
-          "type": "string",
-          "label": "Animal",
-          "placeholder": "Animal…"
-        }
-      ],
       "source": "yrt",
       "icon": "asset-touched-ursine"
     },
@@ -357,16 +227,23 @@
       "summary": "Hircine-touched: surefooted on lethal heights, a gut that shrugs off poison and rot, and a wrongness of aspect that unsettles every room.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [],
+      "preconditions": [
+        {
+          "key": "touched",
+          "min": 1
+        }
+      ],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
-        "touchedLevel": {
+        "touched": {
+          "pure": 0,
           "prime": 1,
           "second": 2,
           "third": 3,
           "feral": 3
         }
       },
+      "characterFields": ["touched", "touchedAnimal"],
       "abilities": [
         {
           "enabled": false,
@@ -384,39 +261,6 @@
           "moves": ["move/compel"]
         }
       ],
-      "customFields": [
-        {
-          "id": "touchedLevel",
-          "type": "dropdown",
-          "label": "Level",
-          "shortLabel": "Touched",
-          "default": "prime",
-          "options": [
-            {
-              "id": "prime",
-              "label": "Prime"
-            },
-            {
-              "id": "second",
-              "label": "Second"
-            },
-            {
-              "id": "third",
-              "label": "Third"
-            },
-            {
-              "id": "feral",
-              "label": "Feral"
-            }
-          ]
-        },
-        {
-          "id": "animalName",
-          "type": "string",
-          "label": "Animal",
-          "placeholder": "Animal…"
-        }
-      ],
       "source": "yrt",
       "icon": "asset-touched-hircine"
     },
@@ -427,16 +271,23 @@
       "summary": "Varanine-touched: a patient ambush and a killing rush, a tongue that reads blood on the wind, and bony scale beneath the skin that turns a blow.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [],
+      "preconditions": [
+        {
+          "key": "touched",
+          "min": 1
+        }
+      ],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
-        "touchedLevel": {
+        "touched": {
+          "pure": 0,
           "prime": 1,
           "second": 2,
           "third": 3,
           "feral": 3
         }
       },
+      "characterFields": ["touched", "touchedAnimal"],
       "abilities": [
         {
           "enabled": false,
@@ -454,39 +305,6 @@
           "moves": ["move/endure-harm"]
         }
       ],
-      "customFields": [
-        {
-          "id": "touchedLevel",
-          "type": "dropdown",
-          "label": "Level",
-          "shortLabel": "Touched",
-          "default": "prime",
-          "options": [
-            {
-              "id": "prime",
-              "label": "Prime"
-            },
-            {
-              "id": "second",
-              "label": "Second"
-            },
-            {
-              "id": "third",
-              "label": "Third"
-            },
-            {
-              "id": "feral",
-              "label": "Feral"
-            }
-          ]
-        },
-        {
-          "id": "animalName",
-          "type": "string",
-          "label": "Animal",
-          "placeholder": "Animal…"
-        }
-      ],
       "source": "yrt",
       "icon": "asset-touched-varanine"
     },
@@ -497,16 +315,23 @@
       "summary": "Lupine-touched: a tracker's nose for blood, a pack-hunter's instinct in company, and a crippling bite for the straggler.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [],
+      "preconditions": [
+        {
+          "key": "touched",
+          "min": 1
+        }
+      ],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
-        "touchedLevel": {
+        "touched": {
+          "pure": 0,
           "prime": 1,
           "second": 2,
           "third": 3,
           "feral": 3
         }
       },
+      "characterFields": ["touched", "touchedAnimal"],
       "abilities": [
         {
           "enabled": false,
@@ -524,39 +349,6 @@
           "moves": ["move/strike", "move/clash"]
         }
       ],
-      "customFields": [
-        {
-          "id": "touchedLevel",
-          "type": "dropdown",
-          "label": "Level",
-          "shortLabel": "Touched",
-          "default": "prime",
-          "options": [
-            {
-              "id": "prime",
-              "label": "Prime"
-            },
-            {
-              "id": "second",
-              "label": "Second"
-            },
-            {
-              "id": "third",
-              "label": "Third"
-            },
-            {
-              "id": "feral",
-              "label": "Feral"
-            }
-          ]
-        },
-        {
-          "id": "animalName",
-          "type": "string",
-          "label": "Animal",
-          "placeholder": "Animal…"
-        }
-      ],
       "source": "yrt",
       "icon": "asset-touched-lupine"
     },
@@ -567,16 +359,23 @@
       "summary": "Marine-touched: lungs that drink the deep, a voice the sea answers to, and a tongue the whales understand.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [],
+      "preconditions": [
+        {
+          "key": "touched",
+          "min": 1
+        }
+      ],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
-        "touchedLevel": {
+        "touched": {
+          "pure": 0,
           "prime": 1,
           "second": 2,
           "third": 3,
           "feral": 3
         }
       },
+      "characterFields": ["touched", "touchedAnimal"],
       "abilities": [
         {
           "enabled": false,
@@ -594,39 +393,6 @@
           "moves": ["move/secure-an-advantage"]
         }
       ],
-      "customFields": [
-        {
-          "id": "touchedLevel",
-          "type": "dropdown",
-          "label": "Level",
-          "shortLabel": "Touched",
-          "default": "prime",
-          "options": [
-            {
-              "id": "prime",
-              "label": "Prime"
-            },
-            {
-              "id": "second",
-              "label": "Second"
-            },
-            {
-              "id": "third",
-              "label": "Third"
-            },
-            {
-              "id": "feral",
-              "label": "Feral"
-            }
-          ]
-        },
-        {
-          "id": "animalName",
-          "type": "string",
-          "label": "Animal",
-          "placeholder": "Animal…"
-        }
-      ],
       "source": "yrt",
       "icon": "asset-touched-marine"
     },
@@ -637,16 +403,23 @@
       "summary": "Vulpine-touched: a liar's ease, a trail that doubles back, and an eye for what other people walk past.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [],
+      "preconditions": [
+        {
+          "key": "touched",
+          "min": 1
+        }
+      ],
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
-        "touchedLevel": {
+        "touched": {
+          "pure": 0,
           "prime": 1,
           "second": 2,
           "third": 3,
           "feral": 3
         }
       },
+      "characterFields": ["touched", "touchedAnimal"],
       "abilities": [
         {
           "enabled": false,
@@ -662,39 +435,6 @@
           "enabled": false,
           "text": "**Cache.** What others walk past you pick up, and you remember where you put it. When you [Resupply](move:resupply), add +1. On a strong hit, you also turn up one small specific thing you were not looking for: name it, and it proves useful before the day is out.",
           "moves": ["move/resupply"]
-        }
-      ],
-      "customFields": [
-        {
-          "id": "touchedLevel",
-          "type": "dropdown",
-          "label": "Level",
-          "shortLabel": "Touched",
-          "default": "prime",
-          "options": [
-            {
-              "id": "prime",
-              "label": "Prime"
-            },
-            {
-              "id": "second",
-              "label": "Second"
-            },
-            {
-              "id": "third",
-              "label": "Third"
-            },
-            {
-              "id": "feral",
-              "label": "Feral"
-            }
-          ]
-        },
-        {
-          "id": "animalName",
-          "type": "string",
-          "label": "Animal",
-          "placeholder": "Animal…"
         }
       ],
       "source": "yrt",

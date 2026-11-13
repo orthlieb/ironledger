@@ -17,7 +17,7 @@
 // =============================================================================
 
 /** Escape HTML special characters in plain text nodes. */
-function escHtml(s: string): string {
+export function escHtml(s: string): string {
 	return s
 		.replace(/&/g, '&amp;')
 		.replace(/</g, '&lt;')

@@ -39,6 +39,8 @@ interface ManifestEntry {
   supersedesOracles?: Record<string, string>;
   supersedesCultures?: Record<string, string>;
   infoLink?: { label: string; url: string };
+  characterFields?: Array<{ id: string }>;
+  characterFieldsHeading?: string | false;
   provides?: Record<string, string[]>;
   root?: string;
 }
@@ -151,5 +153,28 @@ describe('toPublicExtension — /catalogue/extensions contract', () => {
     const byId = Object.fromEntries(publicList.map((e) => [e.id, e]));
     expect(byId.base?.infoLink?.label).toBe('Ironsworn');
     expect(byId.yrt?.infoLink?.label).toBe('YRT');
+  });
+
+  it('forwards characterFields and characterFieldsHeading verbatim', () => {
+    // The sheet, New Character and the Touched assets' precondition all read
+    // these; a dropped field would leave a YRT character with no Touched
+    // level and every Touched asset ungated.
+    const project = (
+      entries: Array<{ id: string; characterFields?: unknown; characterFieldsHeading?: unknown }>,
+    ) =>
+      Object.fromEntries(
+        entries.map((e) => [e.id, [e.characterFields ?? null, e.characterFieldsHeading ?? null]]),
+      );
+    expect(project(publicList)).toEqual(project(manifest.extensions));
+    const byId = Object.fromEntries(publicList.map((e) => [e.id, e]));
+    expect(byId.base?.characterFields?.map((f) => f.id)).toEqual(['origin']);
+    expect(byId.yrt?.characterFields?.map((f) => f.id)).toEqual([
+      'religion',
+      'touched',
+      'touchedAnimal',
+    ]);
+    expect(byId.base?.characterFieldsHeading).toBe(false);
+    expect(byId.delve?.characterFieldsHeading).toBe(false);
+    expect(byId.lodestar?.characterFieldsHeading).toBe(false);
   });
 });

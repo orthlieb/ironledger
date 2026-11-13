@@ -4,6 +4,7 @@
   "description": "Ironsworn: Delve — site themes/domains, delve moves, oracles, foes, and assets.",
   "defaultEnabled": true,
   "order": 10,
+  "characterFieldsHeading": false,
   "moveCategories": [
     { "key": "Delve", "icon": "dungeon-gate", "color": "var(--color-shadow)", "order": 80 }
   ],

@@ -165,6 +165,46 @@ export interface ExtensionInfo {
    *  one entry per extension. External URL — the HamburgerMenu opens it
    *  with `target="_blank" rel="noopener noreferrer"`. */
   infoLink?: { label: string; url: string };
+  /** Fields this extension adds to a character (docs/character-fields.md),
+   *  in declaration order. Checked by gen-extensions-manifest. */
+  characterFields?: CharacterFieldDef[];
+  /** The heading over those fields on the sheet: left out, the extension's
+   *  `name`; text, that text; `false`, no heading. */
+  characterFieldsHeading?: string | false;
+}
+
+/** One choice of a dropdown or radio character field. */
+export interface CharacterFieldOption {
+  id: string;
+  label: string;
+}
+
+/** A field an extension adds to every character: shown on the sheet and in
+ *  New Character, rolled from an oracle, and readable by preconditions. */
+export interface CharacterFieldDef {
+  /** camelCase, unique across extensions; the key in `character.fields` and
+   *  the precondition key. */
+  id: string;
+  label: string;
+  /** The asset custom field types: dropdown, radio, counter (pips 0 to
+   *  maxValue), switch, string (one line) and markdown (notes). */
+  type: 'dropdown' | 'radio' | 'string' | 'counter' | 'switch' | 'markdown';
+  options?: CharacterFieldOption[];
+  /** counter only: the most pips. */
+  maxValue?: number;
+  /** Instead of `options`: one option per row of an oracle, labelled by the
+   *  row's `label` property (default `value`). */
+  optionsFrom?: { oracle: string; label?: string };
+  /** The value for a character made before the field existed; `""` is no
+   *  choice. New Character starts every field empty. */
+  default: string;
+  placeholder?: string;
+  /** Preconditions on fields declared above it in the same extension; while
+   *  they fail the field is hidden (its value is kept). */
+  if?: Array<{ key: string; min?: number; max?: number; eq?: number; ne?: number }>;
+  /** The oracle New Character's die rolls, by key. */
+  roll?: { oracle: string; from?: string; column?: { field: string; from: string } };
+  tooltip?: string;
 }
 
 /** Move definition — mirrors the JSON structure in moves/*.json */

@@ -39,11 +39,23 @@
 		defaultRandomizeFlags,
 		rollCharacterRandomizations,
 		randomizationsAsMarkdown,
-		touchedLogHtml,
 		logCreateRolls,
+		rollYrtTouchedFeatures,
+		touchedFeaturesLogHtml,
+		touchedFeaturesMd,
 		type CharacterRandomizeFlags,
 	} from '#lib/characterRollups.js';
 	import RandomizeBlock from '#lib/components/RandomizeBlock.svelte';
+	import CharacterFields from '#lib/components/CharacterFields.svelte';
+	import {
+		characterFieldGroups,
+		fieldShown,
+		fieldValue,
+		findCharacterField,
+		rollCharacterField,
+		valueLabel,
+		type ResolvedField,
+	} from '#lib/characterFields.svelte.js';
 	import StatAllocator from '#lib/components/StatAllocator.svelte';
 	import { STAT_MAX, STAT_MIN, availableStatArrays, type Stat } from '#lib/rules/statArrays.js';
 	import penSvg from '#icons/pen-to-square-solid.svg?raw';
@@ -68,7 +80,9 @@
 	} from '#lib/character.js';
 	import hornedHelmSvg from '#icons/horned-helm.svg?raw';
 	import { appIcon } from '#lib/liveryIcons.js';
-	import type { CharacterData, CharacterAsset } from '#lib/types.js';
+	import type { AssetDefinition, CharacterData, CharacterAsset } from '#lib/types.js';
+	import { escHtml } from '#lib/markdown.js';
+	import { firstPreconditionFailure, type Precondition } from '#lib/preconditions.js';
 	import AssetCard from '#lib/components/AssetCard.svelte';
 	import SegmentedRadio from '#lib/components/SegmentedRadio.svelte';
 	import AssetPicker from '#lib/components/AssetPicker.svelte';
@@ -496,6 +510,69 @@
 				.join(''),
 		);
 		statsDraft = null;
+	}
+
+	/** Why an owned asset can't be used now (its preconditions fail, e.g. a
+	 *  Touched asset on a Pure character), or null. */
+	function assetBlocked(def: AssetDefinition | undefined): string | null {
+		if (!def || !activeData) return null;
+		return firstPreconditionFailure(def.preconditions as Precondition[] | undefined, activeData);
+	}
+
+	/** An asset's chit name from the character fields it shows (a Touched
+	 *  asset: the animal), when one is set. */
+	function assetFieldName(
+		def: { characterFields?: string[] } | undefined,
+	): { text: string; custom: boolean } | null {
+		for (const id of def?.characterFields ?? []) {
+			const f = findCharacterField(id);
+			if (f?.type !== 'string' || !fieldShown(f, activeData?.fields, findCharacterField)) continue;
+			const v = fieldValue(f, activeData?.fields);
+			if (v) return { text: v, custom: true };
+		}
+		return null;
+	}
+
+	/** A change to an extension field on the sheet: stored, logged, and — for
+	 *  a field an asset's ability limit follows (a Touched asset's
+	 *  `abilityMaxByField.touched`) — the abilities above the new limit
+	 *  unmarked, keeping the first ones. No XP comes back, as when an ability
+	 *  is unmarked by hand. */
+	function setCharField(field: ResolvedField, value: string) {
+		const data = activeData;
+		if (!data) return;
+		const old = fieldValue(field, data.fields);
+		if (value === old) return;
+		data.fields = { ...(data.fields ?? {}), [field.id]: value };
+		const notes: string[] = [];
+		for (const a of (data.assets ?? []) as CharacterAsset[]) {
+			const def = findAsset(a.assetId);
+			const limits = def?.abilityMaxByField?.[field.id];
+			if (!def || !limits || (a.customValues && field.id in a.customValues)) continue;
+			const cap = limits[value] ?? Infinity;
+			let kept = 0;
+			let dropped = 0;
+			const next = a.abilities.map((on) => {
+				if (!on) return false;
+				if (kept < cap) {
+					kept++;
+					return true;
+				}
+				dropped++;
+				return false;
+			});
+			if (dropped) {
+				a.abilities = next;
+				notes.push(`unmarked ${dropped} ${dropped === 1 ? 'ability' : 'abilities'} on ${def.name}`);
+			}
+		}
+		// Notes aren't logged as they're typed, as the background isn't.
+		if (field.type === 'markdown') return;
+		const show = (v: string) => escHtml(valueLabel(field, v) || '—');
+		appendLog(
+			charTitle(field.label),
+			`<div>${escHtml(field.label)}: ${show(old)} → <strong>${show(value)}</strong>${notes.length ? `; ${notes.join('; ')}` : ''}</div>`,
+		);
 	}
 
 	// ── Apply functions invoked by the action bus ─────────────────────────
@@ -1026,7 +1103,9 @@
 	// pipeline as the New NPC dialog. Character has no dedicated slots for any
 	// of these, so the results are folded into `background` as a markdown block.
 	let newCharFlags = $state<CharacterRandomizeFlags>(defaultRandomizeFlags());
-	let newCharOrigin = $state('');
+	/** New Character's draft of the extension fields (CharacterFields): only
+	 *  what's been rolled or picked; Create rolls the rest. */
+	let newCharFields = $state<Record<string, string>>({});
 	// Stat allocator — the dialog opens with all-zero stats so Create is gated
 	// until the user either rolls a starting array (Lodestar offers three) or
 	// hand-types values. Values live in a plain object bound through
@@ -1075,7 +1154,7 @@
 	function resetNewCharDraft() {
 		newCharName = '';
 		newCharFlags = defaultRandomizeFlags();
-		newCharOrigin = '';
+		newCharFields = {};
 		newCharStats = zeroStats();
 	}
 
@@ -1092,16 +1171,43 @@
 			// Roll every flagged field now (concept-gated, YRT-gated), so the
 			// resulting character opens with a filled-in background and a
 			// composite log entry sits alongside the individual concept rolls.
-			const r = rollCharacterRandomizations(newCharFlags, {
-				origin: newCharOrigin,
-				yrtEnabled: isSourceEnabled('yrt'),
-			});
+			// The region of origin, religion and touched level are character
+			// fields here (CharacterFields), not part of this roll: its Touched
+			// box only rolls the features, below.
+			const r = rollCharacterRandomizations(
+				{ ...newCharFlags, touched: false, religion: false },
+				{ yrtEnabled: isSourceEnabled('yrt') },
+			);
+			// Fields left empty are rolled now, in order, so the origin is set
+			// before religion rolls on its country and the level before the
+			// animal's `if` is checked.
+			const fields: Record<string, string> = {};
+			for (const [k, v] of Object.entries(newCharFields)) if (v.trim()) fields[k] = v.trim();
+			for (const g of characterFieldGroups())
+				for (const f of g.fields) {
+					if (fields[f.id] || !fieldShown(f, fields, findCharacterField)) continue;
+					const rolled = rollCharacterField(f, fields);
+					if (rolled) fields[f.id] = rolled.value;
+				}
+			for (const g of characterFieldGroups())
+				for (const f of g.fields)
+					if (fields[f.id] && f.type !== 'markdown' && fieldShown(f, fields, findCharacterField))
+						r.rolled.push([f.label, valueLabel(f, fields[f.id]!)]);
 			logCreateRolls(`New Character — ${nameToUse}`, r.rolled);
-			if (r.touched)
-				appendLog(findOracle('yrtTouched')?.title ?? 'Touched', touchedLogHtml(r.touched));
-			if (r.religionLogHtml)
-				appendLog(findOracle('yrtReligion')?.title ?? 'Character: Religion', r.religionLogHtml);
-			const md = randomizationsAsMarkdown(r, nameToUse);
+			let md = randomizationsAsMarkdown(r, nameToUse);
+			// YRT's features: how many depends on the touched level just set.
+			const touched = findCharacterField('touched');
+			if (isSourceEnabled('yrt') && newCharFlags.touched && touched) {
+				const feats = rollYrtTouchedFeatures(valueLabel(touched, fieldValue(touched, fields)));
+				if (feats) {
+					appendLog(
+						findOracle('touchedFeatures')?.title ?? 'Touched Features',
+						touchedFeaturesLogHtml(feats),
+					);
+					const fmd = touchedFeaturesMd(feats);
+					if (fmd) md = md ? `${md}\n\n${fmd}` : fmd;
+				}
+			}
 			// Ride the just-rolled/edited stats along with the background prose
 			// as `initialData` — createCharacter merges these into a fresh
 			// character before the API create call, so DEFAULT_CHARACTER's 1s
@@ -1119,6 +1225,7 @@
 				wits: newCharStats.wits,
 				// Enough to buy the three starting assets (Advance: 3 each).
 				xp: STARTING_XP,
+				fields,
 			};
 			if (md) initial.background = md;
 			const newChar = await createCharacter(nameToUse, initial);
@@ -1438,6 +1545,11 @@
 										/>
 									</div>
 								</div>
+
+								<!-- Fields extensions add to the character (YRT's region of
+								     origin, religion, touched level and animal): below the
+								     stats and vitals, however many there are. -->
+								<CharacterFields mode="sheet" values={d.fields} onset={setCharField} />
 							</div>
 						{:else if activeCard === 'vows'}
 							<div class="ca-card-section">
@@ -1483,12 +1595,24 @@
 											{@const def = findAsset(a.assetId)}
 											{@const catColor = CAT_COLOR[def?.category ?? ''] ?? 'var(--text-muted)'}
 											{@const counter = assetCounter(a, d.globalValues)}
-											{@const display = assetDisplayName(a, def)}
-											<div class="ca-asset-card" style="--cat-color: {catColor}">
+											{@const display = assetFieldName(def) ?? assetDisplayName(a, def)}
+											{@const blocked = assetBlocked(def)}
+											<!-- An asset whose requirement no longer holds (a Touched asset on a
+											     Pure character) stays, faded, with the reason on hover; its
+											     card still opens, so it can be deleted. -->
+											<div
+												class="ca-asset-card"
+												class:ca-asset-card--blocked={!!blocked}
+												style="--cat-color: {catColor}"
+											>
 												<button
 													class="ca-asset-card-main"
 													onclick={(e) => openAssetDialog(a.assetId, e)}
-													use:tooltip={def ? `${def.name} · ${def.category}` : a.assetId}
+													use:tooltip={blocked
+														? `${def?.name}: can't be used. ${blocked}`
+														: def
+															? `${def.name} · ${def.category}`
+															: a.assetId}
 												>
 													<span class="ca-asset-card-meta">
 														<span class="ca-asset-card-cat">{def?.category ?? ''}</span>
@@ -1686,6 +1810,8 @@
 						onRemove={() => dialogDraft && openRemoveAssetConfirm(dialogDraft.assetId)}
 						onCommit={commitAssetDialog}
 						onClose={closeAssetDialog}
+						characterFields={activeData.fields}
+						blockedReason={dialogMode === 'edit' ? assetBlocked(def) : null}
 					/>
 				</Dialog.Content>
 			</Dialog.Portal>
@@ -1766,7 +1892,13 @@
 		<StatAllocator bind:stats={newCharStats} arrays={statArrays} />
 	</div>
 
-	<RandomizeBlock bind:flags={newCharFlags} bind:origin={newCharOrigin} />
+	<CharacterFields
+		mode="create"
+		values={newCharFields}
+		onset={(f, v) => (newCharFields = { ...newCharFields, [f.id]: v })}
+	/>
+
+	<RandomizeBlock bind:flags={newCharFlags} characterFields />
 </ConfirmDialog>
 
 <!-- Character options — gear icon in the header opens this. Rename +
@@ -2361,6 +2493,12 @@
 	   counter tile on the right. Hover state is on the inner main-button
 	   area only — putting it on the outer card caused the whole chit to
 	   lift when the cursor moved onto the counter ± buttons. */
+	/* An owned asset whose requirement no longer holds: still there, and
+	   still opens (to delete it), but plainly out of use. */
+	.ca-asset-card--blocked {
+		opacity: 0.5;
+		border-left-style: dashed;
+	}
 	.ca-asset-card {
 		display: flex;
 		align-items: stretch;
