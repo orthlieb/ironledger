@@ -4,7 +4,7 @@
  * Touched and Animal.
  *
  * New Character shows each with a d6 and rolls the empty ones on Create,
- * keeping them out of the background. On the sheet (Core tab) Animal hides
+ * keeping them out of the background. On the sheet (Details tab) Animal hides
  * for a Pure character, a change is logged, lowering Touched unmarks a
  * Touched asset's extra abilities, and the Touched assets need Prime or
  * higher. Older characters get their values from the Touched asset and the
@@ -33,7 +33,7 @@ async function openSheet(page: Page, name: string) {
 	await page.goto('/home');
 	await settleHome(page);
 	await selectCharacterByName(page, name);
-	await page.locator(`${CHAR_AREA} [data-tour="char-tab-core"]`).click();
+	await page.locator(`${CHAR_AREA} [data-tour="char-tab-details"]`).click();
 	await expect(page.locator('[data-tour="char-fields"]')).toBeVisible();
 }
 
@@ -142,10 +142,10 @@ test('New Character: each field has a die, and Create rolls the ones left empty'
 	await page.locator('[data-tour="roll-stats"]').click();
 	await page.locator('[data-tour="new-char-dialog-confirm"]').click();
 	// Create saves, then selects the new character on its Background tab:
-	// wait for that, or the Core click lands on the previous character.
+	// wait for that, or the Details click lands on the previous character.
 	await expect(page.locator(`${CHAR_AREA} .ca-hdr-combobox .cb-value`)).toHaveText('Fieldia');
 
-	await page.locator(`${CHAR_AREA} [data-tour="char-tab-core"]`).click();
+	await page.locator(`${CHAR_AREA} [data-tour="char-tab-details"]`).click();
 	for (const id of ['origin', 'religion', 'touched'])
 		await expect(field(page, id).locator('.bui-select-trigger')).not.toHaveText('—');
 	await page.locator(`${CHAR_AREA} [data-tour="char-tab-background"]`).click();
@@ -186,8 +186,8 @@ test('Touched assets need Touched: Prime or higher', async ({ page }) => {
 	await expect(tile).toHaveClass(/pick-tile-blocked/);
 	await page.keyboard.press('Escape');
 
-	// The picker opened the Assets tab; the level is set on Core.
-	await page.locator(`${CHAR_AREA} [data-tour="char-tab-core"]`).click();
+	// The picker opened the Assets tab; the level is set on Details.
+	await page.locator(`${CHAR_AREA} [data-tour="char-tab-details"]`).click();
 	await pick(page, 'touched', 'Prime');
 	await page.locator(`${CHAR_AREA} [data-tour="char-add-asset"]`).click();
 	await expect(page.locator('.pick-tile', { hasText: 'Touched, Feline' })).not.toHaveClass(
@@ -204,7 +204,7 @@ test('Lowering Touched unmarks the abilities above the new limit', async ({ page
 	// The chit is named for the animal.
 	await page.locator(`${CHAR_AREA} [data-tour="char-tab-assets"]`).click();
 	await expect(page.locator('.ca-asset-card').first()).toContainText('Lynx');
-	await page.locator(`${CHAR_AREA} [data-tour="char-tab-core"]`).click();
+	await page.locator(`${CHAR_AREA} [data-tour="char-tab-details"]`).click();
 
 	await pick(page, 'touched', 'Prime');
 	await expect(page.locator('.log-entry').first()).toContainText(

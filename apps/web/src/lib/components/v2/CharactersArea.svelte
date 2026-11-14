@@ -89,6 +89,7 @@
 	import MomentumTile from '#lib/components/MomentumTile.svelte';
 	import ProgressTrackPanel from '#lib/components/ProgressTrackPanel.svelte';
 	import MarkdownNotes from '#lib/components/MarkdownNotes.svelte';
+	import TrackNotesDialog from '#lib/components/TrackNotesDialog.svelte';
 	import PortraitUploader from '#lib/components/PortraitUploader.svelte';
 	import { assetIcon } from '#lib/iconRegistry.js';
 	import { Dialog, Tabs } from 'bits-ui';
@@ -153,13 +154,13 @@
 	};
 	import shieldSvg from '#icons/shield-halved-solid.svg?raw';
 
-	type CardKey = 'background' | 'core' | 'vows' | 'assets' | 'status';
+	type CardKey = 'core' | 'details' | 'background' | 'vows' | 'assets';
 	const CARD_LABELS: { key: CardKey; label: string }[] = [
 		{ key: 'core', label: 'Core' },
+		{ key: 'details', label: 'Details' },
 		{ key: 'background', label: 'Background' },
 		{ key: 'vows', label: 'Vows' },
 		{ key: 'assets', label: 'Assets' },
-		{ key: 'status', label: 'Status' },
 	];
 
 	/** Category colour for asset tabs — mirrors AssetCard's CAT_COLOR. */
@@ -195,9 +196,9 @@
 
 	// Background card edit state
 	let editingBackground = $state(false);
-	// Status-tab note edit state (so each can expand to fill while editing)
-	let editingBondsFormed = $state(false);
-	let editingLessonsLearned = $state(false);
+	// The notes behind the Bonds and Failures note buttons.
+	let bondsNotesRef = $state<ReturnType<typeof TrackNotesDialog> | null>(null);
+	let lessonsNotesRef = $state<ReturnType<typeof TrackNotesDialog> | null>(null);
 	const characters = $derived(getCharacters());
 	const loading = $derived(isCharacterLoading() || isAssetsLoading());
 
@@ -1592,9 +1593,53 @@
 									</div>
 								</div>
 
-								<!-- Fields extensions add to the character (YRT's region of
-								     origin, religion, touched level and animal): below the
-								     stats and vitals, however many there are. -->
+								<!-- Debilities — Conditions / Banes / Burdens. -->
+								<div class="ca-debilities-wrapper" data-tour="char-debilities">
+									<div class="ca-side-label">Debilities</div>
+									<div class="ca-debilities-body">
+										<DebilitiesSection
+											data={d}
+											onchange={(label, active) => logDebility(d, label, active)}
+										/>
+									</div>
+								</div>
+
+								<!-- Bonds & Failures — progress tracks with ± spinners; the note
+								     button at the end of each opens its notes (Bonds Formed,
+								     Lessons Learned) in a dialog. -->
+								<div class="ca-tracks-wrapper" data-tour="char-tracks">
+									<div class="ca-side-label">Tracks</div>
+									<div class="ca-tracks-row">
+										<ProgressTrackPanel label="Bonds" bind:value={d.bonds}>
+											{#snippet trailing()}
+												{@render trackNotesButton(
+													'Bonds Formed',
+													d.bondsFormed,
+													() => bondsNotesRef?.open(d.bondsFormed ?? ''),
+													'char-bonds-notes',
+												)}
+											{/snippet}
+										</ProgressTrackPanel>
+										{#if isSourceEnabled('delve')}
+											<ProgressTrackPanel label="Failures" bind:value={d.failures}>
+												{#snippet trailing()}
+													{@render trackNotesButton(
+														'Lessons Learned',
+														d.lessonsLearned,
+														() => lessonsNotesRef?.open(d.lessonsLearned ?? ''),
+														'char-failures-notes',
+													)}
+												{/snippet}
+											</ProgressTrackPanel>
+										{/if}
+									</div>
+								</div>
+							</div>
+						{:else if activeCard === 'details'}
+							<!-- Fields the core rules and extensions add to the character
+							     (Region of origin; with YRT, Religion, Touched and Animal),
+							     under each extension's heading. -->
+							<div class="ca-card-section">
 								<CharacterFields mode="sheet" values={d.fields} onset={setCharField} />
 							</div>
 						{:else if activeCard === 'vows'}
@@ -1718,52 +1763,6 @@
 									</div>
 								{/if}
 							</div>
-						{:else if activeCard === 'status'}
-							<div class="ca-card-section ca-status-section">
-								<!-- Debilities — Conditions / Banes / Burdens grid (V1 component). -->
-								<div class="ca-debilities-wrapper" data-tour="char-debilities">
-									<div class="section-label">Debilities</div>
-									<DebilitiesSection
-										data={d}
-										onchange={(label, active) => logDebility(d, label, active)}
-									/>
-								</div>
-
-								<!-- Bonds & Failures — V1 progress tracks with ± spinners. The
-								     note fields expand to fill the panel while being edited. -->
-								<div class="ca-tracks-row" data-tour="char-tracks">
-									<ProgressTrackPanel label="Bonds" bind:value={d.bonds} />
-
-									<!-- value + oninput (not bind:value): bondsFormed/lessonsLearned
-									     are optional, so legacy/imported characters may have them
-									     undefined, which trips MarkdownNotes' bindable fallback. -->
-									<div class="ca-track-notes" class:ca-track-notes--editing={editingBondsFormed}>
-										<MarkdownNotes
-											label="Bonds Formed"
-											bind:editing={editingBondsFormed}
-											value={d.bondsFormed ?? ''}
-											oninput={(v) => (d.bondsFormed = v)}
-											placeholder="Note significant bonds — people, communities, places…"
-										/>
-									</div>
-
-									{#if isSourceEnabled('delve')}
-										<ProgressTrackPanel label="Failures" bind:value={d.failures} />
-										<div
-											class="ca-track-notes"
-											class:ca-track-notes--editing={editingLessonsLearned}
-										>
-											<MarkdownNotes
-												label="Lessons Learned"
-												bind:editing={editingLessonsLearned}
-												value={d.lessonsLearned ?? ''}
-												oninput={(v) => (d.lessonsLearned = v)}
-												placeholder="What has this character learned from their failures…"
-											/>
-										</div>
-									{/if}
-								</div>
-							</div>
 						{/if}
 					</div>
 				{/if}
@@ -1771,6 +1770,41 @@
 		</div>
 	{/if}
 </div>
+
+<!-- The note button at the end of the Bonds and Failures tracks; lit when
+     the track has notes. -->
+{#snippet trackNotesButton(
+	label: string,
+	notes: string | undefined,
+	onopen: () => void,
+	tour: string,
+)}
+	{@const has = !!notes?.trim()}
+	<button
+		class="ca-track-note-btn"
+		class:ca-track-note-btn--has={has}
+		type="button"
+		onclick={onopen}
+		use:tooltip={has ? label : `${label}: none yet`}
+		aria-label={label}
+		data-tour={tour}>{@html iconNote}</button
+	>
+{/snippet}
+
+{#if activeData}
+	<TrackNotesDialog
+		bind:this={bondsNotesRef}
+		title="Bonds Formed"
+		placeholder="Note significant bonds — people, communities, places…"
+		onsave={(v) => activeData && (activeData.bondsFormed = v)}
+	/>
+	<TrackNotesDialog
+		bind:this={lessonsNotesRef}
+		title="Lessons Learned"
+		placeholder="What has this character learned from their failures…"
+		onsave={(v) => activeData && (activeData.lessonsLearned = v)}
+	/>
+{/if}
 
 <!-- Asset card dialog — hosts AssetCard in either 'add' or 'edit' mode.
      dialogDraft is a clone of the live asset (edit) or a defaults-seeded
@@ -2336,7 +2370,9 @@
 	   border separates the section from whatever is above (initiative for
 	   stats, stats for vitals). */
 	.ca-stats-wrapper,
-	.ca-vitals-wrapper {
+	.ca-vitals-wrapper,
+	.ca-debilities-wrapper,
+	.ca-tracks-wrapper {
 		display: flex;
 		align-items: stretch;
 		gap: 8px;
@@ -2423,57 +2459,49 @@
 		width: 168px;
 	}
 
-	/* Debilities — Conditions / Banes / Burdens grid above Bonds/Failures.
-	   padding-bottom matches v2 ExpeditionsArea's .ea-pills-row (14px) so the
-	   gap below the debility buttons reads the same as the gap below the
-	   journey pills, and roughly equals the top gap above the section
-	   label (tabs margin-bottom 8px + card padding-top 7px ≈ 15px). */
-	.ca-debilities-wrapper {
-		padding-bottom: 14px;
-		border-bottom: 1px solid var(--border);
-	}
-
-	/* Tracks — V1 tracks-row layout: side-by-side Bonds + Failures groups,
-	   each with label · tally on top and progress boxes + ± buttons below. */
-	/* Status tab fills the card so a note being edited can grow to the bottom. */
-	.ca-status-section {
-		height: 100%;
-		min-height: 0;
+	/* Debilities and Tracks: rows like Stats and Vitals, with a side label. */
+	.ca-debilities-body {
+		flex: 1;
+		min-width: 0;
 	}
 	.ca-tracks-row {
 		display: flex;
 		flex-direction: column;
 		gap: 10px;
-		padding-top: 4px;
 		flex: 1;
-		min-height: 0;
+		min-width: 0;
 	}
-	/* Under-track notes (Bonds Formed / Lessons Learned) — reserve at least
-	   three text lines in display mode so an empty or short note doesn't
-	   collapse to a single line under the label. Line-height 1.5 × 3 lines
-	   ≈ 4.5em. `min-height` (not fixed) so real content past three lines
-	   still expands. Only the display element is scoped — the editing
-	   textarea already has its own 7em min-height. */
-	.ca-track-notes :global(.md-notes-display) {
-		min-height: 4.5em;
+	/* The note button at the end of a track, sized like its ± buttons; lit
+	   when the track has notes. */
+	.ca-track-note-btn {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 22px;
+		padding: 0 6px;
+		border: 1px solid var(--border-mid);
+		border-radius: 3px;
+		background: transparent;
+		color: var(--text-dimmer);
+		cursor: pointer;
+		flex-shrink: 0;
+		transition:
+			background 0.12s,
+			color 0.12s;
 	}
-	/* A note field grows to fill the remaining track-row space while editing,
-	   with the textarea filling it and the markdown hint pinned at the bottom. */
-	.ca-track-notes--editing {
-		display: flex;
-		flex-direction: column;
-		flex: 1;
-		min-height: 0;
+	.ca-track-note-btn :global(svg) {
+		width: 0.75rem;
+		height: 0.75rem;
+		fill: currentColor;
+		display: block;
 	}
-	.ca-track-notes--editing :global(.md-notes) {
-		display: flex;
-		flex-direction: column;
-		flex: 1;
-		min-height: 0;
+	.ca-track-note-btn:hover {
+		background: var(--bg-hover);
+		color: var(--text);
 	}
-	.ca-track-notes--editing :global(.md-notes-input) {
-		flex: 1;
-		min-height: 0;
+	.ca-track-note-btn--has {
+		color: var(--text-accent);
+		border-color: var(--text-accent);
 	}
 	/* Vows tab — stack of VowCards. The "+ Vow" action lives in the header
 	   toolbar now, so no per-tab header is needed. */

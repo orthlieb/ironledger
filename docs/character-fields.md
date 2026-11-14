@@ -98,8 +98,8 @@ YRT adds three more:
 ]
 ```
 
-On the sheet, at the bottom of the Core tab, that's Region of origin with no
-heading, then a YRT heading over:
+On the sheet, on the Details tab, that's Region of origin with no heading,
+then a YRT heading over:
 
 - **Religion:** a dropdown of Puritan, Optime, Wildens and None, or their
   own. Hovering it shows the chosen religion's text from the oracle.
@@ -217,8 +217,10 @@ the player picks again.
 
 ## On the sheet
 
-The fields of the enabled extensions close the Core tab, below Vitals, so
-the stats and vitals stay at the top however many there are. Each field is a
+The fields of the core rules and the enabled extensions have the sheet's
+Details tab to themselves (Core, Details, Background, Vows, Assets), so Core
+keeps the stats, vitals, debilities and tracks however many there are. Each
+field is a
 label and its control: a `<Select>` for a dropdown, a `SegmentedRadio` for a
 radio, a one-line text input for text. They sit two to a row on a wide
 screen and one to a row on a phone. An unset dropdown shows "—"; an unset
@@ -402,7 +404,7 @@ work can pick it up.
 | `preconditions.ts` `touched` branch, `TOUCHED_LEVEL`, `TOUCHED_LABEL`                                                                                                                    | The `touched` precondition key                         | The generic field branch                                                                       | This work |
 | The Touched assets' `touchedLevel` / `animalName` custom fields; `types.ts` `touched` / `touchedAnimal`                                                                                  | Per-asset and legacy copies of the level and animal    | Read from `fields`; removed                                                                    | This work |
 | `tutorials/createCharacter.ts` region step (`isSourceEnabled('yrt')`)                                                                                                                    | Shows the Region of origin step only with YRT on       | A "Roll their details" step, shown when an enabled extension declares fields                   | This work |
-| `CharactersArea.svelte` Status tab `isSourceEnabled('delve')`: Failures track, Lessons Learned; `MovesDialog.svelte` `+1 failure` link on a miss                                         | Delve's failures track on the character                | A `track` field type, and a move-outcome hook for the `+1 failure` link                        | Later     |
+| `CharactersArea.svelte` Core tab `isSourceEnabled('delve')`: Failures track, Lessons Learned; `MovesDialog.svelte` `+1 failure` link on a miss                                           | Delve's failures track on the character                | A `track` field type, and a move-outcome hook for the `+1 failure` link                        | Later     |
 | `CharactersArea.svelte` `applyResourceChange` `mana` branch; `preconditions.ts` `mana` in the stat map; `MovesDialog.svelte` mana commit                                                 | YRT's mana as a resource with a 0–10 range             | A `counter` field type with a range and colour, which `resource:` links and preconditions read | Later     |
 
 ### Other declarations
@@ -446,7 +448,7 @@ them on, as `expeditionKinds` would, but the screens themselves stay code.
     extension `order` then declaration, with their headings and with
     `optionsFrom` options built from the loaded oracles.
   - `preconditions.ts`: the field branch, and the `touched` branch removed.
-  - `CharactersArea.svelte`: the fields below Vitals (Animal hidden for
+  - `CharactersArea.svelte`: the fields on the Details tab (Animal hidden for
     Pure), their log entries, and the level change unmarking abilities.
   - New Character (`CharactersArea.svelte`, `RandomizeBlock.svelte`): each
     field's control and d6 below the stats, hidden by its `if`, replacing the
@@ -482,4 +484,4 @@ them on, as `expeditionKinds` would, but the screens themselves stay code.
 - **Docs:** `extensions.md` (the new `extension.json` key, and its stale
   table of current extensions), `data-schema.md` (character fields as
   precondition keys; the Touched row), the YRT README (Touched assets,
-  religion), `character-sheet.md` (the Core tab rows).
+  religion), `character-sheet.md` (the Details tab).

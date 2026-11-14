@@ -697,16 +697,16 @@ nested state.
 
 ```svelte
 <MarkdownNotes
-  label="Bonds Formed"
-  bind:value={d.bondsFormed}
-  placeholder="Note significant bonds…"
+  label="Background"
+  bind:value={d.background}
+  placeholder="Origin, upbringing, major traits…"
 />
 ```
 
 Props: `value` (bindable), `editing?` (bindable, exposes the dialog
 state so parents can hide e.g. floating portraits during edit),
 `label?`, `placeholder?`, `rows?` (default 4), `oninput?`. Used by
-Characters (background, bondsFormed, lessonsLearned), VowCard,
+Characters (background), TrackNotesDialog (Bonds Formed, Lessons Learned), VowCard,
 ExpeditionsArea, CommunitiesArea (core + notes tab).
 
 ### `PortraitUploader` (`#lib/components/PortraitUploader.svelte`)

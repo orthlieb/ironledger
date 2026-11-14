@@ -283,10 +283,10 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		const charId = await goToHomeWithCharacter(page);
 		const id = crypto.randomUUID();
 
-		// Status tab hosts the failures track (still uses .track-box / data-ticks).
+		// Core hosts the failures track (still uses .track-box / data-ticks).
 		// The track now lives inside ProgressTrackPanel, whose root class is .ptp-group
 		// (was .ca-track-group before the panel was extracted).
-		await switchCharTab(page, 'Status');
+		await switchCharTab(page, 'Core');
 		const failGroup = page.locator(`${CHAR_AREA} .ptp-group`).filter({ hasText: /Failures/i });
 		const tickCountBefore = await failGroup
 			.locator('.track-box')
@@ -308,7 +308,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await entry.locator('a.failure-link').click();
 		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
 
-		await switchCharTab(page, 'Status');
+		await switchCharTab(page, 'Core');
 		await expect(async () => {
 			const after = await failGroup
 				.locator('.track-box')
@@ -325,8 +325,8 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		const charId = await goToHomeWithCharacter(page);
 		const id = crypto.randomUUID();
 
-		// Ensure Shaken is unmarked before the test. Debilities live on the Status tab.
-		await switchCharTab(page, 'Status');
+		// Ensure Shaken is unmarked before the test. Debilities live on Core.
+		await switchCharTab(page, 'Core');
 		const shakenBtn = page.locator(`${CHAR_AREA} .debility-btn`).filter({ hasText: 'Shaken' });
 		await expect(shakenBtn).toBeVisible({ timeout: 3_000 });
 		if (await shakenBtn.evaluate((el) => el.classList.contains('active'))) {
@@ -350,7 +350,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 
 		await page.waitForTimeout(300);
 
-		await switchCharTab(page, 'Status');
+		await switchCharTab(page, 'Core');
 		await expect(shakenBtn).toHaveClass(/active/, { timeout: 8_000 });
 	});
 

@@ -705,8 +705,8 @@ The fields that accept it:
 | Entity                 | Field              | Notes                                                                                                                                                     |
 | ---------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Character` (`data`)   | `background`       | Character sheet → Background tab — origin, upbringing, major traits                                                                                       |
-| `Character` (`data`)   | `bondsFormed`      | Character sheet → Bonds → notes column                                                                                                                    |
-| `Character` (`data`)   | `lessonsLearned`   | Character sheet → Failures → notes column                                                                                                                 |
+| `Character` (`data`)   | `bondsFormed`      | Character sheet → Core → the note button at the end of the Bonds track (a dialog)                                                                         |
+| `Character` (`data`)   | `lessonsLearned`   | Character sheet → Core → the note button at the end of the Failures track (a dialog)                                                                      |
 | `Vow` (in `data.vows`) | `notes`            | Per-vow notes block                                                                                                                                       |
 | `Community`            | `notes`            | Long-form description of the place (Description tab)                                                                                                      |
 | `Community`            | `situationalNotes` | Conditions / aspects of the current trouble (Core tab)                                                                                                    |
