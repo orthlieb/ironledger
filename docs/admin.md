@@ -80,11 +80,16 @@ When **enabled** (`maintenanceService.enableMaintenance`):
 
 When active:
 
-- A global countdown banner polls `/api/v1/admin/maintenance/status` every 10s and renders for all users.
+- A global countdown banner renders for all users. Every open tab checks
+  `/api/v1/system/status` (maintenance and broadcast together) once a
+  minute while it's visible, at once when it's shown again, and not while
+  it's hidden. So a warning can take up to a minute to appear: schedule a
+  shutdown a few minutes ahead. Once a tab has the shutdown time it counts
+  down and logs the user out on its own.
 - Login is blocked for non-admin users.
 - Admins can still log in (admin bypass) so they can disable maintenance.
 
-When **disabled**, the keys are deleted and the banner clears on next poll.
+When **disabled**, the keys are deleted and the banner clears on each tab's next check.
 
 ### Registration
 

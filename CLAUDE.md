@@ -125,18 +125,20 @@ wired but doesn't actually travel.
 
 The zip export copies a character's `data` whole, so a new key exports
 by itself. Import is where new data gets forgotten:
-`reconcileImportedChar()` (`apps/web/src/routes/home/+page.svelte`) runs
-on every imported character, new or Replacing one of the same name, and
+`reconcileImportedCharacter()` (`apps/web/src/lib/character.ts`) runs on
+every imported character, new or Replacing one of the same name, and
 Replace writes its output straight onto the open character with no load
 step after it. So when you add character data — a new key, a new
 character field type, a change of shape that a load-time migration fixes:
 
-1. **Import:** make `reconcileImportedChar()` tidy it and run any
-   migration that loading does. Character fields go through
+1. **Import:** make `reconcileImportedCharacter()` tidy it and run any
+   migration that loading does, with a unit test beside its others in
+   `apps/web/tests/unit/characterFields.test.ts`. Character fields go through
    `cleanFieldValues` and `moveLegacyYrtFields` there; add a branch for a
    new field type to `cleanFieldValues` (`characterFieldsCore.ts`).
 2. **Markdown export:** add it to the character page in `exportMarkdownZip`
-   (the fields are `fieldsMarkdown`'s `## Details`).
+   (`apps/web/src/routes/home/+page.svelte`; the fields are
+   `fieldsMarkdown`'s `## Details`).
 3. **Docs:** `docs/import-schema.md` → Characters and the Character field
    reference.
 4. **Tests:** the full round trip in `import-export.spec.ts` (seed the new

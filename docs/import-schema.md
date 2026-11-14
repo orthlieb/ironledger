@@ -145,7 +145,8 @@ the runtime `Character.data` type (see `apps/web/src/lib/types.ts`).
 On import each entry is created as a **new** character (a fresh id is
 allocated; nothing is overwritten) unless its name collides and the player
 picks Replace (see [Collision resolution](#collision-resolution)). Imported
-character data is run through `reconcileImportedChar()` so stale/unknown
+character data is run through `reconcileImportedCharacter()`
+(`apps/web/src/lib/character.ts`) so stale/unknown
 fields are normalized before save, on both paths:
 
 - `globalValues` goes through `reconcileGlobalValues` (unknown counter ids

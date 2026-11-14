@@ -25,7 +25,7 @@ import {
 	valueLabel,
 	type ResolvedField,
 } from '../../src/lib/characterFieldsCore.js';
-import { moveLegacyYrtFields } from '../../src/lib/character.js';
+import { moveLegacyYrtFields, reconcileImportedCharacter } from '../../src/lib/character.js';
 import type { OracleFile } from '../../src/lib/oracleStore.svelte.js';
 import type { CharacterFieldDef } from '../../src/lib/types.js';
 
@@ -446,5 +446,44 @@ describe('import and export', () => {
 		]);
 		const base = [{ heading: null, fields: fields.filter((f) => f.source === 'base') }];
 		expect(fieldsMarkdown(base, {}, allById)).toEqual([]);
+	});
+});
+
+describe('reconcileImportedCharacter', () => {
+	const counters = new Map([['mana', { maxValue: 5 }]]);
+
+	it("tidies the fields, moves an older export's values in, and keeps the outer name", () => {
+		const entry: { name?: unknown; data?: Record<string, unknown> } = {
+			name: '  Ivy ',
+			data: {
+				fields: { origin: 'Oray Hills', futureField: 'kept' },
+				touched: 'Second',
+				touchedAnimal: 'Heron',
+				background: '**Religion:** **Puritan**, by upbringing.',
+				globalValues: { mana: '9', orphan: '2' },
+			},
+		};
+		const data = reconcileImportedCharacter(entry, counters, byId);
+		expect(entry.data).toBe(data);
+		expect(data.fields).toEqual({
+			origin: 'oray-hills',
+			futureField: 'kept',
+			religion: 'puritan',
+			touched: 'second',
+			touchedAnimal: 'Heron',
+		});
+		expect(data).not.toHaveProperty('touched');
+		expect(data).not.toHaveProperty('touchedAnimal');
+		expect(data.globalValues).toEqual({ mana: '5' });
+		expect(data.name).toBe('Ivy');
+	});
+
+	it('leaves a data name alone, and gives an entry without data a fields map', () => {
+		const named = { name: 'Outer', data: { name: 'Inner' } };
+		expect(reconcileImportedCharacter(named, counters, byId).name).toBe('Inner');
+		const bare: { name?: unknown; data?: Record<string, unknown> } = { name: 'Bare' };
+		expect(reconcileImportedCharacter(bare, counters, byId)).toEqual({ fields: {}, name: 'Bare' });
+		const odd = { name: 42, data: {} };
+		expect(reconcileImportedCharacter(odd, counters, byId)).not.toHaveProperty('name');
 	});
 });

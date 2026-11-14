@@ -48,10 +48,9 @@
 		getGlobalCounterDef,
 		getGlobalCounterIds,
 	} from '#lib/assetStore.svelte.js';
-	import { reconcileGlobalValues, moveLegacyYrtFields } from '#lib/character.js';
+	import { reconcileImportedCharacter } from '#lib/character.js';
 	import {
 		characterFieldGroups,
-		cleanFieldValues,
 		fieldsMarkdown,
 		findCharacterField,
 	} from '#lib/characterFields.svelte.js';
@@ -779,38 +778,14 @@
 			// flight lets the load's `_sync.reset()` clobber the just-imported
 			// rows (silent drop). `loadAssets()` stays for the catalogue below.
 			await initialLoad;
-			// Reconcile imported globalValues against the current catalogue
-			// (drops unknown counter ids, clamps to canonical maxValue, drops
-			// non-numeric values). Catalogue is already auto-loaded on mount;
-			// this await is a safety net for very early imports. The oracles
-			// give the character fields' dropdown options, which their
-			// reconcile matches labels against.
+			// Imported characters are reconciled against the catalogue's
+			// counters and the character fields' options (reconcileImportedCharacter).
+			// Both are usually loaded by now; these awaits are a safety net for
+			// very early imports.
 			await Promise.all([loadAssets(), loadOracles()]);
 			const knownDefs = new Map(
 				getGlobalCounterIds().map((id) => [id, getGlobalCounterDef(id)!] as const),
 			);
-			function reconcileImportedChar(entry: { name?: string; data?: Record<string, unknown> }) {
-				const data = entry.data ?? {};
-				if (data.globalValues && typeof data.globalValues === 'object') {
-					data.globalValues = reconcileGlobalValues(
-						data.globalValues as Record<string, string>,
-						knownDefs,
-					);
-				}
-				// Character fields (docs/character-fields.md): tidy the values,
-				// then move an older export's YRT values (background prose, the
-				// Touched asset) into them. Loading does the move too, but Replace
-				// writes this data straight onto the existing character.
-				if ('fields' in data) data.fields = cleanFieldValues(data.fields, findCharacterField);
-				moveLegacyYrtFields(data);
-				// The sheet shows `data.name`, and loading fills a missing one with
-				// "New Character": a file with only the outer name takes it.
-				const dataName = typeof data.name === 'string' ? data.name.trim() : '';
-				const outerName = typeof entry.name === 'string' ? entry.name.trim() : '';
-				if (!dataName && outerName) data.name = outerName;
-				entry.data = data;
-				return entry;
-			}
 
 			function appendSafeLog(entry: {
 				title?: string;
@@ -1024,14 +999,12 @@
 			}
 
 			async function importChar(entry: ImportableChar): Promise<void> {
-				const reconciled = reconcileImportedChar(entry);
-				const data = (reconciled.data ?? {}) as Record<string, unknown>;
-				reconciled.data = data;
+				const data = reconcileImportedCharacter(entry, knownDefs, findCharacterField);
 				// Lift any inline portrait out of the JSON; it goes to the blob store.
 				const inline = takeInlineDataUrl(data, 'portrait');
-				const collided = existingCharByName.has(normaliseName(reconciled.name));
-				if (await applyCharacterStrategy(reconciled)) {
-					const created = await createCharacter(reconciled.name ?? 'Imported Character', data);
+				const collided = existingCharByName.has(normaliseName(entry.name));
+				if (await applyCharacterStrategy(entry)) {
+					const created = await createCharacter(entry.name ?? 'Imported Character', data);
 					if (inline) {
 						const etag = await uploadPortrait(`/api/characters/${created.id}/portrait`, inline);
 						if (etag) {
@@ -1044,12 +1017,12 @@
 				} else if (inline && collided && strategy === 'replace') {
 					// applyCharacterStrategy already overwrote the existing character;
 					// attach the portrait to it and persist the etag.
-					const existingId = existingCharByName.get(normaliseName(reconciled.name));
+					const existingId = existingCharByName.get(normaliseName(entry.name));
 					if (existingId) {
 						const etag = await uploadPortrait(`/api/characters/${existingId}/portrait`, inline);
 						if (etag) {
 							persistCharacterNow(existingId, {
-								name: reconciled.name ?? 'Imported Character',
+								name: entry.name ?? 'Imported Character',
 								data: { ...data, portraitEtag: etag },
 							});
 						}

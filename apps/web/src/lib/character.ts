@@ -5,6 +5,7 @@
 
 import type { CharacterData } from './types.js';
 import { DEFAULT_CHARACTER } from './types.js';
+import { cleanFieldValues, optionId, type ResolvedField } from './characterFieldsCore.js';
 
 /** Count all active debilities (conditions + banes + burdens). */
 export function countDebilities(d: CharacterData): number {
@@ -85,13 +86,6 @@ export function hydrateCharacterInPlace(d: Record<string, unknown>): void {
 	moveLegacyYrtFields(d);
 }
 
-/** The id of an option from its label, as characterFields.optionId does. */
-const toOptionId = (label: string) =>
-	label
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, '-')
-		.replace(/^-+|-+$/g, '');
-
 /**
  * YRT's region of origin, religion, touched level and animal were kept as
  * prose in the background, and the level and animal also on the Touched asset
@@ -117,11 +111,11 @@ export function moveLegacyYrtFields(d: Record<string, unknown>): void {
 	};
 
 	const originLine = /^\*\*Region of origin:\*\*[ \t]*([^\n]+)\n?\n?/m;
-	set('origin', toOptionId(bg.match(originLine)?.[1]?.trim() ?? ''));
+	set('origin', optionId(bg.match(originLine)?.[1]?.trim() ?? ''));
 	// The field holds the region now: drop the background's copy of it, and
 	// the blank line after it.
 	if (fields.origin && originLine.test(bg)) d.background = bg.replace(originLine, '').trimEnd();
-	set('religion', toOptionId(bg.match(/\*\*Religion:\*\*[ \t]*\*\*([^*\n]+)\*\*/)?.[1] ?? ''));
+	set('religion', optionId(bg.match(/\*\*Religion:\*\*[ \t]*\*\*([^*\n]+)\*\*/)?.[1] ?? ''));
 	const level =
 		onAsset('touchedLevel') ||
 		(typeof d.touched === 'string' ? d.touched : '') ||
@@ -260,4 +254,41 @@ export function reconcileGlobalValues(
 		out[id] = String(clamped);
 	}
 	return out;
+}
+
+/**
+ * An imported character's data, made ready to save (docs/import-schema.md →
+ * Characters). Import runs this on every character, new or Replacing one of
+ * the same name. Replace writes the result straight onto the character
+ * already open, with no load after it, so whatever loading fixes is fixed
+ * here too (CLAUDE.md: new character data has to survive import and export).
+ *
+ * - `globalValues`: checked against the catalogue's counters
+ *   (reconcileGlobalValues).
+ * - `fields`: tidied (cleanFieldValues), then an older export's YRT values
+ *   moved in (moveLegacyYrtFields).
+ * - A missing `data.name` takes the entry's `name`: the sheet shows
+ *   `data.name`, and loading would fill it with "New Character".
+ *
+ * Changes `entry.data` in place (creating it if missing) and returns it.
+ */
+export function reconcileImportedCharacter(
+	entry: { name?: unknown; data?: Record<string, unknown> },
+	counterDefs: Map<string, { maxValue?: number | number[] }>,
+	findField: (id: string) => ResolvedField | undefined,
+): Record<string, unknown> {
+	const data = entry.data ?? {};
+	if (data.globalValues && typeof data.globalValues === 'object') {
+		data.globalValues = reconcileGlobalValues(
+			data.globalValues as Record<string, string>,
+			counterDefs,
+		);
+	}
+	if ('fields' in data) data.fields = cleanFieldValues(data.fields, findField);
+	moveLegacyYrtFields(data);
+	const dataName = typeof data.name === 'string' ? data.name.trim() : '';
+	const outerName = typeof entry.name === 'string' ? entry.name.trim() : '';
+	if (!dataName && outerName) data.name = outerName;
+	entry.data = data;
+	return data;
 }

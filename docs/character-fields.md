@@ -483,9 +483,11 @@ them on, as `expeditionKinds` would, but the screens themselves stay code.
     the origin, religion and touched prose dropped from the background.
   - `AssetCard.svelte`: `abilityMaxByField` against character fields, the
     level and animal as text; the chit named for the animal.
-  - `character.ts`: the load-time move into `fields`.
-  - `routes/home/+page.svelte`: `reconcileImportedChar` (`cleanFieldValues`,
-    then the move) and the Markdown export's `## Details` (`fieldsMarkdown`).
+  - `character.ts`: the load-time move into `fields`, and
+    `reconcileImportedCharacter`, which import runs (`cleanFieldValues`,
+    then the move).
+  - `routes/home/+page.svelte`: the Markdown export's `## Details`
+    (`fieldsMarkdown`).
   - `tutorials/createCharacter.ts`: the "Roll a region of origin" step
     becomes one step over the YRT fields, shown when they're there.
 - **YRT data:** the four fields in `extension.json`; a `name` on each
