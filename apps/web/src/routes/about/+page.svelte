@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { appIcon } from '#lib/liveryIcons.js';
+	import BetaBadge from '#lib/components/BetaBadge.svelte';
 	import adventureSvg from '#icons/Adventure.svg?raw';
 	import eyeSvg from '#icons/eye-solid.svg?raw';
 	import noteSvg from '#icons/note-sticky-solid.svg?raw';
@@ -218,7 +219,7 @@
 <section class="hero">
 	<div class="hero-text">
 		<p class="hero-eyebrow">Forged in JavaScript. Tempered by coffee.</p>
-		<h1 class="hero-title">{headingText('Iron Ledger')}</h1>
+		<h1 class="hero-title">{headingText('Iron Ledger')}<BetaBadge size="lg" /></h1>
 		<p class="hero-subtitle">
 			The Ironlands are brutal, the dice are fickle, and paper character sheets have a way of
 			disappearing right before a climactic vow. Iron Ledger remembers so you don't have to.

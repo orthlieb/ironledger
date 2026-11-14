@@ -3,6 +3,7 @@
 	// Per-livery typography + chrome palettes, generated from liveries/<id>/livery.json.
 	import '#lib/liveries.generated.css';
 	import type { LayoutData } from './$types';
+	import BetaBadge from '#lib/components/BetaBadge.svelte';
 	import type { MaintenanceStatus, BroadcastStatus } from '@ironledger/shared';
 	import SettingsDialog from '#lib/components/SettingsDialog.svelte';
 	import BugReportDialog from '#lib/components/BugReportDialog.svelte';
@@ -262,6 +263,7 @@
 				{@html activeLiveryBrand() ?? swordSvg}
 			</span>
 			{headingText('Iron Ledger')}
+			<BetaBadge inApp />
 		</a>
 		<div class="nav-links">
 			<nav class="nav-page-links" aria-label="Main navigation">
