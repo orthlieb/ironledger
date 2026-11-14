@@ -1884,6 +1884,7 @@
 	bind:this={newCharDialogRef}
 	title="New Character"
 	draggable
+	maxHeight="80dvh"
 	confirmLabel="Create"
 	confirmClass="btn-primary"
 	confirmDisabled={!canCreateChar}
