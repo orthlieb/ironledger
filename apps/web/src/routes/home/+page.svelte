@@ -806,7 +806,8 @@
 				// The sheet shows `data.name`, and loading fills a missing one with
 				// "New Character": a file with only the outer name takes it.
 				const dataName = typeof data.name === 'string' ? data.name.trim() : '';
-				if (!dataName && entry.name?.trim()) data.name = entry.name.trim();
+				const outerName = typeof entry.name === 'string' ? entry.name.trim() : '';
+				if (!dataName && outerName) data.name = outerName;
 				entry.data = data;
 				return entry;
 			}

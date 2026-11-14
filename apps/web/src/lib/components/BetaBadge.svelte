@@ -4,6 +4,9 @@
 	 * app's header, and on the login, register and About pages. Its tooltip
 	 * says what beta means; inside the app it also says where to report a bug
 	 * (the hamburger menu, which the signed-out pages don't have).
+	 *
+	 * On a small phone it shows β instead of the word, which the app header
+	 * has no room for; screen readers still read "Beta".
 	 */
 	import { tooltip } from '#lib/actions/tooltip.js';
 
@@ -23,7 +26,9 @@
 	);
 </script>
 
-<span class="beta-badge beta-badge--{size}" use:tooltip={tip}>Beta</span>
+<span class="beta-badge beta-badge--{size}" use:tooltip={tip}
+	><span class="beta-word">Beta</span><span class="beta-glyph" aria-hidden="true">β</span></span
+>
 
 <style>
 	.beta-badge {
@@ -46,5 +51,31 @@
 	}
 	.beta-badge--lg {
 		font-size: 0.7rem;
+	}
+	.beta-glyph {
+		display: none;
+	}
+
+	/* A small phone: β in a round mark, the word kept for screen readers. */
+	@media (max-width: 400px) {
+		.beta-badge {
+			padding: 0.1em 0.4em;
+			letter-spacing: 0;
+		}
+		.beta-word {
+			position: absolute;
+			width: 1px;
+			height: 1px;
+			overflow: hidden;
+			clip-path: inset(50%);
+			white-space: nowrap;
+		}
+		.beta-glyph {
+			display: inline;
+			/* Upper-casing β gives Β, which reads as a B. */
+			text-transform: none;
+			font-size: 1.5em;
+			line-height: 1;
+		}
 	}
 </style>
