@@ -171,9 +171,8 @@ export class CampaignExport {
 					},
 					(warning) => this.warnings.push(warning),
 				);
-				// The markdown bundle also writes maps + the log + the foes
-				// bestiary; reflect all three in the final tally.
-				doneBy['map'] = mapSet.size;
+				// The markdown bundle also writes the log and the foes bestiary;
+				// reflect both in the final tally (maps count as they're written).
 				doneBy['foe'] = sel.foes.length;
 				if (sel.log) doneBy['log'] = sessionLog.entries.length;
 				renderSummary();
@@ -794,6 +793,7 @@ export async function exportMarkdownZip(
 					zipFiles[`maps/${slug}.md`] = strToU8(lines.join('\n').trimEnd() + '\n');
 					if (!written++) index.push('## Maps', '');
 					index.push(`- [${name}](maps/${slug}.md)`);
+					onItem?.('map');
 				}
 				if (written) index.push('');
 			}

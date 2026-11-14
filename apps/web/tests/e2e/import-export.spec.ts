@@ -1474,11 +1474,12 @@ test.describe('Import / Export — Markdown maps leave out hidden layers and bla
 		const TINY_PNG =
 			'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI6QAAAABJRU5ErkJggg==';
 		const layered = await newMap('Layered Map');
+		const ok = (what: string) => (r: Response) => expect(r.ok, what).toBeTruthy();
 		await fetch(`${V1}/session/maps/${layered}/background`, {
 			method: 'PUT',
 			headers: h,
 			body: JSON.stringify({ dataUrl: `data:image/png;base64,${TINY_PNG}` }),
-		});
+		}).then(ok('seed background'));
 		await fetch(`${V1}/session/maps/${layered}/settings`, {
 			method: 'PUT',
 			headers: h,
@@ -1490,17 +1491,17 @@ test.describe('Import / Export — Markdown maps leave out hidden layers and bla
 					],
 				},
 			}),
-		});
+		}).then(ok('seed layers'));
 		await fetch(`${V1}/session/maps/${layered}/markers`, {
 			method: 'PUT',
 			headers: h,
 			body: JSON.stringify({
 				markers: [
-					{ id: 'open', x: 2, y: 2, label: 'Open Pin' },
-					{ id: 'hid', x: 4, y: 4, label: 'Secret Pin', layer: 'secret' },
+					{ id: 'open', x: 2, y: 2, label: 'Open Pin', icon: 'landmark' },
+					{ id: 'hid', x: 4, y: 4, label: 'Secret Pin', icon: 'landmark', layer: 'secret' },
 				],
 			}),
-		});
+		}).then(ok('seed markers'));
 		await newMap('Sketch'); // no background
 	});
 
@@ -1531,6 +1532,8 @@ test.describe('Import / Export — Markdown maps leave out hidden layers and bla
 		await expect(warnings).toBeVisible({ timeout: 10_000 });
 		await expect(warnings).toContainText('Layered Map: 1 marker on hidden layers left out.');
 		await expect(warnings).toContainText("Sketch: no background, so it's left out.");
+		// The tally counts the maps written, not the maps picked.
+		await expect(page.locator('.exp-summary')).toContainText('1/2 maps');
 		const close = page.locator('.exp-footer').getByRole('button', { name: 'Close' });
 		await expect(close).toBeFocused();
 		await close.click();
