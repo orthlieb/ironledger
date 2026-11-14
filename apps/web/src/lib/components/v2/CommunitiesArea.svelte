@@ -2156,7 +2156,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		padding-bottom: 8px;
-		border-bottom: 1px solid #c3baa1;
+		border-bottom: 1px solid var(--border);
 	}
 	.cm-status-label {
 		font-family: var(--font-ui);

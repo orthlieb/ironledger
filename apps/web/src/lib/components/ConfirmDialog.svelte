@@ -32,6 +32,7 @@
 		accentColor = 'var(--color-danger)',
 		draggable = false,
 		width,
+		maxHeight,
 		confirmLabel = 'Confirm',
 		confirmClass = 'btn-danger',
 		cancelLabel = 'Cancel',
@@ -53,6 +54,10 @@
 		draggable?: boolean;
 		/** Optional dialog width (CSS length, e.g. "420px"). Defaults to 340px. */
 		width?: string;
+		/** Optional height cap (CSS length, e.g. "80dvh"). The content between
+		 *  the title bar and the buttons scrolls when it doesn't fit; the
+		 *  title bar and buttons stay put. Uncapped by default. */
+		maxHeight?: string;
 		confirmLabel?: string;
 		confirmClass?: string;
 		cancelLabel?: string;
@@ -136,11 +141,11 @@
 	<AlertDialog.Portal to={portalTo}>
 		<AlertDialog.Overlay class="cm-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<AlertDialog.Content
-			class="confirm-modal"
+			class={maxHeight ? 'confirm-modal confirm-modal--capped' : 'confirm-modal'}
 			data-tour={tour}
 			style="--accent: {accentColor}; z-index: {contentZ(stackDepth)}{width
 				? `; width: ${width}`
-				: ''}"
+				: ''}{maxHeight ? `; max-height: ${maxHeight}` : ''}"
 		>
 			<div class="cm-header" use:dragAction={draggable}>
 				{#if draggable}
@@ -154,7 +159,9 @@
 				{/if}
 			</div>
 			<div class="cm-body">
-				{@render children?.()}
+				{#if children}
+					<div class="cm-content">{@render children()}</div>
+				{/if}
 				<div class="cm-actions">
 					{#if showCancelButton}
 						<AlertDialog.Cancel class="btn" onclick={handleCancel}>{cancelLabel}</AlertDialog.Cancel
@@ -261,9 +268,15 @@
 		color: var(--text);
 	}
 
-	/* Body */
+	/* Body: the content, then the buttons. The padding sits on each part
+	   rather than the body, so a capped dialog's scrolling content keeps
+	   room for its fields' focus rings. */
 	:global(.confirm-modal .cm-body) {
-		padding: 12px 14px;
+		display: flex;
+		flex-direction: column;
+	}
+	:global(.confirm-modal .cm-content) {
+		padding: 12px 14px 0;
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
@@ -272,7 +285,33 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 6px;
-		margin-top: 4px;
+		padding: 12px 14px;
 		justify-content: flex-end;
+	}
+
+	/* maxHeight: header and buttons stay, the content scrolls between them. */
+	:global(.confirm-modal--capped) {
+		display: flex;
+		flex-direction: column;
+	}
+	:global(.confirm-modal--capped .cm-header) {
+		flex-shrink: 0;
+	}
+	:global(.confirm-modal--capped .cm-body) {
+		flex: 1;
+		min-height: 0;
+	}
+	:global(.confirm-modal--capped .cm-content) {
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding-bottom: 10px;
+	}
+	/* A rule over the buttons, so content scrolled under it reads as cut. */
+	:global(.confirm-modal--capped .cm-actions) {
+		flex-shrink: 0;
+		padding-top: 10px;
+		border-top: 1px solid var(--border);
 	}
 </style>
