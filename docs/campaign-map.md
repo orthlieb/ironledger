@@ -32,32 +32,32 @@ proportions (a very slight uniform stretch on the image is invisible).
 
 ### Web (`apps/web`)
 
-| File                                                    | Responsibility                                                                                                                                                        |
-| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `lib/mapConstants.ts`                                   | Grid dims from aspect, zoom-octave helpers, marker defaults, color presets, `resolveMapIcon`.                                                                         |
-| `lib/mapGeometry.ts`                                    | Pure geometry: snap-to-grid, sub-grid step, grid-line offsets, major-line test, a marker's angle, the ruler's length and its distance in map units. No Svelte.        |
-| `lib/mapLabel.ts`                                       | A marker label's placement at its eight positions (`labelPlacement`) and its emphasis style (`labelStyleCss`, `LABEL_SIZE_MULT`). No Svelte.                          |
-| `lib/mapImage.ts`                                       | `downscaleImage(file)` — canvas-based resize + JPEG re-encode.                                                                                                        |
-| `lib/mapStore.svelte.ts`                                | `$state` list + active-map cache backed by `/api/session/maps*`; switch/create/rename/delete/CRUD.                                                                    |
-| `lib/mapExport.ts`                                      | `exportMapZip` / `importMapZip` / `buildMapZipEntries` / `parseBundledMaps` / `applyMapImport` / `populateMap` (Everything nesting + owner re-link) + `exportMapPng`. |
-| `lib/mapEntityLinks.ts`                                 | Enumerate + resolve linkable entities (community / place / journey / site); parse `"kind:id"`.                                                                        |
-| `lib/generated/mapIconManifest.ts`                      | **Auto-generated** icon manifest — do not hand-edit. Rebuilt by the Vite plugin.                                                                                      |
-| `scripts/build-map-icons.mjs`                           | Scans `static/map/**/*.{svg,png}` → `mapIconManifest.ts` (kebab→Title Case; SVGs fill-stripped, PNGs wrapped in `<image>`).                                           |
-| `static/map/<category>/<slug>.{svg,png}`                | Icon source files. First subfolder = category; kebab-case filename = slug + display label. See "Icon formats" below.                                                  |
-| `lib/components/MapDialog.svelte`                       | Map picker + toolbar + SVG canvas: markers, gestures, zoom/pan, ruler, scale bar.                                                                                     |
-| `lib/components/MarkerPropertiesDialog.svelte`          | The marker editor (label, icon, colour, angle, style, layer, link), with its own styles.                                                                              |
-| `lib/components/MapIconPicker.svelte`                   | The icon grid the marker editor opens, with its own styles.                                                                                                           |
-| `lib/components/MapPilePicker.svelte`                   | The pile-up menu: the markers at a crowded point, to pick one.                                                                                                        |
-| `lib/components/MapOptionsDialog.svelte`                | Name / display prefs / scale bar / danger-zone (clear + delete).                                                                                                      |
-| `lib/components/MapLayersMenu.svelte`                   | The toolbar's Layers popover: show / hide, add, rename, delete marker layers, and pick the one new markers go on.                                                     |
-| `lib/components/MapOwnerConflictDialog.svelte`          | Everything-import prompt: Replace vs Skip when a bundled map's owner already has a map.                                                                               |
-| `routes/api/session/maps/+server.ts`                    | BFF: GET (list) / POST (create).                                                                                                                                      |
-| `routes/api/session/maps/entity-markers/+server.ts`     | BFF: GET cross-map `{entityId → refs}` index for entity-card back-references.                                                                                         |
-| `routes/api/session/maps/[mapId]/+server.ts`            | BFF: GET (detail) / PATCH (rename+reorder) / DELETE.                                                                                                                  |
-| `routes/api/session/maps/[mapId]/markers/+server.ts`    | BFF: PUT markers.                                                                                                                                                     |
-| `routes/api/session/maps/[mapId]/settings/+server.ts`   | BFF: PUT settings.                                                                                                                                                    |
-| `routes/api/session/maps/[mapId]/background/+server.ts` | BFF: GET bytes (ETag) / PUT / DELETE.                                                                                                                                 |
-| `tests/unit/mapGeometry.test.ts`                        | Unit tests for the geometry helpers.                                                                                                                                  |
+| File                                                    | Responsibility                                                                                                                                                 |
+| ------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `lib/mapConstants.ts`                                   | Grid dims from aspect, zoom-octave helpers, marker defaults, color presets, `resolveMapIcon`.                                                                  |
+| `lib/mapGeometry.ts`                                    | Pure geometry: snap-to-grid, sub-grid step, grid-line offsets, major-line test, a marker's angle, the ruler's length and its distance in map units. No Svelte. |
+| `lib/mapLabel.ts`                                       | A marker label's placement at its eight positions (`labelPlacement`) and its emphasis style (`labelStyleCss`, `LABEL_SIZE_MULT`). No Svelte.                   |
+| `lib/mapImage.ts`                                       | `downscaleImage(file)` — canvas-based resize + JPEG re-encode.                                                                                                 |
+| `lib/mapStore.svelte.ts`                                | `$state` list + active-map cache backed by `/api/session/maps*`; switch/create/rename/delete/CRUD.                                                             |
+| `lib/mapExport.ts`                                      | `importMapZip` / `buildMapZipEntries` / `parseBundledMaps` / `applyMapImport` / `populateMap` (Everything nesting + owner re-link) + `exportMapPng`.           |
+| `lib/mapEntityLinks.ts`                                 | Enumerate + resolve linkable entities (community / place / journey / site); parse `"kind:id"`.                                                                 |
+| `lib/generated/mapIconManifest.ts`                      | **Auto-generated** icon manifest — do not hand-edit. Rebuilt by the Vite plugin.                                                                               |
+| `scripts/build-map-icons.mjs`                           | Scans `static/map/**/*.{svg,png}` → `mapIconManifest.ts` (kebab→Title Case; SVGs fill-stripped, PNGs wrapped in `<image>`).                                    |
+| `static/map/<category>/<slug>.{svg,png}`                | Icon source files. First subfolder = category; kebab-case filename = slug + display label. See "Icon formats" below.                                           |
+| `lib/components/MapDialog.svelte`                       | Map picker + toolbar + SVG canvas: markers, gestures, zoom/pan, ruler, scale bar.                                                                              |
+| `lib/components/MarkerPropertiesDialog.svelte`          | The marker editor (label, icon, colour, angle, style, layer, link), with its own styles.                                                                       |
+| `lib/components/MapIconPicker.svelte`                   | The icon grid the marker editor opens, with its own styles.                                                                                                    |
+| `lib/components/MapPilePicker.svelte`                   | The pile-up menu: the markers at a crowded point, to pick one.                                                                                                 |
+| `lib/components/MapOptionsDialog.svelte`                | Name / display prefs / scale bar / danger-zone (clear + delete).                                                                                               |
+| `lib/components/MapLayersMenu.svelte`                   | The toolbar's Layers popover: show / hide, add, rename, delete marker layers, and pick the one new markers go on.                                              |
+| `lib/components/MapOwnerConflictDialog.svelte`          | Everything-import prompt: Replace vs Skip when a bundled map's owner already has a map.                                                                        |
+| `routes/api/session/maps/+server.ts`                    | BFF: GET (list) / POST (create).                                                                                                                               |
+| `routes/api/session/maps/entity-markers/+server.ts`     | BFF: GET cross-map `{entityId → refs}` index for entity-card back-references.                                                                                  |
+| `routes/api/session/maps/[mapId]/+server.ts`            | BFF: GET (detail) / PATCH (rename+reorder) / DELETE.                                                                                                           |
+| `routes/api/session/maps/[mapId]/markers/+server.ts`    | BFF: PUT markers.                                                                                                                                              |
+| `routes/api/session/maps/[mapId]/settings/+server.ts`   | BFF: PUT settings.                                                                                                                                             |
+| `routes/api/session/maps/[mapId]/background/+server.ts` | BFF: GET bytes (ETag) / PUT / DELETE.                                                                                                                          |
+| `tests/unit/mapGeometry.test.ts`                        | Unit tests for the geometry helpers.                                                                                                                           |
 
 ### API (`apps/api`)
 
@@ -730,11 +730,12 @@ concern if the failure mode ever matters in practice.
 
 ## Exports
 
-### Zip round-trip (`.zip`)
+### Single-map zip (import only)
 
-`exportMapZip({ name, markers, settings, backgroundUrl })` and
-`importMapZip(file)` — a single map's data as a `fflate`-built zip.
-Layout:
+`importMapZip(file)` reads a single map's data as a `fflate`-built zip.
+Iron Ledger no longer writes these on their own (maps travel in the
+Everything zip, below, in the same layout under `maps/<id>/`), but older
+exports still import. Layout:
 
 ```
 map-<slugified-name>-<stamp>.zip
@@ -744,20 +745,19 @@ map-<slugified-name>-<stamp>.zip
 ```
 
 Zip over inlined JSON because the background image is typically
-200-500 kB and base64 inflates that by ~33 %; raw bytes in a zip
-stay compact and match the `.zip` pattern the "Everything" export
-already uses. The importer is available via the map picker chip's
-**⬇ Import map…** row and via the hamburger-menu Export dialog's
-**Zip** format (which is now the successor to the old JSON format).
+200-500 kB and base64 inflates that by ~33 %; raw bytes in a zip stay
+compact. The importer is available via the map picker chip's
+**⬇ Import map…** row, and the home page's import (Hamburger → Import…,
+or a dropped file) recognises a map zip by its manifest.
 
 The importer creates a fresh map (never overwrites), regenerates
 marker ids to avoid collisions on re-import, and uploads the bytes
 via the existing `PUT /session/maps/:id/background` endpoint.
 
-`exportMapZip()` and `importMapZip()` throw `MapImportError` with a
-user-readable message on any validation failure — bad envelope,
-wrong type, malformed JSON, etc. The Import affordance surfaces
-these in the same red banner as background-upload errors.
+`importMapZip()` throws `MapImportError` with a user-readable message
+on any validation failure — bad envelope, wrong type, malformed JSON,
+etc. The Import affordance surfaces these in the same red banner as
+background-upload errors.
 
 ### Bundled in "All Maps" and "Everything"
 

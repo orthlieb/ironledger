@@ -26,7 +26,7 @@
 // =============================================================================
 
 import { cleanSettlementRecipe } from './settlementRecipe';
-import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
+import { unzipSync, strToU8, strFromU8 } from 'fflate';
 import {
 	createMap,
 	deriveMarkerType,
@@ -144,16 +144,6 @@ function download(blob: Blob, filename: string): void {
 	URL.revokeObjectURL(url);
 }
 
-/** Slugify a name for safe filenames — letters/digits/hyphens only.
- *  Falls back to `map` when the input is empty after cleaning. */
-function slugify(s: string): string {
-	const cleaned = s
-		.toLowerCase()
-		.replace(/[^a-z0-9]+/g, '-')
-		.replace(/^-+|-+$/g, '');
-	return cleaned || 'map';
-}
-
 // ---------------------------------------------------------------------------
 // Zip export
 // ---------------------------------------------------------------------------
@@ -238,23 +228,6 @@ export async function buildMapZipEntries(input: {
 	return files;
 }
 
-/**
- * Export a single map as a downloadable .zip. Filename includes the
- * slugified map name so a user with many maps can tell them apart in
- * their Downloads folder.
- */
-export async function exportMapZip(input: {
-	name: string;
-	markers: MapMarker[];
-	settings: MapServerSettings;
-	backgroundUrl: string;
-}): Promise<void> {
-	const files = await buildMapZipEntries(input);
-	const zipped = zipSync(files, { level: 6 });
-	const blob = new Blob([zipped], { type: 'application/zip' });
-	download(blob, `map-${slugify(input.name)}-${stamp()}.zip`);
-}
-
 // ---------------------------------------------------------------------------
 // Zip import
 // ---------------------------------------------------------------------------
@@ -278,7 +251,8 @@ function bytesToJpegDataUrl(bytes: Uint8Array): string {
 }
 
 /**
- * Import a `.zip` produced by `exportMapZip()`. Creates a fresh map on
+ * Import a single map's `.zip` (the layout in docs/campaign-map.md →
+ * "Single-map zip", as older versions exported it). Creates a fresh map on
  * the server (does not overwrite an existing map), populates markers +
  * settings, and uploads the background image if one was in the zip.
  *

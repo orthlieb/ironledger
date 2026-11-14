@@ -113,11 +113,11 @@ layers and background-less maps left out) is in
 > whether they show their icon, their label, or both. On a
 > merge import where that owner
 > already has a map, the user is prompted **Replace** (overwrite it) or
-> **Skip** (import the incoming map standalone); an owner that can't be matched
-> also imports standalone. The Export dialog also offers a standalone
-> **All Maps** (`type: "map"`) bundle of the same `maps/<id>/` dirs, plus a
-> one-way PNG snapshot. The single-map zip shape — shared by both paths — is
-> documented in [campaign-map.md § Exports](campaign-map.md#exports).
+> **Skip** (keep the existing map; the incoming one isn't imported); an owner
+> that can't be matched imports standalone. Each `maps/<id>/` dir has the
+> single-map zip's layout, which older versions also exported on its own and
+> which still imports — see [campaign-map.md § Exports](campaign-map.md#exports).
+> The Markdown export draws each map as a numbered SVG instead.
 
 ---
 
