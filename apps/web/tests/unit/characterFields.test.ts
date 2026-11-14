@@ -258,11 +258,50 @@ describe('moveLegacyYrtFields', () => {
 });
 
 describe('the asset field types', () => {
-	const sample = declared('sample').map((d) => resolveField(d, 'sample', oracles));
+	const sampleOracles: OracleFile[] = [
+		...oracles,
+		read('extensions/sample/oracles/gizmo.json'),
+		read('extensions/sample/oracles/prefix-suffix.json'),
+	];
+	const sample = declared('sample').map((d) => resolveField(d, 'sample', sampleOracles));
 	const sf = (id: string) => sample.find((f) => f.id === id) as ResolvedField;
+	const sampleById = (id: string) => sample.find((f) => f.id === id);
 
 	it('the sample extension declares one of each', () => {
-		expect(sample.map((f) => f.type)).toEqual(['radio', 'counter', 'switch', 'markdown']);
+		expect(sample.map((f) => f.type)).toEqual([
+			'dropdown',
+			'radio',
+			'counter',
+			'switch',
+			'string',
+			'markdown',
+		]);
+	});
+
+	it("takes a dropdown's options from an oracle, and rolls on it", () => {
+		const trinket = sf('sampleTrinket');
+		expect(trinket.options.map((o) => o.label)).toEqual([
+			'A humming widget',
+			'A glowing sprocket',
+			'A suspicious cog',
+		]);
+		expect(rollField(trinket, {}, sampleOracles, sampleById, undefined, d100(50))).toMatchObject({
+			value: 'a-glowing-sprocket',
+			display: 'A glowing sprocket',
+		});
+	});
+
+	it("rolls a line of text from a part of the row's value", () => {
+		const epithet = sf('sampleEpithet');
+		expect(rollField(epithet, {}, sampleOracles, sampleById, undefined, d100(40))?.value).toBe(
+			'Iron',
+		);
+	});
+
+	it('hides Notes until Sworn is on', () => {
+		const notes = sf('sampleNotes');
+		expect(fieldShown(notes, {}, sampleById)).toBe(false);
+		expect(fieldShown(notes, { sampleSworn: '1' }, sampleById)).toBe(true);
 	});
 
 	it('reads a counter as its count, held to 0..maxValue', () => {

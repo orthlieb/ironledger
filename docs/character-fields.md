@@ -313,9 +313,12 @@ failure message uses the option labels: "Requires Touched: Prime or higher",
 "Requires Resolve 3 or more", for a switch "Requires Sworn". String and
 markdown fields can't be used in preconditions, which compare numbers.
 
-The dev-only `sample` extension declares one field of each other type (Rank,
-a radio; Resolve, a counter; Sworn, a switch; Notes, markdown), which the
-E2E suite exercises.
+The dev-only `sample` extension declares one field of each type, so it shows
+every feature without YRT: Trinket, a dropdown whose options are the Sample –
+Gizmo oracle's rows, with a die; Rank, a radio; Resolve, a counter; Sworn, a
+switch; Epithet, a line of text whose die reads the `prefix` of a Sample –
+Prefix/Suffix row; and Notes, markdown, shown only while Sworn is on. The
+unit and E2E suites exercise them.
 
 The check runs before the asset-name fallback, so a field is never mistaken
 for an asset. The hard-coded `touched` branch in `preconditions.ts`, with its

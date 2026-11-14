@@ -49,13 +49,17 @@ test.afterAll(async () => {
 	await resetExpansions();
 });
 
-test('The asset field types: a radio, a counter, a switch and notes (the sample extension)', async ({
+test('The asset field types: a dropdown, a radio, a counter, a switch, text and notes (the sample extension)', async ({
 	page,
 }) => {
 	await setExpansions({ yrt: true, sample: true });
 	await seedCharacter('Sampla', undefined, { fields: { touched: 'prime' } });
 	await openSheet(page, 'Sampla');
 	await expect(page.locator('.cf-side', { hasText: 'Sample' })).toBeVisible();
+	// A dropdown whose options are an oracle's rows.
+	await pick(page, 'sampleTrinket', 'A glowing sprocket');
+	await expect(page.locator('.log-entry').first()).toContainText('Trinket: — → A glowing sprocket');
+
 	await expect(field(page, 'sampleRank').getByRole('radio', { name: 'Novice' })).toHaveAttribute(
 		'aria-checked',
 		'true',
@@ -68,15 +72,51 @@ test('The asset field types: a radio, a counter, a switch and notes (the sample 
 	await expect(field(page, 'sampleResolve').locator('.cf-count')).toHaveText('4/5');
 	await expect(page.locator('.log-entry').first()).toContainText('Resolve: 2 → 4');
 
+	// Notes waits for Sworn.
+	await expect(field(page, 'sampleNotes')).toHaveCount(0);
 	await field(page, 'sampleSworn').getByRole('checkbox').click();
 	await expect(page.locator('.log-entry').first()).toContainText('Sworn: off → on');
+	await expect(field(page, 'sampleNotes')).toBeVisible();
+
+	await field(page, 'sampleEpithet').locator('input').fill('Iron');
+	await field(page, 'sampleEpithet').locator('input').blur();
+	await expect(page.locator('.log-entry').first()).toContainText('Epithet: — → Iron');
 
 	// Notes: typed in place, and not logged.
 	await field(page, 'sampleNotes').locator('.md-notes-display').click();
 	await field(page, 'sampleNotes').locator('textarea').fill('Owes the ferryman.');
 	await field(page, 'sampleNotes').locator('textarea').blur();
 	await expect(field(page, 'sampleNotes')).toContainText('Owes the ferryman.');
-	await expect(page.locator('.log-entry').first()).toContainText('Sworn: off → on');
+	await expect(page.locator('.log-entry').first()).toContainText('Epithet: — → Iron');
+	await setExpansions({ yrt: true, sample: null });
+});
+
+test('The sample in New Character: Trinket and Epithet roll, and Notes waits for Sworn', async ({
+	page,
+}) => {
+	await setExpansions({ yrt: true, sample: true });
+	await page.goto('/home');
+	await settleHome(page);
+	await page.locator('[data-tour="char-switcher"]').first().click();
+	await page.locator('[data-tour="new-char-action"]').first().click();
+	await expect(page.locator('[data-tour="new-char-fields"]')).toBeVisible();
+	const create = (id: string) => page.locator(`[data-tour="randomize-${id}"]`);
+
+	// Only the fields with an oracle get a die.
+	await expect(page.locator('[data-tour="roll-sampleRank"]')).toHaveCount(0);
+	await page.locator('[data-tour="roll-sampleTrinket"]').click();
+	await expect(create('sampleTrinket').locator('.bui-select-trigger')).toHaveText(
+		/A humming widget|A glowing sprocket|A suspicious cog/,
+	);
+	await page.locator('[data-tour="roll-sampleEpithet"]').click();
+	await expect(create('sampleEpithet').locator('input')).toHaveValue(/^(Bright|Iron|Storm|Rusk)$/);
+
+	await expect(create('sampleNotes')).toHaveCount(0);
+	await create('sampleSworn').getByRole('checkbox').click();
+	await expect(create('sampleNotes')).toBeVisible();
+
+	await page.keyboard.press('Escape');
+	await expect(page.locator('[data-tour="new-char-dialog"]')).toHaveCount(0);
 	await setExpansions({ yrt: true, sample: null });
 });
 
