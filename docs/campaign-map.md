@@ -796,39 +796,28 @@ imports standalone.
 
 ### PNG snapshot
 
-`exportMapPng(svgEl, showLabels)`:
+Map Options → **Export as PNG** downloads `map-<name>-<stamp>.png`: the map
+as it's drawn — background, grid, markers and labels — at the background
+image's own resolution. `exportMapPng(svgEl, name)` in `lib/mapExport.ts`:
 
-1. Clone the live SVG so DOM mutations don't leak.
-2. Fetch the background `href` and inline it as a data URL — a remote
-   href doesn't survive the `<img> → canvas.drawImage` boundary.
-3. Optionally strip `<text>` label elements to match the Names toggle.
-4. Serialise, wrap in a data URL, load into an `Image`, `drawImage`
-   onto a canvas at 2× viewBox scale, `toBlob('image/png')`, download.
+1. Clone the live map SVG, and copy each element's computed drawing styles
+   (fills, strokes, label fonts and sizes, halos, the grid's opacity) onto
+   the copy. The map's look comes from stylesheets, which an SVG drawn as an
+   image doesn't see; without this the labels come out at the default text
+   size and the grid lines vanish.
+2. Remove what only the editor draws: the click surface, the drag hint, the
+   selection outline, the ruler and the loading placeholder.
+3. Drop each marker's `scale(1/zoom)`, so markers come out at their size
+   with the whole map in view, whatever the zoom.
+4. Fetch the background and inline it as a data URL — a remote href doesn't
+   survive the `<img> → canvas.drawImage` boundary.
+5. Serialise, load into an `Image`, `drawImage` onto a canvas the size of the
+   background, `toBlob('image/png')`, download.
 
-### Markdown (numbered map + legend)
-
-☰ → Export… → **Markdown** writes each selected map as two files in the
-bundle (`exportMarkdownZip` in `lib/campaignExport.svelte.ts`):
-
-- `images/map-<name>.svg` — the background as a data URI under a numbered
-  pin per marker, in the marker's colour with a legible number
-  (`mapSvg` / `pinInk` in `lib/exportMarkdown.ts`). Vector, so it scales;
-  no labels or icons.
-- `maps/<name>.md` — the map's name, that image, then `## Markers`: the
-  numbers in the order the markers were placed, each linked to its
-  settlement, landmark or expedition page when that page is in the bundle
-  too, else plain text.
-
-What's left out, each as a warning the export overlay lists at the end
-(it then waits for Close rather than closing itself):
-
-- **Markers on hidden layers** — off the map, so off its export too.
-  Visibility is the map's own (`settings.layers`, read through
-  `lib/mapLayerRules.ts`, the same rules the map draws by).
-- **A map with no background**, or whose background can't be downloaded —
-  there's nothing to draw the pins on, so it's skipped, and the README
-  doesn't list it.
-- A map, or the map list, that can't be loaded.
+Hidden layers aren't drawn, so they aren't in it; the scale bar is a
+separate overlay and isn't either. Labels fall back to a system sans-serif:
+an SVG drawn as an image can't reach the page's web fonts. The button is off
+until the map has a background.
 
 ### Everything zip
 

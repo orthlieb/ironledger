@@ -27,6 +27,7 @@
 
 import { cleanSettlementRecipe } from './settlementRecipe';
 import { unzipSync, strToU8, strFromU8 } from 'fflate';
+import { slugify } from '#lib/exportSerialize.js';
 import {
 	createMap,
 	deriveMarkerType,
@@ -480,15 +481,101 @@ async function measureImage(dataUrl: string): Promise<{ w: number; h: number } |
 	}
 }
 
-export async function exportMapPng(svgEl: SVGSVGElement): Promise<void> {
-	// Clone so we don't mutate the live DOM.
+/**
+ * The properties that decide how the map draws. Its look comes from
+ * stylesheets (grid strokes, label sizes and fonts, halos), which an SVG
+ * drawn as an image doesn't see, so each element's computed values are
+ * copied onto its copy. Transforms stay out: the markers' own transform
+ * attributes carry their position, and their zoom scale is dropped below.
+ */
+const DRAW_PROPS = [
+	'display',
+	'visibility',
+	'opacity',
+	'fill',
+	'fill-opacity',
+	'fill-rule',
+	'stroke',
+	'stroke-width',
+	'stroke-opacity',
+	'stroke-linecap',
+	'stroke-linejoin',
+	'stroke-dasharray',
+	'paint-order',
+	'vector-effect',
+	'font-family',
+	'font-size',
+	'font-weight',
+	'font-style',
+	'font-variant',
+	'letter-spacing',
+	'text-anchor',
+	'dominant-baseline',
+	'text-decoration-line',
+	'text-transform',
+	'x',
+	'y',
+	'width',
+	'height',
+	'cx',
+	'cy',
+	'r',
+] as const;
+
+/** Copy each element's drawing styles from the live map onto its copy
+ *  (the copy has the same structure, so children pair by index). */
+function inlineDrawingStyles(live: Element, copy: Element): void {
+	for (let i = 0; i < live.children.length; i++) {
+		const l = live.children[i]!;
+		const c = copy.children[i];
+		if (!c) continue;
+		const cs = getComputedStyle(l);
+		c.setAttribute('style', DRAW_PROPS.map((p) => `${p}:${cs.getPropertyValue(p)}`).join(';'));
+		inlineDrawingStyles(l, c);
+	}
+}
+
+/** What only the editor draws: the click surface, the drag hint, the
+ *  selection outline, the ruler and the loading placeholder. */
+const EDITOR_ONLY = [
+	'.mp-grid-capture',
+	'.mp-drag-snap',
+	'.mp-marker-selection',
+	'.mp-measure-line',
+	'.mp-measure-dot',
+	'.mp-measure-total',
+	'.mp-bg-placeholder',
+	'.mp-bg-placeholder-text',
+].join(', ');
+
+/**
+ * Download the map as a PNG: the background with the grid, markers and
+ * labels as they're drawn (hidden layers aren't drawn, so they're not in
+ * it), at the background's own resolution. The editor's own marks — the
+ * selection outline, the ruler — are left out, and markers come out at
+ * their size with the whole map in view, whatever the zoom. The scale bar
+ * is a separate overlay and isn't in it. Labels use a system font: an SVG
+ * drawn as an image can't reach the page's web fonts. `name` names the
+ * file.
+ */
+export async function exportMapPng(svgEl: SVGSVGElement, name = ''): Promise<void> {
+	// Clone so we don't mutate the live DOM, then give the copy the live
+	// map's drawing styles before anything changes its structure.
 	const clone = svgEl.cloneNode(true) as SVGSVGElement;
+	inlineDrawingStyles(svgEl, clone);
+	clone.querySelectorAll(EDITOR_ONLY).forEach((el) => el.remove());
+	// Markers keep a constant on-screen size with `scale(1/zoom)`; at the
+	// map's own size that's the scale for zoom 1.
+	clone.querySelectorAll('.mp-marker').forEach((g) => {
+		const t = g.getAttribute('transform');
+		if (t) g.setAttribute('transform', t.replace(/\s*scale\([^)]*\)/, ''));
+	});
 
 	// If there's a background <image href="…">, resolve it to a data URL
 	// so the serialised SVG carries the pixels inline. Remember the
 	// resolved bytes so we can measure them for output sizing.
 	let bgDataUrl = '';
-	const bgImage = clone.querySelector('image');
+	const bgImage = clone.querySelector('.mp-bg-image') ?? clone.querySelector('image');
 	if (bgImage) {
 		const href = bgImage.getAttribute('href') ?? bgImage.getAttribute('xlink:href');
 		if (href) {
@@ -506,14 +593,8 @@ export async function exportMapPng(svgEl: SVGSVGElement): Promise<void> {
 		// pipeline just resolved the bytes itself, so the exported PNG
 		// must render the image regardless of the runtime flag.
 		bgImage.setAttribute('opacity', '1');
+		(bgImage as SVGElement).style.opacity = '1';
 	}
-
-	// Strip the transient "Loading map…" placeholder rect + text —
-	// they only exist to fill the surface while the real background is
-	// on the wire, and shouldn't appear in the export.
-	clone
-		.querySelectorAll('.mp-bg-placeholder, .mp-bg-placeholder-text')
-		.forEach((el) => el.remove());
 
 	// Sizing: prefer the background image's actual pixel dimensions so
 	// the PNG is the same size + aspect the user uploaded. Fallback:
@@ -566,7 +647,7 @@ export async function exportMapPng(svgEl: SVGSVGElement): Promise<void> {
 		await new Promise<void>((resolve, reject) => {
 			canvas.toBlob((blob) => {
 				if (!blob) return reject(new Error('canvas.toBlob returned null'));
-				download(blob, `campaign-map-${stamp()}.png`);
+				download(blob, `map-${slugify(name || 'campaign')}-${stamp()}.png`);
 				resolve();
 			}, 'image/png');
 		});
