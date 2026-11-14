@@ -101,6 +101,9 @@ test('New Character: each field has a die, and Create rolls the ones left empty'
 	await page.locator('[data-tour="new-char-name"] input').fill('Fieldia');
 	await page.locator('[data-tour="roll-stats"]').click();
 	await page.locator('[data-tour="new-char-dialog-confirm"]').click();
+	// Create saves, then selects the new character on its Background tab:
+	// wait for that, or the Core click lands on the previous character.
+	await expect(page.locator(`${CHAR_AREA} .ca-hdr-combobox .cb-value`)).toHaveText('Fieldia');
 
 	await page.locator(`${CHAR_AREA} [data-tour="char-tab-core"]`).click();
 	for (const id of ['origin', 'religion', 'touched'])

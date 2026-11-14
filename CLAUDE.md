@@ -410,6 +410,10 @@ through `onOpenAutoFocus`:
 >
 ```
 
+`<ConfirmDialog>` does this for you: mark the target field in its
+body `autofocus` (as New Character's name input is) and its
+`onOpenAutoFocus` hands the caret to it.
+
 For still-native `<dialog>` elements (until they migrate to
 bits-ui), use HTML `autofocus` on the target input. It fires on
 first mount only, so if the dialog persists across opens (like

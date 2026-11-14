@@ -12,6 +12,10 @@
 	 * bar is the drag handle. Form-style confirms (New* dialogs) turn
 	 * it on so they can be moved aside to see the panel behind them.
 	 *
+	 * Focus: a field in the body marked `autofocus` gets the caret when the
+	 * dialog opens (New Character's name). Without one, bits-ui's default
+	 * applies.
+	 *
 	 * Usage:
 	 *   let ref = $state<ReturnType<typeof ConfirmDialog> | null>(null);
 	 *   <ConfirmDialog bind:this={ref} title="Delete?" onconfirm={doDelete} confirmLabel="Delete">
@@ -82,6 +86,18 @@
 	} = $props();
 
 	let open = $state(false);
+	let contentEl = $state<HTMLElement | null>(null);
+
+	// bits-ui focuses the dialog itself on open, after a body field's own
+	// `autofocus` has fired, so hand the caret back to that field.
+	function onOpenAutoFocus(e: Event) {
+		const field = contentEl?.querySelector<HTMLElement>('[autofocus]');
+		if (!field) return;
+		e.preventDefault();
+		// setTimeout(0) so bits-ui finishes its own focus routine first.
+		setTimeout(() => field.focus(), 0);
+	}
+
 	// Tracks how the dialog closed. bits-ui doesn't distinguish
 	// Cancel-button close from Escape/outside close — we watch the
 	// `open → false` transition and, if no explicit intent was
@@ -141,6 +157,8 @@
 	<AlertDialog.Portal to={portalTo}>
 		<AlertDialog.Overlay class="cm-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<AlertDialog.Content
+			bind:ref={contentEl}
+			{onOpenAutoFocus}
 			class={maxHeight ? 'confirm-modal confirm-modal--capped' : 'confirm-modal'}
 			data-tour={tour}
 			style="--accent: {accentColor}; z-index: {contentZ(stackDepth)}{width
