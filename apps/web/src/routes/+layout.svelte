@@ -3,6 +3,7 @@
 	// Per-livery typography + chrome palettes, generated from liveries/<id>/livery.json.
 	import '#lib/liveries.generated.css';
 	import type { LayoutData } from './$types';
+	import BetaBadge from '#lib/components/BetaBadge.svelte';
 	import type { MaintenanceStatus, BroadcastStatus } from '@ironledger/shared';
 	import SettingsDialog from '#lib/components/SettingsDialog.svelte';
 	import BugReportDialog from '#lib/components/BugReportDialog.svelte';
@@ -181,6 +182,7 @@
 	let countdown = $state('');
 	let countdownInterval: ReturnType<typeof setInterval> | undefined;
 	let pollInterval: ReturnType<typeof setInterval> | undefined;
+	const STATUS_POLL_MS = 60_000;
 	let loggedOut = false; // guard against double-logout
 
 	function updateCountdown() {
@@ -228,11 +230,24 @@
 		// first actual roll doesn't stall waiting for a CDN fetch + GPU init.
 		if (data.user) preloadDice();
 
-		// Start polling (maintenance + broadcast share the same 10s cadence).
-		void pollSystemStatus();
-		pollInterval = setInterval(() => void pollSystemStatus(), 10_000);
+		// Maintenance and broadcast status: every minute while the tab is
+		// visible, at once when it's shown again, never while it's hidden.
+		// Every open tab asks, so the cadence is the server's steady load;
+		// a shutdown is scheduled minutes ahead, so a minute is soon enough.
+		function startPolling() {
+			clearInterval(pollInterval);
+			void pollSystemStatus();
+			pollInterval = setInterval(() => void pollSystemStatus(), STATUS_POLL_MS);
+		}
+		function onVisibilityChange() {
+			if (document.hidden) clearInterval(pollInterval);
+			else startPolling();
+		}
+		if (!document.hidden) startPolling();
+		document.addEventListener('visibilitychange', onVisibilityChange);
 
 		return () => {
+			document.removeEventListener('visibilitychange', onVisibilityChange);
 			clearInterval(pollInterval);
 			clearInterval(countdownInterval);
 		};
@@ -262,6 +277,7 @@
 				{@html activeLiveryBrand() ?? swordSvg}
 			</span>
 			{headingText('Iron Ledger')}
+			<BetaBadge inApp />
 		</a>
 		<div class="nav-links">
 			<nav class="nav-page-links" aria-label="Main navigation">

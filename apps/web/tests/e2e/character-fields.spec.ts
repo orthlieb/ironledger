@@ -4,13 +4,16 @@
  * Touched and Animal.
  *
  * New Character shows each with a d6 and rolls the empty ones on Create,
- * keeping them out of the background. On the sheet (Core tab) Animal hides
+ * keeping them out of the background. On the sheet (Details tab) Animal hides
  * for a Pure character, a change is logged, lowering Touched unmarks a
  * Touched asset's extra abilities, and the Touched assets need Prime or
  * higher. Older characters get their values from the Touched asset and the
- * background New Character wrote.
+ * background New Character wrote. Import tidies the values and moves an older
+ * export's into them, on Replace too, and the Markdown export lists them.
  */
 import { test, expect, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
 import {
 	resetCharacters,
 	resetExpansions,
@@ -33,7 +36,7 @@ async function openSheet(page: Page, name: string) {
 	await page.goto('/home');
 	await settleHome(page);
 	await selectCharacterByName(page, name);
-	await page.locator(`${CHAR_AREA} [data-tour="char-tab-core"]`).click();
+	await page.locator(`${CHAR_AREA} [data-tour="char-tab-details"]`).click();
 	await expect(page.locator('[data-tour="char-fields"]')).toBeVisible();
 }
 
@@ -49,13 +52,17 @@ test.afterAll(async () => {
 	await resetExpansions();
 });
 
-test('The asset field types: a radio, a counter, a switch and notes (the sample extension)', async ({
+test('The asset field types: a dropdown, a radio, a counter, a switch, text and notes (the sample extension)', async ({
 	page,
 }) => {
 	await setExpansions({ yrt: true, sample: true });
 	await seedCharacter('Sampla', undefined, { fields: { touched: 'prime' } });
 	await openSheet(page, 'Sampla');
 	await expect(page.locator('.cf-side', { hasText: 'Sample' })).toBeVisible();
+	// A dropdown whose options are an oracle's rows.
+	await pick(page, 'sampleTrinket', 'A glowing sprocket');
+	await expect(page.locator('.log-entry').first()).toContainText('Trinket: — → A glowing sprocket');
+
 	await expect(field(page, 'sampleRank').getByRole('radio', { name: 'Novice' })).toHaveAttribute(
 		'aria-checked',
 		'true',
@@ -68,15 +75,51 @@ test('The asset field types: a radio, a counter, a switch and notes (the sample 
 	await expect(field(page, 'sampleResolve').locator('.cf-count')).toHaveText('4/5');
 	await expect(page.locator('.log-entry').first()).toContainText('Resolve: 2 → 4');
 
+	// Notes waits for Sworn.
+	await expect(field(page, 'sampleNotes')).toHaveCount(0);
 	await field(page, 'sampleSworn').getByRole('checkbox').click();
 	await expect(page.locator('.log-entry').first()).toContainText('Sworn: off → on');
+	await expect(field(page, 'sampleNotes')).toBeVisible();
+
+	await field(page, 'sampleEpithet').locator('input').fill('Iron');
+	await field(page, 'sampleEpithet').locator('input').blur();
+	await expect(page.locator('.log-entry').first()).toContainText('Epithet: — → Iron');
 
 	// Notes: typed in place, and not logged.
 	await field(page, 'sampleNotes').locator('.md-notes-display').click();
 	await field(page, 'sampleNotes').locator('textarea').fill('Owes the ferryman.');
 	await field(page, 'sampleNotes').locator('textarea').blur();
 	await expect(field(page, 'sampleNotes')).toContainText('Owes the ferryman.');
-	await expect(page.locator('.log-entry').first()).toContainText('Sworn: off → on');
+	await expect(page.locator('.log-entry').first()).toContainText('Epithet: — → Iron');
+	await setExpansions({ yrt: true, sample: null });
+});
+
+test('The sample in New Character: Trinket and Epithet roll, and Notes waits for Sworn', async ({
+	page,
+}) => {
+	await setExpansions({ yrt: true, sample: true });
+	await page.goto('/home');
+	await settleHome(page);
+	await page.locator('[data-tour="char-switcher"]').first().click();
+	await page.locator('[data-tour="new-char-action"]').first().click();
+	await expect(page.locator('[data-tour="new-char-fields"]')).toBeVisible();
+	const create = (id: string) => page.locator(`[data-tour="randomize-${id}"]`);
+
+	// Only the fields with an oracle get a die.
+	await expect(page.locator('[data-tour="roll-sampleRank"]')).toHaveCount(0);
+	await page.locator('[data-tour="roll-sampleTrinket"]').click();
+	await expect(create('sampleTrinket').locator('.bui-select-trigger')).toHaveText(
+		/A humming widget|A glowing sprocket|A suspicious cog/,
+	);
+	await page.locator('[data-tour="roll-sampleEpithet"]').click();
+	await expect(create('sampleEpithet').locator('input')).toHaveValue(/^(Bright|Iron|Storm|Rusk)$/);
+
+	await expect(create('sampleNotes')).toHaveCount(0);
+	await create('sampleSworn').getByRole('checkbox').click();
+	await expect(create('sampleNotes')).toBeVisible();
+
+	await page.keyboard.press('Escape');
+	await expect(page.locator('[data-tour="new-char-dialog"]')).toHaveCount(0);
 	await setExpansions({ yrt: true, sample: null });
 });
 
@@ -102,10 +145,10 @@ test('New Character: each field has a die, and Create rolls the ones left empty'
 	await page.locator('[data-tour="roll-stats"]').click();
 	await page.locator('[data-tour="new-char-dialog-confirm"]').click();
 	// Create saves, then selects the new character on its Background tab:
-	// wait for that, or the Core click lands on the previous character.
+	// wait for that, or the Details click lands on the previous character.
 	await expect(page.locator(`${CHAR_AREA} .ca-hdr-combobox .cb-value`)).toHaveText('Fieldia');
 
-	await page.locator(`${CHAR_AREA} [data-tour="char-tab-core"]`).click();
+	await page.locator(`${CHAR_AREA} [data-tour="char-tab-details"]`).click();
 	for (const id of ['origin', 'religion', 'touched'])
 		await expect(field(page, id).locator('.bui-select-trigger')).not.toHaveText('—');
 	await page.locator(`${CHAR_AREA} [data-tour="char-tab-background"]`).click();
@@ -146,8 +189,8 @@ test('Touched assets need Touched: Prime or higher', async ({ page }) => {
 	await expect(tile).toHaveClass(/pick-tile-blocked/);
 	await page.keyboard.press('Escape');
 
-	// The picker opened the Assets tab; the level is set on Core.
-	await page.locator(`${CHAR_AREA} [data-tour="char-tab-core"]`).click();
+	// The picker opened the Assets tab; the level is set on Details.
+	await page.locator(`${CHAR_AREA} [data-tour="char-tab-details"]`).click();
 	await pick(page, 'touched', 'Prime');
 	await page.locator(`${CHAR_AREA} [data-tour="char-add-asset"]`).click();
 	await expect(page.locator('.pick-tile', { hasText: 'Touched, Feline' })).not.toHaveClass(
@@ -164,7 +207,7 @@ test('Lowering Touched unmarks the abilities above the new limit', async ({ page
 	// The chit is named for the animal.
 	await page.locator(`${CHAR_AREA} [data-tour="char-tab-assets"]`).click();
 	await expect(page.locator('.ca-asset-card').first()).toContainText('Lynx');
-	await page.locator(`${CHAR_AREA} [data-tour="char-tab-core"]`).click();
+	await page.locator(`${CHAR_AREA} [data-tour="char-tab-details"]`).click();
 
 	await pick(page, 'touched', 'Prime');
 	await expect(page.locator('.log-entry').first()).toContainText(
@@ -210,4 +253,103 @@ test("An older character's level, animal and origin move into its fields", async
 	await page.locator(`${CHAR_AREA} [data-tour="char-tab-background"]`).click();
 	await expect(page.locator('[data-tour="char-bio"]')).toContainText('Grew up near the hills.');
 	await expect(page.locator('[data-tour="char-bio"]')).not.toContainText('Region of origin');
+});
+
+/** Import one character through the home page's file input, as a .zip. */
+async function importCharacter(page: Page, name: string, data: Record<string, unknown>) {
+	const manifest = {
+		app: 'Iron Ledger',
+		version: '1.0.0',
+		exportedAt: new Date().toISOString(),
+		type: 'character',
+		count: 1,
+	};
+	await page.locator('input[type="file"][data-import-root="home"]').setInputFiles({
+		name: 'character.zip',
+		mimeType: 'application/zip',
+		buffer: Buffer.from(
+			zipSync({
+				'manifest.json': strToU8(JSON.stringify(manifest)),
+				'character.json': strToU8(JSON.stringify({ name, data })),
+			}),
+		),
+	});
+}
+
+/** The fields the server holds for the character named `name`. */
+async function storedFields(page: Page, name: string) {
+	return page.evaluate(async (n) => {
+		const res = await fetch('/api/characters', { credentials: 'include' });
+		const chars = (await res.json()) as Array<{
+			name: string;
+			data?: { fields?: Record<string, string> };
+		}>;
+		return chars.find((c) => c.name === n)?.data?.fields;
+	}, name);
+}
+
+test("Import tidies the fields and moves an older export's values into them, on Replace too", async ({
+	page,
+}) => {
+	await page.goto('/home');
+	await settleHome(page);
+	// An older or hand-written export: the level and animal outside `fields`,
+	// the religion in the background, the region by its label, a field from an
+	// extension this install doesn't have, and no `data.name` (the outer name
+	// stands in).
+	await importCharacter(page, 'Imported Ivy', {
+		fields: { origin: 'Oray Hills', futureField: 'kept' },
+		touched: 'Second',
+		touchedAnimal: 'Heron',
+		background: '**Religion:** **Puritan**, by upbringing.',
+	});
+	await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 10_000 });
+	await expect
+		.poll(() => storedFields(page, 'Imported Ivy'))
+		.toEqual({
+			origin: 'oray-hills',
+			futureField: 'kept',
+			religion: 'puritan',
+			touched: 'second',
+			touchedAnimal: 'Heron',
+		});
+	await page.locator('.imd-dialog .btn-primary').click();
+
+	// The same character again, now Third: Replace writes it over the one here.
+	await importCharacter(page, 'Imported Ivy', {
+		fields: { origin: 'oray-hills' },
+		touched: 'Third',
+		touchedAnimal: 'Otter',
+	});
+	const collide = page.locator('.icd-dialog');
+	await expect(collide).toBeVisible({ timeout: 8_000 });
+	await collide.locator('[role="radio"][data-value="replace"]').click();
+	await collide.locator('button.btn-primary').click();
+	await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 10_000 });
+	await expect
+		.poll(() => storedFields(page, 'Imported Ivy'))
+		.toEqual({ origin: 'oray-hills', touched: 'third', touchedAnimal: 'Otter' });
+	await page.locator('.imd-dialog .btn-primary').click();
+
+	// The sheet has them straight away, without a reload.
+	await selectCharacterByName(page, 'Imported Ivy');
+	await page.locator(`${CHAR_AREA} [data-tour="char-tab-details"]`).click();
+	await expect(field(page, 'origin').locator('.bui-select-trigger')).toHaveText('Oray Hills');
+	await expect(field(page, 'touched').locator('.bui-select-trigger')).toHaveText('Third');
+	await expect(field(page, 'touchedAnimal').locator('input')).toHaveValue('Otter');
+
+	// The Markdown export lists them on the character's page.
+	await page.locator('.hamburger-btn').click();
+	await page.locator('.hm-item', { hasText: /Export/ }).click();
+	await page.locator('.exd-segbtn', { hasText: 'Markdown' }).click();
+	const [download] = await Promise.all([
+		page.waitForEvent('download'),
+		page.locator('.exd-dialog .btn-primary').click(),
+	]);
+	const files = unzipSync(new Uint8Array(readFileSync(await download.path())));
+	const md = strFromU8(files['characters/imported-ivy.md']!);
+	expect(md).toContain(
+		['## Details', '- **Region of origin:** Oray Hills', '', '### YRT'].join('\n'),
+	);
+	expect(md).toContain('- **Touched:** Third\n- **Animal:** Otter');
 });

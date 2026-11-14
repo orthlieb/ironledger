@@ -98,8 +98,8 @@ YRT adds three more:
 ]
 ```
 
-On the sheet, at the bottom of the Core tab, that's Region of origin with no
-heading, then a YRT heading over:
+On the sheet, on the Details tab, that's Region of origin with no heading,
+then a YRT heading over:
 
 - **Religion:** a dropdown of Puritan, Optime, Wildens and None, or their
   own. Hovering it shows the chosen religion's text from the oracle.
@@ -208,17 +208,43 @@ which drops every id no asset declares and every value that isn't a number.
 `"second"` would be dropped there.
 
 Turning an extension off hides its fields and keeps their values; turning it
-back on shows them again. Export and import carry `fields` with the rest of
-the character. Import keeps values for field ids it doesn't know, since the
-extension may be off or missing on that install; the importer's usual
-stripping of `__proto__`-style keys still applies. A dropdown value that
-matches no option (an oracle row since renamed) shows as its stored id until
-the player picks again.
+back on shows them again. A dropdown value that matches no option (an oracle
+row since renamed) shows as its stored id until the player picks again.
+
+### Import and export
+
+The zip export carries `fields` with the rest of the character, and import
+puts each value through `cleanFieldValues` (`characterFieldsCore.ts`) before
+saving, whether the character is new or Replaces one with the same name:
+
+- a dropdown or radio named by its label (`"Oray Hills"`) or any case of its
+  id is stored as the id; one that names no option keeps its text;
+- a counter is clamped to its maximum, and a switch becomes `"1"` or `"0"`;
+- numbers and booleans become text, and objects and lists are dropped;
+- a field id no extension declares keeps its value, since the extension may
+  be off or missing on that install.
+
+Then import moves an older export's YRT values in, as loading does (see
+[Existing characters](#existing-characters)); Replace needs that, since it
+writes the imported data straight onto the character already open. The
+importer's usual stripping of `__proto__`-style keys still applies.
+
+The Markdown export lists the fields on each character's page, under
+`## Details`: what the Details tab shows, each extension's under its heading,
+leaving out fields with no value. docs/import-schema.md has the import
+details.
+
+**When you add a field type, or a new place a character's data is written
+from:** check `cleanFieldValues` handles the type, and that the import
+round trip in `import-export.spec.ts` and the import test in
+`character-fields.spec.ts` still cover it.
 
 ## On the sheet
 
-The fields of the enabled extensions close the Core tab, below Vitals, so
-the stats and vitals stay at the top however many there are. Each field is a
+The fields of the core rules and the enabled extensions have the sheet's
+Details tab to themselves (Core, Details, Background, Vows, Assets), so Core
+keeps the stats, vitals, debilities and tracks however many there are. Each
+field is a
 label and its control: a `<Select>` for a dropdown, a `SegmentedRadio` for a
 radio, a one-line text input for text. They sit two to a row on a wide
 screen and one to a row on a phone. An unset dropdown shows "—"; an unset
@@ -313,9 +339,12 @@ failure message uses the option labels: "Requires Touched: Prime or higher",
 "Requires Resolve 3 or more", for a switch "Requires Sworn". String and
 markdown fields can't be used in preconditions, which compare numbers.
 
-The dev-only `sample` extension declares one field of each other type (Rank,
-a radio; Resolve, a counter; Sworn, a switch; Notes, markdown), which the
-E2E suite exercises.
+The dev-only `sample` extension declares one field of each type, so it shows
+every feature without YRT: Trinket, a dropdown whose options are the Sample –
+Gizmo oracle's rows, with a die; Rank, a radio; Resolve, a counter; Sworn, a
+switch; Epithet, a line of text whose die reads the `prefix` of a Sample –
+Prefix/Suffix row; and Notes, markdown, shown only while Sworn is on. The
+unit and E2E suites exercise them.
 
 The check runs before the asset-name fallback, so a field is never mistaken
 for an asset. The hard-coded `touched` branch in `preconditions.ts`, with its
@@ -362,8 +391,8 @@ can't be used; Delete still works. That's general: any owned asset whose
 ## Existing characters
 
 When a character loads (next to `hydrateCharacterInPlace` in `character.ts`),
-each YRT field it doesn't have yet is filled once, from the first of these
-it finds:
+and when one is imported, each YRT field it doesn't have yet is filled once,
+from the first of these it finds:
 
 | Field           | Sources, in order                                                                                                                                              |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -399,7 +428,7 @@ work can pick it up.
 | `preconditions.ts` `touched` branch, `TOUCHED_LEVEL`, `TOUCHED_LABEL`                                                                                                                    | The `touched` precondition key                         | The generic field branch                                                                       | This work |
 | The Touched assets' `touchedLevel` / `animalName` custom fields; `types.ts` `touched` / `touchedAnimal`                                                                                  | Per-asset and legacy copies of the level and animal    | Read from `fields`; removed                                                                    | This work |
 | `tutorials/createCharacter.ts` region step (`isSourceEnabled('yrt')`)                                                                                                                    | Shows the Region of origin step only with YRT on       | A "Roll their details" step, shown when an enabled extension declares fields                   | This work |
-| `CharactersArea.svelte` Status tab `isSourceEnabled('delve')`: Failures track, Lessons Learned; `MovesDialog.svelte` `+1 failure` link on a miss                                         | Delve's failures track on the character                | A `track` field type, and a move-outcome hook for the `+1 failure` link                        | Later     |
+| `CharactersArea.svelte` Core tab `isSourceEnabled('delve')`: Failures track, Lessons Learned; `MovesDialog.svelte` `+1 failure` link on a miss                                           | Delve's failures track on the character                | A `track` field type, and a move-outcome hook for the `+1 failure` link                        | Later     |
 | `CharactersArea.svelte` `applyResourceChange` `mana` branch; `preconditions.ts` `mana` in the stat map; `MovesDialog.svelte` mana commit                                                 | YRT's mana as a resource with a 0–10 range             | A `counter` field type with a range and colour, which `resource:` links and preconditions read | Later     |
 
 ### Other declarations
@@ -443,7 +472,7 @@ them on, as `expeditionKinds` would, but the screens themselves stay code.
     extension `order` then declaration, with their headings and with
     `optionsFrom` options built from the loaded oracles.
   - `preconditions.ts`: the field branch, and the `touched` branch removed.
-  - `CharactersArea.svelte`: the fields below Vitals (Animal hidden for
+  - `CharactersArea.svelte`: the fields on the Details tab (Animal hidden for
     Pure), their log entries, and the level change unmarking abilities.
   - New Character (`CharactersArea.svelte`, `RandomizeBlock.svelte`): each
     field's control and d6 below the stats, hidden by its `if`, replacing the
@@ -454,7 +483,11 @@ them on, as `expeditionKinds` would, but the screens themselves stay code.
     the origin, religion and touched prose dropped from the background.
   - `AssetCard.svelte`: `abilityMaxByField` against character fields, the
     level and animal as text; the chit named for the animal.
-  - `character.ts`: the load-time move into `fields`.
+  - `character.ts`: the load-time move into `fields`, and
+    `reconcileImportedCharacter`, which import runs (`cleanFieldValues`,
+    then the move).
+  - `routes/home/+page.svelte`: the Markdown export's `## Details`
+    (`fieldsMarkdown`).
   - `tutorials/createCharacter.ts`: the "Roll a region of origin" step
     becomes one step over the YRT fields, shown when they're there.
 - **YRT data:** the four fields in `extension.json`; a `name` on each
@@ -479,4 +512,4 @@ them on, as `expeditionKinds` would, but the screens themselves stay code.
 - **Docs:** `extensions.md` (the new `extension.json` key, and its stale
   table of current extensions), `data-schema.md` (character fields as
   precondition keys; the Touched row), the YRT README (Touched assets,
-  religion), `character-sheet.md` (the Core tab rows).
+  religion), `character-sheet.md` (the Details tab).

@@ -9,11 +9,13 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import {
+	cleanFieldValues,
 	counterValue,
 	fieldHint,
 	fieldNumber,
 	fieldRequirement,
 	fieldShown,
+	fieldsMarkdown,
 	fieldValue,
 	matchOption,
 	optionId,
@@ -23,7 +25,7 @@ import {
 	valueLabel,
 	type ResolvedField,
 } from '../../src/lib/characterFieldsCore.js';
-import { moveLegacyYrtFields } from '../../src/lib/character.js';
+import { moveLegacyYrtFields, reconcileImportedCharacter } from '../../src/lib/character.js';
 import type { OracleFile } from '../../src/lib/oracleStore.svelte.js';
 import type { CharacterFieldDef } from '../../src/lib/types.js';
 
@@ -258,11 +260,50 @@ describe('moveLegacyYrtFields', () => {
 });
 
 describe('the asset field types', () => {
-	const sample = declared('sample').map((d) => resolveField(d, 'sample', oracles));
+	const sampleOracles: OracleFile[] = [
+		...oracles,
+		read('extensions/sample/oracles/gizmo.json'),
+		read('extensions/sample/oracles/prefix-suffix.json'),
+	];
+	const sample = declared('sample').map((d) => resolveField(d, 'sample', sampleOracles));
 	const sf = (id: string) => sample.find((f) => f.id === id) as ResolvedField;
+	const sampleById = (id: string) => sample.find((f) => f.id === id);
 
 	it('the sample extension declares one of each', () => {
-		expect(sample.map((f) => f.type)).toEqual(['radio', 'counter', 'switch', 'markdown']);
+		expect(sample.map((f) => f.type)).toEqual([
+			'dropdown',
+			'radio',
+			'counter',
+			'switch',
+			'string',
+			'markdown',
+		]);
+	});
+
+	it("takes a dropdown's options from an oracle, and rolls on it", () => {
+		const trinket = sf('sampleTrinket');
+		expect(trinket.options.map((o) => o.label)).toEqual([
+			'A humming widget',
+			'A glowing sprocket',
+			'A suspicious cog',
+		]);
+		expect(rollField(trinket, {}, sampleOracles, sampleById, undefined, d100(50))).toMatchObject({
+			value: 'a-glowing-sprocket',
+			display: 'A glowing sprocket',
+		});
+	});
+
+	it("rolls a line of text from a part of the row's value", () => {
+		const epithet = sf('sampleEpithet');
+		expect(rollField(epithet, {}, sampleOracles, sampleById, undefined, d100(40))?.value).toBe(
+			'Iron',
+		);
+	});
+
+	it('hides Notes until Sworn is on', () => {
+		const notes = sf('sampleNotes');
+		expect(fieldShown(notes, {}, sampleById)).toBe(false);
+		expect(fieldShown(notes, { sampleSworn: '1' }, sampleById)).toBe(true);
 	});
 
 	it('reads a counter as its count, held to 0..maxValue', () => {
@@ -302,5 +343,147 @@ describe('the asset field types', () => {
 		// Pure's social rank is 1, Feral's 5 (held to maxValue 5).
 		expect(rollField(counted, {}, oracles, byId, undefined, d100(1))?.value).toBe('1');
 		expect(rollField(counted, {}, oracles, byId, undefined, d100(100))?.value).toBe('5');
+	});
+});
+
+describe('import and export', () => {
+	const sampleOracles: OracleFile[] = [
+		read('extensions/sample/oracles/gizmo.json'),
+		read('extensions/sample/oracles/prefix-suffix.json'),
+	];
+	const sample = declared('sample').map((d) => resolveField(d, 'sample', sampleOracles));
+	const all = [...fields, ...sample];
+	const allById = (id: string) => all.find((f) => f.id === id);
+
+	it('stores an imported dropdown or radio by option id, from its label or any case of its id', () => {
+		expect(
+			cleanFieldValues(
+				{ origin: 'Oray Hills', religion: 'None, or their own', touched: 'SECOND' },
+				allById,
+			),
+		).toEqual({ origin: 'oray-hills', religion: 'none-or-their-own', touched: 'second' });
+		expect(cleanFieldValues({ sampleRank: 'Master' }, allById)).toEqual({ sampleRank: 'master' });
+	});
+
+	it('keeps a choice that names no option, as the sheet does', () => {
+		expect(cleanFieldValues({ origin: 'Atlantis' }, allById)).toEqual({ origin: 'Atlantis' });
+	});
+
+	it('holds a counter to its maximum and reads a switch as 1 or 0', () => {
+		expect(
+			cleanFieldValues({ sampleResolve: 9, sampleSworn: true, sampleTrinket: '' }, allById),
+		).toEqual({ sampleResolve: '5', sampleSworn: '1', sampleTrinket: '' });
+		expect(cleanFieldValues({ sampleSworn: 'yes' }, allById)).toEqual({ sampleSworn: '1' });
+		expect(cleanFieldValues({ sampleSworn: 'no' }, allById)).toEqual({ sampleSworn: '0' });
+		expect(cleanFieldValues({ sampleResolve: '3' }, allById)).toEqual({ sampleResolve: '3' });
+	});
+
+	it('keeps text as written, and an unknown field id for an extension not here', () => {
+		expect(
+			cleanFieldValues(
+				{ touchedAnimal: 'Heron', sampleNotes: '**Oath** kept', starforgedCallsign: 'Vesper' },
+				allById,
+			),
+		).toEqual({
+			touchedAnimal: 'Heron',
+			sampleNotes: '**Oath** kept',
+			starforgedCallsign: 'Vesper',
+		});
+	});
+
+	it('drops values that are not text, a number or a yes/no, and fields that are not a map', () => {
+		expect(
+			cleanFieldValues({ origin: { id: 'piscis' }, religion: ['puritan'], touched: null }, allById),
+		).toEqual({});
+		expect(cleanFieldValues('piscis', allById)).toEqual({});
+		expect(cleanFieldValues(['piscis'], allById)).toEqual({});
+		expect(cleanFieldValues(undefined, allById)).toEqual({});
+	});
+
+	it('writes the Details tab as Markdown: labels, each extension under its heading', () => {
+		const groups = [
+			{ heading: null, fields: fields.filter((f) => f.source === 'base') },
+			{ heading: 'YRT', fields: fields.filter((f) => f.source === 'yrt') },
+			{ heading: 'Sample', fields: sample },
+		];
+		const values = {
+			origin: 'oray-hills',
+			religion: 'puritan',
+			touched: 'second',
+			touchedAnimal: 'Heron',
+			sampleSworn: '1',
+			sampleNotes: 'Line one\n\nLine two',
+		};
+		expect(fieldsMarkdown(groups, values, allById)).toEqual([
+			'## Details',
+			'- **Region of origin:** Oray Hills',
+			'',
+			'### YRT',
+			'- **Religion:** Puritan',
+			'- **Touched:** Second',
+			'- **Animal:** Heron',
+			'',
+			'### Sample',
+			'- **Rank:** Novice',
+			'- **Resolve:** 2/5',
+			'- **Sworn:** on',
+			'- **Notes:**',
+			'  Line one',
+			'',
+			'  Line two',
+			'',
+		]);
+	});
+
+	it('leaves out fields with no value or a failing if, and the section when nothing is left', () => {
+		const groups = [{ heading: 'YRT', fields: fields.filter((f) => f.source === 'yrt') }];
+		// Touched reads its default, Pure; Animal is hidden while Pure.
+		expect(fieldsMarkdown(groups, { touchedAnimal: 'Heron' }, allById)).toEqual([
+			'## Details',
+			'### YRT',
+			'- **Touched:** Pure',
+			'',
+		]);
+		const base = [{ heading: null, fields: fields.filter((f) => f.source === 'base') }];
+		expect(fieldsMarkdown(base, {}, allById)).toEqual([]);
+	});
+});
+
+describe('reconcileImportedCharacter', () => {
+	const counters = new Map([['mana', { maxValue: 5 }]]);
+
+	it("tidies the fields, moves an older export's values in, and keeps the outer name", () => {
+		const entry: { name?: unknown; data?: Record<string, unknown> } = {
+			name: '  Ivy ',
+			data: {
+				fields: { origin: 'Oray Hills', futureField: 'kept' },
+				touched: 'Second',
+				touchedAnimal: 'Heron',
+				background: '**Religion:** **Puritan**, by upbringing.',
+				globalValues: { mana: '9', orphan: '2' },
+			},
+		};
+		const data = reconcileImportedCharacter(entry, counters, byId);
+		expect(entry.data).toBe(data);
+		expect(data.fields).toEqual({
+			origin: 'oray-hills',
+			futureField: 'kept',
+			religion: 'puritan',
+			touched: 'second',
+			touchedAnimal: 'Heron',
+		});
+		expect(data).not.toHaveProperty('touched');
+		expect(data).not.toHaveProperty('touchedAnimal');
+		expect(data.globalValues).toEqual({ mana: '5' });
+		expect(data.name).toBe('Ivy');
+	});
+
+	it('leaves a data name alone, and gives an entry without data a fields map', () => {
+		const named = { name: 'Outer', data: { name: 'Inner' } };
+		expect(reconcileImportedCharacter(named, counters, byId).name).toBe('Inner');
+		const bare: { name?: unknown; data?: Record<string, unknown> } = { name: 'Bare' };
+		expect(reconcileImportedCharacter(bare, counters, byId)).toEqual({ fields: {}, name: 'Bare' });
+		const odd = { name: 42, data: {} };
+		expect(reconcileImportedCharacter(odd, counters, byId)).not.toHaveProperty('name');
 	});
 });

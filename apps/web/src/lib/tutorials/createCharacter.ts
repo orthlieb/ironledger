@@ -3,10 +3,10 @@
  * Characters panel's switcher, roll a name, roll stats, roll the fields the
  * core rules and extensions add (Region of origin; YRT: Religion, Touched),
  * leave everything else to be randomized, and create; then, on the sheet's
- * Background tab, rewrite the rolled details as a bio and add a portrait; on
- * Core, initiative and the stats (a double-click edits one); and on Status,
- * the debilities and bonds. Its first vow and its assets have tutorials of
- * their own (addVow, addAssets), which its last step points to.
+ * Background tab, rewrite the rolled details as a bio and add a portrait; and
+ * on Core, initiative, the stats (a double-click edits one), the debilities
+ * and bonds (with the bonds' note button). Its first vow and its assets have
+ * tutorials of their own (addVow, addAssets), which its last step points to.
  *
  * Targets (`data-tour`): tab-characters (home's mobile tab bar),
  * char-switcher + new-char-action (CharactersArea's switcher and its
@@ -14,9 +14,8 @@
  * roll-stats (StatAllocator), new-char-fields (CharacterFields) and
  * randomize-also (RandomizeBlock), new-char-dialog-confirm (Create),
  * char-tab-background, char-bio (MarkdownNotes) and char-portrait
- * (PortraitUploader), char-tab-core / char-initiative / char-stats, and
- * char-tab-status
- * / char-debilities / char-tracks.
+ * (PortraitUploader), and char-tab-core / char-initiative / char-stats /
+ * char-debilities / char-tracks.
  */
 import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
 import { characterFieldGroups } from '#lib/characterFields.svelte.js';
@@ -151,7 +150,7 @@ export const createCharacter: Tutorial = {
 		{
 			target: 'char-tab-core',
 			title: 'Your character sheet',
-			body: 'Click Core for the rest of your sheet: stats, vitals and initiative.',
+			body: 'Click Core for the rest of your sheet: initiative, stats, vitals, debilities and bonds. What you rolled in New Character is on Details.',
 			continueWhen: 'char-initiative',
 			back: true,
 		},
@@ -168,13 +167,6 @@ export const createCharacter: Tutorial = {
 			back: true,
 		},
 		{
-			target: 'char-tab-status',
-			title: 'Your status',
-			body: 'Click Status for what can go wrong, and the bonds you forge.',
-			continueWhen: 'char-debilities',
-			back: true,
-		},
-		{
 			target: 'char-debilities',
 			title: 'Debilities',
 			body: 'Mark these when a move tells you to. Conditions (wounded, shaken, unprepared, encumbered) clear as you recover; banes (maimed, corrupted) and burdens (cursed, tormented) last. Each one lowers your maximum momentum.',
@@ -184,7 +176,7 @@ export const createCharacter: Tutorial = {
 			target: 'char-tracks',
 			title: 'Bonds',
 			body:
-				'When you Forge a Bond, mark progress here and note who or where. At the end of your story, your bonds are your legacy.' +
+				'When you Forge a Bond, mark progress here, and note who or where with the note button at the end of the track. At the end of your story, your bonds are your legacy.' +
 				(isSourceEnabled('delve')
 					? ' With Delve on, Failures tracks your setbacks, and Learn From Your Failures turns them into experience.'
 					: '') +

@@ -8,7 +8,7 @@
 	 * The types are an asset's custom field types: dropdown, radio, counter
 	 * (pips), switch, string (one line) and markdown (notes, the full width).
 	 *
-	 * mode "sheet": the Core tab, below Vitals. Values read through to each
+	 * mode "sheet": the Details tab. Values read through to each
 	 * field's default; a text box reports its change when it loses focus, and
 	 * notes as they're typed.
 	 * mode "create": New Character. Every field starts empty and has a d6 when
@@ -278,6 +278,12 @@
 		border-top: 1px solid var(--border);
 		padding-top: 8px;
 		margin-top: 8px;
+	}
+	/* The first group starts the Details tab: no rule above it. */
+	.cf--sheet .cf-group:first-child {
+		border-top: none;
+		padding-top: 0;
+		margin-top: 0;
 	}
 	.cf-side {
 		writing-mode: vertical-rl;

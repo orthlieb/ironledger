@@ -52,7 +52,7 @@ async function waitForCharactersLoaded(page: import('@playwright/test').Page) {
 }
 
 /**
- * Switch to a specific Characters sub-tab (Core / Background / Vows / Assets / Status).
+ * Switch to a specific Characters sub-tab (Core / Details / Background / Vows / Assets).
  */
 async function switchCharTab(page: import('@playwright/test').Page, label: string) {
 	await page.locator(`${CHAR_AREA} .ca-tab`, { hasText: new RegExp(`^${label}$`, 'i') }).click();
@@ -398,6 +398,37 @@ test.describe('Characters area (v2)', () => {
 		await resetBtn.click();
 		// Reset landed — momentum is now the value announced by the button.
 		await expect(val).toHaveText(String(target), { timeout: 2_000 });
+	});
+
+	test('Core has the debilities and tracks; the Bonds note button opens its notes', async ({
+		page,
+	}) => {
+		await ensureCharacterSelected(page);
+		await switchCharTab(page, 'Core');
+		await expect(page.locator(`${CHAR_AREA} [data-tour="char-debilities"]`)).toBeVisible();
+		const btn = page.locator(`${CHAR_AREA} [data-tour="char-bonds-notes"]`);
+		await expect(btn).not.toHaveClass(/ca-track-note-btn--has/);
+
+		// Empty notes open straight into the textarea.
+		await btn.click();
+		const dialog = page.locator('[data-tour="track-notes-dialog"]');
+		await expect(dialog.locator('textarea')).toBeFocused();
+		await page.keyboard.type('- **Rurik**, a ferryman');
+		await dialog.getByRole('button', { name: 'Save' }).click();
+		await expect(dialog).toHaveCount(0);
+		await expect(btn).toHaveClass(/ca-track-note-btn--has/);
+
+		// Notes open rendered; an edit dropped with Cancel leaves them as they were.
+		await btn.click();
+		await expect(dialog.locator('.md-notes-display strong')).toHaveText('Rurik');
+		await dialog.locator('.md-notes-display').click();
+		await dialog.locator('textarea').fill('Someone else');
+		await dialog.getByRole('button', { name: 'Cancel' }).click();
+		await expect(dialog).toHaveCount(0);
+		await btn.click();
+		await expect(dialog.locator('.md-notes-display')).toContainText('Rurik, a ferryman');
+		await page.keyboard.press('Escape');
+		await expect(dialog).toHaveCount(0);
 	});
 
 	// ── Assets ────────────────────────────────────────────────────────────────

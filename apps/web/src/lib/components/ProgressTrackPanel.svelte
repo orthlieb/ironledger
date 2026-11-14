@@ -10,6 +10,7 @@
 	 *   │ ▣▣▣▣▣▣▣▣▣▣  [−step] [+step]            │
 	 *   └────────────────────────────────────────┘
 	 */
+	import type { Snippet } from 'svelte';
 	import ProgressTrack from './ProgressTrack.svelte';
 	import { progressText } from '#lib/character.js';
 	import { tooltip } from '#lib/actions/tooltip.js';
@@ -25,6 +26,7 @@
 		boxes = 10,
 		dangerCount = 0,
 		onchange,
+		trailing,
 	}: {
 		value?: number;
 		/** Section heading shown at top-left of the label row. */
@@ -41,6 +43,9 @@
 		/** Left-most boxes tinted red (e.g. vow menace). */
 		dangerCount?: number;
 		onchange?: (oldVal: number, newVal: number) => void;
+		/** After the ± buttons, at the end of the track (the character
+		 *  sheet's notes button). */
+		trailing?: Snippet;
 	} = $props();
 
 	function fire(next: number) {
@@ -93,6 +98,7 @@
 				aria-label={plusTitle}>{plusLabel}</button
 			>
 		</div>
+		{@render trailing?.()}
 	</div>
 </div>
 

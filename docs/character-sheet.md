@@ -21,6 +21,10 @@ Full character editor rendered in the "Characters" tab of the character detail p
 
 ## Sections
 
+The sheet's tabs: **Core** (initiative, stats, vitals, debilities, and the
+Bonds and Failures tracks), **Details** (the character fields below),
+**Background** (bio and portrait), **Vows** and **Assets**.
+
 ### Identity
 
 - **Name** — text input, synced to `character.name` (top-level DB column) as well as `data.name`.
@@ -50,10 +54,9 @@ is capped at 10 (`rules/actionScore.ts`).
 | Shadow | `#a855f7` purple | `shadow` |
 | Wits   | `#f59e0b` amber  | `wits`   |
 
-The core rules and extensions can add fields to a character, shown at the
-bottom of the Core tab, below Vitals: Region of origin (core, no heading),
-and with YRT, under a YRT heading, Religion, Touched and Animal (Animal
-hidden while Touched is Pure).
+The core rules and extensions can add fields to a character, shown on the
+Details tab: Region of origin (core, no heading), and with YRT, under a YRT
+heading, Religion, Touched and Animal (Animal hidden while Touched is Pure).
 Changing one is logged (`Touched: Prime → Second`), and lowering Touched
 unmarks a Touched asset's abilities above the new limit. They're stored in
 `data.fields`; see [character-fields.md](character-fields.md).
@@ -72,11 +75,18 @@ unmarks a Touched asset's abilities above the new limit. They're stored in
 
 - **XP** — 0–30, `XpTrack` component.
 - **Bonds** — 0–40 ticks across 10 boxes.
-- **Failures** — 0–40 ticks across 10 boxes.
+- **Failures** — 0–40 ticks across 10 boxes (with Delve on).
+
+Both sit on the Core tab. The note button at the end of each track (lit when
+there are notes) opens its notes in a dialog (`TrackNotesDialog`): Bonds
+Formed (`data.bondsFormed`) and Lessons Learned (`data.lessonsLearned`).
+Notes already written open rendered (click to edit); empty notes open in the
+textarea. Markdown works; Save (or Ctrl/Cmd+Enter) keeps the edit, Cancel
+drops it.
 
 ### Debilities (`DebilitiesSection`)
 
-Four groups of boolean toggles:
+On the Core tab, below Vitals. Groups of boolean toggles:
 
 | Group      | Flags                                   |
 | ---------- | --------------------------------------- |

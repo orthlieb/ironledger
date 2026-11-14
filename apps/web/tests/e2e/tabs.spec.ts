@@ -72,13 +72,15 @@ test.describe('Tab accessibility — v2 areas', () => {
 		// Wait for tabs to render.
 		await expect(page.locator(`${CHAR_AREA} .ca-tab`).first()).toBeVisible({ timeout: 8_000 });
 
-		// Core: stats row (5 stat tiles) and vitals row.
+		// Core: stats row (5 stat tiles), vitals, debilities and tracks.
 		await expectTabActivates(
 			page,
 			`${CHAR_AREA} .ca-tab:has-text("Core")`,
 			'ca-tab--active',
 			`${CHAR_AREA} .ca-stats-row`,
 		);
+		await expect(page.locator(`${CHAR_AREA} .ca-debilities-wrapper`)).toBeVisible();
+		await expect(page.locator(`${CHAR_AREA} .ca-tracks-wrapper`)).toBeVisible();
 
 		// Background: background section with portrait uploader.
 		await expectTabActivates(
@@ -115,12 +117,13 @@ test.describe('Tab accessibility — v2 areas', () => {
 			).toBeVisible({ timeout: 3_000 });
 		}
 
-		// Status: debilities + tracks. Debilities wrapper is unique to this tab.
+		// Details: the fields the core rules and extensions add (Region of
+		// origin at least), unique to this tab.
 		await expectTabActivates(
 			page,
-			`${CHAR_AREA} .ca-tab:has-text("Status")`,
+			`${CHAR_AREA} .ca-tab:has-text("Details")`,
 			'ca-tab--active',
-			`${CHAR_AREA} .ca-debilities-wrapper`,
+			`${CHAR_AREA} [data-tour="char-fields"]`,
 		);
 	});
 

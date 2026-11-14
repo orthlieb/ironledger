@@ -48,7 +48,13 @@
 		getGlobalCounterDef,
 		getGlobalCounterIds,
 	} from '#lib/assetStore.svelte.js';
-	import { reconcileGlobalValues } from '#lib/character.js';
+	import { reconcileImportedCharacter } from '#lib/character.js';
+	import {
+		characterFieldGroups,
+		fieldsMarkdown,
+		findCharacterField,
+	} from '#lib/characterFields.svelte.js';
+	import { loadOracles } from '#lib/oracleStore.svelte.js';
 	import { loadFoes, findFoe, resolveFoeName, FOE_RANKS } from '#lib/foeStore.svelte.js';
 	import { loadExtensions } from '#lib/expansionStore.svelte.js';
 	import { viewMode } from '#lib/viewModeStore.svelte.js';
@@ -772,24 +778,14 @@
 			// flight lets the load's `_sync.reset()` clobber the just-imported
 			// rows (silent drop). `loadAssets()` stays for the catalogue below.
 			await initialLoad;
-			// Reconcile imported globalValues against the current catalogue
-			// (drops unknown counter ids, clamps to canonical maxValue, drops
-			// non-numeric values). Catalogue is already auto-loaded on mount;
-			// this await is a safety net for very early imports.
-			await loadAssets();
+			// Imported characters are reconciled against the catalogue's
+			// counters and the character fields' options (reconcileImportedCharacter).
+			// Both are usually loaded by now; these awaits are a safety net for
+			// very early imports.
+			await Promise.all([loadAssets(), loadOracles()]);
 			const knownDefs = new Map(
 				getGlobalCounterIds().map((id) => [id, getGlobalCounterDef(id)!] as const),
 			);
-			function reconcileImportedChar(entry: { name?: string; data?: Record<string, unknown> }) {
-				const data = entry.data ?? {};
-				if (data.globalValues && typeof data.globalValues === 'object') {
-					data.globalValues = reconcileGlobalValues(
-						data.globalValues as Record<string, string>,
-						knownDefs,
-					);
-				}
-				return entry;
-			}
 
 			function appendSafeLog(entry: {
 				title?: string;
@@ -1003,14 +999,12 @@
 			}
 
 			async function importChar(entry: ImportableChar): Promise<void> {
-				const reconciled = reconcileImportedChar(entry);
-				const data = (reconciled.data ?? {}) as Record<string, unknown>;
-				reconciled.data = data;
+				const data = reconcileImportedCharacter(entry, knownDefs, findCharacterField);
 				// Lift any inline portrait out of the JSON; it goes to the blob store.
 				const inline = takeInlineDataUrl(data, 'portrait');
-				const collided = existingCharByName.has(normaliseName(reconciled.name));
-				if (await applyCharacterStrategy(reconciled)) {
-					const created = await createCharacter(reconciled.name ?? 'Imported Character', data);
+				const collided = existingCharByName.has(normaliseName(entry.name));
+				if (await applyCharacterStrategy(entry)) {
+					const created = await createCharacter(entry.name ?? 'Imported Character', data);
 					if (inline) {
 						const etag = await uploadPortrait(`/api/characters/${created.id}/portrait`, inline);
 						if (etag) {
@@ -1023,12 +1017,12 @@
 				} else if (inline && collided && strategy === 'replace') {
 					// applyCharacterStrategy already overwrote the existing character;
 					// attach the portrait to it and persist the etag.
-					const existingId = existingCharByName.get(normaliseName(reconciled.name));
+					const existingId = existingCharByName.get(normaliseName(entry.name));
 					if (existingId) {
 						const etag = await uploadPortrait(`/api/characters/${existingId}/portrait`, inline);
 						if (etag) {
 							persistCharacterNow(existingId, {
-								name: reconciled.name ?? 'Imported Character',
+								name: entry.name ?? 'Imported Character',
 								data: { ...data, portraitEtag: etag },
 							});
 						}
@@ -1544,6 +1538,8 @@
 		const selNpcs = npcs.filter((n) => npcSet.has(n.id));
 		const selPlaces = places.filter((p) => placeSet.has(p.id));
 		const selExps = expeditions.filter((e) => expSet.has(e.id));
+		// The character fields' dropdown labels come from the oracles.
+		if (selChars.length) await loadOracles();
 
 		// Portraits go under images/; entity files live one folder deep and link
 		// to them with a ../ prefix. Returns the bare zip path (images/…).
@@ -1756,6 +1752,14 @@
 				const init = d.initiative as number | undefined;
 				if (init !== undefined && init !== null)
 					lines.push(`**Initiative:** ${initiativeLabels[init] ?? init}`, '');
+				// The Details tab: Region of origin and the extensions' fields.
+				lines.push(
+					...fieldsMarkdown(
+						characterFieldGroups(),
+						d.fields as Record<string, string> | undefined,
+						findCharacterField,
+					),
+				);
 				lines.push(
 					'## Stats',
 					`| Edge | Heart | Iron | Shadow | Wits |`,

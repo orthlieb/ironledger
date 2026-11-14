@@ -10,6 +10,15 @@
   ],
   "characterFields": [
     {
+      "id": "sampleTrinket",
+      "label": "Trinket",
+      "type": "dropdown",
+      "optionsFrom": { "oracle": "sampleGizmo" },
+      "default": "",
+      "roll": { "oracle": "sampleGizmo" },
+      "tooltip": "From the Sample – Gizmo oracle."
+    },
+    {
       "id": "sampleRank",
       "label": "Rank",
       "type": "radio",
@@ -23,11 +32,20 @@
     { "id": "sampleResolve", "label": "Resolve", "type": "counter", "maxValue": 5, "default": "2" },
     { "id": "sampleSworn", "label": "Sworn", "type": "switch", "default": "0" },
     {
+      "id": "sampleEpithet",
+      "label": "Epithet",
+      "type": "string",
+      "default": "",
+      "placeholder": "Epithet…",
+      "roll": { "oracle": "samplePrefixSuffix", "from": "prefix" }
+    },
+    {
       "id": "sampleNotes",
       "label": "Notes",
       "type": "markdown",
       "default": "",
-      "placeholder": "Anything the other fields don't hold…"
+      "placeholder": "Anything the other fields don't hold…",
+      "if": [{ "key": "sampleSworn", "eq": 1 }]
     }
   ]
 }

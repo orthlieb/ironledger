@@ -687,7 +687,7 @@ When a character acquires an asset, each ability checkbox is pre-set to `ability
 Per the Ironsworn printable asset sheet: Paths, Rituals, and Combat Talents include their first ability when acquired (filled circle on the card). Companions start with no abilities pre-enabled: you choose the one yours starts with, and that first pick comes with the 3 XP purchase, as the first ability does for any other asset. Each ability after it costs 2 XP.
 
 Touched assets also start with none marked: how many can be marked follows
-the character's Touched field on the Core tab (`abilityMaxByField`), one at
+the character's Touched field on the Details tab (`abilityMaxByField`), one at
 Prime, two at Second, all three at Third and Feral. A character whose touched
 level is Pure cannot use a Touched asset: each requires
 `{ "key": "touched", "min": 1 }`.
