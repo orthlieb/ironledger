@@ -108,78 +108,78 @@
     },
     {
       "topRange": 19,
-      "value": "Weasel / Stoat",
+      "value": "Weasel / Stoat / Ferret / Mink",
       "group": "Musteline"
     },
     {
       "topRange": 20,
-      "value": "Ferret",
-      "group": "Musteline"
-    },
-    {
-      "topRange": 21,
-      "value": "Mink",
-      "group": "Musteline"
-    },
-    {
-      "topRange": 22,
       "value": "Mountain Lion / Puma",
       "group": "Feline"
     },
     {
-      "topRange": 23,
+      "topRange": 21,
       "value": "Lynx",
       "group": "Feline"
     },
     {
-      "topRange": 24,
+      "topRange": 22,
       "value": "Lion / Tiger",
       "group": "Feline"
     },
     {
-      "topRange": 25,
+      "topRange": 23,
       "value": "Dog (hound)",
       "group": "Canine"
     },
     {
-      "topRange": 26,
+      "topRange": 24,
       "value": "Cat (domestic)",
       "group": "Feline"
     },
     {
-      "topRange": 27,
+      "topRange": 25,
       "value": "Bull / Ox",
       "group": "Bovine"
     },
     {
-      "topRange": 28,
+      "topRange": 26,
+      "value": "Bison / Buffalo",
+      "group": "Bovine"
+    },
+    {
+      "topRange": 27,
       "value": "Goat",
       "group": "Hircine"
     },
     {
-      "topRange": 29,
+      "topRange": 28,
       "value": "Ram / Sheep",
       "group": "Ovine"
     },
     {
-      "topRange": 30,
+      "topRange": 29,
       "value": "Pig / Swine",
       "group": "Porcine"
     },
     {
-      "topRange": 31,
+      "topRange": 30,
       "value": "Donkey / Mule",
       "group": "Equine"
     },
     {
-      "topRange": 32,
+      "topRange": 31,
       "value": "Wolverine",
       "group": "Musteline"
     },
     {
-      "topRange": 33,
+      "topRange": 32,
       "value": "Porcupine",
       "group": "Hystricine"
+    },
+    {
+      "topRange": 33,
+      "value": "Monkey / Ape",
+      "group": "Simian"
     },
     {
       "topRange": 34,

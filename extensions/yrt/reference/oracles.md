@@ -82,21 +82,21 @@ Determine the Touched animal type aspect of a character.
 | 16 | Bat |
 | 17 | Mole |
 | 18 | Hedgehog |
-| 19 | Weasel / Stoat |
-| 20 | Ferret |
-| 21 | Mink |
-| 22 | Mountain Lion / Puma |
-| 23 | Lynx |
-| 24 | Lion / Tiger |
-| 25 | Dog (hound) |
-| 26 | Cat (domestic) |
-| 27 | Bull / Ox |
-| 28 | Goat |
-| 29 | Ram / Sheep |
-| 30 | Pig / Swine |
-| 31 | Donkey / Mule |
-| 32 | Wolverine |
-| 33 | Porcupine |
+| 19 | Weasel / Stoat / Ferret / Mink |
+| 20 | Mountain Lion / Puma |
+| 21 | Lynx |
+| 22 | Lion / Tiger |
+| 23 | Dog (hound) |
+| 24 | Cat (domestic) |
+| 25 | Bull / Ox |
+| 26 | Bison / Buffalo |
+| 27 | Goat |
+| 28 | Ram / Sheep |
+| 29 | Pig / Swine |
+| 30 | Donkey / Mule |
+| 31 | Wolverine |
+| 32 | Porcupine |
+| 33 | Monkey / Ape |
 | 34 | Owl |
 | 35 | Hawk / Falcon |
 | 36 | Eagle |
