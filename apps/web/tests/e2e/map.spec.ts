@@ -107,6 +107,45 @@ test.describe('MapDialog — smoke', () => {
 		await page.keyboard.press('Escape');
 	});
 
+	test('Map Options exports the map as a PNG, at the size of the background image', async ({
+		page,
+	}) => {
+		await page.locator('[aria-label="Open the campaign map"]').first().click();
+		await expect(page.locator('.mp-dialog')).toBeVisible({ timeout: 15_000 });
+		// A 300 × 200 background, drawn in the page.
+		const bg = await page.evaluate(() => {
+			const c = document.createElement('canvas');
+			c.width = 300;
+			c.height = 200;
+			const g = c.getContext('2d')!;
+			g.fillStyle = '#9a8a6a';
+			g.fillRect(0, 0, 300, 200);
+			return c.toDataURL('image/png').split(',')[1]!;
+		});
+		await page.locator('#mp-file-input').setInputFiles({
+			name: 'wide.png',
+			mimeType: 'image/png',
+			buffer: Buffer.from(bg, 'base64'),
+		});
+		await expect(page.locator('.mp-bg-image')).toBeAttached({ timeout: 8_000 });
+
+		await page.locator('.mp-btn-gear').first().click();
+		const exportBtn = page.getByRole('button', { name: 'Export as PNG' });
+		await expect(exportBtn).toBeEnabled({ timeout: 5_000 });
+		const [download] = await Promise.all([page.waitForEvent('download'), exportBtn.click()]);
+		expect(download.suggestedFilename()).toMatch(/^map-.+\.png$/);
+		const chunks: Buffer[] = [];
+		for await (const c of await download.createReadStream()) chunks.push(Buffer.from(c));
+		const png = Buffer.concat(chunks);
+		// The PNG signature, then the header's width and height.
+		expect(png.subarray(1, 4).toString('ascii')).toBe('PNG');
+		expect(png.readUInt32BE(16)).toBe(300);
+		expect(png.readUInt32BE(20)).toBe(200);
+		await expect(exportBtn).toHaveText('Export as PNG');
+		await page.keyboard.press('Escape');
+		await page.keyboard.press('Escape');
+	});
+
 	test('gear button opens the Map Options sub-dialog', async ({ page }) => {
 		await openMapDialogViaUpload(page);
 

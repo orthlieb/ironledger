@@ -110,6 +110,7 @@
 	import { downscaleImage, MapImageError } from '#lib/mapImage.js';
 	import { LABEL_SIZE_MULT, labelPlacement, labelStyleCss } from '#lib/mapLabel.js';
 	import { resolveEntity } from '#lib/mapEntityLinks.js';
+	import { exportMapPng } from '#lib/mapExport.js';
 	import MapLayersMenu from './MapLayersMenu.svelte';
 
 	// bits-ui Dialog open flag + Content ref. The ref is needed for:
@@ -2173,7 +2174,13 @@
 	</Dialog.Portal>
 </Dialog.Root>
 
-<MapOptionsDialog bind:this={optionsDialogRef} onReplaceBackground={triggerBackgroundUpload} />
+<MapOptionsDialog
+	bind:this={optionsDialogRef}
+	onReplaceBackground={triggerBackgroundUpload}
+	onExportPng={async () => {
+		if (svgEl) await exportMapPng(svgEl, mapState.name);
+	}}
+/>
 
 <!--
 	Pile-up picker — surfaces when a click resolves to a snap point with
