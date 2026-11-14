@@ -32,8 +32,8 @@ const ZIP_INPUT = 'input[type="file"][data-import-root="home"]';
 const IMD_DONE_OK = '.imd-badge--ok';
 const IMD_ERRLIST = '.imd-errlist';
 
-// runImport (home/+page.svelte) holds the "importing" stage for a minimum
-// 5s — matching the export overlay so a fast import doesn't flash past its
+// CampaignImport.run (lib/campaignImport.svelte.ts) holds the "importing"
+// stage for a minimum 5s — matching the export overlay so a fast import doesn't flash past its
 // progress bar. Any assertion that waits for the dialog to leave the
 // importing stage (`.imd-badge--ok` / `--warn` / `--err` on the done stage,
 // or `.imd-errlist` on the error stage) needs a timeout above that hold,

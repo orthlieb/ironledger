@@ -10,10 +10,16 @@ from the **Hamburger → Export…** dialog and accepts via
 > data (moves, assets, oracles, foes, delve tables) shipped under `data/`,
 > see [data-schema.md](data-schema.md).
 
-The export/import logic lives in
-[`apps/web/src/routes/home/+page.svelte`](../apps/web/src/routes/home/+page.svelte);
-the import hardening + zip decompression lives in
+The export lives in
+[`apps/web/src/lib/campaignExport.svelte.ts`](../apps/web/src/lib/campaignExport.svelte.ts)
+(with the Markdown pieces in
+[`exportMarkdown.ts`](../apps/web/src/lib/exportMarkdown.ts)), the import in
+[`apps/web/src/lib/campaignImport.svelte.ts`](../apps/web/src/lib/campaignImport.svelte.ts),
+and what both share (portraits, containment refs) in
+[`campaignTransfer.ts`](../apps/web/src/lib/campaignTransfer.ts). The import
+hardening + zip decompression lives in
 [`apps/web/src/lib/importSanitizer.ts`](../apps/web/src/lib/importSanitizer.ts).
+The home page (`routes/home/+page.svelte`) only wires the dialogs to them.
 
 ---
 
@@ -626,7 +632,8 @@ internally by entry id).
 ### The import dialog
 
 Import runs behind the **`ImportDialog`** (`#lib/components/ImportDialog.svelte`),
-which the Hamburger → Import… action opens and the page's `runImport()` drives
+which the Hamburger → Import… action opens and `CampaignImport.run()`
+(`#lib/campaignImport.svelte.ts`, which also holds the dialog's state) drives
 through a small set of stages:
 
 | Stage         | When                                                    | What the user sees                                           |
@@ -638,7 +645,7 @@ through a small set of stages:
 | **error**     | A structural `ImportError` aborted the whole archive.   | ⚠ the readable error message; "Choose another file".         |
 
 A drag-and-drop onto the page and the starter-seed both feed the same
-`runImport()`; the seed path runs **silently** (no dialog), importing whatever
+`CampaignImport.run()`; the seed path runs **silently** (no dialog), importing whatever
 is valid and logging the rest.
 
 ### Validate, then confirm (partial import)

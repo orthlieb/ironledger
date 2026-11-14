@@ -56,7 +56,7 @@ describe('Starter Ironlands zip', () => {
 
 	it('bundles at least one map — nested maps/<id>/{manifest,map,background} files', () => {
 		// Maps ride along in the Everything export as `maps/<id>/…` dirs (see
-		// restoreBundledMaps in /home). They're NOT surfaced through
+		// restoreBundledMaps in lib/campaignImport.svelte.ts). They're NOT surfaced through
 		// parseImportZip's data body — the map importer unzips separately. So
 		// peek the raw entries here and assert the bundle carries at least one.
 		const bytes = new Uint8Array(readFileSync(STARTER_PATH));

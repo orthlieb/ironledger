@@ -486,8 +486,8 @@ them on, as `expeditionKinds` would, but the screens themselves stay code.
   - `character.ts`: the load-time move into `fields`, and
     `reconcileImportedCharacter`, which import runs (`cleanFieldValues`,
     then the move).
-  - `routes/home/+page.svelte`: the Markdown export's `## Details`
-    (`fieldsMarkdown`).
+  - `campaignExport.svelte.ts`: the Markdown export's `## Details`
+    (`fieldsMarkdown`), on the page `characterMarkdown` writes.
   - `tutorials/createCharacter.ts`: the "Roll a region of origin" step
     becomes one step over the YRT fields, shown when they're there.
 - **YRT data:** the four fields in `extension.json`; a `name` on each

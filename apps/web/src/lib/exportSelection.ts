@@ -2,7 +2,7 @@
 // Iron Ledger — Export selection shape
 //
 // The structured choice the comprehensive Export dialog (ExportDialog.svelte)
-// emits and the home route (handleExportSelection) consumes. Each list holds
+// emits and CampaignExport.run (lib/campaignExport.svelte.ts) consumes. Each list holds
 // the ids to include ([] = none); `log` is the whole session log on/off;
 // `format` the output kind.
 // =============================================================================
