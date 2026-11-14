@@ -441,6 +441,94 @@
       "icon": "asset-touched-vulpine"
     },
     {
+      "id": "path/yrt-touched-ovine",
+      "name": "Touched, Ovine",
+      "category": "Touched",
+      "summary": "Ovine-touched: a fleece that turns weather and edges, a knack for vanishing into a crowd, and eyes that miss little at your sides.",
+      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
+      "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
+      "preconditions": [
+        {
+          "key": "touched",
+          "min": 1
+        }
+      ],
+      "exclusiveGroup": "touched",
+      "abilityMaxByField": {
+        "touched": {
+          "pure": 0,
+          "prime": 1,
+          "second": 2,
+          "third": 3,
+          "feral": 3
+        }
+      },
+      "characterFields": ["touched", "touchedAnimal"],
+      "abilities": [
+        {
+          "enabled": false,
+          "text": "**Fleece.** Your wool grows thick and greasy, and it turns weather and blades alike. When you [Endure Harm](move:endure-harm) from cold, wet, exposure, or a blow your fleece could catch (a glancing edge, a bite, a fall through brambles), add +1. On a strong hit, take +2 momentum instead of +1.",
+          "moves": ["move/endure-harm"]
+        },
+        {
+          "enabled": false,
+          "text": "**Flock.** You move with a crowd the way a sheep moves with the flock, and eyes slide past you. When you [Face Danger](move:face-danger) or [Secure an Advantage](move:secure-an-advantage) by losing yourself in a crowd, a herd, or a column on the march, add +1, and you may roll +shadow (even if another stat would normally apply). On a strong hit, also take +1 momentum.",
+          "moves": ["move/face-danger", "move/secure-an-advantage"]
+        },
+        {
+          "enabled": false,
+          "text": "**Wide Sight.** Your pupils have gone wide and flat, and little at your sides escapes you. When you [Face Danger](move:face-danger) to spot an ambush or a threat closing from the side, or [Gather Information](move:gather-information) by watching a place, add +1. On a strong hit, also take +1 momentum.",
+          "moves": ["move/face-danger", "move/gather-information"]
+        }
+      ],
+      "source": "yrt",
+      "icon": "asset-touched-ovine"
+    },
+    {
+      "id": "path/yrt-touched-trochiline",
+      "name": "Touched, Trochiline",
+      "category": "Touched",
+      "summary": "Trochiline-touched: fierce out of all proportion to your size, a shimmer that turns heads, and a body that sleeps cold and wakes mended.",
+      "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
+      "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
+      "preconditions": [
+        {
+          "key": "touched",
+          "min": 1
+        }
+      ],
+      "exclusiveGroup": "touched",
+      "abilityMaxByField": {
+        "touched": {
+          "pure": 0,
+          "prime": 1,
+          "second": 2,
+          "third": 3,
+          "feral": 3
+        }
+      },
+      "characterFields": ["touched", "touchedAnimal"],
+      "abilities": [
+        {
+          "enabled": false,
+          "text": "**Small and Fierce.** You go for the eyes of things ten times your size. When you [Enter the Fray](move:enter-the-fray) against a foe larger than you, add +1, and you may roll +edge (even if another stat would normally apply). On a strong hit, also take +1 momentum.",
+          "moves": ["move/enter-the-fray"]
+        },
+        {
+          "enabled": false,
+          "text": "**Shimmer.** In good light your skin and hair throw back green and violet. When you [Compel](move:compel) or [Secure an Advantage](move:secure-an-advantage) by catching and holding attention (a flash at the right moment, a turn into the sun), add +1, and you may roll +heart (even if another stat would normally apply). On a strong hit, also take +1 momentum.",
+          "moves": ["move/compel", "move/secure-an-advantage"]
+        },
+        {
+          "enabled": false,
+          "text": "**Torpor.** Asleep, you go cold and still, and wake mended. When you [Make Camp](move:make-camp) and choose to recuperate, take +2 health instead of +1.",
+          "moves": ["move/make-camp"]
+        }
+      ],
+      "source": "yrt",
+      "icon": "asset-touched-trochiline"
+    },
+    {
       "id": "ritual/yrt-cantrip",
       "name": "Cantrip",
       "category": "Ritual",

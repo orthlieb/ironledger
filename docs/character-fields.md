@@ -322,7 +322,7 @@ for an asset. The hard-coded `touched` branch in `preconditions.ts`, with its
 `TOUCHED_LEVEL` and `TOUCHED_LABEL` tables, goes: `touched` becomes YRT's
 field, on the same 0–4 scale.
 
-YRT's ten Touched assets each get:
+YRT's Touched assets each get:
 
 ```json
 "preconditions": [{ "key": "touched", "min": 1 }]
@@ -397,7 +397,7 @@ work can pick it up.
 | `characterRollups.ts` `rollYrtTouchedStructured`, `RandomizeBlock.svelte` Touched checkbox, `CharactersArea.svelte` `_commitNewCharacter`, `characterRollupsFormat.ts` `formatTouchedMd` | Rolls the touched level and animal into the background | The `touched` and `touchedAnimal` fields and their `roll`                                      | This work |
 | `RandomizeBlock.svelte` region picker (`regionOriginOptions`), `characterRollups.ts` `religionColumnForOrigin`, `randomizationsAsMarkdown`                                               | Region of origin and religion, into the background     | The `origin` and `religion` fields; `roll.column`                                              | This work |
 | `preconditions.ts` `touched` branch, `TOUCHED_LEVEL`, `TOUCHED_LABEL`                                                                                                                    | The `touched` precondition key                         | The generic field branch                                                                       | This work |
-| The ten Touched assets' `touchedLevel` / `animalName` custom fields; `types.ts` `touched` / `touchedAnimal`                                                                              | Per-asset and legacy copies of the level and animal    | Read from `fields`; removed                                                                    | This work |
+| The Touched assets' `touchedLevel` / `animalName` custom fields; `types.ts` `touched` / `touchedAnimal`                                                                                  | Per-asset and legacy copies of the level and animal    | Read from `fields`; removed                                                                    | This work |
 | `tutorials/createCharacter.ts` region step (`isSourceEnabled('yrt')`)                                                                                                                    | Shows the Region of origin step only with YRT on       | A "Roll their details" step, shown when an enabled extension declares fields                   | This work |
 | `CharactersArea.svelte` Status tab `isSourceEnabled('delve')`: Failures track, Lessons Learned; `MovesDialog.svelte` `+1 failure` link on a miss                                         | Delve's failures track on the character                | A `track` field type, and a move-outcome hook for the `+1 failure` link                        | Later     |
 | `CharactersArea.svelte` `applyResourceChange` `mana` branch; `preconditions.ts` `mana` in the stat map; `MovesDialog.svelte` mana commit                                                 | YRT's mana as a resource with a 0–10 range             | A `counter` field type with a range and colour, which `resource:` links and preconditions read | Later     |
@@ -458,7 +458,7 @@ them on, as `expeditionKinds` would, but the screens themselves stay code.
   - `tutorials/createCharacter.ts`: the "Roll a region of origin" step
     becomes one step over the YRT fields, shown when they're there.
 - **YRT data:** the four fields in `extension.json`; a `name` on each
-  `yrtReligion` row; the ten Touched assets lose `touchedLevel` and
+  `yrtReligion` row; the Touched assets lose `touchedLevel` and
   `animalName` and gain the precondition and the new `abilityMaxByField`.
   Assets and oracles change, so `npm run gen:yrt-ref` regenerates the
   reference pages.
