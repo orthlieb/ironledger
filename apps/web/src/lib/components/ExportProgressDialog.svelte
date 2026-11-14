@@ -68,6 +68,7 @@
 		<Dialog.Overlay class="dialog-overlay exp-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="exp-dialog"
+			data-tour="export-progress"
 			style="z-index: {contentZ(stackDepth)}"
 			escapeKeydownBehavior={held ? 'close' : 'ignore'}
 			interactOutsideBehavior="ignore"

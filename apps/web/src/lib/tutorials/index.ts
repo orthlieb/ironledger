@@ -62,6 +62,11 @@ export const TUTORIALS: readonly TutorialEntry[] = [
 		title: 'Make camp and heal',
 		load: () => import('./makeCamp.js').then((m) => m.makeCamp),
 	},
+	{
+		id: 'back-up',
+		title: 'Back up your campaign',
+		load: () => import('./backUp.js').then((m) => m.backUp),
+	},
 ];
 
 /** Start a tutorial, going to its page first if need be. */

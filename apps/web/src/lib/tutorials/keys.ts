@@ -32,3 +32,8 @@ export const MAP = key(
 );
 /** The map's Add marker button: + and a pin. */
 export const ADD_MARKER = key('Add marker', plus + pinSvg);
+/** The header's ☰ menu button (HamburgerMenu), its three bars. */
+export const MENU = key(
+	'Menu',
+	'<svg viewBox="0 0 16 16"><rect y="2" width="16" height="2" rx="1" fill="currentColor"/><rect y="7" width="16" height="2" rx="1" fill="currentColor"/><rect y="12" width="16" height="2" rx="1" fill="currentColor"/></svg>',
+);

@@ -39,6 +39,9 @@
  * camp; Make Camp, choosing Recuperate and Focus from its links. The dice are loaded, so each roll comes out as
  * the test says.
  *
+ * Back up your campaign: ☰ → Export…, its checklist and format, a real zip
+ * downloaded through the export overlay, then ☰ → Import…, left open.
+ *
  * The steps find their controls by `data-tour` ids, so these tests also
  * catch a UI change that strands a tutorial (a renamed control, a moved
  * dialog).
@@ -1059,5 +1062,77 @@ test.describe('Tutorial — Put your settlement on the map, on a phone', () => {
 		await openHome(page, false);
 		await startTutorial(page, 'Put your settlement on the map');
 		await mapIt(page, 'Ashfen', true);
+	});
+});
+
+/**
+ * Back up your campaign, ☰ to Done: Export… from the menu, its checklist
+ * (with `who` in it) and format, a real export through its overlay, then
+ * Import…, left open when the tour ends. `tap` taps, as on a phone.
+ */
+async function backUp(page: Page, who: string, tap = false) {
+	const n = (i: number) => `${i} of 7`;
+	const press = (l: Locator) => (tap ? l.tap() : l.click());
+	const menu = (name: string) =>
+		press(target(page, 'app-menu')).then(() => press(page.getByRole('menuitem', { name })));
+
+	await expectStep(page, 'Back up your campaign', n(1));
+	await menu('Export…');
+	await expectStep(page, 'What goes in', n(2));
+	await expect(target(page, 'export-list')).toContainText(who);
+	await next(page);
+	await expectStep(page, 'Zip or Markdown', n(3));
+	await next(page);
+
+	// A real export: the zip downloads while the overlay shows.
+	await expectStep(page, 'Export it', n(4));
+	const download = page.waitForEvent('download', { timeout: 30_000 });
+	await press(target(page, 'export-go'));
+	await expectStep(page, 'On its way', n(5));
+	expect((await download).suggestedFilename()).toMatch(/^ironledger-export-.+\.zip$/);
+	await expect(target(page, 'export-progress')).toBeHidden({ timeout: 30_000 });
+
+	await expectStep(page, 'Bringing it back', n(6));
+	await menu('Import…');
+	await expectStep(page, 'Import', n(7));
+	await next(page); // Done
+	await expect(page.locator(POPOVER)).toBeHidden();
+	await expect(target(page, 'import-dialog')).toBeVisible();
+}
+
+test.describe('Tutorial — Back up your campaign', () => {
+	test.beforeAll(async () => {
+		await Promise.all([resetCharacters(), resetFoes(), resetExpeditions(), resetCommunities()]);
+		await resetLog();
+	});
+
+	test('with nothing made yet, says to make a character first', async ({ page }) => {
+		await openHome(page, false);
+		await startTutorial(page, 'Back up your campaign');
+		await expectStep(page, 'Nothing to back up yet');
+		await next(page); // Done
+		await expect(page.locator(POPOVER)).toBeHidden();
+	});
+
+	test('exports a zip, then opens Import', async ({ page }) => {
+		await seedCharacter('Brand');
+		await openHome(page, false);
+		await startTutorial(page, 'Back up your campaign');
+		await backUp(page, 'Brand');
+	});
+});
+
+test.describe('Tutorial — Back up your campaign, on a phone', () => {
+	test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+	test.beforeAll(async () => {
+		await resetCharacters();
+		await seedCharacter('Brand');
+	});
+
+	test('exports a zip, then opens Import, tapping', async ({ page }) => {
+		await openHome(page, false);
+		await startTutorial(page, 'Back up your campaign');
+		await backUp(page, 'Brand', true);
 	});
 });

@@ -82,7 +82,11 @@
 <Dialog.Root bind:open>
 	<Dialog.Portal>
 		<Dialog.Overlay class="dialog-overlay imd-overlay" style="z-index: {overlayZ(stackDepth)}" />
-		<Dialog.Content class="imd-dialog" style="z-index: {contentZ(stackDepth)}">
+		<Dialog.Content
+			class="imd-dialog"
+			data-tour="import-dialog"
+			style="z-index: {contentZ(stackDepth)}"
+		>
 			<DialogHeader
 				title={headingText('Import')}
 				onclose={() => (open = false)}
