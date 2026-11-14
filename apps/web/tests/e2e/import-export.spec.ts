@@ -703,7 +703,13 @@ test.describe('Import / Export — full round-trip', () => {
 			headers: h,
 			body: JSON.stringify({
 				name: 'Rook Vanguard',
-				data: { stats: { edge: 3, heart: 1, iron: 2, shadow: 2, wits: 1 }, momentum: 7 },
+				data: {
+					stats: { edge: 3, heart: 1, iron: 2, shadow: 2, wits: 1 },
+					momentum: 7,
+					// Character fields (core and YRT) and the Bonds notes.
+					fields: { origin: 'barrier-islands', touched: 'second', touchedAnimal: 'Heron' },
+					bondsFormed: '- **Bellmark**, which took me in',
+				},
 			}),
 		}).then((r) => expect(r.ok, 'seed character').toBeTruthy());
 
@@ -870,10 +876,16 @@ test.describe('Import / Export — full round-trip', () => {
 			};
 		});
 
-		// Character — name + a distinctive stat.
+		// Character — name, a distinctive stat, its fields and its Bonds notes.
 		const rook = state.chars.find((c: { name: string }) => c.name === 'Rook Vanguard');
 		expect(rook, 'character round-tripped').toBeDefined();
 		expect(rook.data?.stats?.edge).toBe(3);
+		expect(rook.data?.fields).toEqual({
+			origin: 'barrier-islands',
+			touched: 'second',
+			touchedAnimal: 'Heron',
+		});
+		expect(rook.data?.bondsFormed).toBe('- **Bellmark**, which took me in');
 
 		// Community — name + region.
 		const bellmark = state.communities.find((c: { name: string }) => c.name === 'Bellmark');
