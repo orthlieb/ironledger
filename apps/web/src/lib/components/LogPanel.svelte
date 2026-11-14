@@ -7,6 +7,7 @@
 	 * Notes are attached per-entry and persist to localStorage.
 	 * Clearing the log requires confirmation via a native dialog (irreversible).
 	 */
+	import { outcomeClass, outcomeLabel } from '#lib/moveRoll.js';
 	import {
 		type LogEntry,
 		initLog,
@@ -158,17 +159,6 @@
 	// ---------------------------------------------------------------------------
 	// Burn Momentum
 	// ---------------------------------------------------------------------------
-
-	function outcomeClass(hits1: boolean, hits2: boolean): string {
-		if (hits1 && hits2) return 'roll-outcome-strong';
-		if (hits1 || hits2) return 'roll-outcome-weak';
-		return 'roll-outcome-miss';
-	}
-	function outcomeLabel(hits1: boolean, hits2: boolean): string {
-		if (hits1 && hits2) return 'Strong Hit';
-		if (hits1 || hits2) return 'Weak Hit';
-		return 'Miss';
-	}
 
 	function burnMomentum(entry: LogEntry) {
 		if (!entry.roll || !ctx) return;

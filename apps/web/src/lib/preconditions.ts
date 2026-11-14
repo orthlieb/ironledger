@@ -253,6 +253,20 @@ export function checkPrecondition(
 }
 
 /**
+ * Why a move can't be made now, or null: its first failed precondition. With
+ * no character, a move that has any precondition can't be. MovesDialog greys
+ * such moves out; the command bar leaves them out of its suggestions.
+ */
+export function movePreconditionFailure(
+	preconditions: Precondition[] | undefined,
+	charData: CharacterData | null | undefined,
+	ctx: PreconditionContext = {},
+): string | null {
+	if (!charData) return preconditions?.length ? 'No character selected' : null;
+	return firstPreconditionFailure(preconditions, charData, ctx);
+}
+
+/**
  * Check ALL preconditions (AND logic).
  * Returns the first failure reason, or `null` if all pass.
  * Returns `null` for an empty / undefined array (no restrictions).

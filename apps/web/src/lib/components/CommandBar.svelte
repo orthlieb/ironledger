@@ -61,7 +61,7 @@
 		setActiveExpeditionId,
 	} from '#lib/activeContext.svelte.js';
 	import { getActiveDiceCtx } from '#lib/diceContext.svelte.js';
-	import { firstPreconditionFailure } from '#lib/preconditions.js';
+	import { movePreconditionFailure } from '#lib/preconditions.js';
 	import type { PreconditionContext, Precondition } from '#lib/preconditions.js';
 	import { getExpeditions } from '#lib/expeditionStore.svelte.js';
 	import { ENTITY_KIND_META } from '#lib/entityKinds.js';
@@ -150,18 +150,12 @@
 		};
 	});
 
-	/**
-	 * True when a move satisfies its preconditions in the current context.
-	 * Matches MovesDialog's `moveFailReason` semantics: with no character,
-	 * moves that have any precondition are unavailable; with a character,
-	 * preconditions are evaluated against the character + spine ctx.
-	 */
+	/** True when a move can be made in the current context (the same rule
+	 *  MovesDialog greys moves out by). */
 	function isMoveAvailable(m: MoveDefinition): boolean {
-		const ctx = getActiveDiceCtx();
-		if (!ctx) return !m.preconditions?.length;
-		return !firstPreconditionFailure(
+		return !movePreconditionFailure(
 			m.preconditions as Precondition[] | undefined,
-			ctx.data,
+			getActiveDiceCtx()?.data,
 			preconditionCtx,
 		);
 	}

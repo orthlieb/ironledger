@@ -344,3 +344,194 @@
 		</Dialog.Content>
 	</Dialog.Portal>
 </Dialog.Root>
+
+<style>
+	/* Icon picker sub-dialog — nested inside MapDialog. Overlay 84 /
+	   content 85 sits ABOVE the marker-properties dialog (82/83) so
+	   the icon grid stacks correctly when opened from the props
+	   dialog's Icon button. Still one tier above nothing else in
+	   the app so the shared modal budget stays intact. */
+	/* z-index for .mp-icon-* is set inline by MapIconPicker via dialogStack. */
+	:global(.mp-icon-dialog) {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		/* Match the outer MapDialog's mobile-bounds policy: 90 % of
+		   the viewport on phone widths, 720 px capped on desktop. */
+		width: min(720px, calc(100vw - 2rem));
+		/* Fixed height (not max-height) so switching tabs, or a search that
+		   empties the grid, never resizes the panel — it's centred via
+		   translate(-50%, -50%), so any height change would rock it around
+		   the viewport centre. The tab panels flex into the space.
+		   In `dvh`, the viewport a phone actually shows: `vh` counts the
+		   space under the browser's toolbars too, so a vh-tall picker ran
+		   off the visible screen. (A bits-ui Dialog is a fixed div, not a
+		   top-layer <dialog>, so dvh is safe here; vh is the fallback.) */
+		height: 82vh;
+		height: 82dvh;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		background: var(--bg-card);
+		color: var(--text);
+		border-radius: 8px;
+		box-shadow:
+			0 16px 48px #00000070,
+			0 0 0 1px var(--border-mid);
+		outline: none;
+	}
+	/* Search row modelled on FoePickerDialog's `.fd-search-*` — a
+	   .field wrapper positions the magnifying-glass icon absolutely
+	   over the left-inset padding of the input. */
+	:global(.mp-icon-search-row) {
+		padding: 8px 14px;
+		background: var(--bg-inset);
+		border-bottom: 1px solid var(--border);
+	}
+	:global(.mp-icon-tabs-root),
+	:global(.mp-icon-panel) {
+		flex: 1;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+	}
+	:global(.mp-icon-panel[hidden]) {
+		display: none;
+	}
+	:global(.mp-icon-body) {
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding: 8px 14px 14px;
+	}
+	@media (max-width: 640px) {
+		/* Give the picker room on phones — 90 % of the viewport,
+		   matching the outer MapDialog's mobile bounds. */
+		:global(.mp-icon-dialog) {
+			width: 90vw;
+			height: 90vh;
+			height: 90dvh;
+		}
+	}
+	:global(.mp-icon-cat-label) {
+		font-family: var(--font-ui);
+		font-size: 0.68rem;
+		font-weight: 700;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		/* Each section is tinted with its category colour (set inline as
+		   --cat-color by MapIconPicker); "Label only" has none, so it falls
+		   back to the neutral dimmer + border. */
+		color: var(--cat-color, var(--text-dimmer));
+		margin: 12px 0 6px;
+		padding-bottom: 3px;
+		border-bottom: 1px solid color-mix(in srgb, var(--cat-color, var(--border)) 35%, transparent);
+	}
+	:global(.mp-icon-cat-label:first-child) {
+		margin-top: 0;
+	}
+	:global(.mp-icon-grid) {
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(48px, 1fr));
+		gap: 4px;
+	}
+	:global(.mp-icon-tile) {
+		aspect-ratio: 1 / 1;
+		padding: 6px;
+		background: var(--bg-control);
+		border: 1px solid var(--border);
+		border-radius: 4px;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+	:global(.mp-icon-tile:hover) {
+		border-color: var(--text-accent);
+	}
+	:global(.mp-icon-tile-selected) {
+		border-color: var(--text-accent);
+		background: color-mix(in srgb, var(--text-accent) 12%, var(--bg-control));
+	}
+	:global(.mp-icon-tile svg) {
+		width: 100%;
+		height: 100%;
+	}
+	/* Icons | Settlement builder tabs — the underlined-tab pattern of the
+	   Settings dialog (.sd-tab). */
+	:global(.mp-icon-tabs) {
+		display: flex;
+		padding: 0 14px;
+		border-bottom: 1px solid var(--border);
+	}
+	:global(.mp-icon-tab) {
+		all: unset;
+		cursor: pointer;
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+		border-bottom: 2px solid transparent;
+		padding: 8px 10px 6px;
+		margin-bottom: -1px;
+		white-space: nowrap;
+	}
+	:global(.mp-icon-tab-short) {
+		display: none;
+	}
+	@media (max-width: 480px) {
+		:global(.mp-icon-tab-long) {
+			display: none;
+		}
+		:global(.mp-icon-tab-short) {
+			display: inline;
+		}
+	}
+	:global(.mp-icon-tab:hover) {
+		color: var(--text-muted);
+	}
+	:global(.mp-icon-tab[data-state='active']) {
+		color: var(--text-accent);
+		border-bottom-color: var(--text-accent);
+	}
+	:global(.mp-icon-tab:focus-visible) {
+		outline: 2px solid var(--text-accent);
+		outline-offset: -2px;
+	}
+	/* Hover lightbox: the hovered tile's icon at a readable size. */
+	:global(.mp-icon-lightbox) {
+		position: fixed;
+		pointer-events: none;
+		z-index: 2;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 4px;
+		padding: 10px 10px 6px;
+		background: var(--bg-card);
+		border: 1px solid var(--border-mid);
+		border-radius: 8px;
+		box-shadow: 0 8px 24px #00000050;
+	}
+	:global(.mp-icon-lightbox svg) {
+		width: 100%;
+		aspect-ratio: 1 / 1;
+	}
+	:global(.mp-icon-lightbox span) {
+		font-family: var(--font-ui);
+		font-size: 0.78rem;
+		color: var(--text-muted);
+		text-align: center;
+	}
+	:global(.mp-icon-empty) {
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+		color: var(--text-dimmer);
+		text-align: center;
+		padding: 24px 0;
+	}
+</style>

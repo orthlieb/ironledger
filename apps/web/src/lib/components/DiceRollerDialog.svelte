@@ -10,6 +10,7 @@
 	 * 3D dice animation runs via @3d-dice/dice-box-threejs (CDN, lazy-loaded).
 	 */
 	import { appendLog } from '#lib/log.svelte.js';
+	import { outcomeClass, outcomeLabel } from '#lib/moveRoll.js';
 	import { matchNoteHtml } from '#lib/rollMatch.js';
 	import { actionScore, actionScoreHtml } from '#lib/rules/actionScore.js';
 	import { rollDie, rollD100, animateDice, DIE_BLACK, DIE_WHITE } from '#lib/dice.js';
@@ -72,16 +73,6 @@
 	// ---------------------------------------------------------------------------
 	// Helpers
 	// ---------------------------------------------------------------------------
-	function outcomeClass(hits1: boolean, hits2: boolean): string {
-		if (hits1 && hits2) return 'roll-outcome-strong';
-		if (hits1 || hits2) return 'roll-outcome-weak';
-		return 'roll-outcome-miss';
-	}
-	function outcomeLabel(hits1: boolean, hits2: boolean): string {
-		if (hits1 && hits2) return 'Strong Hit';
-		if (hits1 || hits2) return 'Weak Hit';
-		return 'Miss';
-	}
 
 	// ---------------------------------------------------------------------------
 	// Quick rolls — always available; log only when a character is active

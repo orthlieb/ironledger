@@ -22,6 +22,7 @@
 	import { untrack } from 'svelte';
 	import { Dialog, RadioGroup } from 'bits-ui';
 	import Combobox from '#lib/components/Combobox.svelte';
+	import { normalizeAngle } from '#lib/mapGeometry.js';
 	import ColorPicker from '#lib/components/ColorPicker.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
 	import DialogHeader from './DialogHeader.svelte';
@@ -137,7 +138,7 @@
 
 	/** Label size ramp — H4 → H1 typographic tiers. Stored as
 	 *  `labelStyle.size`; the render path multiplies the base font-size
-	 *  by the corresponding factor (see LABEL_SIZE_MULT in MapDialog). */
+	 *  by the corresponding factor (see LABEL_SIZE_MULT in mapLabel.ts). */
 	type LabelSize = 'sm' | 'md' | 'lg' | 'xl';
 	const LABEL_SIZE_OPTIONS: { value: LabelSize; label: string }[] = [
 		{ value: 'sm', label: 'S' },
@@ -212,15 +213,6 @@
 		} catch {
 			/* persistence is best-effort */
 		}
-	}
-
-	/** Normalise a rotation to `[0, 360)` for display + storage. `undefined`
-	 *  → 0 (default rotation for legacy markers). Non-finite → 0 so a stray
-	 *  NaN doesn't invalidate the SVG transform. */
-	function normalizeAngle(a: number | undefined): number {
-		if (typeof a !== 'number' || !Number.isFinite(a)) return 0;
-		const n = a % 360;
-		return n < 0 ? n + 360 : n;
 	}
 
 	/** ColorPicker `onchange` — fires on every drag of the picker. Push the
@@ -934,3 +926,527 @@
 	onpicksettlement={pickDraftSettlement}
 	onclose={closeIconPicker}
 />
+
+<style>
+	/* This dialog's styles: the marker properties form and its selection
+	   controls (icon, colour, angle, link). Global because bits-ui portals
+	   the dialog to <body>. */
+	/* Marker properties dialog. Same modal tier as the icon picker
+	   (overlay 82 / content 83) so it sits above the outer MapDialog
+	   without breaking the app's shared z-index budget. Layout is
+	   vertical: header, form body, destructive-action footer. */
+	/* z-index for .mp-props-* is set inline by MarkerPropertiesDialog
+	   via dialogStack. */
+	:global(.mp-props-dialog) {
+		position: fixed;
+		top: 50%;
+		left: 50%;
+		transform: translate(-50%, -50%);
+		width: min(460px, calc(100vw - 2rem));
+		/* dvh, the viewport a phone actually shows (vh fallback) — see the
+		   icon picker's height below. */
+		max-height: 82vh;
+		max-height: 82dvh;
+		display: flex;
+		flex-direction: column;
+		background: var(--bg-card);
+		color: var(--text);
+		border-radius: 8px;
+		box-shadow:
+			0 16px 48px #00000070,
+			0 0 0 1px var(--border-mid);
+		outline: none;
+		overflow: hidden;
+	}
+	:global(.mp-props-body) {
+		padding: 12px 14px;
+		display: flex;
+		flex-direction: column;
+		gap: 12px;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+	}
+	:global(.mp-props-field) {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		min-width: 0;
+	}
+	/* Link-to row: the entity combobox fills the width, the "Go to" action
+	   sits to its right, both on one line and the same height. */
+	:global(.mp-link-row) {
+		display: flex;
+		align-items: stretch;
+		gap: 6px;
+		min-width: 0;
+	}
+	:global(.mp-link-row .mp-combobox) {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+	:global(.mp-props-label) {
+		font-family: var(--font-ui);
+		font-size: 0.66rem;
+		font-weight: 600;
+		letter-spacing: 0.06em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
+	}
+	:global(.mp-props-input) {
+		padding: 6px 8px;
+		font-family: var(--font-ui);
+		font-size: 0.9rem;
+		color: var(--text);
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+	}
+	:global(.mp-props-input:focus) {
+		outline: none;
+		border-color: var(--text-accent);
+	}
+	/* Dimmed + inert when the marker is in Icon mode (labelActive false),
+	   matching the icon button / style toggles so the label half reads off.
+	   The app's own bg/color override the native disabled look, so without
+	   this the field stayed bright. */
+	:global(.mp-props-input:disabled) {
+		opacity: 0.4;
+		cursor: default;
+	}
+	:global(.mp-props-row) {
+		display: flex;
+		gap: 12px;
+		flex-wrap: wrap;
+		align-items: flex-end;
+	}
+	/* Two fields splitting a row evenly (Layer + Link to). */
+	:global(.mp-props-field--half) {
+		flex: 1 1 0;
+		min-width: 0;
+	}
+	/* Visual separator between the dialog's control groups (above Label,
+	   Icon, and Link to). Sits in the body's vertical flex so the group's
+	   own gap gives it breathing room; a hair-line border keeps it quiet
+	   on both light and dark themes. */
+	:global(.mp-props-divider) {
+		border: none;
+		border-top: 1px solid var(--border);
+		margin: 0;
+		width: 100%;
+	}
+	:global(.mp-props-field--icon),
+	:global(.mp-props-field--color),
+	:global(.mp-props-field--angle),
+	:global(.mp-props-field--mode) {
+		flex: 0 0 auto;
+	}
+
+	/* Edit-mode radio group — three chips in a row (Both | Label | Icon)
+	   that gate which half of the dialog is active. Grows as needed to
+	   fit its three options on the top row; wraps to its own line on
+	   phone widths when Colour + Angle want their space. The chip itself
+	   mirrors AssetCard's `.radio-option-btn` — same ring + fill-on-check
+	   so the two radio widgets in the app read the same. */
+	:global(.mp-props-field--mode) {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+	:global(.mp-mode-radios) {
+		display: inline-flex;
+		align-items: center;
+		gap: 10px;
+		height: 32px;
+	}
+	:global(.mp-mode-option) {
+		display: inline-flex;
+		align-items: center;
+		gap: 5px;
+		cursor: pointer;
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+		color: var(--text);
+		user-select: none;
+	}
+	:global(.mp-mode-btn) {
+		flex-shrink: 0;
+		width: 14px;
+		height: 14px;
+		padding: 0;
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 999px;
+		cursor: pointer;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+	}
+	:global(.mp-mode-btn:focus-visible) {
+		outline: 2px solid var(--text-accent);
+		outline-offset: 1px;
+	}
+	:global(.mp-mode-btn[data-state='checked']) {
+		border-color: var(--text-accent);
+	}
+	:global(.mp-mode-dot) {
+		width: 7px;
+		height: 7px;
+		border-radius: 999px;
+		background: var(--text-accent);
+		opacity: 0;
+	}
+	:global(.mp-mode-btn[data-state='checked'] .mp-mode-dot) {
+		opacity: 1;
+	}
+	/* Icon and Colour hold a 22 × 22 button + 8 px padding (≈ 2.5rem), but
+	   the label text ("COLOUR", "ICON") is wider than that, and when they
+	   sit next to a stretch field like Hex the labels of adjacent narrow
+	   fields can visually touch across the row's 12 px gap (the "COLOURHEX"
+	   bug). Widen to 3.5rem so each label fits inside its own column and
+	   the buttons stay vertically centred within the extra breathing room. */
+	:global(.mp-props-field--icon),
+	:global(.mp-props-field--color) {
+		width: 3.5rem;
+	}
+	:global(.mp-props-field--icon .mp-sel-icon-btn),
+	:global(.mp-props-field--color .mp-sel-color-btn) {
+		align-self: flex-start;
+	}
+
+	/* Label field: the text input grows to fill the row; Position rides
+	   at the tail as a narrow Select whose trigger only shows the arrow
+	   glyph (~1 em). Position wraps under Label on phone widths when the
+	   flex row can't spare its ~4.5rem tail. */
+	:global(.mp-props-field--label) {
+		flex: 1 1 auto;
+		min-width: 0;
+	}
+	/* Style row is wide (7 buttons + a divider). Size (S / M / L / XL)
+	   sits at the tail on the same row so all label-typography controls
+	   live together. */
+	:global(.mp-props-field--style) {
+		flex: 0 0 auto;
+	}
+	/* Position + Size are both narrow Select triggers (arrow glyph or one
+	   or two letters). Position keeps the ~4.5rem trigger (the arrow glyph
+	   is visually airy); Size tightens to 3.25rem — just the letter + caret
+	   + a hair of padding — so it drops off the Style row's trailing edge
+	   without wrapping. */
+	:global(.mp-props-field--position),
+	:global(.mp-props-field--size) {
+		flex: 0 0 auto;
+	}
+	:global(.mp-props-field--position .bui-select-trigger) {
+		min-width: 4.5rem;
+	}
+	:global(.mp-props-field--size .bui-select-trigger) {
+		min-width: 3.25rem;
+	}
+	/* Scale (per-marker icon scale) — a native range input that grows to
+	   fill the row's trailing slot the same way RGB does. Both are stretch
+	   fields with a 7rem wrap threshold, so on a phone they can drop below
+	   their row-mates rather than squishing them. The readout chip rides
+	   on the label, right-aligned, so the multiplier is visible as the
+	   user drags. */
+	:global(.mp-props-field--scale) {
+		flex: 1 1 7rem;
+		min-width: 7rem;
+		gap: 2px;
+	}
+	:global(.mp-props-field--scale .mp-props-label) {
+		display: flex;
+		align-items: baseline;
+		justify-content: space-between;
+		gap: 8px;
+	}
+	:global(.mp-sel-scale-readout) {
+		font-family: var(--font-mono);
+		font-weight: 500;
+		font-size: 0.72rem;
+		letter-spacing: 0;
+		text-transform: none;
+		color: var(--text);
+	}
+	:global(.mp-sel-scale-range) {
+		width: 100%;
+		/* Line the thumb up with the 32 px tile row so the slider track sits
+		   at the vertical mid-point of its row-mates instead of floating
+		   below. The native height is implementation-defined (Chrome 32 px,
+		   Safari 20 px), so pinning it here keeps the row's baseline
+		   consistent across browsers. */
+		height: 32px;
+		margin: 0;
+	}
+	/* Dimmed in Label mode alongside the icon button (same row, same gate). */
+	:global(.mp-sel-scale-range:disabled) {
+		opacity: 0.4;
+		cursor: default;
+	}
+
+	/* Label text-style toggles (Bold / Italic / Small caps / Underline) —
+	   text-editor-toolbar feel. Each button previews its own effect on
+	   the letter it displays (B, I, Aa, U); the pressed state uses the
+	   accent-glow ground + accent border so a glance across the row tells
+	   the user which flags are on without reading aria-pressed. */
+	:global(.mp-style-row) {
+		display: flex;
+		gap: 4px;
+		align-items: center;
+	}
+	/* Nested radio group (Regular / Small caps / Uppercase) — same button
+	   family as the toggles, just gathered into a radiogroup so a11y
+	   knows they're mutually exclusive. */
+	:global(.mp-style-radios) {
+		display: flex;
+		gap: 4px;
+	}
+	/* Thin vertical rule between the boolean toggles (B / I / U) and the
+	   case radio group so the two families read as distinct at a glance. */
+	:global(.mp-style-sep) {
+		width: 1px;
+		align-self: stretch;
+		margin: 0 4px;
+		background: var(--border-mid);
+	}
+	/* Small-caps preview: the second character in the "A + x-height A"
+	   glyph. Drops to lowercase x-height while keeping the uppercase
+	   letterform, matching the CSS `font-variant: small-caps` look no
+	   matter what the UI font supports. */
+	:global(.mp-style-btn-xheight) {
+		font-size: 0.72em;
+		vertical-align: baseline;
+		margin-left: 0.02em;
+	}
+	:global(.mp-style-btn) {
+		min-width: 32px;
+		height: 32px;
+		padding: 0 8px;
+		/* Fira Sans so the B / I / U / Aa / small-caps / AA glyphs
+		   preview in the same font the marker label renders in. Falls
+		   back through the UI stack. */
+		font-family: 'Fira Sans', var(--font-ui);
+		font-size: 0.95rem;
+		color: var(--text);
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		cursor: pointer;
+		transition:
+			background 120ms,
+			border-color 120ms;
+	}
+	:global(.mp-style-btn:hover) {
+		background: var(--bg-hover);
+	}
+	:global(.mp-style-btn[data-active='true']) {
+		background: var(--accent-glow);
+		border-color: var(--text-accent);
+		color: var(--text-accent);
+	}
+	:global(.mp-style-btn:focus-visible) {
+		outline: 2px solid var(--focus-ring);
+		outline-offset: 1px;
+	}
+	/* Disabled state — greyed and non-interactive. Applied when the
+	   feature the button controls has no target (Style buttons when
+	   there's no label to style; case radios likewise). */
+	:global(.mp-style-btn:disabled) {
+		opacity: 0.4;
+		cursor: not-allowed;
+		background: var(--bg-control);
+	}
+	:global(.mp-style-btn:disabled:hover) {
+		background: var(--bg-control);
+	}
+
+	:global(.mp-props-footer) {
+		display: flex;
+		align-items: center;
+		gap: 8px;
+		padding: 10px 14px;
+		border-top: 1px solid var(--border);
+		background: var(--bg-inset);
+	}
+	:global(.mp-props-footer-spacer) {
+		flex: 1 1 auto;
+	}
+	@media (max-width: 640px) {
+		:global(.mp-props-dialog) {
+			width: 90vw;
+			max-height: 90vh;
+			max-height: 90dvh;
+		}
+	}
+
+	:global(.mp-sel-icon-btn) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		width: 100%;
+		height: 32px;
+		padding: 0 8px;
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		cursor: pointer;
+		color: var(--text);
+	}
+	:global(.mp-sel-icon-btn:hover:not(:disabled)) {
+		border-color: var(--text-accent);
+	}
+	/* Dimmed + inert when the marker is in Label mode (iconActive false),
+	   matching .mp-btn / .mp-style-btn so the row reads as off. */
+	:global(.mp-sel-icon-btn:disabled) {
+		opacity: 0.4;
+		cursor: default;
+	}
+	:global(.mp-sel-icon-btn svg) {
+		width: 22px;
+		height: 22px;
+		flex-shrink: 0;
+	}
+	/* Colour picker trigger — a real `<button>` styled to match the
+	   neighbouring `.mp-sel-icon-btn`. Click opens the ColorPicker's
+	   bits-ui Popover which hosts the vanilla-colorful picker and the
+	   MRU swatch strip (see ColorPicker.svelte). The palette SVG inside
+	   picks up the selected colour via `currentColor` and the same
+	   2-device-pixel white halo the map markers use, so light hues
+	   read on dark backgrounds and dark hues read on light. */
+	:global(.mp-sel-color-btn) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		box-sizing: border-box;
+		width: 100%;
+		height: 32px;
+		padding: 0 8px;
+		background: var(--bg-control);
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		cursor: pointer;
+	}
+	:global(.mp-sel-color-btn:hover) {
+		border-color: var(--text-accent);
+	}
+	:global(.mp-sel-color-btn:focus-visible) {
+		outline: 1px solid var(--text-accent);
+		outline-offset: 1px;
+	}
+	:global(.mp-sel-color-btn svg) {
+		width: 22px;
+		height: 22px;
+	}
+	/* Angle spinner — inline `−  ∠ nnn°  +` cluster. iOS Safari drops
+	   the native <input type="number"> step arrows, so explicit step
+	   buttons flank the numeric field to keep the spinner reachable on
+	   touch. Whole group behaves as one segmented control. */
+	:global(.mp-sel-angle) {
+		display: inline-flex;
+		align-items: stretch;
+		box-sizing: border-box;
+		height: 32px;
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		background: var(--bg-control);
+		overflow: hidden;
+	}
+	:global(.mp-sel-angle:focus-within) {
+		border-color: var(--text-accent);
+	}
+	:global(.mp-sel-angle-step) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 11px;
+		padding: 0;
+		border: none;
+		background: transparent;
+		color: var(--text-muted);
+		font-family: var(--font-ui);
+		font-size: 0.95rem;
+		font-weight: 700;
+		line-height: 1;
+		cursor: pointer;
+	}
+	:global(.mp-sel-angle-step svg) {
+		width: 8px;
+		height: 8px;
+		fill: currentColor;
+		display: block;
+	}
+	:global(.mp-sel-angle-step:hover) {
+		background: color-mix(in srgb, var(--text-accent) 12%, transparent);
+		color: var(--text);
+	}
+	:global(.mp-sel-angle-step:active) {
+		background: color-mix(in srgb, var(--text-accent) 22%, transparent);
+	}
+	:global(.mp-sel-angle-field) {
+		display: inline-flex;
+		align-items: center;
+		gap: 2px;
+		padding: 2px 2px 2px 4px;
+		border-inline: 1px solid var(--border);
+		font-family: var(--font-ui);
+		font-size: 0.72rem;
+		color: var(--text-muted);
+	}
+	:global(.mp-sel-angle-input) {
+		width: 1.9em;
+		padding: 3px 0 3px 2px;
+		border: none;
+		background: transparent;
+		color: var(--text);
+		font-family: inherit;
+		font-size: 0.82rem;
+		text-align: right;
+	}
+	:global(.mp-sel-angle-input:focus) {
+		outline: none;
+	}
+	/* Hide the native step arrows — the surrounding buttons replace
+	   them so we don't need a second, browser-styled pair. */
+	:global(.mp-sel-angle-input::-webkit-outer-spin-button),
+	:global(.mp-sel-angle-input::-webkit-inner-spin-button) {
+		-webkit-appearance: none;
+		margin: 0;
+	}
+	:global(.mp-sel-angle-input) {
+		-moz-appearance: textfield;
+		appearance: textfield;
+	}
+	:global(.mp-sel-angle-unit) {
+		color: var(--text-dimmer);
+		line-height: 1;
+	}
+	/* Sizing override for the marker link combobox trigger — base
+	   look comes from `.mp-combobox`. Passes through bits-ui
+	   Popover.Trigger, so scope with `:global()`. */
+	:global(.mp-sel-entity-btn) {
+		/* Combobox trigger sits inside `.mp-props-field` (flex column):
+		   default `align-items: stretch` gives it full width and the
+		   min-height from `.cb-trigger` handles the vertical rhythm.
+		   Explicit width so the inline-flex Popover.Trigger fills the
+		   field on both mobile and desktop. */
+		width: 100%;
+	}
+
+	/* Selection toolbar's icon-button "No icon" placeholder — a small
+	   two-letter glyph in the marker's colour that stands in for the
+	   icon preview when the marker is a label-only pin. */
+	:global(.mp-sel-icon-none) {
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		width: 22px;
+		height: 22px;
+		flex-shrink: 0;
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		font-weight: 700;
+		color: var(--text);
+		background: var(--bg-inset);
+		border: 1px dashed var(--border-mid);
+		border-radius: 4px;
+	}
+</style>

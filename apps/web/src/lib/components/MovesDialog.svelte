@@ -19,7 +19,24 @@
 	import { moveCategoryIcon } from '#lib/iconRegistry.js';
 	import { moveCategoryMeta } from '#lib/extensionCategories.svelte.js';
 	import { matchNoteHtml } from '#lib/rollMatch.js';
-	import { actionScore, actionScoreHtml } from '#lib/rules/actionScore.js';
+	import { actionScore } from '#lib/rules/actionScore.js';
+	import {
+		actionRollHtml,
+		askOracleHtml,
+		burnMomentumHtml,
+		burnMomentumOffer,
+		d100Faces,
+		moveLogTitle,
+		moveMd,
+		moveOutcomeHtml,
+		outcomeHeaderHtml,
+		progressRollHtml,
+		resolveHarmLinks,
+		spellRollHtml,
+		stripHtml,
+		tableRollHtml,
+		takeAHiatusHtml,
+	} from '#lib/moveRoll.js';
 	import {
 		loadMoves,
 		getVisibleMoves,
@@ -31,7 +48,7 @@
 		isTableRollMove,
 		hasRollableStats,
 	} from '#lib/moveStore.svelte.js';
-	import { firstPreconditionFailure } from '#lib/preconditions.js';
+	import { movePreconditionFailure, type Precondition } from '#lib/preconditions.js';
 	import { applyInitiativeDowngrade } from '#lib/initiativeDowngrade.js';
 	import { appendLog, enrichOutcomeLinks, triggerAction } from '#lib/log.svelte.js';
 	import { renderRich } from '#lib/dsl.js';
@@ -244,143 +261,19 @@
 	// Precondition check
 	// ---------------------------------------------------------------------------
 	function moveFailReason(m: MoveDefinition): string | null {
-		if (!ctx) {
-			return m.preconditions?.length ? 'No character selected' : null;
-		}
-		return firstPreconditionFailure(
-			m.preconditions as import('#lib/preconditions.js').Precondition[] | undefined,
-			ctx.data,
-			pctx,
-		);
+		return movePreconditionFailure(m.preconditions as Precondition[] | undefined, ctx?.data, pctx);
 	}
 
 	// ---------------------------------------------------------------------------
-	// Outcome helpers
+	// Log text — the pure builders live in lib/moveRoll.ts
 	// ---------------------------------------------------------------------------
-	function outcomeClass(hits1: boolean, hits2: boolean): string {
-		if (hits1 && hits2) return 'roll-outcome-strong';
-		if (hits1 || hits2) return 'roll-outcome-weak';
-		return 'roll-outcome-miss';
-	}
-	function outcomeLabel(hits1: boolean, hits2: boolean): string {
-		if (hits1 && hits2) return 'Strong Hit';
-		if (hits1 || hits2) return 'Weak Hit';
-		return 'Miss';
-	}
-
-	function stripHtml(html: string): string {
-		return html
-			.replace(/<[^>]*>/g, '')
-			.replace(/&amp;/g, '&')
-			.replace(/&lt;/g, '<')
-			.replace(/&gt;/g, '>')
-			.replace(/&quot;/g, '"')
-			.replace(/&#39;/g, "'")
-			.replace(/\s+/g, ' ')
-			.trim();
-	}
-
-	/**
-	 * Resolve a log entry title for a move roll.
-	 *
-	 * Uses the move's optional `logTitle` template when present, otherwise
-	 * falls back to the canonical pattern:
-	 *   "{character} — {move name} ({stat})"   when stat is provided
-	 *   "{character} — {move name}"            otherwise
-	 *
-	 * Supported placeholders: {character}, {stat}, {expedition}, {foe}, {move}.
-	 */
+	/** A roll's log title for this character, expedition and foe. */
 	function resolveTitle(move: MoveDefinition, stat?: string): string {
-		const tpl =
-			move.logTitle ??
-			(stat ? `{character} \u2014 ${move.name} ({stat})` : `{character} \u2014 ${move.name}`);
-		return tpl
-			.replace('{character}', ctx?.charName ?? '')
-			.replace('{stat}', stat ?? '')
-			.replace('{expedition}', pctx.expeditionName ?? 'unknown expedition')
-			.replace('{foe}', pctx.foeName ?? 'unknown foe')
-			.replace('{move}', move.name);
-	}
-
-	/** Move text renders through `renderRich` (markdown formatting + `[label](scheme:args)`
-	 *  link DSL) before the existing harm/enrich passes — the default since the DSL
-	 *  migration flipped it (Phase 4). A move opts BACK OUT to raw HTML with `html: true`. */
-	const moveMd = (m: MoveDefinition | null, text: string | undefined): string =>
-		(m as Record<string, unknown> | null)?.html ? (text ?? '') : renderRich(text);
-
-	function getOutcomeHtml(m: MoveDefinition, hits1: boolean, hits2: boolean): string {
-		const raw = hits1 && hits2 ? m.strong : hits1 || hits2 ? m.weak : m.miss;
-		return moveMd(m, raw);
-	}
-
-	// Resolve <a class="harm-link"> placeholders.
-	// ctx.moveId + ctx.foeHarm present (Endure Harm/Stress) → real resource-link.
-	// Otherwise → move-link so the player can navigate to the appropriate suffer move.
-	function resolveHarmLinks(
-		html: string,
-		ctx?: { moveId?: string; foeHarm?: number; curHealth?: number; curSpirit?: number },
-	): string {
-		const harm = ctx?.foeHarm ?? 1;
-		const moveId = ctx?.moveId ?? '';
-
-		// Endure Harm/Stress: suffer -harm to the resource; per the move, if that
-		// would drop it below 0 the remainder converts to -momentum. When the
-		// current value is known and smaller than the harm, split the display into
-		// the resource amount (down to exactly 0) plus the momentum overflow. This
-		// is descriptive text only — the Apply button commits it (see applyHarm).
-		function harmSplit(resource: 'health' | 'spirit', curVal?: number): string {
-			// Canonical wording: you suffer "harm" (to health) / "stress" (to spirit).
-			const harmWord = resource === 'health' ? 'harm' : 'stress';
-			if (curVal !== undefined && harm > curVal) {
-				const overflow = harm - curVal;
-				const resPart =
-					curVal > 0 ? `<span class="harm-amount">${curVal} ${harmWord}</span> and ` : '';
-				return (
-					resPart +
-					`<span class="harm-amount">-${overflow} momentum</span>` +
-					` <span class="harm-note">(overflow)</span>`
-				);
-			}
-			return `<span class="harm-amount">${harm} ${harmWord}</span>`;
-		}
-
-		// Health harm-links: known foe → clickable resource-link; no foe → plain placeholder text.
-		html = html.replace(
-			/<a class="harm-link" data-resource="health">-harm health<\/a>/g,
-			moveId === 'move/endure-harm' && ctx?.foeHarm !== undefined
-				? harmSplit('health', ctx.curHealth)
-				: '<span class="harm-note">-harm health</span>',
+		return moveLogTitle(
+			move,
+			{ character: ctx?.charName ?? '', expedition: pctx.expeditionName, foe: pctx.foeName },
+			stat,
 		);
-		// Spirit harm-links: known foe → clickable resource-link; no foe → plain placeholder text.
-		html = html.replace(
-			/<a class="harm-link" data-resource="spirit">-harm spirit<\/a>/g,
-			moveId === 'move/endure-stress' && ctx?.foeHarm !== undefined
-				? harmSplit('spirit', ctx.curSpirit)
-				: '<span class="harm-note">-harm spirit</span>',
-		);
-
-		// Endure Harm/Stress miss text carries a debility clause: "If you are at 0
-		// <resource>, you must mark <X> or <Y> … or roll on the <oracle>." Rules text
-		// is canon, so it always renders verbatim — but when we KNOW this blow won't
-		// bring the resource to 0 (foe rank < current), the mark/oracle actions don't
-		// apply, so their links are disabled (rendered as inert text). When the clause
-		// applies, or the outcome can't be determined (no foe/character), links stay live.
-		if (moveId === 'move/endure-harm' || moveId === 'move/endure-stress') {
-			html = html.replace(
-				/If you are at 0 (health|spirit), you must mark [\s\S]*?oracle<\/a>\./,
-				(clause, resource) => {
-					const curVal = resource === 'health' ? ctx?.curHealth : ctx?.curSpirit;
-					const survives =
-						ctx?.foeHarm !== undefined && curVal !== undefined && ctx.foeHarm < curVal;
-					if (!survives) return clause; // clause applies, or can't tell → links live
-					return clause.replace(
-						/<a class="[^"]*-link"[^>]*>([\s\S]*?)<\/a>/g,
-						'<span class="rule-disabled">$1</span>',
-					);
-				},
-			);
-		}
-		return html;
 	}
 
 	// Resolve harm links for display in the dialog outcome preview.
@@ -571,34 +464,24 @@
 		const entryId = crypto.randomUUID();
 
 		// Build log HTML
-		const parts: string[] = [];
-		if (cancelled) {
-			parts.push(
-				`<div class="roll-cancel">Momentum cancel! Momentum is ${mom}, ` +
-					`action die ${aDie} \u2192 0.</div>`,
-			);
-		}
-
-		const dieStr = cancelled ? `<s>${aDie}</s>&thinsp;0` : `${aDie}`;
-		const addsStr = adds !== 0 ? ` + adds[${adds > 0 ? '+' : '−'}${Math.abs(adds)}]` : '';
 		const statLabel = stat.charAt(0).toUpperCase() + stat.slice(1);
+		const parts: string[] = [
+			actionRollHtml({
+				actionDie: aDie,
+				cancelled,
+				momentum: mom,
+				stat,
+				statValue: sVal,
+				adds,
+				action,
+				c1,
+				c2,
+			}),
+			outcomeHeaderHtml(hits1, hits2, isMatch),
+			matchNoteHtml(hits1, hits2, isMatch),
+		];
 
-		parts.push(
-			`<div class="roll-line">` +
-				`1d6 [${dieStr}] + ${statLabel.toLowerCase()}[${sVal}]${addsStr}` +
-				` = ${actionScoreHtml(action)} vs 2d10 [${c1}] [${c2}]` +
-				`</div>`,
-		);
-
-		const matchSpan = isMatch ? ' <span class="roll-match">with a match!</span>' : '';
-		parts.push(
-			`<div class="${outcomeClass(hits1, hits2)}">` +
-				`<strong>${outcomeLabel(hits1, hits2)}</strong>${matchSpan}` +
-				`</div>`,
-		);
-		parts.push(matchNoteHtml(hits1, hits2, isMatch));
-
-		let outcomeHtml = getOutcomeHtml(selectedMove, hits1, hits2);
+		let outcomeHtml = moveOutcomeHtml(selectedMove, hits1, hits2);
 		if (outcomeHtml) {
 			outcomeHtml = resolveHarmLinks(outcomeHtml, {
 				moveId: selectedMove.id,
@@ -660,28 +543,21 @@
 
 		// Burn momentum suggestion: auto-append a clickable log entry when burn would improve outcome.
 		// Consistent with overflow/floor/debility cascade pattern — player decides whether to click.
-		const burnHits1 = mom > c1 ? true : hits1;
-		const burnHits2 = mom > c2 ? true : hits2;
-		if (
-			!cancelled &&
-			mom > 0 &&
-			!(hits1 && hits2) &&
-			(burnHits1 !== hits1 || burnHits2 !== hits2)
-		) {
-			const resetVal = momentumReset(ctx.data);
-			const currentLabel = outcomeLabel(hits1, hits2);
-			const burnLabel = outcomeLabel(burnHits1, burnHits2);
+		const burn = burnMomentumOffer({ momentum: mom, cancelled, c1, c2, hits1, hits2 });
+		if (burn) {
 			const burnEntryId = crypto.randomUUID();
-			const burnHtml =
-				`<p>You may <a class="burn-momentum-link" ` +
-				`data-roll-entry-id="${entryId}" ` +
-				`data-move-id="${selectedMove.id}" ` +
-				`data-action-score="${total}" ` +
-				`data-c1="${c1}" data-c2="${c2}" ` +
-				`data-char-id="${ctx.charId}" ` +
-				`data-entry-id="${burnEntryId}">` +
-				`burn momentum (${mom} → reset ${resetVal})` +
-				`</a> to improve this from <em>${currentLabel}</em> to <em>${burnLabel}</em>.</p>`;
+			const burnHtml = burnMomentumHtml({
+				rollEntryId: entryId,
+				entryId: burnEntryId,
+				moveId: selectedMove.id,
+				charId: ctx.charId,
+				actionScore: total,
+				c1,
+				c2,
+				momentum: mom,
+				reset: momentumReset(ctx.data),
+				...burn,
+			});
 			appendLog(BURN_MOMENTUM_TITLE, burnHtml, burnEntryId);
 		}
 
@@ -720,24 +596,10 @@
 		const entryId = crypto.randomUUID();
 		const charId = ctx?.charId ?? '';
 
-		const addsStr =
-			adds !== 0
-				? ` + Adds [<strong>${adds > 0 ? '+' : '−'}${Math.abs(adds)}</strong>] = [<strong>${total}</strong>]`
-				: '';
-
-		const parts: string[] = [];
-		parts.push(
-			`<div class="roll-line">` +
-				`Progress [<strong>${progressValue}</strong>]${addsStr} vs 2d10 [${c1}] [${c2}]` +
-				`</div>`,
-		);
-
-		const matchSpan = isMatch ? ' <span class="roll-match">with a match!</span>' : '';
-		parts.push(
-			`<div class="${outcomeClass(eh1, eh2)}">` +
-				`<strong>${outcomeLabel(eh1, eh2)}</strong>${matchSpan}` +
-				`</div>`,
-		);
+		const parts: string[] = [
+			progressRollHtml(progressValue, adds, c1, c2),
+			outcomeHeaderHtml(eh1, eh2, isMatch),
+		];
 		if (downgraded) {
 			parts.push(
 				'<div class="roll-match-note">Downgraded — you did not have initiative (strong hit counts as weak, weak hit as miss).</div>',
@@ -745,7 +607,7 @@
 		}
 		parts.push(matchNoteHtml(eh1, eh2, isMatch));
 
-		let outcomeHtml = getOutcomeHtml(selectedMove, eh1, eh2);
+		let outcomeHtml = moveOutcomeHtml(selectedMove, eh1, eh2);
 		if (outcomeHtml) {
 			outcomeHtml = resolveHarmLinks(outcomeHtml, {
 				moveId: selectedMove.id,
@@ -796,23 +658,14 @@
 		const entryId = crypto.randomUUID();
 		const parts: string[] = [];
 
-		const addsStr = adds !== 0 ? ` + adds[${adds > 0 ? '+' : '−'}${Math.abs(adds)}]` : '';
-		const manaStr = mana > 0 ? ` + mana[${mana}]` : '';
 		parts.push(
-			`<div class="roll-line">` +
-				`1d6 [${aDie}]${addsStr}${manaStr}` +
-				` = <strong>${total}</strong> vs difficulty[<strong>${diff}</strong>] 1d10[${c1}]` +
-				`</div>`,
-		);
-		parts.push(
-			`<div class="${outcomeClass(hitsDiff, hitsC1)}">` +
-				`<strong>${outcomeLabel(hitsDiff, hitsC1)}</strong>` +
-				`</div>`,
+			spellRollHtml({ actionDie: aDie, adds, mana, difficulty: diff, c1 }),
+			outcomeHeaderHtml(hitsDiff, hitsC1),
 		);
 
 		// Build body: outcome text + mandatory mana cost (always spent)
 		let bodyHtml = '';
-		let outcomeHtml = getOutcomeHtml(selectedMove, hitsDiff, hitsC1);
+		let outcomeHtml = moveOutcomeHtml(selectedMove, hitsDiff, hitsC1);
 		if (outcomeHtml) {
 			outcomeHtml = resolveHarmLinks(outcomeHtml, {
 				moveId: selectedMove.id,
@@ -855,13 +708,8 @@
 		rolling = true;
 		const { odds, threshold } = entry.value;
 		const roll = rollDie(100);
-		const isYes = roll >= threshold;
-		const outcomeClass = isYes ? 'roll-outcome-strong' : 'roll-outcome-miss';
-		const html =
-			`<div class="roll-line">1d100 [${roll}]</div>` +
-			`<div class="${outcomeClass}"><strong>${isYes ? 'Yes' : 'No'}</strong> \u2014 ${odds} (\u2265${threshold})</div>`;
-		const tensV = Math.floor((roll % 100) / 10) || 10;
-		const onesV = roll % 10 || 10;
+		const html = askOracleHtml(roll, odds, threshold);
+		const [tensV, onesV] = d100Faces(roll);
 		close();
 		await animateDice([
 			{ sides: 10, value: tensV, color: DIE_BLACK },
@@ -895,11 +743,8 @@
 		const enriched = ctx ? enrichOutcomeLinks(rendered, entryId, ctx.charId) : rendered;
 		// A d100 table roll is an oracle-style roll — match the oracle log format
 		// (`Roll: d100 → N`) rather than the action-die bracket format.
-		const html =
-			`<div class="roll-line">Roll: d100 → ${roll}</div>` +
-			`<div class="move-outcome">${enriched}</div>`;
-		const tensV = Math.floor((roll % 100) / 10) || 10;
-		const onesV = roll % 10 || 10;
+		const html = tableRollHtml(roll, enriched);
+		const [tensV, onesV] = d100Faces(roll);
 		close();
 		await animateDice([
 			{ sides: 10, value: tensV, color: DIE_BLACK },
@@ -912,72 +757,14 @@
 	async function doApplyNoRollMove() {
 		if (!ctx || !selectedMove) return;
 
-		// \u2500\u2500 Take a Hiatus: build logBody dynamically from character state \u2500\u2500
+		// Take a Hiatus: the log body comes from the character as it stands.
 		if (selectedMove.id === 'move/take-a-hiatus') {
-			const data = ctx.data as unknown as Record<string, unknown>;
-			const parts: string[] = [];
-			// 1. Clear marked conditions
-			const allDebilities: Array<[string, string]> = [
-				['wounded', 'Wounded'],
-				['maimed', 'Maimed'],
-				['shaken', 'Shaken'],
-				['corrupted', 'Corrupted'],
-				['cursed', 'Cursed'],
-				['tormented', 'Tormented'],
-				['unprepared', 'Unprepared'],
-				['encumbered', 'Encumbered'],
-			];
-			const markedDebilities = allDebilities.filter(([key]) => data[key]);
-			if (markedDebilities.length > 0) {
-				const links = markedDebilities
-					.map(
-						([key, label]) =>
-							`<a class="debility-link" data-debility="${key}" data-value="0">Clear ${label}</a>`,
-					)
-					.join(' \u00b7 ');
-				parts.push(`<p><strong>Conditions:</strong> ${links}</p>`);
-			}
-			// 2. Restore resources to max
-			const restoreLinks: string[] = [];
-			const toRestore: Array<[string, string, number]> = [
-				['health', 'health', 5],
-				['spirit', 'spirit', 5],
-				['supply', 'supply', 5],
-			];
-			for (const [key, label, max] of toRestore) {
-				const current = (data[key] as number) ?? 0;
-				const delta = max - current;
-				if (delta > 0) {
-					restoreLinks.push(
-						`<a class="resource-link" data-resource="${key}" data-value="+${delta}">+${delta} ${label}</a>`,
-					);
-				}
-			}
-			if (restoreLinks.length > 0) {
-				parts.push(`<p><strong>Resources:</strong> ${restoreLinks.join(' \u00b7 ')}</p>`);
-			}
-			// 3. Momentum reset
-			const resetVal = momentumReset(ctx.data);
-			const momCurrent = (data['momentum'] as number) ?? 0;
-			const momDelta = resetVal - momCurrent;
-			if (momDelta !== 0) {
-				// data-value is parsed as a number → keep the ASCII sign; the visible
-				// label uses a real +/− sign for display consistency.
-				const disp = `${momDelta > 0 ? '+' : '−'}${Math.abs(momDelta)}`;
-				parts.push(
-					`<p><strong>Momentum:</strong> ` +
-						`<a class="resource-link" data-resource="momentum" data-value="${momDelta}">` +
-						`${disp} momentum (reset to ${resetVal})</a></p>`,
-				);
-			}
-			// 4. Static reminders (always shown)
-			parts.push(
-				`<p>Set companion health to max if applicable.</p>` +
-					`<p>For each active threat: ` +
-					`<a class="move-link" data-id="move/advance-a-threat">Advance a Threat</a>.</p>`,
-			);
 			const entryId = crypto.randomUUID();
-			const enriched = enrichOutcomeLinks(parts.join(''), entryId, ctx.charId);
+			const body = takeAHiatusHtml(
+				ctx.data as unknown as Record<string, unknown>,
+				momentumReset(ctx.data),
+			);
+			const enriched = enrichOutcomeLinks(body, entryId, ctx.charId);
 			close();
 			appendLog(resolveTitle(selectedMove), enriched, entryId);
 			return;
@@ -1015,6 +802,54 @@
 		}
 	});
 </script>
+
+<!-- A move's three outcomes as the detail view previews them. `tour` marks
+     the first view's block for the tutorials. -->
+{#snippet outcomesPreview(m: MoveDefinition, tour?: string)}
+	{#if m.strong || m.weak || m.miss}
+		<div class="md-outcomes" data-tour={tour}>
+			{#if m.strong}
+				<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
+					<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
+					<div class="md-outcome-text">{@html displayHtml(m.strong)}</div>
+				</div>
+			{/if}
+			{#if m.weak}
+				<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
+					<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
+					<div class="md-outcome-text">{@html displayHtml(m.weak)}</div>
+				</div>
+			{/if}
+			{#if m.miss}
+				<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
+					<div class="md-outcome-label md-outcome-miss">Miss</div>
+					<div class="md-outcome-text">{@html displayHtml(m.miss)}</div>
+				</div>
+			{/if}
+		</div>
+	{/if}
+{/snippet}
+
+<!-- The Adds stepper, −5 to +5. `needsChar`: off without a character (an
+     action or spell roll); a progress roll needs none. -->
+{#snippet addsStepper(needsChar: boolean)}
+	<span class="md-adds-label">Adds</span>
+	<button
+		class="md-adj"
+		onclick={() => (adds = Math.max(-5, adds - 1))}
+		disabled={rolling || (needsChar && !ctx) || adds <= -5}
+		aria-label="Decrease adds">−</button
+	>
+	<span class="md-adds-val" class:positive={adds > 0} class:negative={adds < 0}
+		>{adds >= 0 ? '+' : ''}{adds}</span
+	>
+	<button
+		class="md-adj"
+		onclick={() => (adds = Math.min(5, adds + 1))}
+		disabled={rolling || (needsChar && !ctx) || adds >= 5}
+		aria-label="Increase adds">+</button
+	>
+{/snippet}
 
 <!-- =========================================================================
      Dialog — bits-ui Dialog primitive. Portals into `document.body`,
@@ -1237,71 +1072,11 @@
 								</div>
 							{/if}
 							<!-- Outcomes -->
-							{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-								<div class="md-outcomes" data-tour="move-outcomes">
-									{#if selectedMove.strong}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-success, #34d399)"
-										>
-											<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
-										</div>
-									{/if}
-									{#if selectedMove.weak}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-momentum, #60a5fa)"
-										>
-											<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
-										</div>
-									{/if}
-									{#if selectedMove.miss}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-danger, #ef4444)"
-										>
-											<div class="md-outcome-label md-outcome-miss">Miss</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
-										</div>
-									{/if}
-								</div>
-							{/if}
+							{@render outcomesPreview(selectedMove, 'move-outcomes')}
 
 							<!-- ── Spell roll move ── -->
 						{:else if isSpellRollMove(selectedMove)}
-							{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-								<div class="md-outcomes">
-									{#if selectedMove.strong}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-success, #34d399)"
-										>
-											<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
-										</div>
-									{/if}
-									{#if selectedMove.weak}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-momentum, #60a5fa)"
-										>
-											<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
-										</div>
-									{/if}
-									{#if selectedMove.miss}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-danger, #ef4444)"
-										>
-											<div class="md-outcome-label md-outcome-miss">Miss</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
-										</div>
-									{/if}
-								</div>
-							{/if}
+							{@render outcomesPreview(selectedMove)}
 							<!-- Difficulty factors collapsible -->
 							{#if pctx.ritualAssets && pctx.ritualAssets.length > 0}
 								<details class="md-factors">
@@ -1341,37 +1116,7 @@
 
 							<!-- ── Progress move ── -->
 						{:else if isProgressMove(selectedMove)}
-							{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-								<div class="md-outcomes">
-									{#if selectedMove.strong}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-success, #34d399)"
-										>
-											<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
-										</div>
-									{/if}
-									{#if selectedMove.weak}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-momentum, #60a5fa)"
-										>
-											<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
-										</div>
-									{/if}
-									{#if selectedMove.miss}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-danger, #ef4444)"
-										>
-											<div class="md-outcome-label md-outcome-miss">Miss</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
-										</div>
-									{/if}
-								</div>
-							{/if}
+							{@render outcomesPreview(selectedMove)}
 
 							<!-- ── Ask the Oracle ── -->
 						{:else if isOracleRollMove}
@@ -1417,37 +1162,7 @@
 
 							<!-- ── No-roll move ── -->
 						{:else if isNoRollMove(selectedMove)}
-							{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-								<div class="md-outcomes">
-									{#if selectedMove.strong}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-success, #34d399)"
-										>
-											<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
-										</div>
-									{/if}
-									{#if selectedMove.weak}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-momentum, #60a5fa)"
-										>
-											<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
-										</div>
-									{/if}
-									{#if selectedMove.miss}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-danger, #ef4444)"
-										>
-											<div class="md-outcome-label md-outcome-miss">Miss</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
-										</div>
-									{/if}
-								</div>
-							{/if}
+							{@render outcomesPreview(selectedMove)}
 						{/if}
 
 						<!-- Notes -->
@@ -1500,22 +1215,7 @@
 							{@const fail = moveFailReason(selectedMove)}
 							<div class="md-footer-top">
 								<div class="md-adds-row">
-									<span class="md-adds-label">Adds</span>
-									<button
-										class="md-adj"
-										onclick={() => (adds = Math.max(-5, adds - 1))}
-										disabled={rolling || !ctx || adds <= -5}
-										aria-label="Decrease adds">−</button
-									>
-									<span class="md-adds-val" class:positive={adds > 0} class:negative={adds < 0}
-										>{adds >= 0 ? '+' : ''}{adds}</span
-									>
-									<button
-										class="md-adj"
-										onclick={() => (adds = Math.min(5, adds + 1))}
-										disabled={rolling || !ctx || adds >= 5}
-										aria-label="Increase adds">+</button
-									>
+									{@render addsStepper(true)}
 								</div>
 								<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
 							</div>
@@ -1538,22 +1238,7 @@
 						{:else if isSpellRollMove(selectedMove)}
 							<div class="md-footer-top">
 								<div class="md-adds-row">
-									<span class="md-adds-label">Adds</span>
-									<button
-										class="md-adj"
-										onclick={() => (adds = Math.max(-5, adds - 1))}
-										disabled={rolling || !ctx || adds <= -5}
-										aria-label="Decrease adds">−</button
-									>
-									<span class="md-adds-val" class:positive={adds > 0} class:negative={adds < 0}
-										>{adds >= 0 ? '+' : ''}{adds}</span
-									>
-									<button
-										class="md-adj"
-										onclick={() => (adds = Math.min(5, adds + 1))}
-										disabled={rolling || !ctx || adds >= 5}
-										aria-label="Increase adds">+</button
-									>
+									{@render addsStepper(true)}
 									<span class="md-adds-label md-adds-label--gap">Mana</span>
 									<button
 										class="md-adj"
@@ -1606,22 +1291,7 @@
 						{:else if isProgressMove(selectedMove)}
 							<div class="md-footer-top">
 								<div class="md-adds-row">
-									<span class="md-adds-label">Adds</span>
-									<button
-										class="md-adj"
-										onclick={() => (adds = Math.max(-5, adds - 1))}
-										disabled={rolling || adds <= -5}
-										aria-label="Decrease adds">−</button
-									>
-									<span class="md-adds-val" class:positive={adds > 0} class:negative={adds < 0}
-										>{adds >= 0 ? '+' : ''}{adds}</span
-									>
-									<button
-										class="md-adj"
-										onclick={() => (adds = Math.min(5, adds + 1))}
-										disabled={rolling || adds >= 5}
-										aria-label="Increase adds">+</button
-									>
+									{@render addsStepper(false)}
 								</div>
 								<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
 							</div>

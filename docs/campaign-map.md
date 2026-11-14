@@ -35,7 +35,8 @@ proportions (a very slight uniform stretch on the image is invisible).
 | File                                                    | Responsibility                                                                                                                                                        |
 | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `lib/mapConstants.ts`                                   | Grid dims from aspect, zoom-octave helpers, marker defaults, color presets, `resolveMapIcon`.                                                                         |
-| `lib/mapGeometry.ts`                                    | Pure geometry: snap-to-grid, sub-grid step, grid-line offsets, major-line test. No Svelte.                                                                            |
+| `lib/mapGeometry.ts`                                    | Pure geometry: snap-to-grid, sub-grid step, grid-line offsets, major-line test, a marker's angle, the ruler's length and its distance in map units. No Svelte.        |
+| `lib/mapLabel.ts`                                       | A marker label's placement at its eight positions (`labelPlacement`) and its emphasis style (`labelStyleCss`, `LABEL_SIZE_MULT`). No Svelte.                          |
 | `lib/mapImage.ts`                                       | `downscaleImage(file)` — canvas-based resize + JPEG re-encode.                                                                                                        |
 | `lib/mapStore.svelte.ts`                                | `$state` list + active-map cache backed by `/api/session/maps*`; switch/create/rename/delete/CRUD.                                                                    |
 | `lib/mapExport.ts`                                      | `exportMapZip` / `importMapZip` / `buildMapZipEntries` / `parseBundledMaps` / `applyMapImport` / `populateMap` (Everything nesting + owner re-link) + `exportMapPng`. |
@@ -43,7 +44,10 @@ proportions (a very slight uniform stretch on the image is invisible).
 | `lib/generated/mapIconManifest.ts`                      | **Auto-generated** icon manifest — do not hand-edit. Rebuilt by the Vite plugin.                                                                                      |
 | `scripts/build-map-icons.mjs`                           | Scans `static/map/**/*.{svg,png}` → `mapIconManifest.ts` (kebab→Title Case; SVGs fill-stripped, PNGs wrapped in `<image>`).                                           |
 | `static/map/<category>/<slug>.{svg,png}`                | Icon source files. First subfolder = category; kebab-case filename = slug + display label. See "Icon formats" below.                                                  |
-| `lib/components/MapDialog.svelte`                       | Map picker + file toolbar + selection toolbar + icon-picker dialog + SVG canvas.                                                                                      |
+| `lib/components/MapDialog.svelte`                       | Map picker + toolbar + SVG canvas: markers, gestures, zoom/pan, ruler, scale bar.                                                                                     |
+| `lib/components/MarkerPropertiesDialog.svelte`          | The marker editor (label, icon, colour, angle, style, layer, link), with its own styles.                                                                              |
+| `lib/components/MapIconPicker.svelte`                   | The icon grid the marker editor opens, with its own styles.                                                                                                           |
+| `lib/components/MapPilePicker.svelte`                   | The pile-up menu: the markers at a crowded point, to pick one.                                                                                                        |
 | `lib/components/MapOptionsDialog.svelte`                | Name / display prefs / scale bar / danger-zone (clear + delete).                                                                                                      |
 | `lib/components/MapLayersMenu.svelte`                   | The toolbar's Layers popover: show / hide, add, rename, delete marker layers, and pick the one new markers go on.                                                     |
 | `lib/components/MapOwnerConflictDialog.svelte`          | Everything-import prompt: Replace vs Skip when a bundled map's owner already has a map.                                                                               |
@@ -546,7 +550,7 @@ so cells render exactly square with no letterbox at zoom 1.
 
 Marker labels sit at one of eight compass positions around the icon
 (top / bottom / left / right and the four diagonals), governed by
-`labelPlacement()` in `MapDialog.svelte`. Every position keys off
+`labelPlacement()` in `lib/mapLabel.ts`. Every position keys off
 `dominant-baseline: alphabetic` — unambiguously `y = y` in every
 browser — with a cap-height-derived offset per position so the
 visible glyph edges land at the intended anchor regardless of the
@@ -800,6 +804,31 @@ imports standalone.
 3. Optionally strip `<text>` label elements to match the Names toggle.
 4. Serialise, wrap in a data URL, load into an `Image`, `drawImage`
    onto a canvas at 2× viewBox scale, `toBlob('image/png')`, download.
+
+### Markdown (numbered map + legend)
+
+☰ → Export… → **Markdown** writes each selected map as two files in the
+bundle (`exportMarkdownZip` in `lib/campaignExport.svelte.ts`):
+
+- `images/map-<name>.svg` — the background as a data URI under a numbered
+  pin per marker, in the marker's colour with a legible number
+  (`mapSvg` / `pinInk` in `lib/exportMarkdown.ts`). Vector, so it scales;
+  no labels or icons.
+- `maps/<name>.md` — the map's name, that image, then `## Markers`: the
+  numbers in the order the markers were placed, each linked to its
+  settlement, landmark or expedition page when that page is in the bundle
+  too, else plain text.
+
+What's left out, each as a warning the export overlay lists at the end
+(it then waits for Close rather than closing itself):
+
+- **Markers on hidden layers** — off the map, so off its export too.
+  Visibility is the map's own (`settings.layers`, read through
+  `lib/mapLayerRules.ts`, the same rules the map draws by).
+- **A map with no background**, or whose background can't be downloaded —
+  there's nothing to draw the pins on, so it's skipped, and the README
+  doesn't list it.
+- A map, or the map list, that can't be loaded.
 
 ### Everything zip
 

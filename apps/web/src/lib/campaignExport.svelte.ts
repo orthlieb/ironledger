@@ -43,6 +43,7 @@ import { gridDimsForAspect } from '#lib/mapConstants.js';
 import type { MapOwnerKind } from '#lib/mapStore.svelte.js';
 import { resolveEntity } from '#lib/mapEntityLinks.js';
 import { breadcrumbRefs, effectiveRegion } from '#lib/entityContainment.js';
+import { cleanMapLayers, layerShownTest } from '#lib/mapLayerRules.js';
 import {
 	entityWithin,
 	fetchPortraitDataUrl,
@@ -65,6 +66,19 @@ export class CampaignExport {
 	progress = $state<{ done: number; total: number; label: string } | null>(null);
 	/** Live per-category tally ("3/15 settlements, 0/22 landmarks"). */
 	summary = $state('');
+	/** What the export left out, and why. The overlay stays open on them, with
+	 *  a Close button, until `dismiss()`. */
+	warnings = $state<string[]>([]);
+	/** The export is done and the overlay is held open on its warnings. */
+	held = $state(false);
+
+	/** Close the overlay on its warnings. */
+	dismiss(): void {
+		this.progress = null;
+		this.summary = '';
+		this.warnings = [];
+		this.held = false;
+	}
 
 	// Comprehensive export — build the payload from the dialog's selection.
 	// Zip fully honours the selection (per-category and per-item); Markdown is
@@ -73,6 +87,7 @@ export class CampaignExport {
 	// encounters — so they surface only in the Markdown bundle.
 	async run(sel: ExportSelection, session: ExportSessionIds): Promise<void> {
 		const stamp = makeTimestamp();
+		this.warnings = [];
 		const charSet = new Set(sel.characters);
 		const expSet = new Set(sel.expeditions);
 		const mapSet = new Set(sel.maps);
@@ -154,10 +169,10 @@ export class CampaignExport {
 						doneBy[kind] = (doneBy[kind] ?? 0) + 1;
 						renderSummary();
 					},
+					(warning) => this.warnings.push(warning),
 				);
-				// The markdown bundle also writes maps + the log + the foes
-				// bestiary; reflect all three in the final tally.
-				doneBy['map'] = mapSet.size;
+				// The markdown bundle also writes the log and the foes bestiary;
+				// reflect both in the final tally (maps count as they're written).
 				doneBy['foe'] = sel.foes.length;
 				if (sel.log) doneBy['log'] = sessionLog.entries.length;
 				renderSummary();
@@ -279,11 +294,17 @@ export class CampaignExport {
 			// A cached/small export finishes in a blink; hold the overlay a 5s
 			// minimum (matching the import dialog) so the feedback + summary
 			// register rather than flashing past.
+			// With warnings, the overlay waits on them instead (see dismiss()).
 			const MIN_MS = 5000;
 			const elapsed = performance.now() - startedAt;
-			if (elapsed < MIN_MS) await new Promise((r) => setTimeout(r, MIN_MS - elapsed));
-			this.progress = null;
-			this.summary = '';
+			if (this.warnings.length) {
+				this.progress = { done: 1, total: 1, label: 'Done' };
+				this.held = true;
+			} else {
+				if (elapsed < MIN_MS) await new Promise((r) => setTimeout(r, MIN_MS - elapsed));
+				this.progress = null;
+				this.summary = '';
+			}
 		}
 	}
 }
@@ -293,6 +314,7 @@ export async function exportMarkdownZip(
 	sel: ExportSelection,
 	onProgress?: (done: number, total: number, label: string) => void,
 	onItem?: (kind: string) => void,
+	onWarning?: (warning: string) => void,
 ) {
 	const zipFiles: Record<string, Uint8Array> = {};
 	const usedNames = new Set<string>();
@@ -682,76 +704,102 @@ export async function exportMarkdownZip(
 	}
 
 	// ── Campaign Maps — one file per map under maps/ ──────────────────
-	// Each map file shows its background as an image and a linked list of its
-	// markers → the settlement / landmark / expedition each one pins.
-	// Best-effort: a failed maps fetch just omits maps from the bundle.
-	try {
-		const mapListRes = await fetch('/api/session/maps');
-		if (mapListRes.ok) {
-			const listBody = (await mapListRes.json()) as {
-				maps?: Array<{ id: string; name: string }>;
-			};
-			const maps = (Array.isArray(listBody.maps) ? listBody.maps : []).filter((m) =>
-				mapSet.has(m.id),
-			);
-			if (maps.length) index.push('## Maps', '');
-			const mapSlugs = slugMap(maps, 'map');
-			// A numbered marker's linked entity → a relative link into the right
-			// folder (maps/ is one level deep, like connections/ and expeditions/);
-			// an unresolved link falls back to the label + any carried name.
-			const markerLine = (n: number, entityId: unknown, label: string, entityName: unknown) => {
-				const ref = typeof entityId === 'string' ? entityId : '';
-				const i = ref.indexOf(':');
-				const kind = i > 0 ? ref.slice(0, i) : '';
-				const id = i > 0 ? ref.slice(i + 1) : '';
-				const text = label || (typeof entityName === 'string' ? entityName : 'Marker');
-				if ((kind === 'community' || kind === 'place') && connSlugs.has(id))
-					return `${n}. [${text}](../connections/${connSlugs.get(id)}.md)`;
-				if ((kind === 'journey' || kind === 'site' || kind === 'scene') && expSlugs.has(id))
-					return `${n}. [${text}](../expeditions/${expSlugs.get(id)}.md)`;
-				const suffix = typeof entityName === 'string' && entityName ? ` — ${entityName}` : '';
-				return `${n}. ${text}${suffix}`;
-			};
-			for (const summary of maps) {
-				const detailRes = await fetch(`/api/session/maps/${summary.id}`);
-				if (!detailRes.ok) continue;
-				const detail = (await detailRes.json()) as {
-					id: string;
-					name: string;
-					markers: Array<Record<string, unknown>>;
-					backgroundHash: string | null;
-					settings?: { aspect?: number };
+	// Each map file shows its background with a numbered pin per marker, and
+	// a linked list of the markers → the settlement / landmark / expedition
+	// each one pins. Markers on hidden layers stay out, as they're off the
+	// map; a map with no background is skipped, having nothing to draw the
+	// pins on. Each of those is a warning, as is a map that can't be loaded.
+	if (mapSet.size) {
+		const mapsLeftOut = (why: string) => onWarning?.(`The maps ${why}, so they're left out.`);
+		try {
+			const mapListRes = await fetch('/api/session/maps');
+			if (!mapListRes.ok) {
+				mapsLeftOut("couldn't be loaded");
+			} else {
+				const listBody = (await mapListRes.json()) as {
+					maps?: Array<{ id: string; name: string }>;
 				};
-				const slug = mapSlugs.get(detail.id) ?? slugify(detail.name || 'map');
-				const lines: string[] = [`# ${detail.name || 'Untitled Map'}`, ''];
-				const markers = Array.isArray(detail.markers) ? detail.markers : [];
-				if (detail.backgroundHash) {
+				const maps = (Array.isArray(listBody.maps) ? listBody.maps : []).filter((m) =>
+					mapSet.has(m.id),
+				);
+				const mapSlugs = slugMap(maps, 'map');
+				// A numbered marker's linked entity → a relative link into the right
+				// folder (maps/ is one level deep, like connections/ and expeditions/);
+				// an unresolved link falls back to the label + any carried name.
+				const markerLine = (n: number, entityId: unknown, label: string, entityName: unknown) => {
+					const ref = typeof entityId === 'string' ? entityId : '';
+					const i = ref.indexOf(':');
+					const kind = i > 0 ? ref.slice(0, i) : '';
+					const id = i > 0 ? ref.slice(i + 1) : '';
+					const text = label || (typeof entityName === 'string' ? entityName : 'Marker');
+					if ((kind === 'community' || kind === 'place') && connSlugs.has(id))
+						return `${n}. [${text}](../connections/${connSlugs.get(id)}.md)`;
+					if ((kind === 'journey' || kind === 'site' || kind === 'scene') && expSlugs.has(id))
+						return `${n}. [${text}](../expeditions/${expSlugs.get(id)}.md)`;
+					const suffix = typeof entityName === 'string' && entityName ? ` — ${entityName}` : '';
+					return `${n}. ${text}${suffix}`;
+				};
+				let written = 0;
+				for (const summary of maps) {
+					const detailRes = await fetch(`/api/session/maps/${summary.id}`);
+					if (!detailRes.ok) {
+						onWarning?.(
+							`${summary.name || 'Untitled Map'}: it couldn't be loaded, so it's left out.`,
+						);
+						continue;
+					}
+					const detail = (await detailRes.json()) as {
+						id: string;
+						name: string;
+						markers: Array<Record<string, unknown>>;
+						backgroundHash: string | null;
+						settings?: { aspect?: number; layers?: unknown };
+					};
+					const name = detail.name || 'Untitled Map';
+					if (!detail.backgroundHash) {
+						onWarning?.(`${name}: no background, so it's left out.`);
+						continue;
+					}
 					const du = await fetchPortraitDataUrl(
 						`/api/session/maps/${detail.id}/background?v=${encodeURIComponent(detail.backgroundHash)}`,
 					);
-					if (du) {
-						const aspect =
-							typeof detail.settings?.aspect === 'number' && detail.settings.aspect > 0
-								? detail.settings.aspect
-								: 1;
-						const { cols, rows } = gridDimsForAspect(aspect);
-						zipFiles[`images/map-${slug}.svg`] = strToU8(mapSvg(du, cols, rows, markers));
-						lines.push(`![${detail.name || 'Map'}](../images/map-${slug}.svg)`, '');
+					if (!du) {
+						onWarning?.(`${name}: its background couldn't be downloaded, so it's left out.`);
+						continue;
 					}
+					const all = Array.isArray(detail.markers) ? detail.markers : [];
+					const shown = layerShownTest(cleanMapLayers(detail.settings?.layers));
+					const markers = all.filter((m) => shown(m as { layer?: string }));
+					const hidden = all.length - markers.length;
+					if (hidden) {
+						onWarning?.(
+							`${name}: ${hidden} marker${hidden === 1 ? '' : 's'} on hidden layers left out.`,
+						);
+					}
+					const slug = mapSlugs.get(detail.id) ?? slugify(name);
+					const aspect =
+						typeof detail.settings?.aspect === 'number' && detail.settings.aspect > 0
+							? detail.settings.aspect
+							: 1;
+					const { cols, rows } = gridDimsForAspect(aspect);
+					zipFiles[`images/map-${slug}.svg`] = strToU8(mapSvg(du, cols, rows, markers));
+					const lines: string[] = [`# ${name}`, '', `![${name}](../images/map-${slug}.svg)`, ''];
+					if (markers.length) {
+						lines.push('## Markers', '');
+						markers.forEach((mk, idx) =>
+							lines.push(markerLine(idx + 1, mk.entityId, String(mk.label ?? ''), mk.entityName)),
+						);
+					}
+					zipFiles[`maps/${slug}.md`] = strToU8(lines.join('\n').trimEnd() + '\n');
+					if (!written++) index.push('## Maps', '');
+					index.push(`- [${name}](maps/${slug}.md)`);
+					onItem?.('map');
 				}
-				if (markers.length) {
-					lines.push('## Markers', '');
-					markers.forEach((mk, idx) =>
-						lines.push(markerLine(idx + 1, mk.entityId, String(mk.label ?? ''), mk.entityName)),
-					);
-				}
-				zipFiles[`maps/${slug}.md`] = strToU8(lines.join('\n').trimEnd() + '\n');
-				index.push(`- [${detail.name || 'Untitled Map'}](maps/${slug}.md)`);
+				if (written) index.push('');
 			}
-			if (maps.length) index.push('');
+		} catch {
+			mapsLeftOut("couldn't be loaded");
 		}
-	} catch {
-		// Best-effort — a failed maps fetch doesn't block the rest of the bundle.
 	}
 
 	// ── Session Log ──────────────────────────────────────────────────
