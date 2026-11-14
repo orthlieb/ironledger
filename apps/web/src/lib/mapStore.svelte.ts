@@ -26,6 +26,12 @@
 // init so they don't confuse anyone digging through devtools.
 // =============================================================================
 
+import {
+	cleanMapLayers,
+	DEFAULT_LAYER_ID,
+	layerShownTest,
+	type MapLayer,
+} from './mapLayerRules.js';
 import type { SettlementRecipe } from './settlementRecipe';
 import { gridDimsForAspect } from '#lib/mapConstants.js';
 import { clampMarkersToBounds } from '#lib/mapGeometry.js';
@@ -120,19 +126,10 @@ export interface MapMarker {
 	type?: 'both' | 'label' | 'icon';
 }
 
-/** A layer markers can be put on, to show or hide them together. The
- *  map's list lives in its settings (`MapServerSettings.layers`); the
- *  default layer, DEFAULT_LAYER_ID, is always there. */
-export interface MapLayer {
-	id: string;
-	name: string;
-	/** Hidden: its markers aren't drawn, and can't be picked. */
-	hidden?: boolean;
-}
-
-/** The layer every marker without one (or with a deleted one) is on. */
-export const DEFAULT_LAYER_ID = 'default';
-const DEFAULT_LAYER: MapLayer = { id: DEFAULT_LAYER_ID, name: 'Default' };
+// A layer markers can be put on, and the default layer every marker without
+// one is on: plain data, in mapLayerRules.ts, so the Markdown export applies
+// the same rules to the maps it fetches.
+export { DEFAULT_LAYER_ID, type MapLayer } from './mapLayerRules.js';
 
 /** Allowed per-marker icon scale range. Mirrors the zod bounds in
  *  `apps/api/src/routes/maps.ts` so the server never rejects a value the
@@ -662,18 +659,7 @@ export function markersAt(x: number, y: number, tolerance: number): MapMarker[] 
  *  there, renamable, never deleted), then the map's own. A hand-edited
  *  or imported list is cleaned — bad rows and repeated ids dropped. */
 export function mapLayers(): MapLayer[] {
-	const raw = Array.isArray(mapState.settings.layers) ? mapState.settings.layers : [];
-	const seen = new Set<string>();
-	const out: MapLayer[] = [];
-	for (const l of raw) {
-		if (!l || typeof l.id !== 'string' || !l.id || seen.has(l.id)) continue;
-		seen.add(l.id);
-		const name = typeof l.name === 'string' && l.name.trim() ? l.name.trim() : 'Layer';
-		out.push({ id: l.id, name, ...(l.hidden === true ? { hidden: true } : {}) });
-	}
-	const def = out.findIndex((l) => l.id === DEFAULT_LAYER_ID);
-	if (def < 0) return [{ ...DEFAULT_LAYER }, ...out];
-	return [out[def], ...out.filter((_, i) => i !== def)];
+	return cleanMapLayers(mapState.settings.layers);
 }
 
 /** The layer a marker is on: its own, if the map still has it, else the
@@ -685,10 +671,7 @@ export function markerLayerId(m: Pick<MapMarker, 'layer'>): string {
 /** A test for whether a marker's layer is shown, for the layers as they
  *  stand — built once for a pass over many markers. */
 export function markerShown(): (m: Pick<MapMarker, 'layer'>) => boolean {
-	const layers = mapLayers();
-	const ids = new Set(layers.map((l) => l.id));
-	const hidden = new Set(layers.filter((l) => l.hidden).map((l) => l.id));
-	return (m) => !hidden.has(m.layer && ids.has(m.layer) ? m.layer : DEFAULT_LAYER_ID);
+	return layerShownTest(mapLayers());
 }
 
 /** Whether a marker's layer is shown. */

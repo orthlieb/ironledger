@@ -1453,6 +1453,91 @@ test.describe('Import / Export — Markdown structure', () => {
 	});
 });
 
+// ---------------------------------------------------------------------------
+// Markdown maps: a marker on a hidden layer stays off the map and its legend,
+// and a map with no background is skipped. Each is listed in the export
+// overlay, which then waits for Close.
+// ---------------------------------------------------------------------------
+test.describe('Import / Export — Markdown maps leave out hidden layers and blank maps', () => {
+	test.beforeAll(async () => {
+		await resetAll();
+		const tok = await getTestToken();
+		const h = { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' };
+		const newMap = async (name: string) => {
+			const res = await fetch(`${V1}/session/maps`, {
+				method: 'POST',
+				headers: h,
+				body: JSON.stringify({ name }),
+			});
+			return ((await res.json()) as { id: string }).id;
+		};
+		const TINY_PNG =
+			'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI6QAAAABJRU5ErkJggg==';
+		const layered = await newMap('Layered Map');
+		await fetch(`${V1}/session/maps/${layered}/background`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({ dataUrl: `data:image/png;base64,${TINY_PNG}` }),
+		});
+		await fetch(`${V1}/session/maps/${layered}/settings`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({
+				settings: {
+					layers: [
+						{ id: 'default', name: 'Default' },
+						{ id: 'secret', name: 'Secret', hidden: true },
+					],
+				},
+			}),
+		});
+		await fetch(`${V1}/session/maps/${layered}/markers`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({
+				markers: [
+					{ id: 'open', x: 2, y: 2, label: 'Open Pin' },
+					{ id: 'hid', x: 4, y: 4, label: 'Secret Pin', layer: 'secret' },
+				],
+			}),
+		});
+		await newMap('Sketch'); // no background
+	});
+
+	test('the hidden marker and the blank map are left out, and the overlay says so', async ({
+		page,
+	}) => {
+		await gotoHome(page);
+		await openExportDialog(page);
+		await page.locator('.exd-segbtn', { hasText: 'Markdown' }).click();
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.exd-dialog .btn-primary').click(),
+		]);
+		const entries = unzipSync(new Uint8Array(await downloadBuffer(download)));
+		const names = Object.keys(entries);
+		expect(names).toContain('maps/layered-map.md');
+		expect(names).not.toContain('maps/sketch.md');
+		const md = strFromU8(entries['maps/layered-map.md']!);
+		expect(md).toContain('1. Open Pin');
+		expect(md).not.toContain('Secret Pin');
+		const svg = strFromU8(entries['images/map-layered-map.svg']!);
+		expect(svg).toContain('>1</text>');
+		expect(svg).not.toContain('>2</text>');
+		expect(strFromU8(entries['README.md']!)).not.toContain('Sketch');
+
+		// The overlay holds on what was left out until Close.
+		const warnings = page.getByTestId('export-warnings');
+		await expect(warnings).toBeVisible({ timeout: 10_000 });
+		await expect(warnings).toContainText('Layered Map: 1 marker on hidden layers left out.');
+		await expect(warnings).toContainText("Sketch: no background, so it's left out.");
+		const close = page.locator('.exp-footer').getByRole('button', { name: 'Close' });
+		await expect(close).toBeFocused();
+		await close.click();
+		await expect(page.locator('.exp-dialog')).toHaveCount(0);
+	});
+});
+
 function exportMarkdownNames(entries: Record<string, Uint8Array>) {
 	const read = (k: string) => (entries[k] ? strFromU8(entries[k]) : '');
 	return {

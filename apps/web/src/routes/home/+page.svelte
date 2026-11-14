@@ -566,6 +566,9 @@
 	open={exporter.progress !== null}
 	progress={exporter.progress}
 	summary={exporter.summary}
+	warnings={exporter.warnings}
+	held={exporter.held}
+	onclose={() => exporter.dismiss()}
 />
 
 <!-- Name-collision prompt — surfaces only when an import's rows share names

@@ -91,10 +91,12 @@ Import dispatches **solely on `manifest.type`**.
 
 This document covers the **zip / JSON body** format only — the zip
 exports are the re-importable form and the contract this doc defines.
-Separate human-readable **Markdown** exports exist in the UI (Session
-Log, Everything-as-zip, and **Stories** — the AI-generated prose entries
-only, `stories-<stamp>.md`); these are one-way (not re-importable) and
-out of scope here.
+Separate human-readable **Markdown** exports exist in the UI (the Session
+Log alone as `session-log-<stamp>.md`, or anything selected as a Markdown
+zip); these are one-way (not re-importable) and out of scope here. How
+maps come out in the Markdown zip (a numbered SVG and a legend, hidden
+layers and background-less maps left out) is in
+[campaign-map.md → Markdown](campaign-map.md#markdown-numbered-map--legend).
 
 > **Maps.** Campaign maps ride along inside `everything` as nested
 > `maps/<mapId>/` dirs (`manifest.json` + `map.json` with the marker list +

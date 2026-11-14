@@ -805,6 +805,31 @@ imports standalone.
 4. Serialise, wrap in a data URL, load into an `Image`, `drawImage`
    onto a canvas at 2× viewBox scale, `toBlob('image/png')`, download.
 
+### Markdown (numbered map + legend)
+
+☰ → Export… → **Markdown** writes each selected map as two files in the
+bundle (`exportMarkdownZip` in `lib/campaignExport.svelte.ts`):
+
+- `images/map-<name>.svg` — the background as a data URI under a numbered
+  pin per marker, in the marker's colour with a legible number
+  (`mapSvg` / `pinInk` in `lib/exportMarkdown.ts`). Vector, so it scales;
+  no labels or icons.
+- `maps/<name>.md` — the map's name, that image, then `## Markers`: the
+  numbers in the order the markers were placed, each linked to its
+  settlement, landmark or expedition page when that page is in the bundle
+  too, else plain text.
+
+What's left out, each as a warning the export overlay lists at the end
+(it then waits for Close rather than closing itself):
+
+- **Markers on hidden layers** — off the map, so off its export too.
+  Visibility is the map's own (`settings.layers`, read through
+  `lib/mapLayerRules.ts`, the same rules the map draws by).
+- **A map with no background**, or whose background can't be downloaded —
+  there's nothing to draw the pins on, so it's skipped, and the README
+  doesn't list it.
+- A map, or the map list, that can't be loaded.
+
 ### Everything zip
 
 The app-wide "Everything" export (`lib/campaignExport.svelte.ts`) now
