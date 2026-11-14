@@ -99,3 +99,30 @@ export function* gridLineOffsets(extent: number, octave: number): Generator<numb
 export function isMajorLine(x: number): boolean {
 	return Math.abs(x - Math.round(x)) < 1e-9;
 }
+
+/** A marker's rotation in `[0, 360)` for display and storage: undefined (a
+ *  legacy marker) and non-finite values read as 0, so a stray NaN can't
+ *  break the SVG transform. */
+export function normalizeAngle(a: number | undefined): number {
+	if (typeof a !== 'number' || !Number.isFinite(a)) return 0;
+	const n = a % 360;
+	return n < 0 ? n + 360 : n;
+}
+
+/** The length of a polyline through these points, in world units. */
+export function polylineLength(points: readonly GridCoord[]): number {
+	let d = 0;
+	for (let i = 1; i < points.length; i++) {
+		d += Math.hypot(points[i]!.x - points[i - 1]!.x, points[i]!.y - points[i - 1]!.y);
+	}
+	return d;
+}
+
+/** A world-unit distance in the map's scale ("12.5 miles"): to one decimal,
+ *  whole numbers from 100 up, since more precision on a hand-drawn map is
+ *  false precision. */
+export function formatMapDistance(worldUnits: number, perCell: number, unit: string): string {
+	const value = worldUnits * perCell;
+	const shown = value >= 100 ? Math.round(value) : Math.round(value * 10) / 10;
+	return `${shown} ${unit}`;
+}
