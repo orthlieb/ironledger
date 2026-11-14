@@ -6,7 +6,16 @@ Reference for the character sheet's fields and behaviour.
 > into a single area component: the sheet is now implemented in
 > **`apps/web/src/lib/components/v2/CharactersArea.svelte`** (with
 > `ResourceTile` / `MomentumTile` / `ProgressTrackPanel` / `AssetCard` /
-> `AssetPicker`). Component names referenced below — `CharacterSheet`,
+> `AssetPicker`). Three tabs have their own components under
+> `components/v2/sheet/`: **`SheetCore`** (initiative, stats with their
+> double-click edit and its dialogs, vitals, debilities, the tracks and their
+> notes dialogs), **`SheetVows`** and **`SheetAssets`** (the asset chits,
+> their counters and requirement fading). Each takes the live character
+> data and edits it in place, so CharactersArea's autosave sees the change;
+> what touches the rest of the area (the asset dialog, vow deletion and
+> forsaking, momentum's reset) goes back through a callback. Details is
+> `CharacterFields`; Background stays inline. Component names referenced
+> below — `CharacterSheet`,
 > `MeterControl`, `XpTrack`, `AssetsSection` — are the retired v1 names; the
 > field semantics still apply. The action buses (below) drain in
 > `CharactersArea`, not `CharacterSheet`.

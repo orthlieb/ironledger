@@ -236,7 +236,7 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="foe-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay foe-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="foe-dialog"
 			style="z-index: {contentZ(stackDepth)}"
@@ -508,12 +508,6 @@
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
 	   globally. z-index is set inline via dialogStack — see <script>. */
-	:global(.foe-overlay) {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.6);
-		backdrop-filter: blur(2px);
-	}
 	:global(.foe-dialog) {
 		display: flex;
 		flex-direction: column;

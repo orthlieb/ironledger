@@ -64,7 +64,7 @@
 	}}
 >
 	<Dialog.Portal>
-		<Dialog.Overlay class="moc-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay moc-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content class="moc-dialog" style="z-index: {contentZ(stackDepth)}">
 			<DialogHeader title={headingText('Map already exists')} onclose={() => settle('skip')} />
 
@@ -128,12 +128,6 @@
 
 <style>
 	/* z-index set inline via dialogStack — see <script>. */
-	:global(.moc-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000050;
-		backdrop-filter: blur(1px);
-	}
 	:global(.moc-dialog) {
 		position: fixed;
 		top: 50%;

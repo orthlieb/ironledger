@@ -158,7 +158,7 @@
 	}}
 >
 	<Dialog.Portal>
-		<Dialog.Overlay class="picker-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay picker-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="picker-dialog"
 			style="z-index: {contentZ(stackDepth)}"
@@ -281,12 +281,6 @@
 	   Overlay 80 / content 81 matches the modal z-index tier.
 	   ================================================================ */
 	/* z-index is set inline via dialogStack — see <script>. */
-	:global(.picker-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000055;
-		backdrop-filter: blur(2px);
-	}
 	:global(.picker-dialog) {
 		display: flex;
 		flex-direction: column;

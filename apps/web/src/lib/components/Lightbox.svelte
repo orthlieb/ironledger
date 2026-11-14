@@ -49,7 +49,11 @@
 	<Dialog.Portal>
 		<!-- svelte-ignore a11y_click_events_have_key_events -->
 		<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-		<Dialog.Overlay class="lb-overlay" style="z-index: {overlayZ(stackDepth)}" onclick={onclose} />
+		<Dialog.Overlay
+			class="dialog-overlay dialog-overlay--dark lb-overlay"
+			style="z-index: {overlayZ(stackDepth)}"
+			onclick={onclose}
+		/>
 		<Dialog.Content class="lightbox" style="z-index: {contentZ(stackDepth)}">
 			<img class="lb-img" {src} {alt} />
 			<button
@@ -66,12 +70,6 @@
 <style>
 	/* bits-ui portals Content + Overlay to <body>, so scope every rule
 	   globally. z-index is set inline via dialogStack — see <script>. */
-	:global(.lb-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #000000c0;
-		backdrop-filter: blur(2px);
-	}
 	:global(.lightbox) {
 		position: fixed;
 		top: 50%;

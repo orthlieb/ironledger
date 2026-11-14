@@ -136,9 +136,10 @@ character field type, a change of shape that a load-time migration fixes:
    `apps/web/tests/unit/characterFields.test.ts`. Character fields go through
    `cleanFieldValues` and `moveLegacyYrtFields` there; add a branch for a
    new field type to `cleanFieldValues` (`characterFieldsCore.ts`).
-2. **Markdown export:** add it to the character page in `exportMarkdownZip`
-   (`apps/web/src/routes/home/+page.svelte`; the fields are
-   `fieldsMarkdown`'s `## Details`).
+2. **Markdown export:** add it to `characterMarkdown`
+   (`apps/web/src/lib/exportMarkdown.ts`, unit-tested in
+   `exportMarkdown.test.ts`); the fields arrive as `fieldsMarkdown`'s
+   `## Details`.
 3. **Docs:** `docs/import-schema.md` → Characters and the Character field
    reference.
 4. **Tests:** the full round trip in `import-export.spec.ts` (seed the new

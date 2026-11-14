@@ -44,7 +44,7 @@
 
 <Dialog.Root bind:open>
 	<Dialog.Portal>
-		<Dialog.Overlay class="exp-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay exp-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="exp-dialog"
 			style="z-index: {contentZ(stackDepth)}"
@@ -84,11 +84,6 @@
 <style>
 	/* Portalled bits-ui content — scope with :global(). Mirrors the .imd-*
 	   importing stage so import and export read as one visual system. */
-	:global(.exp-overlay) {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.5);
-	}
 	:global(.exp-dialog) {
 		position: fixed;
 		top: 50%;

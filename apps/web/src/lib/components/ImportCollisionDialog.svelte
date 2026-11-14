@@ -141,7 +141,7 @@
 	}}
 >
 	<Dialog.Portal>
-		<Dialog.Overlay class="icd-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay icd-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content class="icd-dialog" style="z-index: {contentZ(stackDepth)}">
 			<DialogHeader title={headingText('Items already exist')} onclose={cancel} />
 
@@ -228,12 +228,6 @@
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
 	   globally. z-index is set inline via dialogStack — see <script>. */
-	:global(.icd-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000050;
-		backdrop-filter: blur(1px);
-	}
 	:global(.icd-dialog) {
 		position: fixed;
 		top: 50%;

@@ -352,7 +352,7 @@
 
 <Dialog.Root bind:open>
 	<Dialog.Portal>
-		<Dialog.Overlay class="exd-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay exd-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="exd-dialog"
 			style="z-index: {contentZ(stackDepth)}"
@@ -455,11 +455,6 @@
 <style>
 	/* z-index for .exd-overlay / .exd-dialog is set inline via dialogStack
 	   — see <script>. */
-	:global(.exd-overlay) {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.5);
-	}
 	:global(.exd-dialog) {
 		position: fixed;
 		top: 50%;

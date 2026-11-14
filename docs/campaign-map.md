@@ -782,7 +782,7 @@ On import the pieces are:
 - `parseBundledMaps(entries)` — pure: groups `maps/<id>/…` and returns each
   `{ body, background }` without applying.
 
-The Everything importer (`restoreBundledMaps` in `home/+page.svelte`) runs
+The Everything importer (`restoreBundledMaps` in `lib/campaignImport.svelte.ts`) runs
 **after** the entity rows land: it resolves each map's `(ownerKind,
 ownerName)` to the just-imported entity's new id, then — if the owner has no
 map yet — creates it linked; if the owner already has a map, it prompts
@@ -803,7 +803,7 @@ imports standalone.
 
 ### Everything zip
 
-The app-wide "Everything" export (`routes/home/+page.svelte`) now
+The app-wide "Everything" export (`lib/campaignExport.svelte.ts`) now
 folds every map in as a subdirectory:
 
 ```

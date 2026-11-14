@@ -58,7 +58,7 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="tn-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay tn-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="tn-dialog"
 			data-tour="track-notes-dialog"
@@ -106,12 +106,6 @@
 <style>
 	/* bits-ui portals Content + Overlay to <body>, so these need :global().
 	   z-index is set inline via dialogStack. */
-	:global(.tn-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000060;
-		backdrop-filter: blur(1px);
-	}
 	:global(.tn-dialog) {
 		display: flex;
 		flex-direction: column;

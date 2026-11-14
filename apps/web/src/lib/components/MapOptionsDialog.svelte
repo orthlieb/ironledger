@@ -124,7 +124,7 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="mo-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay mo-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content class="mo-dialog" style="z-index: {contentZ(stackDepth)}">
 			<DialogHeader title={headingText('Map Options')} onclose={close} radius="8px 8px 0 0" />
 
@@ -303,11 +303,6 @@
 	/* z-index is set inline via dialogStack — see <script>. Opens over
 	   MapDialog when triggered from inside it; the stack primitive puts
 	   this one tier above whatever's underneath. */
-	:global(.mo-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000060;
-	}
 	:global(.mo-dialog) {
 		position: fixed;
 		top: 50%;

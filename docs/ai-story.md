@@ -67,7 +67,7 @@ normalized text back.
 | `lib/components/AiConfigDialog.svelte` | Per-provider key / model / Test dialog                                                                |
 | `lib/components/LogPanel.svelte`       | ▲ / ▼ per-entry marker buttons, section highlight, Generate button + floating strip, ⟳ regenerate     |
 | `routes/api/ai/[...path]/+server.ts`   | BFF proxy → Fastify `/api/v1/ai/*` (streams the generate SSE through)                                 |
-| `routes/home/+page.svelte`             | `storiesToMarkdown()` + the Stories export                                                            |
+| `lib/exportMarkdown.ts`                | `storiesToMarkdown()`: the stories as Markdown (not yet wired to an export)                           |
 
 ### API (`apps/api`)
 

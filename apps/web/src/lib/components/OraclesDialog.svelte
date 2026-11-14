@@ -244,7 +244,10 @@
      ========================================================================= -->
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="oracles-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay
+			class="dialog-overlay oracles-overlay"
+			style="z-index: {overlayZ(stackDepth)}"
+		/>
 		<Dialog.Content
 			class="oracles-dialog"
 			style="z-index: {contentZ(stackDepth)}"
@@ -456,12 +459,6 @@
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
 	   globally. z-index is set inline via dialogStack — see <script>. */
-	:global(.oracles-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000060;
-		backdrop-filter: blur(1px);
-	}
 	:global(.oracles-dialog) {
 		display: flex;
 		flex-direction: column;

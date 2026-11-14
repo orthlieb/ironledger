@@ -81,7 +81,7 @@
 
 <Dialog.Root bind:open>
 	<Dialog.Portal>
-		<Dialog.Overlay class="imd-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay imd-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content class="imd-dialog" style="z-index: {contentZ(stackDepth)}">
 			<DialogHeader
 				title={headingText('Import')}
@@ -266,11 +266,6 @@
 <style>
 	/* z-index is set inline via dialogStack, not here — see the top of the
 	   <script> block. */
-	:global(.imd-overlay) {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.5);
-	}
 	:global(.imd-dialog) {
 		position: fixed;
 		top: 50%;

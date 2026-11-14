@@ -57,13 +57,12 @@
 		type ResolvedField,
 	} from '#lib/characterFields.svelte.js';
 	import StatAllocator from '#lib/components/StatAllocator.svelte';
-	import { STAT_MAX, STAT_MIN, availableStatArrays, type Stat } from '#lib/rules/statArrays.js';
+	import { availableStatArrays, type Stat } from '#lib/rules/statArrays.js';
 	import Select from '#lib/components/Select.svelte';
 	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
 	import {
 		findAsset,
 		findRaritiesForAsset,
-		getGlobalCounterDef,
 		isAssetsLoading,
 		getAssets,
 	} from '#lib/assetStore.svelte.js';
@@ -73,7 +72,6 @@
 		maxMomentum,
 		momentumReset,
 		computeAssetXpDiff,
-		assetDisplayName,
 		STARTING_XP,
 	} from '#lib/character.js';
 	import hornedHelmSvg from '#icons/horned-helm.svg?raw';
@@ -82,23 +80,17 @@
 	import { escHtml } from '#lib/markdown.js';
 	import { firstPreconditionFailure, type Precondition } from '#lib/preconditions.js';
 	import AssetCard from '#lib/components/AssetCard.svelte';
-	import SegmentedRadio from '#lib/components/SegmentedRadio.svelte';
 	import AssetPicker from '#lib/components/AssetPicker.svelte';
-	import StatControl from '#lib/components/StatControl.svelte';
-	import ResourceTile from '#lib/components/ResourceTile.svelte';
-	import MomentumTile from '#lib/components/MomentumTile.svelte';
-	import ProgressTrackPanel from '#lib/components/ProgressTrackPanel.svelte';
 	import MarkdownNotes from '#lib/components/MarkdownNotes.svelte';
-	import TrackNotesDialog from '#lib/components/TrackNotesDialog.svelte';
 	import PortraitUploader from '#lib/components/PortraitUploader.svelte';
-	import { assetIcon } from '#lib/iconRegistry.js';
 	import { Dialog, Tabs } from 'bits-ui';
 	import Combobox from '#lib/components/Combobox.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
 	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
 	import CharacterOptionsDialog from '#lib/components/CharacterOptionsDialog.svelte';
-	import VowCard from '#lib/components/VowCard.svelte';
-	import DebilitiesSection from '#lib/components/DebilitiesSection.svelte';
+	import SheetCore from '#lib/components/v2/sheet/SheetCore.svelte';
+	import SheetVows from '#lib/components/v2/sheet/SheetVows.svelte';
+	import SheetAssets from '#lib/components/v2/sheet/SheetAssets.svelte';
 	import {
 		appendLog,
 		enrichOutcomeLinks,
@@ -111,48 +103,12 @@
 	import { renderRich } from '#lib/dsl.js';
 	import { FLOOR_RULES, DEBILITY_MOMENTUM_TITLE } from '#lib/cascadeRules.js';
 	import { type Vow, type VowDifficulty, VOW_FORSAKE_STRESS } from '#lib/types.js';
-	import iconHealth from '#icons/icon-health.svg?raw';
-	import iconSpirit from '#icons/icon-spirit.svg?raw';
-	import iconSupply from '#icons/icon-supply.svg?raw';
-	import iconStar from '#icons/star-solid.svg?raw';
 	import iconGearSvg from '#icons/gear-solid.svg?raw';
-	import swordSvg from '#icons/sword-solid.svg?raw';
 	import gemSvg from '#icons/gem-solid.svg?raw';
 	import linkSvg from '#icons/link-solid.svg?raw';
-	// Counter icons — same map as v1 AssetCard.COUNTER_ICONS. The asset
-	// definition's customField.icon string keys into this map.
-	import iconHeart from '#icons/icon-heart.svg?raw';
-	import iconSkull from '#icons/skull-crossbones-solid.svg?raw';
-	import iconShield from '#icons/shield-halved-solid.svg?raw';
-	import iconEye from '#icons/eye-solid.svg?raw';
-	import iconMoon from '#icons/moon-solid.svg?raw';
-	import iconSun from '#icons/sun-solid.svg?raw';
-	import iconDice from '#icons/dice-d10-light.svg?raw';
-	import iconNote from '#icons/note-sticky-solid.svg?raw';
-	import iconSackDollar from '#icons/sack-dollar-solid.svg?raw';
-	import iconMana from '#icons/icon-mana.svg?raw';
-	import iconPuppet from '#icons/puppet-solid.svg?raw';
-	import iconGolem from '#icons/rock-golem.svg?raw';
 	import { headingText } from '#lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
-
-	const COUNTER_ICONS: Record<string, string> = {
-		heart: iconHeart,
-		'skull-and-crossbones': iconSkull,
-		sword: swordSvg,
-		shield: iconShield,
-		eye: iconEye,
-		moon: iconMoon,
-		sun: iconSun,
-		dice: iconDice,
-		note: iconNote,
-		'sack-dollar': iconSackDollar,
-		mana: iconMana,
-		puppet: iconPuppet,
-		'rock-golem': iconGolem,
-	};
-	import shieldSvg from '#icons/shield-halved-solid.svg?raw';
 
 	type CardKey = 'core' | 'details' | 'background' | 'vows' | 'assets';
 	const CARD_LABELS: { key: CardKey; label: string }[] = [
@@ -162,15 +118,6 @@
 		{ key: 'vows', label: 'Vows' },
 		{ key: 'assets', label: 'Assets' },
 	];
-
-	/** Category colour for asset tabs — mirrors AssetCard's CAT_COLOR. */
-	const CAT_COLOR: Record<string, string> = {
-		'Combat Talent': 'var(--color-iron)',
-		Path: 'var(--color-edge)',
-		Companion: 'var(--color-heart)',
-		Ritual: 'var(--color-mana)',
-		Touched: 'var(--color-touched)',
-	};
 
 	let activeCharId = $state<string | null>(null);
 	let activeCard = $state<CardKey>('core');
@@ -196,9 +143,6 @@
 
 	// Background card edit state
 	let editingBackground = $state(false);
-	// The notes behind the Bonds and Failures note buttons.
-	let bondsNotesRef = $state<ReturnType<typeof TrackNotesDialog> | null>(null);
-	let lessonsNotesRef = $state<ReturnType<typeof TrackNotesDialog> | null>(null);
 	const characters = $derived(getCharacters());
 	const loading = $derived(isCharacterLoading() || isAssetsLoading());
 
@@ -324,241 +268,14 @@
 		}
 	});
 
-	// Find the first `counter` custom field on the asset (e.g. Mana for
-	// Compulsion, Health for a companion) and return its short label plus
-	// the current value resolved against the effective max — accounting for
-	// per-ability-level maxValue arrays. Returns null when the asset has no
-	// counter so the card just shows its category.
-	function assetCounter(
-		asset: CharacterAsset,
-		globalValues?: Record<string, string>,
-	): { iconSvg: string; label: string; value: number; max: number } | null {
-		const def = findAsset(asset.assetId);
-		const field = (def?.customFields ?? []).find((f) => f.type === 'counter');
-		if (!def || !field) return null;
-		// For global counters use the canonical catalogue-wide definition so
-		// cap/default/icon are consistent across every surface that renders
-		// the same counter id.
-		const eff = field.global ? (getGlobalCounterDef(field.id) ?? field) : field;
-		if (eff.maxValue === undefined) return null;
-		const store = field.global ? globalValues : asset.customValues;
-		const raw = store?.[field.id];
-		const dflt = typeof eff.default === 'number' ? eff.default : 0;
-		const value = raw != null && raw !== '' ? Number(raw) : dflt;
-		let max: number;
-		if (typeof eff.maxValue === 'number') {
-			max = eff.maxValue;
-		} else {
-			let lastEnabled = 0;
-			for (let i = 0; i < asset.abilities.length; i++) if (asset.abilities[i]) lastEnabled = i;
-			const arr = eff.maxValue as number[];
-			max = arr[Math.min(lastEnabled, arr.length - 1)] ?? 0;
-		}
-		const iconSvg = (eff.icon && COUNTER_ICONS[eff.icon]) || iconHeart;
-		return { iconSvg, label: eff.label ?? field.label, value, max };
-	}
-
-	/** Apply a counter delta directly to the live character. Used by the chit
-	 *  ± buttons in the assets tab (asset counters never cost XP, so the
-	 *  snapshot/diff machinery doesn't apply here — these mutations are
-	 *  immediate). Routes to globalValues for global:true fields, otherwise
-	 *  to the asset's customValues. */
-	function bumpAssetCounter(asset: CharacterAsset, delta: number) {
-		if (!activeData) return;
-		const def = findAsset(asset.assetId);
-		const field = (def?.customFields ?? []).find((f) => f.type === 'counter');
-		if (!def || !field) return;
-		const cur = assetCounter(asset, activeData.globalValues);
-		if (!cur) return;
-		const next = Math.max(0, Math.min(cur.max, cur.value + delta));
-		if (next === cur.value) return;
-		if (field.global) {
-			activeData.globalValues = { ...(activeData.globalValues ?? {}), [field.id]: String(next) };
-		} else {
-			const arr = (activeData.assets ?? []) as CharacterAsset[];
-			activeData.assets = arr.map((a) =>
-				a.assetId === asset.assetId
-					? { ...a, customValues: { ...(a.customValues ?? {}), [field.id]: String(next) } }
-					: a,
-			);
-		}
-	}
-
 	function selectChar(id: string) {
 		activeCharId = id;
 		activeCard = 'core';
 		closeAssetDialog();
 	}
 
-	// Write a session-log entry whenever a debility toggles. Mirrors V1
-	// CharacterSheet's logDebility — uses the character's current name so
-	// the log entry attributes the change to the right character.
-	// Also clamps current momentum to the new cap (each debility reduces
-	// max momentum by 1, so an active debility can push current momentum
-	// above the new cap).
-	function logDebility(data: CharacterData, label: string, active: boolean) {
-		const name = data.name || 'Unnamed';
-		appendLog(
-			`${name} — Debilities`,
-			`<div>${label}: <strong>${active ? 'Marked' : 'Cleared'}</strong></div>`,
-		);
-		const cap = maxMomentum(data);
-		if (data.momentum > cap) data.momentum = cap;
-	}
-
 	function charTitle(name: string): string {
 		return `${activeData?.name || 'Unnamed'} — ${name}`;
-	}
-
-	// Stats are set when the character is made; a few path assets change one
-	// by an ability (Battle-Scarred, Shadow-Kin, Lorekeeper, Oathbreaker), so
-	// the Stats row's pen, after a warning that this is unusual, opens a
-	// draft of them. The check then shows what changed and asks to apply it
-	// (or discard it, or keep editing); applied changes are logged, as a
-	// resource's are. Another character discards it.
-	const STAT_TILES: { key: Stat; label: string; color: string; tooltip: string }[] = [
-		{
-			key: 'edge',
-			label: 'Edge',
-			color: 'var(--color-edge)',
-			tooltip: 'Quickness, agility, and prowess in ranged combat',
-		},
-		{
-			key: 'heart',
-			label: 'Heart',
-			color: 'var(--color-heart)',
-			tooltip: 'Courage, willpower, empathy, sociability, and loyalty',
-		},
-		{
-			key: 'iron',
-			label: 'Iron',
-			color: 'var(--color-iron)',
-			tooltip: 'Physical strength, endurance, and prowess in close combat',
-		},
-		{
-			key: 'shadow',
-			label: 'Shadow',
-			color: 'var(--color-shadow)',
-			tooltip: 'Sneakiness, deceptiveness, and cunning',
-		},
-		{
-			key: 'wits',
-			label: 'Wits',
-			color: 'var(--color-wits)',
-			tooltip: 'Expertise, knowledge, and observation',
-		},
-	];
-	/** A draft of the stats while one is edited, or null when they read out. */
-	let statsDraft = $state<Record<Stat, number> | null>(null);
-	/** The stat being edited: its tile is a field. */
-	let editingStat = $state<Stat | null>(null);
-	/** The stat a double-click asked to edit, while the warning is up. */
-	let askedStat: Stat | null = null;
-	let statsRowEl = $state<HTMLElement | null>(null);
-	let statsDialogRef = $state<{ open(): void; close(): void } | null>(null);
-	/** The double-click's warning: editing stats after creation is unusual. */
-	let statsWarningRef = $state<{ open(): void; close(): void } | null>(null);
-	/** How the stat tiles' tooltip says to edit one. */
-	const statEditHint =
-		typeof window !== 'undefined' && window.matchMedia?.('(hover: none)').matches
-			? 'Double-tap to edit'
-			: 'Double-click to edit';
-	$effect(() => {
-		void activeCharId;
-		statsDraft = null;
-		editingStat = null;
-	});
-	/** What the draft changes, stat by stat. */
-	const statChanges = $derived.by(() => {
-		const draft = statsDraft;
-		const data = activeData;
-		if (!draft || !data) return [];
-		return STAT_TILES.filter((t) => draft[t.key] !== data[t.key]).map((t) => ({
-			key: t.key,
-			label: t.label,
-			old: data[t.key],
-			next: draft[t.key],
-		}));
-	});
-	/** The last click on a stat tile, to spot a double-click or double-tap. */
-	let lastStatTap = { key: '', at: 0 };
-	/** A double-click, or a double-tap (which iOS doesn't report as one), on
-	 *  a stat warns, then opens it. */
-	function onStatsClick(e: MouseEvent) {
-		if (statsDraft || !activeData) return;
-		const key = (e.target as HTMLElement).closest<HTMLElement>('[data-stat]')?.dataset.stat;
-		if (!key) return;
-		const twice = e.detail === 2 || (lastStatTap.key === key && e.timeStamp - lastStatTap.at < 500);
-		lastStatTap = twice ? { key: '', at: 0 } : { key, at: e.timeStamp };
-		if (!twice) return;
-		askedStat = key as Stat;
-		statsWarningRef?.open();
-	}
-	/** Yes to the warning: a draft of the stats, with the asked one a field. */
-	function openStatsDraft() {
-		const data = activeData;
-		if (!data || !askedStat) return;
-		statsDraft = {
-			edge: data.edge,
-			heart: data.heart,
-			iron: data.iron,
-			shadow: data.shadow,
-			wits: data.wits,
-		};
-		editingStat = askedStat;
-		focusStatField();
-	}
-	/** Into the stat's field, once the dialog has closed and handed focus back. */
-	function focusStatField() {
-		setTimeout(() => {
-			const field = statsRowEl?.querySelector<HTMLInputElement>('input');
-			field?.focus();
-			field?.select();
-		}, 0);
-	}
-	function closeStatsDraft() {
-		statsDraft = null;
-		editingStat = null;
-	}
-	/** Leaving the field ends the edit, asking first if it changed the stat.
-	 *  The window losing focus (another tab or app) keeps it open. */
-	function onStatsFocusOut() {
-		if (!statsDraft) return;
-		setTimeout(() => {
-			if (!statsDraft || !document.hasFocus()) return;
-			if (statsRowEl?.contains(document.activeElement)) return;
-			if (statChanges.length === 0) closeStatsDraft();
-			else statsDialogRef?.open();
-		}, 0);
-	}
-	/** In the field, Enter leaves it (asking to apply); Escape drops the edit. */
-	function onStatsKeydown(e: KeyboardEvent) {
-		if (!statsDraft) return;
-		if (e.key === 'Enter') {
-			e.preventDefault();
-			(e.target as HTMLElement).blur();
-		} else if (e.key === 'Escape') {
-			e.preventDefault();
-			e.stopPropagation();
-			closeStatsDraft();
-		}
-	}
-	/** Apply the draft to the character, log it, and read the stats out again. */
-	function applyStatChanges() {
-		const data = activeData;
-		const changes = statChanges;
-		if (!data || changes.length === 0) return;
-		for (const c of changes) data[c.key] = c.next;
-		appendLog(
-			charTitle('Stats'),
-			changes
-				.map((c) => {
-					const delta = c.next - c.old;
-					return `<div>${c.label}: ${c.old} → <strong>${c.next}</strong> (${delta > 0 ? '+' : '−'}${Math.abs(delta)})</div>`;
-				})
-				.join(''),
-		);
-		closeStatsDraft();
 	}
 
 	/** Why an owned asset can't be used now (its preconditions fail, e.g. a
@@ -566,20 +283,6 @@
 	function assetBlocked(def: AssetDefinition | undefined): string | null {
 		if (!def || !activeData) return null;
 		return firstPreconditionFailure(def.preconditions as Precondition[] | undefined, activeData);
-	}
-
-	/** An asset's chit name from the character fields it shows (a Touched
-	 *  asset: the animal), when one is set. */
-	function assetFieldName(
-		def: { characterFields?: string[] } | undefined,
-	): { text: string; custom: boolean } | null {
-		for (const id of def?.characterFields ?? []) {
-			const f = findCharacterField(id);
-			if (f?.type !== 'string' || !fieldShown(f, activeData?.fields, findCharacterField)) continue;
-			const v = fieldValue(f, activeData?.fields);
-			if (v) return { text: v, custom: true };
-		}
-		return null;
 	}
 
 	/** A change to an extension field on the sheet: stored, logged, and — for
@@ -1471,169 +1174,12 @@
 							</div>
 						{:else if activeCard === 'core'}
 							<div class="ca-card-section">
-								<!-- Initiative — None / Foe / Character. Mirrors V1's
-								     cs-init-section. Stored on data.initiative
-								     (0 = none, 1 = character, 2 = foe). -->
-								<div class="ca-init-section" data-tour="char-initiative">
-									<span class="ca-init-label">Initiative</span>
-									<SegmentedRadio
-										ariaLabel="Initiative"
-										labels="always"
-										value={(d.initiative as number) ?? 0}
-										onchange={(v) => (d.initiative = v)}
-										options={[
-											{ value: 0, text: 'None', label: 'No initiative', tone: 'neutral' },
-											{
-												value: 2,
-												icon: shieldSvg,
-												text: 'Foe',
-												label: 'Foe has initiative',
-												tone: 'stop',
-											},
-											{
-												value: 1,
-												icon: swordSvg,
-												text: 'Character',
-												label: 'You have initiative',
-												tone: 'go',
-											},
-										]}
-									/>
-								</div>
-
-								<!-- Stats — same StatControl tiles as v1, with the same color vars and stat-icon mapping.
-								     Wrapped with a vertical "STATS" side label on the LHS (V1 stats-row-wrapper pattern). -->
-								<div class="ca-stats-wrapper" data-tour="char-stats">
-									<div class="ca-side-label">Stats</div>
-									<!-- Stats are set in the New Character dialog; here they read out
-									     only, unless a double-click (or double-tap) on one opens it
-									     for an asset ability that changes it. Leaving the field asks
-									     to apply the change. -->
-									<!-- svelte-ignore a11y_click_events_have_key_events -->
-									<!-- svelte-ignore a11y_no_static_element_interactions -->
-									<div
-										class="ca-stats-row"
-										bind:this={statsRowEl}
-										onclick={onStatsClick}
-										onkeydown={onStatsKeydown}
-										onfocusout={onStatsFocusOut}
-									>
-										{#each STAT_TILES as t (t.key)}
-											<div class="ca-stat" data-stat={t.key}>
-												{#if statsDraft && editingStat === t.key}
-													<StatControl
-														label={t.label}
-														bind:value={statsDraft[t.key]}
-														color={t.color}
-														min={STAT_MIN}
-														max={STAT_MAX}
-														tooltip={t.tooltip}
-													/>
-												{:else}
-													<StatControl
-														label={t.label}
-														value={d[t.key]}
-														color={t.color}
-														readonly
-														tooltip={statsDraft ? t.tooltip : `${t.tooltip}. ${statEditHint}.`}
-													/>
-												{/if}
-											</div>
-										{/each}
-									</div>
-								</div>
-
-								<!-- Vitals — Momentum + Health/Spirit/Supply + Experience. Spinners on every tile;
-								     ResourceTile carries its own +/− buttons. XP lives here per the v2 layout
-								     so it sits with the other tracked resources. Wrapped with a vertical
-								     "VITALS" side label on the LHS (V1 vitals-row-wrapper pattern). -->
-								<div class="ca-vitals-wrapper" data-tour="char-vitals">
-									<div class="ca-side-label">Vitals</div>
-									<div class="ca-vitals-row">
-										<MomentumTile
-											bind:value={d.momentum}
-											resetVal={momentumReset(d)}
-											maxVal={maxMomentum(d)}
-											tooltipText="Your overall advantage or disadvantage on the quest. Build it up through good rolls and smart choices, then burn it at a crucial moment to force a better outcome."
-											onreset={() => applyResourceChange('momentum', momentumReset(d) - d.momentum)}
-										/>
-										<ResourceTile
-											label="Health"
-											bind:value={d.health}
-											color="var(--color-health)"
-											max={5}
-											icon={iconHealth}
-											tooltip="Physical condition and readiness"
-										/>
-										<ResourceTile
-											label="Spirit"
-											bind:value={d.spirit}
-											color="var(--color-spirit)"
-											max={5}
-											icon={iconSpirit}
-											tooltip="Mental fortitude and morale"
-										/>
-										<ResourceTile
-											label="Supply"
-											bind:value={d.supply}
-											color="var(--color-supply)"
-											max={5}
-											icon={iconSupply}
-											tooltip="Available provisions and resources"
-											onchange={(_old, next) => setPartySupply(next)}
-										/>
-										<ResourceTile
-											label="Experience"
-											bind:value={d.xp}
-											color="var(--color-xp)"
-											max={30}
-											icon={iconStar}
-											tooltip="Accumulated experience that can be spent on assets and other enhancements."
-										/>
-									</div>
-								</div>
-
-								<!-- Debilities — Conditions / Banes / Burdens. -->
-								<div class="ca-debilities-wrapper" data-tour="char-debilities">
-									<div class="ca-side-label">Debilities</div>
-									<div class="ca-debilities-body">
-										<DebilitiesSection
-											data={d}
-											onchange={(label, active) => logDebility(d, label, active)}
-										/>
-									</div>
-								</div>
-
-								<!-- Bonds & Failures — progress tracks with ± spinners; the note
-								     button at the end of each opens its notes (Bonds Formed,
-								     Lessons Learned) in a dialog. -->
-								<div class="ca-tracks-wrapper" data-tour="char-tracks">
-									<div class="ca-side-label">Tracks</div>
-									<div class="ca-tracks-row">
-										<ProgressTrackPanel label="Bonds" bind:value={d.bonds}>
-											{#snippet trailing()}
-												{@render trackNotesButton(
-													'Bonds Formed',
-													d.bondsFormed,
-													() => bondsNotesRef?.open(d.bondsFormed ?? ''),
-													'char-bonds-notes',
-												)}
-											{/snippet}
-										</ProgressTrackPanel>
-										{#if isSourceEnabled('delve')}
-											<ProgressTrackPanel label="Failures" bind:value={d.failures}>
-												{#snippet trailing()}
-													{@render trackNotesButton(
-														'Lessons Learned',
-														d.lessonsLearned,
-														() => lessonsNotesRef?.open(d.lessonsLearned ?? ''),
-														'char-failures-notes',
-													)}
-												{/snippet}
-											</ProgressTrackPanel>
-										{/if}
-									</div>
-								</div>
+								<SheetCore
+									charId={activeChar.id}
+									data={d}
+									onmomentumreset={() =>
+										applyResourceChange('momentum', momentumReset(d) - d.momentum)}
+								/>
 							</div>
 						{:else if activeCard === 'details'}
 							<!-- Fields the core rules and extensions add to the character
@@ -1644,124 +1190,11 @@
 							</div>
 						{:else if activeCard === 'vows'}
 							<div class="ca-card-section">
-								{#if (d.vows ?? []).length === 0}
-									<div class="ca-empty">
-										<span class="ca-empty-icon" aria-hidden="true">{@html linkSvg}</span>
-										<p class="ca-empty-text">
-											You currently have no vows. Do you want to fade into obscurity or perform
-											great deeds? Click
-											<span class="ca-empty-key" role="img" aria-label="Add Vow"
-												><span class="ca-empty-key-plus">+</span>{@html linkSvg}</span
-											> to swear on iron.
-										</p>
-									</div>
-								{:else}
-									<div class="ca-vows-list" data-tour="char-vows">
-										{#each d.vows ?? [] as vow, i (vow.id)}
-											<VowCard
-												bind:vow={d.vows[i]}
-												onDelete={() => removeVow(vow.id)}
-												onForsake={() => logForsakeVow(d.vows[i])}
-											/>
-										{/each}
-									</div>
-								{/if}
+								<SheetVows data={d} onremove={removeVow} onforsake={logForsakeVow} />
 							</div>
 						{:else if activeCard === 'assets'}
 							<div class="ca-card-section">
-								{#if (d.assets ?? []).length === 0}
-									<div class="ca-empty">
-										<span class="ca-empty-icon" aria-hidden="true">{@html gemSvg}</span>
-										<p class="ca-empty-text">
-											You currently have no assets. You are either unskilled, destitute, or both.
-											Click
-											<span class="ca-empty-key" role="img" aria-label="Add Asset"
-												><span class="ca-empty-key-plus">+</span>{@html gemSvg}</span
-											> to prove me wrong.
-										</p>
-									</div>
-								{:else}
-									<div class="ca-asset-grid" aria-label="Assets" data-tour="char-assets">
-										{#each d.assets ?? [] as a (a.assetId)}
-											{@const def = findAsset(a.assetId)}
-											{@const catColor = CAT_COLOR[def?.category ?? ''] ?? 'var(--text-muted)'}
-											{@const counter = assetCounter(a, d.globalValues)}
-											{@const display = assetFieldName(def) ?? assetDisplayName(a, def)}
-											{@const blocked = assetBlocked(def)}
-											<!-- An asset whose requirement no longer holds (a Touched asset on a
-											     Pure character) stays, faded, with the reason on hover; its
-											     card still opens, so it can be deleted. -->
-											<div
-												class="ca-asset-card"
-												class:ca-asset-card--blocked={!!blocked}
-												style="--cat-color: {catColor}"
-											>
-												<button
-													class="ca-asset-card-main"
-													onclick={(e) => openAssetDialog(a.assetId, e)}
-													use:tooltip={blocked
-														? `${def?.name}: can't be used. ${blocked}`
-														: def
-															? `${def.name} · ${def.category}`
-															: a.assetId}
-												>
-													<span class="ca-asset-card-meta">
-														<span class="ca-asset-card-cat">{def?.category ?? ''}</span>
-														{#if a.rarityId}
-															{@const rarity = findRaritiesForAsset(a.assetId).find(
-																(r) => r.id === a.rarityId,
-															)}
-															<span
-																class="ca-asset-card-rarity"
-																use:tooltip={rarity ? `Rarity: ${rarity.name}` : 'Has rarity'}
-																aria-label={rarity ? `Rarity: ${rarity.name}` : 'Has rarity'}
-																>{@html gemSvg}</span
-															>
-														{/if}
-													</span>
-													<span class="ca-asset-card-name-row">
-														<span class="ca-asset-card-name-icon" aria-hidden="true"
-															>{@html assetIcon(def)}</span
-														>
-														<span
-															class="ca-asset-card-name"
-															class:ca-asset-card-name--custom={display.custom}>{display.text}</span
-														>
-													</span>
-												</button>
-												{#if counter}
-													<div
-														class="ca-asset-card-tile"
-														style:--res-color={catColor}
-														use:tooltip={`${counter.label}: ${counter.value}/${counter.max}`}
-													>
-														<div class="ca-asset-card-tile-bg" aria-hidden="true">
-															{@html counter.iconSvg}
-														</div>
-														<span class="ca-asset-card-tile-name">{counter.label}</span>
-														<div class="ca-asset-card-tile-row">
-															<button
-																class="ca-asset-card-tile-btn"
-																onclick={() => bumpAssetCounter(a, -1)}
-																disabled={counter.value <= 0}
-																aria-label="Decrease {counter.label}">−</button
-															>
-															<span class="ca-asset-card-tile-val"
-																>{counter.value}/{counter.max}</span
-															>
-															<button
-																class="ca-asset-card-tile-btn"
-																onclick={() => bumpAssetCounter(a, 1)}
-																disabled={counter.value >= counter.max}
-																aria-label="Increase {counter.label}">+</button
-															>
-														</div>
-													</div>
-												{/if}
-											</div>
-										{/each}
-									</div>
-								{/if}
+								<SheetAssets data={d} onopen={openAssetDialog} />
 							</div>
 						{/if}
 					</div>
@@ -1770,41 +1203,6 @@
 		</div>
 	{/if}
 </div>
-
-<!-- The note button at the end of the Bonds and Failures tracks; lit when
-     the track has notes. -->
-{#snippet trackNotesButton(
-	label: string,
-	notes: string | undefined,
-	onopen: () => void,
-	tour: string,
-)}
-	{@const has = !!notes?.trim()}
-	<button
-		class="ca-track-note-btn"
-		class:ca-track-note-btn--has={has}
-		type="button"
-		onclick={onopen}
-		use:tooltip={has ? label : `${label}: none yet`}
-		aria-label={label}
-		data-tour={tour}>{@html iconNote}</button
-	>
-{/snippet}
-
-{#if activeData}
-	<TrackNotesDialog
-		bind:this={bondsNotesRef}
-		title="Bonds Formed"
-		placeholder="Note significant bonds — people, communities, places…"
-		onsave={(v) => activeData && (activeData.bondsFormed = v)}
-	/>
-	<TrackNotesDialog
-		bind:this={lessonsNotesRef}
-		title="Lessons Learned"
-		placeholder="What has this character learned from their failures…"
-		onsave={(v) => activeData && (activeData.lessonsLearned = v)}
-	/>
-{/if}
 
 <!-- Asset card dialog — hosts AssetCard in either 'add' or 'edit' mode.
      dialogDraft is a clone of the live asset (edit) or a defaults-seeded
@@ -1823,7 +1221,7 @@
 		>
 			<Dialog.Portal>
 				<Dialog.Overlay
-					class="ca-asset-overlay"
+					class="dialog-overlay ca-asset-overlay"
 					style="z-index: {overlayZ(stackDepth)}"
 					onclick={closeAssetDialog}
 				/>
@@ -2017,46 +1415,6 @@
 
 <!-- New Vow dialog — name + rank (rank is fixed at creation, shown read-only
      on the card afterward). Mirrors New Journey. -->
-<!-- A double-click on a stat: stats are set at creation, so editing one is
-     unusual. -->
-<ConfirmDialog
-	bind:this={statsWarningRef}
-	title="Edit Stats"
-	confirmLabel="Yes"
-	confirmClass="btn-primary"
-	cancelLabel="No"
-	onconfirm={openStatsDraft}
-	tour="stats-warning"
->
-	<p>
-		Editing your stats post character creation is an unusual event (some assets allow this).
-		Proceed?
-	</p>
-</ConfirmDialog>
-
-<!-- A changed stat, on leaving its field: apply it, discard it, or (Cancel,
-     ✕) go back to editing. -->
-<ConfirmDialog
-	bind:this={statsDialogRef}
-	title="Change Stats"
-	confirmLabel="Apply"
-	confirmClass="btn-primary"
-	cancelLabel="Cancel"
-	alternateLabel="Discard"
-	accentColor="var(--text-accent)"
-	onconfirm={applyStatChanges}
-	onalternate={closeStatsDraft}
-	oncancel={focusStatField}
-	tour="stats-dialog"
->
-	<p>Change {activeData?.name || 'this character'}'s stats?</p>
-	<ul class="ca-stat-changes">
-		{#each statChanges as c (c.key)}
-			<li>{c.label}: {c.old} → <strong>{c.next}</strong></li>
-		{/each}
-	</ul>
-</ConfirmDialog>
-
 <ConfirmDialog
 	bind:this={newVowDialogRef}
 	title="New Vow"
@@ -2148,12 +1506,16 @@
 		justify-content: flex-end;
 	}
 	.ca-loading,
-	.ca-empty {
+	/* Empty states — the deck's (no characters) and the Vows and Assets tabs'
+	   (sheet/), so global under .ca-area: an icon and a witty prompt, mirroring
+	   FoesArea/CommunitiesArea. */
+	.ca-area :global(.ca-empty) {
 		flex: 1;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
+		min-height: 180px;
 		font-family: var(--font-ui);
 		font-size: 0.8rem;
 		color: var(--text-muted);
@@ -2161,27 +1523,25 @@
 		gap: 12px;
 		text-align: center;
 	}
-
-	.ca-empty-icon {
+	.ca-area :global(.ca-empty-icon) {
 		display: flex;
 		width: 48px;
 		height: 48px;
 		opacity: 0.25;
 	}
-	.ca-empty-icon :global(svg) {
+	.ca-area :global(.ca-empty-icon svg) {
 		width: 100%;
 		height: 100%;
 		fill: currentColor;
 	}
-
-	.ca-empty-text {
+	.ca-area :global(.ca-empty-text) {
 		margin: 0;
 		line-height: 1.5;
-		max-width: 26ch;
+		max-width: 30ch;
 	}
 	/* The header's add button, drawn into the empty state's text ("Click + ⛓
 	   to swear on iron"): it has no label, so the text shows what to look for. */
-	.ca-empty-key {
+	.ca-area :global(.ca-empty-key) {
 		display: inline-flex;
 		align-items: center;
 		gap: 3px;
@@ -2194,16 +1554,14 @@
 		line-height: 1;
 		vertical-align: middle;
 	}
-	.ca-empty-key-plus {
+	.ca-area :global(.ca-empty-key-plus) {
 		font-weight: 700;
 		font-size: 0.85rem;
 	}
-	.ca-empty-key :global(svg) {
+	.ca-area :global(.ca-empty-key svg),
+	.ca-area :global(.ca-empty-key svg path) {
 		width: 11px;
 		height: 11px;
-		fill: currentColor;
-	}
-	.ca-empty-key :global(svg path) {
 		fill: currentColor;
 	}
 
@@ -2347,419 +1705,6 @@
 		min-height: 0;
 	}
 
-	/* Initiative widget — mirrors V1 .cs-init-section: small toggle group
-	   with three pill buttons (None / Foe / Character). */
-	.ca-init-section {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-	}
-	.ca-init-label {
-		font-family: var(--font-ui);
-		font-size: 0.7rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		color: var(--text-dimmer);
-	}
-	/* The initiative toggle now uses the shared <SegmentedRadio> (labels="always",
-	   tones none→neutral / foe→stop / character→go), which carries these styles. */
-
-	/* Stats / Vitals wrappers — wrap each row with a vertical "STATS" /
-	   "VITALS" side label on the left, V1-style with a separator. Upper
-	   border separates the section from whatever is above (initiative for
-	   stats, stats for vitals). */
-	.ca-stats-wrapper,
-	.ca-vitals-wrapper,
-	.ca-debilities-wrapper,
-	.ca-tracks-wrapper {
-		display: flex;
-		align-items: stretch;
-		gap: 8px;
-		border-top: 1px solid var(--border);
-		padding-top: 8px;
-	}
-	.ca-side-label {
-		writing-mode: vertical-rl;
-		transform: rotate(180deg);
-		font-family: var(--font-ui);
-		font-size: 0.55rem;
-		font-weight: 800;
-		letter-spacing: 0.14em;
-		text-transform: uppercase;
-		color: var(--text-dimmer);
-		flex-shrink: 0;
-		align-self: stretch;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		/* The element is rotated 180° (writing-mode + transform), so a CSS
-		   `border-left` shows up on the visual RIGHT of the label — between
-		   the label text and the chits to its right. */
-		border-left: 1px solid var(--border);
-		padding-left: 6px;
-		padding-right: 2px;
-	}
-
-	/* Chit rows: fixed-width chits packed against the left. */
-	.ca-stats-row {
-		display: flex;
-		justify-content: flex-start;
-		align-items: stretch;
-		gap: 8px;
-		flex-wrap: wrap;
-		flex: 1;
-	}
-	/* Each tile's wrapper only names its stat (for the double-click), so it
-	   adds no box: the tiles stay the row's flex items. */
-	.ca-stat {
-		display: contents;
-	}
-	.ca-stats-row :global(.stat-tile) {
-		flex: 0 0 auto;
-		/* Both taps of a double-tap land as clicks, with no zoom between. */
-		touch-action: manipulation;
-	}
-	/* A double-click doesn't select the stat's name. Read-out tiles only:
-	   Safari won't type into a field under user-select: none. */
-	.ca-stats-row :global(.stat-tile:not(:has(input))) {
-		user-select: none;
-		-webkit-user-select: none;
-	}
-	/* A 375px phone: a slightly tighter gap keeps all five on one row. */
-	@media (max-width: 389px) {
-		.ca-stats-row {
-			gap: 6px;
-		}
-	}
-	/* The stats dialog's list of changes. */
-	.ca-stat-changes {
-		margin: 6px 0 0;
-		padding-left: 18px;
-		font-size: 0.85rem;
-	}
-	/* The stat being edited: outlined, so it reads as a field. */
-	.ca-stats-row :global(.stat-tile:has(input)) {
-		outline: 1px dashed var(--text-accent);
-		outline-offset: 1px;
-	}
-
-	.ca-vitals-row {
-		display: flex;
-		flex-wrap: wrap;
-		justify-content: flex-start;
-		align-items: stretch;
-		gap: 8px;
-		flex: 1;
-	}
-	.ca-vitals-row > :global(*) {
-		flex: 0 0 auto;
-	}
-	.ca-vitals-row > :global(.mt-tile) {
-		width: 168px;
-	}
-
-	/* Debilities and Tracks: rows like Stats and Vitals, with a side label. */
-	.ca-debilities-body {
-		flex: 1;
-		min-width: 0;
-	}
-	.ca-tracks-row {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-		flex: 1;
-		min-width: 0;
-	}
-	/* The note button at the end of a track, sized like its ± buttons; lit
-	   when the track has notes. */
-	.ca-track-note-btn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		height: 22px;
-		padding: 0 6px;
-		border: 1px solid var(--border-mid);
-		border-radius: 3px;
-		background: transparent;
-		color: var(--text-dimmer);
-		cursor: pointer;
-		flex-shrink: 0;
-		transition:
-			background 0.12s,
-			color 0.12s;
-	}
-	.ca-track-note-btn :global(svg) {
-		width: 0.75rem;
-		height: 0.75rem;
-		fill: currentColor;
-		display: block;
-	}
-	.ca-track-note-btn:hover {
-		background: var(--bg-hover);
-		color: var(--text);
-	}
-	.ca-track-note-btn--has {
-		color: var(--text-accent);
-		border-color: var(--text-accent);
-	}
-	/* Vows tab — stack of VowCards. The "+ Vow" action lives in the header
-	   toolbar now, so no per-tab header is needed. */
-	.ca-vows-list {
-		display: flex;
-		flex-direction: column;
-		gap: 10px;
-	}
-	/* Tab empty state — icon + witty prompt, mirrors FoesArea/CommunitiesArea. */
-	.ca-empty {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: center;
-		min-height: 180px;
-		font-family: var(--font-ui);
-		font-size: 0.8rem;
-		color: var(--text-muted);
-		padding: 20px;
-		gap: 12px;
-		text-align: center;
-	}
-	.ca-empty-icon {
-		display: flex;
-		width: 48px;
-		height: 48px;
-		opacity: 0.25;
-	}
-	.ca-empty-icon :global(svg) {
-		width: 100%;
-		height: 100%;
-		fill: currentColor;
-	}
-	.ca-empty-text {
-		margin: 0;
-		line-height: 1.5;
-		max-width: 30ch;
-	}
-
-	/* ── Asset tab content — clickable cards in a responsive grid.
-	   Each card is auto-sized so a row fits as many as possible. Hover
-	   raises the card slightly and brightens it; clicking opens the
-	   AssetCard dialog (same as v1). The left-edge accent uses the
-	   asset's category color (Combat/Path/Companion/Ritual/Talent). */
-	.ca-asset-grid {
-		display: grid;
-		/* As many ~220-px columns as fit. Mobile gets 1 column; mid-width
-		   screens get 2; wide desktops can get 3+. */
-		grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-		gap: 6px;
-	}
-	/* Outer card is now a flex row: main info area on the left + optional
-	   counter tile on the right. Hover state is on the inner main-button
-	   area only — putting it on the outer card caused the whole chit to
-	   lift when the cursor moved onto the counter ± buttons. */
-	/* An owned asset whose requirement no longer holds: still there, and
-	   still opens (to delete it), but plainly out of use. */
-	.ca-asset-card--blocked {
-		opacity: 0.5;
-		border-left-style: dashed;
-	}
-	.ca-asset-card {
-		display: flex;
-		align-items: stretch;
-		gap: 0;
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-left: 3px solid var(--cat-color, var(--text-muted));
-		border-radius: 4px;
-		overflow: hidden;
-		transition: border-color 0.12s;
-	}
-	/* Clickable main area — opens the asset dialog. The ± buttons in the
-	   tile to its right have their own focus, so this region is purely
-	   for "open detail". */
-	.ca-asset-card-main {
-		all: unset;
-		flex: 1;
-		min-width: 0;
-		cursor: pointer;
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		padding: 7px 10px;
-		transition: background 0.12s;
-	}
-	.ca-asset-card-main:hover {
-		background: var(--bg-hover);
-	}
-	.ca-asset-card-meta {
-		display: flex;
-		align-items: center;
-		gap: 5px;
-	}
-	.ca-asset-card-cat {
-		font-family: var(--font-ui);
-		font-size: 0.55rem;
-		font-weight: 700;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		color: var(--cat-color, var(--text-muted));
-		line-height: 1;
-	}
-	/* Name row — flex with category icon on the left and the name text
-	   on the right. Mirrors the Communities / Expeditions stage-icon
-	   pattern. 16-px icon fits the compact chit size. */
-	.ca-asset-card-name-row {
-		display: flex;
-		align-items: center;
-		gap: 6px;
-		min-width: 0;
-	}
-	.ca-asset-card-name-icon {
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		width: 16px;
-		height: 16px;
-		color: var(--cat-color, var(--text-muted));
-		flex-shrink: 0;
-	}
-	.ca-asset-card-name-icon :global(svg) {
-		width: 100%;
-		height: 100%;
-		fill: currentColor;
-	}
-	.ca-asset-card-name-icon :global(svg path) {
-		fill: currentColor;
-	}
-	/* Gem badge — appears in the meta row when the asset has a selected
-	   rarity. Inherits the asset category colour via currentColor on the
-	   SVG fill. */
-	.ca-asset-card-rarity {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		width: 12px;
-		height: 12px;
-		color: var(--cat-color, var(--text-muted));
-		flex-shrink: 0;
-	}
-	.ca-asset-card-rarity :global(svg) {
-		width: 100%;
-		height: 100%;
-		fill: currentColor;
-	}
-	.ca-asset-card-rarity :global(svg path) {
-		fill: currentColor;
-	}
-	.ca-asset-card-name {
-		flex: 1;
-		min-width: 0;
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		color: var(--text);
-		overflow: hidden;
-		text-overflow: ellipsis;
-		white-space: nowrap;
-	}
-	/* User-supplied name (filled in via the asset's "string" custom field —
-	   companion name, specialty, etc.). Italic signals it's not the catalogue
-	   name. */
-	.ca-asset-card-name--custom {
-		font-style: italic;
-	}
-
-	/* Counter tile on the right end of the chit — mirrors ResourceTile's
-	   visual structure (label + value/± row + faded background icon) but
-	   compact. ± buttons mutate the underlying counter directly; counters
-	   don't cost XP so no draft/snapshot is needed. */
-	.ca-asset-card-tile {
-		position: relative;
-		flex-shrink: 0;
-		width: 84px;
-		display: flex;
-		flex-direction: column;
-		align-items: center;
-		justify-content: space-between;
-		gap: 3px;
-		padding: 5px 4px;
-		border-left: 1px solid color-mix(in srgb, var(--res-color) 30%, var(--border));
-		background: color-mix(in srgb, var(--res-color) 8%, var(--bg-card));
-		overflow: hidden;
-	}
-	.ca-asset-card-tile-bg {
-		position: absolute;
-		inset: 0;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		opacity: 0.18;
-		pointer-events: none;
-	}
-	:global([data-theme='dark']) .ca-asset-card-tile-bg {
-		opacity: 0.4;
-	}
-	.ca-asset-card-tile-bg :global(svg) {
-		width: 60%;
-		height: 60%;
-		fill: var(--res-color);
-		color: var(--res-color);
-	}
-	.ca-asset-card-tile-name {
-		font-family: var(--font-ui);
-		font-size: 0.55rem;
-		font-weight: 900;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-		color: var(--res-color);
-		line-height: 1;
-		position: relative;
-		z-index: 1;
-	}
-	.ca-asset-card-tile-row {
-		display: flex;
-		align-items: center;
-		gap: 3px;
-		position: relative;
-		z-index: 1;
-	}
-	.ca-asset-card-tile-btn {
-		background: transparent;
-		border: 1px solid var(--border-mid);
-		color: var(--text-muted);
-		cursor: pointer;
-		padding: 0;
-		width: 18px;
-		height: 18px;
-		font-size: 0.7rem;
-		line-height: 1;
-		border-radius: 3px;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		transition:
-			border-color 0.12s,
-			color 0.12s;
-	}
-	.ca-asset-card-tile-btn:hover:not(:disabled) {
-		border-color: var(--res-color);
-		color: var(--res-color);
-	}
-	.ca-asset-card-tile-btn:disabled {
-		opacity: 0.35;
-		cursor: not-allowed;
-	}
-	.ca-asset-card-tile-val {
-		font-family: var(--font-ui);
-		font-size: 0.65rem;
-		font-weight: 800;
-		color: var(--res-color);
-		font-variant-numeric: tabular-nums;
-		min-width: 2.6em;
-		text-align: center;
-		line-height: 1;
-	}
-
 	/* ── Asset detail dialog ── transparent shell; the AssetCard inside owns
 	   all visual structure (header, abilities, custom fields) so the popup
 	   matches v1's expanded asset look exactly. The dialog itself uses no
@@ -2769,11 +1714,8 @@
 	   that collapsed the dialog to a thin line on iOS Safari. */
 	/* bits-ui portals Content + Overlay to <body>; scope everything
 	   globally. z-index is set inline via dialogStack — see <script>. */
+	/* The backdrop is the shared .dialog-overlay (app.css), fading in. */
 	:global(.ca-asset-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000060;
-		backdrop-filter: blur(1px);
 		animation: ca-asset-backdrop-in 0.5s ease-out;
 	}
 	:global(.ca-asset-dialog) {
