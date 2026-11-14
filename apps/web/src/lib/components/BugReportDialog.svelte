@@ -155,7 +155,7 @@
 	}}
 >
 	<Dialog.Portal>
-		<Dialog.Overlay class="bug-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay bug-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="bug-dialog"
 			style="z-index: {contentZ(stackDepth)}"
@@ -247,12 +247,6 @@
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
 	   globally. z-index is set inline via dialogStack — see <script>. */
-	:global(.bug-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000050;
-		backdrop-filter: blur(1px);
-	}
 	:global(.bug-dialog) {
 		display: flex;
 		flex-direction: column;

@@ -1823,7 +1823,7 @@
 		>
 			<Dialog.Portal>
 				<Dialog.Overlay
-					class="ca-asset-overlay"
+					class="dialog-overlay ca-asset-overlay"
 					style="z-index: {overlayZ(stackDepth)}"
 					onclick={closeAssetDialog}
 				/>
@@ -2769,11 +2769,8 @@
 	   that collapsed the dialog to a thin line on iOS Safari. */
 	/* bits-ui portals Content + Overlay to <body>; scope everything
 	   globally. z-index is set inline via dialogStack — see <script>. */
+	/* The backdrop is the shared .dialog-overlay (app.css), fading in. */
 	:global(.ca-asset-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000060;
-		backdrop-filter: blur(1px);
 		animation: ca-asset-backdrop-in 0.5s ease-out;
 	}
 	:global(.ca-asset-dialog) {

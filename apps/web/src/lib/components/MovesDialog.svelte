@@ -1022,7 +1022,7 @@
      ========================================================================= -->
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="md-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay md-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="moves-dialog"
 			style="z-index: {contentZ(stackDepth)}"
@@ -1716,12 +1716,6 @@
 		overflow: hidden;
 	}
 	/* z-index is set inline via dialogStack — see <script>. */
-	:global(.md-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000060;
-		backdrop-filter: blur(1px);
-	}
 
 	/* ── Header ─────────────────────────────────────────────────────────── */
 	.md-category-badge {

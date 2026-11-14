@@ -211,7 +211,10 @@
 
 <Dialog.Root bind:open>
 	<Dialog.Portal>
-		<Dialog.Overlay class="mp-icon-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay
+			class="dialog-overlay mp-icon-overlay"
+			style="z-index: {overlayZ(stackDepth)}"
+		/>
 		<Dialog.Content
 			bind:ref={dialogEl}
 			class="mp-icon-dialog"

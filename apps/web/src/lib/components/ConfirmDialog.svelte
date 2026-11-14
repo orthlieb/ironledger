@@ -155,7 +155,10 @@
 
 <AlertDialog.Root bind:open {onOpenChange}>
 	<AlertDialog.Portal to={portalTo}>
-		<AlertDialog.Overlay class="cm-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<AlertDialog.Overlay
+			class="dialog-overlay cm-overlay"
+			style="z-index: {overlayZ(stackDepth)}"
+		/>
 		<AlertDialog.Content
 			bind:ref={contentEl}
 			{onOpenAutoFocus}
@@ -211,12 +214,6 @@
 	 * base tier. See <script>. Popovers/menus (at 90+) still win by design,
 	 * which is correct: a picker opened from inside a confirm must beat
 	 * the confirm. */
-	:global(.cm-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000050;
-		backdrop-filter: blur(1px);
-	}
 	/* Standard neutral dialog surface — matches every other bits-ui
 	   Dialog in the app. The `--accent` prop only surfaces as a 3px
 	   LHS band (mirroring `.ea-stage` / `.cm-stage` / `.fa-stage` on

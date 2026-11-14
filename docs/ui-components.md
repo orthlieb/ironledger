@@ -857,6 +857,14 @@ reserve **z-index 80+** for it so it wins over the app chrome:
 | Modal overlay  | `overlayZ(depth)` = `80 + 2n` | `.cm-overlay`, other alert-dialog scrims.                                                                                                                            |
 | App chrome     | `< 20`                        | Toolbars, sidebar.                                                                                                                                                   |
 
+**The backdrop's look is shared.** Every Dialog / AlertDialog overlay
+carries `class="dialog-overlay <prefix>-overlay"`: `.dialog-overlay`
+(`app.css`) draws the dimmed, lightly blurred layer the same for every
+modal, and the dialog's own `*-overlay` class stays as a hook for tests and
+local tweaks (the asset dialog's fade-in). The Lightbox adds
+`.dialog-overlay--dark` to frame a picture. Don't give a new dialog its own
+backdrop colour or blur.
+
 Popovers / menus sit **above** modal content on purpose: a
 `<Select>`, combobox, or `DropdownMenu` opened from inside a
 `ConfirmDialog` / `AlertDialog` still needs to render on top
@@ -996,7 +1004,7 @@ outside-click; Escape still closes):
 ```svelte
 <AlertDialog.Root bind:open onOpenChange={…}>
   <AlertDialog.Portal to={portalTo}>
-    <AlertDialog.Overlay class="cm-overlay" />
+    <AlertDialog.Overlay class="dialog-overlay cm-overlay" />
     <AlertDialog.Content class="confirm-modal" style="--accent: …">
       <div class="cm-header">
         <AlertDialog.Title class="cm-title">…</AlertDialog.Title>

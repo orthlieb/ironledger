@@ -386,6 +386,24 @@ select option {
 	background: var(--bg-hover);
 }
 
+/* Dialog backdrop — the dimmed, lightly blurred layer behind every modal.
+   Put it on the bits-ui Dialog.Overlay / AlertDialog.Overlay, beside the
+   dialog's own *-overlay class (kept as a hook for tests and tweaks such as
+   the asset dialog's fade-in): class="dialog-overlay nd-overlay". bits-ui
+   portals the overlay to <body>, so this rule has to be global; z-index is
+   set inline via dialogStack. */
+.dialog-overlay {
+	position: fixed;
+	inset: 0;
+	background: #00000060;
+	backdrop-filter: blur(1px);
+}
+/* Behind a full-size picture (Lightbox): darker, so the image stands out. */
+.dialog-overlay--dark {
+	background: #000000c0;
+	backdrop-filter: blur(2px);
+}
+
 /* Drag gripper — shared visual indicator used in every draggable dialog header.
    The grip icon renders as a 2×3 grid of dots (FontAwesome grip-vertical). */
 .drag-grip {

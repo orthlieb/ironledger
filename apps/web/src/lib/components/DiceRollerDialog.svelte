@@ -202,7 +202,7 @@
      ========================================================================= -->
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="dice-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay dice-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content class="dice-dialog" style="z-index: {contentZ(stackDepth)}">
 			<DialogHeader title={headingText('Roll Dice')} onclose={close} />
 
@@ -320,12 +320,6 @@
 <style>
 	/* bits-ui portals Content + Overlay to <body> — scope everything
 	   globally. z-index is set inline via dialogStack — see <script>. */
-	:global(.dice-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000060;
-		backdrop-filter: blur(1px);
-	}
 	:global(.dice-dialog) {
 		display: flex;
 		flex-direction: column;

@@ -563,7 +563,10 @@
 		}}
 	>
 		<Dialog.Portal>
-			<Dialog.Overlay class="mp-props-overlay" style="z-index: {overlayZ(stackDepth)}" />
+			<Dialog.Overlay
+				class="dialog-overlay mp-props-overlay"
+				style="z-index: {overlayZ(stackDepth)}"
+			/>
 			<Dialog.Content
 				bind:ref={dialogEl}
 				class="mp-props-dialog"

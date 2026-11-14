@@ -161,7 +161,7 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="ch-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay ch-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content bind:ref={contentEl} class="ch-dialog" style="z-index: {contentZ(stackDepth)}">
 			<DialogHeader title={headingText('Command Bar')} onclose={close} />
 
@@ -199,12 +199,6 @@
 	/* bits-ui portals Content + Overlay to <body> — scope everything
 	   globally so Svelte's CSS pruning can see through the portal.
 	   z-index is set inline via dialogStack — see <script>. */
-	:global(.ch-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000060;
-		backdrop-filter: blur(1px);
-	}
 	:global(.ch-dialog) {
 		position: fixed;
 		top: 50%;

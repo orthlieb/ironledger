@@ -1811,7 +1811,7 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="mp-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay mp-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			bind:ref={dialogEl}
 			class={effectiveFullscreen ? 'mp-dialog mp-dialog--fullscreen' : 'mp-dialog'}
@@ -2472,12 +2472,6 @@
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
 	   globally. z-index is set inline via dialogStack — see <script>. */
-	:global(.mp-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000060;
-		backdrop-filter: blur(1px);
-	}
 	:global(.mp-dialog) {
 		display: flex;
 		flex-direction: column;
@@ -3376,11 +3370,6 @@
 	   vertical: header, form body, destructive-action footer. */
 	/* z-index for .mp-props-* is set inline by MarkerPropertiesDialog
 	   via dialogStack. */
-	:global(.mp-props-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000060;
-	}
 	:global(.mp-props-dialog) {
 		position: fixed;
 		top: 50%;
@@ -3727,11 +3716,6 @@
 	   dialog's Icon button. Still one tier above nothing else in
 	   the app so the shared modal budget stays intact. */
 	/* z-index for .mp-icon-* is set inline by MapIconPicker via dialogStack. */
-	:global(.mp-icon-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000060;
-	}
 	:global(.mp-icon-dialog) {
 		position: fixed;
 		top: 50%;
