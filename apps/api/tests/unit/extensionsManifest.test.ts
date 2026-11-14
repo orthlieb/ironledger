@@ -95,7 +95,7 @@ describe('extensions.manifest.json', () => {
     // and "Touched, Marine", then 15 → 16 with "Touched, Vulpine" so the
     // ninth Touched aspect in the oracle (fox-aspect Lupans) is playable, then
     // 16 → 18 with "Touched, Ovine" (sheep) and "Touched, Trochiline"
-    // (hummingbird, which took the Touched Aspect oracle's 28 from Deer (roe)).
+    // (hummingbird, now on the Touched Aspect oracle).
     expect(assetData.flatMap((f) => f.assets)).toHaveLength(96);
     expect(assetData.flatMap((f) => f.rarities ?? [])).toHaveLength(63);
     // 49 base/delve/yrt moves + 6 lodestar (Follow a Path, alternate End the Fight,
