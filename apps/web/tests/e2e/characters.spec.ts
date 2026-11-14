@@ -173,6 +173,18 @@ test.describe('Characters area (v2)', () => {
 		await expect(dialog).not.toBeVisible({ timeout: 3_000 });
 	});
 
+	test('New Character opens with the caret in the name field', async ({ page }) => {
+		await page.locator(CHAR_COMBOBOX).click();
+		await page.locator('.cb-item--action', { hasText: /New character/i }).click();
+		const name = page.locator('[data-tour="new-char-name"] input');
+		await expect(name).toBeFocused();
+		// Typing goes straight into it.
+		await page.keyboard.type('Focusa');
+		await expect(name).toHaveValue('Focusa');
+		await page.keyboard.press('Escape');
+		await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 3_000 });
+	});
+
 	test('New Character with default checkboxes folds rolls into the Background prose', async ({
 		page,
 	}) => {
