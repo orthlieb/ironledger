@@ -91,7 +91,7 @@ Determine the Touched animal type aspect of a character.
 | 25 | Ram / Sheep |
 | 26 | Pig / Swine |
 | 27 | Donkey / Mule |
-| 28 | Deer (roe) |
+| 28 | Hummingbird |
 | 29 | Wolverine |
 | 30 | Porcupine |
 | 31 | Owl |
