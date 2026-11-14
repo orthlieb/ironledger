@@ -2340,7 +2340,7 @@
 		display: flex;
 		align-items: stretch;
 		gap: 8px;
-		border-top: 1px solid #c5b99e;
+		border-top: 1px solid var(--border);
 		padding-top: 8px;
 	}
 	.ca-side-label {

@@ -722,7 +722,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		padding-bottom: 8px;
-		border-bottom: 1px solid #c3baa1;
+		border-bottom: 1px solid var(--border);
 	}
 	.fa-status-label {
 		font-family: var(--font-ui);
@@ -864,7 +864,7 @@
 		flex-wrap: wrap;
 		gap: 5px;
 		align-items: center;
-		border-bottom: 1px solid #c3baa1;
+		border-bottom: 1px solid var(--border);
 		padding-bottom: 8px;
 	}
 	.fa-badge {
@@ -906,7 +906,7 @@
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 10px;
-		border-bottom: 1px solid #c3baa1;
+		border-bottom: 1px solid var(--border);
 		padding-bottom: 8px;
 	}
 	.fa-escalate-label {
