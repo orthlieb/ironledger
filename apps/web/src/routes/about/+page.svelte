@@ -41,7 +41,7 @@
 			body: "Stats, vows, bonds, debilities, XP — everything the Ironlands will hurl at you, and everything you'll cling to when the dice betray you. Auto-saved, because the darkness waits for no one.",
 			color: 'var(--color-edge)',
 			image: '/about/characters.webp',
-			alt: 'A character sheet in Iron Ledger: initiative, the five stats with their icons, and the momentum, health, spirit, supply and experience trackers',
+			alt: 'A character sheet in Iron Ledger: initiative, the five stats with their icons, the momentum, health, spirit, supply and experience trackers, and the debilities',
 		},
 		{
 			get icon() {
