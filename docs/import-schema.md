@@ -143,8 +143,47 @@ the runtime `Character.data` type (see `apps/web/src/lib/types.ts`).
 `{ name, data }` entries.
 
 On import each entry is created as a **new** character (a fresh id is
-allocated; nothing is overwritten). Imported character data is run through
-`reconcileImportedChar()` so stale/unknown fields are normalized before save.
+allocated; nothing is overwritten) unless its name collides and the player
+picks Replace (see [Collision resolution](#collision-resolution)). Imported
+character data is run through `reconcileImportedChar()` so stale/unknown
+fields are normalized before save, on both paths:
+
+- `globalValues` goes through `reconcileGlobalValues` (unknown counter ids
+  and non-numeric values dropped, counts clamped).
+- `fields` (the character fields: Region of origin and the extensions' —
+  see [character-fields.md](character-fields.md#storage)) goes
+  through `cleanFieldValues`. A dropdown or radio given by its label
+  (`"Oray Hills"`) or any case of its id is stored as the id; one that names
+  no option keeps its text. A counter is clamped to its maximum, a switch
+  becomes `"1"` / `"0"`, and numbers and booleans become text. A value that's
+  an object or a list is dropped. A field id no extension declares is
+  **kept**: the extension may be off or missing on this install.
+- Then `moveLegacyYrtFields` moves an older export's YRT values into
+  `fields`: the `**Region of origin:**` and `**Religion:**` lines New
+  Character wrote into `background`, the touched level and animal from the
+  Touched asset's `customValues` or the old `data.touched` /
+  `data.touchedAnimal`. Loading a character does the same, but Replace
+  writes the imported data straight onto the existing character.
+- A `data` with no `name` takes the entry's `name`. The sheet shows
+  `data.name`, and loading would otherwise fill it with "New Character".
+
+```json
+{
+  "name": "Ivy",
+  "data": {
+    "fields": {
+      "origin": "oray-hills",
+      "religion": "puritan",
+      "touched": "second",
+      "touchedAnimal": "Heron"
+    },
+    "...": "…"
+  }
+}
+```
+
+The Markdown export lists the same fields on each character's page, under
+`## Details`, each extension's under its heading.
 
 ---
 
@@ -277,6 +316,10 @@ they export and import exactly like any other field:
 | **Community** | (always)         | `locationDescription`, `situationalNotes`, `shortDescription`, `within` / `withinRef`                                                                              |
 | **NPC**       | Lodestar / Delve | `firstLook`, `activity`, `disposition`, `situationalNotes`, `within` / `withinRef`                                                                                 |
 | **Place**     | (always)         | `locationDescription`, `situationalNotes`, `shortDescription`, `within` / `withinRef` (modern), `withinSettlementId` / `withinSettlementName` (legacy, place-only) |
+
+Characters carry their extension fields (YRT's religion, touched level and
+animal; the core Region of origin) in one map, `data.fields`; see
+[Characters](#characters) for how import tidies it.
 
 `Place` currently shares the `Community` field set (it renders in the same
 card), but is stored as its own entity kind so future place-specific fields
@@ -550,8 +593,19 @@ oracle-driven fields.
 `name` comes from the **Character: Name** oracles; `data` is the full
 persisted blob (stats — point-buy, not rolled; momentum / health / spirit /
 supply; experience; initiative; vows; owned assets; debilities;
-`globalValues`; portrait). Stats and tracks are mechanical, not
+`globalValues`; `fields`; portrait). Stats and tracks are mechanical, not
 oracle-populated. Full field list mirrors `Character.data` in `types.ts`.
+
+`fields` holds the character fields, keyed by field id. Those with a d6 in
+New Character roll from an oracle:
+
+| Key (`fields.…`) | Contains                               | Oracle                                                                                                   |
+| ---------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `origin`         | Region of origin (option id)           | **Location: Region** (`region`), base; YRT replaces with its own **Location: Region** (`yrtRegion`)      |
+| `religion`       | Religion (option id)                   | **Character: Religion** (`yrtReligion`), **YRT**                                                         |
+| `touched`        | Touched level: `pure` … `feral`        | **Character: Touched** (`yrtTouched`), **YRT**                                                           |
+| `touchedAnimal`  | The animal (text), shown from Prime on | **Character: Touched Aspect** (`yrtAnimal`), **YRT**                                                     |
+| _(other ids)_    | another extension's fields, kept as-is | per that extension's `extension.json` (see [character-fields.md](character-fields.md#declaring-a-field)) |
 
 ### Session-log entry (`log[]`)
 
@@ -727,7 +781,9 @@ In a character's `data.assets[].customValues`, any value keyed by a
 `customField` whose `type` is `"markdown"` (see
 [data-schema.md → CustomFieldDef](data-schema.md#customfielddef-schema))
 is also rendered as Markdown. The catalogue defines the field type; the
-import format just preserves the stored string.
+import format just preserves the stored string. The same goes for a
+character field (`data.fields`) whose `extension.json` declaration has
+`"type": "markdown"`, such as the sample extension's Notes.
 
 ---
 

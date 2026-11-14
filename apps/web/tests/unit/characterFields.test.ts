@@ -9,11 +9,13 @@ import { readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import {
+	cleanFieldValues,
 	counterValue,
 	fieldHint,
 	fieldNumber,
 	fieldRequirement,
 	fieldShown,
+	fieldsMarkdown,
 	fieldValue,
 	matchOption,
 	optionId,
@@ -341,5 +343,108 @@ describe('the asset field types', () => {
 		// Pure's social rank is 1, Feral's 5 (held to maxValue 5).
 		expect(rollField(counted, {}, oracles, byId, undefined, d100(1))?.value).toBe('1');
 		expect(rollField(counted, {}, oracles, byId, undefined, d100(100))?.value).toBe('5');
+	});
+});
+
+describe('import and export', () => {
+	const sampleOracles: OracleFile[] = [
+		read('extensions/sample/oracles/gizmo.json'),
+		read('extensions/sample/oracles/prefix-suffix.json'),
+	];
+	const sample = declared('sample').map((d) => resolveField(d, 'sample', sampleOracles));
+	const all = [...fields, ...sample];
+	const allById = (id: string) => all.find((f) => f.id === id);
+
+	it('stores an imported dropdown or radio by option id, from its label or any case of its id', () => {
+		expect(
+			cleanFieldValues(
+				{ origin: 'Oray Hills', religion: 'None, or their own', touched: 'SECOND' },
+				allById,
+			),
+		).toEqual({ origin: 'oray-hills', religion: 'none-or-their-own', touched: 'second' });
+		expect(cleanFieldValues({ sampleRank: 'Master' }, allById)).toEqual({ sampleRank: 'master' });
+	});
+
+	it('keeps a choice that names no option, as the sheet does', () => {
+		expect(cleanFieldValues({ origin: 'Atlantis' }, allById)).toEqual({ origin: 'Atlantis' });
+	});
+
+	it('holds a counter to its maximum and reads a switch as 1 or 0', () => {
+		expect(
+			cleanFieldValues({ sampleResolve: 9, sampleSworn: true, sampleTrinket: '' }, allById),
+		).toEqual({ sampleResolve: '5', sampleSworn: '1', sampleTrinket: '' });
+		expect(cleanFieldValues({ sampleSworn: 'yes' }, allById)).toEqual({ sampleSworn: '1' });
+		expect(cleanFieldValues({ sampleSworn: 'no' }, allById)).toEqual({ sampleSworn: '0' });
+		expect(cleanFieldValues({ sampleResolve: '3' }, allById)).toEqual({ sampleResolve: '3' });
+	});
+
+	it('keeps text as written, and an unknown field id for an extension not here', () => {
+		expect(
+			cleanFieldValues(
+				{ touchedAnimal: 'Heron', sampleNotes: '**Oath** kept', starforgedCallsign: 'Vesper' },
+				allById,
+			),
+		).toEqual({
+			touchedAnimal: 'Heron',
+			sampleNotes: '**Oath** kept',
+			starforgedCallsign: 'Vesper',
+		});
+	});
+
+	it('drops values that are not text, a number or a yes/no, and fields that are not a map', () => {
+		expect(
+			cleanFieldValues({ origin: { id: 'piscis' }, religion: ['puritan'], touched: null }, allById),
+		).toEqual({});
+		expect(cleanFieldValues('piscis', allById)).toEqual({});
+		expect(cleanFieldValues(['piscis'], allById)).toEqual({});
+		expect(cleanFieldValues(undefined, allById)).toEqual({});
+	});
+
+	it('writes the Details tab as Markdown: labels, each extension under its heading', () => {
+		const groups = [
+			{ heading: null, fields: fields.filter((f) => f.source === 'base') },
+			{ heading: 'YRT', fields: fields.filter((f) => f.source === 'yrt') },
+			{ heading: 'Sample', fields: sample },
+		];
+		const values = {
+			origin: 'oray-hills',
+			religion: 'puritan',
+			touched: 'second',
+			touchedAnimal: 'Heron',
+			sampleSworn: '1',
+			sampleNotes: 'Line one\n\nLine two',
+		};
+		expect(fieldsMarkdown(groups, values, allById)).toEqual([
+			'## Details',
+			'- **Region of origin:** Oray Hills',
+			'',
+			'### YRT',
+			'- **Religion:** Puritan',
+			'- **Touched:** Second',
+			'- **Animal:** Heron',
+			'',
+			'### Sample',
+			'- **Rank:** Novice',
+			'- **Resolve:** 2/5',
+			'- **Sworn:** on',
+			'- **Notes:**',
+			'  Line one',
+			'',
+			'  Line two',
+			'',
+		]);
+	});
+
+	it('leaves out fields with no value or a failing if, and the section when nothing is left', () => {
+		const groups = [{ heading: 'YRT', fields: fields.filter((f) => f.source === 'yrt') }];
+		// Touched reads its default, Pure; Animal is hidden while Pure.
+		expect(fieldsMarkdown(groups, { touchedAnimal: 'Heron' }, allById)).toEqual([
+			'## Details',
+			'### YRT',
+			'- **Touched:** Pure',
+			'',
+		]);
+		const base = [{ heading: null, fields: fields.filter((f) => f.source === 'base') }];
+		expect(fieldsMarkdown(base, {}, allById)).toEqual([]);
 	});
 });

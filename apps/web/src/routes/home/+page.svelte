@@ -48,7 +48,14 @@
 		getGlobalCounterDef,
 		getGlobalCounterIds,
 	} from '#lib/assetStore.svelte.js';
-	import { reconcileGlobalValues } from '#lib/character.js';
+	import { reconcileGlobalValues, moveLegacyYrtFields } from '#lib/character.js';
+	import {
+		characterFieldGroups,
+		cleanFieldValues,
+		fieldsMarkdown,
+		findCharacterField,
+	} from '#lib/characterFields.svelte.js';
+	import { loadOracles } from '#lib/oracleStore.svelte.js';
 	import { loadFoes, findFoe, resolveFoeName, FOE_RANKS } from '#lib/foeStore.svelte.js';
 	import { loadExtensions } from '#lib/expansionStore.svelte.js';
 	import { viewMode } from '#lib/viewModeStore.svelte.js';
@@ -775,8 +782,10 @@
 			// Reconcile imported globalValues against the current catalogue
 			// (drops unknown counter ids, clamps to canonical maxValue, drops
 			// non-numeric values). Catalogue is already auto-loaded on mount;
-			// this await is a safety net for very early imports.
-			await loadAssets();
+			// this await is a safety net for very early imports. The oracles
+			// give the character fields' dropdown options, which their
+			// reconcile matches labels against.
+			await Promise.all([loadAssets(), loadOracles()]);
 			const knownDefs = new Map(
 				getGlobalCounterIds().map((id) => [id, getGlobalCounterDef(id)!] as const),
 			);
@@ -788,6 +797,17 @@
 						knownDefs,
 					);
 				}
+				// Character fields (docs/character-fields.md): tidy the values,
+				// then move an older export's YRT values (background prose, the
+				// Touched asset) into them. Loading does the move too, but Replace
+				// writes this data straight onto the existing character.
+				if ('fields' in data) data.fields = cleanFieldValues(data.fields, findCharacterField);
+				moveLegacyYrtFields(data);
+				// The sheet shows `data.name`, and loading fills a missing one with
+				// "New Character": a file with only the outer name takes it.
+				const dataName = typeof data.name === 'string' ? data.name.trim() : '';
+				if (!dataName && entry.name?.trim()) data.name = entry.name.trim();
+				entry.data = data;
 				return entry;
 			}
 
@@ -1544,6 +1564,8 @@
 		const selNpcs = npcs.filter((n) => npcSet.has(n.id));
 		const selPlaces = places.filter((p) => placeSet.has(p.id));
 		const selExps = expeditions.filter((e) => expSet.has(e.id));
+		// The character fields' dropdown labels come from the oracles.
+		if (selChars.length) await loadOracles();
 
 		// Portraits go under images/; entity files live one folder deep and link
 		// to them with a ../ prefix. Returns the bare zip path (images/…).
@@ -1756,6 +1778,14 @@
 				const init = d.initiative as number | undefined;
 				if (init !== undefined && init !== null)
 					lines.push(`**Initiative:** ${initiativeLabels[init] ?? init}`, '');
+				// The Details tab: Region of origin and the extensions' fields.
+				lines.push(
+					...fieldsMarkdown(
+						characterFieldGroups(),
+						d.fields as Record<string, string> | undefined,
+						findCharacterField,
+					),
+				);
 				lines.push(
 					'## Stats',
 					`| Edge | Heart | Iron | Shadow | Wits |`,

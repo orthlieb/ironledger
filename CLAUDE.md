@@ -121,6 +121,29 @@ site 5, so both were dropped on every save until the `building` field
 suite exercises them. Skip any of the five sites and the field looks
 wired but doesn't actually travel.
 
+## Standing order — new character data has to survive import and export
+
+The zip export copies a character's `data` whole, so a new key exports
+by itself. Import is where new data gets forgotten:
+`reconcileImportedChar()` (`apps/web/src/routes/home/+page.svelte`) runs
+on every imported character, new or Replacing one of the same name, and
+Replace writes its output straight onto the open character with no load
+step after it. So when you add character data — a new key, a new
+character field type, a change of shape that a load-time migration fixes:
+
+1. **Import:** make `reconcileImportedChar()` tidy it and run any
+   migration that loading does. Character fields go through
+   `cleanFieldValues` and `moveLegacyYrtFields` there; add a branch for a
+   new field type to `cleanFieldValues` (`characterFieldsCore.ts`).
+2. **Markdown export:** add it to the character page in `exportMarkdownZip`
+   (the fields are `fieldsMarkdown`'s `## Details`).
+3. **Docs:** `docs/import-schema.md` → Characters and the Character field
+   reference.
+4. **Tests:** the full round trip in `import-export.spec.ts` (seed the new
+   key, assert it after re-import) and, for character fields, the import
+   test in `character-fields.spec.ts`, which covers Replace and the
+   Markdown export.
+
 ## App-level scroll architecture
 
 The viewport itself (`html` and `body`) **never** scrolls. `app.css` sets

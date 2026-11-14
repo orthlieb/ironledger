@@ -149,6 +149,79 @@ export function matchOption(field: ResolvedField, raw: string): string | null {
 	return hit?.id ?? null;
 }
 
+/**
+ * A character's field values from an import, tidied into what the sheet
+ * stores. A dropdown or radio may name its option by label ("Barrier
+ * Islands") or by its id in any case; either way the id is kept, and a value
+ * that names no option keeps its text, as the sheet does. A counter keeps its
+ * count within its maximum; a switch is `"1"` or `"0"` (true, yes and on
+ * count as on). Numbers and booleans become text; anything else (an object, a
+ * list) is dropped, as is a `fields` that isn't an object. An empty value
+ * stays empty. A field id no extension declares keeps its value: the
+ * extension may be off or missing on this install.
+ */
+export function cleanFieldValues(
+	raw: unknown,
+	byId: (id: string) => ResolvedField | undefined,
+): Record<string, string> {
+	const out: Record<string, string> = {};
+	if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return out;
+	for (const [id, v] of Object.entries(raw as Record<string, unknown>)) {
+		let text: string;
+		if (typeof v === 'string') text = v;
+		else if (typeof v === 'number' && Number.isFinite(v)) text = String(v);
+		else if (typeof v === 'boolean') text = v ? '1' : '0';
+		else continue;
+		const f = byId(id);
+		if (!f || text === '' || isText(f)) out[id] = text;
+		else if (isChoice(f)) out[id] = matchOption(f, text) ?? text;
+		else if (f.type === 'counter') out[id] = String(counterValue(f, text));
+		else if (f.type === 'switch') out[id] = /^(1|true|yes|on)$/i.test(text.trim()) ? '1' : '0';
+		else out[id] = text;
+	}
+	return out;
+}
+
+/**
+ * The character's fields as Markdown for the export: a `## Details` section
+ * with what the sheet's Details tab shows (the enabled extensions' fields
+ * whose `if` passes), each extension's under its heading. A field with no
+ * value is left out; a markdown field's notes follow its label, indented
+ * under it. No lines when nothing has a value.
+ */
+export function fieldsMarkdown(
+	groups: Array<{ heading: string | null; fields: ResolvedField[] }>,
+	values: Values,
+	byId: (id: string) => ResolvedField | undefined,
+): string[] {
+	const lines: string[] = [];
+	for (const g of groups) {
+		const items: string[] = [];
+		for (const f of g.fields) {
+			if (!fieldShown(f, values, byId)) continue;
+			const v = fieldValue(f, values);
+			if (!v.trim()) continue;
+			if (f.type === 'markdown') {
+				items.push(
+					`- **${f.label}:**`,
+					...v
+						.trim()
+						.split('\n')
+						.map((l) => (l ? `  ${l}` : '')),
+				);
+			} else if (f.type === 'counter') {
+				items.push(`- **${f.label}:** ${counterValue(f, v)}/${f.maxValue ?? 0}`);
+			} else {
+				items.push(`- **${f.label}:** ${valueLabel(f, v)}`);
+			}
+		}
+		if (!items.length) continue;
+		if (g.heading) lines.push(`### ${g.heading}`);
+		lines.push(...items, '');
+	}
+	return lines.length ? ['## Details', ...lines] : [];
+}
+
 /** A field's hover hint: its tooltip, then (for an `optionsFrom` field) the
  *  chosen row's description, or its value when that isn't just the label. */
 export function fieldHint(field: ResolvedField, value: string): string {

@@ -8,9 +8,12 @@
  * for a Pure character, a change is logged, lowering Touched unmarks a
  * Touched asset's extra abilities, and the Touched assets need Prime or
  * higher. Older characters get their values from the Touched asset and the
- * background New Character wrote.
+ * background New Character wrote. Import tidies the values and moves an older
+ * export's into them, on Replace too, and the Markdown export lists them.
  */
 import { test, expect, type Page } from '@playwright/test';
+import { readFileSync } from 'node:fs';
+import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
 import {
 	resetCharacters,
 	resetExpansions,
@@ -250,4 +253,103 @@ test("An older character's level, animal and origin move into its fields", async
 	await page.locator(`${CHAR_AREA} [data-tour="char-tab-background"]`).click();
 	await expect(page.locator('[data-tour="char-bio"]')).toContainText('Grew up near the hills.');
 	await expect(page.locator('[data-tour="char-bio"]')).not.toContainText('Region of origin');
+});
+
+/** Import one character through the home page's file input, as a .zip. */
+async function importCharacter(page: Page, name: string, data: Record<string, unknown>) {
+	const manifest = {
+		app: 'Iron Ledger',
+		version: '1.0.0',
+		exportedAt: new Date().toISOString(),
+		type: 'character',
+		count: 1,
+	};
+	await page.locator('input[type="file"][data-import-root="home"]').setInputFiles({
+		name: 'character.zip',
+		mimeType: 'application/zip',
+		buffer: Buffer.from(
+			zipSync({
+				'manifest.json': strToU8(JSON.stringify(manifest)),
+				'character.json': strToU8(JSON.stringify({ name, data })),
+			}),
+		),
+	});
+}
+
+/** The fields the server holds for the character named `name`. */
+async function storedFields(page: Page, name: string) {
+	return page.evaluate(async (n) => {
+		const res = await fetch('/api/characters', { credentials: 'include' });
+		const chars = (await res.json()) as Array<{
+			name: string;
+			data?: { fields?: Record<string, string> };
+		}>;
+		return chars.find((c) => c.name === n)?.data?.fields;
+	}, name);
+}
+
+test("Import tidies the fields and moves an older export's values into them, on Replace too", async ({
+	page,
+}) => {
+	await page.goto('/home');
+	await settleHome(page);
+	// An older or hand-written export: the level and animal outside `fields`,
+	// the religion in the background, the region by its label, a field from an
+	// extension this install doesn't have, and no `data.name` (the outer name
+	// stands in).
+	await importCharacter(page, 'Imported Ivy', {
+		fields: { origin: 'Oray Hills', futureField: 'kept' },
+		touched: 'Second',
+		touchedAnimal: 'Heron',
+		background: '**Religion:** **Puritan**, by upbringing.',
+	});
+	await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 10_000 });
+	await expect
+		.poll(() => storedFields(page, 'Imported Ivy'))
+		.toEqual({
+			origin: 'oray-hills',
+			futureField: 'kept',
+			religion: 'puritan',
+			touched: 'second',
+			touchedAnimal: 'Heron',
+		});
+	await page.locator('.imd-dialog .btn-primary').click();
+
+	// The same character again, now Third: Replace writes it over the one here.
+	await importCharacter(page, 'Imported Ivy', {
+		fields: { origin: 'oray-hills' },
+		touched: 'Third',
+		touchedAnimal: 'Otter',
+	});
+	const collide = page.locator('.icd-dialog');
+	await expect(collide).toBeVisible({ timeout: 8_000 });
+	await collide.locator('[role="radio"][data-value="replace"]').click();
+	await collide.locator('button.btn-primary').click();
+	await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 10_000 });
+	await expect
+		.poll(() => storedFields(page, 'Imported Ivy'))
+		.toEqual({ origin: 'oray-hills', touched: 'third', touchedAnimal: 'Otter' });
+	await page.locator('.imd-dialog .btn-primary').click();
+
+	// The sheet has them straight away, without a reload.
+	await selectCharacterByName(page, 'Imported Ivy');
+	await page.locator(`${CHAR_AREA} [data-tour="char-tab-details"]`).click();
+	await expect(field(page, 'origin').locator('.bui-select-trigger')).toHaveText('Oray Hills');
+	await expect(field(page, 'touched').locator('.bui-select-trigger')).toHaveText('Third');
+	await expect(field(page, 'touchedAnimal').locator('input')).toHaveValue('Otter');
+
+	// The Markdown export lists them on the character's page.
+	await page.locator('.hamburger-btn').click();
+	await page.locator('.hm-item', { hasText: /Export/ }).click();
+	await page.locator('.exd-segbtn', { hasText: 'Markdown' }).click();
+	const [download] = await Promise.all([
+		page.waitForEvent('download'),
+		page.locator('.exd-dialog .btn-primary').click(),
+	]);
+	const files = unzipSync(new Uint8Array(readFileSync(await download.path())));
+	const md = strFromU8(files['characters/imported-ivy.md']!);
+	expect(md).toContain(
+		['## Details', '- **Region of origin:** Oray Hills', '', '### YRT'].join('\n'),
+	);
+	expect(md).toContain('- **Touched:** Third\n- **Animal:** Otter');
 });

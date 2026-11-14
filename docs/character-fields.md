@@ -208,12 +208,36 @@ which drops every id no asset declares and every value that isn't a number.
 `"second"` would be dropped there.
 
 Turning an extension off hides its fields and keeps their values; turning it
-back on shows them again. Export and import carry `fields` with the rest of
-the character. Import keeps values for field ids it doesn't know, since the
-extension may be off or missing on that install; the importer's usual
-stripping of `__proto__`-style keys still applies. A dropdown value that
-matches no option (an oracle row since renamed) shows as its stored id until
-the player picks again.
+back on shows them again. A dropdown value that matches no option (an oracle
+row since renamed) shows as its stored id until the player picks again.
+
+### Import and export
+
+The zip export carries `fields` with the rest of the character, and import
+puts each value through `cleanFieldValues` (`characterFieldsCore.ts`) before
+saving, whether the character is new or Replaces one with the same name:
+
+- a dropdown or radio named by its label (`"Oray Hills"`) or any case of its
+  id is stored as the id; one that names no option keeps its text;
+- a counter is clamped to its maximum, and a switch becomes `"1"` or `"0"`;
+- numbers and booleans become text, and objects and lists are dropped;
+- a field id no extension declares keeps its value, since the extension may
+  be off or missing on that install.
+
+Then import moves an older export's YRT values in, as loading does (see
+[Existing characters](#existing-characters)); Replace needs that, since it
+writes the imported data straight onto the character already open. The
+importer's usual stripping of `__proto__`-style keys still applies.
+
+The Markdown export lists the fields on each character's page, under
+`## Details`: what the Details tab shows, each extension's under its heading,
+leaving out fields with no value. docs/import-schema.md has the import
+details.
+
+**When you add a field type, or a new place a character's data is written
+from:** check `cleanFieldValues` handles the type, and that the import
+round trip in `import-export.spec.ts` and the import test in
+`character-fields.spec.ts` still cover it.
 
 ## On the sheet
 
@@ -367,8 +391,8 @@ can't be used; Delete still works. That's general: any owned asset whose
 ## Existing characters
 
 When a character loads (next to `hydrateCharacterInPlace` in `character.ts`),
-each YRT field it doesn't have yet is filled once, from the first of these
-it finds:
+and when one is imported, each YRT field it doesn't have yet is filled once,
+from the first of these it finds:
 
 | Field           | Sources, in order                                                                                                                                              |
 | --------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -460,6 +484,8 @@ them on, as `expeditionKinds` would, but the screens themselves stay code.
   - `AssetCard.svelte`: `abilityMaxByField` against character fields, the
     level and animal as text; the chit named for the animal.
   - `character.ts`: the load-time move into `fields`.
+  - `routes/home/+page.svelte`: `reconcileImportedChar` (`cleanFieldValues`,
+    then the move) and the Markdown export's `## Details` (`fieldsMarkdown`).
   - `tutorials/createCharacter.ts`: the "Roll a region of origin" step
     becomes one step over the YRT fields, shown when they're there.
 - **YRT data:** the four fields in `extension.json`; a `name` on each
