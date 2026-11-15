@@ -955,6 +955,28 @@ pattern; the wrapper above is the default. If a call site needs
 something the wrapper can't express, add a prop to the wrapper rather
 than hand-rolling a fresh `Popover` + `Command` block.
 
+### Dropdown menus — spread `touchSafeTrigger()` on the trigger
+
+bits-ui's `DropdownMenu.Trigger` opens on a touch's pointerup, and also
+toggles on a click whose `detail` is 0 (meant for a screen reader's click).
+Some browsers follow a tap with just such a click, so the menu shuts the
+moment it opens. Give every `DropdownMenu.Trigger` its own guard, which
+drops the click that comes from a touch and leaves a mouse, key or screen
+reader alone:
+
+```svelte
+<script>
+  import { touchSafeTrigger } from '#lib/touchSafeTrigger.js';
+  const touchGuard = touchSafeTrigger();
+</script>
+
+<DropdownMenu.Trigger class="…" {...touchGuard}>…</DropdownMenu.Trigger>
+```
+
+The ☰ menu (`HamburgerMenu`) and the stat-array menu (`StatAllocator`)
+use it; `navigation.spec.ts` (☰ menu on a phone) checks a tap followed by
+that click leaves the menu open.
+
 ### Simple dropdown fields — `<Select>` wrapper
 
 For a plain form-field dropdown (a native `<select>` you'd
