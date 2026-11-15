@@ -355,6 +355,7 @@
 		<Dialog.Overlay class="dialog-overlay exd-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="exd-dialog"
+			data-tour="export-dialog"
 			style="z-index: {contentZ(stackDepth)}"
 			onOpenAutoFocus={(e) => {
 				// Focus the search field on open (CLAUDE.md focus rule: search-first).
@@ -368,50 +369,56 @@
 				radius="10px 10px 0 0"
 			/>
 
-			<div class="exd-toolbar">
-				<FilterBar
-					bind:search={q}
-					bind:active={activeFacets}
-					bind:filtersOpen
-					bind:inputEl={searchEl}
-					placeholder="Search everything…"
-					categories={pillFacets.length > 1
-						? pillFacets.map((f) => ({ key: f.key, label: f.label, color: f.color }))
-						: []}
-				/>
-				<button
-					type="button"
-					class="exd-selectall"
-					aria-pressed={selectAllState === 'on'}
-					onclick={() => toggleKeys(filteredKeys)}
-				>
-					<span class="exd-cb" data-state={selectAllState} aria-hidden="true">{@html CHECK}</span>
-					<span class="exd-selectall-label"
-						>Select all{filtered.length < allItems.length
-							? ` (${filtered.length} shown)`
-							: ''}</span
+			<!-- What goes in: the search and Select all, and the checklist (one
+			     target for the backup tutorial). -->
+			<div class="exd-pick" data-tour="export-list">
+				<div class="exd-toolbar">
+					<FilterBar
+						bind:search={q}
+						bind:active={activeFacets}
+						bind:filtersOpen
+						bind:inputEl={searchEl}
+						placeholder="Search everything…"
+						categories={pillFacets.length > 1
+							? pillFacets.map((f) => ({ key: f.key, label: f.label, color: f.color }))
+							: []}
+					/>
+					<button
+						type="button"
+						class="exd-selectall"
+						aria-pressed={selectAllState === 'on'}
+						onclick={() => toggleKeys(filteredKeys)}
 					>
-				</button>
-			</div>
-
-			<div class="exd-list">
-				{#each filtered as item (item.key)}
-					<button type="button" class="exd-item" onclick={() => toggleItem(item.key)}>
-						<span class="exd-cb sm" data-state={sel.has(item.key) ? 'on' : 'off'} aria-hidden="true"
-							>{@html CHECK}</span
+						<span class="exd-cb" data-state={selectAllState} aria-hidden="true">{@html CHECK}</span>
+						<span class="exd-selectall-label"
+							>Select all{filtered.length < allItems.length
+								? ` (${filtered.length} shown)`
+								: ''}</span
 						>
-						<span class="exd-rowicon" style="--cat:{item.color}" aria-hidden="true"
-							>{@html item.icon}</span
-						>
-						<span class="exd-item-name">{item.name}</span>
 					</button>
-				{/each}
-				{#if filtered.length === 0}
-					<p class="exd-empty">No items match “{q}”.</p>
-				{/if}
+				</div>
+
+				<div class="exd-list">
+					{#each filtered as item (item.key)}
+						<button type="button" class="exd-item" onclick={() => toggleItem(item.key)}>
+							<span
+								class="exd-cb sm"
+								data-state={sel.has(item.key) ? 'on' : 'off'}
+								aria-hidden="true">{@html CHECK}</span
+							>
+							<span class="exd-rowicon" style="--cat:{item.color}" aria-hidden="true"
+								>{@html item.icon}</span
+							>
+							<span class="exd-item-name">{item.name}</span>
+						</button>
+					{/each}
+					{#if filtered.length === 0}
+						<p class="exd-empty">No items match “{q}”.</p>
+					{/if}
+				</div>
 			</div>
 
-			<div class="exd-fmt">
+			<div class="exd-fmt" data-tour="export-format">
 				<ToggleGroup.Root
 					type="single"
 					value={format}
@@ -444,7 +451,13 @@
 
 			<div class="exd-footer">
 				<button type="button" class="btn" onclick={() => (open = false)}>Cancel</button>
-				<button type="button" class="btn btn-primary" disabled={!anySelected} onclick={doExport}>
+				<button
+					type="button"
+					class="btn btn-primary"
+					data-tour="export-go"
+					disabled={!anySelected}
+					onclick={doExport}
+				>
 					{isEverything ? 'Export Everything' : 'Export Selection'}
 				</button>
 			</div>
@@ -475,6 +488,12 @@
 	}
 
 	/* toolbar: search + select-all */
+	:global(.exd-pick) {
+		flex: 1;
+		min-height: 0;
+		display: flex;
+		flex-direction: column;
+	}
 	:global(.exd-toolbar) {
 		padding: 10px 12px 6px;
 		display: flex;

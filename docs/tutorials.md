@@ -21,26 +21,28 @@ picked, each tutorial in a chunk of its own.
 | Create your first foe          | The switcher's "+ New foe…", searching and filtering the foe picker, choosing a foe, solo / pack / horde, its features, drives and tactics, Add to Foes, then its pills, marking progress and vanquishing it                                                                                                                                                   |
 | Fight your foe                 | With the active character and foe: vitals and initiative; Move → searching for Enter the Fray → a stat → Roll Move, then applying the outcome from the log's links; saying what you do, as a note in the log; Strike or Clash as initiative allows, and the harm marked on the foe's progress track; Endure Harm, applying it, rolling, and the health it cost |
 | Make camp and heal             | After a fight, with the active character: their vitals; Heal (a stat, the roll, its health and wounded links in the log); saying where you camp, as a note in the log; Make Camp (what it lets you choose, the roll, choosing from its links); the vitals again                                                                                                |
+| Back up your campaign          | ☰ → Export…: what goes in (all of it, to start), Zip archive or Markdown, and a real export through its progress overlay; then ☰ → Import…, where a backup goes back in (left open when the tour ends)                                                                                                                                                       |
 
 ## Where things live
 
-| File                                            | What it holds                                                                                                                                    |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `apps/web/src/lib/tutorials/tour.ts`            | The runner: `TourStep`, `Tutorial`, `runTour()` on top of Driver.js                                                                              |
-| `apps/web/src/lib/tutorials/tour.css`           | The popover in the house style; bits-ui menus above the tour's overlay                                                                           |
-| `apps/web/src/lib/tutorials/index.ts`           | `TUTORIALS` (the menu's list) and `startTutorial(id)`                                                                                            |
-| `apps/web/src/lib/tutorials/createCharacter.ts` | The Create a character tutorial                                                                                                                  |
-| `apps/web/src/lib/tutorials/addVow.ts`          | The Add your first vow tutorial                                                                                                                  |
-| `apps/web/src/lib/tutorials/addAssets.ts`       | The Add your assets tutorial                                                                                                                     |
-| `apps/web/src/lib/tutorials/startJourney.ts`    | The Start a journey tutorial                                                                                                                     |
-| `apps/web/src/lib/tutorials/addConnections.ts`  | The Add a settlement and an NPC tutorial                                                                                                         |
-| `apps/web/src/lib/tutorials/mapSettlement.ts`   | The Put your settlement on the map tutorial                                                                                                      |
-| `apps/web/src/lib/tutorials/createFoe.ts`       | The Create your first foe tutorial                                                                                                               |
-| `apps/web/src/lib/tutorials/fightFoe.ts`        | The Fight your foe tutorial                                                                                                                      |
-| `apps/web/src/lib/tutorials/makeCamp.ts`        | The Make camp and heal tutorial                                                                                                                  |
-| `apps/web/src/lib/tutorials/moves.ts`           | What the tutorials that make moves share: the rolls and notes made since the tour began, closing the Moves dialog, searching it, choosing a stat |
-| `apps/web/src/lib/tutorials/keys.ts`            | Controls drawn into a step's text as they look (`MOVE`, `MAP`, `ADD_VOW`, `ADD_ASSET`, `ADD_MARKER`), for buttons that show an icon, not a word  |
-| `apps/web/tests/e2e/tutorials.spec.ts`          | E2E tests that follow each tutorial as a player would                                                                                            |
+| File                                            | What it holds                                                                                                                                           |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web/src/lib/tutorials/tour.ts`            | The runner: `TourStep`, `Tutorial`, `runTour()` on top of Driver.js                                                                                     |
+| `apps/web/src/lib/tutorials/tour.css`           | The popover in the house style; bits-ui menus above the tour's overlay                                                                                  |
+| `apps/web/src/lib/tutorials/index.ts`           | `TUTORIALS` (the menu's list) and `startTutorial(id)`                                                                                                   |
+| `apps/web/src/lib/tutorials/createCharacter.ts` | The Create a character tutorial                                                                                                                         |
+| `apps/web/src/lib/tutorials/addVow.ts`          | The Add your first vow tutorial                                                                                                                         |
+| `apps/web/src/lib/tutorials/addAssets.ts`       | The Add your assets tutorial                                                                                                                            |
+| `apps/web/src/lib/tutorials/startJourney.ts`    | The Start a journey tutorial                                                                                                                            |
+| `apps/web/src/lib/tutorials/addConnections.ts`  | The Add a settlement and an NPC tutorial                                                                                                                |
+| `apps/web/src/lib/tutorials/mapSettlement.ts`   | The Put your settlement on the map tutorial                                                                                                             |
+| `apps/web/src/lib/tutorials/createFoe.ts`       | The Create your first foe tutorial                                                                                                                      |
+| `apps/web/src/lib/tutorials/fightFoe.ts`        | The Fight your foe tutorial                                                                                                                             |
+| `apps/web/src/lib/tutorials/makeCamp.ts`        | The Make camp and heal tutorial                                                                                                                         |
+| `apps/web/src/lib/tutorials/backUp.ts`          | The Back up your campaign tutorial                                                                                                                      |
+| `apps/web/src/lib/tutorials/moves.ts`           | What the tutorials that make moves share: the rolls and notes made since the tour began, closing the Moves dialog, searching it, choosing a stat        |
+| `apps/web/src/lib/tutorials/keys.ts`            | Controls drawn into a step's text as they look (`MOVE`, `MAP`, `ADD_VOW`, `ADD_ASSET`, `ADD_MARKER`, `MENU`), for buttons that show an icon, not a word |
+| `apps/web/tests/e2e/tutorials.spec.ts`          | E2E tests that follow each tutorial as a player would                                                                                                   |
 
 ## Writing a tutorial
 

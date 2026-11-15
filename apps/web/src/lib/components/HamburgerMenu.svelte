@@ -84,7 +84,7 @@
 </script>
 
 <DropdownMenu.Root>
-	<DropdownMenu.Trigger class="hamburger-btn" aria-label="Menu">
+	<DropdownMenu.Trigger class="hamburger-btn" aria-label="Menu" data-tour="app-menu">
 		<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
 			<rect y="2" width="16" height="2" rx="1" fill="currentColor" />
 			<rect y="7" width="16" height="2" rx="1" fill="currentColor" />
