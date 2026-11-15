@@ -229,7 +229,7 @@ A `$effect` reads `getXpSpendNonce()` and drains queued XP spend amounts via `dr
 
 A `$effect` reads `getActionNonce()` and drains queued actions via `drainActions(charId)`. Handles:
 
-- **Resource changes** (`type: 'resource'`): Applies delta to momentum, health, spirit, supply, mana, xp, bonds, or failures with proper clamping (e.g., momentum -6 to maxMomentum, health/spirit/supply 0-5).
+- **Resource changes** (`type: 'resource'`): Applies delta to momentum, health, spirit, supply, mana, xp, bonds, or failures with proper clamping (e.g., momentum -6 to maxMomentum, health/spirit/supply 0-5, xp 0-30; `resourceRange()` in `character.ts`).
 - **Debility toggles** (`type: 'debility'`): Sets debility flags (wounded, shaken, etc.) to the specified value.
 
 Both buses use the nonce-queue-drain pattern to ensure mutations happen inside Svelte's reactive context (`$effect`), not from external callbacks.

@@ -173,6 +173,26 @@ async function readVital(
 	return parseInt((text ?? '0').trim(), 10);
 }
 
+/** A vitals tile's value, on the active character's Core tab. */
+function vitalValue(page: Page, label: 'Health' | 'Spirit' | 'Supply' | 'Experience') {
+	return page.locator(`${CHAR_AREA} .res-tile`).filter({ hasText: label }).locator('.res-value');
+}
+
+/** Step a vitals tile to `target` with its − / + buttons. */
+async function setVital(page: Page, label: 'Health' | 'Spirit' | 'Supply', target: number) {
+	await switchCharTab(page, 'Core');
+	const tile = page.locator(`${CHAR_AREA} .res-tile`).filter({ hasText: label });
+	const value = vitalValue(page, label);
+	for (let i = 0; i < 10; i++) {
+		const cur = parseInt((await value.textContent()) ?? '0', 10);
+		if (cur === target) break;
+		const dir = cur < target ? 'Increase' : 'Decrease';
+		await tile.locator(`button[aria-label="${dir} ${label}"]`).click();
+		await expect(value).not.toHaveText(String(cur));
+	}
+	await expect(value).toHaveText(String(target));
+}
+
 /** Read momentum (a MomentumTile, not a ResourceTile). */
 async function readMomentum(page: Page): Promise<number> {
 	await switchCharTab(page, 'Core');
@@ -255,6 +275,50 @@ test.describe('Log interactive links (injected mock entries)', () => {
 
 		await entry.locator('a.resource-link[data-resource="xp"]').click();
 		expect(await waitVitalChange(page, 'Experience', xpPre)).toBe(xpPre + 1);
+	});
+
+	test('resource links stop at the top of the range, and the log line says so', async ({
+		page,
+	}) => {
+		const charId = await goToHomeWithCharacter(page);
+		for (const label of ['Health', 'Spirit', 'Supply'] as const) await setVital(page, label, 4);
+
+		const id = crypto.randomUUID();
+		const link = (resource: string, value: string) =>
+			`<p><a class="resource-link" data-resource="${resource}" data-value="${value}" ` +
+			`data-entry-id="${id}" data-char-id="${charId}">${value} ${resource}</a></p>`;
+		await inject(
+			page,
+			'Mock Outcome',
+			link('health', '+2') +
+				link('spirit', '+2') +
+				link('supply', '+2') +
+				link('health', '+1') +
+				link('xp', '+40'),
+			id,
+		);
+		const entry = entryById(page, id);
+		await expect(entry).toBeVisible({ timeout: 3_000 });
+		const logLine = (text: string | RegExp) =>
+			page.locator('.log-entry', { hasText: text }).first();
+
+		// 4 and +2 is 5, not 6: health, spirit and supply top out at 5.
+		for (const label of ['Health', 'Spirit', 'Supply'] as const) {
+			const resource = label.toLowerCase();
+			await entry.locator(`a.resource-link[data-resource="${resource}"][data-value="+2"]`).click();
+			await expect(vitalValue(page, label)).toHaveText('5');
+			await expect(logLine(`${label}: 4 → 5 (+2, max 5)`)).toBeVisible();
+		}
+
+		// Already at the top, the link changes nothing, and the log says why.
+		await entry.locator('a.resource-link[data-resource="health"][data-value="+1"]').click();
+		await expect(logLine('Health: 5 → 5 (+1, max 5)')).toBeVisible();
+		await expect(vitalValue(page, 'Health')).toHaveText('5');
+
+		// Experience tops out at 30, as its tile does.
+		await entry.locator('a.resource-link[data-resource="xp"]').click();
+		await expect(vitalValue(page, 'Experience')).toHaveText('30');
+		await expect(logLine(/Xp: \d+ → 30 \(\+40, max 30\)/)).toBeVisible();
 	});
 
 	test('mana resource link is marked spent', async ({ page }) => {

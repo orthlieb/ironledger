@@ -42,6 +42,68 @@ export function momentumReset(d: CharacterData): number {
 	return 0;
 }
 
+/** The lowest and highest value a resource can hold. */
+export interface ResourceRange {
+	min: number;
+	max: number;
+}
+
+/**
+ * The range a log link or command holds a resource to (docs/data-schema.md
+ * → Resource Links), or null for a key that isn't a resource. Health,
+ * spirit and supply top out at 5 and experience at 30, as their tiles do;
+ * momentum's top falls with each debility (maxMomentum).
+ */
+export function resourceRange(key: string, d: CharacterData): ResourceRange | null {
+	switch (key) {
+		case 'momentum':
+			return { min: -6, max: maxMomentum(d) };
+		case 'health':
+		case 'spirit':
+		case 'supply':
+			return { min: 0, max: 5 };
+		case 'xp':
+			return { min: 0, max: 30 };
+		case 'bonds':
+		case 'failures':
+			return { min: 0, max: 40 };
+		case 'mana':
+			return { min: 0, max: 10 };
+		default:
+			return null;
+	}
+}
+
+/** A resource after a change: its new value, its range's top, and whether
+ *  that top cut the change short. */
+export interface ResourceChange {
+	next: number;
+	max: number;
+	capped: boolean;
+}
+
+/**
+ * A resource after a change of `delta` from `old`, held to its range
+ * (resourceRange): 4 health +2 → 5, capped at the max of 5. A value already
+ * past the top (saved before links were held to it) comes back to it. Null
+ * for a key that isn't a resource.
+ */
+export function changeResource(
+	key: string,
+	old: number,
+	delta: number,
+	d: CharacterData,
+): ResourceChange | null {
+	const range = resourceRange(key, d);
+	if (!range) return null;
+	const wanted = old + delta;
+	return {
+		next: Math.max(range.min, Math.min(range.max, wanted)),
+		max: range.max,
+		capped: wanted > range.max,
+	};
+}
+
 /**
  * Compute how many ticks are in a specific progress box (0-based index).
  * Progress is stored linearly (0–40) across 10 boxes of 4 ticks each.

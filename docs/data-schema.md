@@ -294,6 +294,13 @@ Resources are clamped to their valid ranges:
 
 See [Yrt extensions](../extensions/yrt/README.md#mana-resource) for the `mana` resource (0–10, amber `#f59e0b`).
 
+A click logs the change, and when the top of the range cuts it short, the
+line names the top: `+2 health` at 4 health logs `Health: 4 → 5 (+2, max 5)`,
+and at 5 it logs `Health: 5 → 5 (+2, max 5)` and changes nothing. At the
+bottom, the [cascades](log.md#cascade-rules) say what becomes of the rest
+(momentum lost, Face Death, Out of Supply). The ranges live in
+`resourceRange()` (`apps/web/src/lib/character.ts`).
+
 _(Planned.)_ A stat link is held to 0–4 (`STAT_MIN` / `STAT_MAX` in `rules/statArrays.ts`)
 differently from the other resources: a click that would take the stat past
 either end changes nothing and leaves the link live, with a tooltip saying

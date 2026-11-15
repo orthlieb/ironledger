@@ -143,6 +143,10 @@ CharacterSheet auto-appends entries from **floor rules** (`FLOOR_RULES`) when a 
 - Momentum hits −6 → "Momentum: Desperate" note appended
 - Supply hits 0 → "Supply: Exhausted" note with clickable Unprepared debility link
 
+There is no cascade at the top of a range: a change it cuts short says so in
+its own line, `Health: 4 → 5 (+2, max 5)` (see
+[Resource Links](data-schema.md#resource-links)).
+
 Callback props: `onMoveLink`, `onOracleLink`, `onProgressLink`, `onInitiativeLink`, `onMenaceLink`.
 
 ---
