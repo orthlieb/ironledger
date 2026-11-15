@@ -691,6 +691,9 @@ const V1 = 'http://127.0.0.1:3000/api/v1';
 test.describe('Import / Export — full round-trip', () => {
 	// Distinctive ids/names so we can assert each survived and re-linked.
 	const COMMUNITY_ID = 'rt-comm-1';
+	const LOG_FILLER = 250;
+	const LOG_MARK_ID = '11111111-1111-4111-8111-111111111111';
+	const LOG_MARK_TS = '2026-02-14T09:30:00.000Z';
 
 	test.beforeAll(async () => {
 		await resetAll();
@@ -806,14 +809,50 @@ test.describe('Import / Export — full round-trip', () => {
 			}),
 		}).then((r) => expect(r.ok, 'seed expeditions').toBeTruthy());
 
-		await fetch(`${V1}/session/log`, {
+		// A foe, with its progress and notes.
+		await fetch(`${V1}/session/encounters`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify({
+				encounters: [
+					{
+						id: 'rt-foe-1',
+						foeId: 'ironsworn/bear',
+						quantity: 'few',
+						effectiveRank: 3,
+						ticks: 12,
+						notes: 'Wounded at the ford',
+						customName: 'Old Scar',
+						vanquished: false,
+					},
+				],
+			}),
+		}).then((r) => expect(r.ok, 'seed foe').toBeTruthy());
+
+		// A log longer than the 200 entries the page loads, all of it in the
+		// past, and one with a note on it. The batch endpoint keeps each
+		// entry's id and time.
+		const day = Date.parse('2026-03-01T12:00:00Z');
+		const older = Array.from({ length: LOG_FILLER }, (_, i) => ({
+			id: crypto.randomUUID(),
+			title: `Filler ${i}`,
+			html: `<div>Filler ${i}</div>`,
+			ts: new Date(day + i * 60_000).toISOString(),
+		}));
+		await fetch(`${V1}/session/log/batch`, {
 			method: 'POST',
 			headers: h,
 			body: JSON.stringify({
-				id: '11111111-1111-4111-8111-111111111111',
-				title: 'Round-trip Marker',
-				html: '<div>A distinctive log line.</div>',
-				ts: new Date().toISOString(),
+				entries: [
+					...older,
+					{
+						id: LOG_MARK_ID,
+						title: 'Round-trip Marker',
+						html: '<div>A distinctive log line.</div>',
+						ts: LOG_MARK_TS,
+						note: 'Remember the ferryman',
+					},
+				],
 			}),
 		}).then((r) => expect(r.ok, 'seed log').toBeTruthy());
 	});
@@ -829,6 +868,13 @@ test.describe('Import / Export — full round-trip', () => {
 		]);
 		const zipBytes = await downloadBuffer(download);
 		expect(zipBytes.length).toBeGreaterThan(0);
+		// The whole log is in it, not just the 200 the page loaded, and the foe.
+		const body = JSON.parse(strFromU8(unzipSync(new Uint8Array(zipBytes))['everything.json']!)) as {
+			log?: unknown[];
+			encounters?: unknown[];
+		};
+		expect(body.log, 'the whole log').toHaveLength(LOG_FILLER + 1);
+		expect(body.encounters, 'the foe').toHaveLength(1);
 
 		// 2. Wipe the account and confirm it's empty on a fresh load.
 		await resetAll();
@@ -838,15 +884,28 @@ test.describe('Import / Export — full round-trip', () => {
 			const chars = await fetch('/api/characters', { credentials: 'include' }).then((r) =>
 				r.json(),
 			);
+			const log = await fetch('/api/session/log?limit=1000', { credentials: 'include' }).then((r) =>
+				r.json(),
+			);
 			return {
 				chars: chars.length,
 				communities: (s.communities ?? []).length,
 				npcs: (s.npcs ?? []).length,
 				places: (s.places ?? []).length,
 				expeditions: (s.expeditions ?? []).length,
+				foes: (s.encounters ?? []).length,
+				log: log.length,
 			};
 		});
-		expect(empty).toEqual({ chars: 0, communities: 0, npcs: 0, places: 0, expeditions: 0 });
+		expect(empty).toEqual({
+			chars: 0,
+			communities: 0,
+			npcs: 0,
+			places: 0,
+			expeditions: 0,
+			foes: 0,
+			log: 0,
+		});
 
 		// 3. Re-import the produced zip.
 		await page.locator(ZIP_INPUT).setInputFiles({
@@ -863,7 +922,7 @@ test.describe('Import / Export — full round-trip', () => {
 			const chars = await fetch('/api/characters', { credentials: 'include' }).then((r) =>
 				r.json(),
 			);
-			const log = await fetch('/api/session/log?limit=100', { credentials: 'include' }).then((r) =>
+			const log = await fetch('/api/session/log?limit=1000', { credentials: 'include' }).then((r) =>
 				r.json(),
 			);
 			return {
@@ -872,6 +931,7 @@ test.describe('Import / Export — full round-trip', () => {
 				npcs: s.npcs ?? [],
 				places: s.places ?? [],
 				expeditions: s.expeditions ?? [],
+				foes: s.encounters ?? [],
 				log: Array.isArray(log) ? log : (log.entries ?? []),
 			};
 		});
@@ -911,11 +971,23 @@ test.describe('Import / Export — full round-trip', () => {
 		expect(site?.type).toBe('site');
 		expect(site?.domain).toBe('Barrow');
 
-		// Log — the distinctive entry is back.
-		expect(
-			state.log.some((e: { title?: string }) => e.title === 'Round-trip Marker'),
-			'log entry round-tripped',
-		).toBeTruthy();
+		// Foe — its progress, rank and notes.
+		expect(state.foes).toHaveLength(1);
+		expect(state.foes[0]).toMatchObject({
+			foeId: 'ironsworn/bear',
+			customName: 'Old Scar',
+			effectiveRank: 3,
+			ticks: 12,
+			notes: 'Wounded at the ford',
+		});
+
+		// Log — every entry, each as it was: its id, time and note.
+		expect(state.log).toHaveLength(LOG_FILLER + 1);
+		const mark = state.log.find((e: { title?: string }) => e.title === 'Round-trip Marker');
+		expect(mark, 'log entry round-tripped').toBeDefined();
+		expect(mark).toMatchObject({ id: LOG_MARK_ID, ts: LOG_MARK_TS, note: 'Remember the ferryman' });
+		// Newest first, by its own time: the filler is newer than the marker.
+		expect(state.log[0].title).toBe(`Filler ${LOG_FILLER - 1}`);
 	});
 });
 

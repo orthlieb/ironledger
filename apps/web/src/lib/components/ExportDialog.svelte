@@ -196,9 +196,6 @@
 		},
 		{
 			// Foes are current encounter cards, not the catalogue bestiary.
-			// The zip format doesn't carry encounters, so foe selection
-			// only shows up in the markdown export (the format toggle
-			// wires that constraint through the summary + doExport).
 			key: 'foe',
 			label: 'Foes',
 			color: '#b04a3a',
@@ -432,7 +429,7 @@
 					</ToggleGroup.Item>
 					<ToggleGroup.Item value="md" class="exd-segbtn">
 						<strong>Markdown</strong>
-						<span>Readable · not re-importable · foes only in this format</span>
+						<span>Readable · not re-importable</span>
 					</ToggleGroup.Item>
 				</ToggleGroup.Root>
 			</div>

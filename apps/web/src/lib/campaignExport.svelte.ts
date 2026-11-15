@@ -27,7 +27,7 @@ import {
 } from '#lib/characterFields.svelte.js';
 import { loadOracles } from '#lib/oracleStore.svelte.js';
 import { findFoe, resolveFoeName, FOE_RANKS } from '#lib/foeStore.svelte.js';
-import { sessionLog } from '#lib/log.svelte.js';
+import { sessionLog, fetchWholeLog, type LogEntry } from '#lib/log.svelte.js';
 import {
 	makeTimestamp,
 	downloadFile,
@@ -83,8 +83,8 @@ export class CampaignExport {
 	// Comprehensive export — build the payload from the dialog's selection.
 	// Zip fully honours the selection (per-category and per-item); Markdown is
 	// still whole-campaign except for a log-only pick (per-category markdown
-	// filtering is a follow-up). Foes are never in the JSON — transient
-	// encounters — so they surface only in the Markdown bundle.
+	// filtering is a follow-up). Both carry the foes picked, and the whole log
+	// the server keeps (not just the newest entries the page has loaded).
 	async run(sel: ExportSelection, session: ExportSessionIds): Promise<void> {
 		const stamp = makeTimestamp();
 		this.warnings = [];
@@ -112,7 +112,24 @@ export class CampaignExport {
 		const journeys = selExps.filter((e) => e.type === 'journey').length;
 		const sites = selExps.filter((e) => e.type === 'site').length;
 		const scenes = selExps.filter((e) => e.type === 'scene').length;
-		const foeCount = sel.format === 'md' ? sel.foes.length : 0;
+		const foeSet = new Set(sel.foes);
+		const selFoes = getEncounters().filter((f) => foeSet.has(f.id));
+		const foeCount = selFoes.length;
+		// The whole log, read up front so the tally counts what goes in. If it
+		// can't be read, the entries the page has are still worth keeping.
+		this.progress = { done: 0, total: 0, label: 'Preparing export…' };
+		const startedAt = performance.now();
+		let logEntries: LogEntry[] = [];
+		if (sel.log) {
+			const whole = await fetchWholeLog();
+			if (whole) logEntries = whole;
+			else {
+				logEntries = sessionLog.entries;
+				this.warnings.push(
+					`The log couldn't be read in full, so only its newest ${logEntries.length} entries are in.`,
+				);
+			}
+		}
 		const tally: Array<{ key: string; total: number; label: string }> = [
 			{ key: 'char', total: selChars.length, label: word(selChars.length, 'character') },
 			{ key: 'comm', total: selComms.length, label: word(selComms.length, 'settlement') },
@@ -125,8 +142,8 @@ export class CampaignExport {
 			{ key: 'foe', total: foeCount, label: word(foeCount, 'foe') },
 			{
 				key: 'log',
-				total: sel.log ? sessionLog.entries.length : 0,
-				label: word(sel.log ? sessionLog.entries.length : 0, 'log entry', 'log entries'),
+				total: logEntries.length,
+				label: word(logEntries.length, 'log entry', 'log entries'),
 			},
 		];
 		const doneBy: Record<string, number> = {};
@@ -137,8 +154,6 @@ export class CampaignExport {
 				.join(', '));
 		renderSummary();
 
-		this.progress = { done: 0, total: 0, label: 'Preparing export…' };
-		const startedAt = performance.now();
 		try {
 			// ── Markdown ──────────────────────────────────────────────────────────
 			if (sel.format === 'md') {
@@ -150,11 +165,7 @@ export class CampaignExport {
 					sel.foes.length === 0 &&
 					sel.log;
 				if (onlyLog) {
-					downloadFile(
-						`session-log-${stamp}.md`,
-						logToMarkdown(sessionLog.entries),
-						'text/markdown',
-					);
+					downloadFile(`session-log-${stamp}.md`, logToMarkdown(logEntries), 'text/markdown');
 					return;
 				}
 				this.progress = { done: 0, total: 0, label: 'Building Markdown…' };
@@ -162,6 +173,7 @@ export class CampaignExport {
 				await exportMarkdownZip(
 					stamp,
 					sel,
+					logEntries,
 					(done, total, label) => {
 						this.progress = { done, total, label };
 					},
@@ -173,8 +185,8 @@ export class CampaignExport {
 				);
 				// The markdown bundle also writes the log and the foes bestiary;
 				// reflect both in the final tally (maps count as they're written).
-				doneBy['foe'] = sel.foes.length;
-				if (sel.log) doneBy['log'] = sessionLog.entries.length;
+				doneBy['foe'] = foeCount;
+				if (sel.log) doneBy['log'] = logEntries.length;
 				renderSummary();
 				this.progress = { done: 1, total: 1, label: 'Done' };
 				return;
@@ -215,10 +227,30 @@ export class CampaignExport {
 					}),
 				);
 			};
+			// A picture that won't download goes without it, and says so.
+			const noPicture = (name: string) =>
+				this.warnings.push(
+					`${name || 'Unnamed'}: its picture couldn't be downloaded, so it's left out.`,
+				);
+			const embedRow = async <
+				T extends { id: string; name: string; portraitEtag?: string; imageUrl?: string },
+			>(
+				seg: string,
+				row: T,
+			) => {
+				const out = await embedEntityForExport(seg, row);
+				if (row.portraitEtag && !out.imageUrl) noPicture(row.name);
+				return out;
+			};
 			if (selChars.length) {
 				payload.characters = await embedAll(
 					selChars,
-					embedCharForExport,
+					async (c) => {
+						const out = await embedCharForExport(c);
+						if ((c.data as Record<string, unknown>).portraitEtag && !out.data.portrait)
+							noPicture(c.name);
+						return out;
+					},
 					'Embedding characters…',
 					() => 'char',
 				);
@@ -227,7 +259,7 @@ export class CampaignExport {
 			if (selComms.length) {
 				payload.communities = await embedAll(
 					selComms,
-					(c) => embedEntityForExport('communities', c),
+					(c) => embedRow('communities', c),
 					'Embedding settlements…',
 					() => 'comm',
 				);
@@ -236,7 +268,7 @@ export class CampaignExport {
 			if (selNpcs.length) {
 				payload.npcs = await embedAll(
 					selNpcs,
-					(n) => embedEntityForExport('npcs', n),
+					(n) => embedRow('npcs', n),
 					'Embedding NPCs…',
 					() => 'npc',
 				);
@@ -245,7 +277,7 @@ export class CampaignExport {
 			if (selPlaces.length) {
 				payload.places = await embedAll(
 					selPlaces,
-					(p) => embedEntityForExport('places', p),
+					(p) => embedRow('places', p),
 					'Embedding landmarks…',
 					() => 'place',
 				);
@@ -254,14 +286,21 @@ export class CampaignExport {
 			if (selExps.length) {
 				payload.expeditions = await embedAll(
 					selExps,
-					(e) => embedEntityForExport('expeditions', e),
+					(e) => embedRow('expeditions', e),
 					'Embedding expeditions…',
 					(e) => e.type,
 				);
 				count += selExps.length;
 			}
+			if (selFoes.length) {
+				payload.encounters = selFoes.map((f) => $state.snapshot(f));
+				count += selFoes.length;
+				doneBy['foe'] = selFoes.length;
+				renderSummary();
+			}
 			if (sel.log) {
-				const entries = [...sessionLog.entries].reverse();
+				// Oldest first, as the importer adds them.
+				const entries = [...logEntries].reverse();
 				payload.log = entries;
 				count += entries.length;
 				doneBy['log'] = entries.length;
@@ -275,9 +314,12 @@ export class CampaignExport {
 			if (mapSet.size) {
 				this.progress = { done, total, label: 'Collecting maps…' };
 				await tick();
-				({ mapFiles } = await collectMapEntries(mapSet));
+				let written = 0;
+				({ mapFiles, count: written } = await collectMapEntries(mapSet, (w) =>
+					this.warnings.push(w),
+				));
 				done += mapSet.size;
-				doneBy['map'] = mapSet.size;
+				doneBy['map'] = written;
 				this.progress = { done, total, label: 'Collecting maps…' };
 				renderSummary();
 			}
@@ -312,6 +354,8 @@ export class CampaignExport {
 export async function exportMarkdownZip(
 	stamp: string,
 	sel: ExportSelection,
+	/** The log to write (the whole one the server keeps), newest first. */
+	logEntries: LogEntry[],
 	onProgress?: (done: number, total: number, label: string) => void,
 	onItem?: (kind: string) => void,
 	onWarning?: (warning: string) => void,
@@ -640,7 +684,7 @@ export async function exportMarkdownZip(
 	if (selExps.length) {
 		index.push('## Expeditions', '');
 		for (const exp of selExps) {
-			const type = exp.type === 'journey' ? 'Journey' : 'Site';
+			const type = exp.type === 'journey' ? 'Journey' : exp.type === 'scene' ? 'Scene' : 'Site';
 			const lines: string[] = [`# ${exp.name} _(${type})_`, ''];
 			const expDu = expPortraits.get(exp.id);
 			if (expDu) lines.push(`![Portrait](../${addImage(expDu, 'expedition', exp.name)})`);
@@ -677,12 +721,9 @@ export async function exportMarkdownZip(
 	}
 
 	// ── Foes ─────────────────────────────────────────────────────────
-	// Markdown only: encounters are transient (deleted session to session)
-	// and are deliberately excluded from the JSON export. The
-	// ExportDialog surfaces a per-foe checklist under the Foes facet;
-	// `sel.foes` names which encounter ids the user opted into. An
-	// empty set means "no bestiary" (nothing rendered), which is why
-	// we early-out here rather than defaulting to every encounter.
+	// The ExportDialog lists the foes under its Foes facet; `sel.foes` names
+	// the ones picked. An empty set means no bestiary (nothing rendered),
+	// which is why this doesn't default to every foe.
 	const foeSet = new Set(sel.foes);
 	const selEncounters = encounters.filter((e) => foeSet.has(e.id));
 	if (selEncounters.length) {
@@ -799,7 +840,7 @@ export async function exportMarkdownZip(
 
 	// ── Session Log ──────────────────────────────────────────────────
 	if (sel.log) {
-		zipFiles['session-log.md'] = strToU8(logToMarkdown(sessionLog.entries));
+		zipFiles['session-log.md'] = strToU8(logToMarkdown(logEntries));
 		index.push('## Session Log', '', '- [Log](session-log.md)', '');
 	}
 
@@ -887,18 +928,25 @@ function mapOwnerName(kind: MapOwnerKind, id: string): string | undefined {
 
 /** Fetch every map the user owns and build its zip entries under
  *  `maps/<mapId>/…` (manifest.json + map.json + optional background.jpg),
- *  plus a `maps.md` index. Shared by the "All Maps" export and the
- *  Everything bundle, which nests the same dirs alongside its JSON body so
- *  a full backup captures maps + markers + backgrounds. */
-export async function collectMapEntries(mapIdFilter?: Set<string>): Promise<{
+ *  plus a `maps.md` index. The Everything bundle nests the same dirs
+ *  alongside its JSON body so a full backup captures maps + markers +
+ *  backgrounds. A map that can't be loaded, or whose background won't
+ *  download, is a warning; `count` is the maps written. */
+export async function collectMapEntries(
+	mapIdFilter?: Set<string>,
+	onWarning?: (warning: string) => void,
+): Promise<{
 	mapFiles: Record<string, Uint8Array>;
 	count: number;
 	mdLines: string[];
 }> {
 	const mapFiles: Record<string, Uint8Array> = {};
 	const mdLines: string[] = ['# Campaign Maps', ''];
-	const listRes = await fetch('/api/session/maps');
-	if (!listRes.ok) return { mapFiles, count: 0, mdLines };
+	const listRes = await fetch('/api/session/maps').catch(() => null);
+	if (!listRes?.ok) {
+		onWarning?.("The maps couldn't be loaded, so they're left out.");
+		return { mapFiles, count: 0, mdLines };
+	}
 	const listBody = (await listRes.json()) as {
 		maps?: Array<{ id: string; name: string; updatedAt: string }>;
 	};
@@ -906,9 +954,13 @@ export async function collectMapEntries(mapIdFilter?: Set<string>): Promise<{
 	// Restrict to the selected maps when the caller passes an id filter
 	// (the comprehensive export's per-map selection); undefined = all maps.
 	if (mapIdFilter) mapsList = mapsList.filter((m) => mapIdFilter.has(m.id));
+	let count = 0;
 	for (const summary of mapsList) {
-		const detailRes = await fetch(`/api/session/maps/${summary.id}`);
-		if (!detailRes.ok) continue;
+		const detailRes = await fetch(`/api/session/maps/${summary.id}`).catch(() => null);
+		if (!detailRes?.ok) {
+			onWarning?.(`${summary.name || 'Untitled Map'}: it couldn't be loaded, so it's left out.`);
+			continue;
+		}
 		const detail = (await detailRes.json()) as {
 			id: string;
 			name: string;
@@ -945,10 +997,15 @@ export async function collectMapEntries(mapIdFilter?: Set<string>): Promise<{
 			ownerKind: detail.ownerKind,
 			ownerName,
 		});
+		if (bgUrl && !entries['background.jpg'])
+			onWarning?.(
+				`${detail.name || 'Untitled Map'}: its background couldn't be downloaded, so it comes without one.`,
+			);
 		const dir = `maps/${detail.id}`;
 		for (const [path, bytes] of Object.entries(entries)) {
 			mapFiles[`${dir}/${path}`] = bytes;
 		}
+		count++;
 		mdLines.push(`## ${detail.name || 'Untitled Map'}`);
 		mdLines.push(`- Markers: ${Array.isArray(detail.markers) ? detail.markers.length : 0}`);
 		mdLines.push(`- [Data](./${dir}/map.json)`);
@@ -957,5 +1014,5 @@ export async function collectMapEntries(mapIdFilter?: Set<string>): Promise<{
 		}
 		mdLines.push('');
 	}
-	return { mapFiles, count: mapsList.length, mdLines };
+	return { mapFiles, count, mdLines };
 }

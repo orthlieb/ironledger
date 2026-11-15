@@ -120,8 +120,8 @@ export function appendLog(
 		...(roll ? { roll } : {}),
 	};
 
-	// Optimistic: prepend immediately; rolling cap matches server-side 1000
-	sessionLog.entries = [entry, ...sessionLog.entries].slice(0, 1000);
+	// Optimistic: prepend immediately; rolling cap matches the server's
+	sessionLog.entries = [entry, ...sessionLog.entries].slice(0, LOG_CAP);
 
 	// Persist to server in background
 	apiPost(entry).catch(() => {
@@ -161,6 +161,67 @@ export function updateLogEntryHtml(
 export function deleteLogEntry(entryId: string): void {
 	sessionLog.entries = sessionLog.entries.filter((e) => e.id !== entryId);
 	apiDelete(entryId).catch(() => {});
+}
+
+// ---------------------------------------------------------------------------
+// The whole log, for an export; many entries at once, for an import
+// ---------------------------------------------------------------------------
+
+/** The most entries the server keeps, and the most one request returns. */
+export const LOG_CAP = 1000;
+
+/** Every entry the server keeps, newest first — more than the page loads
+ *  (its newest 200). Null if it can't be read. */
+export async function fetchWholeLog(): Promise<LogEntry[] | null> {
+	try {
+		const res = await apiGet(`?limit=${LOG_CAP}`);
+		if (!res.ok) return null;
+		const rows = (await res.json()) as unknown;
+		return Array.isArray(rows) ? (rows as LogEntry[]) : null;
+	} catch {
+		return null;
+	}
+}
+
+/** The batches an import's entries go up in: the API takes 2 MB a request. */
+const BATCH_BYTES = 1_500_000;
+const BATCH_ENTRIES = 250;
+
+/**
+ * Add a backup's entries to the log as they were — each with its own id,
+ * time, note and roll — and show them in their places. An id already in the
+ * log is left as it is (server and here), so importing the same backup
+ * twice adds nothing; the log keeps its newest LOG_CAP either way. Throws if
+ * a batch is refused, having added the batches before it.
+ */
+export async function importLogEntries(entries: LogEntry[]): Promise<void> {
+	if (entries.length === 0) return;
+	let batch: LogEntry[] = [];
+	let bytes = 0;
+	const send = async () => {
+		if (batch.length === 0) return;
+		const res = await fetch('/api/session/log/batch', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ entries: batch }),
+		});
+		if (!res.ok) throw new Error(`the log couldn't be saved (${res.status})`);
+		const have = new Set(sessionLog.entries.map((e) => e.id));
+		const added = batch.filter((e) => !have.has(e.id));
+		sessionLog.entries = [...sessionLog.entries, ...added]
+			.sort((a, b) => Date.parse(b.ts) - Date.parse(a.ts))
+			.slice(0, LOG_CAP);
+		batch = [];
+		bytes = 0;
+	};
+	for (const e of entries) {
+		const size = JSON.stringify(e).length;
+		if (batch.length >= BATCH_ENTRIES || (batch.length > 0 && bytes + size > BATCH_BYTES))
+			await send();
+		batch.push(e);
+		bytes += size;
+	}
+	await send();
 }
 
 // ---------------------------------------------------------------------------

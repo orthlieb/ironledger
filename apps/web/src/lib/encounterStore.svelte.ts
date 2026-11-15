@@ -88,6 +88,27 @@ export async function updateEncounter(updated: FoeEncounter): Promise<void> {
 	await persist();
 }
 
+/** Add or replace many at once (an import), in one request: an id already
+ *  here is replaced in place, the rest go on the end in order. */
+export async function addManyEncounters(rows: FoeEncounter[]): Promise<void> {
+	if (rows.length === 0) return;
+	const byId = new Map(rows.map((r) => [r.id, r]));
+	const replaced = new Set<string>();
+	_encounters = _encounters.map((cur) => {
+		const next = byId.get(cur.id);
+		if (!next) return cur;
+		replaced.add(cur.id);
+		return next;
+	});
+	_encounters = [..._encounters, ...rows.filter((r) => !replaced.has(r.id))];
+	_saving = true;
+	try {
+		await _sync.persistBatch();
+	} finally {
+		_saving = false;
+	}
+}
+
 /** Remove one encounter by id and persist. */
 export async function removeEncounter(id: string): Promise<void> {
 	_encounters = _encounters.filter((e) => e.id !== id);

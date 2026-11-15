@@ -78,14 +78,14 @@ Import dispatches **solely on `manifest.type`**.
 
 ### Export types
 
-| `type`           | Export menu item  | `data` shape                                                                                    | Body filename           | Zip filename                    |
-| ---------------- | ----------------- | ----------------------------------------------------------------------------------------------- | ----------------------- | ------------------------------- |
-| `character`      | Current Character | `{ name, data }`                                                                                | `character.json`        | `<slug-of-name>.zip`            |
-| `all-characters` | All Characters    | `Array<{ name, data }>`                                                                         | `characters.json`       | `all-characters-<stamp>.zip`    |
-| `communities`    | Connections       | `{ communities: Community[], npcs: Npc[], places: Place[] }`                                    | `communities.json`      | `communities-<stamp>.zip`       |
-| `expeditions`    | Expeditions       | `Array<Expedition>` (Journey \| Site \| Scene)                                                  | `expeditions.json`      | `expeditions-<stamp>.zip`       |
-| `everything`     | Everything        | `{ characters, log, communities, npcs, places, expeditions, session }` (foes are Markdown-only) | `everything.json`       | `ironledger-export-<stamp>.zip` |
-| `log`            | Session Log       | `Array<LogEntry>` (oldest-first)                                                                | _(no zip — plain JSON)_ | `session-log-<stamp>.json`      |
+| `type`           | Export menu item  | `data` shape                                                                       | Body filename           | Zip filename                    |
+| ---------------- | ----------------- | ---------------------------------------------------------------------------------- | ----------------------- | ------------------------------- |
+| `character`      | Current Character | `{ name, data }`                                                                   | `character.json`        | `<slug-of-name>.zip`            |
+| `all-characters` | All Characters    | `Array<{ name, data }>`                                                            | `characters.json`       | `all-characters-<stamp>.zip`    |
+| `communities`    | Connections       | `{ communities: Community[], npcs: Npc[], places: Place[] }`                       | `communities.json`      | `communities-<stamp>.zip`       |
+| `expeditions`    | Expeditions       | `Array<Expedition>` (Journey \| Site \| Scene)                                     | `expeditions.json`      | `expeditions-<stamp>.zip`       |
+| `everything`     | Everything        | `{ characters, log, communities, npcs, places, expeditions, encounters, session }` | `everything.json`       | `ironledger-export-<stamp>.zip` |
+| `log`            | Session Log       | `Array<LogEntry>` (oldest-first)                                                   | _(no zip — plain JSON)_ | `session-log-<stamp>.json`      |
 
 `<stamp>` is local time formatted `YYYY-MM-DD_HHmm` (e.g. `2026-06-18_1504`).
 
@@ -385,7 +385,10 @@ Two fields are worth calling out:
 
 `type: "log"` — `data` is an array of `LogEntry` objects. The store keeps
 entries **newest-first**; the export **reverses** them so the file reads
-**oldest-first** (chronological).
+**oldest-first** (chronological). An export carries the **whole** log the
+server keeps (up to 1000 entries, read with `GET /session/log?limit=1000`),
+not just the newest 200 the page loads; if that read fails, it carries what
+the page has and the export overlay says so.
 
 ```json
 {
@@ -463,12 +466,13 @@ entities exactly instead of by name.
     "npcs": [{ "id": "…", "name": "…" }],
     "places": [{ "id": "…", "name": "…" }],
     "expeditions": [{ "id": "…", "type": "journey" }],
+    "encounters": [{ "id": "…", "foeId": "ironsworn/bear", "customName": "…", "ticks": 12 }],
     "session": { "activeCharId": "…", "activeFoeId": "…", "activeExpeditionId": "…" }
   }
 }
 ```
 
-`count` is the sum of `characters + log + communities + npcs + places + expeditions`
+`count` is the sum of `characters + log + communities + npcs + places + expeditions + encounters`
 lengths. `places` is optional on import — legacy exports without it load as `[]`. `session` records which entities were active at export time (not
 re-applied on import).
 
@@ -481,11 +485,18 @@ re-applied on import).
 > omitted from `count`. See
 > [campaign-map.md § Exports](campaign-map.md#exports).
 
-> **Foes are Markdown-only.** Foe encounters are transient — they vary from
-> campaign and session to session and are routinely deleted — so they are
-> **excluded from the JSON export** entirely (and were never restored on
-> import). They appear only in the **Markdown** export, as `foes.md` in the
-> `everything` Markdown ZIP, as a human-readable record.
+> **Foes.** `encounters` holds the foes picked in the dialog's Foes section,
+> each a `FoeEncounter` (`id`, `foeId` — the catalogue foe, e.g.
+> `ironsworn/bear` — `quantity`, `effectiveRank`, `ticks`, `notes`,
+> `customName`, `vanquished`, and YRT's `currentHarm` / `currentDefense`),
+> copied whole. Import needs a non-empty `foeId`; the catalogue foe needn't
+> be enabled on the importing account (the foe imports anyway, and shows once
+> that content is on). Older exports have no `encounters`; the Markdown
+> export also lists the foes, as `foes.md`.
+
+> **Nothing goes quietly.** A picture, a map, or a map's background that
+> can't be downloaded at export time is left out with a warning in the export
+> overlay, which then waits for Close.
 
 ---
 
@@ -624,14 +635,20 @@ New Character roll from an oracle:
 **recorded results** of oracle / move rolls, not fields an oracle fills. See
 [Session log](#session-log) for the shape.
 
+### Foe (`encounters[]`)
+
+`id`, `foeId`, `quantity`, `effectiveRank`, `ticks`, `notes`, `customName`,
+`vanquished`, `currentHarm?`, `currentDefense?` — a foe being fought, not an
+oracle result. See [Everything](#everything).
+
 ---
 
 ## Import behavior
 
 Import dispatches by `manifest.type` (see the export-types table). Every
 section that carries user-visible rows participates in collision detection
-(see below); only the session log entries are always appended (deduplicated
-internally by entry id).
+(see below); only the session log entries are always added (each keeping its
+own id, so one already in the log is left as it is).
 
 ### The import dialog
 
@@ -711,16 +728,18 @@ lower-cased, trimmed `name`** (not by `id`). Matching by name lets a file
 exported from one user be imported by another — IDs are minted independently
 per user, so an `id`-based match would never fire on a cross-user transfer.
 
-The collision dialog covers six categories:
+The collision dialog covers eight categories:
 
-| Category        | Detected against                                      |
-| --------------- | ----------------------------------------------------- |
-| **Characters**  | existing `Character.name`                             |
-| **Communities** | existing `Community.name`                             |
-| **NPCs**        | existing `Npc.name`                                   |
-| **Places**      | existing `Place.name`                                 |
-| **Journeys**    | existing `Expedition.name` where `type === "journey"` |
-| **Sites**       | existing `Expedition.name` where `type === "site"`    |
+| Category        | Detected against                                                             |
+| --------------- | ---------------------------------------------------------------------------- |
+| **Characters**  | existing `Character.name`                                                    |
+| **Communities** | existing `Community.name`                                                    |
+| **NPCs**        | existing `Npc.name`                                                          |
+| **Places**      | existing `Place.name`                                                        |
+| **Journeys**    | existing `Expedition.name` where `type === "journey"`                        |
+| **Sites**       | existing `Expedition.name` where `type === "site"`                           |
+| **Scenes**      | existing `Expedition.name` where `type === "scene"`                          |
+| **Foes**        | the name a foe's card shows: its `customName`, else the catalogue foe's name |
 
 If **any** incoming row's name matches an existing row's name (in the same
 category), the **`ImportCollisionDialog`** opens, lists the colliding names
@@ -739,9 +758,18 @@ no collisions at all, the dialog is skipped and every row is simply added
 (the implicit `new` path). The strategy is chosen once and applied
 uniformly across every category in the file.
 
-Session log entries never trigger the collision dialog — `appendSafeLog()`
-mints a fresh entry id on insert, so re-imported logs append (with their
-existing id; duplicates are ignored by the per-id append guard).
+A row whose **id** is already in use here but whose name isn't (renamed
+since the backup, say) gets a fresh id and comes in beside the other: an
+import only ever replaces by name, as asked.
+
+Session log entries never trigger the collision dialog. Each keeps its own
+`id`, `ts` (so it lands in its place in the log, not at the top), `note`,
+`source` and `roll`, and goes up in batches through
+`POST /session/log/batch` (`importLogEntries` in `lib/log.svelte.ts`); an id
+already in the log is left as it is, so importing the same backup twice adds
+no entries the second time. The log keeps its newest 1000 entries either way.
+An entry with a malformed `id` gets a new one, and one with an unreadable
+`ts` gets the import's time.
 
 ### Backwards compatibility
 
@@ -878,8 +906,8 @@ through this pipeline:
    prototype-pollution keys at every level. The result is the
    `{ manifest, data }` envelope the rest of the import flow consumes.
 6. **Log-HTML scrub** — each log entry's `html` is passed through
-   `sanitizeLogHtml()` (and added via `appendSafeLog()`) so no active
-   content can reach the renderer.
+   `sanitizeLogHtml()` before it's added, so no active content can reach the
+   renderer.
 
 ### Limits and filters
 

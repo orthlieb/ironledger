@@ -90,6 +90,21 @@ function makeJourney(id: string, name: string) {
 	};
 }
 
+/** Bare-bones foe encounter: a catalogue foe, with a name of its own. */
+function makeFoe(id: string, customName: string, extras: Record<string, unknown> = {}) {
+	return {
+		id,
+		foeId: 'ironsworn/bear',
+		quantity: 'few' as const,
+		effectiveRank: 2,
+		ticks: 0,
+		notes: '',
+		customName,
+		vanquished: false,
+		...extras,
+	};
+}
+
 /** Tag a payload with the manifest `type` the importer switches on
  *  (`communities`, `everything`, …). The returned tuple is unpacked
  *  by `importPayload` and packed into a real `.zip` via `zipEnvelope`
@@ -180,12 +195,14 @@ async function readWorld(page: Page) {
 			npcs?: Array<{ id: string; name: string; notes?: string }>;
 			places?: Array<{ id: string; name: string; trouble?: string }>;
 			expeditions?: Array<{ id: string; name: string; type: string }>;
+			encounters?: Array<{ id: string; customName: string; ticks: number }>;
 		};
 		return {
 			communities: j.communities ?? [],
 			npcs: j.npcs ?? [],
 			places: j.places ?? [],
 			expeditions: j.expeditions ?? [],
+			foes: j.encounters ?? [],
 		};
 	});
 }
@@ -243,6 +260,8 @@ test.describe('Import collision dialog (name-based)', () => {
 		await waitForWorld(page, (w) => w.communities.length >= 1);
 
 		// Same id, different name → not a collision under name-based detection.
+		// Nor does it write over Skara Brae (replacing is only ever by name):
+		// it comes in beside it, with an id of its own.
 		await importPayload(
 			page,
 			envelope('communities', {
@@ -252,6 +271,32 @@ test.describe('Import collision dialog (name-based)', () => {
 		);
 		await waitForWorld(page, (w) => w.communities.some((c) => c.name === 'Westcliff'));
 		await expect(page.locator('.icd-dialog')).not.toBeVisible();
+		const world = await readWorld(page);
+		expect(world.communities.map((c) => c.name).sort()).toEqual(['Skara Brae', 'Westcliff']);
+		expect(new Set(world.communities.map((c) => c.id)).size).toBe(2);
+	});
+
+	test('a foe with a name already here is asked about too, and Replace keeps its id', async ({
+		page,
+	}) => {
+		const everything = (foes: unknown[]) =>
+			envelope('everything', { characters: [], log: [], encounters: foes, session: {} });
+		await importPayload(page, everything([makeFoe('f-1', 'Old Scar')]));
+		await waitForWorld(page, (w) => w.foes.length === 1);
+
+		await importPayload(page, everything([makeFoe('f-incoming', 'old scar', { ticks: 12 })]));
+		const dialog = page.locator('.icd-dialog');
+		await expect(dialog).toBeVisible({ timeout: 5_000 });
+		await expect(dialog.locator('.icd-group-label')).toHaveText(['Foe']);
+		await expect(dialog.locator('.icd-name')).toHaveText(['old scar']);
+		await dialog.locator('[role="radio"][data-value="replace"]').click();
+		await dialog.locator('button.btn-primary').click();
+		await expect(dialog).not.toBeVisible();
+		await waitForWorld(page, (w) => w.foes.some((f) => f.ticks === 12));
+
+		const world = await readWorld(page);
+		expect(world.foes).toHaveLength(1);
+		expect(world.foes[0]).toMatchObject({ id: 'f-1', customName: 'old scar', ticks: 12 });
 	});
 
 	test('opens and lists colliding rows grouped by category (incl. places + journeys / sites split)', async ({
