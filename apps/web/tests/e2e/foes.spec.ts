@@ -7,7 +7,8 @@
  * active foe is the trash button (`.fa-hdr-settings-btn`) → confirm.
  */
 import { test, expect, type Page } from '@playwright/test';
-import { resetFoes } from './helpers/reset';
+import { resetFoes, getTestToken } from './helpers/reset';
+import { expectSwitcherShowsActiveIcon } from './helpers/home';
 
 const FOE_AREA = '.home-area--foes';
 const FOE_HEADER = `${FOE_AREA} .fa-header`;
@@ -106,5 +107,59 @@ test.describe('Foes area (v2)', () => {
 		}
 		expect(await foeCount(page)).toBe(0);
 		await expect(page.locator(`${FOE_AREA} .fa-empty`)).toBeVisible({ timeout: 5_000 });
+	});
+});
+
+// ── The switcher's icon ─────────────────────────────────────────────────────
+
+test.describe('Foes switcher icon', () => {
+	const API = 'http://127.0.0.1:3000/api/v1';
+	const foe = (customName: string, foeId: string) => ({
+		id: crypto.randomUUID(),
+		foeId,
+		quantity: 'solo',
+		effectiveRank: 2,
+		ticks: 0,
+		notes: '',
+		customName,
+		vanquished: false,
+	});
+
+	test.beforeAll(async () => {
+		// An animal and a person: two natures, two icons, two colours.
+		const res = await fetch(`${API}/session/encounters`, {
+			method: 'PATCH',
+			headers: {
+				Authorization: `Bearer ${await getTestToken()}`,
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				encounters: [foe('Icon Bear', 'ironsworn/bear'), foe('Icon Broken', 'ironsworn/broken')],
+			}),
+		});
+		expect(res.ok, 'seed foes').toBeTruthy();
+	});
+	test.afterAll(async () => {
+		await resetFoes();
+	});
+
+	test('the switcher shows the selected foe’s icon, an animal’s or a person’s', async ({
+		page,
+	}) => {
+		await page.goto('/home');
+		await waitForFoesLoaded(page);
+		const pick = async (name: string) => {
+			await page.locator(FOE_COMBOBOX).click();
+			await page.locator('.cb-popover .cb-item', { hasText: name }).click();
+			await expect(page.locator('.cb-popover')).toBeHidden({ timeout: 3_000 });
+		};
+
+		await pick('Icon Bear');
+		await expectSwitcherShowsActiveIcon(page, FOE_COMBOBOX);
+		const bearIcon = await page.locator(`${FOE_COMBOBOX} .cb-item-icon`).innerHTML();
+
+		await pick('Icon Broken');
+		await expectSwitcherShowsActiveIcon(page, FOE_COMBOBOX);
+		expect(await page.locator(`${FOE_COMBOBOX} .cb-item-icon`).innerHTML()).not.toBe(bearIcon);
 	});
 });
