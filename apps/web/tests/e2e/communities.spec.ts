@@ -10,6 +10,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetCommunities } from './helpers/reset';
+import { expectSwitcherShowsActiveIcon } from './helpers/home';
 
 const CM_AREA = '.home-area--communities';
 const CM_HEADER = `${CM_AREA} .cm-header`;
@@ -75,6 +76,18 @@ test.describe('Connections area (v2)', () => {
 
 	test('shows the connection switcher combobox', async ({ page }) => {
 		await expect(page.locator(CM_COMBOBOX)).toBeVisible();
+	});
+
+	test('the switcher shows the selected connection’s icon, whatever its kind', async ({ page }) => {
+		await openNew(page, 'Settlement');
+		await fillAndCreate(page, 'Iconford');
+		await expectSwitcherShowsActiveIcon(page, CM_COMBOBOX);
+		const settlementIcon = await page.locator(`${CM_COMBOBOX} .cb-item-icon`).innerHTML();
+
+		await openNew(page, 'NPC');
+		await fillAndCreate(page, 'Ida Iconwright');
+		await expectSwitcherShowsActiveIcon(page, CM_COMBOBOX);
+		expect(await page.locator(`${CM_COMBOBOX} .cb-item-icon`).innerHTML()).not.toBe(settlementIcon);
 	});
 
 	// ── Communities ──────────────────────────────────────────────────────────

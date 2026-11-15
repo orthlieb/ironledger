@@ -104,3 +104,21 @@ export async function ensureCharacter(page: Page): Promise<void> {
 	if (await hasActiveCharacter(page)) return;
 	await createCharacter(page);
 }
+
+/**
+ * An area's header switcher shows the selected entry's icon, in its colour,
+ * the same as that entry's (checked) row in the open list.
+ */
+export async function expectSwitcherShowsActiveIcon(page: Page, trigger: string): Promise<void> {
+	const read = (el: Element) => ({
+		html: el.innerHTML,
+		color: (el as HTMLElement).style.getPropertyValue('--kind-color'),
+	});
+	const shown = await page.locator(`${trigger} .cb-item-icon`).evaluate(read);
+	await page.locator(trigger).click();
+	const row = page.locator('.cb-popover .cb-item:has(.cb-check svg) .cb-item-icon');
+	await expect(row).toBeVisible({ timeout: 3_000 });
+	expect(shown).toEqual(await row.evaluate(read));
+	await page.keyboard.press('Escape');
+	await expect(page.locator('.cb-popover')).toBeHidden({ timeout: 3_000 });
+}
