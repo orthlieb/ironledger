@@ -179,16 +179,13 @@
 						bind:this={doingEl}
 						rows="2"
 						bind:value={doing}
-						placeholder="e.g. Roll Face Danger from the moves dialog."
+						placeholder="The steps you took, in order…"
 					></textarea>
 				</label>
 
 				<label class="bg-field">
 					<span>What did you expect to happen?</span>
-					<textarea
-						rows="2"
-						bind:value={expected}
-						placeholder="e.g. See a d6 + 2 vs 2d10 animation and a log entry."
+					<textarea rows="2" bind:value={expected} placeholder="What should have happened…"
 					></textarea>
 				</label>
 
@@ -197,7 +194,7 @@
 					<textarea
 						rows="3"
 						bind:value={happened}
-						placeholder="e.g. Dice panel opened but the Roll button did nothing."
+						placeholder="What happened instead, and any message you saw…"
 					></textarea>
 				</label>
 

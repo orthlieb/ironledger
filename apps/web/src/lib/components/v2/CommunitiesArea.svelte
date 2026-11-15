@@ -1247,7 +1247,7 @@
 											value={n.firstLook ?? ''}
 											oninput={(e) =>
 												updateNpc({ firstLook: (e.target as HTMLInputElement).value })}
-											placeholder="First look — well-armed, cloaked, weathered…"
+											placeholder="How they strike you at first sight…"
 										/>
 									</div>
 								{/if}
@@ -1260,7 +1260,7 @@
 											type="text"
 											value={n.activity ?? ''}
 											oninput={(e) => updateNpc({ activity: (e.target as HTMLInputElement).value })}
-											placeholder="Activity — patrolling, mending, resting…"
+											placeholder="What they’re doing when you meet them…"
 										/>
 									</div>
 								{/if}
@@ -1274,7 +1274,7 @@
 											value={n.disposition ?? ''}
 											oninput={(e) =>
 												updateNpc({ disposition: (e.target as HTMLInputElement).value })}
-											placeholder="Disposition — helpful, wary, hostile…"
+											placeholder="How they feel toward you…"
 										/>
 									</div>
 								{/if}
@@ -1286,7 +1286,7 @@
 										type="text"
 										value={n.role}
 										oninput={(e) => updateNpc({ role: (e.target as HTMLInputElement).value })}
-										placeholder="Role…"
+										placeholder="What they do, their place in the world…"
 									/>
 								</div>
 								<div class="cm-field-row">
@@ -1297,7 +1297,7 @@
 										type="text"
 										value={n.goal}
 										oninput={(e) => updateNpc({ goal: (e.target as HTMLInputElement).value })}
-										placeholder="Goal…"
+										placeholder="What they want…"
 									/>
 								</div>
 								<div class="cm-field-row">
@@ -1308,7 +1308,7 @@
 										type="text"
 										value={n.descriptor}
 										oninput={(e) => updateNpc({ descriptor: (e.target as HTMLInputElement).value })}
-										placeholder="Short likeness — tall, gaunt, scarred…"
+										placeholder="What you’ve learned about them…"
 									/>
 								</div>
 								<div class="cm-field-row">
@@ -1329,7 +1329,7 @@
 										type="text"
 										value={n.location}
 										oninput={(e) => updateNpc({ location: (e.target as HTMLInputElement).value })}
-										placeholder="Free-text whereabouts — a spot within the container below…"
+										placeholder="Where to find them, in the place below…"
 									/>
 								</div>
 								<!-- Within: the structured container (settlement/landmark). Sits below
@@ -1388,7 +1388,7 @@
 										? 'Actions taken by or things that have happened to this NPC in your story…'
 										: activeEntry.kind === 'place'
 											? 'Events that have happened here, current state…'
-											: 'Situational notes — conditions, or aspects of the trouble…'}
+											: 'How things stand here now, and how the trouble goes…'}
 									rows={4}
 								/>
 							</div>
@@ -1403,7 +1403,7 @@
 										bind:editing={editingShortDesc}
 										value={activeEntry.data.shortDescription ?? ''}
 										oninput={(v) => setShortDescription(v)}
-										placeholder="A line or two — shown when its map marker is selected…"
+										placeholder="A line or two, shown when its map marker is selected…"
 										rows={3}
 									/>
 								</div>
