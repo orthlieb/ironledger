@@ -144,7 +144,6 @@
 		box-shadow: 0 0 0 2px var(--accent-glow);
 	}
 	:global(.nd-textarea::placeholder) {
-		color: var(--text-dimmer);
 		font-style: italic;
 	}
 	:global(.nd-hint) {

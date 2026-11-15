@@ -831,7 +831,7 @@
 										bind:editing={editingShortDesc}
 										value={activeExp.shortDescription ?? ''}
 										oninput={(v) => updateExp({ shortDescription: v })}
-										placeholder="A line or two — shown when its map marker is selected…"
+										placeholder="A line or two, shown when its map marker is selected…"
 										rows={3}
 									/>
 								</div>

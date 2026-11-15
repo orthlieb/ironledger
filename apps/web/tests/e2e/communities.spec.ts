@@ -295,3 +295,40 @@ test.describe('Connections area (v2)', () => {
 		await expect(page.locator(`${CM_AREA} .cm-empty`)).toBeVisible({ timeout: 5_000 });
 	});
 });
+
+// ── Suggested text ─────────────────────────────────────────────────────────
+// A field's suggested text (its placeholder) is the Notes hint's colour, in
+// both themes: the browser's own placeholder grey is much brighter on dark.
+
+for (const scheme of ['dark', 'light'] as const) {
+	test.describe(`Suggested text, ${scheme} theme`, () => {
+		test.use({ colorScheme: scheme });
+
+		test('an NPC’s fields and its notes, editing, show it in the Notes hint’s colour', async ({
+			page,
+		}) => {
+			await page.goto('/home');
+			await waitForCommunitiesLoaded(page);
+			await openNew(page, 'NPC');
+			await fillAndCreate(page, `Pale Wren (${scheme})`);
+
+			const area = page.locator(CM_AREA);
+			const hint = area.locator('.cm-core-notes .md-notes-placeholder');
+			await expect(hint).toBeVisible();
+			const hintColor = await hint.evaluate((el) => getComputedStyle(el).color);
+			const placeholderColor = (sel: string) =>
+				area
+					.locator(sel)
+					.first()
+					.evaluate((el) => getComputedStyle(el, '::placeholder').color);
+
+			for (const field of ['role', 'goal', 'desc'])
+				expect(await placeholderColor(`input[id^="cm-${field}-"]`), field).toBe(hintColor);
+
+			// And the notes' own box, once it's being edited.
+			await hint.click();
+			await expect(area.locator('.cm-core-notes textarea')).toBeVisible();
+			expect(await placeholderColor('.cm-core-notes textarea')).toBe(hintColor);
+		});
+	});
+}

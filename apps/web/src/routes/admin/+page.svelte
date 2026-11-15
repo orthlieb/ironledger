@@ -946,7 +946,7 @@
 									required
 									maxlength="254"
 									autocomplete="email"
-									placeholder="name@example.com"
+									placeholder="Where the invite is sent"
 								/>
 							</label>
 							<label class="invites-field">
@@ -959,7 +959,7 @@
 									bind:value={inviteDisplayName}
 									maxlength="80"
 									autocomplete="nickname"
-									placeholder="e.g. Silk Char"
+									placeholder="The name shown for them"
 								/>
 							</label>
 							<div class="invites-actions">
@@ -1187,7 +1187,7 @@
 									<span>Message</span>
 									<input
 										type="text"
-										placeholder="e.g. Upgrading to v2.0"
+										placeholder="What the maintenance page says"
 										bind:value={maintMessage}
 										maxlength="500"
 									/>
@@ -1237,7 +1237,7 @@
 									<span>Message shown on the register page</span>
 									<input
 										type="text"
-										placeholder="e.g. Registration is currently closed."
+										placeholder="Why registration is closed, or until when"
 										bind:value={regLockMessage}
 										maxlength="500"
 									/>
@@ -1365,7 +1365,7 @@
 									type="text"
 									bind:value={broadcastMessage}
 									maxlength="500"
-									placeholder="e.g. Foe images regenerating tonight 10–11pm UTC."
+									placeholder="What the banner says to everyone"
 								/>
 							</label>
 							<RadioGroup.Root
@@ -2277,9 +2277,6 @@
 	}
 	.logs-search:focus {
 		border-color: var(--text-accent);
-	}
-	.logs-search::placeholder {
-		color: var(--text-dimmer);
 	}
 
 	.logs-match-count {

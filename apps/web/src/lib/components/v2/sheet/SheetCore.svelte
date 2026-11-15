@@ -408,7 +408,7 @@
 <TrackNotesDialog
 	bind:this={bondsNotesRef}
 	title="Bonds Formed"
-	placeholder="Note significant bonds — people, communities, places…"
+	placeholder="Who and what this character has bonded with, and how…"
 	onsave={(v) => (cd.bondsFormed = v)}
 />
 <TrackNotesDialog
