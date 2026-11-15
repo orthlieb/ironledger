@@ -15,7 +15,14 @@ import { test, expect, type Download } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
-import { resetAll, getTestToken, seedCommunity, fetchMaps } from './helpers/reset';
+import {
+	resetAll,
+	getTestToken,
+	seedCommunity,
+	fetchMaps,
+	setExpansions,
+	resetExpansions,
+} from './helpers/reset';
 import { settleHome } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
@@ -855,6 +862,13 @@ test.describe('Import / Export — full round-trip', () => {
 				],
 			}),
 		}).then((r) => expect(r.ok, 'seed log').toBeTruthy());
+
+		// Content packs away from their defaults: YRT on, Lodestar off.
+		await setExpansions({ yrt: true, lodestar: false }, tok);
+	});
+
+	test.afterAll(async () => {
+		await resetExpansions();
 	});
 
 	test('export everything, wipe, re-import, and every type returns intact', async ({ page }) => {
@@ -872,9 +886,19 @@ test.describe('Import / Export — full round-trip', () => {
 		const body = JSON.parse(strFromU8(unzipSync(new Uint8Array(zipBytes))['everything.json']!)) as {
 			log?: unknown[];
 			encounters?: unknown[];
+			extensions?: Array<{ id: string; name: string; enabled: boolean }>;
 		};
 		expect(body.log, 'the whole log').toHaveLength(LOG_FILLER + 1);
 		expect(body.encounters, 'the foe').toHaveLength(1);
+		// Which content packs were on, each by id and name; core isn't listed.
+		expect(body.extensions).toEqual(
+			expect.arrayContaining([
+				{ id: 'delve', name: 'Delve', enabled: true },
+				{ id: 'yrt', name: 'YRT', enabled: true },
+				{ id: 'lodestar', name: 'Lodestar', enabled: false },
+			]),
+		);
+		expect(body.extensions?.some((e) => e.id === 'base')).toBe(false);
 
 		// 2. Wipe the account and confirm it's empty on a fresh load.
 		await resetAll();
@@ -887,6 +911,9 @@ test.describe('Import / Export — full round-trip', () => {
 			const log = await fetch('/api/session/log?limit=1000', { credentials: 'include' }).then((r) =>
 				r.json(),
 			);
+			const packs = await fetch('/api/session/extensions', { credentials: 'include' }).then((r) =>
+				r.json(),
+			);
 			return {
 				chars: chars.length,
 				communities: (s.communities ?? []).length,
@@ -895,6 +922,7 @@ test.describe('Import / Export — full round-trip', () => {
 				expeditions: (s.expeditions ?? []).length,
 				foes: (s.encounters ?? []).length,
 				log: log.length,
+				packs: packs.extensions,
 			};
 		});
 		expect(empty).toEqual({
@@ -905,6 +933,8 @@ test.describe('Import / Export — full round-trip', () => {
 			expeditions: 0,
 			foes: 0,
 			log: 0,
+			// Every pack back to its default (YRT off, Lodestar on).
+			packs: {},
 		});
 
 		// 3. Re-import the produced zip.
@@ -915,6 +945,7 @@ test.describe('Import / Export — full round-trip', () => {
 		});
 		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 10_000 });
 		await expect(page.locator('.imd-errlist')).toHaveCount(0);
+		await expect(page.locator('.imd-state-sub')).toContainText('Switched on the YRT content pack.');
 
 		// 4. Verify every type came back with its data intact.
 		const state = await page.evaluate(async () => {
@@ -933,6 +964,9 @@ test.describe('Import / Export — full round-trip', () => {
 				expeditions: s.expeditions ?? [],
 				foes: s.encounters ?? [],
 				log: Array.isArray(log) ? log : (log.entries ?? []),
+				packs: (
+					await fetch('/api/session/extensions', { credentials: 'include' }).then((r) => r.json())
+				).extensions,
 			};
 		});
 
@@ -988,6 +1022,65 @@ test.describe('Import / Export — full round-trip', () => {
 		expect(mark).toMatchObject({ id: LOG_MARK_ID, ts: LOG_MARK_TS, note: 'Remember the ferryman' });
 		// Newest first, by its own time: the filler is newer than the marker.
 		expect(state.log[0].title).toBe(`Filler ${LOG_FILLER - 1}`);
+
+		// Content packs — YRT, on in the backup, is on again. Lodestar, off in
+		// the backup, is left as it is here: a restore never switches one off.
+		expect(state.packs).toEqual({ yrt: true });
+	});
+});
+
+// ---------------------------------------------------------------------------
+// A backup with a content pack this app doesn't have: the pack is named, and
+// everything in the backup still imports (the packs it does have go on).
+// ---------------------------------------------------------------------------
+
+test.describe('Import — a content pack this app does not have', () => {
+	test.beforeAll(async () => {
+		await resetAll();
+	});
+	test.afterAll(async () => {
+		await resetExpansions();
+	});
+
+	test('warns about the missing pack and imports the rest anyway', async ({ page }) => {
+		await gotoHome(page);
+		await uploadImport(
+			page,
+			makeManifest('everything', {
+				characters: [{ name: 'Far Wanderer', data: { fields: { lostField: 'Kept anyway' } } }],
+				extensions: [
+					{ id: 'lost-pack', name: 'Lost Pack', enabled: true },
+					{ id: 'yrt', name: 'YRT', enabled: true },
+					{ id: 'gone-off', name: 'Gone Off', enabled: false },
+				],
+			}),
+		);
+		const notes = page.getByTestId('import-warnings');
+		await expect(notes).toBeVisible({ timeout: IMD_TIMEOUT });
+		await expect(notes).toContainText('“Lost Pack” content pack');
+		// One that was off in the backup needs nothing, so isn't named.
+		await expect(notes).not.toContainText('Gone Off');
+		await expect(notes.locator('li')).toHaveCount(1);
+		await expect(page.locator('.imd-badge--warn')).toBeVisible();
+		await expect(page.locator('.imd-state-title')).toHaveText('Import complete');
+		await expect(page.locator('.imd-state-sub')).toContainText(
+			'Imported 1 character. Switched on the YRT content pack.',
+		);
+
+		const after = await page.evaluate(async () => {
+			const chars = await fetch('/api/characters', { credentials: 'include' }).then((r) =>
+				r.json(),
+			);
+			const packs = await fetch('/api/session/extensions', { credentials: 'include' }).then((r) =>
+				r.json(),
+			);
+			return { chars, packs: packs.extensions };
+		});
+		const wanderer = after.chars.find((c: { name: string }) => c.name === 'Far Wanderer');
+		expect(wanderer, 'the character imported').toBeDefined();
+		// A field no pack here declares is kept as it was.
+		expect(wanderer.data?.fields).toEqual({ lostField: 'Kept anyway' });
+		expect(after.packs).toEqual({ yrt: true });
 	});
 });
 

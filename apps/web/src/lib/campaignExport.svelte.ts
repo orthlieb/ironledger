@@ -5,9 +5,9 @@
 // JSON body with portraits re-embedded inline, plus each selected map's
 // `maps/<id>/…` dir) or a Markdown bundle (`exportMarkdownZip`: one file per
 // entity, a README index, portraits under images/, each map as an SVG with
-// numbered pins). `CampaignExport` drives the busy overlay. Foes appear only
-// in the Markdown bundle: encounters are transient, so the JSON leaves them
-// out. See docs/import-schema.md.
+// numbered pins). `CampaignExport` drives the busy overlay. The zip also
+// records which content packs are on, so a restore can switch them back on.
+// See docs/import-schema.md.
 // =============================================================================
 
 import { tick } from 'svelte';
@@ -28,6 +28,7 @@ import {
 import { loadOracles } from '#lib/oracleStore.svelte.js';
 import { findFoe, resolveFoeName, FOE_RANKS } from '#lib/foeStore.svelte.js';
 import { sessionLog, fetchWholeLog, type LogEntry } from '#lib/log.svelte.js';
+import { getExtensions, loadExtensions, packChoices } from '#lib/expansionStore.svelte.js';
 import {
 	makeTimestamp,
 	downloadFile,
@@ -307,6 +308,14 @@ export class CampaignExport {
 				renderSummary();
 			}
 			payload.session = session;
+			// Which content packs are on, whatever was picked: what's in the
+			// file may need them to show.
+			await loadExtensions();
+			if (getExtensions().length) payload.extensions = packChoices();
+			else
+				this.warnings.push(
+					"The content packs couldn't be read, so the file doesn't say which are on.",
+				);
 
 			// Selected maps ride along as nested `maps/<id>/…` dirs (markers +
 			// background bytes).

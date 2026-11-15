@@ -78,14 +78,14 @@ Import dispatches **solely on `manifest.type`**.
 
 ### Export types
 
-| `type`           | Export menu item  | `data` shape                                                                       | Body filename           | Zip filename                    |
-| ---------------- | ----------------- | ---------------------------------------------------------------------------------- | ----------------------- | ------------------------------- |
-| `character`      | Current Character | `{ name, data }`                                                                   | `character.json`        | `<slug-of-name>.zip`            |
-| `all-characters` | All Characters    | `Array<{ name, data }>`                                                            | `characters.json`       | `all-characters-<stamp>.zip`    |
-| `communities`    | Connections       | `{ communities: Community[], npcs: Npc[], places: Place[] }`                       | `communities.json`      | `communities-<stamp>.zip`       |
-| `expeditions`    | Expeditions       | `Array<Expedition>` (Journey \| Site \| Scene)                                     | `expeditions.json`      | `expeditions-<stamp>.zip`       |
-| `everything`     | Everything        | `{ characters, log, communities, npcs, places, expeditions, encounters, session }` | `everything.json`       | `ironledger-export-<stamp>.zip` |
-| `log`            | Session Log       | `Array<LogEntry>` (oldest-first)                                                   | _(no zip — plain JSON)_ | `session-log-<stamp>.json`      |
+| `type`           | Export menu item  | `data` shape                                                                                   | Body filename           | Zip filename                    |
+| ---------------- | ----------------- | ---------------------------------------------------------------------------------------------- | ----------------------- | ------------------------------- |
+| `character`      | Current Character | `{ name, data }`                                                                               | `character.json`        | `<slug-of-name>.zip`            |
+| `all-characters` | All Characters    | `Array<{ name, data }>`                                                                        | `characters.json`       | `all-characters-<stamp>.zip`    |
+| `communities`    | Connections       | `{ communities: Community[], npcs: Npc[], places: Place[] }`                                   | `communities.json`      | `communities-<stamp>.zip`       |
+| `expeditions`    | Expeditions       | `Array<Expedition>` (Journey \| Site \| Scene)                                                 | `expeditions.json`      | `expeditions-<stamp>.zip`       |
+| `everything`     | Everything        | `{ characters, log, communities, npcs, places, expeditions, encounters, extensions, session }` | `everything.json`       | `ironledger-export-<stamp>.zip` |
+| `log`            | Session Log       | `Array<LogEntry>` (oldest-first)                                                               | _(no zip — plain JSON)_ | `session-log-<stamp>.json`      |
 
 `<stamp>` is local time formatted `YYYY-MM-DD_HHmm` (e.g. `2026-06-18_1504`).
 
@@ -467,6 +467,7 @@ entities exactly instead of by name.
     "places": [{ "id": "…", "name": "…" }],
     "expeditions": [{ "id": "…", "type": "journey" }],
     "encounters": [{ "id": "…", "foeId": "ironsworn/bear", "customName": "…", "ticks": 12 }],
+    "extensions": [{ "id": "yrt", "name": "YRT", "enabled": true }],
     "session": { "activeCharId": "…", "activeFoeId": "…", "activeExpeditionId": "…" }
   }
 }
@@ -494,9 +495,24 @@ re-applied on import).
 > that content is on). Older exports have no `encounters`; the Markdown
 > export also lists the foes, as `foes.md`.
 
+> **Content packs.** `extensions` lists every content pack but core
+> (`base`, always on) with whether it was on, whatever the dialog had picked:
+> what's in the file may need them to show. Import switches on each pack that
+> was on, before any rows, and never switches one off; the done stage's
+> summary names the packs it switched on ("Switched on the YRT content
+> pack."). A pack that was on but that this app doesn't have (a dev-only
+> pack, say) is named under **Worth knowing** on the done stage, and the
+> import goes on: everything in the file still imports, and what comes from
+> that pack is kept but doesn't show. A pack that was off is ignored. Rows
+> that aren't `{ id, name, enabled }` with an id the account's choices take
+> are skipped. Older exports have no `extensions`, and nothing is switched.
+> The rules live in `#lib/packChoices.ts`; the choices themselves are the
+> account's ([expansion-toggles.md](expansion-toggles.md)).
+
 > **Nothing goes quietly.** A picture, a map, or a map's background that
 > can't be downloaded at export time is left out with a warning in the export
-> overlay, which then waits for Close.
+> overlay, which then waits for Close. So is the list of content packs, if it
+> can't be read.
 
 ---
 
@@ -657,13 +673,13 @@ which the Hamburger → Import… action opens and `CampaignImport.run()`
 (`#lib/campaignImport.svelte.ts`, which also holds the dialog's state) drives
 through a small set of stages:
 
-| Stage         | When                                                    | What the user sees                                           |
-| ------------- | ------------------------------------------------------- | ------------------------------------------------------------ |
-| **idle**      | Dialog just opened.                                     | Drop zone + "choose a file".                                 |
-| **importing** | Reading + applying the archive.                         | Spinner.                                                     |
-| **review**    | The validate pass dropped one or more rows (see below). | ⚠ list of unreadable rows + "Import the _N_ valid items?".   |
-| **done**      | Finished (cleanly, or with skipped rows).               | ✓ summary; a warn badge + issue list when rows were skipped. |
-| **error**     | A structural `ImportError` aborted the whole archive.   | ⚠ the readable error message; "Choose another file".         |
+| Stage         | When                                                    | What the user sees                                                                                                                  |
+| ------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **idle**      | Dialog just opened.                                     | Drop zone + "choose a file".                                                                                                        |
+| **importing** | Reading + applying the archive.                         | Spinner.                                                                                                                            |
+| **review**    | The validate pass dropped one or more rows (see below). | ⚠ list of unreadable rows + "Import the _N_ valid items?".                                                                          |
+| **done**      | Finished (cleanly, or with skipped rows).               | ✓ summary; a warn badge + issue list when rows were skipped, and a **Worth knowing** list for a content pack this app doesn't have. |
+| **error**     | A structural `ImportError` aborted the whole archive.   | ⚠ the readable error message; "Choose another file".                                                                                |
 
 A drag-and-drop onto the page and the starter-seed both feed the same
 `CampaignImport.run()`; the seed path runs **silently** (no dialog), importing whatever

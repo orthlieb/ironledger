@@ -60,7 +60,21 @@ export function sourceLabel(source: CatalogueSource | string): string;
 /** Ordered list of registered extensions (manifest `order`), for building
  *  the settings panel and any generic source-order UI. */
 export function getExtensions(): ExtensionInfo[];
+
+/** Every toggleable extension ({ id, name, enabled }), for a Zip backup. */
+export function packChoices(): PackChoice[];
+
+/** Switch on the given extensions that are here and off, awaiting the
+ *  account's save (a restore). Never switches one off; throws if the save
+ *  fails. Returns those switched on. */
+export function enableExtensions(ids: string[]): Promise<ExtensionInfo[]>;
 ```
+
+> **Backups.** A Zip export records the choices (`extensions` in
+> `everything.json`), and importing it switches on the packs it had on, never
+> switching one off; a pack this app doesn't have is named on the import's
+> done stage while the rest imports. See
+> [import-schema.md § Everything](import-schema.md#everything).
 
 Hydration is synchronous on first import (with a `typeof window` guard for SSR). The state uses Svelte 5 module-level `$state`, so any component reading `isSourceEnabled('<id>')` re-runs reactively when a toggle flips.
 

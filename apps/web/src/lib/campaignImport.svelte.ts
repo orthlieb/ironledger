@@ -2,7 +2,8 @@
 // Iron Ledger — import (Hamburger → Import…, a dropped file, the starter seed)
 //
 // Takes the `.zip` bundles the export writes: a single map (`importMapZip`),
-// or a bundle of characters, connections, expeditions, log entries and maps.
+// or a bundle of characters, connections, expeditions, foes, log entries and
+// maps, which also switches on the content packs it had on.
 // Every row is shape-checked first; a file with bad rows pauses on the review
 // stage. Names that already exist get one strategy for the whole file (new,
 // replace, skip or cancel). Portraits go to the blob store, connections and
@@ -30,6 +31,8 @@ import {
 	type CollisionStrategy,
 } from '#lib/components/importCollision.js';
 import { importLogEntries, type LogEntry } from '#lib/log.svelte.js';
+import { enableExtensions, getExtensions, loadExtensions } from '#lib/expansionStore.svelte.js';
+import { planPackRestore, readPackChoices } from '#lib/packChoices.js';
 import { parseImportZip, sanitizeLogHtml, ImportError } from '#lib/importSanitizer.js';
 import {
 	importMapZip,
@@ -69,6 +72,9 @@ export class CampaignImport {
 	liveSummary = $state('');
 	/** Every problem found: rows that failed the shape check or to apply. */
 	errors = $state<string[]>([]);
+	/** Worth knowing once it's in, though nothing failed: a content pack the
+	 *  backup had on that this app doesn't have. */
+	warnings = $state<string[]>([]);
 	/** Rows left to import once the review stage drops the bad ones. */
 	validCount = $state(0);
 	/** The bar. `total` 0 = row count not known yet (still unpacking), which
@@ -87,6 +93,7 @@ export class CampaignImport {
 	open(): void {
 		this.stage = 'idle';
 		this.errors = [];
+		this.warnings = [];
 		this.summary = '';
 		this.dialogOpen = true;
 	}
@@ -95,6 +102,7 @@ export class CampaignImport {
 	reset(): void {
 		this.stage = 'idle';
 		this.errors = [];
+		this.warnings = [];
 		this.summary = '';
 		this.liveSummary = '';
 		this.progress = null;
@@ -188,6 +196,7 @@ export class CampaignImport {
 			}
 		};
 		this.errors = [];
+		this.warnings = [];
 		this.summary = '';
 		this.liveSummary = '';
 		this.progress = null;
@@ -681,6 +690,33 @@ export class CampaignImport {
 					? step('Log entries', () => importLogEntries(incomingLog), incomingLog.length)
 					: undefined;
 
+			// The content packs the backup had on are switched on first (none is
+			// switched off), so what needs them shows. One this app doesn't have
+			// is noted, and what the backup holds from it imports all the same.
+			const packWarnings: string[] = [];
+			let packsOn: string[] = [];
+			const incomingPacks = readPackChoices(
+				kind === 'everything' ? (parsed.data as { extensions?: unknown })?.extensions : undefined,
+			);
+			if (incomingPacks.some((p) => p.enabled)) {
+				await step(
+					'Content packs',
+					async () => {
+						await loadExtensions();
+						const here = getExtensions().map((e) => e.id);
+						if (here.length === 0)
+							throw new Error("couldn't be read, so the backup's weren't switched on");
+						const plan = planPackRestore(incomingPacks, here);
+						for (const p of plan.missing)
+							packWarnings.push(
+								`This app doesn't have the “${p.name}” content pack the backup had on. Everything in the backup is imported anyway, but what comes from that pack won't show.`,
+							);
+						packsOn = (await enableExtensions(plan.switchOn)).map((e) => e.name);
+					},
+					0,
+				);
+			}
+
 			if (parsed.manifest && parsed.data) {
 				const m = parsed.manifest as { type: string };
 				if (m.type === 'character' || m.type === 'all-characters') {
@@ -795,10 +831,16 @@ export class CampaignImport {
 			if (incomingFoes.length)
 				parts.push(`${incomingFoes.length} foe${incomingFoes.length === 1 ? '' : 's'}`);
 			if (logCount) parts.push(`${logCount} log ${logCount === 1 ? 'entry' : 'entries'}`);
+			const packNote = packsOn.length
+				? ` Switched on the ${new Intl.ListFormat('en').format(packsOn)} content pack${packsOn.length === 1 ? '' : 's'}.`
+				: '';
 			this.summary =
 				(parts.length ? `Imported ${parts.join(' · ')}.` : 'Nothing new to import.') +
-				(validErrors.length ? ` ${validErrors.length} skipped.` : '');
+				(validErrors.length ? ` ${validErrors.length} skipped.` : '') +
+				packNote;
 			this.errors = [...validErrors, ...errors];
+			this.warnings = packWarnings;
+			if (silent) for (const w of packWarnings) console.warn('[import]', w);
 			// Hold the (full) bar the 5s minimum before flipping to the summary.
 			if (!silent) {
 				await holdImportMin();
