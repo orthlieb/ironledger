@@ -94,8 +94,8 @@ exports are the re-importable form and the contract this doc defines.
 Separate human-readable **Markdown** exports exist in the UI (the Session
 Log alone as `session-log-<stamp>.md`, or anything selected as a Markdown
 zip); these are one-way (not re-importable) and out of scope here. How
-maps come out in the Markdown zip (a numbered SVG and a legend, hidden
-layers and background-less maps left out) is in
+maps come out in the Markdown zip (a numbered SVG and a legend; markers on
+hidden layers and maps with no background left out) is in
 [campaign-map.md → Markdown](campaign-map.md#markdown-numbered-map--legend).
 
 > **Maps.** Campaign maps ride along inside `everything` as nested
@@ -104,9 +104,11 @@ layers and background-less maps left out) is in
 > records the map's owner **by name** (`ownerKind` + `ownerName`) so import can
 > re-link it to the owning community / place / journey / site after entities
 > land (ids regenerate, names don't). A map's **layers** travel too — the
-> layer list (`settings.layers`) and every marker's `layer` id are in
-> `map.json`, so a round-tripped map keeps its layers and which marker sits on
-> each (a marker whose layer id no longer resolves falls back to Default). Each
+> layer list (`settings.layers`, each layer's `hidden` flag with it) and every
+> marker's `layer` id are in `map.json`, markers on hidden layers included, so
+> a round-tripped map keeps its layers, which of them are hidden, and which
+> marker sits on each (a marker whose layer id no longer resolves falls back
+> to Default). Each
 > marker's **display `type`** (`both` / `label` / `icon`) travels as well;
 > export always writes one, and import backfills a derived `type` on any older
 > marker that predates the field, so imported markers are never ambiguous about

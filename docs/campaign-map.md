@@ -774,7 +774,9 @@ background-upload errors.
 
 `map.json` records the owner **by name** (`ownerKind` + `ownerName`) — ids
 regenerate on import, names survive — so an owned map can re-link on the way
-back in.
+back in. Every marker goes in, those on hidden layers too, with the settings
+as they are, so an imported map has the same layers, the same ones hidden,
+and each marker on its own.
 
 On import the pieces are:
 
@@ -818,6 +820,34 @@ Hidden layers aren't drawn, so they aren't in it; the scale bar is a
 separate overlay and isn't either. Labels fall back to a system sans-serif:
 an SVG drawn as an image can't reach the page's web fonts. The button is off
 until the map has a background.
+
+### Markdown (numbered map + legend)
+
+☰ → Export… → **Markdown** writes each selected map as two files in the
+bundle (`exportMarkdownZip` in `lib/campaignExport.svelte.ts`):
+
+- `images/map-<name>.svg` — the background as a data URI under a numbered
+  pin per marker, in the marker's colour with a legible number
+  (`mapSvg` / `pinInk` in `lib/exportMarkdown.ts`). Vector, so it scales;
+  no labels or icons.
+- `maps/<name>.md` — the map's name, that image, then `## Markers`: the
+  numbers in the order the markers were placed, each linked to its
+  settlement, landmark or expedition page when that page is in the bundle
+  too, else plain text.
+
+**Markers on hidden layers** are left out of both, as they're off the map,
+without a warning. Visibility is the map's own (`settings.layers`, read
+through `lib/mapLayerRules.ts`, the same rules the map draws by). The Zip
+export keeps them, on their layer, which stays hidden (see the Everything
+zip below).
+
+The rest of what's left out is a warning the export overlay lists at the
+end (it then waits for Close rather than closing itself):
+
+- **A map with no background**, or whose background can't be downloaded —
+  there's nothing to draw the pins on, so it's skipped, and the README
+  doesn't list it.
+- A map, or the map list, that can't be loaded.
 
 ### Everything zip
 

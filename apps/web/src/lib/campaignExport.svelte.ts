@@ -706,9 +706,10 @@ export async function exportMarkdownZip(
 	// ── Campaign Maps — one file per map under maps/ ──────────────────
 	// Each map file shows its background with a numbered pin per marker, and
 	// a linked list of the markers → the settlement / landmark / expedition
-	// each one pins. Markers on hidden layers stay out, as they're off the
-	// map; a map with no background is skipped, having nothing to draw the
-	// pins on. Each of those is a warning, as is a map that can't be loaded.
+	// each one pins. Markers on hidden layers stay out, quietly, as they're
+	// off the map (the Zip keeps them, layer and all). A map with no
+	// background is skipped, having nothing to draw the pins on: that's a
+	// warning, as is a map that can't be loaded.
 	if (mapSet.size) {
 		const mapsLeftOut = (why: string) => onWarning?.(`The maps ${why}, so they're left out.`);
 		try {
@@ -770,12 +771,6 @@ export async function exportMarkdownZip(
 					const all = Array.isArray(detail.markers) ? detail.markers : [];
 					const shown = layerShownTest(cleanMapLayers(detail.settings?.layers));
 					const markers = all.filter((m) => shown(m as { layer?: string }));
-					const hidden = all.length - markers.length;
-					if (hidden) {
-						onWarning?.(
-							`${name}: ${hidden} marker${hidden === 1 ? '' : 's'} on hidden layers left out.`,
-						);
-					}
 					const slug = mapSlugs.get(detail.id) ?? slugify(name);
 					const aspect =
 						typeof detail.settings?.aspect === 'number' && detail.settings.aspect > 0

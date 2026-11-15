@@ -151,7 +151,8 @@ export async function clearAllMaps(token?: string): Promise<void> {
 export interface MapDetail {
 	id: string;
 	name: string;
-	markers: Array<{ label?: string }>;
+	markers: Array<{ label?: string; layer?: string }>;
+	settings: { layers?: unknown; activeLayer?: string };
 	ownerKind: 'community' | 'place' | 'journey' | 'site' | null;
 	ownerId: string | null;
 }

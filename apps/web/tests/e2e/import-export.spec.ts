@@ -15,7 +15,7 @@ import { test, expect, type Download } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
-import { resetAll, getTestToken, seedCommunity } from './helpers/reset';
+import { resetAll, getTestToken, seedCommunity, fetchMaps } from './helpers/reset';
 import { settleHome } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
@@ -1455,8 +1455,8 @@ test.describe('Import / Export — Markdown structure', () => {
 
 // ---------------------------------------------------------------------------
 // Markdown maps: a marker on a hidden layer stays off the map and its legend,
-// and a map with no background is skipped. Each is listed in the export
-// overlay, which then waits for Close.
+// quietly; a map with no background is skipped, and the export overlay lists
+// it, then waits for Close.
 // ---------------------------------------------------------------------------
 test.describe('Import / Export — Markdown maps leave out hidden layers and blank maps', () => {
 	test.beforeAll(async () => {
@@ -1505,7 +1505,7 @@ test.describe('Import / Export — Markdown maps leave out hidden layers and bla
 		await newMap('Sketch'); // no background
 	});
 
-	test('the hidden marker and the blank map are left out, and the overlay says so', async ({
+	test('the hidden marker and the blank map are left out; only the blank map is a warning', async ({
 		page,
 	}) => {
 		await gotoHome(page);
@@ -1527,17 +1527,117 @@ test.describe('Import / Export — Markdown maps leave out hidden layers and bla
 		expect(svg).not.toContain('>2</text>');
 		expect(strFromU8(entries['README.md']!)).not.toContain('Sketch');
 
-		// The overlay holds on what was left out until Close.
+		// The overlay holds on what was left out until Close: the blank map,
+		// not the hidden marker, which is off the map by the map's own choice.
 		const warnings = page.getByTestId('export-warnings');
 		await expect(warnings).toBeVisible({ timeout: 10_000 });
-		await expect(warnings).toContainText('Layered Map: 1 marker on hidden layers left out.');
 		await expect(warnings).toContainText("Sketch: no background, so it's left out.");
+		await expect(warnings).not.toContainText('Layered Map');
+		await expect(warnings.locator('li')).toHaveCount(1);
 		// The tally counts the maps written, not the maps picked.
 		await expect(page.locator('.exp-summary')).toContainText('1/2 maps');
 		const close = page.locator('.exp-footer').getByRole('button', { name: 'Close' });
 		await expect(close).toBeFocused();
 		await close.click();
 		await expect(page.locator('.exp-dialog')).toHaveCount(0);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Zip maps keep their layers: every marker goes in, those on a hidden layer
+// too, and the layer list goes with them, so a map exported, wiped and
+// imported again has the same layers, the same one hidden, and each marker on
+// its own layer.
+// ---------------------------------------------------------------------------
+test.describe('Import / Export — Zip maps keep their layers, hidden ones hidden', () => {
+	const LAYERS = [
+		{ id: 'default', name: 'Default' },
+		{ id: 'roads', name: 'Roads' },
+		{ id: 'secret', name: 'Secret', hidden: true },
+	];
+
+	test.beforeAll(async () => {
+		await resetAll();
+		const tok = await getTestToken();
+		const h = { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' };
+		const ok = (what: string) => (r: Response) => expect(r.ok, what).toBeTruthy();
+		// Something besides the map, as a real campaign has.
+		await seedCommunity('Layer Town');
+		const res = await fetch(`${V1}/session/maps`, {
+			method: 'POST',
+			headers: h,
+			body: JSON.stringify({ name: 'Layered Map' }),
+		});
+		const id = ((await res.json()) as { id: string }).id;
+		await fetch(`${V1}/session/maps/${id}/background`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({
+				dataUrl:
+					'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI6QAAAABJRU5ErkJggg==',
+			}),
+		}).then(ok('seed background'));
+		await fetch(`${V1}/session/maps/${id}/settings`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({ settings: { layers: LAYERS, activeLayer: 'roads' } }),
+		}).then(ok('seed layers'));
+		await fetch(`${V1}/session/maps/${id}/markers`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({
+				markers: [
+					{ id: 'open', x: 2, y: 2, label: 'Open Pin', icon: 'landmark' },
+					{ id: 'road', x: 3, y: 3, label: 'Road Pin', icon: 'landmark', layer: 'roads' },
+					{ id: 'hid', x: 4, y: 4, label: 'Secret Pin', icon: 'landmark', layer: 'secret' },
+				],
+			}),
+		}).then(ok('seed markers'));
+	});
+
+	test('export, wipe and import: the layers, the hidden one and every marker come back', async ({
+		page,
+	}) => {
+		await gotoHome(page);
+		await openExportDialog(page);
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.exd-dialog .btn-primary').click(),
+		]);
+		const zipBytes = await downloadBuffer(download);
+
+		// The zip has the hidden marker, and the layer list with its flag.
+		const entries = unzipSync(new Uint8Array(zipBytes));
+		const mapJson = Object.keys(entries).find((n) => /^maps\/[^/]+\/map\.json$/.test(n));
+		expect(mapJson, 'the map is in the zip').toBeTruthy();
+		const body = JSON.parse(strFromU8(entries[mapJson as string]!)) as {
+			markers: Array<{ label: string; layer?: string }>;
+			settings: { layers?: unknown; activeLayer?: string };
+		};
+		expect(body.markers.map((m) => m.label).sort()).toEqual(['Open Pin', 'Road Pin', 'Secret Pin']);
+		expect(body.settings.layers).toEqual(LAYERS);
+
+		// Wipe, and bring it back.
+		await resetAll();
+		expect(await fetchMaps(), 'wiped').toHaveLength(0);
+		await gotoHome(page);
+		await page.locator(ZIP_INPUT).setInputFiles({
+			name: 'layers.zip',
+			mimeType: 'application/zip',
+			buffer: zipBytes,
+		});
+		await expectImportOk(page, 15_000);
+
+		const map = (await fetchMaps()).find((m) => m.name === 'Layered Map');
+		expect(map, 'the map came back').toBeDefined();
+		// The same layers, Secret still hidden, new markers still going on Roads.
+		expect(map!.settings.layers).toEqual(LAYERS);
+		expect(map!.settings.activeLayer).toBe('roads');
+		// Every marker, each on its own layer (ids are new; labels aren't).
+		const layerOf = Object.fromEntries(
+			map!.markers.map((m) => [m.label ?? '', m.layer ?? 'default']),
+		);
+		expect(layerOf).toEqual({ 'Open Pin': 'default', 'Road Pin': 'roads', 'Secret Pin': 'secret' });
 	});
 });
 
