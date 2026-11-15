@@ -105,6 +105,16 @@ export function changeResource(
 }
 
 /**
+ * A value set outright (`/vital health = 9`), held to the resource's range
+ * (resourceRange): 9 health → 5, momentum −20 → −6. A key that isn't a
+ * resource (initiative) keeps the value asked.
+ */
+export function setResource(key: string, value: number, d: CharacterData): number {
+	const range = resourceRange(key, d);
+	return range ? Math.max(range.min, Math.min(range.max, value)) : value;
+}
+
+/**
  * Compute how many ticks are in a specific progress box (0-based index).
  * Progress is stored linearly (0–40) across 10 boxes of 4 ticks each.
  */

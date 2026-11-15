@@ -72,6 +72,7 @@
 		maxMomentum,
 		momentumReset,
 		changeResource,
+		setResource,
 		computeAssetXpDiff,
 		STARTING_XP,
 		type ResourceChange,
@@ -433,25 +434,38 @@
 		}
 	}
 
-	// Set (not add) a field to an absolute value — used for initiative.
-	function applySet(key: string, value: number) {
-		if (!activeData) return;
-		const rec = activeData as unknown as Record<string, number>;
+	/**
+	 * Set (not add) a field to an absolute value: initiative, and `/vital`,
+	 * `/bonds`, `/failures` with `=`. A resource is held to its range
+	 * (setResource), and a value the range cuts says so in the log line,
+	 * `Health: 4 → 5 (= 9, max 5)`, even when nothing moves. Supply, being
+	 * party-wide, is shared with the party.
+	 */
+	function applySetTo(
+		data: CharacterData,
+		key: string,
+		value: number,
+		title: (label: string) => string,
+	) {
+		const rec = data as unknown as Record<string, number>;
 		const old = rec[key] ?? 0;
-		if (old !== value) {
-			rec[key] = value;
-			const label = key.charAt(0).toUpperCase() + key.slice(1);
-			const INITIATIVE_NAMES_ACTIVE: Record<number, string> = {
-				0: 'None',
-				1: 'Character',
-				2: 'Foe',
-			};
-			const display =
-				key === 'initiative'
-					? `${INITIATIVE_NAMES_ACTIVE[old] ?? old} → <strong>${INITIATIVE_NAMES_ACTIVE[value] ?? value}</strong>`
-					: `${old} → <strong>${value}</strong>`;
-			appendLog(charTitle(label), `<div>${label}: ${display}</div>`);
-		}
+		const next = setResource(key, value, data);
+		if (next === old && next === value) return;
+		if (next !== old) rec[key] = next;
+		const label = key.charAt(0).toUpperCase() + key.slice(1);
+		const display =
+			key === 'initiative'
+				? `${INITIATIVE_LABELS[old] ?? old} → <strong>${INITIATIVE_LABELS[next] ?? next}</strong>`
+				: `${old} → <strong>${next}</strong>`;
+		const num = (n: number) => (n < 0 ? `−${-n}` : String(n));
+		const cut =
+			next === value ? '' : ` (= ${num(value)}, ${value > next ? 'max' : 'min'} ${num(next)})`;
+		appendLog(title(label), `<div>${label}: ${display}${cut}</div>`);
+		if (key === 'supply' && next !== old) setPartySupply(next);
+	}
+
+	function applySet(key: string, value: number) {
+		if (activeData) applySetTo(activeData, key, value, charTitle);
 	}
 
 	// Dedicated initiative applier — enforces the 0|1|2 enum at the action-bus
@@ -508,18 +522,7 @@
 				appendLog(title(label), `<div>${label}: ${old} → <strong>0</strong> (−${old})</div>`);
 			}
 		} else if (action.type === 'set') {
-			const rec = data as unknown as Record<string, number>;
-			const old = rec[action.key] ?? 0;
-			const next = action.value as number;
-			if (old !== next) {
-				rec[action.key] = next;
-				const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
-				const display =
-					action.key === 'initiative'
-						? `${_INITIATIVE_NAMES[old] ?? old} → <strong>${_INITIATIVE_NAMES[next] ?? next}</strong>`
-						: `${old} → <strong>${next}</strong>`;
-				appendLog(title(label), `<div>${label}: ${display}</div>`);
-			}
+			applySetTo(data as unknown as CharacterData, action.key, action.value, title);
 		} else if (action.type === 'initiative') {
 			const next = action.value;
 			if (next !== 0 && next !== 1 && next !== 2) return;

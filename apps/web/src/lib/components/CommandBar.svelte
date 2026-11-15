@@ -68,6 +68,7 @@
 	import { FOE_RANKS } from '#lib/foeStore.svelte.js';
 	import type { MoveDefinition } from '@ironledger/shared';
 	import type { CharacterData } from '#lib/types.js';
+	import { setResource } from '#lib/character.js';
 	import CommandHelpDialog from './CommandHelpDialog.svelte';
 
 	let input = $state('');
@@ -91,6 +92,15 @@
 		const id = getActiveCharacterId();
 		return id ? getCharacters().find((c) => c.id === id) : null;
 	});
+	/** The status line for `/vital <res> = n`, `/bonds = n`, `/failures = n`:
+	 *  the value as CharactersArea will hold it to its range, "health set to
+	 *  5 (max 5).", not the 9 asked. */
+	function setStatusText(label: string, key: string, value: number): string {
+		const data = activeChar?.data as unknown as CharacterData | undefined;
+		const next = data ? setResource(key, value, data) : value;
+		const cut = next === value ? '' : ` (${value > next ? 'max' : 'min'} ${next})`;
+		return `${label} set to ${next}${cut}.`;
+	}
 	const activeCharName = $derived.by(() => {
 		const c = activeChar;
 		return c ? (c.data as unknown as CharacterData).name || 'Unnamed' : '';
@@ -672,7 +682,7 @@
 				const label = cmd.resource === 'xp' ? 'experience' : cmd.resource;
 				if (cmd.op === '=') {
 					triggerAction({ charId, type: 'set', key: cmd.resource, value: cmd.value });
-					setStatus(`${label} set to ${cmd.value}.`, 'info');
+					setStatus(setStatusText(label, cmd.resource, cmd.value), 'info');
 				} else {
 					const delta = cmd.op === '+' ? cmd.value : -cmd.value;
 					triggerAction({ charId, type: 'resource', key: cmd.resource, value: delta });
@@ -753,7 +763,7 @@
 				}
 				if (cmd.op === '=') {
 					triggerAction({ charId, type: 'set', key: cmd.name, value: cmd.value });
-					setStatus(`${cmd.name} set to ${cmd.value}.`, 'info');
+					setStatus(setStatusText(cmd.name, cmd.name, cmd.value), 'info');
 				} else {
 					const delta = cmd.op === '+' ? cmd.value : -cmd.value;
 					triggerAction({ charId, type: 'resource', key: cmd.name, value: delta });

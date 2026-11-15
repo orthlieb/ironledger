@@ -1,10 +1,11 @@
 /**
  * The ranges the action bus holds a character's resources to
- * (docs/data-schema.md → Resource Links), and a change held to them: a log
- * link's "+2 health" at 4 health lands on 5, not 6.
+ * (docs/data-schema.md → Resource Links), and a change or a value set
+ * outright held to them: a log link's "+2 health" at 4 health lands on 5,
+ * not 6, and `/vital health = 9` sets 5.
  */
 import { describe, it, expect } from 'vitest';
-import { changeResource, resourceRange } from '../../src/lib/character.js';
+import { changeResource, resourceRange, setResource } from '../../src/lib/character.js';
 import { DEFAULT_CHARACTER, type CharacterData } from '../../src/lib/types.js';
 
 const char = (over: Partial<CharacterData> = {}): CharacterData => ({
@@ -81,5 +82,25 @@ describe('changeResource', () => {
 
 	it('is null for a key that is not a resource', () => {
 		expect(changeResource('edge', 2, 1, char())).toBeNull();
+	});
+});
+
+describe('setResource', () => {
+	it('holds a value set outright to the range', () => {
+		expect(setResource('health', 9, char())).toBe(5);
+		expect(setResource('xp', 50, char())).toBe(30);
+		expect(setResource('bonds', 41, char())).toBe(40);
+		expect(setResource('momentum', -20, char())).toBe(-6);
+		expect(setResource('momentum', 10, char({ wounded: true }))).toBe(9);
+		expect(setResource('supply', -1, char())).toBe(0);
+	});
+
+	it('keeps a value inside the range as asked', () => {
+		expect(setResource('health', 3, char())).toBe(3);
+		expect(setResource('momentum', -3, char())).toBe(-3);
+	});
+
+	it('keeps the value asked for a key that is not a resource', () => {
+		expect(setResource('initiative', 2, char())).toBe(2);
 	});
 });

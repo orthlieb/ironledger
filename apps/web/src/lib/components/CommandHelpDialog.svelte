@@ -114,7 +114,7 @@
 		{
 			verb: 'vital',
 			syntax: '/vital <name> <op> [n]',
-			hint: 'Adjust a vital on the active character. name: momentum / health / spirit / supply / experience (xp). op: + (delta up), - (delta down), = (set absolute). n defaults to 1 for +/-, is required for =. Examples: /vital momentum +2, /vital health -3, /vital experience = 12.',
+			hint: 'Adjust a vital on the active character. name: momentum / health / spirit / supply / experience (xp). op: + (delta up), - (delta down), = (set absolute). n defaults to 1 for +/-, is required for =. Each is held to its range: health, spirit and supply 0..5, experience 0..30, momentum −6 to its max. Examples: /vital momentum +2, /vital health -3, /vital experience = 12.',
 		},
 		{
 			verb: 'debility',
