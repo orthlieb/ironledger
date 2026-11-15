@@ -39,7 +39,7 @@ Both use 10-box progress tracks with 4 ticks per box and a difficulty rank.
   domain:     DelveDomain | '', // 12 domains: Barrow, Cavern, Frozen Cavern, Icereach, Mine, Pass, Ruin, Sea Cave, Shadowfen, Stronghold, Tanglewood, Underkeep
   difficulty: VowDifficulty,
   ticks:      number,           // 0–40
-  denizens:   string[12],       // one text entry per denizen cell
+  denizens:   string[12],       // per cell: a catalogue foe's id (picked) or the text typed
   complete:   boolean,
 }
 ```
@@ -84,7 +84,10 @@ The Expeditions tab contains:
 - 12-cell denizen grid with:
   - d100 range labels and frequency indicators
   - Text input for each cell
-  - ⊕ button to pick a foe from the catalogue (opens FoePickerDialog in denizen mode)
+  - ⊕ button to pick a foe from the catalogue (opens FoePickerDialog in denizen mode);
+    the cell stores the foe's id and shows its name, so a renamed or translated
+    foe still finds the same one. Typed text is kept as typed, and matches a foe
+    by name (`findDenizenFoe` / `denizenLabel` in `foeStore.svelte.ts`)
   - **Roll Denizen** button for d100 denizen roll with cell highlighting
   - When a rolled denizen matches a foe in the catalogue, an **Add to Foes?** button appears
 - 10-box progress track with +/- buttons

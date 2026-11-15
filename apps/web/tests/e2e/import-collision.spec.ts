@@ -195,7 +195,7 @@ async function readWorld(page: Page) {
 			npcs?: Array<{ id: string; name: string; notes?: string }>;
 			places?: Array<{ id: string; name: string; trouble?: string }>;
 			expeditions?: Array<{ id: string; name: string; type: string }>;
-			encounters?: Array<{ id: string; customName: string; ticks: number }>;
+			encounters?: Array<{ id: string; foeId: string; customName: string; ticks: number }>;
 		};
 		return {
 			communities: j.communities ?? [],
@@ -297,6 +297,41 @@ test.describe('Import collision dialog (name-based)', () => {
 		const world = await readWorld(page);
 		expect(world.foes).toHaveLength(1);
 		expect(world.foes[0]).toMatchObject({ id: 'f-1', customName: 'old scar', ticks: 12 });
+	});
+
+	test('a foe with no name of its own matches by which catalogue foe it is, not its name', async ({
+		page,
+	}) => {
+		const everything = (foes: unknown[]) =>
+			envelope('everything', { characters: [], log: [], encounters: foes, session: {} });
+		await importPayload(page, everything([makeFoe('f-1', '')]));
+		await waitForWorld(page, (w) => w.foes.length === 1);
+
+		// Another bear, and a wolf: only the bear is asked about, under the
+		// name it shows here.
+		await importPayload(
+			page,
+			everything([
+				makeFoe('f-bear', '', { ticks: 8 }),
+				makeFoe('f-wolf', '', { foeId: 'ironsworn/wolf' }),
+			]),
+		);
+		const dialog = page.locator('.icd-dialog');
+		await expect(dialog).toBeVisible({ timeout: 5_000 });
+		await expect(dialog.locator('.icd-group-label')).toHaveText(['Foe']);
+		await expect(dialog.locator('.icd-name')).toHaveText(['Bear']);
+		await dialog.locator('[role="radio"][data-value="skip"]').click();
+		await dialog.locator('button.btn-primary').click();
+		await expect(dialog).not.toBeVisible();
+		await waitForWorld(page, (w) => w.foes.length === 2);
+
+		const world = await readWorld(page);
+		expect(world.foes.map((f) => f.foeId).sort()).toEqual(['ironsworn/bear', 'ironsworn/wolf']);
+		// The bear here is left as it was.
+		expect(world.foes.find((f) => f.foeId === 'ironsworn/bear')).toMatchObject({
+			id: 'f-1',
+			ticks: 0,
+		});
 	});
 
 	test('opens and lists colliding rows grouped by category (incl. places + journeys / sites split)', async ({

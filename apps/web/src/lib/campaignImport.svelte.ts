@@ -31,6 +31,7 @@ import {
 	type CollisionStrategy,
 } from '#lib/components/importCollision.js';
 import { importLogEntries, type LogEntry } from '#lib/log.svelte.js';
+import { remapLogEntries } from '#lib/logRemap.js';
 import { enableExtensions, getExtensions, loadExtensions } from '#lib/expansionStore.svelte.js';
 import { planPackRestore, readPackChoices } from '#lib/packChoices.js';
 import { parseImportZip, sanitizeLogHtml, ImportError } from '#lib/importSanitizer.js';
@@ -256,14 +257,30 @@ export class CampaignImport {
 				getGlobalCounterIds().map((id) => [id, getGlobalCounterDef(id)!] as const),
 			);
 
+			// The id each imported row landed with, per kind, keyed by the id it
+			// had in the backup: the log is re-pointed through these before it
+			// goes up (see logRemap.ts), as a character always gets a new id and
+			// a foe or expedition can. Keyed by collection, plus `log` for
+			// entries whose own id had to be replaced.
+			const landedIds: Record<string, Map<string, string>> = {};
+			const landed = (kind: string, oldId: unknown, id: string) => {
+				if (typeof oldId === 'string' && oldId) (landedIds[kind] ??= new Map()).set(oldId, id);
+			};
+
 			/** A backup's log, as it was: each entry keeps its id (so importing
 			 *  the same file twice adds nothing), time, note and roll, with its
 			 *  HTML made safe. One that's malformed gets a new id, or now. */
 			const toLogEntries = (rows: unknown): LogEntry[] =>
 				(Array.isArray(rows) ? rows : [])
 					.filter((r): r is Record<string, unknown> => !!r && typeof r === 'object')
-					.map((r) => ({
-						id: typeof r.id === 'string' && UUID.test(r.id) ? r.id : crypto.randomUUID(),
+					.map((r) => {
+						const keep = typeof r.id === 'string' && UUID.test(r.id);
+						const id = keep ? (r.id as string) : crypto.randomUUID();
+						if (!keep) landed('log', r.id, id);
+						return { r, id };
+					})
+					.map(({ r, id }) => ({
+						id,
 						title: String(r.title ?? ''),
 						html: sanitizeLogHtml(String(r.html ?? '')),
 						ts:
@@ -281,6 +298,13 @@ export class CampaignImport {
 				if (own) return own;
 				const def = typeof f.foeId === 'string' ? findFoe(f.foeId) : undefined;
 				return def ? resolveFoeName(def) : String(f.foeId ?? 'Foe');
+			};
+			/** What makes two foes the same for the duplicate check: the name
+			 *  it's been given, else which catalogue foe it is (its id, not its
+			 *  name, which can differ between the backup and here). */
+			const foeKey = (f: { customName?: unknown; foeId?: unknown }): string => {
+				const own = typeof f.customName === 'string' ? f.customName.trim() : '';
+				return own ? normaliseName(own) : `\u0000${String(f.foeId ?? '')}`;
 			};
 
 			// ── Name-collision handling ───────────────────────────────────
@@ -300,7 +324,7 @@ export class CampaignImport {
 			//
 			// Logs aren't surfaced here: an entry keeps its id, and one whose
 			// id is already in the log is left as it is (importLogEntries).
-			type ImportableChar = { name?: string; data?: Record<string, unknown> };
+			type ImportableChar = { id?: string; name?: string; data?: Record<string, unknown> };
 
 			// name → existing id maps (only existing rows we can replace
 			// back into; new strategy uses crypto.randomUUID() instead).
@@ -319,7 +343,7 @@ export class CampaignImport {
 			const existingSceneByName = new Map(
 				expeditions.filter((e) => e.type === 'scene').map((e) => [normaliseName(e.name), e.id]),
 			);
-			const existingFoeByName = new Map(encounters.map((f) => [normaliseName(foeName(f)), f.id]));
+			const existingFoeByKey = new Map(encounters.map((f) => [foeKey(f), f.id]));
 			// Every id in use, per collection (see stageImportRow).
 			const takenIds: Record<string, Set<string>> = {
 				communities: new Set(communities.map((c) => c.id)),
@@ -464,9 +488,7 @@ export class CampaignImport {
 				scenes: incomingExpeditions
 					.filter((e) => e.type === 'scene' && existingSceneByName.has(normaliseName(e.name)))
 					.map((e) => e.name ?? ''),
-				foes: incomingFoes
-					.filter((f) => existingFoeByName.has(normaliseName(foeName(f))))
-					.map((f) => foeName(f)),
+				foes: incomingFoes.filter((f) => existingFoeByKey.has(foeKey(f))).map((f) => foeName(f)),
 			};
 			const totalCollisions = Object.values(collisions).reduce((n, names) => n + names.length, 0);
 
@@ -486,8 +508,10 @@ export class CampaignImport {
 			async function applyCharacterStrategy(entry: ImportableChar): Promise<boolean> {
 				const existingId = existingCharByName.get(normaliseName(entry.name));
 				if (!existingId) return true; // no collision — caller creates
-				if (strategy === 'skip') return false;
 				if (strategy === 'new') return true; // createCharacter mints a fresh id; both coexist
+				// Skipped or replaced: the log's entries for it are this one's now.
+				landed('characters', entry.id, existingId);
+				if (strategy === 'skip') return false;
 				// 'replace' — overwrite the existing character's data + name
 				persistCharacterNow(existingId, {
 					name: entry.name ?? 'Imported Character',
@@ -503,6 +527,7 @@ export class CampaignImport {
 				const collided = existingCharByName.has(normaliseName(entry.name));
 				if (await applyCharacterStrategy(entry)) {
 					const created = await createCharacter(entry.name ?? 'Imported Character', data);
+					landed('characters', entry.id, created.id);
 					if (inline) {
 						const etag = await uploadPortrait(`/api/characters/${created.id}/portrait`, inline);
 						if (etag) {
@@ -539,7 +564,11 @@ export class CampaignImport {
 			 *
 			 *  A row whose id is already taken here but whose name isn't (it was
 			 *  renamed since the backup, say) gets a new id rather than writing
-			 *  over the other: replacing is only ever by name, as asked. */
+			 *  over the other: replacing is only ever by name, as asked.
+			 *
+			 *  `key` is what the duplicate check matches on (the row's name by
+			 *  default). The id the row lands with, or the one a skip leaves it
+			 *  to, is recorded for re-pointing the log. */
 			async function stageImportRow<
 				T extends {
 					id: string;
@@ -551,19 +580,21 @@ export class CampaignImport {
 				seg: string,
 				existingByName: Map<string, string>,
 				batch: T[],
-				name = (row as { name?: string | null }).name,
+				key = normaliseName((row as { name?: string | null }).name),
 			): Promise<void> {
 				const inline = takeInlineDataUrl(row as Record<string, unknown>, 'imageUrl');
 				const taken = (takenIds[seg] ??= new Set());
-				const existingId = existingByName.get(normaliseName(name));
+				const oldId = row.id;
+				const existingId = existingByName.get(key);
 				if (existingId) {
-					if (strategy === 'skip') return;
+					if (strategy === 'skip') return landed(seg, oldId, existingId);
 					if (strategy === 'new') row.id = crypto.randomUUID();
 					else if (strategy === 'replace') row.id = existingId;
 				} else if (typeof row.id !== 'string' || row.id === '' || taken.has(row.id)) {
 					row.id = crypto.randomUUID();
 				}
 				taken.add(row.id);
+				landed(seg, oldId, row.id);
 				if (inline) {
 					const etag = await uploadPortrait(`/api/session/${seg}/${row.id}/portrait`, inline);
 					if (etag) row.portraitEtag = etag;
@@ -685,9 +716,22 @@ export class CampaignImport {
 				renderImportSummary();
 			}
 			// The log goes up in a few batches, as one step that counts each entry.
+			// It goes up last, re-pointed at the ids the rows it names landed with.
 			const importLog = () =>
 				incomingLog.length
-					? step('Log entries', () => importLogEntries(incomingLog), incomingLog.length)
+					? step(
+							'Log entries',
+							() =>
+								importLogEntries(
+									remapLogEntries(incomingLog, {
+										char: landedIds.characters,
+										foe: landedIds.encounters,
+										exp: landedIds.expeditions,
+										entry: landedIds.log,
+									}),
+								),
+							incomingLog.length,
+						)
 					: undefined;
 
 			// The content packs the backup had on are switched on first (none is
@@ -764,7 +808,6 @@ export class CampaignImport {
 				} else if (m.type === 'everything') {
 					for (const entry of incomingCharacters)
 						await step(`Character “${entry.name}”`, () => importChar(entry));
-					await importLog();
 					const commBatch: Community[] = [];
 					const npcBatch: Npc[] = [];
 					const placeBatch: Place[] = [];
@@ -801,9 +844,10 @@ export class CampaignImport {
 					const foeBatch: FoeEncounter[] = [];
 					for (const f of incomingFoes)
 						await step(`Foe “${foeName(f)}”`, () =>
-							stageImportRow(f, 'encounters', existingFoeByName, foeBatch, foeName(f)),
+							stageImportRow(f, 'encounters', existingFoeByKey, foeBatch, foeKey(f)),
 						);
 					await addManyEncounters(foeBatch);
+					await importLog();
 					// Restore bundled maps (markers + backgrounds) from the nested
 					// `maps/<id>/…` dirs, re-linking each to its owner entity by name.
 					await step('Maps', () =>

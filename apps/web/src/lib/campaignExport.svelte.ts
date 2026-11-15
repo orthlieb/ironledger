@@ -875,7 +875,10 @@ export async function exportMarkdownZip(
 // Build an export-ready character copy with its portrait re-embedded inline
 // (data.portrait) so the JSON stays self-contained. portraitEtag is dropped
 // from the exported copy — import re-derives it when it stores the bytes.
+/** A character as the zip carries it. `id` is the one it had here, so an
+ *  import can re-point the log's links at the id it lands with. */
 export async function embedCharForExport(c: CharacterFull): Promise<{
+	id: string;
 	name: string;
 	data: Record<string, unknown>;
 }> {
@@ -888,7 +891,7 @@ export async function embedCharForExport(c: CharacterFull): Promise<{
 		if (du) data.portrait = du;
 	}
 	delete data.portraitEtag;
-	return { name: c.name, data };
+	return { id: c.id, name: c.name, data };
 }
 
 // Same for a session-collection entity — re-embeds into imageUrl.

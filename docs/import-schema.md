@@ -125,9 +125,14 @@ hidden layers and maps with no background left out) is in
 
 ## Characters
 
-A character is exported as `{ name, data }`, where `name` is the display name
+A character is exported as `{ id, name, data }`, where `id` is the one it had
+when exported, `name` is the display name
 and `data` is the full per-character saved state (stats, momentum/health/
 spirit/supply, experience, initiative, vows, owned assets, debilities, etc.).
+The `id` isn't kept (an imported character always gets a new one); it's how
+the log's entries for the character are re-pointed at it (see
+[Session log entries point at the rows as they landed](#collision-resolution)).
+Older exports have no `id`, and import takes them as they are.
 The inner `data` object is the character's persisted blob; its fields mirror
 the runtime `Character.data` type (see `apps/web/src/lib/types.ts`).
 
@@ -143,6 +148,7 @@ the runtime `Character.data` type (see `apps/web/src/lib/types.ts`).
     "count": 1
   },
   "data": {
+    "id": "…",
     "name": "Mr. Pibbles",
     "data": { "stats": { "edge": 2, "heart": 2, "iron": 2, "shadow": 3, "wits": 1 }, "...": "…" }
   }
@@ -611,16 +617,16 @@ oracle-driven fields.
 
 **Site** (`type: "site"`, Delve):
 
-| Key                                           | Contains              | Oracle                                                            |
-| --------------------------------------------- | --------------------- | ----------------------------------------------------------------- |
-| `name`                                        | Site name             | **Delve Site: Name (Template)** (`siteName`), base                |
-| `theme`                                       | Delve theme           | **Delve Site: Theme** (`siteNatureTheme`), base                   |
-| `domain`                                      | Delve domain          | **Delve Site: Domain** (`siteNatureDomain`), base                 |
-| `currentFeature`                              | last-rolled feature   | Combined **Feature** table for the site's theme + domain (Delve)  |
-| `currentDanger`                               | last-rolled danger    | Combined **Danger** table for theme + domain (Delve)              |
-| `denizens[]`                                  | 12-row denizen matrix | Delve **denizen** tables (theme + domain), via the Denizen dialog |
-| `objective`                                   | the site's objective  | —                                                                 |
-| `difficulty` / `ticks` / `notes` / `complete` | mechanical            | —                                                                 |
+| Key                                           | Contains                                                                                                              | Oracle                                                            |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `name`                                        | Site name                                                                                                             | **Delve Site: Name (Template)** (`siteName`), base                |
+| `theme`                                       | Delve theme                                                                                                           | **Delve Site: Theme** (`siteNatureTheme`), base                   |
+| `domain`                                      | Delve domain                                                                                                          | **Delve Site: Domain** (`siteNatureDomain`), base                 |
+| `currentFeature`                              | last-rolled feature                                                                                                   | Combined **Feature** table for the site's theme + domain (Delve)  |
+| `currentDanger`                               | last-rolled danger                                                                                                    | Combined **Danger** table for theme + domain (Delve)              |
+| `denizens[]`                                  | 12-row denizen matrix: each a catalogue foe's `id` (picked from the list, e.g. `ironsworn/bear`) or the text typed in | Delve **denizen** tables (theme + domain), via the Denizen dialog |
+| `objective`                                   | the site's objective                                                                                                  | —                                                                 |
+| `difficulty` / `ticks` / `notes` / `complete` | mechanical                                                                                                            | —                                                                 |
 
 **Scene** (`type: "scene"`, Lodestar Scene Challenge) — `name`, `objective`,
 `consequences`, `countdownFilled` (0–4), `difficulty` (rank), `ticks`,
@@ -746,16 +752,16 @@ per user, so an `id`-based match would never fire on a cross-user transfer.
 
 The collision dialog covers eight categories:
 
-| Category        | Detected against                                                             |
-| --------------- | ---------------------------------------------------------------------------- |
-| **Characters**  | existing `Character.name`                                                    |
-| **Communities** | existing `Community.name`                                                    |
-| **NPCs**        | existing `Npc.name`                                                          |
-| **Places**      | existing `Place.name`                                                        |
-| **Journeys**    | existing `Expedition.name` where `type === "journey"`                        |
-| **Sites**       | existing `Expedition.name` where `type === "site"`                           |
-| **Scenes**      | existing `Expedition.name` where `type === "scene"`                          |
-| **Foes**        | the name a foe's card shows: its `customName`, else the catalogue foe's name |
+| Category        | Detected against                                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Characters**  | existing `Character.name`                                                                                                |
+| **Communities** | existing `Community.name`                                                                                                |
+| **NPCs**        | existing `Npc.name`                                                                                                      |
+| **Places**      | existing `Place.name`                                                                                                    |
+| **Journeys**    | existing `Expedition.name` where `type === "journey"`                                                                    |
+| **Sites**       | existing `Expedition.name` where `type === "site"`                                                                       |
+| **Scenes**      | existing `Expedition.name` where `type === "scene"`                                                                      |
+| **Foes**        | its `customName`; one with none matches another of the same catalogue foe (`foeId`), listed under the name it shows here |
 
 If **any** incoming row's name matches an existing row's name (in the same
 category), the **`ImportCollisionDialog`** opens, lists the colliding names
@@ -786,6 +792,20 @@ already in the log is left as it is, so importing the same backup twice adds
 no entries the second time. The log keeps its newest 1000 entries either way.
 An entry with a malformed `id` gets a new one, and one with an unreadable
 `ts` gets the import's time.
+
+**Session log entries point at the rows as they landed.** An entry names the
+character, foe and expedition it was rolled with by id: in its `roll`
+(`charId`, `foeId`, `expeditionId`, which Burn momentum reads) and on its
+links (`data-char-id` on "+1 failure" or "+1 momentum", `data-foe-id` on a
+foe's progress, `data-exp-id` / `data-expedition-id` on a journey's or a
+site's), with its own id on each link (`data-entry-id`,
+`data-roll-entry-id`). An import gives some of those rows new ids: a
+character always gets one, and a foe or expedition does on **New**, or when
+its id is taken here. So the import records, per kind, the id each row
+landed with (or, on **Skip** and **Replace**, the id of the one here it
+matched), imports the log **last**, and re-points each entry's ids through
+those first (`#lib/logRemap.ts`). An id the file has nothing for is left as
+it is.
 
 ### Backwards compatibility
 

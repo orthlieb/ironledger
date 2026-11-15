@@ -701,6 +701,11 @@ test.describe('Import / Export — full round-trip', () => {
 	const LOG_FILLER = 250;
 	const LOG_MARK_ID = '11111111-1111-4111-8111-111111111111';
 	const LOG_MARK_TS = '2026-02-14T09:30:00.000Z';
+	// An entry rolled by Rook against the foe on the journey, with the links
+	// such an entry carries. Rook gets a new id on import; the links follow.
+	const LOG_LINKED_ID = '22222222-2222-4222-8222-222222222222';
+	const LOG_TOTAL = LOG_FILLER + 2;
+	let rookId = '';
 
 	test.beforeAll(async () => {
 		await resetAll();
@@ -708,7 +713,7 @@ test.describe('Import / Export — full round-trip', () => {
 		const h = { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' };
 
 		// One of each entity type, each with a distinctive field to assert on.
-		await fetch(`${V1}/characters`, {
+		const rook = await fetch(`${V1}/characters`, {
 			method: 'POST',
 			headers: h,
 			body: JSON.stringify({
@@ -721,7 +726,9 @@ test.describe('Import / Export — full round-trip', () => {
 					bondsFormed: '- **Bellmark**, which took me in',
 				},
 			}),
-		}).then((r) => expect(r.ok, 'seed character').toBeTruthy());
+		});
+		expect(rook.ok, 'seed character').toBeTruthy();
+		rookId = ((await rook.json()) as { id: string }).id;
 
 		await fetch(`${V1}/session/communities`, {
 			method: 'PATCH',
@@ -859,6 +866,23 @@ test.describe('Import / Export — full round-trip', () => {
 						ts: LOG_MARK_TS,
 						note: 'Remember the ferryman',
 					},
+					{
+						id: LOG_LINKED_ID,
+						title: 'Strike',
+						html:
+							`<a data-entry-id="${LOG_LINKED_ID}" data-char-id="${rookId}" class="resource-link" data-resource="momentum" data-value="1" href="#">+1 momentum</a> ` +
+							`<a data-entry-id="${LOG_LINKED_ID}" data-char-id="${rookId}" data-exp-id="rt-journey-1" data-foe-id="rt-foe-1" class="progress-link" data-track="combat" data-value="2" href="#">Mark progress</a>`,
+						ts: '2026-02-14T09:00:00.000Z',
+						roll: {
+							moveId: 'move/strike',
+							actionScore: 7,
+							c1: 3,
+							c2: 5,
+							charId: rookId,
+							foeId: 'rt-foe-1',
+							expeditionId: 'rt-journey-1',
+						},
+					},
 				],
 			}),
 		}).then((r) => expect(r.ok, 'seed log').toBeTruthy());
@@ -888,7 +912,7 @@ test.describe('Import / Export — full round-trip', () => {
 			encounters?: unknown[];
 			extensions?: Array<{ id: string; name: string; enabled: boolean }>;
 		};
-		expect(body.log, 'the whole log').toHaveLength(LOG_FILLER + 1);
+		expect(body.log, 'the whole log').toHaveLength(LOG_TOTAL);
 		expect(body.encounters, 'the foe').toHaveLength(1);
 		// Which content packs were on, each by id and name; core isn't listed.
 		expect(body.extensions).toEqual(
@@ -1016,12 +1040,28 @@ test.describe('Import / Export — full round-trip', () => {
 		});
 
 		// Log — every entry, each as it was: its id, time and note.
-		expect(state.log).toHaveLength(LOG_FILLER + 1);
+		expect(state.log).toHaveLength(LOG_TOTAL);
 		const mark = state.log.find((e: { title?: string }) => e.title === 'Round-trip Marker');
 		expect(mark, 'log entry round-tripped').toBeDefined();
 		expect(mark).toMatchObject({ id: LOG_MARK_ID, ts: LOG_MARK_TS, note: 'Remember the ferryman' });
 		// Newest first, by its own time: the filler is newer than the marker.
 		expect(state.log[0].title).toBe(`Filler ${LOG_FILLER - 1}`);
+
+		// Rook has a new id; the entry rolled by Rook points at it now, in its
+		// roll and on its links. The foe and journey kept theirs.
+		expect(rook.id).not.toBe(rookId);
+		const linked = state.log.find((e: { id: string }) => e.id === LOG_LINKED_ID);
+		expect(linked?.roll).toMatchObject({
+			charId: rook.id,
+			foeId: state.foes[0].id,
+			expeditionId: journey.id,
+		});
+		expect(linked?.html).not.toContain(rookId);
+		expect(linked?.html.match(/data-char-id="([^"]*)"/g)).toEqual([
+			`data-char-id="${rook.id}"`,
+			`data-char-id="${rook.id}"`,
+		]);
+		expect(linked?.html).toContain(`data-exp-id="${journey.id}" data-foe-id="${state.foes[0].id}"`);
 
 		// Content packs — YRT, on in the backup, is on again. Lodestar, off in
 		// the backup, is left as it is here: a restore never switches one off.

@@ -106,7 +106,7 @@ The Foes tab contains:
 - Searchable grid of foe tiles filtered by name and nature
 - Two modes:
   - **Encounter mode** — pick foe → confirm with quantity selector → adds encounter
-  - **Denizen mode** — pick foe → immediately returns foe name (used by SiteCard)
+  - **Denizen mode** — pick foe → immediately returns the foe's id (the site's denizen cell shows its name)
 
 ---
 

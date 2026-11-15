@@ -15,7 +15,6 @@
 	import type { FoeDef, FoeQuantity, CatalogueSource } from '#lib/types.js';
 	import {
 		loadFoes,
-		getFoes,
 		getVisibleFoes,
 		getFoeNatures,
 		getVisibleFoeSources,
@@ -23,6 +22,7 @@
 		effectiveRank as calcEffectiveRank,
 		resolveFoeDescription,
 		resolveFoeName,
+		findDenizenFoe,
 		RANK_COLORS,
 		FOE_RANKS,
 		FOE_QUANTITIES,
@@ -53,8 +53,8 @@
 		onDenizenPick,
 	}: {
 		onSelect: (foeDef: FoeDef, quantity: FoeQuantity, effectiveRank: number) => void;
-		/** Called when a foe is picked in denizen mode (name only, no quantity). */
-		onDenizenPick?: (foeName: string) => void;
+		/** Called when a foe is picked in denizen mode, with its id (no quantity). */
+		onDenizenPick?: (foeId: string) => void;
 	} = $props();
 
 	// ---------------------------------------------------------------------------
@@ -81,7 +81,7 @@
 	let activeSources = $state(new Set<CatalogueSource>());
 	let activeRanks = $state(new Set<number>());
 
-	// Pickers use getVisibleFoes (expansion-filtered); direct lookups use getFoes.
+	// Pickers use getVisibleFoes (expansion-filtered); direct lookups go by id (findDenizenFoe).
 	const foes = $derived(getVisibleFoes());
 	const natures = $derived(getFoeNatures());
 	const sources = $derived(getVisibleFoeSources());
@@ -149,10 +149,11 @@
 		dialogOpen = true;
 	}
 
-	/** Open directly to the confirm view for a foe matched by name (for denizen roll results). */
-	export async function openWithFoe(foeName: string): Promise<void> {
+	/** Open directly to the confirm view for a denizen's foe: its id, or a
+	 *  name as typed (see findDenizenFoe). */
+	export async function openWithFoe(ref: string): Promise<void> {
 		await loadFoes();
-		const match = getFoes().find((f) => f.name.toLowerCase() === foeName.toLowerCase());
+		const match = findDenizenFoe(ref);
 		if (!match) return;
 		_mode = 'encounter';
 		_noBack = true;
@@ -200,10 +201,10 @@
 	function selectFoe(foe: FoeDef) {
 		if (_mode === 'denizen') {
 			dialogOpen = false;
-			// Denizen picks store the string the user actually saw — pass the
-			// resolved name so a YRT-renamed foe lands as "Altan" on the Site
-			// denizen row, not "Giant".
-			onDenizenPick?.(resolveFoeName(foe));
+			// A denizen pick stores the foe's id, not its name: the slot shows
+			// the name as it reads here (a YRT-renamed foe as "Altan"), and one
+			// that reads differently elsewhere still finds the same foe.
+			onDenizenPick?.(foe.id);
 			return;
 		}
 		confirmFoe = foe;
