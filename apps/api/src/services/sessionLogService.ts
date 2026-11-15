@@ -11,7 +11,8 @@
 import { withUserContext } from '../db/index.js';
 import { sql } from 'drizzle-orm';
 
-const LOG_CAP = 1000;
+/** The most entries a user's log keeps (and the most one GET returns). */
+export const LOG_CAP = 1000;
 
 // ---------------------------------------------------------------------------
 // Types (mirror LogEntry from the web app)
@@ -87,6 +88,47 @@ export async function appendEntry(userId: string, payload: LogEntryPayload): Pro
           LIMIT  ${LOG_CAP}
         )
     `);
+  });
+}
+
+// ---------------------------------------------------------------------------
+// appendEntries — insert many (an import), then trim to the cap once
+// ---------------------------------------------------------------------------
+
+/**
+ * Insert a batch of entries with their own ids and times — an import
+ * restoring a backup. Like appendEntry, an id already in the log is left as
+ * it is, so importing the same backup twice adds nothing the second time.
+ * The cap is applied once, after the batch: entries older than the newest
+ * LOG_CAP go, whichever side they came from. Returns how many were new.
+ */
+export async function appendEntries(userId: string, payloads: LogEntryPayload[]): Promise<number> {
+  if (payloads.length === 0) return 0;
+  return withUserContext(userId, async (tx) => {
+    const values = sql.join(
+      payloads.map(
+        (p) => sql`(${userId}::uuid, ${p.id}, ${JSON.stringify(p)}::jsonb, ${p.ts}::timestamptz)`,
+      ),
+      sql`, `,
+    );
+    const inserted = await tx.execute(sql`
+      INSERT INTO session_log_entries (user_id, entry_id, entry, occurred_at)
+      VALUES ${values}
+      ON CONFLICT (user_id, entry_id) DO NOTHING
+      RETURNING entry_id
+    `);
+    await tx.execute(sql`
+      DELETE FROM session_log_entries
+      WHERE user_id = ${userId}::uuid
+        AND entry_id NOT IN (
+          SELECT entry_id
+          FROM   session_log_entries
+          WHERE  user_id = ${userId}::uuid
+          ORDER  BY occurred_at DESC
+          LIMIT  ${LOG_CAP}
+        )
+    `);
+    return (inserted as unknown as unknown[]).length;
   });
 }
 

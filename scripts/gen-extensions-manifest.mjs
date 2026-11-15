@@ -83,6 +83,60 @@ const BUILTIN_PRECONDITION_KEYS = new Set([
   'tormented',
 ]);
 
+/**
+ * Check every `preconditions` array in an extension's moves, move overrides
+ * and assets (data-schema.md → Preconditions); throws on the first problem.
+ * A key is a built-in one, a character field that isn't text, or an asset's
+ * id (`hasAnyAsset` takes asset ids in `ids`). An asset is never named by its
+ * display name: a name can read differently from one language, or one
+ * content pack's rename, to another, so preconditions.ts matches ids only.
+ */
+function validatePreconditions(where, data, fields, assets) {
+  const byName = new Map([...assets.values()].map((a) => [a.name, a.id]));
+  const check = (pre, at) => {
+    if (!pre || typeof pre !== 'object' || typeof pre.key !== 'string' || !pre.key)
+      throw new Error(`${at}: each precondition needs a key`);
+    const { key } = pre;
+    if (key === 'hasAnyAsset') {
+      if (!Array.isArray(pre.ids) || pre.ids.length === 0)
+        throw new Error(`${at}: hasAnyAsset needs a list of asset ids in "ids"`);
+      for (const id of pre.ids)
+        if (!assets.has(id))
+          throw new Error(
+            `${at}: hasAnyAsset names "${id}", which isn't an asset id` +
+              (byName.has(id) ? ` (that asset's id is "${byName.get(id)}")` : ''),
+          );
+      return;
+    }
+    if (BUILTIN_PRECONDITION_KEYS.has(key) || assets.has(key)) return;
+    const field = fields.get(key);
+    if (field) {
+      if (field.type === 'string' || field.type === 'markdown')
+        throw new Error(`${at}: precondition "${key}" names a text field, which can't be compared`);
+      return;
+    }
+    if (byName.has(key))
+      throw new Error(
+        `${at}: precondition "${key}" names an asset by its name; use its id, "${byName.get(key)}"`,
+      );
+    throw new Error(
+      `${at}: precondition "${key}" is neither a built-in key, a character field, nor an asset id`,
+    );
+  };
+  const walk = (node, at) => {
+    if (Array.isArray(node)) return node.forEach((n) => walk(n, at));
+    if (!node || typeof node !== 'object') return;
+    const here = typeof node.id === 'string' ? `${where}: ${node.id}` : at;
+    for (const [k, v] of Object.entries(node)) {
+      if (k === 'preconditions') {
+        if (!Array.isArray(v)) throw new Error(`${here}: preconditions must be an array`);
+        for (const pre of v) check(pre, here);
+      } else walk(v, here);
+    }
+  };
+  walk(data, where);
+}
+
 /** The character field types: the same as an asset's custom fields. */
 const FIELD_TYPES = ['dropdown', 'radio', 'string', 'counter', 'switch', 'markdown'];
 
@@ -391,18 +445,37 @@ async function build() {
       if (data.key) oracles.set(data.key, { owner: e.id, data });
     }
   const fieldOwner = new Map();
+  const allFields = new Map();
   let core = new Map();
   for (const e of entries) {
     const declared = validateCharacterFields(e.id, meta[e.id], oracles, core);
     if (e.id === 'base') core = declared;
-    for (const fid of declared.keys()) {
+    for (const [fid, f] of declared) {
       if (fieldOwner.has(fid))
         throw new Error(
           `character field "${fid}" is declared by both ${fieldOwner.get(fid)} and ${e.id}`,
         );
       fieldOwner.set(fid, e.id);
+      allFields.set(fid, f);
     }
   }
+
+  // Preconditions: each key names something that exists (see
+  // validatePreconditions), checked across every extension's content.
+  const assets = new Map();
+  for (const e of entries)
+    for (const rel of e.provides.assets ?? [])
+      for (const a of (await readJson(path.join(REPO, e.root, rel))).assets ?? [])
+        if (typeof a?.id === 'string') assets.set(a.id, a);
+  for (const e of entries)
+    for (const kind of ['moves', 'moveOverrides', 'assets'])
+      for (const rel of e.provides[kind] ?? [])
+        validatePreconditions(
+          `${e.root}/${rel}`,
+          await readJson(path.join(REPO, e.root, rel)),
+          allFields,
+          assets,
+        );
 
   return {
     $comment:

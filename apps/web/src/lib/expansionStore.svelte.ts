@@ -20,6 +20,7 @@
 // =============================================================================
 
 import type { ExtensionInfo } from '#lib/types.js';
+import type { PackChoice } from '#lib/packChoices.js';
 
 /** Where a browser kept its choices before they moved to the account. */
 const legacyKey = (id: string) => `ironledger:expansion:${id}`;
@@ -176,6 +177,32 @@ export function setExtensionEnabled(id: string, on: boolean): void {
 	void saveChoices({ [id]: on }).then((saved) => {
 		if (!saved) console.error(`[extensions] couldn't save ${id} ${on ? 'on' : 'off'}`);
 	});
+}
+
+/** Every toggleable extension and whether it's on, for a backup. */
+export function packChoices(): PackChoice[] {
+	return getToggleableExtensions().map((e) => ({
+		id: e.id,
+		name: e.name,
+		enabled: isSourceEnabled(e.id),
+	}));
+}
+
+/**
+ * Switch on the extensions a restore asks for, storing the choice on the
+ * account. One that's already on is left alone, and nothing is switched off.
+ * Returns those switched on, in display order; throws if the account
+ * couldn't store them (then nothing changes here either).
+ */
+export async function enableExtensions(ids: string[]): Promise<ExtensionInfo[]> {
+	const want = new Set(ids);
+	const turnOn = getToggleableExtensions().filter((e) => want.has(e.id) && !_enabled[e.id]);
+	if (turnOn.length === 0) return [];
+	const patch = Object.fromEntries(turnOn.map((e) => [e.id, true]));
+	if (!(await saveChoices(patch))) throw new Error("couldn't be switched on");
+	_choices = { ..._choices, ...patch };
+	_enabled = { ..._enabled, ...patch };
+	return turnOn;
 }
 
 // ---------------------------------------------------------------------------

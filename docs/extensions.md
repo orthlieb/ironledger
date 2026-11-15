@@ -327,7 +327,11 @@ extensions/<id>/            scripts/gen-extensions-manifest.mjs      apps/api/sr
   and the content files it provides, copies foe images into the served static
   dir, and emits the deterministic `apps/api/data/extensions.manifest.json`.
   `node scripts/gen-extensions-manifest.mjs --check` fails if the manifest or
-  the foe-image `.gitignore` is out of date (wire it into CI).
+  the foe-image `.gitignore` is out of date (wire it into CI). Both also fail
+  on a move's or asset's precondition whose key names nothing: not a built-in
+  key, a character field that isn't text, or an asset id (an asset named by
+  its display name is caught, with its id in the message). See
+  [data-schema.md § Preconditions](data-schema.md#preconditions).
 - **Loader** (`catalogue.ts`) reads the manifest and merges the listed files. It
   serves `GET /catalogue/extensions` (the metadata registry) alongside the
   content endpoints. Content resolves relative to each extension's `root`

@@ -161,9 +161,9 @@ properties. Adding a row to the oracle adds an option.
 
 - the `id` isn't camelCase, is declared by two extensions, or matches a
   built-in precondition key (`momentum`, `edge`, `hasFoe`, `vowCount`,
-  `wounded`, … all of them, listed in `preconditions.ts`). Asset names, which
-  preconditions also accept, can't clash: they're display names and start
-  with a capital.
+  `wounded`, … all of them, listed in `preconditions.ts`). Asset ids, which
+  preconditions also accept, can't clash: they have a slash
+  (`companion/hawk`).
 - a dropdown or radio has both `options` and `optionsFrom`, or neither; has fewer than
   two options; repeats an option id; or has a `default` that's neither one of
   them nor `""`.

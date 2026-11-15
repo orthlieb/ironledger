@@ -409,14 +409,30 @@ test.describe('Expeditions area (v2)', () => {
 		// open one is interactable.
 		const firstTile = page.locator('.foe-dialog .fd-tile').first();
 		await expect(firstTile).toBeVisible({ timeout: 8_000 });
+		const tileName = (await firstTile.locator('.fd-tile-name').innerText()).trim();
 		await firstTile.click();
 
 		// Dialog closes immediately in denizen mode (no confirm step).
 		await expect(page.locator('.foe-dialog')).not.toBeVisible({ timeout: 5_000 });
 
-		// The first denizen input should now contain the foe's name.
-		const foeName = await page.locator(`${EXP_AREA} .ea-denizen-input`).first().inputValue();
-		expect(foeName.trim()).toBeTruthy();
+		// The first denizen input shows the foe's name…
+		await expect(page.locator(`${EXP_AREA} .ea-denizen-input`).first()).toHaveValue(tileName);
+		// …and the site stores which foe it is, by its catalogue id.
+		const stored = async () =>
+			page.evaluate(async () => {
+				const s = await fetch('/api/session', { credentials: 'include' }).then((r) => r.json());
+				const sites = (s.expeditions ?? []) as Array<{ type: string; denizens?: string[] }>;
+				return sites.find((e) => e.type === 'site' && e.denizens?.[0])?.denizens?.[0] ?? '';
+			});
+		await expect.poll(stored, { timeout: 8_000 }).toMatch(/^[a-z0-9-]+\/[a-z0-9-]+$/);
+		const foes = await page.evaluate(async () => {
+			const j = await fetch('/api/catalogue/foes', { credentials: 'include' }).then((r) =>
+				r.json(),
+			);
+			return j.foes as Array<{ id: string; name: string }>;
+		});
+		const id = await stored();
+		expect(foes.find((f) => f.id === id)?.name).toBe(tileName);
 	});
 
 	// ── Denizen table — Roll Denizen + Add to Foes ────────────────────────────

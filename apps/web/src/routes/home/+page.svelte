@@ -552,6 +552,7 @@
 	summary={importer.summary}
 	liveSummary={importer.liveSummary}
 	errors={importer.errors}
+	warnings={importer.warnings}
 	validCount={importer.validCount}
 	progress={importer.progress}
 	onfile={(file) => void importer.run(file)}

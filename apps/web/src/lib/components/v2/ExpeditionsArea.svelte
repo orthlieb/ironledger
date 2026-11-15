@@ -60,6 +60,7 @@
 		type EntityMarkerRef,
 	} from '#lib/mapStore.svelte.js';
 	import { formatEntityId } from '#lib/mapEntityLinks.js';
+	import { denizenLabel } from '#lib/foeStore.svelte.js';
 	import iconGearSvg from '#icons/gear-solid.svg?raw';
 	import checkSvg from '#icons/circle-check-solid.svg?raw';
 	import locationSvg from '#icons/location-dot-solid.svg?raw';
@@ -464,9 +465,10 @@
 		denizenPickIndex = index;
 		foePickerRef?.openForDenizen();
 	}
-	function handleDenizenFoePick(foeName: string) {
+	/** A foe picked from the list goes in as its id; the slot shows its name. */
+	function handleDenizenFoePick(foeId: string) {
 		if (denizenPickIndex < 0) return;
-		handleDenizenChange(denizenPickIndex, foeName);
+		handleDenizenChange(denizenPickIndex, foeId);
 		denizenPickIndex = -1;
 	}
 
@@ -1127,7 +1129,7 @@
 												class="ea-denizen-input"
 												type="text"
 												placeholder="—"
-												value={activeSite.denizens[i] ?? ''}
+												value={denizenLabel(activeSite.denizens[i] ?? '')}
 												oninput={(e) =>
 													handleDenizenChange(i, (e.target as HTMLInputElement).value)}
 											/>
@@ -1173,7 +1175,7 @@
 	</ConfirmDialog>
 {/if}
 
-<!-- Foe picker — used by Denizens tab to pick a foe name for any of the 12 cells. -->
+<!-- Foe picker — used by Denizens tab to pick a foe for any of the 12 cells. -->
 <FoePickerDialog
 	bind:this={foePickerRef}
 	onSelect={() => {}}

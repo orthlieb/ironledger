@@ -28,6 +28,7 @@
 	import StatControl from './StatControl.svelte';
 	import Checkbox from './Checkbox.svelte';
 	import { DropdownMenu } from 'bits-ui';
+	import { touchSafeTrigger } from '#lib/touchSafeTrigger.js';
 	import { tooltip } from '#lib/actions/tooltip.js';
 	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
 	import {
@@ -58,6 +59,7 @@
 	// under base) so the dropdown opens on the RAW default rather than
 	// whichever entry happens to lead the list.
 	let selectedId = $state<string>('');
+	const touchGuard = touchSafeTrigger();
 	$effect(() => {
 		if (!arrays.find((a) => a.id === selectedId)) {
 			selectedId = (arrays.find((a) => a.default) ?? arrays[0])?.id ?? '';
@@ -87,7 +89,12 @@
 		     NOT roll immediately. -->
 		<div class="sa-picker-row">
 			<DropdownMenu.Root>
-				<DropdownMenu.Trigger class="sa-trigger" aria-label="Choose difficulty level">
+				<!-- touchSafeTrigger: a tap opens the menu and leaves it open. -->
+				<DropdownMenu.Trigger
+					class="sa-trigger"
+					aria-label="Choose difficulty level"
+					{...touchGuard}
+				>
 					<span class="sa-trigger-label">{selected?.label ?? ''}</span>
 					<span class="sa-trigger-chevron" aria-hidden="true">▾</span>
 				</DropdownMenu.Trigger>

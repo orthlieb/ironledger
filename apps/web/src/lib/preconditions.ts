@@ -33,7 +33,8 @@ export interface Precondition {
 	max?: number;
 	eq?: number;
 	ne?: number;
-	/** Used with key="hasAnyAsset": passes if the character owns at least one asset whose id is in this list. */
+	/** Used with key="hasAnyAsset": passes if the character owns at least one
+	 *  asset whose id is in this list. For one asset, the key is its id. */
 	ids?: string[];
 }
 
@@ -226,8 +227,9 @@ export function checkPrecondition(
 
 	// ---- Character fields an extension declares (YRT's touched level, …) ----
 	// A dropdown or radio reads as its option's position, from 0 (−1 unset),
-	// a counter as its count, a switch as 1 or 0; text can't be compared. Checked before the asset-name fallback below, so a field is
-	// never mistaken for an asset. See docs/character-fields.md.
+	// a counter as its count, a switch as 1 or 0; text can't be compared.
+	// Checked before the asset fallback below (a field id is camelCase, an
+	// asset id has a slash). See docs/character-fields.md.
 	const field = findCharacterField(key);
 	if (field && !isText(field)) {
 		const v = fieldNumber(field, fieldValue(field, charData.fields));
@@ -244,12 +246,17 @@ export function checkPrecondition(
 		return `Requires ${names}`;
 	}
 
-	// ---- Asset by name (any remaining key is treated as an asset name) ----
-	const hasNamed = charData.assets.some((a) => findAsset(a.assetId)?.name === key);
-	if (passes(hasNamed ? 1 : 0, pre)) return null;
-	if (pre.eq === 1) return `Requires the "${key}" asset`;
-	if (pre.eq === 0) return `Must not have the "${key}" asset`;
-	return `"${key}" asset requirement not met`;
+	// ---- One asset, by its id (any remaining key, e.g. "companion/hawk") ----
+	// Its id, not its name: a name can read differently from one language,
+	// or one content pack's rename, to another. The message names it as it
+	// reads here. scripts/gen-extensions-manifest.mjs fails the build on a
+	// key that's none of these, so a typo or a name can't slip through.
+	const owned = charData.assets.some((a) => a.assetId === key);
+	if (passes(owned ? 1 : 0, pre)) return null;
+	const name = findAsset(key)?.name ?? key;
+	if (pre.eq === 1) return `Requires the "${name}" asset`;
+	if (pre.eq === 0) return `Must not have the "${name}" asset`;
+	return `"${name}" asset requirement not met`;
 }
 
 /**

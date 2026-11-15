@@ -20,8 +20,7 @@ export type ExportSelection = {
 	places: string[];
 	/** Map ids to include. */
 	maps: string[];
-	/** Foe encounter ids to include (markdown export only — the zip
-	 *  format doesn't carry encounters). */
+	/** Foe encounter ids to include. */
 	foes: string[];
 	/** Whether to include the session log. */
 	log: boolean;
