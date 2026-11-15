@@ -323,6 +323,17 @@ select option {
 	background: var(--bg-card);
 }
 
+/* Suggested text, everywhere: the colour of an empty field's hint (the Notes
+   hint, a Select's or Combobox's "Select…"), not the browser's own grey,
+   which reads much brighter on the dark theme. `opacity` because Firefox
+   fades placeholders by default; the fill colour because WebKit paints a
+   placeholder with an input's -webkit-text-fill-color when one is set. */
+::placeholder {
+	color: var(--text-dimmer);
+	-webkit-text-fill-color: var(--text-dimmer);
+	opacity: 1;
+}
+
 /* --------------------------------------------------------------------------
    Buttons
    -------------------------------------------------------------------------- */

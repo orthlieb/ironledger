@@ -447,9 +447,6 @@
 		outline: none;
 		box-shadow: none;
 	}
-	:global(.cb-search::placeholder) {
-		color: var(--text-dimmer);
-	}
 
 	/* Filter-pill row above the list — colour-tinted small caps, filled
 	   ~18% when active; trailing clear button on the right. */

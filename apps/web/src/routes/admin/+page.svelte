@@ -2278,9 +2278,6 @@
 	.logs-search:focus {
 		border-color: var(--text-accent);
 	}
-	.logs-search::placeholder {
-		color: var(--text-dimmer);
-	}
 
 	.logs-match-count {
 		font-family: var(--font-ui);
