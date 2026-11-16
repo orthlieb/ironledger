@@ -71,8 +71,11 @@
 		hydrateCharacterInPlace,
 		maxMomentum,
 		momentumReset,
+		changeResource,
+		setResource,
 		computeAssetXpDiff,
 		STARTING_XP,
+		type ResourceChange,
 	} from '#lib/character.js';
 	import hornedHelmSvg from '#icons/horned-helm.svg?raw';
 	import { appIcon } from '#lib/liveryIcons.js';
@@ -330,61 +333,59 @@
 	// ── Apply functions invoked by the action bus ─────────────────────────
 	// All mutations target `activeData` (the v2 writable copy synced from
 	// the store on character switch). Mirrors v1 CharacterSheet.applyResourceChange.
+
+	/** A resource change's log line: `Health: 4 → 5 (+2)`, adding the top of
+	 *  the range when that cut the change short: `Health: 4 → 5 (+2, max 5)`. */
+	function resourceLine(label: string, old: number, delta: number, change: ResourceChange) {
+		const cap = change.capped ? `, max ${change.max}` : '';
+		return (
+			`<div>${label}: ${old} → <strong>${change.next}</strong> ` +
+			`(${delta > 0 ? '+' : '−'}${Math.abs(delta)}${cap})</div>`
+		);
+	}
+
+	/**
+	 * A resource link's change to a character's data: held to the resource's
+	 * range (changeResource), logged under `title(label)`, and for supply,
+	 * shared with the party. Returns the old and new values, or null for a
+	 * key that isn't a resource or a change of nothing. A change the top of
+	 * the range swallows whole still logs (`Health: 5 → 5 (+1, max 5)`), so
+	 * the spent link says why nothing moved.
+	 */
+	function applyResourceTo(
+		data: CharacterData,
+		key: string,
+		delta: number,
+		title: (label: string) => string,
+	): { old: number; next: number } | null {
+		// Global counters (e.g. mana) live in data.globalValues as numeric strings.
+		const gv = data.globalValues ?? {};
+		const rec = data as unknown as Record<string, number>;
+		const old = key === 'mana' ? parseInt(gv['mana'] ?? '0') : (rec[key] ?? 0);
+		const change = changeResource(key, old, delta, data);
+		if (!change || (change.next === old && !change.capped)) return null;
+		const { next } = change;
+		if (next !== old) {
+			if (key === 'mana') data.globalValues = { ...gv, mana: String(next) };
+			else rec[key] = next;
+		}
+		const label = key.charAt(0).toUpperCase() + key.slice(1);
+		appendLog(title(label), resourceLine(label, old, delta, change));
+		// Supply is party-wide — broadcast to every character.
+		if (key === 'supply' && next !== old) setPartySupply(next);
+		return { old, next };
+	}
+
 	function applyResourceChange(key: string, delta: number) {
 		if (!activeData) return;
-		const data = activeData;
-		// Global counters (e.g. mana) live in data.globalValues as numeric strings.
-		if (key === 'mana') {
-			const gv = data.globalValues ?? {};
-			const old = parseInt(gv['mana'] ?? '0');
-			const next = Math.max(0, Math.min(10, old + delta));
-			if (next !== old) {
-				data.globalValues = { ...gv, mana: String(next) };
-				appendLog(
-					charTitle('Mana'),
-					`<div>Mana: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : '−'}${Math.abs(delta)})</div>`,
-				);
-			}
-			return;
-		}
-		const rec = data as unknown as Record<string, number>;
-		const old = rec[key] ?? 0;
-		let next: number;
-		switch (key) {
-			case 'momentum':
-				next = Math.max(-6, Math.min(maxMomentum(data), old + delta));
-				break;
-			case 'health':
-			case 'spirit':
-			case 'supply':
-			case 'xp':
-				next = Math.max(0, Math.min(999, old + delta));
-				break;
-			case 'bonds':
-			case 'failures':
-				next = Math.max(0, Math.min(40, old + delta));
-				break;
-			default:
-				return;
-		}
-		if (next !== old) {
-			rec[key] = next;
-			const label = key.charAt(0).toUpperCase() + key.slice(1);
-			appendLog(
-				charTitle(label),
-				`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : '−'}${Math.abs(delta)})</div>`,
-			);
-			// Supply is party-wide — broadcast to every character.
-			if (key === 'supply') setPartySupply(next);
-			// Floor cascade — resource just landed at its minimum this change.
-			if (delta < 0) {
-				const charId = activeCharId ?? '';
-				const floorRule = FLOOR_RULES.find((r) => r.resource === key && next === r.floor);
-				if (floorRule) {
-					const entryId = crypto.randomUUID();
-					appendLog(floorRule.logTitle, floorRule.logHtml({ charId, entryId }), entryId);
-				}
-			}
+		const change = applyResourceTo(activeData, key, delta, charTitle);
+		// Floor cascade — resource just landed at its minimum this change.
+		if (!change || change.next === change.old || delta >= 0) return;
+		const floorRule = FLOOR_RULES.find((r) => r.resource === key && change.next === r.floor);
+		if (floorRule) {
+			const entryId = crypto.randomUUID();
+			const charId = activeCharId ?? '';
+			appendLog(floorRule.logTitle, floorRule.logHtml({ charId, entryId }), entryId);
 		}
 	}
 
@@ -433,25 +434,38 @@
 		}
 	}
 
-	// Set (not add) a field to an absolute value — used for initiative.
-	function applySet(key: string, value: number) {
-		if (!activeData) return;
-		const rec = activeData as unknown as Record<string, number>;
+	/**
+	 * Set (not add) a field to an absolute value: initiative, and `/vital`,
+	 * `/bonds`, `/failures` with `=`. A resource is held to its range
+	 * (setResource), and a value the range cuts says so in the log line,
+	 * `Health: 4 → 5 (= 9, max 5)`, even when nothing moves. Supply, being
+	 * party-wide, is shared with the party.
+	 */
+	function applySetTo(
+		data: CharacterData,
+		key: string,
+		value: number,
+		title: (label: string) => string,
+	) {
+		const rec = data as unknown as Record<string, number>;
 		const old = rec[key] ?? 0;
-		if (old !== value) {
-			rec[key] = value;
-			const label = key.charAt(0).toUpperCase() + key.slice(1);
-			const INITIATIVE_NAMES_ACTIVE: Record<number, string> = {
-				0: 'None',
-				1: 'Character',
-				2: 'Foe',
-			};
-			const display =
-				key === 'initiative'
-					? `${INITIATIVE_NAMES_ACTIVE[old] ?? old} → <strong>${INITIATIVE_NAMES_ACTIVE[value] ?? value}</strong>`
-					: `${old} → <strong>${value}</strong>`;
-			appendLog(charTitle(label), `<div>${label}: ${display}</div>`);
-		}
+		const next = setResource(key, value, data);
+		if (next === old && next === value) return;
+		if (next !== old) rec[key] = next;
+		const label = key.charAt(0).toUpperCase() + key.slice(1);
+		const display =
+			key === 'initiative'
+				? `${INITIATIVE_LABELS[old] ?? old} → <strong>${INITIATIVE_LABELS[next] ?? next}</strong>`
+				: `${old} → <strong>${next}</strong>`;
+		const num = (n: number) => (n < 0 ? `−${-n}` : String(n));
+		const cut =
+			next === value ? '' : ` (= ${num(value)}, ${value > next ? 'max' : 'min'} ${num(next)})`;
+		appendLog(title(label), `<div>${label}: ${display}${cut}</div>`);
+		if (key === 'supply' && next !== old) setPartySupply(next);
+	}
+
+	function applySet(key: string, value: number) {
+		if (activeData) applySetTo(activeData, key, value, charTitle);
 	}
 
 	// Dedicated initiative applier — enforces the 0|1|2 enum at the action-bus
@@ -486,57 +500,7 @@
 	): void {
 		const title = (label: string) => `${charName || 'Character'} — ${label}`;
 		if (action.type === 'resource') {
-			const key = action.key;
-			const delta = action.value as number;
-			if (key === 'mana') {
-				const gv = (data.globalValues as Record<string, string>) ?? {};
-				const old = parseInt(gv['mana'] ?? '0');
-				const next = Math.max(0, Math.min(10, old + delta));
-				if (next !== old) {
-					data.globalValues = { ...gv, mana: String(next) };
-					appendLog(
-						title('Mana'),
-						`<div>Mana: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : '−'}${Math.abs(delta)})</div>`,
-					);
-				}
-				return;
-			}
-			const rec = data as unknown as Record<string, number>;
-			const old = rec[key] ?? 0;
-			let next: number;
-			switch (key) {
-				case 'momentum':
-					next = Math.max(
-						-6,
-						Math.min(
-							maxMomentum(data as unknown as import('#lib/types.js').CharacterData),
-							old + delta,
-						),
-					);
-					break;
-				case 'health':
-				case 'spirit':
-				case 'supply':
-				case 'xp':
-					next = Math.max(0, Math.min(999, old + delta));
-					break;
-				case 'bonds':
-				case 'failures':
-					next = Math.max(0, Math.min(40, old + delta));
-					break;
-				default:
-					return;
-			}
-			if (next !== old) {
-				rec[key] = next;
-				const label = key.charAt(0).toUpperCase() + key.slice(1);
-				appendLog(
-					title(label),
-					`<div>${label}: ${old} → <strong>${next}</strong> (${delta > 0 ? '+' : '−'}${Math.abs(delta)})</div>`,
-				);
-				// Supply is party-wide — broadcast to every character.
-				if (key === 'supply') setPartySupply(next);
-			}
+			applyResourceTo(data as unknown as CharacterData, action.key, action.value, title);
 		} else if (action.type === 'debility') {
 			const rec = data as unknown as Record<string, boolean>;
 			if (rec[action.key] === undefined) return;
@@ -558,18 +522,7 @@
 				appendLog(title(label), `<div>${label}: ${old} → <strong>0</strong> (−${old})</div>`);
 			}
 		} else if (action.type === 'set') {
-			const rec = data as unknown as Record<string, number>;
-			const old = rec[action.key] ?? 0;
-			const next = action.value as number;
-			if (old !== next) {
-				rec[action.key] = next;
-				const label = action.key.charAt(0).toUpperCase() + action.key.slice(1);
-				const display =
-					action.key === 'initiative'
-						? `${_INITIATIVE_NAMES[old] ?? old} → <strong>${_INITIATIVE_NAMES[next] ?? next}</strong>`
-						: `${old} → <strong>${next}</strong>`;
-				appendLog(title(label), `<div>${label}: ${display}</div>`);
-			}
+			applySetTo(data as unknown as CharacterData, action.key, action.value, title);
 		} else if (action.type === 'initiative') {
 			const next = action.value;
 			if (next !== 0 && next !== 1 && next !== 2) return;
