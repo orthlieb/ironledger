@@ -1,5 +1,9 @@
 /**
- * The address players write to: bug reports (BugReportDialog) and privacy
- * requests (the /privacy page). One place, so changing it changes both.
+ * The addresses players write to.
  */
-export const CONTACT_EMAIL = 'bugs@ironledger.org';
+
+/** Bug reports (BugReportDialog). */
+export const BUG_EMAIL = 'bugs@ironledger.org';
+
+/** Privacy requests: copies, corrections, erasure (the /privacy page). */
+export const PRIVACY_EMAIL = 'gdpr@ironledger.org';

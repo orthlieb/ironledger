@@ -10,8 +10,9 @@
 	 * and its date.
 	 */
 	import { headingText } from '#lib/fontStore.svelte.js';
-	import { CONTACT_EMAIL } from '#lib/contact.js';
+	import { PRIVACY_EMAIL } from '#lib/contact.js';
 
+	// Shown as "Last updated": change it whenever the notice's text changes.
 	const UPDATED = '16 November 2026';
 </script>
 
@@ -20,6 +21,14 @@
 </svelte:head>
 
 <article class="privacy">
+	<div class="pv-hero">
+		<img
+			src="/ironledger-privacy.webp"
+			alt="A cloaked warrior listens at the keyhole of a locked, iron-banded door between burning torches, watched by a carved stone guardian and a red-eyed raven"
+			width="1024"
+			height="572"
+		/>
+	</div>
 	<h1 class="pv-title">{headingText('Privacy')}</h1>
 	<p class="pv-updated">Last updated {UPDATED}</p>
 
@@ -135,16 +144,13 @@
 		</li>
 		<li>
 			<strong>Ask:</strong> for anything else, such as a copy of the security records about you or a
-			correction, write to <a href="mailto:{CONTACT_EMAIL}">{CONTACT_EMAIL}</a>.
+			correction, write to <a href="mailto:{PRIVACY_EMAIL}">{PRIVACY_EMAIL}</a>.
 		</li>
 	</ul>
 	<p>
 		If you're in the EU or the UK these are your rights under the GDPR, and you can also complain to
 		your local data protection authority.
 	</p>
-
-	<h2>{headingText('Changes')}</h2>
-	<p>When this page changes, the date at the top changes with it.</p>
 
 	<p class="pv-back"><a href="/about">About Iron Ledger</a> · <a href="/login">Sign in</a></p>
 </article>
@@ -157,6 +163,21 @@
 		font-family: var(--font-body);
 		color: var(--text-muted);
 		line-height: 1.7;
+	}
+
+	/* Framed like the About page's hero image. */
+	.pv-hero {
+		margin: 0 0 1.25rem;
+		border-radius: 10px;
+		overflow: hidden;
+		box-shadow: 0 12px 48px rgba(0, 0, 0, 0.45);
+		border: 1px solid var(--border-mid);
+	}
+
+	.pv-hero img {
+		display: block;
+		width: 100%;
+		height: auto;
 	}
 
 	.pv-title {
