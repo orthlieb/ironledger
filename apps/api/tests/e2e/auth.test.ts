@@ -16,6 +16,7 @@ import { eq } from 'drizzle-orm';
 if (!adminDb) throw new Error('adminDb is required — set DATABASE_ADMIN_URL');
 
 const { sendVerificationEmail } = await import('../../src/lib/mailer.js');
+const { redis } = await import('../../src/server.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -197,6 +198,64 @@ describe('POST /login', () => {
 
     expect(wrongPass.statusCode).toBe(unknownEmail.statusCode);
     expect(wrongPass.json().message).toBe(unknownEmail.json().message);
+  });
+});
+
+describe('POST /login, unverified', () => {
+  const email = 'e2e-unverified@example.com';
+  const password = 'SuperSecurePass!42';
+
+  beforeEach(async () => {
+    await cleanupUser(email);
+    vi.clearAllMocks();
+  });
+
+  it('returns 403 with code EMAIL_UNVERIFIED, so the page can offer a new link', async () => {
+    await post('/register', { email, password, captchaToken: 'test' });
+    const res = await post('/login', { email, password, captchaToken: 'test' });
+
+    expect(res.statusCode).toBe(403);
+    expect(res.json().code).toBe('EMAIL_UNVERIFIED');
+  });
+});
+
+describe('POST /resend-verification', () => {
+  const email = 'e2e-resend@example.com';
+  const password = 'SuperSecurePass!42';
+
+  beforeEach(async () => {
+    await cleanupUser(email);
+    vi.clearAllMocks();
+  });
+
+  it('returns 202 and sends a new link to an unverified account', async () => {
+    await post('/register', { email, password, captchaToken: 'test' });
+    await new Promise((r) => setTimeout(r, 50));
+    const [u] = await adminDb!.select({ id: users.id }).from(users).where(eq(users.email, email));
+    await redis.del(`verify_resend:${u!.id}`); // as if a minute had passed
+
+    const res = await post('/resend-verification', { email, captchaToken: 'test' });
+    await new Promise((r) => setTimeout(r, 50));
+
+    expect(res.statusCode).toBe(202);
+    expect(sendVerificationEmail).toHaveBeenCalledTimes(2);
+  });
+
+  it('gives the same answer for an address with no account (no enumeration)', async () => {
+    await post('/register', { email, password, captchaToken: 'test' });
+    const known = await post('/resend-verification', { email, captchaToken: 'test' });
+    const unknown = await post('/resend-verification', {
+      email: 'nobody@example.com',
+      captchaToken: 'test',
+    });
+
+    expect(unknown.statusCode).toBe(202);
+    expect(unknown.json()).toEqual(known.json());
+  });
+
+  it('returns 400 if captchaToken is missing', async () => {
+    const res = await post('/resend-verification', { email });
+    expect(res.statusCode).toBe(400);
   });
 });
 

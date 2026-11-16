@@ -70,7 +70,8 @@ const loginBody = z.object({
   captchaToken: z.string().min(1, 'CAPTCHA is required'),
 });
 
-const forgotBody = z.object({
+/** An email address and a captcha: forgot-password and resend-verification. */
+const emailCaptchaBody = z.object({
   email: z.string().email().max(254),
   captchaToken: z.string().min(1, 'CAPTCHA is required'),
 });
@@ -188,9 +189,14 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
                 ? 'account_disabled'
                 : 'login_failed';
           logSecurityEvent({ eventType, req, metadata: { email } });
-          reply
-            .status(err.statusCode)
-            .send({ statusCode: err.statusCode, error: err.name, message: err.message });
+          // `code` lets the login page offer "Send a new link" for an
+          // unverified account. It's only reached with the right password.
+          reply.status(err.statusCode).send({
+            statusCode: err.statusCode,
+            error: err.name,
+            code: err.code,
+            message: err.message,
+          });
         } else {
           reply
             .status(500)
@@ -276,7 +282,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
     '/forgot-password',
     {
       schema: {
-        body: forgotBody,
+        body: emailCaptchaBody,
         response: { 202: z.object({ message: z.string() }) },
       },
       config: {
@@ -301,6 +307,38 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
 
       return reply.status(202).send({
         message: 'If an account exists for that email, a reset link is on its way.',
+      });
+    },
+  );
+
+  // ── POST /resend-verification ─────────────────────────────────────────────
+  server.post(
+    '/resend-verification',
+    {
+      schema: {
+        body: emailCaptchaBody,
+        response: { 202: z.object({ message: z.string() }) },
+      },
+      config: {
+        rateLimit: {
+          max: config.RATE_LIMIT_REGISTER,
+          timeWindow: '1 hour',
+        },
+      },
+    },
+    async (req, reply) => {
+      const { email, captchaToken } = req.body;
+
+      await verifyCaptcha(captchaToken, req.ip).catch(handleCaptchaError(reply));
+      if (reply.sent) return;
+
+      // Always returns 202 — prevents email enumeration
+      await auth.resendVerification(email).catch((err: unknown) => req.log.error(err));
+
+      logSecurityEvent({ eventType: 'verify_resend_req', req, metadata: { email } });
+
+      return reply.status(202).send({
+        message: 'If that address has an account waiting to be verified, a new link is on its way.',
       });
     },
   );

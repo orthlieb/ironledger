@@ -41,8 +41,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 	if (!res.ok) {
 		const body = (await res.json().catch(() => ({}))) as { message?: string };
 		return {
-			error:
-				body.message ?? 'Verification failed. The link may have expired — please register again.',
+			error: body.message ?? 'Verification failed. The link may have expired: ask for a new one.',
 		};
 	}
 
@@ -56,6 +55,20 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 		secure: process.env.NODE_ENV === 'production',
 		maxAge: 900, // 15 minutes — matches JWT TTL
 	});
+
+	// And the refresh token, as the log-in page does, so hooks.server.ts can
+	// renew the access token. Without it a brand-new player was signed out
+	// 15 minutes after verifying. A session cookie: the log-in page's
+	// "remember me" is what makes it last 30 days.
+	const rt = (res.headers.get('set-cookie') ?? '').match(/(?:^|,)\s*rt=([^;,]+)/)?.[1];
+	if (rt) {
+		cookies.set('rt', rt, {
+			path: '/',
+			httpOnly: true,
+			sameSite: 'strict',
+			secure: process.env.NODE_ENV === 'production',
+		});
+	}
 
 	throw redirect(302, '/home');
 };

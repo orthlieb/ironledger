@@ -33,6 +33,7 @@ vi.mock('../../src/lib/hibp.js', () => ({
 }));
 
 const { sendVerificationEmail } = await import('../../src/lib/mailer.js');
+const { redis } = await import('../../src/server.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -273,5 +274,106 @@ describe('forgotPassword / resetPassword', () => {
 
     // New password should work
     await expect(auth.login({ email: TEST_EMAIL, password: newPass })).resolves.toBeDefined();
+  });
+});
+
+describe('verification links: 24 hours, and a new one on request', () => {
+  /** The raw token in the most recent verification email. */
+  const lastLink = () => {
+    const calls = vi.mocked(sendVerificationEmail).mock.calls;
+    const last = calls[calls.length - 1];
+    if (!last) throw new Error('sendVerificationEmail was not called');
+    return last[1];
+  };
+  const settle = () => new Promise((r) => setTimeout(r, 50));
+
+  /** Lift the one-email-a-minute limit, as if a minute had passed. */
+  async function minutePasses(email = TEST_EMAIL) {
+    const [u] = await adminDb!.select({ id: users.id }).from(users).where(eq(users.email, email));
+    await redis.del(`verify_resend:${u!.id}`);
+  }
+
+  beforeEach(async () => {
+    await cleanupUser(TEST_EMAIL);
+    vi.clearAllMocks();
+  });
+
+  it('a verification link works for 24 hours', async () => {
+    const before = Date.now();
+    await auth.register({ email: TEST_EMAIL, password: TEST_PASSWORD });
+    const [u] = await adminDb!
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.email, TEST_EMAIL));
+    const [token] = await adminDb!.select().from(authTokens).where(eq(authTokens.userId, u!.id));
+
+    const lifetimeH = (token!.expiresAt.getTime() - before) / 3_600_000;
+    expect(lifetimeH).toBeGreaterThan(23.9);
+    expect(lifetimeH).toBeLessThan(24.1);
+  });
+
+  it('resendVerification sends a new link, and the old one stops working', async () => {
+    await auth.register({ email: TEST_EMAIL, password: TEST_PASSWORD });
+    await settle();
+    const first = lastLink();
+
+    await minutePasses();
+    await auth.resendVerification(TEST_EMAIL.toUpperCase()); // any case
+    await settle();
+    const second = lastLink();
+
+    expect(sendVerificationEmail).toHaveBeenCalledTimes(2);
+    expect(second).not.toBe(first);
+    await expect(auth.verifyEmail(first)).rejects.toMatchObject({ code: 'TOKEN_INVALID' });
+    await expect(auth.verifyEmail(second)).resolves.toBeDefined();
+  });
+
+  it('sends at most one verification email a minute per account', async () => {
+    await auth.register({ email: TEST_EMAIL, password: TEST_PASSWORD });
+    await auth.resendVerification(TEST_EMAIL);
+    await auth.resendVerification(TEST_EMAIL);
+    await settle();
+
+    expect(sendVerificationEmail).toHaveBeenCalledTimes(1);
+  });
+
+  it('silently does nothing for an unknown or already verified address', async () => {
+    await auth.resendVerification('nobody@example.com');
+    await createVerifiedUser();
+    vi.clearAllMocks();
+    await minutePasses();
+    await auth.resendVerification(TEST_EMAIL);
+    await settle();
+
+    expect(sendVerificationEmail).not.toHaveBeenCalled();
+  });
+
+  it('registering again with an unverified address sends a fresh link; the first password stands', async () => {
+    await auth.register({ email: TEST_EMAIL, password: TEST_PASSWORD });
+    await settle();
+    const first = lastLink();
+
+    await minutePasses();
+    await auth.register({ email: TEST_EMAIL, password: 'AnotherPassword!Entirely7' });
+    await settle();
+    const second = lastLink();
+
+    expect(second).not.toBe(first);
+    await expect(auth.verifyEmail(first)).rejects.toMatchObject({ code: 'TOKEN_INVALID' });
+    await auth.verifyEmail(second);
+    await expect(auth.login({ email: TEST_EMAIL, password: TEST_PASSWORD })).resolves.toBeDefined();
+    await expect(
+      auth.login({ email: TEST_EMAIL, password: 'AnotherPassword!Entirely7' }),
+    ).rejects.toMatchObject({ code: 'INVALID_CREDENTIALS' });
+  });
+
+  it('registering again with a verified address sends nothing', async () => {
+    await createVerifiedUser();
+    vi.clearAllMocks();
+    await minutePasses();
+    await auth.register({ email: TEST_EMAIL, password: TEST_PASSWORD });
+    await settle();
+
+    expect(sendVerificationEmail).not.toHaveBeenCalled();
   });
 });

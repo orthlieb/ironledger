@@ -45,7 +45,15 @@
 					.message}
 			</div>
 		{:else if form?.error}
-			<div class="error-msg">{form.error}</div>
+			<div class="error-msg">
+				{form.error}
+				{#if (form as { unverified?: boolean }).unverified}
+					<a
+						href="/resend-verification?email={encodeURIComponent(form.email ?? '')}"
+						data-testid="login-resend-link">Send a new link</a
+					>
+				{/if}
+			</div>
 		{/if}
 
 		<form method="POST" class="auth-form">

@@ -14,6 +14,7 @@
  *   login_unverified     — correct password but email not verified
  *   register_success     — new account created
  *   email_verified       — email verification link used
+ *   verify_resend_req    — a new email-verification link requested
  *   password_reset_req   — password reset email requested
  *   password_reset_done  — password successfully reset
  *   token_theft          — a revoked refresh token was presented
@@ -31,6 +32,7 @@ export type SecurityEventType =
   | 'login_unverified'
   | 'register_success'
   | 'email_verified'
+  | 'verify_resend_req'
   | 'password_reset_req'
   | 'password_reset_done'
   | 'token_theft'
