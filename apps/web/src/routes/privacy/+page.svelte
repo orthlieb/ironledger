@@ -109,11 +109,11 @@
 
 	<h2>{headingText('Cookies and browser storage')}</h2>
 	<p>
-		Iron Ledger sets only the cookies it needs to work: two that keep you signed in, and a
-		short-lived one that remembers whether you asked for the starter world while you verify your
-		email. There are no advertising or analytics cookies. Display preferences (theme, dice, panel
-		sizes and the like) are saved in your browser, not on our servers, and your browser's settings
-		can clear them.
+		Iron Ledger sets only the cookies it needs to work: two that keep you signed in, a third if you
+		tick "Remember me", and a short-lived one that remembers whether you asked for the starter world
+		while you verify your email. There are no advertising or analytics cookies. Display preferences
+		(theme, dice, panel sizes and the like) are saved in your browser, not on our servers, and your
+		browser's settings can clear them.
 	</p>
 
 	<h2>{headingText('How long it’s kept')}</h2>
