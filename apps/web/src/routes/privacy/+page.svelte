@@ -12,6 +12,7 @@
 	import { headingText } from '#lib/fontStore.svelte.js';
 	import { CONTACT_EMAIL } from '#lib/contact.js';
 
+	// Shown as "Last updated": change it whenever the notice's text changes.
 	const UPDATED = '16 November 2026';
 </script>
 
@@ -142,9 +143,6 @@
 		If you're in the EU or the UK these are your rights under the GDPR, and you can also complain to
 		your local data protection authority.
 	</p>
-
-	<h2>{headingText('Changes')}</h2>
-	<p>When this page changes, the date at the top changes with it.</p>
 
 	<p class="pv-back"><a href="/about">About Iron Ledger</a> · <a href="/login">Sign in</a></p>
 </article>
