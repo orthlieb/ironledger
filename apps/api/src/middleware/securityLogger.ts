@@ -14,11 +14,13 @@
  *   login_unverified     — correct password but email not verified
  *   register_success     — new account created
  *   email_verified       — email verification link used
+ *   verify_resend_req    — a new email-verification link requested
  *   password_reset_req   — password reset email requested
  *   password_reset_done  — password successfully reset
  *   token_theft          — a revoked refresh token was presented
  *   token_refresh        — refresh token successfully rotated
  *   account_disabled     — login attempted on a deactivated account
+ *   account_deleted      — a player deleted their own account
  */
 
 import { db } from '../db/index.js';
@@ -31,11 +33,13 @@ export type SecurityEventType =
   | 'login_unverified'
   | 'register_success'
   | 'email_verified'
+  | 'verify_resend_req'
   | 'password_reset_req'
   | 'password_reset_done'
   | 'token_theft'
   | 'token_refresh'
   | 'account_disabled'
+  | 'account_deleted'
   | 'admin_create_invite'
   | 'admin_revoke_invite'
   | 'invite_accepted'

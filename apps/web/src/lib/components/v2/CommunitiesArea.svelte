@@ -947,6 +947,8 @@
 				activeKey={activeEntryId}
 				onselect={(e) => selectEntry(e.id)}
 				triggerValue={activeEntry ? entryLabel(activeEntry) : ''}
+				triggerIcon={activeEntry ? iconFor(activeEntry.kind) : undefined}
+				triggerColor={activeEntry ? accentFor(activeEntry.kind) : undefined}
 				placeholder="— No connections yet —"
 				searchPlaceholder="Search connections…"
 				emptyText="No matching connections."

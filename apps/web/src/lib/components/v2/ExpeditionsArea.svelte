@@ -744,6 +744,8 @@
 				activeKey={activeExpId}
 				onselect={(e) => selectExp(e.id)}
 				triggerValue={activeExp ? expDisplayName(activeExp) : ''}
+				triggerIcon={activeExp ? EXP_ICON[activeExp.type as ExpKind] : undefined}
+				triggerColor={activeExp ? EXP_COLOR[activeExp.type as ExpKind] : undefined}
 				placeholder="— No expeditions yet —"
 				searchPlaceholder="Search expeditions…"
 				emptyText="No matching expeditions."

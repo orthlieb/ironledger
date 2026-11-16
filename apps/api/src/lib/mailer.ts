@@ -149,7 +149,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
       'Verify your email address by visiting:',
       link,
       '',
-      'This link expires in 1 hour.',
+      'This link expires in 24 hours.',
       '',
       "If you didn't create an account, you can safely ignore this email.",
     ].join('\n'),
@@ -202,7 +202,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
               <p style="margin:0 0 20px;
                         font-family:'Roboto',Arial,Helvetica,sans-serif;
                         font-size:0.82rem;color:#64748b;line-height:1.6;">
-                This link expires in&nbsp;1&nbsp;hour. If you didn&rsquo;t create an account,
+                This link expires in&nbsp;24&nbsp;hours. If you didn&rsquo;t create an account,
                 you can safely ignore this email.
               </p>
 

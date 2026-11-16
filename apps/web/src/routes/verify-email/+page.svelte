@@ -42,7 +42,7 @@
 				</div>
 				<div class="error-msg">{data.error}</div>
 				<p class="auth-link">
-					<a href="/register">Register again</a> or <a href="/login">sign in</a>
+					<a href="/resend-verification">Send a new link</a> or <a href="/login">sign in</a>
 				</p>
 			{:else}
 				<div class="hero-image-wrap">

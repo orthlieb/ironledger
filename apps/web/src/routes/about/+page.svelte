@@ -488,7 +488,7 @@
 			>. Iron Ledger is free and open source — source available on
 			<a href="https://github.com/orthlieb/ironledger" target="_blank" rel="noopener noreferrer"
 				>GitHub</a
-			>.
+			>. How it handles your data is in the <a href="/privacy">privacy notice</a>.
 		</p>
 	</div>
 </section>

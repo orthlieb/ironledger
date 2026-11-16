@@ -131,7 +131,8 @@
 			</form>
 
 			<p class="auth-link">
-				Already sworn in? <a href="/login">Sign in</a>
+				Already sworn in? <a href="/login">Sign in</a> ·
+				<a href="/privacy" data-testid="register-privacy">How we handle your data</a>
 			</p>
 		</div>
 	</div>

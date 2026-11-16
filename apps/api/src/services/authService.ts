@@ -13,7 +13,7 @@ import argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 import { eq, and, isNull } from 'drizzle-orm';
 import { withUserContext, adminDb } from '../db/index.js';
-import { users, refreshTokens, authTokens, type User } from '../db/schema.js';
+import { users, refreshTokens, authTokens, userInvites, type User } from '../db/schema.js';
 import {
   signAccessToken,
   generateRefreshToken,
@@ -21,6 +21,7 @@ import {
   refreshTokenExpiresAt,
   generateAuthToken,
   hashToken,
+  VERIFY_LINK_TTL_MS,
 } from '../lib/tokens.js';
 import { assertPasswordNotPwned } from '../lib/hibp.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../lib/mailer.js';
@@ -123,7 +124,7 @@ export async function register(input: RegisterInput): Promise<void> {
   // We always hash the password (even if we're going to reject) to keep
   // timing consistent (prevents user enumeration via response time).
   const [existing] = await adminDb
-    .select({ id: users.id })
+    .select({ id: users.id, emailVerifiedAt: users.emailVerifiedAt, isActive: users.isActive })
     .from(users)
     .where(eq(users.email, email))
     .limit(1);
@@ -133,8 +134,14 @@ export async function register(input: RegisterInput): Promise<void> {
 
   if (existing) {
     // Return success silently — don't tell the caller the email is taken.
-    // The user will see "check your email" and notice no email arrives.
     // This prevents email enumeration via the registration endpoint.
+    // An account still waiting to be verified gets a fresh link: whoever
+    // registers again most likely lost the first email. The password
+    // given now is ignored; the one set at the first registration stands,
+    // and "Forgot password" works once the address is verified.
+    if (!existing.emailVerifiedAt && existing.isActive) {
+      await sendFreshVerificationLink(existing.id, email);
+    }
     return;
   }
 
@@ -171,12 +178,44 @@ export async function register(input: RegisterInput): Promise<void> {
 
   if (!newUser) throw new AuthError('Failed to create user', 'CREATE_FAILED', 500);
 
-  // Generate and store verification token
-  const { raw, hash, expiresAt } = generateAuthToken();
+  await sendFreshVerificationLink(newUser.id, email);
+}
 
-  await withUserContext(newUser.id, async (tx) => {
+// ---------------------------------------------------------------------------
+// Verification links — issue, and send again
+// ---------------------------------------------------------------------------
+
+/** Shortest gap between two verification emails to one account. */
+const VERIFY_RESEND_COOLDOWN_S = 60;
+
+/**
+ * Give an account a fresh 24-hour verification link and email it. Any
+ * earlier unused link stops working. At most one email a minute per
+ * account, so neither "Send a new link" nor registering again can flood
+ * an inbox; within the minute this silently does nothing.
+ */
+async function sendFreshVerificationLink(userId: string, email: string): Promise<void> {
+  if (redis) {
+    const first = await redis
+      .set(`verify_resend:${userId}`, '1', 'EX', VERIFY_RESEND_COOLDOWN_S, 'NX')
+      .catch(() => 'OK'); // Redis down: send anyway; the route's rate limit still applies
+    if (first !== 'OK') return;
+  }
+
+  const { raw, hash, expiresAt } = generateAuthToken(VERIFY_LINK_TTL_MS);
+
+  await withUserContext(userId, async (tx) => {
+    await tx
+      .delete(authTokens)
+      .where(
+        and(
+          eq(authTokens.userId, userId),
+          eq(authTokens.purpose, 'verify_email'),
+          isNull(authTokens.usedAt),
+        ),
+      );
     await tx.insert(authTokens).values({
-      userId: newUser.id,
+      userId,
       tokenHash: hash,
       purpose: 'verify_email',
       expiresAt,
@@ -185,6 +224,28 @@ export async function register(input: RegisterInput): Promise<void> {
 
   // Send verification email (don't await — don't block the response)
   void sendVerificationEmail(email, raw).catch(console.error);
+}
+
+/**
+ * Send a new verification link to an account that hasn't verified its
+ * email yet. Silently does nothing for an unknown, verified or disabled
+ * address, so the caller can't tell which addresses have accounts.
+ */
+export async function resendVerification(email: string): Promise<void> {
+  const normalised = email.toLowerCase().trim();
+
+  if (!adminDb) return;
+
+  // Pre-auth lookup, no user context yet: adminDb, as in forgotPassword.
+  const [user] = await adminDb
+    .select({ id: users.id, emailVerifiedAt: users.emailVerifiedAt, isActive: users.isActive })
+    .from(users)
+    .where(eq(users.email, normalised))
+    .limit(1);
+
+  if (!user || user.emailVerifiedAt || !user.isActive) return;
+
+  await sendFreshVerificationLink(user.id, normalised);
 }
 
 // ---------------------------------------------------------------------------
@@ -529,5 +590,53 @@ export async function resetPassword(rawToken: string, newPassword: string): Prom
       .update(refreshTokens)
       .set({ revokedAt: new Date() })
       .where(and(eq(refreshTokens.userId, token.userId), isNull(refreshTokens.revokedAt)));
+  });
+}
+
+// ---------------------------------------------------------------------------
+// deleteAccount — a player deletes their own account
+// ---------------------------------------------------------------------------
+
+/**
+ * Delete the signed-in user's account and everything in it, after checking
+ * their password again. Every table holding their data cascades from
+ * `users` (characters, entities, portraits, maps, the log, AI settings,
+ * tokens); invitations sent to their address go too. The security log
+ * keeps its rows (no FK) until they age out.
+ *
+ * An admin can't delete their own account this way, so the site can't be
+ * left without one by accident: another admin removes the role first.
+ */
+export async function deleteAccount(userId: string, password: string): Promise<void> {
+  if (!adminDb) throw new AuthError('Admin DB not configured', 'CONFIG_ERROR', 500);
+
+  const [user] = await adminDb
+    .select({ email: users.email, passwordHash: users.passwordHash, role: users.role })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  if (!user) throw new AuthError('Account not found', 'ACCOUNT_ERROR', 404);
+
+  let passwordValid: boolean;
+  try {
+    passwordValid = await argon2.verify(user.passwordHash, password);
+  } catch {
+    passwordValid = false;
+  }
+  if (!passwordValid) {
+    throw new AuthError("That password isn't right.", 'WRONG_PASSWORD', 400);
+  }
+
+  if (user.role === 'admin') {
+    throw new AuthError(
+      "An admin account can't delete itself. Another admin can remove the admin role first.",
+      'ADMIN_ACCOUNT',
+      403,
+    );
+  }
+
+  await adminDb.transaction(async (tx) => {
+    await tx.delete(userInvites).where(eq(userInvites.email, user.email));
+    await tx.delete(users).where(eq(users.id, userId));
   });
 }

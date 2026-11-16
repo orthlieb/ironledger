@@ -70,7 +70,7 @@ async function openSettings(page: Page): Promise<void> {
 	await page.locator('.hm-menu').waitFor({ state: 'visible', timeout: 3_000 });
 	await page.locator('.hm-item', { hasText: /settings/i }).click();
 	await expect(page.locator('.settings-dialog')).toBeVisible({ timeout: 3_000 });
-	// Settings is tabbed (Appearance / Dice / Expansions / AI); the expansion
+	// Settings is tabbed (Appearance / Dice / Expansions / AI / Account); the expansion
 	// toggles live behind the Expansions tab, so activate it.
 	await page.locator('.sd-tab', { hasText: /^Expansions$/ }).click();
 	await expect(page.locator('.sd-tab-panel:not([hidden])')).toBeVisible({ timeout: 3_000 });

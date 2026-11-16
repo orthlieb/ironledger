@@ -12,6 +12,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { resetExpeditions, resetFoes } from './helpers/reset';
+import { expectSwitcherShowsActiveIcon } from './helpers/home';
 
 const EXP_AREA = '.home-area--expeditions';
 const EXP_HEADER = `${EXP_AREA} .ea-header`;
@@ -190,6 +191,16 @@ test.describe('Expeditions area (v2)', () => {
 
 	test('shows the expedition switcher combobox in the header', async ({ page }) => {
 		await expect(page.locator(EXP_COMBOBOX)).toBeVisible();
+	});
+
+	test('the switcher shows the selected expedition’s icon, journey or site', async ({ page }) => {
+		await createJourney(page);
+		await expectSwitcherShowsActiveIcon(page, EXP_COMBOBOX);
+		const journeyIcon = await page.locator(`${EXP_COMBOBOX} .cb-item-icon`).innerHTML();
+
+		await createSite(page);
+		await expectSwitcherShowsActiveIcon(page, EXP_COMBOBOX);
+		expect(await page.locator(`${EXP_COMBOBOX} .cb-item-icon`).innerHTML()).not.toBe(journeyIcon);
 	});
 
 	// ── Journeys ──────────────────────────────────────────────────────────────

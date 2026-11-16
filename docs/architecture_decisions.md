@@ -160,6 +160,17 @@ Two database roles:
 (SMS 2FA has SIM-swap risks and excludes users without phones). Email verification
 prevents throwaway registrations and ensures a working contact address.
 
+**A lost verification email can always be replaced.** The link works for 24
+hours (a password-reset link, for 1). `/resend-verification` (`POST
+/api/v1/auth/resend-verification`, captcha and rate limited) sends a fresh link
+to an unverified account, and registering again with an unverified address does
+the same; either way the earlier link stops working, the password set at the
+first registration stands, and no extra daily sign-up place is used. One email a
+minute per account at most. Every answer is the same "if that address has an
+account…", so nothing reveals which addresses are registered. Logging in before
+verifying says so (the API's 403 carries `code: "EMAIL_UNVERIFIED"`) and links to
+the resend page with the address filled in.
+
 **Future:** TOTP (time-based one-time passwords via an authenticator app) can be
 added as an optional second factor without changing the core auth flow.
 

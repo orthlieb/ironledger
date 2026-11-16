@@ -322,6 +322,8 @@
 				activeKey={activeFoeId}
 				onselect={(enc) => selectFoe(enc.id)}
 				triggerValue={activeEnc ? displayName : ''}
+				triggerIcon={activeEnc ? foeIcon(activeDef) : undefined}
+				triggerColor={activeEnc ? foeItemColor(activeEnc) : undefined}
 				placeholder="— No foes yet —"
 				searchPlaceholder="Search foes…"
 				emptyText="No matching foes."

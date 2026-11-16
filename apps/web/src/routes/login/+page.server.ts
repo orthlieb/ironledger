@@ -16,7 +16,7 @@ const TAGLINES = [
 
 const THIRTY_DAYS = 30 * 24 * 60 * 60; // seconds
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 	// Already logged in? Skip login page.
 	if (locals.user) {
 		throw redirect(302, '/home');
@@ -26,6 +26,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		hcaptchaSiteKey: HCAPTCHA_SITE_KEY,
 		isDev: process.env.NODE_ENV !== 'production',
 		tagline,
+		// Arriving from Settings → Account → Delete my account.
+		deleted: url.searchParams.has('deleted'),
 	};
 };
 
@@ -59,6 +61,18 @@ export const actions: Actions = {
 
 		if (res.status === 401) {
 			return fail(401, { error: 'Invalid email or password.', email });
+		}
+		if (res.status === 403) {
+			// Right password, but the account can't sign in yet (or at all).
+			const body = (await res.json().catch(() => ({}))) as { code?: string; message?: string };
+			if (body.code === 'EMAIL_UNVERIFIED') {
+				return fail(403, {
+					error: 'Verify your email address first, with the link we sent you.',
+					unverified: true,
+					email,
+				});
+			}
+			return fail(403, { error: body.message ?? 'Login failed. Please try again.', email });
 		}
 		if (res.status === 503) {
 			// Could be maintenance mode — check the body
