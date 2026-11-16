@@ -21,6 +21,14 @@
 </svelte:head>
 
 <article class="privacy">
+	<div class="pv-hero">
+		<img
+			src="/ironledger-privacy.webp"
+			alt="A cloaked warrior listens at the keyhole of a locked, iron-banded door between burning torches, watched by a carved stone guardian and a red-eyed raven"
+			width="1024"
+			height="572"
+		/>
+	</div>
 	<h1 class="pv-title">{headingText('Privacy')}</h1>
 	<p class="pv-updated">Last updated {UPDATED}</p>
 
@@ -155,6 +163,21 @@
 		font-family: var(--font-body);
 		color: var(--text-muted);
 		line-height: 1.7;
+	}
+
+	/* Framed like the About page's hero image. */
+	.pv-hero {
+		margin: 0 0 1.25rem;
+		border-radius: 10px;
+		overflow: hidden;
+		box-shadow: 0 12px 48px rgba(0, 0, 0, 0.45);
+		border: 1px solid var(--border-mid);
+	}
+
+	.pv-hero img {
+		display: block;
+		width: 100%;
+		height: auto;
 	}
 
 	.pv-title {
