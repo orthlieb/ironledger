@@ -34,7 +34,10 @@ import { importLogEntries, type LogEntry } from '#lib/log.svelte.js';
 import { remapLogEntries } from '#lib/logRemap.js';
 import { enableExtensions, getExtensions, loadExtensions } from '#lib/expansionStore.svelte.js';
 import { planPackRestore, readPackChoices } from '#lib/packChoices.js';
-import { parseImportZip, sanitizeLogHtml, ImportError } from '#lib/importSanitizer.js';
+import { parseImportZip, ImportError } from '#lib/importSanitizer.js';
+// The same DOMPurify allowlist the log is shown through: a shared backup's
+// log HTML is untrusted, and more than the on-screen view reads it.
+import { sanitizeLogHtml } from '#lib/sanitize.js';
 import {
 	importMapZip,
 	parseBundledMaps,

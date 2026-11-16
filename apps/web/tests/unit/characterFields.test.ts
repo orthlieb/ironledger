@@ -486,4 +486,38 @@ describe('reconcileImportedCharacter', () => {
 		const odd = { name: 42, data: {} };
 		expect(reconcileImportedCharacter(odd, counters, byId)).not.toHaveProperty('name');
 	});
+
+	it("gives a shared backup's numbers and true/false values their types", () => {
+		const xss = '<img src=x onerror=alert(1)>';
+		const entry: { name?: unknown; data?: Record<string, unknown> } = {
+			name: 'Brennan',
+			data: {
+				edge: xss,
+				heart: '3',
+				health: 4,
+				momentum: '-2',
+				xp: null,
+				wounded: 'yes',
+				shaken: true,
+				vows: [{ name: 'Avenge', ticks: xss, menace: '2' }, null],
+			},
+		};
+		const data = reconcileImportedCharacter(entry, counters, byId);
+		expect(data).toMatchObject({
+			edge: 0,
+			heart: 3,
+			health: 4,
+			momentum: -2,
+			xp: 0,
+			wounded: false,
+			shaken: true,
+		});
+		expect((data.vows as Array<Record<string, unknown>>)[0]).toMatchObject({
+			name: 'Avenge',
+			ticks: 0,
+			menace: 2,
+		});
+		// Keys the backup didn't have stay absent: loading fills its defaults.
+		expect(data).not.toHaveProperty('iron');
+	});
 });

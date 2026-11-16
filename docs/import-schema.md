@@ -942,22 +942,31 @@ through this pipeline:
    prototype-pollution keys at every level. The result is the
    `{ manifest, data }` envelope the rest of the import flow consumes.
 6. **Log-HTML scrub** — each log entry's `html` is passed through
-   `sanitizeLogHtml()` before it's added, so no active content can reach the
-   renderer.
+   `sanitizeLogHtml()` (`lib/sanitize.ts`, DOMPurify with the same tag and
+   attribute allowlist the log is shown through) before it's added, so no
+   active content is stored. Code that reads stored log HTML for text (the
+   Markdown export, the Story dialog) parses it with `inertBody()`
+   (`lib/inertHtml.ts`), never `innerHTML` on a page element.
+7. **Type coercion** — an imported character's numbers and true/false values
+   are given those types (`reconcileImportedCharacter`), since dialogs build
+   HTML from them. Entity ids that aren't letters, digits, `_` and `-` get a
+   fresh id (the API refuses others on create).
 
 ### Limits and filters
 
-| Guard                   | Limit / behavior                                                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Outer file size         | **20 MB** max (`MAX_BYTES`) on the raw `.zip` bytes.                                                                      |
-| Total decompressed size | **40 MB** max (`MAX_DECOMPRESSED`) — zip-bomb guard.                                                                      |
-| Body file size          | **20 MB** max (`MAX_BYTES`) on the unpacked `<type>.json`.                                                                |
-| Nesting depth           | **12** levels max (`MAX_DEPTH`).                                                                                          |
-| Array length            | **1000** items max per array (`MAX_ARRAY_ITEMS`).                                                                         |
-| String length           | Capped at the file-size limit (`MAX_STR_LEN = MAX_BYTES`, 20 MB) — large enough for a single re-embedded portrait.        |
-| Prototype pollution     | Keys `__proto__`, `constructor`, `prototype` are stripped from every object (the `POISON_KEYS` set).                      |
-| Missing portrait file   | Silently dropped — the entity imports without a portrait rather than aborting the whole zip.                              |
-| Log HTML                | `sanitizeLogHtml()` strips `<script>` blocks, `on*=` event handlers, and `javascript:` URLs before any entry is rendered. |
+| Guard                   | Limit / behavior                                                                                                             |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Outer file size         | **20 MB** max (`MAX_BYTES`) on the raw `.zip` bytes.                                                                         |
+| Total decompressed size | **40 MB** max (`MAX_DECOMPRESSED`) — zip-bomb guard.                                                                         |
+| Body file size          | **20 MB** max (`MAX_BYTES`) on the unpacked `<type>.json`.                                                                   |
+| Nesting depth           | **12** levels max (`MAX_DEPTH`).                                                                                             |
+| Array length            | **1000** items max per array (`MAX_ARRAY_ITEMS`).                                                                            |
+| String length           | Capped at the file-size limit (`MAX_STR_LEN = MAX_BYTES`, 20 MB) — large enough for a single re-embedded portrait.           |
+| Prototype pollution     | Keys `__proto__`, `constructor`, `prototype` are stripped from every object (the `POISON_KEYS` set).                         |
+| Missing portrait file   | Silently dropped — the entity imports without a portrait rather than aborting the whole zip.                                 |
+| Log HTML                | `sanitizeLogHtml()` (DOMPurify) keeps only the log's tags and attributes; scripts, event handlers and `javascript:` URLs go. |
+| Character numbers       | Stats, resources, XP, tracks and vow ticks become numbers (anything else → 0); debilities become true/false.                 |
+| Entity ids              | Anything outside `[A-Za-z0-9_-]{1,64}` is replaced with a fresh UUID, and references follow it.                              |
 
 Any violated limit throws an `ImportError`. That is caught at the import call
 site, surfaced on the dialog's **error** stage as a readable message, and

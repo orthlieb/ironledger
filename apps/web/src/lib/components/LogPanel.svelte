@@ -8,6 +8,8 @@
 	 * Clearing the log requires confirmation via a native dialog (irreversible).
 	 */
 	import { outcomeClass, outcomeLabel } from '#lib/moveRoll.js';
+	import { inertBody } from '#lib/inertHtml.js';
+	import { escHtml } from '#lib/markdown.js';
 	import {
 		type LogEntry,
 		initLog,
@@ -259,8 +261,7 @@
 	 */
 	function htmlToMarkdown(html: string): string {
 		if (typeof document === 'undefined') return html;
-		const tmp = document.createElement('div');
-		tmp.innerHTML = html;
+		const tmp = inertBody(html);
 		const lines: string[] = [];
 
 		function walk(node: Node, prefix = '') {
@@ -426,7 +427,11 @@
 		const re = new RegExp(
 			`<a\\b(?=[^>]*\\bclass="${esc(linkClass)}")${dataLookaheads}[^>]*>[\\s\\S]*?<\\/a>`,
 		);
-		const newHtml = entry.html.replace(re, `<s class="resource-spent">${link.textContent}</s>`);
+		// textContent is decoded text: escape it back before it becomes HTML (an
+		// imported link's "&lt;img…&gt;" would otherwise turn into a real tag),
+		// and use a function so "$&" in the text isn't a replacement pattern.
+		const spent = `<s class="resource-spent">${escHtml(link.textContent ?? '')}</s>`;
+		const newHtml = entry.html.replace(re, () => spent);
 		updateLogEntryHtml(entryId, newHtml);
 	}
 
