@@ -10,7 +10,7 @@
 	 * and its date.
 	 */
 	import { headingText } from '#lib/fontStore.svelte.js';
-	import { CONTACT_EMAIL } from '#lib/contact.js';
+	import { PRIVACY_EMAIL } from '#lib/contact.js';
 
 	// Shown as "Last updated": change it whenever the notice's text changes.
 	const UPDATED = '16 November 2026';
@@ -136,7 +136,7 @@
 		</li>
 		<li>
 			<strong>Ask:</strong> for anything else, such as a copy of the security records about you or a
-			correction, write to <a href="mailto:{CONTACT_EMAIL}">{CONTACT_EMAIL}</a>.
+			correction, write to <a href="mailto:{PRIVACY_EMAIL}">{PRIVACY_EMAIL}</a>.
 		</li>
 	</ul>
 	<p>
