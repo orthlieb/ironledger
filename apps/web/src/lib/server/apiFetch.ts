@@ -15,6 +15,7 @@
  */
 import { AsyncLocalStorage } from 'node:async_hooks';
 import { isIP } from 'node:net';
+import { error } from '@sveltejs/kit';
 
 const visitor = new AsyncLocalStorage<string>();
 
@@ -44,8 +45,39 @@ export function withClientAddress<T>(ip: string, fn: () => T): T {
 	return visitor.run(ip, fn);
 }
 
+/**
+ * One URL path segment made from a route parameter.
+ *
+ * SvelteKit hands parameters over decoded, so an id such as
+ * "../../admin/users/<id>/role" (say, from an imported backup someone shared)
+ * would otherwise turn into extra path segments, and the visitor's token
+ * would go to a different API route. This encodes `/`, `?`, `#` and the
+ * rest, and refuses the two values encoding leaves as they are: "." and "..".
+ */
+export function pathSegment(value: string): string {
+	if (value === '' || value === '.' || value === '..') throw error(400, 'Bad request');
+	return encodeURIComponent(value);
+}
+
+/**
+ * Backstop for pathSegment: refuse a URL whose path the URL parser would
+ * rewrite (a "." or ".." segment, in any spelling, or a backslash), since
+ * the request would then reach a different API route than the one written.
+ */
+function assertLiteralPath(input: string | URL): void {
+	if (typeof input !== 'string') return;
+	const path = input.replace(/^[a-z][a-z0-9+.-]*:\/\/[^/?#]*/i, '').split(/[?#]/)[0];
+	for (const seg of path.split('/')) {
+		const dots = seg.toLowerCase().replaceAll('%2e', '.');
+		if (dots === '.' || dots === '..' || seg.includes('\\')) {
+			throw error(400, 'Bad request path');
+		}
+	}
+}
+
 /** `fetch`, plus `X-Forwarded-For` naming the visitor whose request this is. */
 export function apiFetch(input: string | URL, init: RequestInit = {}): Promise<Response> {
+	assertLiteralPath(input);
 	const ip = visitor.getStore();
 	if (!ip) return fetch(input, init);
 	const headers = new Headers(init.headers);

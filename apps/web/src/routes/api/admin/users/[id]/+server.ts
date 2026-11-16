@@ -7,7 +7,7 @@
 import type { RequestHandler } from './$types';
 import { error } from '@sveltejs/kit';
 import { INTERNAL_API_URL } from '#lib/server/config.js';
-import { apiFetch } from '#lib/server/apiFetch.js';
+import { apiFetch, pathSegment } from '#lib/server/apiFetch.js';
 
 function authHeader(locals: App.Locals): Record<string, string> {
 	if (!locals.accessToken) throw error(401, 'Not authenticated');
@@ -15,7 +15,7 @@ function authHeader(locals: App.Locals): Record<string, string> {
 }
 
 export const DELETE: RequestHandler = async ({ locals, params }) => {
-	const res = await apiFetch(`${INTERNAL_API_URL}/api/v1/admin/users/${params.id}`, {
+	const res = await apiFetch(`${INTERNAL_API_URL}/api/v1/admin/users/${pathSegment(params.id)}`, {
 		method: 'DELETE',
 		headers: authHeader(locals),
 	});
@@ -27,14 +27,17 @@ export const DELETE: RequestHandler = async ({ locals, params }) => {
 
 export const PATCH: RequestHandler = async ({ locals, params, request }) => {
 	const body = await request.text();
-	const res = await apiFetch(`${INTERNAL_API_URL}/api/v1/admin/users/${params.id}/role`, {
-		method: 'PATCH',
-		headers: {
-			...authHeader(locals),
-			'Content-Type': 'application/json',
+	const res = await apiFetch(
+		`${INTERNAL_API_URL}/api/v1/admin/users/${pathSegment(params.id)}/role`,
+		{
+			method: 'PATCH',
+			headers: {
+				...authHeader(locals),
+				'Content-Type': 'application/json',
+			},
+			body,
 		},
-		body,
-	});
+	);
 	return new Response(res.body, {
 		status: res.status,
 		headers: { 'Content-Type': 'application/json' },

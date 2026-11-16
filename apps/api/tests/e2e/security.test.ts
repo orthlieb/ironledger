@@ -305,3 +305,51 @@ describe('client address (trustProxy: loopback)', () => {
     expect(await loggedIp({ remoteAddress: '192.0.2.50', xff: '203.0.113.7' })).toBe('192.0.2.50');
   });
 });
+
+// ---------------------------------------------------------------------------
+// Entity ids: only letters, digits, _ and - on create (no "/" or "..")
+// ---------------------------------------------------------------------------
+
+describe('entity ids', () => {
+  const email = 'sec-entity-ids@example.com';
+  const pw = 'ValidP@ssw0rd-ids';
+  let bearer = '';
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    await cleanupUser(email);
+    bearer = `Bearer ${await registerAndVerify(email, pw)}`;
+  });
+
+  const send = (method: 'POST' | 'PUT', url: string, body: unknown) =>
+    global.testServer.inject({
+      method,
+      url,
+      headers: { 'content-type': 'application/json', authorization: bearer },
+      payload: JSON.stringify(body),
+    });
+
+  it.each(['../../admin/users/x/role', '..', 'a/b', 'a b', 'x'.repeat(65)])(
+    'refuses to create an entity with id %j',
+    async (id) => {
+      const one = await send('POST', '/api/v1/session/npcs', { id, name: 'Bob' });
+      expect(one.statusCode).toBe(400);
+      const many = await send('PUT', '/api/v1/session/npcs/batch', {
+        entities: [{ id, name: 'Bob' }],
+      });
+      expect(many.statusCode).toBe(400);
+    },
+  );
+
+  it('creates one with a UUID or a plain token', async () => {
+    const one = await send('POST', '/api/v1/session/npcs', {
+      id: '0b6c1c7e-3c1e-4b8e-9a1e-2f2d3c4b5a69',
+      name: 'Bob',
+    });
+    expect(one.statusCode).toBe(201);
+    const many = await send('PUT', '/api/v1/session/npcs/batch', {
+      entities: [{ id: 'npc_2-B', name: 'Ann' }],
+    });
+    expect(many.statusCode).toBe(200);
+  });
+});
