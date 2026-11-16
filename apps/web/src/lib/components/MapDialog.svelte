@@ -64,6 +64,7 @@
 	import Combobox from '#lib/components/Combobox.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
 	import { tooltip } from '#lib/actions/tooltip.js';
+	import { dropImage, canDropFiles } from '#lib/actions/dropImage.js';
 	import { resolveMarkerIcon } from '#lib/settlementIcons.svelte.js';
 	import MarkerCard from './MarkerCard.svelte';
 	import MapPilePicker from './MapPilePicker.svelte';
@@ -1515,11 +1516,20 @@
 		if (pilePicker) closePilePicker();
 	});
 
-	async function handleFileChosen(e: Event) {
+	function handleFileChosen(e: Event) {
 		const input = e.target as HTMLInputElement;
 		const file = input.files?.[0];
 		input.value = '';
-		if (!file) return;
+		if (file) void loadBackground(file);
+	}
+
+	/** Mention dropping in the empty map's hint only where a file can be
+	 *  dragged in (mouse or trackpad). */
+	const dropHint = canDropFiles();
+
+	/** Set (or replace) the active map's background: from the file input,
+	 *  or an image file dropped on the map. */
+	async function loadBackground(file: File) {
 		uploadError = '';
 		try {
 			const result = await downscaleImage(file);
@@ -1778,7 +1788,16 @@
 	     `IH = dialog height − AHH`. `aspect-ratio` on the body is
 	     redundant but harmless — it keeps square grid cells even if
 	     a race briefly leaves the dialog un-sized. -->
-			<div class="mp-body" style="aspect-ratio: {gridDims.cols} / {gridDims.rows};">
+			<!-- An image file dropped here sets the background, or replaces it,
+			     as Map options' "Replace background image…" does. -->
+			<div
+				class="mp-body"
+				style="aspect-ratio: {gridDims.cols} / {gridDims.rows};"
+				data-drop-label={mapState.backgroundHash
+					? 'Drop to replace the background'
+					: 'Drop to set the background'}
+				use:dropImage={{ ondrop: loadBackground, disabled: !mapState.loaded }}
+			>
 				<!-- Placing / square-selected hint. Overlaid on top of the
 				<!-- Wheel listener is attached manually with `passive: false` in a
 		     $effect above so trackpad-pinch (ctrl+wheel) is preventable. -->
@@ -2165,7 +2184,9 @@
 							<span class="mp-empty-cta-label">Add background image</span>
 						</button>
 						<p class="mp-empty-cta-hint">
-							Pick a map picture to paint over — jpg / png, any aspect.
+							Pick a map picture to paint over — jpg / png, any aspect{dropHint
+								? ', or drop one here'
+								: ''}.
 						</p>
 					</div>
 				{/if}
@@ -2492,6 +2513,24 @@
 		position: relative;
 		width: 100%;
 		overflow: hidden;
+	}
+	/* An image dragged over the map (use:dropImage sets data-drop-over). */
+	:global(.mp-body[data-drop-over])::after {
+		content: attr(data-drop-label);
+		position: absolute;
+		inset: 0;
+		z-index: 5;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-family: var(--font-ui);
+		font-size: 1rem;
+		font-weight: 600;
+		color: var(--text-accent);
+		background: color-mix(in srgb, var(--bg-card) 75%, transparent);
+		outline: 3px dashed var(--text-accent);
+		outline-offset: -8px;
+		pointer-events: none;
 	}
 	/* Overlay SVG — floats above .mp-canvas at fixed canvas-pixel
 	   dimensions so the scale bar stays put while the map pans and zooms

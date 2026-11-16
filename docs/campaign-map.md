@@ -495,6 +495,14 @@ strip.
 
 ## Image ingest
 
+A background comes from the hidden `#mp-file-input` (the empty map's "Add
+background image" button, or Map options → "Replace background image…") or
+from an image file dragged in from the desktop and dropped on the map
+(`use:dropImage` on `.mp-body`; see
+[ui-components.md → Image drop targets](ui-components.md#image-drop-targets--usedropimage)).
+A drop on a map with a background replaces it, as the Map options button
+does. Both reach `loadBackground(file)` in `MapDialog.svelte`, which calls:
+
 `mapImage.downscaleImage(file: File) → Promise<DownscaledImage>`:
 
 1. Reject uploads > `MAP_IMAGE_MAX_UPLOAD_BYTES` (20 MB) up front.

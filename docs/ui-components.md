@@ -152,6 +152,47 @@ clipped inside any `overflow: hidden/scroll` ancestor and doesn't show on touch.
 
 ---
 
+## Image drop targets — `use:dropImage`
+
+An image uploader also takes an image file dragged in from the desktop. Put
+`use:dropImage` (`#lib/actions/dropImage.ts`) on the element to drop on, and
+give it the same function the file input's change handler calls, so cropping,
+size limits and error messages stay in one place:
+
+```svelte
+<script>
+  import { dropImage, canDropFiles } from '#lib/actions/dropImage.js';
+  const dropHint = canDropFiles(); // mouse or trackpad: mention dropping
+</script>
+
+<div class="x-wrap" use:dropImage={{ ondrop: upload, disabled: uploading }}>…</div>
+
+<style>
+  /* The action sets data-drop-over while an image is over the element;
+     :global() because Svelte can't see an attribute set at runtime and
+     would strip the rule as unused. */
+  .x-wrap:global([data-drop-over]) {
+    outline: 2px dashed var(--text-accent);
+  }
+</style>
+```
+
+- Only drags that carry an image react: text, links, non-image files and the
+  app's own pointer drags get no highlight and the browser's "no drop" cursor.
+- The highlight survives moving across the element's children, and clears on
+  leave or drop.
+- Mention dropping in hints only where `canDropFiles()` is true; a touch
+  screen has nothing to drag from.
+- The root layout mounts `guardStrayFileDrops()`, so a file dropped beside a
+  target is ignored rather than opened by the browser in place of the app.
+
+In use: `PortraitUploader` (characters, NPCs, settlements, expeditions;
+dropping on a filled portrait replaces it) and the map's background
+(`.mp-body` in `MapDialog`). The import dialog's `.zip` drop zone predates
+the action and handles its own drag events.
+
+---
+
 ## Card Headers
 
 Used in: `CharacterSheet` (`.char-header`), `FoeCard` (`.fc-header`), `JourneyCard` (`.jc-header`), `SiteCard` (`.sc-header`)
