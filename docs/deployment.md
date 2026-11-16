@@ -108,19 +108,20 @@ openssl genrsa -out /tmp/private.pem 2048
 openssl rsa -in /tmp/private.pem -pubout -out /tmp/public.pem
 # Copy the key contents into .env (see below)
 
-# 6. Create production .env
-cp .env.example /home/ironledger/.env
-nano /home/ironledger/.env   # fill in all values
+# 6. Create production .env — in the app directory, where PM2
+#    (ecosystem.config.js) and the API (apps/api/src/loadEnv.ts) read it
+cp .env.example /home/ironledger/app/.env
+nano /home/ironledger/app/.env   # fill in all values
 ```
 
 ### 1.4 Create the Production .env
 
-Copy `.env.example` and fill in production values:
+Copy `.env.example` to `/home/ironledger/app/.env` and fill in production
+values. Leave `PORT` out: `ecosystem.config.js` gives the API 3000 and the web
+server 3001.
 
 ```env
 NODE_ENV=production
-PORT=3000
-HOST=0.0.0.0
 APP_URL=https://yourdomain.com
 
 DATABASE_URL=postgres://app_user:REAL_PASSWORD@localhost:5432/ironledger
@@ -182,10 +183,13 @@ Keep the `/api/` and `/health` location blocks unchanged (they proxy to `:3000`)
 # On the server as ironledger user:
 cd ~/app
 npm ci
-npm run build
+# NODE_ENV=production leaves the dev-only Sample content pack out, as the
+# deploy workflow's builds do
+NODE_ENV=production npm run build
 npm run migrate
 
-# Start PM2
+# Start PM2 (ecosystem.config.js writes its logs to ~/logs)
+mkdir -p ~/logs
 pm2 start ecosystem.config.js
 pm2 save
 ```
@@ -359,6 +363,24 @@ tail -f /home/ironledger/logs/api-error.log
 ```bash
 curl https://yourdomain.com/health
 ```
+
+---
+
+## Updating the Nginx Config
+
+Deploys don't touch Nginx's files: `infra/nginx/nginx.conf` and `infra/nginx/proxy_params` reach the server only through `server-setup.sh`. When either changes in the repo, apply it by hand once the deploy has pulled it, as root or a sudo user:
+
+```bash
+cd /home/ironledger/app
+sudo cp /etc/nginx/sites-available/ironledger /etc/nginx/sites-available/ironledger.bak
+sed 's/YOURDOMAIN.COM/yourdomain.com/g' infra/nginx/nginx.conf > /tmp/ironledger.nginx
+diff /etc/nginx/sites-available/ironledger /tmp/ironledger.nginx  # only the repo's change should show
+sudo cp /tmp/ironledger.nginx /etc/nginx/sites-available/ironledger
+sudo cp infra/nginx/proxy_params /etc/nginx/proxy_params           # if it changed too
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+If `diff` shows more than the repo's change (lines Certbot added, or hand edits on the server), carry those over into `/tmp/ironledger.nginx` before copying it. `nginx -t` refuses a broken file and leaves the running config alone; `ironledger.bak` puts the old one back.
 
 ---
 
