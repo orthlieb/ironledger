@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { INTERNAL_API_URL, HCAPTCHA_SITE_KEY } from '#lib/server/config.js';
+import { apiFetch } from '#lib/server/apiFetch.js';
 
 const TAGLINES = [
 	'Your ledger awaits. Try not to die filling it in.',
@@ -50,7 +51,7 @@ export const actions: Actions = {
 
 		let res: Response;
 		try {
-			res = await fetch(`${INTERNAL_API_URL}/api/v1/auth/login`, {
+			res = await apiFetch(`${INTERNAL_API_URL}/api/v1/auth/login`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ email, password, captchaToken }),

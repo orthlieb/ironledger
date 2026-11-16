@@ -24,8 +24,8 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { adminDb } from '../../src/db/index.js';
-import { users } from '../../src/db/schema.js';
-import { eq } from 'drizzle-orm';
+import { users, securityEvents } from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 if (!adminDb) throw new Error('adminDb is required — set DATABASE_ADMIN_URL');
 
@@ -257,5 +257,51 @@ describe('login timing parity', () => {
     const elapsed = performance.now() - t0;
     expect(res.statusCode).toBe(401);
     expect(elapsed).toBeGreaterThanOrEqual(15);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Client address: X-Forwarded-For is believed only from loopback
+// ---------------------------------------------------------------------------
+
+describe('client address (trustProxy: loopback)', () => {
+  /** Ask for a password reset (logged with req.ip) and read back the logged address. */
+  async function loggedIp(opts: { remoteAddress?: string; xff?: string }): Promise<string | null> {
+    const email = `ip-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
+    await global.testServer.inject({
+      method: 'POST',
+      url: '/api/v1/auth/forgot-password',
+      remoteAddress: opts.remoteAddress,
+      headers: {
+        'content-type': 'application/json',
+        ...(opts.xff ? { 'x-forwarded-for': opts.xff } : {}),
+      },
+      payload: JSON.stringify({ email, captchaToken: 'test' }),
+    });
+    // The security log is written fire-and-forget: wait for the row.
+    for (let i = 0; i < 40; i++) {
+      const [row] = await adminDb!
+        .select({ ip: securityEvents.ipAddress })
+        .from(securityEvents)
+        .where(sql`${securityEvents.metadata}->>'email' = ${email}`);
+      if (row) return row.ip;
+      await new Promise((r) => setTimeout(r, 25));
+    }
+    return null;
+  }
+
+  it('takes the visitor named by the loopback proxy (the web server, Nginx)', async () => {
+    expect(await loggedIp({ remoteAddress: '127.0.0.1', xff: '203.0.113.7' })).toBe('203.0.113.7');
+  });
+
+  it('ignores addresses a client put in front of the real one', async () => {
+    // Nginx appends the real address to whatever the client sent.
+    expect(await loggedIp({ remoteAddress: '127.0.0.1', xff: '198.51.100.1, 203.0.113.7' })).toBe(
+      '203.0.113.7',
+    );
+  });
+
+  it("ignores the header from anywhere that isn't loopback", async () => {
+    expect(await loggedIp({ remoteAddress: '192.0.2.50', xff: '203.0.113.7' })).toBe('192.0.2.50');
   });
 });

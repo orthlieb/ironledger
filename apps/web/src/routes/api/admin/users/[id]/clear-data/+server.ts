@@ -14,6 +14,7 @@
 import type { RequestHandler } from './$types';
 import { error } from '@sveltejs/kit';
 import { INTERNAL_API_URL } from '#lib/server/config.js';
+import { apiFetch } from '#lib/server/apiFetch.js';
 
 function authHeader(locals: App.Locals): Record<string, string> {
 	if (!locals.accessToken) throw error(401, 'Not authenticated');
@@ -21,7 +22,7 @@ function authHeader(locals: App.Locals): Record<string, string> {
 }
 
 export const POST: RequestHandler = async ({ locals, params }) => {
-	const res = await fetch(`${INTERNAL_API_URL}/api/v1/admin/users/${params.id}/clear-data`, {
+	const res = await apiFetch(`${INTERNAL_API_URL}/api/v1/admin/users/${params.id}/clear-data`, {
 		method: 'POST',
 		headers: authHeader(locals),
 	});

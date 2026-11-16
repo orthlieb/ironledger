@@ -362,6 +362,19 @@ curl https://yourdomain.com/health
 
 ---
 
+## Client IP Addresses
+
+The API's per-IP limits (sign-ups, log-ins, password resets, verification emails) and the security log need each visitor's real address, which crosses up to two hops on the same machine:
+
+- **Browser → Nginx → Fastify** (`/api/v1/*`): Nginx appends `$remote_addr` to `X-Forwarded-For` (`infra/nginx/proxy_params`).
+- **Browser → Nginx → SvelteKit → Fastify** (every page action and `/api/*` BFF route): Nginx sets `X-Real-IP` from the connection, overwriting anything the visitor sent; `hooks.server.ts` records it per request, and `apiFetch` (`apps/web/src/lib/server/apiFetch.ts`) sends it on as `X-Forwarded-For`. An ESLint rule rejects a bare `fetch` in web server code, so a new route can't quietly drop it.
+
+Fastify believes `X-Forwarded-For` only from loopback (`trustProxy: 'loopback'`), so addresses a client puts in the header itself are ignored. Two things this relies on: the SvelteKit server (port 3001) and Fastify (port 3000) are reachable only through Nginx (UFW allows 22/80/443 only), and nothing sits in front of Nginx. If a CDN or load balancer is ever added in front, set Nginx's `real_ip_header` / `set_real_ip_from` for it, or every visitor will appear to come from the CDN.
+
+The global API rate limit counts against the signed-in user when the request carries a valid access token, and against the address otherwise (`apps/api/src/lib/rateLimitKey.ts`).
+
+---
+
 ## Security Checklist
 
 - [x] SSH key-only auth (no passwords)

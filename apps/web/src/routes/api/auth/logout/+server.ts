@@ -1,11 +1,12 @@
 import type { RequestHandler } from './$types';
 import { INTERNAL_API_URL } from '#lib/server/config.js';
+import { apiFetch } from '#lib/server/apiFetch.js';
 
 /** Called by the client-side auth.logout() helper. */
 export const POST: RequestHandler = async ({ locals, cookies }) => {
 	if (locals.accessToken) {
 		try {
-			await fetch(`${INTERNAL_API_URL}/api/v1/auth/logout`, {
+			await apiFetch(`${INTERNAL_API_URL}/api/v1/auth/logout`, {
 				method: 'POST',
 				headers: { Authorization: `Bearer ${locals.accessToken}` },
 			});

@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { INTERNAL_API_URL } from '#lib/server/config.js';
+import { apiFetch } from '#lib/server/apiFetch.js';
 
 const THIRTY_DAYS = 30 * 24 * 60 * 60;
 
@@ -10,7 +11,7 @@ export const load: PageServerLoad = async ({ params, locals }) => {
 
 	let res: Response;
 	try {
-		res = await fetch(`${INTERNAL_API_URL}/api/v1/invites/${params.token}`);
+		res = await apiFetch(`${INTERNAL_API_URL}/api/v1/invites/${params.token}`);
 	} catch {
 		return { token: params.token, error: 'Could not reach the server. Please try again.' };
 	}
@@ -51,7 +52,7 @@ export const actions: Actions = {
 
 		let res: Response;
 		try {
-			res = await fetch(`${INTERNAL_API_URL}/api/v1/invites/${params.token}/accept`, {
+			res = await apiFetch(`${INTERNAL_API_URL}/api/v1/invites/${params.token}/accept`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({

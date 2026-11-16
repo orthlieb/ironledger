@@ -7,9 +7,10 @@
  */
 import type { RequestHandler } from './$types';
 import { INTERNAL_API_URL } from '#lib/server/config.js';
+import { apiFetch } from '#lib/server/apiFetch.js';
 
 export const GET: RequestHandler = async ({ request }) => {
-	const upstream = await fetch(`${INTERNAL_API_URL}/api/v1/catalogue/oracles`, {
+	const upstream = await apiFetch(`${INTERNAL_API_URL}/api/v1/catalogue/oracles`, {
 		headers: {
 			'If-None-Match': request.headers.get('If-None-Match') ?? '',
 		},

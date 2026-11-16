@@ -1,11 +1,12 @@
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';
 import { INTERNAL_API_URL } from '#lib/server/config.js';
+import { apiFetch } from '#lib/server/apiFetch.js';
 
 export const load: PageServerLoad = async ({ url, cookies }) => {
 	// Block email verification during maintenance.
 	try {
-		const maintRes = await fetch(`${INTERNAL_API_URL}/api/v1/maintenance/status`);
+		const maintRes = await apiFetch(`${INTERNAL_API_URL}/api/v1/maintenance/status`);
 		if (maintRes.ok) {
 			const maint = (await maintRes.json()) as { enabled?: boolean; message?: string };
 			if (maint.enabled) {
@@ -29,7 +30,7 @@ export const load: PageServerLoad = async ({ url, cookies }) => {
 
 	let res: Response;
 	try {
-		res = await fetch(`${INTERNAL_API_URL}/api/v1/auth/verify-email`, {
+		res = await apiFetch(`${INTERNAL_API_URL}/api/v1/auth/verify-email`, {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({ token }),

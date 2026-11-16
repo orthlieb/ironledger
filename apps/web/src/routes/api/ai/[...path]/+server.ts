@@ -8,6 +8,7 @@
 import type { RequestHandler } from './$types';
 import { error } from '@sveltejs/kit';
 import { INTERNAL_API_URL } from '#lib/server/config.js';
+import { apiFetch } from '#lib/server/apiFetch.js';
 
 type Method = 'GET' | 'PUT' | 'POST' | 'DELETE';
 
@@ -25,7 +26,7 @@ async function proxy(
 	const body = raw.length > 0 ? raw : undefined;
 	if (body !== undefined) headers['Content-Type'] = 'application/json';
 
-	const res = await fetch(`${INTERNAL_API_URL}/api/v1/ai/${params.path}`, {
+	const res = await apiFetch(`${INTERNAL_API_URL}/api/v1/ai/${params.path}`, {
 		method,
 		headers,
 		body,

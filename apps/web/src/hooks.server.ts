@@ -1,4 +1,5 @@
 import type { Handle, HandleServerError } from '@sveltejs/kit/hooks';
+import { apiFetch, clientAddress, withClientAddress } from '#lib/server/apiFetch.js';
 
 const INTERNAL_API_URL = process.env.INTERNAL_API_URL ?? 'http://localhost:3000';
 
@@ -15,7 +16,12 @@ const SCANNER_PATTERN =
 // blanket-404ing these is safe.
 const SCANNER_EXT = /\.(?:php|phtml|asp|aspx|cgi|jsp)(?:$|\/)/i;
 
-export const handle: Handle = async ({ event, resolve }) => {
+// Every call this request makes to the API names the visitor (see apiFetch),
+// so the API's per-IP limits and security log see real addresses.
+export const handle: Handle = (input) =>
+	withClientAddress(clientAddress(input.event), () => handleRequest(input));
+
+const handleRequest: Handle = async ({ event, resolve }) => {
 	const path = event.url.pathname;
 	if (SCANNER_PATTERN.test(path) || SCANNER_EXT.test(path)) {
 		return new Response(null, { status: 404 });
@@ -56,7 +62,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	const rt = event.cookies.get('rt');
 	if (rt) {
 		try {
-			const refreshRes = await fetch(`${INTERNAL_API_URL}/api/v1/auth/refresh`, {
+			const refreshRes = await apiFetch(`${INTERNAL_API_URL}/api/v1/auth/refresh`, {
 				method: 'POST',
 				headers: { Cookie: `rt=${rt}` },
 			});

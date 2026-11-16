@@ -11,6 +11,7 @@ import helmet from '@fastify/helmet';
 import cors from '@fastify/cors';
 import cookie from '@fastify/cookie';
 import rateLimit from '@fastify/rate-limit';
+import { rateLimitKey } from './lib/rateLimitKey.js';
 import { Redis } from 'ioredis';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 
@@ -57,7 +58,11 @@ export async function buildServer(): Promise<FastifyInstance> {
           ? { target: 'pino-pretty', options: { colorize: true } }
           : undefined, // in production, output raw JSON (for log aggregators)
     },
-    trustProxy: true, // respect X-Forwarded-For from Nginx
+    // X-Forwarded-For is believed only from loopback: Nginx and the SvelteKit
+    // server, both on this machine, each add the visitor's address. `true`
+    // trusted the whole header, so a client could name any address it liked
+    // and step around every per-IP limit.
+    trustProxy: 'loopback',
   });
 
   // ── Zod type provider — replaces AJV for request validation ──────────────
@@ -100,11 +105,8 @@ export async function buildServer(): Promise<FastifyInstance> {
     max: config.RATE_LIMIT_GLOBAL,
     timeWindow: '1 minute',
     redis,
-    keyGenerator: (req) => {
-      // Prefer authenticated user ID over IP — logged-in users aren't unfairly
-      // blocked by shared IPs (e.g. office NAT, mobile carrier NAT)
-      return (req.user?.id ?? req.ip) as string;
-    },
+    // The signed-in user if the token is valid, else the IP (lib/rateLimitKey).
+    keyGenerator: rateLimitKey,
     errorResponseBuilder: () => ({
       statusCode: 429,
       error: 'Too Many Requests',

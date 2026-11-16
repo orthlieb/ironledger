@@ -12,6 +12,7 @@
 import type { RequestHandler } from './$types';
 import { error } from '@sveltejs/kit';
 import { INTERNAL_API_URL } from '#lib/server/config.js';
+import { apiFetch } from '#lib/server/apiFetch.js';
 
 function authHeader(locals: App.Locals): Record<string, string> {
 	if (!locals.accessToken) throw error(401, 'Not authenticated');
@@ -33,7 +34,7 @@ export const GET: RequestHandler = async ({ locals, params, request }) => {
 	const inm = request.headers.get('if-none-match');
 	if (inm) upstream['If-None-Match'] = inm;
 
-	const res = await fetch(
+	const res = await apiFetch(
 		`${INTERNAL_API_URL}/api/v1/session/${params.kind}/${params.id}/portrait`,
 		{ headers: upstream },
 	);
@@ -44,7 +45,7 @@ export const GET: RequestHandler = async ({ locals, params, request }) => {
 
 export const PUT: RequestHandler = async ({ locals, params, request }) => {
 	const body = await request.text();
-	const res = await fetch(
+	const res = await apiFetch(
 		`${INTERNAL_API_URL}/api/v1/session/${params.kind}/${params.id}/portrait`,
 		{
 			method: 'PUT',
@@ -59,7 +60,7 @@ export const PUT: RequestHandler = async ({ locals, params, request }) => {
 };
 
 export const DELETE: RequestHandler = async ({ locals, params }) => {
-	const res = await fetch(
+	const res = await apiFetch(
 		`${INTERNAL_API_URL}/api/v1/session/${params.kind}/${params.id}/portrait`,
 		{ method: 'DELETE', headers: authHeader(locals) },
 	);
