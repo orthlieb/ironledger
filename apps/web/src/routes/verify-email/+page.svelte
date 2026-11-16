@@ -1,8 +1,9 @@
 <script lang="ts">
-	import type { PageData } from './$types';
+	import type { ActionData, PageData } from './$types';
 	import swordSvg from '#icons/sharp-axe.svg?raw';
 
-	let { data }: { data: PageData } = $props();
+	let { data, form }: { data: PageData; form: ActionData } = $props();
+	const error = $derived(form?.error ?? data.error);
 </script>
 
 <svelte:head>
@@ -31,20 +32,7 @@
 			</div>
 			<h2>Email verification</h2>
 
-			{#if data.error}
-				<div class="hero-image-wrap">
-					<img
-						class="hero-image"
-						src="/email/ironledger-email-expired.webp"
-						alt="A Norse warrior holds the charred remains of a scroll with resigned disappointment"
-					/>
-					<p class="hero-caption">The link has perished.</p>
-				</div>
-				<div class="error-msg">{data.error}</div>
-				<p class="auth-link">
-					<a href="/resend-verification">Send a new link</a> or <a href="/login">sign in</a>
-				</p>
-			{:else}
+			{#if form && 'verified' in form && form.verified}
 				<div class="hero-image-wrap">
 					<img
 						class="hero-image"
@@ -53,7 +41,41 @@
 					/>
 					<p class="hero-caption">The oath is sworn.</p>
 				</div>
-				<p class="auth-info">Verifying your account…</p>
+				<p class="auth-info" data-testid="verified">
+					Your email is verified. Sign in to begin your chronicle.
+				</p>
+				<a class="btn btn-primary verify-btn" href="/login?verified=1">Sign In</a>
+				<p class="auth-info muted">
+					Use the password you chose when you registered. Not sure of it?
+					<a href="/forgot-password">Reset it</a>.
+				</p>
+			{:else if error}
+				<div class="hero-image-wrap">
+					<img
+						class="hero-image"
+						src="/email/ironledger-email-expired.webp"
+						alt="A Norse warrior holds the charred remains of a scroll with resigned disappointment"
+					/>
+					<p class="hero-caption">The link has perished.</p>
+				</div>
+				<div class="error-msg">{error}</div>
+				<p class="auth-link">
+					<a href="/resend-verification">Send a new link</a> or <a href="/login">sign in</a>
+				</p>
+			{:else}
+				<div class="hero-image-wrap">
+					<img
+						class="hero-image"
+						src="/email/ironledger-verify-pending.webp"
+						alt="A Norse warrior scans the horizon, waiting for your verification to arrive"
+					/>
+					<p class="hero-caption">One last step.</p>
+				</div>
+				<p class="auth-info">Confirm this is your address, then sign in.</p>
+				<form method="POST" class="auth-form">
+					<input type="hidden" name="token" value={data.token} />
+					<button type="submit" class="btn btn-primary verify-btn">Verify My Email</button>
+				</form>
 			{/if}
 		</div>
 	</div>
@@ -101,6 +123,22 @@
 		font-size: 0.95rem;
 		color: var(--text-muted);
 		margin-bottom: 0.75rem;
+	}
+
+	.verify-btn {
+		display: block;
+		width: 100%;
+		text-align: center;
+		margin: 0.75rem 0 0.25rem;
+	}
+
+	.auth-info.muted {
+		color: var(--text-muted);
+		font-size: 0.875rem;
+	}
+
+	.auth-info a {
+		color: var(--text-accent);
 	}
 
 	.auth-info {

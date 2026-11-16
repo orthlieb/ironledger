@@ -16,6 +16,50 @@ const SCANNER_PATTERN =
 // blanket-404ing these is safe.
 const SCANNER_EXT = /\.(?:php|phtml|asp|aspx|cgi|jsp)(?:$|\/)/i;
 
+interface Refreshed {
+	accessToken: string;
+	/** The rotated refresh token, from the API's Set-Cookie. */
+	rt?: string;
+}
+
+/**
+ * Refreshes in flight, or just done, by refresh token. A page fires several
+ * requests at once; once the access token has expired, each would refresh
+ * with the same `rt`. The first rotates it, and the rest would present a
+ * revoked token, which the API treats as theft: it revokes the whole session
+ * and the player is signed out. So requests share one refresh per `rt`, and
+ * its result for a few seconds (for requests already on their way with the
+ * old cookie). One web process serves every request, so a Map is enough.
+ */
+const refreshes = new Map<string, Promise<Refreshed | null>>();
+const REFRESH_SHARE_MS = 10_000;
+
+function refreshOnce(rt: string): Promise<Refreshed | null> {
+	const pending = refreshes.get(rt);
+	if (pending) return pending;
+	const p = (async (): Promise<Refreshed | null> => {
+		try {
+			const res = await apiFetch(`${INTERNAL_API_URL}/api/v1/auth/refresh`, {
+				method: 'POST',
+				headers: { Cookie: `rt=${rt}` },
+			});
+			if (!res.ok) return null;
+			const body = (await res.json()) as { accessToken: string };
+			const newRt = (res.headers.get('set-cookie') ?? '').match(/(?:^|,)\s*rt=([^;,]+)/)?.[1];
+			return { accessToken: body.accessToken, rt: newRt };
+		} catch {
+			return null;
+		}
+	})();
+	refreshes.set(rt, p);
+	void p.then((r) => {
+		// A failure isn't shared: the next request may try again.
+		if (!r) refreshes.delete(rt);
+		else setTimeout(() => refreshes.delete(rt), REFRESH_SHARE_MS).unref?.();
+	});
+	return p;
+}
+
 // Every call this request makes to the API names the visitor (see apiFetch),
 // so the API's per-IP limits and security log see real addresses.
 export const handle: Handle = (input) =>
@@ -61,68 +105,53 @@ const handleRequest: Handle = async ({ event, resolve }) => {
 	// cookie (set during login and stored with the browser's cookie jar).
 	const rt = event.cookies.get('rt');
 	if (rt) {
-		try {
-			const refreshRes = await apiFetch(`${INTERNAL_API_URL}/api/v1/auth/refresh`, {
-				method: 'POST',
-				headers: { Cookie: `rt=${rt}` },
+		const fresh = await refreshOnce(rt);
+		if (fresh) {
+			// Decode to get claims and exp.
+			const [, payloadB64] = fresh.accessToken.split('.');
+			const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8')) as {
+				sub?: string;
+				email?: string;
+				role?: string;
+				exp?: number;
+			};
+
+			const secure = process.env.NODE_ENV === 'production';
+			event.cookies.set('access_token', fresh.accessToken, {
+				path: '/',
+				httpOnly: true,
+				sameSite: 'strict',
+				secure,
+				maxAge: 900,
 			});
 
-			if (refreshRes.ok) {
-				const refreshBody = (await refreshRes.json()) as { accessToken: string };
-				const newToken = refreshBody.accessToken;
-
-				// Decode to get claims and exp.
-				const [, payloadB64] = newToken.split('.');
-				const payload = JSON.parse(Buffer.from(payloadB64, 'base64url').toString('utf8')) as {
-					sub?: string;
-					email?: string;
-					role?: string;
-					exp?: number;
-				};
-
-				// Determine if we should persist the cookie (remember-me mode).
-				// Check if the existing rt cookie had a long maxAge by comparing
-				// expiry via the new token payload — if exp is far out, use 30 days.
-				// Simpler heuristic: if the original access_token cookie was set with
-				// a long maxAge it would still be present (even if expired as a JWT).
-				// We just always set 900s here — on next login rememberMe controls it.
-				event.cookies.set('access_token', newToken, {
+			// Re-set the rotated refresh token, keeping its kind: 30 days if the
+			// player ticked "Remember me" (the login page's `remember` cookie),
+			// otherwise a session cookie that goes when the browser closes.
+			if (fresh.rt) {
+				const remember = event.cookies.get('remember') === '1';
+				event.cookies.set('rt', fresh.rt, {
 					path: '/',
 					httpOnly: true,
 					sameSite: 'strict',
-					secure: process.env.NODE_ENV === 'production',
-					maxAge: 900,
+					secure,
+					...(remember ? { maxAge: 30 * 24 * 60 * 60 } : {}),
 				});
-
-				// Extract new rt from refresh response and re-set it.
-				const setCookieHeader = refreshRes.headers.get('set-cookie') ?? '';
-				const newRtMatch = setCookieHeader.match(/(?:^|,)\s*rt=([^;,]+)/);
-				const newRt = newRtMatch?.[1];
-				if (newRt) {
-					event.cookies.set('rt', newRt, {
-						path: '/',
-						httpOnly: true,
-						sameSite: 'strict',
-						secure: process.env.NODE_ENV === 'production',
-						maxAge: 30 * 24 * 60 * 60, // keep refresh token alive
-					});
-				}
-
-				event.locals.accessToken = newToken;
-				event.locals.user = {
-					id: payload.sub ?? '',
-					email: payload.email ?? '',
-					role: payload.role ?? 'user',
-				};
-				return resolve(event);
 			}
-		} catch {
-			// Refresh failed — clear stale cookies and treat as logged out.
+
+			event.locals.accessToken = fresh.accessToken;
+			event.locals.user = {
+				id: payload.sub ?? '',
+				email: payload.email ?? '',
+				role: payload.role ?? 'user',
+			};
+			return resolve(event);
 		}
 
 		// Refresh failed — clear cookies so the user gets a clean login redirect.
 		event.cookies.delete('access_token', { path: '/' });
 		event.cookies.delete('rt', { path: '/' });
+		event.cookies.delete('remember', { path: '/' });
 	}
 
 	event.locals.accessToken = null;
@@ -149,7 +178,8 @@ export const handleError: HandleServerError = ({ kind, error, event }) => {
 		console.error('[web]', error);
 		return;
 	}
+	// Logged in full here; the browser gets a generic line (a raw message like
+	// "fetch failed" or a stack detail tells an outsider about the internals).
 	console.error('[web]', error);
-	const message = error instanceof Error ? error.message : String(error);
-	return { message: message || 'Internal error' };
+	return { message: 'Something went wrong. Please try again.' };
 };

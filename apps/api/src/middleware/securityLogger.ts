@@ -12,6 +12,7 @@
  *   login_success        — successful login
  *   login_failed         — wrong password or unknown email
  *   login_unverified     — correct password but email not verified
+ *   login_locked         — refused: too many failures for that address from that IP
  *   register_success     — new account created
  *   email_verified       — email verification link used
  *   verify_resend_req    — a new email-verification link requested
@@ -31,6 +32,7 @@ export type SecurityEventType =
   | 'login_success'
   | 'login_failed'
   | 'login_unverified'
+  | 'login_locked'
   | 'register_success'
   | 'email_verified'
   | 'verify_resend_req'

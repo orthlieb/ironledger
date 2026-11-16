@@ -34,5 +34,6 @@ export const POST: RequestHandler = async ({ locals, request, cookies }) => {
 
 	cookies.delete('access_token', { path: '/' });
 	cookies.delete('rt', { path: '/' });
+	cookies.delete('remember', { path: '/' });
 	return json({ message: 'Account deleted.' });
 };

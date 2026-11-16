@@ -39,7 +39,7 @@ vi.mock('../../src/lib/hibp.js', () => ({
   PwnedPasswordError: class PwnedPasswordError extends Error {},
 }));
 
-const { sendVerificationEmail } = await import('../../src/lib/mailer.js');
+const { sendVerificationEmail, sendPasswordResetEmail } = await import('../../src/lib/mailer.js');
 const { redis } = await import('../../src/server.js');
 
 // ---------------------------------------------------------------------------
@@ -77,7 +77,9 @@ async function createVerifiedUser(email = TEST_EMAIL, password = TEST_PASSWORD) 
   if (!lastCall) throw new Error('sendVerificationEmail was not called');
   const rawToken = lastCall[1]; // second arg is the raw token
 
-  return auth.verifyEmail(rawToken);
+  // Verifying signs no one in; log in for the session the tests use.
+  await auth.verifyEmail(rawToken);
+  return auth.login({ email, password });
 }
 
 // ---------------------------------------------------------------------------
@@ -135,19 +137,22 @@ describe('verifyEmail', () => {
     vi.clearAllMocks();
   });
 
-  it('marks email as verified and returns tokens', async () => {
-    const result = await createVerifiedUser();
+  it('marks the email verified and signs no one in', async () => {
+    await auth.register({ email: TEST_EMAIL, password: TEST_PASSWORD });
+    await new Promise((r) => setTimeout(r, 50));
+    const calls = vi.mocked(sendVerificationEmail).mock.calls;
 
-    expect(result.user.email).toBe(TEST_EMAIL);
-    expect(result.accessToken).toBeTruthy();
-    expect(result.refreshToken).toBeTruthy();
+    const result = await auth.verifyEmail(calls[calls.length - 1]![1]);
 
+    expect(result).toEqual({ email: TEST_EMAIL });
     const [user] = await adminDb!
-      .select({ emailVerifiedAt: users.emailVerifiedAt })
+      .select({ id: users.id, emailVerifiedAt: users.emailVerifiedAt })
       .from(users)
       .where(eq(users.email, TEST_EMAIL));
-
     expect(user?.emailVerifiedAt).not.toBeNull();
+    expect(
+      await adminDb!.select().from(refreshTokens).where(eq(refreshTokens.userId, user!.id)),
+    ).toHaveLength(0);
   });
 
   it('rejects an invalid token', async () => {
@@ -452,5 +457,152 @@ describe('security-log retention', () => {
     expect(left.map((r) => r.id)).toEqual([recent!.id]);
     expect(left.map((r) => r.id)).not.toContain(old!.id);
     await adminDb!.delete(securityEvents).where(eq(securityEvents.eventType, tag));
+  });
+});
+
+describe('pre-account takeover: someone registers your address first', () => {
+  const ATTACKER_PW = 'AttackersOwnPassword!77';
+
+  beforeEach(async () => {
+    await cleanupUser(TEST_EMAIL);
+    vi.clearAllMocks();
+  });
+
+  it('a reset link works for the unverified account, verifies it, and the first password stops working', async () => {
+    // The attacker registers the address with their own password.
+    await auth.register({ email: TEST_EMAIL, password: ATTACKER_PW });
+    // The owner, unable to sign in, uses Forgot password.
+    await auth.forgotPassword(TEST_EMAIL);
+    await new Promise((r) => setTimeout(r, 50));
+    const calls = vi.mocked(sendPasswordResetEmail).mock.calls;
+    expect(calls).toHaveLength(1);
+
+    await auth.resetPassword(calls[0]![1], TEST_PASSWORD);
+
+    const [u] = await adminDb!
+      .select({ emailVerifiedAt: users.emailVerifiedAt })
+      .from(users)
+      .where(eq(users.email, TEST_EMAIL));
+    expect(u?.emailVerifiedAt).not.toBeNull();
+    await expect(auth.login({ email: TEST_EMAIL, password: TEST_PASSWORD })).resolves.toBeDefined();
+    await expect(auth.login({ email: TEST_EMAIL, password: ATTACKER_PW })).rejects.toMatchObject({
+      code: 'INVALID_CREDENTIALS',
+    });
+  });
+
+  it('a used reset link takes the other unused ones with it', async () => {
+    await createVerifiedUser();
+    await auth.forgotPassword(TEST_EMAIL);
+    await auth.forgotPassword(TEST_EMAIL);
+    await new Promise((r) => setTimeout(r, 50));
+    const [a, b] = vi.mocked(sendPasswordResetEmail).mock.calls.map((c) => c[1]);
+
+    await auth.resetPassword(a!, 'BrandNewPassword!Here5');
+    await expect(auth.resetPassword(b!, 'AnotherOne!Entirely9')).rejects.toMatchObject({
+      code: 'TOKEN_INVALID',
+    });
+  });
+});
+
+describe('failed sign-ins lock an address from one IP, for a while', () => {
+  beforeEach(async () => {
+    await cleanupUser(TEST_EMAIL);
+    vi.clearAllMocks();
+    await createVerifiedUser();
+    for (const ip of ['203.0.113.10', '203.0.113.11', '-']) {
+      await redis.del(`login_fail:${TEST_EMAIL}:${ip}`, `login_lock:${TEST_EMAIL}:${ip}`);
+    }
+  });
+
+  const attempt = (password: string, ip: string) => auth.login({ email: TEST_EMAIL, password, ip });
+
+  it('five failures from one IP lock it out of that address, even with the right password', async () => {
+    for (let i = 0; i < 5; i++) {
+      await expect(attempt('WrongWrongWrong!1', '203.0.113.10')).rejects.toMatchObject({
+        code: 'INVALID_CREDENTIALS',
+      });
+    }
+    await expect(attempt(TEST_PASSWORD, '203.0.113.10')).rejects.toMatchObject({
+      code: 'LOGIN_LOCKED',
+      statusCode: 429,
+    });
+  });
+
+  it("doesn't lock the owner out from elsewhere, or disable the account", async () => {
+    for (let i = 0; i < 5; i++) {
+      await attempt('WrongWrongWrong!1', '203.0.113.10').catch(() => {});
+    }
+    await expect(attempt(TEST_PASSWORD, '203.0.113.11')).resolves.toBeDefined();
+    const [u] = await adminDb!
+      .select({ isActive: users.isActive })
+      .from(users)
+      .where(eq(users.email, TEST_EMAIL));
+    expect(u?.isActive).toBe(true);
+  });
+
+  it('counts unknown addresses the same way, so a lock reveals nothing', async () => {
+    const ghost = 'nobody-here@example.com';
+    await redis.del(`login_fail:${ghost}:203.0.113.10`, `login_lock:${ghost}:203.0.113.10`);
+    for (let i = 0; i < 5; i++) {
+      await auth.login({ email: ghost, password: 'x', ip: '203.0.113.10' }).catch(() => {});
+    }
+    await expect(
+      auth.login({ email: ghost, password: 'x', ip: '203.0.113.10' }),
+    ).rejects.toMatchObject({ code: 'LOGIN_LOCKED' });
+  });
+});
+
+describe('spent-token pruning', () => {
+  it('deletes refresh tokens and links a day past expiry or use, and keeps live ones', async () => {
+    const { pruneSpentTokens } = await import('../../src/services/retentionService.js');
+    await cleanupUser(TEST_EMAIL);
+    const { user } = await createVerifiedUser();
+    const day = 86_400_000;
+    const now = Date.now();
+    await adminDb!.insert(refreshTokens).values([
+      {
+        userId: user.id,
+        tokenHash: `old-rt-${now}`,
+        familyId: user.id,
+        expiresAt: new Date(now - 2 * day),
+      },
+    ]);
+    await adminDb!.insert(authTokens).values([
+      {
+        userId: user.id,
+        tokenHash: `old-link-${now}`,
+        purpose: 'reset_password',
+        expiresAt: new Date(now - 2 * day),
+      },
+      {
+        userId: user.id,
+        tokenHash: `used-link-${now}`,
+        purpose: 'reset_password',
+        expiresAt: new Date(now + day),
+        usedAt: new Date(now - 2 * day),
+      },
+      {
+        userId: user.id,
+        tokenHash: `live-link-${now}`,
+        purpose: 'reset_password',
+        expiresAt: new Date(now + day),
+      },
+    ]);
+
+    await pruneSpentTokens();
+
+    const rts = await adminDb!
+      .select({ h: refreshTokens.tokenHash })
+      .from(refreshTokens)
+      .where(eq(refreshTokens.userId, user.id));
+    expect(rts.map((r) => r.h)).not.toContain(`old-rt-${now}`);
+    expect(rts.length).toBeGreaterThan(0); // the live session from createVerifiedUser
+    const links = await adminDb!
+      .select({ h: authTokens.tokenHash })
+      .from(authTokens)
+      .where(eq(authTokens.userId, user.id));
+    expect(links.map((l) => l.h)).toContain(`live-link-${now}`);
+    expect(links.map((l) => l.h)).not.toContain(`old-link-${now}`);
+    expect(links.map((l) => l.h)).not.toContain(`used-link-${now}`);
   });
 });

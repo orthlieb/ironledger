@@ -13,6 +13,7 @@
  */
 
 import { z } from 'zod';
+import { passwordSchema } from '../lib/passwordSchema.js';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { authenticate } from '../middleware/authenticate.js';
 import { logSecurityEvent } from '../middleware/securityLogger.js';
@@ -42,20 +43,6 @@ function cookieOptions() {
 // ---------------------------------------------------------------------------
 // Input schemas (Zod)
 // ---------------------------------------------------------------------------
-
-const passwordSchema = z
-  .string()
-  .min(12, 'Password must be at least 12 characters')
-  .max(1000, 'Password is too long')
-  // HIBP catches known-breached passwords at the service layer. This gate
-  // catches low-entropy passwords that haven't been breached yet —
-  // "aaaaaaaaaaaa" is a valid 12-char string but trivially brute-forceable.
-  // Minimum 5 distinct characters rejects the obvious degenerate cases
-  // (single-char repeats, "ababababab", "1234512345") without nagging
-  // realistic pass-phrases.
-  .refine((pw) => new Set(pw).size >= 5, {
-    message: 'Password is too repetitive — use at least 5 distinct characters',
-  });
 
 const registerBody = z.object({
   email: z.string().email('Invalid email address').max(254),
@@ -150,17 +137,14 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
       },
     },
     async (req, reply) => {
+      // Verifying proves the inbox, not the password, so it signs no one in
+      // (see authService.verifyEmail): the player signs in next.
       const result = await auth.verifyEmail(req.body.token).catch(handleAuthError(reply));
       if (!result || reply.sent) return;
 
-      logSecurityEvent({ eventType: 'email_verified', req, userId: result.user.id });
+      logSecurityEvent({ eventType: 'email_verified', req, metadata: { email: result.email } });
 
-      reply.setCookie(REFRESH_COOKIE, result.refreshToken, cookieOptions());
-
-      return reply.status(200).send({
-        user: result.user,
-        accessToken: result.accessToken,
-      });
+      return reply.status(200).send({ message: 'Email verified. Sign in to continue.' });
     },
   );
 
@@ -184,14 +168,16 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
       await verifyCaptcha(captchaToken, req.ip).catch(handleCaptchaError(reply));
       if (reply.sent) return;
 
-      const result = await auth.login({ email, password }).catch((err: unknown) => {
+      const result = await auth.login({ email, password, ip: req.ip }).catch((err: unknown) => {
         if (err instanceof auth.AuthError) {
           const eventType =
             err.code === 'EMAIL_UNVERIFIED'
               ? 'login_unverified'
               : err.code === 'ACCOUNT_DISABLED'
                 ? 'account_disabled'
-                : 'login_failed';
+                : err.code === 'LOGIN_LOCKED'
+                  ? 'login_locked'
+                  : 'login_failed';
           logSecurityEvent({ eventType, req, metadata: { email } });
           // `code` lets the login page offer "Send a new link" for an
           // unverified account. It's only reached with the right password.

@@ -37,9 +37,19 @@ declare global {
 beforeAll(async () => {
   // Clear Redis state that could interfere with tests
   await redis.del('registration:locked', 'registration:message');
-  // Clear per-IP registration email rate-limit keys
-  const ipKeys = await redis.keys('reg_email_ip:*');
-  if (ipKeys.length > 0) await redis.del(...ipKeys);
+  // Clear per-IP registration email rate-limit keys, the routes' rate-limit
+  // counters, failed-sign-in locks and verification-email cooldowns, so a
+  // rerun within their windows starts from zero like a fresh CI Redis.
+  for (const pattern of [
+    'reg_email_ip:*',
+    'fastify-rate-limit-*',
+    'login_fail:*',
+    'login_lock:*',
+    'verify_resend:*',
+  ]) {
+    const keys = await redis.keys(pattern);
+    if (keys.length > 0) await redis.del(...keys);
+  }
 
   global.testServer = await buildServer();
   await global.testServer.ready();

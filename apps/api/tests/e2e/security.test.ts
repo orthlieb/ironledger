@@ -30,6 +30,7 @@ import { eq, sql } from 'drizzle-orm';
 if (!adminDb) throw new Error('adminDb is required — set DATABASE_ADMIN_URL');
 
 const { sendVerificationEmail } = await import('../../src/lib/mailer.js');
+const auth = await import('../../src/services/authService.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -71,8 +72,10 @@ async function registerAndVerify(email: string, password: string): Promise<strin
   const calls = vi.mocked(sendVerificationEmail).mock.calls;
   const rawToken = calls[calls.length - 1]![1];
 
-  const res = await post('/api/v1/auth/verify-email', { token: rawToken });
-  return res.json<{ accessToken: string }>().accessToken;
+  // Verifying signs no one in: log in (through the service, so setup doesn't
+  // spend the log-in route's rate limit) for the token.
+  await post('/api/v1/auth/verify-email', { token: rawToken });
+  return (await auth.login({ email, password })).accessToken;
 }
 
 // ---------------------------------------------------------------------------

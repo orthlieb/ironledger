@@ -17,6 +17,16 @@ if (!adminDb) throw new Error('adminDb is required — set DATABASE_ADMIN_URL');
 
 const { sendVerificationEmail } = await import('../../src/lib/mailer.js');
 const { redis } = await import('../../src/server.js');
+const auth = await import('../../src/services/authService.js');
+
+// The auth routes allow a few calls per window per address (log-in 5 per
+// 15 minutes, resend and reset 3 an hour, by default), and every request here
+// comes from 127.0.0.1: start each test with clean counts, as separate real
+// clients would.
+beforeEach(async () => {
+  const keys = await redis.keys('fastify-rate-limit-*');
+  if (keys.length > 0) await redis.del(...keys);
+});
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -47,17 +57,12 @@ async function registerAndVerify(email: string, password: string) {
   const calls = vi.mocked(sendVerificationEmail).mock.calls;
   const rawToken = calls[calls.length - 1]![1];
 
-  const res = await post('/verify-email', { token: rawToken });
-  const body = res.json<{ accessToken: string }>();
+  // Verifying signs no one in: log in (through the service, so setup doesn't
+  // spend the log-in route's rate limit) for the session.
+  await post('/verify-email', { token: rawToken });
+  const session = await auth.login({ email, password });
 
-  // Extract refresh token cookie
-  const setCookie = res.headers['set-cookie'] as string | string[] | undefined;
-  const cookieStr = Array.isArray(setCookie)
-    ? (setCookie.find((c) => c.startsWith('rt=')) ?? '')
-    : (setCookie ?? '');
-  const rt = cookieStr.split(';')[0] ?? ''; // "rt=<value>"
-
-  return { accessToken: body.accessToken, refreshCookie: rt };
+  return { accessToken: session.accessToken, refreshCookie: `rt=${session.refreshToken}` };
 }
 
 // ---------------------------------------------------------------------------
@@ -117,11 +122,16 @@ describe('POST /verify-email', () => {
     vi.clearAllMocks();
   });
 
-  it('returns 200 with accessToken and sets rt cookie', async () => {
-    const { accessToken, refreshCookie } = await registerAndVerify(email, password);
+  it('returns 200 and signs no one in (no token, no cookie)', async () => {
+    await post('/register', { email, password, captchaToken: 'test' });
+    await new Promise((r) => setTimeout(r, 50));
+    const calls = vi.mocked(sendVerificationEmail).mock.calls;
 
-    expect(accessToken).toBeTruthy();
-    expect(refreshCookie).toMatch(/^rt=/);
+    const res = await post('/verify-email', { token: calls[calls.length - 1]![1] });
+
+    expect(res.statusCode).toBe(200);
+    expect(res.json()).not.toHaveProperty('accessToken');
+    expect(res.headers['set-cookie']).toBeUndefined();
   });
 
   it('returns 400 for an invalid token', async () => {

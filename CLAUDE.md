@@ -147,6 +147,20 @@ character field type, a change of shape that a load-time migration fixes:
    test in `character-fields.spec.ts`, which covers Replace and the
    Markdown export.
 
+## Standing order — web server calls to the API go through `apiFetch` + `pathSegment`
+
+Every `+server.ts`, `+page.server.ts` and `hooks.server.ts` call to the
+Fastify API uses `apiFetch` (`#lib/server/apiFetch.js`), never bare `fetch`
+(ESLint enforces it there). It carries the visitor's IP address, which the
+API's per-IP limits and security log depend on; without it every visitor is
+127.0.0.1 and one limit is shared by the whole site.
+
+Any route parameter that goes into an API URL goes through `pathSegment()`
+(`${pathSegment(params.id)}`, never `${params.id}`). SvelteKit decodes
+parameters, so an id of `../log` or `../../admin/users/<id>/role` (ids arrive
+in shared backup files) would otherwise climb out of the route and carry the
+visitor's token somewhere else. See `docs/security-review.md`.
+
 ## App-level scroll architecture
 
 The viewport itself (`html` and `body`) **never** scrolls. `app.css` sets

@@ -29,6 +29,8 @@ export const load: PageServerLoad = async ({ locals, url }) => {
 		tagline,
 		// Arriving from Settings → Account → Delete my account.
 		deleted: url.searchParams.has('deleted'),
+		// Arriving from the verify-email page.
+		verified: url.searchParams.has('verified'),
 	};
 };
 
@@ -75,6 +77,15 @@ export const actions: Actions = {
 			}
 			return fail(403, { error: body.message ?? 'Login failed. Please try again.', email });
 		}
+		if (res.status === 429) {
+			// Too many failed sign-ins for this address from here, or too many
+			// sign-ins at all: the API says which.
+			const body = (await res.json().catch(() => ({}))) as { message?: string };
+			return fail(429, {
+				error: body.message ?? 'Too many attempts. Please wait a few minutes and try again.',
+				email,
+			});
+		}
 		if (res.status === 503) {
 			// Could be maintenance mode — check the body
 			const body = (await res.json().catch(() => ({}))) as { message?: string };
@@ -108,14 +119,19 @@ export const actions: Actions = {
 		// Store the refresh token so hooks.server.ts can silently renew the access
 		// token when it expires (every 15 min) without interrupting the session.
 		// Without remember-me this is a session cookie — deleted on browser close.
+		// `remember` tells hooks.server.ts which kind to keep when it renews `rt`
+		// (a cookie's lifetime isn't sent back to the server).
 		if (refreshToken) {
-			cookies.set('rt', refreshToken, {
+			const opts = {
 				path: '/',
 				httpOnly: true,
-				sameSite: 'strict',
+				sameSite: 'strict' as const,
 				secure: process.env.NODE_ENV === 'production',
 				...(rememberMe ? { maxAge: THIRTY_DAYS } : {}),
-			});
+			};
+			cookies.set('rt', refreshToken, opts);
+			if (rememberMe) cookies.set('remember', '1', opts);
+			else cookies.delete('remember', { path: '/' });
 		}
 
 		// Everyone goes to /home; admins see the Admin tab there.

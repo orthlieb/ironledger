@@ -60,7 +60,10 @@ test.describe('A lost verification email', () => {
 			'/resend-verification',
 		);
 
+		// Opening the link changes nothing (mail scanners fetch links); the
+		// button posts the token.
 		await page.goto('/verify-email?token=not-a-real-token');
+		await page.getByRole('button', { name: 'Verify My Email' }).click();
 		await expect(page.locator('.error-msg')).toBeVisible();
 		await page.getByRole('link', { name: 'Send a new link' }).click();
 		await expect(page).toHaveURL(/\/resend-verification$/);

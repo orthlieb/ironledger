@@ -41,7 +41,8 @@ export const users = pgTable('users', {
 // refresh_tokens
 // Stateful refresh tokens. Stored hashed — the raw token lives only on the
 // client (in an HttpOnly cookie). One row per active session/device.
-// Revoked tokens are kept briefly for theft detection, then pruned by a cron.
+// Revoked tokens are kept for theft detection until they expire; a day after
+// that, retentionService.pruneSpentTokens deletes them (daily).
 // ---------------------------------------------------------------------------
 export const refreshTokens = pgTable(
   'refresh_tokens',

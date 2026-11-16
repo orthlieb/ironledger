@@ -1,5 +1,6 @@
 /**
- * Retention — how long the security log keeps its rows.
+ * Retention — how long the security log keeps its rows, and clearing out
+ * spent sign-in tokens.
  *
  * `security_events` holds IP addresses, browser user agents and, in some
  * rows' metadata, email addresses. The privacy notice (/privacy in the web
@@ -7,9 +8,9 @@
  * pruned once at start-up and then daily. Every API process runs it; the
  * delete is idempotent, so two workers pruning at once is harmless.
  */
-import { lt } from 'drizzle-orm';
+import { lt, or, and, isNotNull } from 'drizzle-orm';
 import { adminDb } from '../db/index.js';
-import { securityEvents } from '../db/schema.js';
+import { securityEvents, refreshTokens, authTokens } from '../db/schema.js';
 
 /** Keep in step with the privacy notice (apps/web/src/routes/privacy). */
 export const SECURITY_LOG_RETENTION_DAYS = 90;
@@ -27,6 +28,31 @@ export async function pruneSecurityLog(now: Date = new Date()): Promise<number> 
   return gone.length;
 }
 
+/**
+ * Delete spent sign-in tokens: refresh tokens a day past expiry, and
+ * verification / reset links a day past expiry or use. Nothing reads them
+ * after that (an expired refresh token is refused either way), and each row
+ * holds a user id and a timestamp. Returns how many went.
+ */
+export async function pruneSpentTokens(now: Date = new Date()): Promise<number> {
+  if (!adminDb) return 0;
+  const dayAgo = new Date(now.getTime() - DAY_MS);
+  const refresh = await adminDb
+    .delete(refreshTokens)
+    .where(lt(refreshTokens.expiresAt, dayAgo))
+    .returning({ id: refreshTokens.id });
+  const links = await adminDb
+    .delete(authTokens)
+    .where(
+      or(
+        lt(authTokens.expiresAt, dayAgo),
+        and(isNotNull(authTokens.usedAt), lt(authTokens.usedAt, dayAgo)),
+      ),
+    )
+    .returning({ id: authTokens.id });
+  return refresh.length + links.length;
+}
+
 interface Logger {
   info: (obj: object, msg: string) => void;
   error: (obj: object, msg: string) => void;
@@ -35,11 +61,12 @@ interface Logger {
 /** Prune now, then once a day. The timer doesn't keep the process alive. */
 export function scheduleSecurityLogPruning(log: Logger): NodeJS.Timeout {
   const run = () =>
-    pruneSecurityLog()
-      .then((n) => {
-        if (n > 0) log.info({ pruned: n }, 'Pruned old security-log rows');
+    Promise.all([pruneSecurityLog(), pruneSpentTokens()])
+      .then(([events, tokens]) => {
+        if (events > 0) log.info({ pruned: events }, 'Pruned old security-log rows');
+        if (tokens > 0) log.info({ pruned: tokens }, 'Pruned spent sign-in tokens');
       })
-      .catch((err: unknown) => log.error({ err }, 'Security-log pruning failed'));
+      .catch((err: unknown) => log.error({ err }, 'Retention pruning failed'));
   void run();
   const timer = setInterval(run, DAY_MS);
   timer.unref();
