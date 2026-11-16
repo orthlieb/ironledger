@@ -13,7 +13,7 @@ import argon2 from 'argon2';
 import { randomBytes } from 'crypto';
 import { eq, and, isNull } from 'drizzle-orm';
 import { withUserContext, adminDb } from '../db/index.js';
-import { users, refreshTokens, authTokens, type User } from '../db/schema.js';
+import { users, refreshTokens, authTokens, userInvites, type User } from '../db/schema.js';
 import {
   signAccessToken,
   generateRefreshToken,
@@ -590,5 +590,53 @@ export async function resetPassword(rawToken: string, newPassword: string): Prom
       .update(refreshTokens)
       .set({ revokedAt: new Date() })
       .where(and(eq(refreshTokens.userId, token.userId), isNull(refreshTokens.revokedAt)));
+  });
+}
+
+// ---------------------------------------------------------------------------
+// deleteAccount — a player deletes their own account
+// ---------------------------------------------------------------------------
+
+/**
+ * Delete the signed-in user's account and everything in it, after checking
+ * their password again. Every table holding their data cascades from
+ * `users` (characters, entities, portraits, maps, the log, AI settings,
+ * tokens); invitations sent to their address go too. The security log
+ * keeps its rows (no FK) until they age out.
+ *
+ * An admin can't delete their own account this way, so the site can't be
+ * left without one by accident: another admin removes the role first.
+ */
+export async function deleteAccount(userId: string, password: string): Promise<void> {
+  if (!adminDb) throw new AuthError('Admin DB not configured', 'CONFIG_ERROR', 500);
+
+  const [user] = await adminDb
+    .select({ email: users.email, passwordHash: users.passwordHash, role: users.role })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  if (!user) throw new AuthError('Account not found', 'ACCOUNT_ERROR', 404);
+
+  let passwordValid: boolean;
+  try {
+    passwordValid = await argon2.verify(user.passwordHash, password);
+  } catch {
+    passwordValid = false;
+  }
+  if (!passwordValid) {
+    throw new AuthError("That password isn't right.", 'WRONG_PASSWORD', 400);
+  }
+
+  if (user.role === 'admin') {
+    throw new AuthError(
+      "An admin account can't delete itself. Another admin can remove the admin role first.",
+      'ADMIN_ACCOUNT',
+      403,
+    );
+  }
+
+  await adminDb.transaction(async (tx) => {
+    await tx.delete(userInvites).where(eq(userInvites.email, user.email));
+    await tx.delete(users).where(eq(users.id, userId));
   });
 }

@@ -122,6 +122,16 @@ Every admin action is recorded in `security_events` (Drizzle table in `apps/api/
 
 The audit-log view is a paginated, searchable view of the last 100 events. Clearing the audit log is itself an audit-log entry (recorded after the truncate).
 
+**Retention: 90 days.** The table holds IP addresses, user agents and (for sign-in and reset events) email addresses, so every API process prunes rows older than `SECURITY_LOG_RETENTION_DAYS` at start-up and then daily (`apps/api/src/services/retentionService.ts`). The privacy notice (`/privacy`) states the 90 days; change both together. Admin-action rows age out the same way.
+
+---
+
+## Players deleting their own accounts
+
+☰ → Settings → Account → **Delete my account** asks for the password again, then `POST /api/v1/auth/delete-account` deletes the `users` row; every table of theirs cascades from it, and invitations sent to their address are deleted too. The browser is signed out and lands on `/login?deleted=1`. An `account_deleted` event is logged with the old user id only.
+
+An **admin** account can't delete itself this way (`ADMIN_ACCOUNT`), so the site can't lose its last admin by accident: another admin removes the role first. Deleted data lingers in the nightly backups until they age out (`RETAIN_DAYS=30` in `infra/scripts/backup.sh`), which the privacy notice also states.
+
 ---
 
 ## Operational Notes

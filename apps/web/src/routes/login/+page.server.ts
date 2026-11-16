@@ -16,7 +16,7 @@ const TAGLINES = [
 
 const THIRTY_DAYS = 30 * 24 * 60 * 60; // seconds
 
-export const load: PageServerLoad = async ({ locals }) => {
+export const load: PageServerLoad = async ({ locals, url }) => {
 	// Already logged in? Skip login page.
 	if (locals.user) {
 		throw redirect(302, '/home');
@@ -26,6 +26,8 @@ export const load: PageServerLoad = async ({ locals }) => {
 		hcaptchaSiteKey: HCAPTCHA_SITE_KEY,
 		isDev: process.env.NODE_ENV !== 'production',
 		tagline,
+		// Arriving from Settings → Account → Delete my account.
+		deleted: url.searchParams.has('deleted'),
 	};
 };
 

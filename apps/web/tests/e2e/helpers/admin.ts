@@ -58,3 +58,29 @@ export async function registerUnverified(email: string, password: string): Promi
 		await ctx.dispose();
 	}
 }
+
+/**
+ * A fresh, verified account to sign in as: an admin invite, accepted
+ * through the API (which verifies the address as it creates the account).
+ */
+export async function createVerifiedUser(
+	token: string,
+	email: string,
+	password: string,
+): Promise<void> {
+	const ctx = await request.newContext({ baseURL: API });
+	try {
+		const inv = await ctx.post('/api/v1/admin/invites', {
+			headers: { Authorization: `Bearer ${token}` },
+			data: { email },
+		});
+		if (!inv.ok()) throw new Error(`Create invite failed: ${inv.status()} ${await inv.text()}`);
+		const { url } = (await inv.json()) as { url: string };
+		const inviteToken = url.match(/\/invite\/([^/?#]+)/)?.[1];
+		if (!inviteToken) throw new Error(`No token in invite URL: ${url}`);
+		const acc = await ctx.post(`/api/v1/invites/${inviteToken}/accept`, { data: { password } });
+		if (!acc.ok()) throw new Error(`Accept invite failed: ${acc.status()} ${await acc.text()}`);
+	} finally {
+		await ctx.dispose();
+	}
+}

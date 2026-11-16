@@ -259,6 +259,46 @@ describe('POST /resend-verification', () => {
   });
 });
 
+describe('POST /delete-account', () => {
+  const email = 'e2e-delete@example.com';
+  const password = 'SuperSecurePass!42';
+
+  beforeEach(async () => {
+    await cleanupUser(email);
+    vi.clearAllMocks();
+  });
+
+  async function postAuthed(path: string, body: unknown, accessToken: string) {
+    return global.testServer.inject({
+      method: 'POST',
+      url: BASE + path,
+      headers: { 'content-type': 'application/json', authorization: `Bearer ${accessToken}` },
+      payload: JSON.stringify(body),
+    });
+  }
+
+  it('needs a signed-in user', async () => {
+    const res = await post('/delete-account', { password });
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('refuses a wrong password, then deletes with the right one', async () => {
+    const { accessToken } = await registerAndVerify(email, password);
+
+    const wrong = await postAuthed('/delete-account', { password: 'Nope!Nope!Nope1' }, accessToken);
+    expect(wrong.statusCode).toBe(400);
+    expect(wrong.json().code).toBe('WRONG_PASSWORD');
+
+    const ok = await postAuthed('/delete-account', { password }, accessToken);
+    expect(ok.statusCode).toBe(200);
+    expect(await adminDb!.select().from(users).where(eq(users.email, email))).toHaveLength(0);
+
+    // The account is gone, so it can't sign in again.
+    const login = await post('/login', { email, password, captchaToken: 'test' });
+    expect(login.statusCode).toBe(401);
+  });
+});
+
 describe('POST /refresh', () => {
   const email = 'e2e-refresh@example.com';
   const password = 'SuperSecurePass!42';

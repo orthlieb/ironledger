@@ -18,8 +18,7 @@
 	import { Dialog } from 'bits-ui';
 	import DialogHeader from '#lib/components/DialogHeader.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
-
-	const BUG_EMAIL = 'bugs@ironledger.org';
+	import { CONTACT_EMAIL as BUG_EMAIL } from '#lib/contact.js';
 
 	let { user }: { user?: { email?: string; displayName?: string } | null } = $props();
 

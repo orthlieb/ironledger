@@ -44,6 +44,10 @@
 				<strong>Under Construction</strong> — {(form as { maintenance?: boolean; message?: string })
 					.message}
 			</div>
+		{:else if data.deleted && !form}
+			<div class="deleted-msg" role="status" data-testid="account-deleted">
+				Your account and everything in it have been deleted. Farewell, Ironsworn.
+			</div>
 		{:else if form?.error}
 			<div class="error-msg">
 				{form.error}
@@ -86,6 +90,7 @@
 			No account yet? <a href="/register">Create one</a> ·
 			<a href="/forgot-password" class="forgot-link">Forgot password?</a>
 			· <a href="/about" class="forgot-link">About</a>
+			· <a href="/privacy" class="forgot-link">Privacy</a>
 		</p>
 	</div>
 </div>
@@ -150,6 +155,17 @@
 		color: var(--text-muted);
 		cursor: pointer;
 		user-select: none;
+	}
+
+	.deleted-msg {
+		font-family: var(--font-ui);
+		font-size: 0.88rem;
+		line-height: 1.55;
+		color: var(--text-muted);
+		background: rgba(52, 211, 153, 0.08);
+		border: 1px solid rgba(52, 211, 153, 0.25);
+		border-radius: 5px;
+		padding: 10px 14px;
 	}
 
 	.forgot-link {

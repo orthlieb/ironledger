@@ -85,6 +85,10 @@ const verifyBody = z.object({
   token: z.string().min(1),
 });
 
+const deleteAccountBody = z.object({
+  password: z.string().min(1).max(1000),
+});
+
 // ---------------------------------------------------------------------------
 // Route plugin
 // ---------------------------------------------------------------------------
@@ -343,6 +347,37 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
     },
   );
 
+  // ── POST /delete-account ──────────────────────────────────────────────────
+  // The signed-in player deletes their own account, password re-checked.
+  // A POST, not a DELETE with a body, which some proxies drop.
+  server.post(
+    '/delete-account',
+    {
+      preHandler: authenticate,
+      schema: {
+        body: deleteAccountBody,
+        response: { 200: z.object({ message: z.string() }) },
+      },
+      config: {
+        // Stops a stolen session guessing the password here.
+        rateLimit: {
+          max: config.RATE_LIMIT_LOGIN,
+          timeWindow: '15 minutes',
+        },
+      },
+    },
+    async (req, reply) => {
+      const userId = req.user!.id;
+      await auth.deleteAccount(userId, req.body.password).catch(handleAuthError(reply));
+      if (reply.sent) return;
+
+      logSecurityEvent({ eventType: 'account_deleted', req, userId });
+
+      reply.clearCookie(REFRESH_COOKIE, { path: '/api/v1/auth' });
+      return reply.status(200).send({ message: 'Account deleted.' });
+    },
+  );
+
   // ── POST /reset-password ──────────────────────────────────────────────────
   server.post(
     '/reset-password',
@@ -377,6 +412,7 @@ function handleAuthError(reply: FastifyReply) {
       reply.status(err.statusCode).send({
         statusCode: err.statusCode,
         error: err.name,
+        code: err.code,
         message: err.message,
       });
     } else if (err instanceof PwnedPasswordError) {

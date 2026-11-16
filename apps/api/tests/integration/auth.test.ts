@@ -8,7 +8,14 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import * as auth from '../../src/services/authService.js';
 import { adminDb } from '../../src/db/index.js';
-import { users, authTokens } from '../../src/db/schema.js';
+import {
+  users,
+  authTokens,
+  refreshTokens,
+  userInvites,
+  securityEvents,
+} from '../../src/db/schema.js';
+import { pruneSecurityLog } from '../../src/services/retentionService.js';
 import { eq } from 'drizzle-orm';
 
 // Tests use adminDb (bypasses RLS) for all setup, cleanup, and verification
@@ -375,5 +382,75 @@ describe('verification links: 24 hours, and a new one on request', () => {
     await settle();
 
     expect(sendVerificationEmail).not.toHaveBeenCalled();
+  });
+});
+
+describe('deleteAccount', () => {
+  beforeEach(async () => {
+    await cleanupUser(TEST_EMAIL);
+    await adminDb!.delete(userInvites).where(eq(userInvites.email, TEST_EMAIL));
+    vi.clearAllMocks();
+  });
+
+  it('deletes the account, its sessions and invitations, after checking the password', async () => {
+    const { user } = await createVerifiedUser();
+    await adminDb!.insert(userInvites).values({
+      email: TEST_EMAIL,
+      tokenHash: `invite-${Date.now()}`,
+      expiresAt: new Date(Date.now() + 86_400_000),
+    });
+
+    await auth.deleteAccount(user.id, TEST_PASSWORD);
+
+    expect(await adminDb!.select().from(users).where(eq(users.id, user.id))).toHaveLength(0);
+    expect(
+      await adminDb!.select().from(refreshTokens).where(eq(refreshTokens.userId, user.id)),
+    ).toHaveLength(0);
+    expect(
+      await adminDb!.select().from(userInvites).where(eq(userInvites.email, TEST_EMAIL)),
+    ).toHaveLength(0);
+  });
+
+  it('keeps the account when the password is wrong', async () => {
+    const { user } = await createVerifiedUser();
+
+    await expect(auth.deleteAccount(user.id, 'NotThePassword!123')).rejects.toMatchObject({
+      code: 'WRONG_PASSWORD',
+    });
+    expect(await adminDb!.select().from(users).where(eq(users.id, user.id))).toHaveLength(1);
+  });
+
+  it("won't delete an admin account", async () => {
+    const { user } = await createVerifiedUser();
+    await adminDb!.update(users).set({ role: 'admin' }).where(eq(users.id, user.id));
+
+    await expect(auth.deleteAccount(user.id, TEST_PASSWORD)).rejects.toMatchObject({
+      code: 'ADMIN_ACCOUNT',
+    });
+    expect(await adminDb!.select().from(users).where(eq(users.id, user.id))).toHaveLength(1);
+  });
+});
+
+describe('security-log retention', () => {
+  it('prunes rows older than 90 days and keeps the rest', async () => {
+    const day = 86_400_000;
+    const tag = `retention-${Date.now()}`;
+    const [old, recent] = await adminDb!
+      .insert(securityEvents)
+      .values([
+        { eventType: tag, createdAt: new Date(Date.now() - 91 * day) },
+        { eventType: tag, createdAt: new Date(Date.now() - 89 * day) },
+      ])
+      .returning({ id: securityEvents.id });
+
+    await pruneSecurityLog();
+
+    const left = await adminDb!
+      .select({ id: securityEvents.id })
+      .from(securityEvents)
+      .where(eq(securityEvents.eventType, tag));
+    expect(left.map((r) => r.id)).toEqual([recent!.id]);
+    expect(left.map((r) => r.id)).not.toContain(old!.id);
+    await adminDb!.delete(securityEvents).where(eq(securityEvents.eventType, tag));
   });
 });

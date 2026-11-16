@@ -7,6 +7,7 @@
 	 *   • 3D Dice   — on / off (persisted to localStorage via dice.ts)
 	 *   • Delve     — on / off (persisted via expansionStore)
 	 *   • YRT       — on / off (persisted via expansionStore)
+	 *   • Account   — the privacy notice, and deleting the account
 	 *
 	 * Usage:
 	 *   <SettingsDialog bind:this={ref} />
@@ -61,6 +62,7 @@
 	import AiConfigDialog from '#lib/components/AiConfigDialog.svelte';
 	import Select from '#lib/components/Select.svelte';
 	import ColorPicker from '#lib/components/ColorPicker.svelte';
+	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
 	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
 	import diceD10Svg from '#icons/dice-d10-light.svg?raw';
 
@@ -210,11 +212,52 @@
 	}
 
 	// ---------------------------------------------------------------------------
+	// Account — delete it, with the password asked for again. A wrong password
+	// reopens the confirm with the error and the password kept, so it can be
+	// fixed in place. On success the server has already cleared the sign-in
+	// cookies; leave for the log-in page, which says the account is gone.
+	// ---------------------------------------------------------------------------
+	let deleteRef = $state<ReturnType<typeof ConfirmDialog> | null>(null);
+	let deletePassword = $state('');
+	let deleteError = $state('');
+	let deleting = $state(false);
+
+	function askDeleteAccount() {
+		deletePassword = '';
+		deleteError = '';
+		deleteRef?.open();
+	}
+
+	async function deleteAccount() {
+		if (!deletePassword || deleting) return;
+		deleting = true;
+		deleteError = '';
+		try {
+			const res = await fetch('/api/account/delete', {
+				method: 'POST',
+				headers: { 'Content-Type': 'application/json' },
+				body: JSON.stringify({ password: deletePassword }),
+			});
+			if (res.ok) {
+				window.location.assign('/login?deleted=1');
+				return;
+			}
+			const body = (await res.json().catch(() => ({}))) as { message?: string };
+			deleteError = body.message ?? 'The account could not be deleted.';
+		} catch {
+			deleteError = 'Could not reach the server. Please try again.';
+		} finally {
+			deleting = false;
+		}
+		deleteRef?.open();
+	}
+
+	// ---------------------------------------------------------------------------
 	// Dialog + tabs. Tabs (bits-ui) group the settings so the dialog stops
 	// growing every time a new preference lands. `activeTab` persists across
 	// open/close so the user returns to the same tab they last used.
 	// ---------------------------------------------------------------------------
-	type SdTab = 'appearance' | 'dice' | 'expansions' | 'ai';
+	type SdTab = 'appearance' | 'dice' | 'expansions' | 'ai' | 'account';
 	let activeTab = $state<SdTab>('appearance');
 	let dialogOpen = $state(false);
 	let stackDepth = $state(1);
@@ -277,6 +320,7 @@
 						<Tabs.Trigger value="dice" class="sd-tab">Dice</Tabs.Trigger>
 						<Tabs.Trigger value="expansions" class="sd-tab">Expansions</Tabs.Trigger>
 						<Tabs.Trigger value="ai" class="sd-tab">AI</Tabs.Trigger>
+						<Tabs.Trigger value="account" class="sd-tab">Account</Tabs.Trigger>
 					</Tabs.List>
 
 					<!-- ─── Appearance ─── -->
@@ -540,6 +584,29 @@
 							</div>
 						{/if}
 					</Tabs.Content>
+
+					<!-- ─── Account ─── -->
+					<Tabs.Content value="account" class="sd-tab-panel">
+						<div class="sd-hint sd-hint-tight">
+							What Iron Ledger keeps about you, and why, is in the
+							<a href="/privacy" target="_blank" rel="noopener">privacy notice</a>.
+						</div>
+						<div class="sd-row">
+							<span class="sd-label">Delete account</span>
+							<button
+								class="sd-key-btn sd-danger-btn"
+								type="button"
+								data-testid="delete-account"
+								onclick={askDeleteAccount}
+							>
+								Delete my account…
+							</button>
+						</div>
+						<div class="sd-hint sd-hint-tight">
+							Removes your account and everything in it, for good. To keep a copy, use ☰ → Export
+							first.
+						</div>
+					</Tabs.Content>
 				</Tabs.Root>
 			</div>
 		</Dialog.Content>
@@ -547,6 +614,40 @@
 </Dialog.Root>
 
 <AiConfigDialog bind:this={aiConfigRef} />
+
+<ConfirmDialog
+	bind:this={deleteRef}
+	title="Delete your account?"
+	confirmLabel="Delete Forever"
+	confirmDisabled={!deletePassword || deleting}
+	onconfirm={deleteAccount}
+>
+	<p class="sd-delete-text">
+		This deletes your account and everything in it: characters, connections, expeditions, foes,
+		maps, the log and your AI keys. It can't be undone.
+	</p>
+	<label class="sd-delete-field">
+		<span>Your password</span>
+		<!-- svelte-ignore a11y_autofocus -->
+		<input
+			type="password"
+			autocomplete="current-password"
+			autofocus
+			bind:value={deletePassword}
+			data-testid="delete-account-password"
+			onkeydown={(e) => {
+				if (e.key === 'Enter' && deletePassword) {
+					e.preventDefault();
+					deleteRef?.close();
+					void deleteAccount();
+				}
+			}}
+		/>
+	</label>
+	{#if deleteError}
+		<p class="sd-delete-error" role="alert" data-testid="delete-account-error">{deleteError}</p>
+	{/if}
+</ConfirmDialog>
 
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
@@ -750,7 +851,8 @@
 		background: transparent;
 		border: none;
 		border-bottom: 2px solid transparent;
-		padding: 7px 10px 6px;
+		/* Five tabs share the dialog's fixed width: keep the sides tight. */
+		padding: 7px 5px 6px;
 		margin-bottom: -1px;
 		white-space: nowrap;
 		flex-shrink: 0;
@@ -760,6 +862,20 @@
 		display: inline-flex;
 		align-items: center;
 		gap: 0.35rem;
+	}
+	/* The dialog narrows on a phone: closer letters there, and a smaller
+	   size on the narrowest (320px) screens, so all five tabs still fit. */
+	@media (max-width: 440px) {
+		:global(.sd-tab) {
+			letter-spacing: 0.02em;
+		}
+	}
+	@media (max-width: 340px) {
+		:global(.sd-tab) {
+			padding: 7px 4px 6px;
+			font-size: 0.66rem;
+			letter-spacing: 0;
+		}
 	}
 	:global(.sd-tab:hover) {
 		color: var(--text-muted);
@@ -815,6 +931,47 @@
 	}
 	:global(.sd-hint-tight) {
 		margin-top: 2px;
+	}
+	:global(.sd-hint a) {
+		color: var(--text-accent);
+	}
+
+	/* ── Account: delete ─────────────────────────────────────────── */
+	:global(.sd-danger-btn) {
+		color: var(--color-danger);
+		border-color: color-mix(in srgb, var(--color-danger) 45%, var(--border-mid));
+	}
+	:global(.sd-danger-btn:hover:not(:disabled)) {
+		color: var(--color-danger);
+		border-color: var(--color-danger);
+	}
+	/* The confirm is portaled to <body>, outside the settings dialog. */
+	:global(.sd-delete-text) {
+		margin: 0 0 10px;
+		line-height: 1.5;
+	}
+	:global(.sd-delete-field) {
+		display: flex;
+		flex-direction: column;
+		gap: 4px;
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
+		font-weight: 600;
+		color: var(--text-muted);
+	}
+	:global(.sd-delete-field input) {
+		padding: 6px 8px;
+		background: var(--bg-input, var(--bg-control));
+		border: 1px solid var(--border-mid);
+		border-radius: 4px;
+		color: var(--text);
+		font-size: 0.9rem;
+		font-weight: 400;
+	}
+	:global(.sd-delete-error) {
+		margin: 8px 0 0;
+		color: var(--color-danger);
+		font-size: 0.8rem;
 	}
 
 	:global(.sd-setup-field) {

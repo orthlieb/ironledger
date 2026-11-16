@@ -20,6 +20,7 @@
  *   token_theft          — a revoked refresh token was presented
  *   token_refresh        — refresh token successfully rotated
  *   account_disabled     — login attempted on a deactivated account
+ *   account_deleted      — a player deleted their own account
  */
 
 import { db } from '../db/index.js';
@@ -38,6 +39,7 @@ export type SecurityEventType =
   | 'token_theft'
   | 'token_refresh'
   | 'account_disabled'
+  | 'account_deleted'
   | 'admin_create_invite'
   | 'admin_revoke_invite'
   | 'invite_accepted'
