@@ -63,7 +63,7 @@ export const backUp: Tutorial = {
 			{
 				target: 'export-format',
 				title: 'Zip or Markdown',
-				body: 'A Zip archive is the backup: everything, portraits and map pictures too, and it can be imported again. Markdown is for reading, or for pasting into notes elsewhere, and can’t be. Keep Zip archive.',
+				body: 'Zip archive is the backup: it has everything, portraits and map pictures too, and can be imported again. Markdown is a copy to read, or to paste into notes elsewhere; it can’t be imported. Leave Zip archive selected.',
 				backIfGone: true,
 			},
 			{

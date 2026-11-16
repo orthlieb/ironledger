@@ -34,7 +34,10 @@ import { importLogEntries, type LogEntry } from '#lib/log.svelte.js';
 import { remapLogEntries } from '#lib/logRemap.js';
 import { enableExtensions, getExtensions, loadExtensions } from '#lib/expansionStore.svelte.js';
 import { planPackRestore, readPackChoices } from '#lib/packChoices.js';
-import { parseImportZip, sanitizeLogHtml, ImportError } from '#lib/importSanitizer.js';
+import { parseImportZip, ImportError } from '#lib/importSanitizer.js';
+// The same DOMPurify allowlist the log is shown through: a shared backup's
+// log HTML is untrusted, and more than the on-screen view reads it.
+import { sanitizeLogHtml } from '#lib/sanitize.js';
 import {
 	importMapZip,
 	parseBundledMaps,
@@ -590,7 +593,9 @@ export class CampaignImport {
 					if (strategy === 'skip') return landed(seg, oldId, existingId);
 					if (strategy === 'new') row.id = crypto.randomUUID();
 					else if (strategy === 'replace') row.id = existingId;
-				} else if (typeof row.id !== 'string' || row.id === '' || taken.has(row.id)) {
+				} else if (typeof row.id !== 'string' || !SAFE_ID.test(row.id) || taken.has(row.id)) {
+					// A shared backup's ids are untrusted: anything beyond letters,
+					// digits, _ and - (a "/" or "..") gets a fresh id.
 					row.id = crypto.randomUUID();
 				}
 				taken.add(row.id);
@@ -911,6 +916,8 @@ export class CampaignImport {
 
 /** A log entry id the API takes. */
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+/** An entity id safe to put in a URL path as it is: no "/", "." or "%". */
+const SAFE_ID = /^[A-Za-z0-9_-]{1,64}$/;
 
 /** Peek a zip's manifest.json to see if this is a per-map bundle.
  *  Cheap enough (only unzips into an entries dict + parses one small

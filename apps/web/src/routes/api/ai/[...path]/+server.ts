@@ -8,14 +8,23 @@
 import type { RequestHandler } from './$types';
 import { error } from '@sveltejs/kit';
 import { INTERNAL_API_URL } from '#lib/server/config.js';
+import { apiFetch } from '#lib/server/apiFetch.js';
 
 type Method = 'GET' | 'PUT' | 'POST' | 'DELETE';
+
+/**
+ * The API's AI routes, and nothing else. The catch-all parameter arrives
+ * decoded, so without this a crafted path ("../admin/…") could carry the
+ * visitor's token to any API route.
+ */
+const AI_PATH = /^(?:config|active|generate|test\/[a-z]+|provider\/[a-z]+(?:\/key)?)$/;
 
 async function proxy(
 	method: Method,
 	{ locals, params, request }: Parameters<RequestHandler>[0],
 ): Promise<Response> {
 	if (!locals.accessToken) throw error(401, 'Not authenticated');
+	if (!AI_PATH.test(params.path)) throw error(404, 'Not found');
 
 	const headers: Record<string, string> = { Authorization: `Bearer ${locals.accessToken}` };
 	// Only forward a JSON content-type when there's an actual body. A body-less
@@ -25,7 +34,7 @@ async function proxy(
 	const body = raw.length > 0 ? raw : undefined;
 	if (body !== undefined) headers['Content-Type'] = 'application/json';
 
-	const res = await fetch(`${INTERNAL_API_URL}/api/v1/ai/${params.path}`, {
+	const res = await apiFetch(`${INTERNAL_API_URL}/api/v1/ai/${params.path}`, {
 		method,
 		headers,
 		body,

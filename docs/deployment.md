@@ -108,19 +108,20 @@ openssl genrsa -out /tmp/private.pem 2048
 openssl rsa -in /tmp/private.pem -pubout -out /tmp/public.pem
 # Copy the key contents into .env (see below)
 
-# 6. Create production .env
-cp .env.example /home/ironledger/.env
-nano /home/ironledger/.env   # fill in all values
+# 6. Create production .env — in the app directory, where PM2
+#    (ecosystem.config.js) and the API (apps/api/src/loadEnv.ts) read it
+cp .env.example /home/ironledger/app/.env
+nano /home/ironledger/app/.env   # fill in all values
 ```
 
 ### 1.4 Create the Production .env
 
-Copy `.env.example` and fill in production values:
+Copy `.env.example` to `/home/ironledger/app/.env` and fill in production
+values. Leave `PORT` out: `ecosystem.config.js` gives the API 3000 and the web
+server 3001.
 
 ```env
 NODE_ENV=production
-PORT=3000
-HOST=0.0.0.0
 APP_URL=https://yourdomain.com
 
 DATABASE_URL=postgres://app_user:REAL_PASSWORD@localhost:5432/ironledger
@@ -182,10 +183,13 @@ Keep the `/api/` and `/health` location blocks unchanged (they proxy to `:3000`)
 # On the server as ironledger user:
 cd ~/app
 npm ci
-npm run build
+# NODE_ENV=production leaves the dev-only Sample content pack out, as the
+# deploy workflow's builds do
+NODE_ENV=production npm run build
 npm run migrate
 
-# Start PM2
+# Start PM2 (ecosystem.config.js writes its logs to ~/logs)
+mkdir -p ~/logs
 pm2 start ecosystem.config.js
 pm2 save
 ```
@@ -359,6 +363,37 @@ tail -f /home/ironledger/logs/api-error.log
 ```bash
 curl https://yourdomain.com/health
 ```
+
+---
+
+## Updating the Nginx Config
+
+Deploys don't touch Nginx's files: `infra/nginx/nginx.conf` and `infra/nginx/proxy_params` reach the server only through `server-setup.sh`. When either changes in the repo, apply it by hand once the deploy has pulled it, as root or a sudo user:
+
+```bash
+cd /home/ironledger/app
+sudo cp /etc/nginx/sites-available/ironledger /etc/nginx/sites-available/ironledger.bak
+sed 's/YOURDOMAIN.COM/yourdomain.com/g' infra/nginx/nginx.conf > /tmp/ironledger.nginx
+diff /etc/nginx/sites-available/ironledger /tmp/ironledger.nginx  # only the repo's change should show
+sudo cp /tmp/ironledger.nginx /etc/nginx/sites-available/ironledger
+sudo cp infra/nginx/proxy_params /etc/nginx/proxy_params           # if it changed too
+sudo nginx -t && sudo systemctl reload nginx
+```
+
+If `diff` shows more than the repo's change (lines Certbot added, or hand edits on the server), carry those over into `/tmp/ironledger.nginx` before copying it. `nginx -t` refuses a broken file and leaves the running config alone; `ironledger.bak` puts the old one back.
+
+---
+
+## Client IP Addresses
+
+The API's per-IP limits (sign-ups, log-ins, password resets, verification emails) and the security log need each visitor's real address, which crosses up to two hops on the same machine:
+
+- **Browser → Nginx → Fastify** (`/api/v1/*`): Nginx appends `$remote_addr` to `X-Forwarded-For` (`infra/nginx/proxy_params`).
+- **Browser → Nginx → SvelteKit → Fastify** (every page action and `/api/*` BFF route): Nginx sets `X-Real-IP` from the connection, overwriting anything the visitor sent; `hooks.server.ts` records it per request, and `apiFetch` (`apps/web/src/lib/server/apiFetch.ts`) sends it on as `X-Forwarded-For`. An ESLint rule rejects a bare `fetch` in web server code, so a new route can't quietly drop it.
+
+Fastify believes `X-Forwarded-For` only from loopback (`trustProxy: 'loopback'`), so addresses a client puts in the header itself are ignored. Two things this relies on: the SvelteKit server (port 3001) and Fastify (port 3000) are reachable only through Nginx (UFW allows 22/80/443 only), and nothing sits in front of Nginx. If a CDN or load balancer is ever added in front, set Nginx's `real_ip_header` / `set_real_ip_from` for it, or every visitor will appear to come from the CDN.
+
+The global API rate limit counts against the signed-in user when the request carries a valid access token, and against the address otherwise (`apps/api/src/lib/rateLimitKey.ts`).
 
 ---
 

@@ -95,6 +95,28 @@ export default ts.config(
     },
   },
 
+  // Web server code calls the API with apiFetch, never bare fetch, so the
+  // API sees the visitor's address rather than 127.0.0.1 for everyone (its
+  // per-IP limits and security log depend on it). See lib/server/apiFetch.ts.
+  {
+    files: [
+      'apps/web/src/hooks.server.ts',
+      'apps/web/src/routes/**/+server.ts',
+      'apps/web/src/routes/**/+page.server.ts',
+      'apps/web/src/routes/**/+layout.server.ts',
+    ],
+    rules: {
+      'no-restricted-globals': [
+        'error',
+        {
+          name: 'fetch',
+          message:
+            "Call the API with apiFetch from '#lib/server/apiFetch.js', so it sees the visitor's address.",
+        },
+      ],
+    },
+  },
+
   // Test files: allow the looser patterns tests tend to use.
   {
     files: ['**/*.test.ts', '**/tests/**'],

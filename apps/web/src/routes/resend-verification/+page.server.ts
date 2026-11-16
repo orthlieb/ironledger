@@ -1,6 +1,7 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { INTERNAL_API_URL, HCAPTCHA_SITE_KEY } from '#lib/server/config.js';
+import { apiFetch } from '#lib/server/apiFetch.js';
 
 export const load: PageServerLoad = async ({ url }) => {
 	// Prefill from ?email= (the log-in page passes it).
@@ -8,7 +9,7 @@ export const load: PageServerLoad = async ({ url }) => {
 
 	// Block during maintenance, as the other sign-in pages do.
 	try {
-		const maintRes = await fetch(`${INTERNAL_API_URL}/api/v1/maintenance/status`);
+		const maintRes = await apiFetch(`${INTERNAL_API_URL}/api/v1/maintenance/status`);
 		if (maintRes.ok) {
 			const maint = (await maintRes.json()) as { enabled?: boolean; message?: string };
 			if (maint.enabled) {
@@ -49,7 +50,7 @@ export const actions: Actions = {
 		}
 
 		try {
-			await fetch(`${INTERNAL_API_URL}/api/v1/auth/resend-verification`, {
+			await apiFetch(`${INTERNAL_API_URL}/api/v1/auth/resend-verification`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ email, captchaToken }),

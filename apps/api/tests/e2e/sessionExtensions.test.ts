@@ -43,8 +43,10 @@ async function signUp(): Promise<string> {
   await new Promise((r) => setTimeout(r, 50));
   const calls = vi.mocked(sendVerificationEmail).mock.calls;
   const token = calls[calls.length - 1]![1];
-  const res = await call('POST', '/api/v1/auth/verify-email', { token });
-  return `Bearer ${res.json<{ accessToken: string }>().accessToken}`;
+  // Verifying signs no one in: log in (through the service) for the token.
+  await call('POST', '/api/v1/auth/verify-email', { token });
+  const { login } = await import('../../src/services/authService.js');
+  return `Bearer ${(await login({ email: EMAIL, password: PASSWORD })).accessToken}`;
 }
 
 describe('session extension choices', () => {

@@ -183,6 +183,7 @@ echo "▶ [11/11] Creating app directory..."
 sudo -u "$APP_USER" bash -c "
   mkdir -p '$APP_DIR'
   mkdir -p /home/$APP_USER/backups
+  mkdir -p /home/$APP_USER/logs
 "
 echo "  App directory: $APP_DIR"
 
@@ -195,8 +196,9 @@ echo "Next steps:"
 echo "  1. Edit /etc/nginx/sites-available/ironledger — replace YOURDOMAIN.COM"
 echo "  2. Point your domain's DNS A record to this server's IP"
 echo "  3. Run: certbot --nginx -d YOURDOMAIN.COM"
-echo "  4. Create /home/$APP_USER/.env (copy from .env.example)"
-echo "  5. Run: ./infra/scripts/deploy.sh (from your local machine)"
+echo "  4. Clone the repo into $APP_DIR and create $APP_DIR/.env"
+echo "     (copy from .env.example; PM2 and the API read it there)"
+echo "  5. First deploy: docs/deployment.md → 1.6 (build, migrate, pm2 start)"
 echo ""
 echo "  Database passwords to change:"
 echo "    sudo -u postgres psql -c \"ALTER ROLE app_admin PASSWORD 'new_password';\""

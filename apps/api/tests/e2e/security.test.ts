@@ -24,12 +24,13 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { adminDb } from '../../src/db/index.js';
-import { users } from '../../src/db/schema.js';
-import { eq } from 'drizzle-orm';
+import { users, securityEvents } from '../../src/db/schema.js';
+import { eq, sql } from 'drizzle-orm';
 
 if (!adminDb) throw new Error('adminDb is required — set DATABASE_ADMIN_URL');
 
 const { sendVerificationEmail } = await import('../../src/lib/mailer.js');
+const auth = await import('../../src/services/authService.js');
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -71,8 +72,10 @@ async function registerAndVerify(email: string, password: string): Promise<strin
   const calls = vi.mocked(sendVerificationEmail).mock.calls;
   const rawToken = calls[calls.length - 1]![1];
 
-  const res = await post('/api/v1/auth/verify-email', { token: rawToken });
-  return res.json<{ accessToken: string }>().accessToken;
+  // Verifying signs no one in: log in (through the service, so setup doesn't
+  // spend the log-in route's rate limit) for the token.
+  await post('/api/v1/auth/verify-email', { token: rawToken });
+  return (await auth.login({ email, password })).accessToken;
 }
 
 // ---------------------------------------------------------------------------
@@ -257,5 +260,99 @@ describe('login timing parity', () => {
     const elapsed = performance.now() - t0;
     expect(res.statusCode).toBe(401);
     expect(elapsed).toBeGreaterThanOrEqual(15);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Client address: X-Forwarded-For is believed only from loopback
+// ---------------------------------------------------------------------------
+
+describe('client address (trustProxy: loopback)', () => {
+  /** Ask for a password reset (logged with req.ip) and read back the logged address. */
+  async function loggedIp(opts: { remoteAddress?: string; xff?: string }): Promise<string | null> {
+    const email = `ip-${Date.now()}-${Math.random().toString(36).slice(2)}@example.com`;
+    await global.testServer.inject({
+      method: 'POST',
+      url: '/api/v1/auth/forgot-password',
+      remoteAddress: opts.remoteAddress,
+      headers: {
+        'content-type': 'application/json',
+        ...(opts.xff ? { 'x-forwarded-for': opts.xff } : {}),
+      },
+      payload: JSON.stringify({ email, captchaToken: 'test' }),
+    });
+    // The security log is written fire-and-forget: wait for the row.
+    for (let i = 0; i < 40; i++) {
+      const [row] = await adminDb!
+        .select({ ip: securityEvents.ipAddress })
+        .from(securityEvents)
+        .where(sql`${securityEvents.metadata}->>'email' = ${email}`);
+      if (row) return row.ip;
+      await new Promise((r) => setTimeout(r, 25));
+    }
+    return null;
+  }
+
+  it('takes the visitor named by the loopback proxy (the web server, Nginx)', async () => {
+    expect(await loggedIp({ remoteAddress: '127.0.0.1', xff: '203.0.113.7' })).toBe('203.0.113.7');
+  });
+
+  it('ignores addresses a client put in front of the real one', async () => {
+    // Nginx appends the real address to whatever the client sent.
+    expect(await loggedIp({ remoteAddress: '127.0.0.1', xff: '198.51.100.1, 203.0.113.7' })).toBe(
+      '203.0.113.7',
+    );
+  });
+
+  it("ignores the header from anywhere that isn't loopback", async () => {
+    expect(await loggedIp({ remoteAddress: '192.0.2.50', xff: '203.0.113.7' })).toBe('192.0.2.50');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Entity ids: only letters, digits, _ and - on create (no "/" or "..")
+// ---------------------------------------------------------------------------
+
+describe('entity ids', () => {
+  const email = 'sec-entity-ids@example.com';
+  const pw = 'ValidP@ssw0rd-ids';
+  let bearer = '';
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    await cleanupUser(email);
+    bearer = `Bearer ${await registerAndVerify(email, pw)}`;
+  });
+
+  const send = (method: 'POST' | 'PUT', url: string, body: unknown) =>
+    global.testServer.inject({
+      method,
+      url,
+      headers: { 'content-type': 'application/json', authorization: bearer },
+      payload: JSON.stringify(body),
+    });
+
+  it.each(['../../admin/users/x/role', '..', 'a/b', 'a b', 'x'.repeat(65)])(
+    'refuses to create an entity with id %j',
+    async (id) => {
+      const one = await send('POST', '/api/v1/session/npcs', { id, name: 'Bob' });
+      expect(one.statusCode).toBe(400);
+      const many = await send('PUT', '/api/v1/session/npcs/batch', {
+        entities: [{ id, name: 'Bob' }],
+      });
+      expect(many.statusCode).toBe(400);
+    },
+  );
+
+  it('creates one with a UUID or a plain token', async () => {
+    const one = await send('POST', '/api/v1/session/npcs', {
+      id: '0b6c1c7e-3c1e-4b8e-9a1e-2f2d3c4b5a69',
+      name: 'Bob',
+    });
+    expect(one.statusCode).toBe(201);
+    const many = await send('PUT', '/api/v1/session/npcs/batch', {
+      entities: [{ id: 'npc_2-B', name: 'Ann' }],
+    });
+    expect(many.statusCode).toBe(200);
   });
 });

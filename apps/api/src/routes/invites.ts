@@ -9,6 +9,7 @@
  */
 
 import { z } from 'zod';
+import { passwordSchema } from '../lib/passwordSchema.js';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import type { FastifyReply } from 'fastify';
 import * as inviteService from '../services/inviteService.js';
@@ -61,7 +62,8 @@ const tokenParam = z.object({
 });
 
 const acceptBody = z.object({
-  password: z.string().min(12, 'Password must be at least 12 characters').max(1000),
+  // The same rule as registering (length, and at least 5 distinct characters).
+  password: passwordSchema,
   displayName: z.string().trim().max(80).optional(),
 });
 

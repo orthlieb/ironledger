@@ -48,6 +48,10 @@
 			<div class="deleted-msg" role="status" data-testid="account-deleted">
 				Your account and everything in it have been deleted. Farewell, Ironsworn.
 			</div>
+		{:else if data.verified && !form}
+			<div class="deleted-msg" role="status" data-testid="email-verified">
+				Your email is verified. Sign in to begin your chronicle.
+			</div>
 		{:else if form?.error}
 			<div class="error-msg">
 				{form.error}

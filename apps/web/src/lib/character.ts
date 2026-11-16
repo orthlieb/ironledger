@@ -256,6 +256,58 @@ export function reconcileGlobalValues(
 	return out;
 }
 
+/** The character's number and true/false values (CharacterData). */
+const NUMBER_KEYS = [
+	'edge',
+	'heart',
+	'iron',
+	'shadow',
+	'wits',
+	'momentum',
+	'health',
+	'spirit',
+	'supply',
+	'xp',
+	'bonds',
+	'failures',
+	'initiative',
+] as const;
+const BOOLEAN_KEYS = [
+	'wounded',
+	'unprepared',
+	'shaken',
+	'encumbered',
+	'maimed',
+	'corrupted',
+	'cursed',
+	'tormented',
+] as const;
+
+/** A finite number from whatever a backup holds there, else 0. */
+const toNumber = (v: unknown): number => {
+	const n = Number(v);
+	return Number.isFinite(n) ? n : 0;
+};
+
+/**
+ * Give a shared backup's values the types the app assumes. A backup is
+ * untrusted, and several dialogs build HTML from these values as numbers
+ * (the Moves roll line, log entries): a string there would be markup.
+ * Present keys only; vows' numbers too.
+ */
+function coerceImportedShape(data: Record<string, unknown>): void {
+	for (const k of NUMBER_KEYS) if (k in data) data[k] = toNumber(data[k]);
+	for (const k of BOOLEAN_KEYS) if (k in data) data[k] = data[k] === true;
+	if (Array.isArray(data.vows)) {
+		for (const v of data.vows) {
+			if (!v || typeof v !== 'object') continue;
+			const vow = v as Record<string, unknown>;
+			if ('ticks' in vow) vow.ticks = toNumber(vow.ticks);
+			if ('menace' in vow) vow.menace = toNumber(vow.menace);
+		}
+	}
+}
+
 /**
  * An imported character's data, made ready to save (docs/import-schema.md →
  * Characters). Import runs this on every character, new or Replacing one of
@@ -267,6 +319,8 @@ export function reconcileGlobalValues(
  *   (reconcileGlobalValues).
  * - `fields`: tidied (cleanFieldValues), then an older export's YRT values
  *   moved in (moveLegacyYrtFields).
+ * - Numbers and true/false values get those types (coerceImportedShape):
+ *   a backup is untrusted, and dialogs build HTML from them.
  * - A missing `data.name` takes the entry's `name`: the sheet shows
  *   `data.name`, and loading would fill it with "New Character".
  *
@@ -286,6 +340,7 @@ export function reconcileImportedCharacter(
 	}
 	if ('fields' in data) data.fields = cleanFieldValues(data.fields, findField);
 	moveLegacyYrtFields(data);
+	coerceImportedShape(data);
 	const dataName = typeof data.name === 'string' ? data.name.trim() : '';
 	const outerName = typeof entry.name === 'string' ? entry.name.trim() : '';
 	if (!dataName && outerName) data.name = outerName;

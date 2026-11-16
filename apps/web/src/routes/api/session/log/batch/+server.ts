@@ -6,10 +6,11 @@
 import type { RequestHandler } from './$types';
 import { error } from '@sveltejs/kit';
 import { INTERNAL_API_URL } from '#lib/server/config.js';
+import { apiFetch } from '#lib/server/apiFetch.js';
 
 export const POST: RequestHandler = async ({ locals, request }) => {
 	if (!locals.accessToken) throw error(401, 'Not authenticated');
-	const res = await fetch(`${INTERNAL_API_URL}/api/v1/session/log/batch`, {
+	const res = await apiFetch(`${INTERNAL_API_URL}/api/v1/session/log/batch`, {
 		method: 'POST',
 		headers: { Authorization: `Bearer ${locals.accessToken}`, 'Content-Type': 'application/json' },
 		body: await request.text(),

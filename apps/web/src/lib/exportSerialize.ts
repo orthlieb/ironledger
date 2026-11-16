@@ -13,6 +13,7 @@
 // =============================================================================
 
 import { zipSync, strToU8 } from 'fflate';
+import { inertBody } from './inertHtml.js';
 
 /** Local-time filename stamp: `YYYY-MM-DD_HHmm`. */
 export function makeTimestamp(): string {
@@ -175,8 +176,7 @@ export async function exportZip(
  *  DOM (returns the input unchanged during SSR). */
 export function htmlToMd(html: string): string {
 	if (typeof document === 'undefined') return html;
-	const tmp = document.createElement('div');
-	tmp.innerHTML = html;
+	const tmp = inertBody(html);
 	const lines: string[] = [''];
 	function walk(node: Node) {
 		if (node.nodeType === Node.TEXT_NODE) {

@@ -15,6 +15,7 @@
 // =============================================================================
 
 import type { LogEntry } from './log.svelte.js';
+import { inertBody } from './inertHtml.js';
 
 /** Link classes that represent a takeable choice/action in a move outcome. */
 const ACTION_LINK_CLASSES = [
@@ -55,8 +56,7 @@ function tidy(s: string): string {
  * `document` is passed in so this remains pure and testable via happy-dom.
  */
 export function entryBodyToPrompt(html: string, doc: Document): string {
-	const tmp = doc.createElement('div');
-	tmp.innerHTML = html;
+	const tmp = inertBody(html, doc);
 
 	// Drop dialog-only decorations (they're hidden in the log anyway).
 	tmp.querySelectorAll('.dialog-only').forEach((n) => n.remove());
@@ -216,8 +216,7 @@ export function sectionText(entries: LogEntry[], doc: Document): string {
 	const parts: string[] = [];
 	for (const e of entries) {
 		parts.push(e.title ?? '');
-		const tmp = doc.createElement('div');
-		tmp.innerHTML = e.html ?? '';
+		const tmp = inertBody(e.html ?? '', doc);
 		parts.push(tmp.textContent ?? '');
 		if (e.note) parts.push(e.note);
 	}
@@ -268,8 +267,7 @@ export function referencedCharIds(entries: LogEntry[], doc: Document): string[] 
 	const ids = new Set<string>();
 	for (const e of entries) {
 		if (e.roll?.charId) ids.add(e.roll.charId);
-		const tmp = doc.createElement('div');
-		tmp.innerHTML = e.html ?? '';
+		const tmp = inertBody(e.html ?? '', doc);
 		tmp.querySelectorAll('[data-char-id]').forEach((el) => {
 			const id = el.getAttribute('data-char-id');
 			if (id) ids.add(id);
