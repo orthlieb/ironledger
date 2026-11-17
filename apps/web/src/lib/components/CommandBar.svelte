@@ -201,23 +201,26 @@
 		return sugg.top;
 	});
 
-	/** A row whose command is whole, so taking it with Enter runs it. */
+	/** Rows that open the next slot rather than finish a command: a value, a
+	 *  read-only value, or a name (its owner rows end in a dot; a kind
+	 *  keyword's has no operator yet). */
+	const OPENING: SuggestionIcon[] = [
+		'value',
+		'lock',
+		'character',
+		'foe',
+		'journey',
+		'site',
+		'scene',
+		'vow',
+		'asset',
+	];
+	/** A row whose command is whole, so taking it with Enter runs it: an
+	 *  operator like `++`, an option, `/foe=Wolf`, a move, `/story start`.
+	 *  One that leaves a slot open (`/move `, `/health+=`, `/Ash.`) isn't. */
 	function isFinal(s: Suggestion): boolean {
-		if (/[.=\s]$/.test(s.apply) || s.apply.endsWith('+=') || s.apply.endsWith('-=')) return false;
-		return (
-			![
-				'value',
-				'lock',
-				'verb',
-				'character',
-				'foe',
-				'journey',
-				'site',
-				'scene',
-				'vow',
-				'asset',
-			].includes(s.icon) || /=/.test(s.apply)
-		);
+		if (/[.=\s]$/.test(s.apply) || /[+-]=$/.test(s.apply)) return false;
+		return !OPENING.includes(s.icon) || s.apply.includes('=');
 	}
 
 	function onEnter() {

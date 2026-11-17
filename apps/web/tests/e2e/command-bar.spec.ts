@@ -256,6 +256,53 @@ test.describe('Command bar — the command language', () => {
 		}
 	});
 
+	test('/burn burns momentum on the newest action roll, spending its burn link', async ({
+		page,
+	}) => {
+		await openHome(page);
+		await expect(await run(page, '/burn')).toHaveText('No action roll to burn momentum on.');
+		await expect(await run(page, '/momentum=6')).toHaveText('Momentum 2 → 6');
+
+		// A missed roll, and the log's offer to burn momentum on it.
+		const charId = await page.evaluate(async () => {
+			const list = (await fetch('/api/characters', { credentials: 'include' }).then((r) =>
+				r.json(),
+			)) as Array<{ id: string; name: string }>;
+			return list.find((c) => c.name === 'Bjorn')!.id;
+		});
+		const rollId = crypto.randomUUID();
+		const offerId = crypto.randomUUID();
+		await page.evaluate(
+			({ rollId, offerId, charId }) => {
+				// eslint-disable-next-line @typescript-eslint/no-explicit-any
+				const log = (window as any).__testLog;
+				log.appendLog(
+					'Strike',
+					'<div class="roll-outcome roll-outcome-miss"><p>Miss — pay the price.</p></div>',
+					rollId,
+					null,
+					{ moveId: 'move/strike', actionScore: 1, c1: 1, c2: 9, charId },
+				);
+				log.appendLog(
+					'Burn Momentum',
+					`<p>You may <a class="burn-momentum-link" data-roll-entry-id="${rollId}" data-entry-id="${offerId}" data-char-id="${charId}">burn momentum</a>.</p>`,
+					offerId,
+				);
+			},
+			{ rollId, offerId, charId },
+		);
+
+		await expect(await run(page, '/burn')).toHaveText('Burned momentum (6 → reset 2).');
+		const offer = page.locator(`.log-entry[data-entry-id="${offerId}"]`);
+		await expect(offer.locator('a.burn-momentum-link')).toHaveCount(0);
+		await expect(offer.locator('s.resource-spent')).toHaveText('burn momentum');
+		await expect(page.locator(`.log-entry[data-entry-id="${rollId}"] .roll-burn`)).toBeVisible();
+		await expect.poll(async () => (await run(page, '/momentum')).textContent()).toBe('Momentum 2');
+		await expect(await run(page, '/burn')).toHaveText(
+			'Momentum is already burned on the newest roll.',
+		);
+	});
+
 	test('typeahead: Tab completes slot by slot, Enter runs, ↑ recalls', async ({ page }) => {
 		await openHome(page);
 		const bar = page.locator('.cb-input');
