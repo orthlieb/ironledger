@@ -392,3 +392,7 @@ export interface SystemStatus {
   maintenance: MaintenanceStatus;
   broadcast: BroadcastStatus;
 }
+
+// Condition expressions (docs/command-language.md → Conditions). Plain JS so
+// the build-time content checker can import it from source.
+export * from './condition.js';
