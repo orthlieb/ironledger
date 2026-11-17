@@ -8,7 +8,7 @@
   "moveCategories": [
     { "key": "Sample", "icon": "dice-d100-solid", "color": "var(--text-muted)", "order": 900 }
   ],
-  "characterFields": [
+  "fields": [
     {
       "id": "sampleTrinket",
       "label": "Trinket",
@@ -38,6 +38,28 @@
       "default": "",
       "placeholder": "Epithet…",
       "roll": { "oracle": "samplePrefixSuffix", "from": "prefix" }
+    },
+    {
+      "id": "sampleHome",
+      "label": "Home",
+      "type": "dropdown",
+      "custom": true,
+      "options": [
+        { "id": "hearth", "label": "Hearth" },
+        { "id": "road", "label": "Road" },
+        { "id": "sea", "label": "Sea" }
+      ],
+      "default": "",
+      "tooltip": "One of the three, or anywhere typed in."
+    },
+    {
+      "id": "sampleBanner",
+      "label": "Banner",
+      "type": "string",
+      "scope": "party",
+      "default": "",
+      "placeholder": "Banner…",
+      "tooltip": "The party's banner: one for every character."
     },
     {
       "id": "sampleNotes",

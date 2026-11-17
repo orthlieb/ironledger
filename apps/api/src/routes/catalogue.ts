@@ -115,11 +115,12 @@ interface ExtensionManifestEntry {
    *  Carried through to the public payload — the Hamburger → Info submenu
    *  renders one item per enabled extension that declares this. */
   infoLink?: { label: string; url: string };
-  /** Fields this extension adds to a character, and the heading over them.
-   *  Carried through as declared (gen-extensions-manifest checks them); the
-   *  shape is CharacterFieldDef in @ironledger/shared, kept loose here. */
-  characterFields?: Array<Record<string, unknown>>;
-  characterFieldsHeading?: string | false;
+  /** Fields this extension declares (party, character or global scope), and
+   *  the heading over them on the sheet. Carried through as declared
+   *  (gen-extensions-manifest checks them); the shape is CharacterFieldDef in
+   *  @ironledger/shared, kept loose here. */
+  fields?: Array<Record<string, unknown>>;
+  fieldsHeading?: string | false;
   /** Repo-relative content root (e.g. `apps/api/data` or `extensions/yrt`). */
   root: string;
   /** Content files this extension provides, relative to `root`. */
@@ -143,8 +144,8 @@ export interface PublicExtension {
   moveCategories?: CategoryMeta[];
   oracleCategories?: CategoryMeta[];
   infoLink?: { label: string; url: string };
-  characterFields?: Array<Record<string, unknown>>;
-  characterFieldsHeading?: string | false;
+  fields?: Array<Record<string, unknown>>;
+  fieldsHeading?: string | false;
 }
 
 /**
@@ -176,12 +177,44 @@ export function toPublicExtension(e: ExtensionManifestEntry): PublicExtension {
     ...(e.moveCategories?.length ? { moveCategories: e.moveCategories } : {}),
     ...(e.oracleCategories?.length ? { oracleCategories: e.oracleCategories } : {}),
     ...(e.infoLink ? { infoLink: e.infoLink } : {}),
-    // The sheet, New Character and preconditions read these; without them a
+    // The sheet, New Character and conditions read these; without them a
     // YRT character loses its Touched level and the Touched assets' gate.
-    ...(e.characterFields?.length ? { characterFields: e.characterFields } : {}),
-    ...(e.characterFieldsHeading !== undefined
-      ? { characterFieldsHeading: e.characterFieldsHeading }
-      : {}),
+    ...(e.fields?.length ? { fields: e.fields } : {}),
+    ...(e.fieldsHeading !== undefined ? { fieldsHeading: e.fieldsHeading } : {}),
+  };
+}
+
+/**
+ * An asset's field that refers to a global field (`{ "field": "mana",
+ * "position": "bottom", "tooltipLabel": "Conclave Ritual" }`) becomes the
+ * whole field: the declaration in extension.json (type, label, range,
+ * default, icon, writable) with the asset's own placement and tooltip, and
+ * `global: true`, which the app reads as "one shared value per character".
+ * gen-extensions-manifest checks that every reference names a declared
+ * global field. Fields of the asset's own pass through as they are.
+ */
+export function resolveAssetFields(
+  asset: unknown,
+  globalFields: Map<string, Record<string, unknown>>,
+): unknown {
+  const a = asset as { customFields?: Array<Record<string, unknown>> };
+  if (!a.customFields?.some((cf) => typeof cf.field === 'string')) return asset;
+  return {
+    ...a,
+    customFields: a.customFields.map((cf) => {
+      if (typeof cf.field !== 'string') return cf;
+      const g = globalFields.get(cf.field);
+      if (!g) return cf;
+      const { field: _field, ...placement } = cf;
+      const { scope: _scope, ...decl } = g;
+      return {
+        ...decl,
+        // A counter's default as a number, as an asset's own counters have it.
+        ...(decl.type === 'counter' ? { default: Number(decl.default ?? 0) } : {}),
+        ...placement,
+        global: true,
+      };
+    }),
   };
 }
 
@@ -223,8 +256,13 @@ async function loadCatalogue(): Promise<{
     assets: unknown[];
     rarities?: unknown[];
   }>;
+  const globalFields = new Map(
+    extensions.flatMap((e) =>
+      (e.fields ?? []).filter((f) => f.scope === 'global').map((f) => [String(f.id), f] as const),
+    ),
+  );
   const allAssets = {
-    assets: assetData.flatMap((f) => f.assets),
+    assets: assetData.flatMap((f) => f.assets).map((a) => resolveAssetFields(a, globalFields)),
     rarities: assetData.flatMap((f) => f.rarities ?? []),
   };
 

@@ -97,6 +97,8 @@ const RESERVED_NAMES = new Set([
 /** What a name in a condition reads, for checking a comparison against it:
  *  `{ kind, options? }` where options are a list's option ids and labels. */
 function fieldKind(f) {
+  // A custom value has no place in the options' order: only "chosen?".
+  if (f.custom) return { kind: 'chosen' };
   if (f.type === 'counter') return { kind: 'number' };
   if (f.type === 'switch') return { kind: 'bool' };
   if (f.type === 'dropdown' || f.type === 'radio')
@@ -130,6 +132,10 @@ function checkCondition(src, at, resolve) {
       case 'bool':
       case 'text':
         throw new Error(`${here} can't be compared: name it alone, or with ! for "not"`);
+      case 'chosen':
+        throw new Error(
+          `${here} takes custom values, which have no order: test only whether one is chosen (name it alone, or with !)`,
+        );
       case 'initiative':
         if (lv.kind !== 'word' || !INITIATIVE.includes(lv.word))
           throw new Error(`${here}: initiative compares with none, character or foe`);
@@ -165,14 +171,12 @@ function checkCondition(src, at, resolve) {
  */
 function validatePreconditions(where, data, fields, assets) {
   const byName = new Map([...assets.values()].map((a) => [a.name, a.id]));
-  const globals = new Map();
-  for (const a of assets.values())
-    for (const cf of a.customFields ?? []) if (cf.global) globals.set(cf.id, cf);
-  /** An asset's own field, by the asset (or `self`'s) definition. */
+  /** An asset's own field, by the asset (or `self`'s) definition; one that
+   *  refers to a global field reads that. */
   const assetField = (asset, t, here) => {
-    const cf = (asset?.customFields ?? []).find((f) => f.id === t.name);
+    const cf = (asset?.customFields ?? []).find((f) => (f.field ?? f.id) === t.name);
     if (!cf) throw new Error(`${here}: ${asset?.id ?? t.owner} has no field "${t.name}"`);
-    return fieldKind(cf);
+    return fieldKind(cf.field ? fields.get(cf.field) : cf);
   };
   const check = (src, at, self) =>
     checkCondition(src, at, (t, here) => {
@@ -192,14 +196,10 @@ function validatePreconditions(where, data, fields, assets) {
       if (DEBILITY_NAMES.has(key)) return { kind: 'bool' };
       const field = fields.get(key);
       if (field) return fieldKind(field);
-      const counter = globals.get(key);
-      if (counter) return fieldKind(counter);
       if (assets.has(key)) return { kind: 'asset' };
       if (byName.has(key))
         throw new Error(`${here} names an asset by its name; use its id, "${byName.get(key)}"`);
-      throw new Error(
-        `${here} is neither a built-in name, a character field, a global counter, nor an asset id`,
-      );
+      throw new Error(`${here} is neither a built-in name, a declared field, nor an asset id`);
     });
   const walk = (node, at) => {
     if (Array.isArray(node)) return node.forEach((n) => walk(n, at));
@@ -218,6 +218,9 @@ function validatePreconditions(where, data, fields, assets) {
 /** The character field types: the same as an asset's custom fields. */
 const FIELD_TYPES = ['dropdown', 'radio', 'string', 'counter', 'switch', 'markdown'];
 
+/** Whose a declared field's value is. An asset's own fields are `asset`. */
+const SCOPES = ['party', 'character', 'global'];
+
 /** An option id from its label: lower case, each run of other characters a
  *  `-` ("Oray Hills" → "oray-hills"). Same rule as the web's optionId(). */
 const optionId = (label) =>
@@ -227,20 +230,25 @@ const optionId = (label) =>
     .replace(/^-+|-+$/g, '');
 
 /**
- * Check each extension's `characterFields` and `characterFieldsHeading`
- * (docs/character-fields.md); throws on the first problem. `oracles` maps an
- * oracle key to its owning extension and file contents; `core` holds base's
- * fields, which any extension's fields may depend on, since base is always
- * on. Returns this extension's fields by id.
+ * Check each extension's `fields` and `fieldsHeading`
+ * (docs/character-fields.md, docs/command-language.md → Declaring fields);
+ * throws on the first problem. `oracles` maps an oracle key to its owning
+ * extension and file contents; `core` holds base's fields, which any
+ * extension's fields may depend on, since base is always on. Returns this
+ * extension's fields by id.
  */
 function validateCharacterFields(id, m, oracles, core = new Map()) {
   const where = `extensions/${id}/extension.json`;
-  const h = m.characterFieldsHeading;
+  if (m.characterFields !== undefined || m.characterFieldsHeading !== undefined)
+    throw new Error(
+      `${where}: characterFields and characterFieldsHeading are now fields and fieldsHeading`,
+    );
+  const h = m.fieldsHeading;
   if (h !== undefined && h !== false && !(typeof h === 'string' && h.trim()))
-    throw new Error(`${where}: characterFieldsHeading must be false or a non-empty string`);
-  const fields = m.characterFields;
+    throw new Error(`${where}: fieldsHeading must be false or a non-empty string`);
+  const fields = m.fields;
   if (fields === undefined) return new Map();
-  if (!Array.isArray(fields)) throw new Error(`${where}: characterFields must be an array`);
+  if (!Array.isArray(fields)) throw new Error(`${where}: fields must be an array`);
   /** An oracle this extension may use: its own, or base's. */
   const oracle = (key, what) => {
     const o = oracles.get(key);
@@ -252,10 +260,28 @@ function validateCharacterFields(id, m, oracles, core = new Map()) {
   };
   const declared = new Map();
   for (const f of fields) {
-    if (!f || typeof f !== 'object') throw new Error(`${where}: each character field is an object`);
-    const at = `${where}: character field "${f.id}"`;
+    if (!f || typeof f !== 'object') throw new Error(`${where}: each field is an object`);
+    const at = `${where}: field "${f.id}"`;
     if (typeof f.id !== 'string' || !/^[a-z][a-zA-Z0-9]*$/.test(f.id))
-      throw new Error(`${where}: character field id "${f.id}" must be camelCase`);
+      throw new Error(`${where}: field id "${f.id}" must be camelCase`);
+    // Whose the value is: party (every character), character, or global
+    // (one per character, shared by the assets that refer to it).
+    if (f.scope !== undefined && !SCOPES.includes(f.scope))
+      throw new Error(`${at}: scope must be one of ${SCOPES.map((x) => `"${x}"`).join(', ')}`);
+    if (f.writable !== undefined && typeof f.writable !== 'boolean')
+      throw new Error(`${at}: writable must be true or false`);
+    if (f.custom !== undefined && (f.custom !== true || f.type !== 'dropdown'))
+      throw new Error(`${at}: custom is true or left out, and only on a dropdown`);
+    if (f.scope === 'global') {
+      // Shown on the assets that refer to it, not the Details tab.
+      if (f.type !== 'counter' && f.type !== 'switch')
+        throw new Error(`${at}: a global field is a counter or a switch`);
+      for (const k of ['roll', 'if', 'placeholder'])
+        if (f[k] !== undefined) throw new Error(`${at}: a global field has no ${k}`);
+    } else {
+      for (const k of ['shortLabel', 'icon'])
+        if (f[k] !== undefined) throw new Error(`${at}: only a global field has a ${k}`);
+    }
     if (RESERVED_NAMES.has(f.id))
       throw new Error(`${at}: the id is a built-in name or keyword in conditions`);
     if (declared.has(f.id)) throw new Error(`${at}: declared twice`);
@@ -509,10 +535,8 @@ async function build() {
       ...(meta[id].infoLink ? { infoLink: meta[id].infoLink } : {}),
       // Fields this extension adds to a character, and the heading over them
       // on the sheet (docs/character-fields.md). Checked below.
-      ...(meta[id].characterFields?.length ? { characterFields: meta[id].characterFields } : {}),
-      ...(meta[id].characterFieldsHeading !== undefined
-        ? { characterFieldsHeading: meta[id].characterFieldsHeading }
-        : {}),
+      ...(meta[id].fields?.length ? { fields: meta[id].fields } : {}),
+      ...(meta[id].fieldsHeading !== undefined ? { fieldsHeading: meta[id].fieldsHeading } : {}),
       root,
       provides: Object.fromEntries(
         Object.entries(provides)
@@ -554,6 +578,36 @@ async function build() {
     for (const rel of e.provides.assets ?? [])
       for (const a of (await readJson(path.join(REPO, e.root, rel))).assets ?? [])
         if (typeof a?.id === 'string') assets.set(a.id, a);
+
+  // An asset's fields: one that refers to a global field (`{ "field":
+  // "mana" }`) names one declared by its own pack or base, and takes its
+  // type, range and look from that declaration; `"global": true` is gone.
+  for (const e of entries)
+    for (const rel of e.provides.assets ?? [])
+      for (const a of (await readJson(path.join(REPO, e.root, rel))).assets ?? [])
+        for (const cf of a.customFields ?? []) {
+          const at = `${e.root}/${rel}: ${a.id}`;
+          if (cf.global !== undefined)
+            throw new Error(
+              `${at}: field "${cf.id}": "global" is gone; declare the field once in extension.json fields with "scope": "global" and refer to it: { "field": "${cf.id}" }`,
+            );
+          if (cf.writable !== undefined && typeof cf.writable !== 'boolean')
+            throw new Error(`${at}: field "${cf.id ?? cf.field}": writable must be true or false`);
+          if (cf.field === undefined) continue;
+          const g = allFields.get(cf.field);
+          if (!g || g.scope !== 'global')
+            throw new Error(`${at}: { "field": "${cf.field}" } names no global field`);
+          const owner = fieldOwner.get(cf.field);
+          if (owner !== e.id && owner !== 'base')
+            throw new Error(
+              `${at}: { "field": "${cf.field}" } is declared by ${owner}; an asset refers to its own pack's or base's`,
+            );
+          for (const k of ['id', 'type', 'maxValue', 'default', 'icon', 'shortLabel', 'writable'])
+            if (cf[k] !== undefined)
+              throw new Error(
+                `${at}: { "field": "${cf.field}" } takes its ${k} from the declaration`,
+              );
+        }
   for (const e of entries)
     for (const kind of ['moves', 'moveOverrides', 'assets'])
       for (const rel of e.provides[kind] ?? [])

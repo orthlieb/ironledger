@@ -14,6 +14,7 @@ import {
 	fieldHint,
 	fieldNumber,
 	fieldRequirement,
+	fieldReading,
 	fieldShown,
 	fieldsMarkdown,
 	fieldValue,
@@ -32,8 +33,12 @@ import type { CharacterFieldDef } from '../../src/lib/types.js';
 const here = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(here, '../../../..');
 const read = (rel: string) => JSON.parse(readFileSync(path.join(REPO, rel), 'utf-8'));
+/** An extension's sheet fields: its party and character ones (its global
+ *  fields, like YRT's mana, are its assets'). */
 const declared = (ext: string) =>
-	read(`extensions/${ext}/extension.json`).characterFields as CharacterFieldDef[];
+	(read(`extensions/${ext}/extension.json`).fields as CharacterFieldDef[]).filter(
+		(f) => f.scope !== 'global',
+	);
 
 // The core Region of origin, then YRT's three, against both region oracles.
 const oracles: OracleFile[] = [
@@ -269,15 +274,31 @@ describe('the asset field types', () => {
 	const sf = (id: string) => sample.find((f) => f.id === id) as ResolvedField;
 	const sampleById = (id: string) => sample.find((f) => f.id === id);
 
-	it('the sample extension declares one of each', () => {
+	it('the sample extension declares one of each, and a custom dropdown and a party field', () => {
 		expect(sample.map((f) => f.type)).toEqual([
 			'dropdown',
 			'radio',
 			'counter',
 			'switch',
 			'string',
+			'dropdown',
+			'string',
 			'markdown',
 		]);
+		expect(sf('sampleHome').custom).toBe(true);
+		expect(sf('sampleBanner').scope).toBe('party');
+	});
+
+	it('reads a custom dropdown’s typed value as chosen, with no place in the order', () => {
+		const home = sf('sampleHome');
+		expect(fieldReading(home, 'road')).toMatchObject({ kind: 'list', value: 1 });
+		expect(fieldReading(home, 'Timbuktu')).toMatchObject({ kind: 'list', value: 3 });
+		expect(fieldReading(home, '')).toMatchObject({ kind: 'list', value: -1 });
+		const gated = { ...sf('sampleNotes'), if: 'sampleHome' };
+		expect(fieldShown(gated, { sampleHome: 'Timbuktu' }, sampleById)).toBe(true);
+		expect(fieldShown(gated, {}, sampleById)).toBe(false);
+		// Shown as typed.
+		expect(valueLabel(home, 'Timbuktu')).toBe('Timbuktu');
 	});
 
 	it("takes a dropdown's options from an oracle, and rolls on it", () => {

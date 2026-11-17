@@ -18,6 +18,7 @@
 	 * the values: `onset` hands it each change.
 	 */
 	import Select from '#lib/components/Select.svelte';
+	import Combobox from '#lib/components/Combobox.svelte';
 	import SegmentedRadio from '#lib/components/SegmentedRadio.svelte';
 	import Checkbox from '#lib/components/Checkbox.svelte';
 	import MarkdownNotes from '#lib/components/MarkdownNotes.svelte';
@@ -33,6 +34,8 @@
 		optionIndex,
 		rollCharacterField,
 		rollOracleTitle,
+		valueLabel,
+		type FieldOption,
 		type ResolvedField,
 	} from '#lib/characterFields.svelte.js';
 
@@ -45,6 +48,18 @@
 		mode: 'sheet' | 'create';
 		onset: (field: ResolvedField, value: string) => void;
 	} = $props();
+
+	/** What's typed in a custom dropdown's search, by field id: offered as a
+	 *  value of its own when it isn't one of the options. */
+	let customSearch = $state<Record<string, string>>({});
+
+	/** A custom dropdown's "Use "…"" row for the typed text, unless it names
+	 *  an option already. */
+	function customActions(f: ResolvedField) {
+		const typed = (customSearch[f.id] ?? '').trim();
+		if (!typed || f.options.some((o) => o.label.toLowerCase() === typed.toLowerCase())) return [];
+		return [{ label: `Use “${typed}”`, value: `use ${typed}`, onselect: () => onset(f, typed) }];
+	}
 
 	const groups = $derived(characterFieldGroups());
 
@@ -95,7 +110,23 @@
 							>
 								<span class="cf-label co-field-label" use:tooltip={hint}>{f.label}</span>
 								<div class="cf-row co-name-row">
-									{#if f.type === 'dropdown'}
+									{#if f.type === 'dropdown' && f.custom}
+										<!-- A custom dropdown takes the options or any text typed. -->
+										<Combobox
+											items={f.options}
+											getKey={(o: FieldOption) => o.id}
+											getLabel={(o: FieldOption) => o.label}
+											activeKey={v || null}
+											onselect={(o: FieldOption) => onset(f, o.id)}
+											triggerValue={valueLabel(f, v)}
+											placeholder="—"
+											searchPlaceholder="Search or type…"
+											ariaLabel={f.label}
+											clearItem={{ label: '—', onselect: () => onset(f, '') }}
+											actions={customActions(f)}
+											bind:search={() => customSearch[f.id] ?? '', (q) => (customSearch[f.id] = q)}
+										/>
+									{:else if f.type === 'dropdown'}
 										<Select
 											value={v}
 											options={f.options.map((o) => ({ value: o.id, label: o.label }))}

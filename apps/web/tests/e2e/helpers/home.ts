@@ -91,7 +91,8 @@ export async function createCharacter(page: Page): Promise<void> {
 	await page.locator(`${CHAR_AREA} .ca-hdr-combobox`).click();
 	await page.locator('.cb-item--action', { hasText: /New character/i }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-	await page.locator('.confirm-modal .co-input').fill('E2E Character');
+	// The name box: a content pack's text fields in the dialog are .co-input too.
+	await page.locator('.confirm-modal [data-tour="new-char-name"] input').fill('E2E Character');
 	await page.locator('.confirm-modal .sa-field .dice-btn').click();
 	await page.locator('.confirm-modal .btn-primary').click();
 	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });

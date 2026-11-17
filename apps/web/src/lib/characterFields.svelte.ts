@@ -1,15 +1,17 @@
 // =============================================================================
 // Iron Ledger — character fields from extensions
 //
-// An extension declares fields on the character in its extension.json
-// (`characterFields`): a dropdown, a radio or a line of text, shown on the
-// sheet and in New Character, rolled from an oracle, and readable by
-// preconditions. Values live in `character.fields`, keyed by field id. See
-// docs/character-fields.md. The pure helpers are in characterFieldsCore.ts;
+// An extension declares fields in its extension.json (`fields`). Party and
+// character fields (a dropdown, a radio, a counter, a line of text, …) are
+// shown on the sheet and in New Character, rolled from an oracle, and read by
+// conditions; their values live in `character.fields`, keyed by field id.
+// Global fields (mana) are shown on the assets that refer to them, and live
+// in `character.globalValues`; they aren't listed here. See
+// docs/character-fields.md and docs/command-language.md → Declaring fields. The pure helpers are in characterFieldsCore.ts;
 // these read the extension registry and the loaded oracles.
 // =============================================================================
 
-import type { CharacterFieldDef } from '#lib/types.js';
+import type { CharacterFieldDef, ExtensionInfo } from '#lib/types.js';
 import { getExtensions, isSourceEnabled, resolveOracleKey } from '#lib/expansionStore.svelte.js';
 import { getOracles } from '#lib/oracleStore.svelte.js';
 import {
@@ -34,12 +36,18 @@ export interface FieldGroup {
 // Store-backed
 // ---------------------------------------------------------------------------
 
+/** An extension's party and character fields: the ones on the sheet, kept in
+ *  `character.fields`. Its global fields are its assets'. */
+function sheetFields(e: ExtensionInfo): CharacterFieldDef[] {
+	return (e.fields ?? []).filter((f) => f.scope !== 'global');
+}
+
 /** Every declared field, enabled or not, in extension order then declaration
  *  order: what preconditions and saved values resolve against. */
 export function allCharacterFields(): ResolvedField[] {
 	const oracles = getOracles();
 	return getExtensions().flatMap((e) =>
-		(e.characterFields ?? []).map((f) => resolveField(f, e.id, oracles, resolveOracleKey)),
+		sheetFields(e).map((f) => resolveField(f, e.id, oracles, resolveOracleKey)),
 	);
 }
 
@@ -53,13 +61,11 @@ export function findCharacterField(id: string): ResolvedField | undefined {
 export function characterFieldGroups(): FieldGroup[] {
 	const oracles = getOracles();
 	return getExtensions()
-		.filter((e) => isSourceEnabled(e.id) && e.characterFields?.length)
+		.filter((e) => isSourceEnabled(e.id) && sheetFields(e).length)
 		.map((e) => ({
 			source: e.id,
-			heading: e.characterFieldsHeading === false ? null : (e.characterFieldsHeading ?? e.name),
-			fields: (e.characterFields ?? []).map((f) =>
-				resolveField(f, e.id, oracles, resolveOracleKey),
-			),
+			heading: e.fieldsHeading === false ? null : (e.fieldsHeading ?? e.name),
+			fields: sheetFields(e).map((f) => resolveField(f, e.id, oracles, resolveOracleKey)),
 		}));
 }
 

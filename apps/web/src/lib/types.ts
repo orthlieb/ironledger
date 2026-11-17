@@ -97,12 +97,12 @@ export interface ExtensionInfo {
 	 *  adds one item that opens `url` in a new tab, labelled `label`. Mirrors
 	 *  ExtensionInfo in @ironledger/shared. */
 	infoLink?: { label: string; url: string };
-	/** Fields this extension adds to a character, in declaration order (see
-	 *  characterFields.svelte.ts and docs/character-fields.md). */
-	characterFields?: CharacterFieldDef[];
-	/** The heading over those fields: left out, `name`; text, that text;
-	 *  `false`, none. */
-	characterFieldsHeading?: string | false;
+	/** Fields this extension declares, in declaration order: party, character
+	 *  and global ones (characterFields.svelte.ts, docs/character-fields.md). */
+	fields?: CharacterFieldDef[];
+	/** The heading over its party and character fields: left out, `name`;
+	 *  text, that text; `false`, none. */
+	fieldsHeading?: string | false;
 }
 
 /** One choice of a dropdown or radio character field. */
@@ -137,6 +137,20 @@ export interface CharacterFieldDef {
 	/** The oracle New Character's die rolls, by key. */
 	roll?: { oracle: string; from?: string; column?: { field: string; from: string } };
 	tooltip?: string;
+	/** Whose the value is (docs/command-language.md → Scopes): `party` (one
+	 * value every character shares), `character` (the default), or `global`
+	 * (one per character, shared by the assets that refer to it, like mana).
+	 * Party and character values live in `character.fields`, global ones in
+	 * `character.globalValues`. */
+	scope?: 'party' | 'character' | 'global';
+	/** `false`: commands and log links can show and test the value but not
+	 * change it; the sheet edits it either way. Default true. */
+	writable?: boolean;
+	/** dropdown only: a value that isn't an option is kept as typed. */
+	custom?: boolean;
+	/** global only: the pill label in the context bar, and the icon. */
+	shortLabel?: string;
+	icon?: string;
 }
 
 export interface FoeDef {
@@ -473,8 +487,11 @@ export interface CustomFieldDef {
 	// counter
 	maxValue?: number | number[]; // array = per-ability-level
 	icon?: string;
-	/** If true, all counter fields with the same id share one value across the character (e.g. supply). */
+	/** One value per character, shared by every asset with this field: a
+	 *  reference to a global field (mana), resolved by the API. */
 	global?: boolean;
+	/** `false`: commands and log links can show it but not change it. */
+	writable?: boolean;
 	// radio | dropdown
 	options?: CustomFieldOption[];
 }

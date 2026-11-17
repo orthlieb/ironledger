@@ -1,9 +1,12 @@
 # Command language — spec
 
-**Status: agreed design, being built.** [Conditions](#conditions) are
-built: moves, assets and fields use expressions. The command bar still runs
-the syntax in [command-bar.md](command-bar.md), and log links the old link
-forms, until the later stages; [Build order](#build-order) says how.
+**Status: agreed design, being built.** Built so far:
+[conditions](#conditions) (moves, assets and fields use expressions) and
+[field declarations](#declaring-fields) (`fields` with `scope`, `writable`
+and `custom`; mana declared once; party fields copied to every character).
+The command bar still runs the syntax in [command-bar.md](command-bar.md), and
+log links the old link forms, until the later stages;
+[Build order](#build-order) says how.
 
 One language for three things:
 

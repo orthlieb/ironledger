@@ -26,7 +26,7 @@ wherever resource links appear.
 
 ## Character fields
 
-YRT adds three fields to every character (`characterFields` in
+YRT adds three fields to every character (`fields` in
 `extension.json`; see [character-fields.md](../../docs/character-fields.md)),
 shown under a YRT heading at the bottom of the sheet's Core tab and in New
 Character, each with a d6. They follow the core rules' Region of origin,

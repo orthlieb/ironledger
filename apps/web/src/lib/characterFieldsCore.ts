@@ -143,7 +143,14 @@ export function fieldReading(field: ResolvedField, value: string): Reading {
 	if (isChoice(field))
 		return {
 			kind: 'list',
-			value: optionIndex(field, value),
+			// A custom value (a `custom` dropdown's typed text) is chosen but has
+			// no place in the options' order: it reads past the last one, which
+			// only "is one chosen?" looks at (the content checker allows nothing
+			// else on such a field).
+			value:
+				field.custom && value && optionIndex(field, value) < 0
+					? field.options.length
+					: optionIndex(field, value),
 			option: (word) => {
 				const id = matchOption(field, word);
 				return id === null ? -1 : optionIndex(field, id);

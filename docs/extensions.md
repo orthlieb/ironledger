@@ -78,10 +78,10 @@ and everything filters out — nothing else changes.
 
   // Optional — fields this extension adds to every character, and the
   // heading over them on the sheet. See "Character fields" below.
-  "characterFields": [
+  "fields": [
     { "id": "sampleRank", "label": "Rank", "type": "radio", "options": [ … ], "default": "" },
   ],
-  "characterFieldsHeading": "Sample", // or false for none; left out: `name`
+  "fieldsHeading": "Sample", // or false for none; left out: `name`
 }
 ```
 
@@ -271,7 +271,7 @@ per-extension "menu" and the UI budget doesn't have room for that. If
 a pack really needs a hub, point `url` at a landing page and branch
 from there.
 
-### Character fields — `characterFields` / `characterFieldsHeading`
+### Fields — `fields` / `fieldsHeading`
 
 An extension can add fields to every character, of the same types as an
 asset's custom fields (dropdown, radio, counter, switch, string, markdown),
@@ -282,7 +282,7 @@ Region of origin (from the Region oracle, which YRT supersedes with its own
 regions); YRT declares Religion, Touched and Animal, and its Touched assets
 need `{ "key": "touched", "min": 1 }`. The fields sort by extension `order`, then
 in the order declared, under a heading: the extension's `name`, the
-`characterFieldsHeading` text, or none when it's `false` (the core rules,
+`fieldsHeading` text, or none when it's `false` (the core rules,
 Delve and Lodestar). The build checks every field (ids unique across extensions and
 clear of built-in precondition keys, options, defaults, the oracles named).
 The full reference is [character-fields.md](character-fields.md).

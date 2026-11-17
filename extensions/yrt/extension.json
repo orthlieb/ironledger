@@ -15,13 +15,14 @@
   "moveCategories": [
     { "key": "Yrt", "icon": "yrt-tree", "color": "var(--color-touched)", "order": 200 }
   ],
-  "characterFields": [
+  "fields": [
     {
       "id": "religion",
       "label": "Religion",
       "type": "dropdown",
       "optionsFrom": { "oracle": "yrtReligion", "label": "name" },
       "default": "",
+      "writable": false,
       "roll": {
         "oracle": "yrtReligion",
         "from": "name",
@@ -40,6 +41,7 @@
         { "id": "feral", "label": "Feral" }
       ],
       "default": "pure",
+      "writable": false,
       "roll": { "oracle": "yrtTouched", "from": "className" },
       "tooltip": "From the Character: Touched oracle. A Pure character cannot use a Touched asset."
     },
@@ -52,6 +54,16 @@
       "if": "touched >= prime",
       "roll": { "oracle": "yrtAnimal" },
       "tooltip": "From the Character: Touched Aspect oracle."
+    },
+    {
+      "id": "mana",
+      "scope": "global",
+      "label": "Mana",
+      "shortLabel": "Mana",
+      "type": "counter",
+      "maxValue": 10,
+      "default": "0",
+      "icon": "mana"
     }
   ],
   "infoLink": {

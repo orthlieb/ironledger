@@ -27,6 +27,7 @@
 		flushCharacterToApi,
 		persistCharacterNow,
 		setPartySupply,
+		setPartyFields,
 	} from '#lib/characterStore.svelte.js';
 	import { setActiveDiceCtx } from '#lib/diceContext.svelte.js';
 	import { getActiveCharacterId, setActiveCharacterId } from '#lib/activeContext.svelte.js';
@@ -301,6 +302,8 @@
 		const old = fieldValue(field, data.fields);
 		if (value === old) return;
 		data.fields = { ...(data.fields ?? {}), [field.id]: value };
+		// A party field is the whole party's: every character gets the value.
+		if (field.scope === 'party') setPartyFields({ [field.id]: value });
 		const notes: string[] = [];
 		for (const a of (data.assets ?? []) as CharacterAsset[]) {
 			const def = findAsset(a.assetId);

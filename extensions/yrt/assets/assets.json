@@ -550,15 +550,8 @@
       ],
       "customFields": [
         {
-          "id": "mana",
-          "type": "counter",
-          "label": "Mana",
-          "shortLabel": "Mana",
+          "field": "mana",
           "position": "bottom",
-          "maxValue": 10,
-          "default": 0,
-          "icon": "mana",
-          "global": true,
           "tooltipLabel": "Conclave Ritual"
         }
       ],
@@ -676,15 +669,8 @@
       ],
       "customFields": [
         {
-          "id": "mana",
-          "type": "counter",
-          "label": "Mana",
-          "shortLabel": "Mana",
+          "field": "mana",
           "position": "bottom",
-          "maxValue": 10,
-          "default": 0,
-          "icon": "mana",
-          "global": true,
           "tooltipLabel": "Conclave Ritual"
         }
       ],
@@ -798,15 +784,8 @@
       ],
       "customFields": [
         {
-          "id": "mana",
-          "type": "counter",
-          "label": "Mana",
-          "shortLabel": "Mana",
+          "field": "mana",
           "position": "bottom",
-          "maxValue": 10,
-          "default": 0,
-          "icon": "mana",
-          "global": true,
           "tooltipLabel": "Conclave Ritual"
         }
       ],
@@ -924,15 +903,8 @@
       ],
       "customFields": [
         {
-          "id": "mana",
-          "type": "counter",
-          "label": "Mana",
-          "shortLabel": "Mana",
+          "field": "mana",
           "position": "bottom",
-          "maxValue": 10,
-          "default": 0,
-          "icon": "mana",
-          "global": true,
           "tooltipLabel": "Conclave Ritual"
         }
       ],

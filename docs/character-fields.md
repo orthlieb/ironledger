@@ -31,8 +31,8 @@ Region of origin belongs to the core rules, so every game has it:
 
 ```jsonc
 // extensions/base/extension.json
-"characterFieldsHeading": false,
-"characterFields": [
+"fieldsHeading": false,
+"fields": [
   {
     "id": "origin",
     "label": "Region of origin",
@@ -57,7 +57,7 @@ YRT adds three more:
 
 ```jsonc
 // extensions/yrt/extension.json
-"characterFields": [
+"fields": [
   {
     "id": "religion",
     "label": "Religion",
@@ -118,19 +118,22 @@ Touched rows as their `className`.
 
 ## Declaring a field
 
-| Field         | Type   | Required        | Description                                                                                                                                                                                                                                                                  |
-| ------------- | ------ | --------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `id`          | string | yes             | camelCase key, unique across all extensions. Stores the value, and a precondition names the field by it.                                                                                                                                                                     |
-| `label`       | string | yes             | Shown on the sheet, in New Character, and in log lines.                                                                                                                                                                                                                      |
-| `type`        | string | yes             | One of the asset custom field types: `"dropdown"`, `"radio"` (the same kind of choice, shown as a row of buttons), `"counter"` (pips from 0 to `maxValue`), `"switch"` (on or off), `"string"` (one line of text) or `"markdown"` (notes, the full width of the sheet).      |
-| `options`     | array  | dropdown, radio | `{ id, label }` in order. A condition compares by the options' order, so order them from lowest to highest.                                                                                                                                                                  |
-| `optionsFrom` | object | dropdown, radio | Instead of `options`: one option per row of an oracle. `oracle`: its key. `label`: the row property to show (default `value`).                                                                                                                                               |
-| `maxValue`    | number | counter         | The most pips: a whole number, 1 or more.                                                                                                                                                                                                                                    |
-| `default`     | string | yes             | The value of a character made before the field existed, or with the extension off: an option `id` or `""` for no choice, a whole number from 0 to `maxValue` for a counter, `"0"` or `"1"` for a switch, or text. New Character starts every field empty.                    |
-| `placeholder` | string | no              | Hint shown in an empty text box.                                                                                                                                                                                                                                             |
-| `if`          | string | no              | A condition ([command-language.md → Conditions](command-language.md#conditions)) on fields declared above it in the same extension, or in the core rules: `"touched >= prime"`. While it's false, the field is hidden, in New Character and on the sheet; its value is kept. |
-| `roll`        | object | no              | The oracle New Character rolls for the field; see below.                                                                                                                                                                                                                     |
-| `tooltip`     | string | no              | Hover hint on the sheet's control.                                                                                                                                                                                                                                           |
+| Field         | Type   | Required        | Description                                                                                                                                                                                                                                                                                                                                                                                                     |
+| ------------- | ------ | --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`          | string | yes             | camelCase key, unique across all extensions. Stores the value, and a condition names the field by it.                                                                                                                                                                                                                                                                                                           |
+| `label`       | string | yes             | Shown on the sheet, in New Character, and in log lines.                                                                                                                                                                                                                                                                                                                                                         |
+| `type`        | string | yes             | One of the asset custom field types: `"dropdown"`, `"radio"` (the same kind of choice, shown as a row of buttons), `"counter"` (pips from 0 to `maxValue`), `"switch"` (on or off), `"string"` (one line of text) or `"markdown"` (notes, the full width of the sheet).                                                                                                                                         |
+| `options`     | array  | dropdown, radio | `{ id, label }` in order. A condition compares by the options' order, so order them from lowest to highest.                                                                                                                                                                                                                                                                                                     |
+| `optionsFrom` | object | dropdown, radio | Instead of `options`: one option per row of an oracle. `oracle`: its key. `label`: the row property to show (default `value`).                                                                                                                                                                                                                                                                                  |
+| `maxValue`    | number | counter         | The most pips: a whole number, 1 or more.                                                                                                                                                                                                                                                                                                                                                                       |
+| `default`     | string | yes             | The value of a character made before the field existed, or with the extension off: an option `id` or `""` for no choice, a whole number from 0 to `maxValue` for a counter, `"0"` or `"1"` for a switch, or text. New Character starts every field empty.                                                                                                                                                       |
+| `placeholder` | string | no              | Hint shown in an empty text box.                                                                                                                                                                                                                                                                                                                                                                                |
+| `if`          | string | no              | A condition ([command-language.md → Conditions](command-language.md#conditions)) on fields declared above it in the same extension, or in the core rules: `"touched >= prime"`. While it's false, the field is hidden, in New Character and on the sheet; its value is kept.                                                                                                                                    |
+| `roll`        | object | no              | The oracle New Character rolls for the field; see below.                                                                                                                                                                                                                                                                                                                                                        |
+| `tooltip`     | string | no              | Hover hint on the sheet's control.                                                                                                                                                                                                                                                                                                                                                                              |
+| `scope`       | string | no              | Whose the value is: `character` (the default), `party` (one value every character shares, copied to each on change, as supply is), or `global` (one per character, shared by the assets that refer to it: YRT's mana). A global field is a counter or a switch, has a `shortLabel` and an `icon`, and shows on its assets, not the Details tab. See [command-language.md → Scopes](command-language.md#scopes). |
+| `writable`    | bool   | no              | `false`: commands and log links can show and test the value but not change it. The sheet edits it either way. Default `true`. Region of origin, Religion and Touched are `false`.                                                                                                                                                                                                                               |
+| `custom`      | bool   | dropdown        | `true`: a value that isn't one of the options is kept as typed. A condition can then only test whether one is chosen.                                                                                                                                                                                                                                                                                           |
 
 `roll` holds:
 
@@ -172,7 +175,7 @@ properties. Adding a row to the oracle adds an option.
   extension, or `base`, provides, or an `if` or `roll.column` names a field
   that isn't declared above it in the same extension or in the core rules.
 
-The manifest copies `characterFields` into the extension's registry entry, so
+The manifest copies `fields` into the extension's registry entry, so
 `/catalogue/extensions` serves it with the rest of the metadata and the web
 reads it through `expansionStore`, as it reads `supersedesOracles`.
 
@@ -255,7 +258,7 @@ animal it had, if they're raised to Prime. Each field carries
 `data-tour="char-field-<id>"`.
 
 An extension's fields sit under a small heading, set by
-`characterFieldsHeading` in its `extension.json`:
+`fieldsHeading` in its `extension.json`:
 
 - left out: the extension's `name`, the label on its Settings toggle
   ("YRT");
@@ -349,8 +352,10 @@ The dev-only `sample` extension declares one field of each type, so it shows
 every feature without YRT: Trinket, a dropdown whose options are the Sample –
 Gizmo oracle's rows, with a die; Rank, a radio; Resolve, a counter; Sworn, a
 switch; Epithet, a line of text whose die reads the `prefix` of a Sample –
-Prefix/Suffix row; and Notes, markdown, shown only while Sworn is on
-(`"if": "sampleSworn"`). The unit and E2E suites exercise them.
+Prefix/Suffix row; Home, a `custom` dropdown that takes one of its three
+options or anything typed; Banner, a `party` field every character shares;
+and Notes, markdown, shown only while Sworn is on (`"if": "sampleSworn"`).
+The unit and E2E suites exercise them.
 
 A field id is camelCase and an asset id has a slash, so a field is never
 mistaken for an asset.
@@ -423,7 +428,7 @@ Code that knows about one extension by name, and what each piece would
 become. "This work" marks what moved with character fields; the rest is listed so later
 work can pick it up.
 
-### Character fields (`characterFields`)
+### Character fields (`fields`)
 
 | Code                                                                                                                                                                                     | Does                                                   | Becomes                                                                                        | When      |
 | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------ | ---------------------------------------------------------------------------------------------- | --------- |
@@ -467,10 +472,10 @@ them on, as `expeditionKinds` would, but the screens themselves stay code.
 ## Where it lives
 
 - **Manifest:** `scripts/gen-extensions-manifest.mjs` validates and passes
-  `characterFields` and `characterFieldsHeading` through; `ExtensionInfo`
+  `fields` and `fieldsHeading` through; `ExtensionInfo`
   gains both in `packages/shared`, `apps/api/src/routes/catalogue.ts` and the
   web types. Delve's and Lodestar's `extension.json` set
-  `"characterFieldsHeading": false`.
+  `"fieldsHeading": false`.
 - **Web:**
   - `expansionStore`: the fields of the enabled extensions, sorted by
     extension `order` then declaration, with their headings and with
