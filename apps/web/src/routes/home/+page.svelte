@@ -118,16 +118,12 @@
 		openChangeDomainForExp(expId: string): void;
 		applyProgress(marks: number, expId?: string): void;
 		applyCountdown(n: number, expId?: string): void;
-		completeActiveExpedition(): void;
-		reactivateActiveExpedition(): void;
 	} | null>(null);
 
 	/** Ref to FoesArea — forwards vanquish / menace from log links. */
 	let foeAreaRef = $state<{
 		selectFoe(id: string): void;
-		vanquishActiveFoe(): void;
 		vanquishFoe(foeId?: string): void;
-		reactivateActiveFoe(): void;
 		applyMenace(value: number, foeId?: string): void;
 	} | null>(null);
 
@@ -327,25 +323,14 @@
 		queueMicrotask(attachImportListener);
 		initialLoad.finally(attachImportListener);
 
-		// Command-bar bus: /foe +N/-N, /foe vanquish, /exp +N/-N. CommandBar
-		// dispatches these as CustomEvents so it doesn't need to hold refs to
-		// the sheet areas — this route already does. FoesArea / ExpeditionsArea
-		// handle the rank/difficulty tick conversion + log-line writing inside
-		// their apply methods, so we just forward the signed box/mark count.
-		const onFoeProgress = (e: Event) => {
-			const d = (e as CustomEvent<{ boxes: number }>).detail;
+		// `/site.theme` and `/site.domain` in the command bar open the site's
+		// picker, as its log links do.
+		const onSitePicker = (e: Event) => {
+			const d = (e as CustomEvent<{ expId: string; which: 'theme' | 'domain' }>).detail;
 			if (!d) return;
-			foeAreaRef?.applyMenace(d.boxes);
+			if (d.which === 'theme') expAreaRef?.openChangeThemeForExp(d.expId);
+			else expAreaRef?.openChangeDomainForExp(d.expId);
 		};
-		const onFoeVanquish = () => foeAreaRef?.vanquishActiveFoe();
-		const onFoeReactivate = () => foeAreaRef?.reactivateActiveFoe();
-		const onExpProgress = (e: Event) => {
-			const d = (e as CustomEvent<{ marks: number }>).detail;
-			if (!d) return;
-			expAreaRef?.applyProgress(d.marks);
-		};
-		const onExpComplete = () => expAreaRef?.completeActiveExpedition();
-		const onExpReactivate = () => expAreaRef?.reactivateActiveExpedition();
 
 		// Map-marker click-through: focus an entity from the campaign map by
 		// switching the mobile tab (desktop shows everything already) and
@@ -360,23 +345,13 @@
 				mobileTab = 'communities';
 		};
 
-		document.addEventListener('ironledger:foe-progress', onFoeProgress);
-		document.addEventListener('ironledger:foe-vanquish', onFoeVanquish);
-		document.addEventListener('ironledger:foe-reactivate', onFoeReactivate);
-		document.addEventListener('ironledger:exp-progress', onExpProgress);
-		document.addEventListener('ironledger:exp-complete', onExpComplete);
-		document.addEventListener('ironledger:exp-reactivate', onExpReactivate);
+		document.addEventListener('ironledger:site-picker', onSitePicker);
 		document.addEventListener('ironledger:focus-entity', onFocusEntity);
 
 		return () => {
 			document.removeEventListener('change', onImportChange, true);
 			document.removeEventListener('il-menu-action', handleMenuAction);
-			document.removeEventListener('ironledger:foe-progress', onFoeProgress);
-			document.removeEventListener('ironledger:foe-vanquish', onFoeVanquish);
-			document.removeEventListener('ironledger:foe-reactivate', onFoeReactivate);
-			document.removeEventListener('ironledger:exp-progress', onExpProgress);
-			document.removeEventListener('ironledger:exp-complete', onExpComplete);
-			document.removeEventListener('ironledger:exp-reactivate', onExpReactivate);
+			document.removeEventListener('ironledger:site-picker', onSitePicker);
 			document.removeEventListener('ironledger:focus-entity', onFocusEntity);
 		};
 	});

@@ -7,7 +7,7 @@
  *   • Increasing supply on one char syncs all others (+ button)
  *   • Decreasing supply on one char syncs all others (− button)
  *   • Supply resource-link click in the log echoes the change to all chars
- *   • `/vital supply = N` in the command bar echoes it to all chars
+ *   • `/supply=N` in the command bar echoes it to all chars
  *
  * v2: only the active character's vitals are visible at a time. To verify
  * sync, we click each spine in turn and read its Supply tile value.
@@ -277,9 +277,9 @@ test.describe('Party supply sync (v2)', () => {
 		await expectAllCharsSupply(page, 2);
 	});
 
-	// ── /vital supply = N syncs all ───────────────────────────────────────────
+	// ── /supply=N syncs all ───────────────────────────────────────────────────
 
-	test('/vital supply = N in the command bar syncs all chars', async ({ page }) => {
+	test('/supply=N in the command bar syncs all chars', async ({ page }) => {
 		await ensureCharCount(page, 2);
 
 		await selectSpine(page, 0);
@@ -289,9 +289,9 @@ test.describe('Party supply sync (v2)', () => {
 
 		await selectSpine(page, 0);
 		const bar = page.locator('.cb-input');
-		await bar.fill('/vital supply = 1');
+		await bar.fill('/supply=1');
 		await bar.press('Enter');
-		await expect(page.locator('.cb-status')).toHaveText('supply set to 1.');
+		await expect(page.locator('.cb-status')).toHaveText('Supply 3 → 1');
 
 		await expectAllCharsSupply(page, 1);
 	});

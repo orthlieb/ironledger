@@ -250,7 +250,6 @@
 		const name = enc.customName?.trim() || (def ? resolveFoeName(def) : null) || enc.foeId;
 		return `${name} — ${suffix}`;
 	}
-	const foeTitle = (suffix: string) => foeTitleFor(activeEnc, suffix);
 
 	// Vanquish — a specific foe (from a bound log link) or the active one. No-ops
 	// when the foe is gone (deleted) or already vanquished.
@@ -259,17 +258,6 @@
 		if (!enc || enc.vanquished) return;
 		updateEnc(enc, { vanquished: true });
 		appendLog(foeTitleFor(enc, 'Vanquished'), `<div><strong>Vanquished.</strong></div>`);
-	}
-	export function vanquishActiveFoe() {
-		vanquishFoe();
-	}
-
-	// Un-vanquish the active foe. Sibling to vanquish; no-ops when the state
-	// already matches so the caller doesn't have to check first.
-	export function reactivateActiveFoe() {
-		if (!activeEnc || !activeEnc.vanquished) return;
-		update({ vanquished: false });
-		appendLog(foeTitle('Reactivated'), `<div><strong>Reactivated.</strong></div>`);
 	}
 
 	// Menace / combat-progress from a log-entry link. Acts on the foe the entry

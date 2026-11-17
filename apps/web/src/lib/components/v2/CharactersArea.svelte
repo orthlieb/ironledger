@@ -50,9 +50,11 @@
 	import CharacterFields from '#lib/components/CharacterFields.svelte';
 	import {
 		characterFieldGroups,
+		counterValue,
 		fieldShown,
 		fieldValue,
 		findCharacterField,
+		findGlobalField,
 		rollCharacterField,
 		valueLabel,
 		type ResolvedField,
@@ -72,6 +74,7 @@
 		hydrateCharacterInPlace,
 		maxMomentum,
 		momentumReset,
+		capAbilitiesForField,
 		changeResource,
 		setResource,
 		computeAssetXpDiff,
@@ -304,28 +307,7 @@
 		data.fields = { ...(data.fields ?? {}), [field.id]: value };
 		// A party field is the whole party's: every character gets the value.
 		if (field.scope === 'party') setPartyFields({ [field.id]: value });
-		const notes: string[] = [];
-		for (const a of (data.assets ?? []) as CharacterAsset[]) {
-			const def = findAsset(a.assetId);
-			const limits = def?.abilityMaxByField?.[field.id];
-			if (!def || !limits || (a.customValues && field.id in a.customValues)) continue;
-			const cap = limits[value] ?? Infinity;
-			let kept = 0;
-			let dropped = 0;
-			const next = a.abilities.map((on) => {
-				if (!on) return false;
-				if (kept < cap) {
-					kept++;
-					return true;
-				}
-				dropped++;
-				return false;
-			});
-			if (dropped) {
-				a.abilities = next;
-				notes.push(`unmarked ${dropped} ${dropped === 1 ? 'ability' : 'abilities'} on ${def.name}`);
-			}
-		}
+		const notes = capAbilitiesForField(data, field.id, value, findAsset);
 		// Notes aren't logged as they're typed, as the background isn't.
 		if (field.type === 'markdown') return;
 		const show = (v: string) => escHtml(valueLabel(field, v) || '—');
@@ -363,18 +345,21 @@
 		delta: number,
 		title: (label: string) => string,
 	): { old: number; next: number } | null {
-		// Global counters (e.g. mana) live in data.globalValues as numeric strings.
+		// A content pack's global field (YRT's mana) lives in data.globalValues
+		// as a numeric string, held to the range its declaration gives.
+		const global = findGlobalField(key);
 		const gv = data.globalValues ?? {};
 		const rec = data as unknown as Record<string, number>;
-		const old = key === 'mana' ? parseInt(gv['mana'] ?? '0') : (rec[key] ?? 0);
-		const change = changeResource(key, old, delta, data);
+		const old = global ? counterValue(global, fieldValue(global, gv)) : (rec[key] ?? 0);
+		const range = global ? { min: 0, max: global.maxValue ?? Infinity } : undefined;
+		const change = changeResource(key, old, delta, data, range);
 		if (!change || (change.next === old && !change.capped)) return null;
 		const { next } = change;
 		if (next !== old) {
-			if (key === 'mana') data.globalValues = { ...gv, mana: String(next) };
+			if (global) data.globalValues = { ...gv, [key]: String(next) };
 			else rec[key] = next;
 		}
-		const label = key.charAt(0).toUpperCase() + key.slice(1);
+		const label = global?.label ?? key.charAt(0).toUpperCase() + key.slice(1);
 		appendLog(title(label), resourceLine(label, old, delta, change));
 		// Supply is party-wide — broadcast to every character.
 		if (key === 'supply' && next !== old) setPartySupply(next);
@@ -440,8 +425,8 @@
 	}
 
 	/**
-	 * Set (not add) a field to an absolute value: initiative, and `/vital`,
-	 * `/bonds`, `/failures` with `=`. A resource is held to its range
+	 * Set (not add) a field to an absolute value, for a log link that sets
+	 * one (initiative, a resource). A resource is held to its range
 	 * (setResource), and a value the range cuts says so in the log line,
 	 * `Health: 4 → 5 (= 9, max 5)`, even when nothing moves. Supply, being
 	 * party-wide, is shared with the party.

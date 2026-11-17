@@ -235,15 +235,13 @@ Three surfaces write to the store; all funnel through `toggleStart`/
    Edit / Delete; the active marker stays visible even without hover so the
    user can see where the pins are. The ▼ button is disabled until a ▲ is
    set (a bare end has no meaning).
-2. **Command bar** — see [`docs/global-context-bar.md`](global-context-bar.md)
-   for the surface, and `apps/web/src/lib/commandBar.ts` for the parser. Three
-   verbs mutate the store:
-   - `/start` — pin ▲ on the current newest entry (opens an open, growing
-     section).
-   - `/end` — pin ▼ on the current newest entry (closes the section).
-   - `/story` — dispatch `ironledger:story-generate`, which LogPanel handles
-     by opening the Story dialog on the current section. No-ops with a status
-     message when nothing is pinned.
+2. **Command bar** ([command-bar.md](command-bar.md)):
+   - `/story start` — pin ▲ on the current newest entry (opens an open,
+     growing section).
+   - `/story end` — pin ▼ on the current newest entry (closes the section).
+   - `/story write` — dispatch `ironledger:story-generate`, which LogPanel
+     handles by opening the Story dialog on the current section. Refused,
+     saying why, when nothing is pinned.
 3. **Toolbar Generate button + floating strip** at the bottom of the log —
    both call `storyDialogRef?.open()` on the current section, which reads
    `sectionEntries()`. The strip also has a **Clear** button that calls
@@ -286,20 +284,16 @@ itself is one dialog downstream.
 
 ## Command Bar
 
-The always-visible strip at the bottom of `/home` writes into the same log
-and drives the same buses documented above. Full reference (all 14 verbs,
-overloaded grammar for `/char`/`/foe`/`/exp`, autocomplete behavior, regex
-grammar reference, dispatch map) lives in
+The strip at the bottom of `/home` writes into the same log. Its commands are
+the [command language](command-language.md); how the bar runs them is in
 [`command-bar.md`](command-bar.md). In short:
 
 - **Prose** → Note.
-- **`/vital`, `/debility`, `/bonds`, `/failures`, `/initiative`, `/char + / -`**
-  → dispatch through the LogAction bus above; CharactersArea's drain effect
-  applies the mutation and appends the log entry.
-- **`/foe + / -`, `/foe vanquish`, `/exp + / -`** → dispatch as
-  `ironledger:foe-progress` / `foe-vanquish` / `exp-progress` CustomEvents;
-  `+page.svelte` forwards to `FoesArea.applyMenace` /
-  `vanquishActiveFoe` / `ExpeditionsArea.applyProgress`. Progress is
-  rank-aware (foes) / difficulty-aware (expeditions).
-- **`/start`, `/end`, `/story`** → mutate `sectionStore` directly (see
-  above).
+- **A value command** (`/health-=2`, `/foe.progress+=2`, `/wounded++`) →
+  written through the value registry (`apps/web/src/lib/commands/values.ts`)
+  onto the store's live object, logged with the line the sheet writes
+  (`Health: 4 → 2 (−2)`), and saved. Party values reach every character.
+- **`/burn`** → `ironledger:burn`, which LogPanel answers by burning momentum
+  on the newest action roll, as its burn link would.
+- **`/story start`, `/story end`, `/story write`** → `sectionStore`, as
+  above.

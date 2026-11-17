@@ -1,12 +1,13 @@
 # Command language — spec
 
 **Status: agreed design, being built.** Built so far:
-[conditions](#conditions) (moves, assets and fields use expressions) and
+[conditions](#conditions) (moves, assets and fields use expressions),
 [field declarations](#declaring-fields) (`fields` with `scope`, `writable`
-and `custom`; mana declared once; party fields copied to every character).
-The command bar still runs the syntax in [command-bar.md](command-bar.md), and
-log links the old link forms, until the later stages;
-[Build order](#build-order) says how.
+and `custom`; mana declared once; party fields copied to every character),
+the value registry, and [typed commands](#commands) with
+[typeahead](#typeahead): the command bar runs this language (how, in
+[command-bar.md](command-bar.md)). Log links still use the old link forms
+until stage 3; [Build order](#build-order) says how.
 
 One language for three things:
 
@@ -103,7 +104,7 @@ a track whose rank isn't set.
 
 `++` and `--` are one mark, so the same rule applies: one mark by rank, or
 one tick with none. Showing a track gives boxes and ticks:
-`/foe` → "Wolf (Dangerous): 3 boxes, 2 ticks".
+`/foe` → "Wolf (Dangerous foe): 3 boxes, 2 ticks".
 
 **Harm** is the harm of the foe by its rank, Troublesome 1 to Epic 5. It's
 an amount, written after `+=` or `-=`: `/health-=harm`. Typed, it's the
@@ -116,7 +117,7 @@ active foe's; in a log link, the foe the entry was made against.
 | (left out)                           | `/health-=2`                                   | The active character; for supply, the party. |
 | Another character, by name           | `/Bjorn.health-=2`                             | Acts on Bjorn without making him active.     |
 | `foe`, `journey`, `site`, `scene`    | `/foe.progress++`                              | The active one of that kind.                 |
-| A foe, expedition or vow, by name    | `/Wolf.progress++`, `/Avenge Bjorn.progress++` |                                              |
+| A foe, expedition or vow, by name    | `/Wolf.progress++`, `/Avenge Bjorn.progress++` | A vow: one of the active character's.        |
 | An asset, by name or id              | `/hawk.health--`, `/companion/hawk.health--`   | One of the active character's assets.        |
 | A companion, by the name you gave it | `/Ash.health--`                                |                                              |
 | `self` (content only)                | `self.health >= 1`                             | The asset a condition or link belongs to.    |

@@ -344,22 +344,6 @@
 		if (exp?.type !== 'scene' || exp.complete) return;
 		commitExpChange(exp, { countdownFilled: Math.max(0, Math.min(4, exp.countdownFilled + n)) });
 	}
-	/** Mark the active expedition complete. Sibling to /foe vanquish — no-op
-	 *  if already complete. */
-	export function completeActiveExpedition() {
-		if (!activeExp || activeExp.complete) return;
-		const name = activeExp.name || 'Expedition';
-		updateExp({ complete: true });
-		appendLog(`${name} — Completed`, `<div><strong>Completed.</strong></div>`);
-	}
-	/** Reactivate a completed expedition. Sibling to /foe active — no-op if
-	 *  already active. */
-	export function reactivateActiveExpedition() {
-		if (!activeExp || !activeExp.complete) return;
-		const name = activeExp.name || 'Expedition';
-		updateExp({ complete: false });
-		appendLog(`${name} — Reactivated`, `<div><strong>Reactivated.</strong></div>`);
-	}
 
 	export function openChangeThemeForExp(expId: string) {
 		_save.flush();

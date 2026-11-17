@@ -154,6 +154,44 @@
 		return () => document.removeEventListener('ironledger:story-generate', onStory);
 	});
 
+	// `/burn` in the command bar: burn momentum on the newest action roll, as
+	// its burn link would, and spend that link. The bar hears back through
+	// `reply`.
+	$effect(() => {
+		const onBurn = (e: Event) => {
+			const reply =
+				(e as CustomEvent<{ reply?: (message: string, ok: boolean) => void }>).detail?.reply ??
+				(() => {});
+			reply(...burnNewest());
+		};
+		document.addEventListener('ironledger:burn', onBurn);
+		return () => document.removeEventListener('ironledger:burn', onBurn);
+	});
+
+	/** Burn momentum on the newest action roll, if a burn is on offer for it:
+	 *  the message for the command bar, and whether it burned. */
+	function burnNewest(): [string, boolean] {
+		const entries = getLog();
+		const roll = entries.find((x) => x.roll || x.html.includes('class="roll-burn"'));
+		if (!roll) return ['No action roll to burn momentum on.', false];
+		if (!roll.roll) return ['Momentum is already burned on the newest roll.', false];
+		const offerRe = new RegExp(
+			`<a\\b(?=[^>]*\\bclass="burn-momentum-link")(?=[^>]*\\bdata-roll-entry-id="${roll.id}")[^>]*>([\\s\\S]*?)<\\/a>`,
+		);
+		const offer = entries.find((x) => offerRe.test(x.html));
+		if (!offer) return ['Burning momentum wouldn’t improve the newest roll.', false];
+		if (!ctx || ctx.charId !== roll.roll.charId)
+			return ['Make the character who rolled active to burn their momentum.', false];
+		if (ctx.data.momentum <= 0) return ['No momentum to burn.', false];
+		const mom = ctx.data.momentum;
+		updateLogEntryHtml(
+			offer.id,
+			offer.html.replace(offerRe, (_m, text: string) => `<s class="resource-spent">${text}</s>`),
+		);
+		burnMomentum(roll);
+		return [`Burned momentum (${mom} → reset ${momentumReset(ctx.data)}).`, true];
+	}
+
 	// Mobile tap-tracking — used by touchend delegation to distinguish taps from scrolls.
 	let _touchStartX = 0;
 	let _touchStartY = 0;

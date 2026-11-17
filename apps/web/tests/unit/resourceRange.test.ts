@@ -21,7 +21,6 @@ describe('resourceRange', () => {
 		['xp', 0, 30],
 		['bonds', 0, 40],
 		['failures', 0, 40],
-		['mana', 0, 10],
 		['momentum', -6, 10],
 	])('%s runs %i to %i', (key, min, max) => {
 		expect(resourceRange(key, char())).toEqual({ min, max });
@@ -37,10 +36,23 @@ describe('resourceRange', () => {
 	it('is null for a key that is not a resource', () => {
 		expect(resourceRange('edge', char())).toBeNull();
 		expect(resourceRange('initiative', char())).toBeNull();
+		// A content pack's global field brings its declared range (below).
+		expect(resourceRange('mana', char())).toBeNull();
 	});
 });
 
 describe('changeResource', () => {
+	it('holds a content pack field to the range its declaration gives', () => {
+		const mana = { min: 0, max: 10 };
+		expect(changeResource('mana', 9, 3, char(), mana)).toEqual({ next: 10, max: 10, capped: true });
+		expect(changeResource('mana', 2, -3, char(), mana)).toEqual({
+			next: 0,
+			max: 10,
+			capped: false,
+		});
+		expect(changeResource('mana', 2, 1, char())).toBeNull();
+	});
+
 	it('stops at the top of the range, and says the top cut it short', () => {
 		expect(changeResource('health', 4, 2, char())).toEqual({ next: 5, max: 5, capped: true });
 		expect(changeResource('spirit', 4, 2, char())).toEqual({ next: 5, max: 5, capped: true });

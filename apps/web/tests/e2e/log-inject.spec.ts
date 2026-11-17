@@ -7,8 +7,8 @@
  * Clicking a resource link may prepend cascade notification entries; we always
  * locate the mock entry by data-entry-id (via :has()), never by position.
  *
- * Also `/vital <res> = n`, typed in the command bar: it goes through the same
- * action bus and is held to the same ranges as the resource links.
+ * Also `/health=n` and the like, typed in the command bar: held to the same
+ * ranges as the resource links (docs/command-language.md).
  *
  * Prerequisites (provided by hooks.client.ts):
  *   window.__testLog.appendLog(title, html, id?, source?, roll?)
@@ -324,48 +324,49 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await expect(logLine(/Xp: \d+ → 30 \(\+40, max 30\)/)).toBeVisible();
 	});
 
-	// `/vital <res> = n` goes through the same action bus, as a `set`.
-	test('/vital = holds the value to the range, and the log line says so', async ({ page }) => {
+	// `/health=n` in the command bar sets a value, held to its range as the
+	// sheet's controls are (docs/command-language.md → Operators).
+	test('= holds the value to the range, and the log line says so', async ({ page }) => {
 		await goToHomeWithCharacter(page);
 		await setVital(page, 'Health', 4);
 		const bar = page.locator('.cb-input');
-		const vital = async (cmd: string) => {
+		const run = async (cmd: string) => {
 			await bar.fill(cmd);
 			await bar.press('Enter');
 		};
 		const logLine = (text: string | RegExp) =>
 			page.locator('.log-entry', { hasText: text }).first();
 
-		await vital('/vital health = 9');
-		await expect(page.locator('.cb-status')).toHaveText('health set to 5 (max 5).');
+		await run('/health=9');
+		await expect(page.locator('.cb-status')).toHaveText('Health 4 → 5 (max 5)');
 		await expect(vitalValue(page, 'Health')).toHaveText('5');
 		await expect(logLine('Health: 4 → 5 (= 9, max 5)')).toBeVisible();
 
 		// Already at the top: nothing moves, and the log says why.
-		await vital('/vital health = 7');
+		await run('/health=7');
 		await expect(logLine('Health: 5 → 5 (= 7, max 5)')).toBeVisible();
 		await expect(vitalValue(page, 'Health')).toHaveText('5');
 
-		await vital('/vital experience = 50');
+		await run('/xp=50');
 		await expect(vitalValue(page, 'Experience')).toHaveText('30');
-		await expect(logLine(/Xp: \d+ → 30 \(= 50, max 30\)/)).toBeVisible();
+		await expect(logLine(/Experience: \d+ → 30 \(= 50, max 30\)/)).toBeVisible();
 
-		await vital('/vital momentum = -20');
-		await expect(page.locator('.cb-status')).toHaveText('momentum set to -6 (min -6).');
+		await run('/momentum=-20');
+		await expect(page.locator('.cb-status')).toHaveText(/^Momentum −?\d+ → −6 \(min −6\)$/);
 		await expect.poll(() => readMomentum(page)).toBe(-6);
 		await expect(logLine(/Momentum: -?\d+ → -6 \(= −20, min −6\)/)).toBeVisible();
 
 		// A value inside the range is set as asked, with no note.
-		await vital('/vital health = 2');
+		await run('/health=2');
 		await expect(vitalValue(page, 'Health')).toHaveText('2');
 		await expect(logLine('Health: 5 → 2')).toBeVisible();
 		await expect(page.locator('.log-entry', { hasText: '(= 2,' })).toHaveCount(0);
 
 		// Back to a new character's momentum and health: the tests after this
 		// one share the character, and burning momentum needs it above 0.
-		await vital('/vital momentum = 2');
+		await run('/momentum=2');
 		await expect.poll(() => readMomentum(page)).toBe(2);
-		await vital('/vital health = 5');
+		await run('/health=5');
 		await expect(vitalValue(page, 'Health')).toHaveText('5');
 	});
 

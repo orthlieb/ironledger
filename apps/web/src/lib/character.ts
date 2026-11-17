@@ -3,7 +3,7 @@
 // Ported from YRT oracles-pure.js + 08-characters.js
 // =============================================================================
 
-import type { CharacterData } from './types.js';
+import type { AssetDefinition, CharacterAsset, CharacterData } from './types.js';
 import { DEFAULT_CHARACTER } from './types.js';
 import { cleanFieldValues, optionId, type ResolvedField } from './characterFieldsCore.js';
 
@@ -49,10 +49,11 @@ export interface ResourceRange {
 }
 
 /**
- * The range a log link or command holds a resource to (docs/data-schema.md
- * → Resource Links), or null for a key that isn't a resource. Health,
- * spirit and supply top out at 5 and experience at 30, as their tiles do;
- * momentum's top falls with each debility (maxMomentum).
+ * The range a log link holds a built-in resource to (docs/data-schema.md
+ * → Resource Links), or null for a key that isn't one. Health, spirit and
+ * supply top out at 5 and experience at 30, as their tiles do; momentum's
+ * top falls with each debility (maxMomentum). A content pack's global field
+ * (mana) takes its range from its declaration: see commands/values.ts.
  */
 export function resourceRange(key: string, d: CharacterData): ResourceRange | null {
 	switch (key) {
@@ -67,8 +68,6 @@ export function resourceRange(key: string, d: CharacterData): ResourceRange | nu
 		case 'bonds':
 		case 'failures':
 			return { min: 0, max: 40 };
-		case 'mana':
-			return { min: 0, max: 10 };
 		default:
 			return null;
 	}
@@ -84,17 +83,18 @@ export interface ResourceChange {
 
 /**
  * A resource after a change of `delta` from `old`, held to its range
- * (resourceRange): 4 health +2 → 5, capped at the max of 5. A value already
- * past the top (saved before links were held to it) comes back to it. Null
- * for a key that isn't a resource.
+ * (resourceRange, or the one given for a content pack's field): 4 health
+ * +2 → 5, capped at the max of 5. A value already past the top (saved before
+ * links were held to it) comes back to it. Null for a key that isn't a
+ * resource.
  */
 export function changeResource(
 	key: string,
 	old: number,
 	delta: number,
 	d: CharacterData,
+	range: ResourceRange | null = resourceRange(key, d),
 ): ResourceChange | null {
-	const range = resourceRange(key, d);
 	if (!range) return null;
 	const wanted = old + delta;
 	return {
@@ -105,13 +105,51 @@ export function changeResource(
 }
 
 /**
- * A value set outright (`/vital health = 9`), held to the resource's range
+ * A value a log link sets outright, held to the resource's range
  * (resourceRange): 9 health → 5, momentum −20 → −6. A key that isn't a
  * resource (initiative) keeps the value asked.
  */
 export function setResource(key: string, value: number, d: CharacterData): number {
 	const range = resourceRange(key, d);
 	return range ? Math.max(range.min, Math.min(range.max, value)) : value;
+}
+
+/**
+ * After a field an asset's ability limit follows changes (a Touched asset's
+ * `abilityMaxByField.touched`), unmark the abilities above the new limit,
+ * keeping the first ones. No XP comes back, as when an ability is unmarked
+ * by hand. Returns what it unmarked, for the log line ("unmarked 1 ability
+ * on Varou"). An asset that keeps its own value for the field is left be.
+ */
+export function capAbilitiesForField(
+	data: CharacterData,
+	fieldId: string,
+	value: string,
+	findAsset: (id: string) => AssetDefinition | undefined,
+): string[] {
+	const notes: string[] = [];
+	for (const a of (data.assets ?? []) as CharacterAsset[]) {
+		const def = findAsset(a.assetId);
+		const limits = def?.abilityMaxByField?.[fieldId];
+		if (!def || !limits || (a.customValues && fieldId in a.customValues)) continue;
+		const cap = limits[value] ?? Infinity;
+		let kept = 0;
+		let dropped = 0;
+		const next = a.abilities.map((on) => {
+			if (!on) return false;
+			if (kept < cap) {
+				kept++;
+				return true;
+			}
+			dropped++;
+			return false;
+		});
+		if (dropped) {
+			a.abilities = next;
+			notes.push(`unmarked ${dropped} ${dropped === 1 ? 'ability' : 'abilities'} on ${def.name}`);
+		}
+	}
+	return notes;
 }
 
 /**

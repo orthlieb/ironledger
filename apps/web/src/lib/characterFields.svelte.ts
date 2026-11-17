@@ -51,6 +51,17 @@ export function allCharacterFields(): ResolvedField[] {
 	);
 }
 
+/** Every extension's global fields (YRT's mana): one value per character,
+ *  kept in `character.globalValues`, shared by the assets that refer to it. */
+export function allGlobalFields(): CharacterFieldDef[] {
+	return getExtensions().flatMap((e) => (e.fields ?? []).filter((f) => f.scope === 'global'));
+}
+
+/** A global field by id. */
+export function findGlobalField(id: string): CharacterFieldDef | undefined {
+	return allGlobalFields().find((f) => f.id === id);
+}
+
 /** A declared field by id, from any extension. */
 export function findCharacterField(id: string): ResolvedField | undefined {
 	return allCharacterFields().find((f) => f.id === id);

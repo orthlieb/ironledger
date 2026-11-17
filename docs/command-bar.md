@@ -1,358 +1,157 @@
 # Command Bar
 
-> A new command language is agreed but not built yet:
-> [command-language.md](command-language.md). It replaces the syntax below,
-> and the log-link and precondition forms, with no aliases. Until it ships,
-> this page describes what runs.
+The command bar is the input strip at the bottom of `/home`. Plain text goes
+in the log as a note; a line starting with `/` is a command in the
+[command language](command-language.md): show a value, change it, make
+something active, or open a move or an oracle. Every change is held to the
+value's rules and logged with the line a click on the sheet would write.
 
-The command bar is the always-visible input strip at the bottom of `/home`. It
-accepts freeform prose (added to the log as a Note) or slash commands that
-drive the same surfaces the buttons and dialogs do — moves, oracles, active
-character/foe/expedition, vitals, debilities, tracks, story sections. The
-whole surface is a single reactive Svelte component
-(`apps/web/src/lib/components/CommandBar.svelte`) plus a pure parser
-(`apps/web/src/lib/commandBar.ts`).
+The bar exists so a session doesn't have to leave the keyboard: prose →
+`/move strike` → `/foe.progress+=2` → `/health-=harm` → prose again.
 
-The bar exists so a session doesn't have to leave the keyboard for the most
-frequent actions. When you're playing, the loop is prose → `/move face` →
-`/foe +2` → prose again; every command opens or drives what a button would,
-and every mutation lands in the session log with the same formatting as a
-click would produce.
+This page is how the bar works. The language itself (operators, units,
+owners, names, collisions) is specified in
+[command-language.md](command-language.md); the in-app help
+(`CommandHelpDialog`, the bar's **?** button or `/help`) is the same
+reference, shorter.
 
-## Input contract
+## At a glance
 
-- **Bare prose** → Note log entry (rendered through `renderNote()`).
-- **`/verb …`** → slash command; unknown verbs surface `Unknown command:
-/verb. Type /help for a list.`
-- **Empty input** → nothing happens.
+| Typed                            | Does                                                                              |
+| -------------------------------- | --------------------------------------------------------------------------------- |
+| `Bjorn reaches the hall`         | Adds a note (as `/note …` does).                                                  |
+| `/health`                        | Shows the active character's health in the status line.                           |
+| `/momentum++`, `/supply--`       | Adds or takes away 1.                                                             |
+| `/health+=2`, `/health-=2`       | Adds or takes away an amount; `-=harm` takes the active foe's.                    |
+| `/xp=12`, `/initiative=foe`      | Sets a value: a number, a list's option, or text.                                 |
+| `/wounded!`                      | Flips a true/false value; `++` marks it, `--` clears it.                          |
+| `/foe.progress+=2`               | Two marks on the active foe's track, by its rank (`b` boxes, `t` ticks).          |
+| `/Bjorn.health-=2`               | Another character's value, without making them active.                            |
+| `/Ash.health--`                  | A companion by the name you gave it (or `/hawk.health--`).                        |
+| `/Avenge Bjorn.menace++`         | A vow by its name.                                                                |
+| `/foe=Wolf`                      | Makes Wolf the active foe (also `/character=`, `/journey=`, `/site=`, `/scene=`). |
+| `/foe:Raider#2.progress++`       | A name two things share: the kind before it, and which of two.                    |
+| `/move face danger`              | Opens a move; `/move endure harm 2` with an amount.                               |
+| `/oracle region`                 | Opens an oracle.                                                                  |
+| `/roll 2d10 1d6+2`               | Rolls dice and logs them.                                                         |
+| `/burn`                          | Burns momentum on the newest action roll.                                         |
+| `/story start` / `end` / `write` | Marks a story section, or opens Generate on it.                                   |
+| `/help tracks`                   | Opens the help at a topic.                                                        |
 
-Verb names and enum tokens are matched case-insensitively; freeform text
-arguments (names, notes) preserve case as-typed. Autocomplete assists every
-slot; the parser itself is strict — no prefix matching on enums, no fuzzy
-"did you mean" for names inside the parser (the _dispatcher_ resolves names
-fuzzily against the appropriate store).
+Old verbs (`/vital`, `/char`, `/exp`, `/debility`, `/bonds +`, `/start`, …)
+are gone, with no aliases.
 
-## Commands
+## Typeahead
 
-### Log & notes
+Nobody should have to remember the syntax. The suggestion strip above the
+input follows the command slot by slot:
 
-| Syntax         | Effect                                                                                    |
-| -------------- | ----------------------------------------------------------------------------------------- |
-| `<prose>`      | Adds a Note log entry (light markdown → HTML).                                            |
-| `/note <text>` | Same as bare prose.                                                                       |
-| `/help`        | Opens the [Command Help Dialog](../apps/web/src/lib/components/CommandHelpDialog.svelte). |
+| Typed so far                  | Suggests                                                                                                                                                                                    |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`, `/he`                    | The kind keywords (with what's active), the active character's values (with their values), the verbs, and the names: characters, foes, expeditions, the active character's vows and assets. |
+| `/hawk.`                      | That owner's values.                                                                                                                                                                        |
+| `/health`                     | The operators that fit, each with its result: `++ Health 4 → 5`, `-=harm Health 4 → 2 (Wolf’s harm)`. A read-only value shows only "(show)".                                                |
+| `/initiative=`                | The options, the current one ticked; a field that takes its own values adds "Use “…”".                                                                                                      |
+| `/foe=`                       | The foes, the active one ticked, two of a name numbered (`Raider#2`).                                                                                                                       |
+| `/foe.progress+=2`            | The units with what each comes to: `2` (marks), `2b`, `2t`.                                                                                                                                 |
+| `/move `, `/oracle `          | Moves (those that can't be made now greyed, saying why) or oracles.                                                                                                                         |
+| `/roll `, `/story `, `/help ` | Dice presets; `start`, `end`, `write`; help topics.                                                                                                                                         |
 
-### Session dialogs
+The **top row** says what <kbd>Enter</kbd> does with the input as it stands
+("Enter: Health 4 → 2", "Enter: Wolf becomes the active foe", or the error
+it would give). While a command can't run yet but a suggestion fits, it says
+what Enter will complete it to ("Enter: /health").
 
-| Syntax            | Effect                                                                                                                                                          |
-| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/oracle <table>` | Opens `OraclesDialog` on the matched table (fuzzy).                                                                                                             |
-| `/move <name>`    | Opens `MovesDialog` on the matched move, filtered to moves available in the current precondition context (matches the "hide unavailable" toggle in the dialog). |
+**Ghost text**: the rest of the highlighted suggestion shows greyed after
+the caret.
 
-### Active context — overloaded verbs
+**Keys**
 
-All three follow the same argument-shape overload. Empty args opens the help
-dialog scrolled to and highlighting the verb's row.
+- <kbd>Tab</kbd> — take the highlighted suggestion. An owner brings its dot,
+  so its values come next.
+- <kbd>→</kbd> at the end of the input — take the ghost text.
+- <kbd>↑</kbd> / <kbd>↓</kbd> — move through the suggestions. In an empty bar
+  they step through the commands run before (newest first, kept in
+  `localStorage` under `ironledger:command-history`, 50 at most).
+- <kbd>Enter</kbd> — run the input if it's a whole command; otherwise take
+  the highlighted suggestion (and run it, when that makes a whole command:
+  an operator like `++`, an option, a foe after `/foe=`, a move). Moving the
+  highlight with ↑/↓ first makes Enter take that row.
+- <kbd>Esc</kbd> — clear the bar.
 
-**`/char`** — active character
+**On a phone** (a coarse pointer) a tap on a row takes it, as Tab does, and a
+row of operator keys (`++` `--` `+=` `-=` `=` `!` `.`) sits under the
+suggestions, since phone keyboards bury those characters.
 
-| Syntax         | Effect                                                                                                                                                                                                                                             |
-| -------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/char`        | Help focused on `char`.                                                                                                                                                                                                                            |
-| `/char <name>` | Set active character (fuzzy match).                                                                                                                                                                                                                |
-| `/char + [n]`  | Heal `n` health (default 1). Applied through the resource action bus (clamps 0..5).                                                                                                                                                                |
-| `/char - [n]`  | Take `n` harm. **If `n` is omitted and a foe is active, `n` becomes that foe's rank harm** (troublesome=1 … epic=5) — the most common combat action becomes a single keystroke sequence. If no foe active, default is 1. Explicit `n` always wins. |
+## How it's built
 
-**`/foe`** — active foe
+Four modules under `apps/web/src/lib/commands/`, the first three pure:
 
-| Syntax          | Effect                                                                                                                                     |
-| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/foe`          | Help focused on `foe`.                                                                                                                     |
-| `/foe <name>`   | Set active foe (fuzzy match).                                                                                                              |
-| `/foe + [n]`    | Advance combat progress by `n` boxes. **Rank-aware** — `n` counts progress boxes; the FoesArea applier expands to `n × ticksPerBox(rank)`. |
-| `/foe - [n]`    | Reduce combat progress by `n` boxes.                                                                                                       |
-| `/foe vanquish` | Mark active foe vanquished. Does not delete the encounter.                                                                                 |
-| `/foe active`   | Reactivate a previously-vanquished active foe (inverse of `vanquish`). No-op if the foe is already active.                                 |
+| Module          | Does                                                                                                                                                                                                                                                                                                                                                        |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `parse.ts`      | Syntax only: `/[owner.]value[operator]`, the seven verbs, quotes, `kind:` qualifiers and `#n`, amounts (`2`, `2b`, `3t`, `harm`), `/roll` dice. Never fails on a half-typed command: a lone `+` or an open quote is reported, not refused.                                                                                                                  |
+| `values.ts`     | **The value registry.** Every value an owner has — a character's built-ins and its content packs' fields (party, character and global), a foe's, an expedition's, a vow's, an asset's — bound to the owner's live object, with its kind (number, true/false, list, text, track, notes), its range or options, whether it's writable, and a `get` and `set`. |
+| `change.ts`     | `planChange()`: what an operator does to a value, without doing it — before and after, held to the range, the log line the sheet writes, and a summary ("Health 4 → 5 (max 5)").                                                                                                                                                                            |
+| `resolve.ts`    | `plan(input, world)`: names and keywords to owners (only owners that have the value count; keywords win over names; a collision lists how to name each), then a `Plan` — show, change, select, a verb, or an error.                                                                                                                                         |
+| `suggest.ts`    | `suggest(input, world)`: the rows for the slot being typed and the top row. `ghostText()`. `HELP_TOPICS`, the help dialog's sections.                                                                                                                                                                                                                       |
+| `run.svelte.ts` | `buildWorld()` from the stores (characters, foes, expeditions, what's active, the enabled packs' fields, moves and whether each can be made now, oracles); `runPlan()` carries a plan out.                                                                                                                                                                  |
 
-**`/exp`** — active expedition
+`CommandBar.svelte` builds the world (`$derived`), shows `suggest()`'s rows,
+and on Enter hands the plan to `runPlan()`.
 
-| Syntax          | Effect                                                                                                           |
-| --------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `/exp`          | Help focused on `exp`.                                                                                           |
-| `/exp <name>`   | Set active expedition (journey or site).                                                                         |
-| `/exp + [n]`    | Advance by `n` marks. Difficulty-aware — ExpeditionsArea multiplies by `EXPEDITION_MARK_TICKS[difficulty]`.      |
-| `/exp - [n]`    | Reduce by `n` marks.                                                                                             |
-| `/exp complete` | Mark the active expedition complete. Analog to `/foe vanquish` — preserves ticks, notes, and the id.             |
-| `/exp active`   | Reactivate a previously-completed expedition (inverse of `complete`). No-op if the expedition is already active. |
+### What running a plan does
 
-`=` is deliberately absent on `/char`, `/foe`, `/exp` — the ticks-vs-boxes
-semantics on foe/exp progress made `=N` ambiguous ("N ticks or N boxes?"),
-and consistency across the three overloads wins over cleverness. For an
-absolute set on any character field, use `/vital <res> = N`. Attempting `=`
-returns an explicit "= is not supported here — use + or -" error.
+| Plan                | Runner                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| change              | Writes through the registry's `set` on the live store object, logs `title` + `line`, saves (`flushCharacterToApi`, `flushEncountersToApi`, `persistExpeditionsNow`). A party value reaches every character (`setPartySupply`, `setPartyFields`). Cascades as the sheet's do: marking a debility brings momentum down to its new top; a resource reaching its floor logs the floor rule (`FLOOR_RULES`); a field an asset's ability limit follows unmarks abilities above it (`capAbilitiesForField`). |
+| select              | `setActiveCharacterId` / `setActiveFoeId` / `setActiveExpeditionId`.                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| show                | The status line. `/site.theme` and `/site.domain` also open the site's picker (`ironledger:site-picker` → `/home`'s `ExpeditionsArea` ref).                                                                                                                                                                                                                                                                                                                                                           |
+| `/move`, `/oracle`  | `ironledger:open-move` (`{ id, harm }`) / `ironledger:open-oracle` (`{ key }`), handled by `+layout.svelte`.                                                                                                                                                                                                                                                                                                                                                                                          |
+| `/roll`             | Rolls (`rollDie`), animates (`animateDice`), logs each group.                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| `/burn`             | `ironledger:burn` with a `reply` callback: LogPanel burns momentum on the newest action roll when a burn is on offer for it (its burn link), spends that link, and replies.                                                                                                                                                                                                                                                                                                                           |
+| `/story`            | `sectionStore.setStart` / `setEnd` on the newest entry; `write` dispatches `ironledger:story-generate`.                                                                                                                                                                                                                                                                                                                                                                                               |
+| `/note`, plain text | `appendLog('Note', renderNote(text))`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| `/help`             | `CommandHelpDialog.open(topic)`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
-### Character sheet edits
-
-All require an active character; error message points at `/char <name>` if
-none.
-
-| Syntax                     | Effect                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `/vital <name> <op> [n]`   | Adjust a vital. `name` = `momentum` \| `health` \| `spirit` \| `supply` \| `xp` \| `experience` (alias for xp). `op` = `+` \| `-` \| `=`. `n` defaults to 1 for `+/-`; is **required** for `=` (bare `=` errors). Negatives allowed on `=` (permitted where the field allows, e.g. momentum's -6 floor). Delegates to the existing resource/set action bus, so every op is held to the field's range (`resourceRange()`: health/spirit/supply 0..5, xp 0..30, momentum −6..max); a value the range cuts says so in the status (`health set to 5 (max 5).`) and the log line (`Health: 4 → 5 (= 9, max 5)`). `supply = n` is shared with the party, as `+`/`-` are. |
-| `/debility <name> <state>` | Mark a debility. `name` is one of the eight canonical debilities: `wounded`, `shaken`, `unprepared`, `encumbered`, `maimed`, `corrupted`, `cursed`, `tormented`. `state` = `on` \| `off` \| `toggle` (**required** — no default). `toggle` is resolved at dispatch time by reading the character's current value; the action bus itself only knows on/off.                                                                                                                                                                                                                                                                                                         |
-| `/bonds <op> [n]`          | Edit the bonds track (0..40). Same operator grammar as `/vital`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   |
-| `/failures <op> [n]`       | Edit the failures track (0..40). Same operator grammar as `/vital`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
-| `/initiative <who>`        | Set combat initiative. `who` = `none` \| `character` \| `foe`. No numeric aliases (`/initiative 1` errors); no shortcuts (`char`, `me`, `you` all errored). Uses the `initiative` action-bus type, which clamps to 0..2 defensively and emits the log line `"Initiative: None → Character"`.                                                                                                                                                                                                                                                                                                                                                                       |
-
-### Freeform dice
-
-| Syntax           | Effect                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/roll <group>+` | Roll one or more dice groups. Each group is `[n]d<sides>[±k]`: `n` defaults to 1, `sides` is one of `4 \| 6 \| 8 \| 10 \| 12 \| 20 \| 100` (what `@3d-dice/dice-box-threejs` supports), `k` is an optional flat modifier. Up to `ROLL_MAX_GROUPS` (4) groups per `/roll`; `n ≤ ROLL_MAX_N` (10), \|k\| ≤ `ROLL_MAX_MODIFIER` (99). Drives the 3D dice animation when the `dice3d` preference is on; otherwise just logs. Each group's rolled values + sum land in a `"Roll — 2d10 1d6+2"` log entry, with a `Total` row when there's more than one group. No active-context requirement — the roll is freeform, unlike `/move` which needs a character. |
-
-Examples:
-
-```
-/roll 2d10 1d6+2      # full action roll: challenge + action die + adds
-/roll d100            # oracle
-/roll 3d6+1 2d8-2     # two independent groups, each with its own sum
-```
-
-Autocomplete on `/roll ` offers presets for the common Ironsworn shapes
-(`2d10 1d6`, `2d10`, `1d6`, `1d100`, `1d6+2`), prefix-filtered by what's
-been typed.
-
-### AI story sections
-
-Section markers pin two log-entry ids (start ▲ and end ▼); the story flow
-consumes the section. See [ai-story.md](ai-story.md) and
-[log.md § Story sections](log.md#story-sections-----markers).
-
-| Syntax   | Effect                                                                            |
-| -------- | --------------------------------------------------------------------------------- |
-| `/start` | Pin ▲ on the current newest log entry (open, growing selection).                  |
-| `/end`   | Pin ▼ on the current newest log entry (closes the selection). Errors if no ▲ set. |
-| `/story` | Open the Generate dialog on the current section. Errors if no section marked.     |
-
-## Grammar reference (regex)
-
-Per-verb patterns matching the full input after the leading `/`. Real
-parsing is case-insensitive on the verb + enum tokens.
-
-```regex
-# ── simple ──
-/help$
-/note\s+(?<text>.+)$
-/oracle\s+(?<key>.+)$
-/move\s+(?<name>.+)$
-
-# ── section markers (any trailing content ignored) ──
-/(start|end|story)(\s+.*)?$
-
-# ── initiative (exact enum) ──
-/initiative\s+(?<who>none|character|foe)$
-
-# ── vital (accepts =) ──
-/vital\s+(?<name>momentum|health|spirit|supply|xp|experience)\s*(?<op>[+\-=])\s*(?<n>-?\d+)?$
-
-# ── debility ──
-/debility\s+(?<name>wounded|shaken|unprepared|encumbered|maimed|corrupted|cursed|tormented)\s+(?<state>on|off|toggle)$
-
-# ── flat tracks (accept =) ──
-/(?<track>bonds|failures)\s*(?<op>[+\-=])\s*(?<n>-?\d+)?$
-
-# ── freeform dice ──
-# One group per whitespace-separated token; 1..4 groups per command.
-# Each group: [n]d<sides>[±k]
-#   n ∈ 1..10, defaults to 1 when omitted
-#   sides ∈ {4, 6, 8, 10, 12, 20, 100}   (dice-box-threejs set)
-#   k ∈ -99..99, optional
-/roll\s+(?<groups>((\d+)?d(\d+)([+\-]\d+)?\s*)+)$
-# Per-group inner pattern (parseRollGroup consumes this):
-#   ^(?<n>\d+)?d(?<sides>\d+)(?<mod>[+\-]\d+)?$
-
-# ── overloaded verbs — order matters: subcommand → op → name ──
-/char$                                            # help focus=char
-/char\s+(?<op>[+\-])\s*(?<n>\d+)?$                # char-harm (bare op = defaulted)
-/char\s+(?<name>[^+\-=\s].*?)\s*$                 # set active
-
-/foe$                                             # help focus=foe
-/foe\s+vanquish\s*$                               # vanquish subcommand
-/foe\s+active\s*$                                 # reactivate (un-vanquish) subcommand
-/foe\s+(?<op>[+\-])\s*(?<n>\d+)?$                 # foe-progress (boxes)
-/foe\s+(?<name>[^+\-=\s].*?)\s*$                  # set active
-
-/exp$                                             # help focus=exp
-/exp\s+complete\s*$                               # complete subcommand
-/exp\s+active\s*$                                 # reactivate (un-complete) subcommand
-/exp\s+(?<op>[+\-])\s*(?<n>\d+)?$                 # exp-progress (marks)
-/exp\s+(?<name>[^+\-=\s].*?)\s*$                  # set active
-```
-
-**Notes on the overloaded three.** The `name` pattern's `[^+\-=\s]`
-first-char guard is what stops `+2` / `-3` / `= 4` from matching the name
-branch. Any argument starting with an operator sign is an op — never a
-name. `/foe vanquish` beats `/foe <name=vanquish>` by rule order; foes
-cannot be named `vanquish` (repo policy).
-
-**What the regexes don't capture** (and why the parser exists):
-
-- `defaulted: true` on `char-harm` when `n` was omitted — needed so the
-  dispatcher can substitute the active foe's rank harm.
-- Error routing for `+ -N` (regex would match; parser rejects with "use
-  the opposite operator for negative deltas").
-- Structured `Command` output (regex tells you _if_, parser gives you
-  _what_).
-
-## Operators
-
-Shared across `/vital`, `/bonds`, `/failures`, `/foe`, `/exp`, `/char`:
-
-| Form    | Meaning      | Notes                                                                                                                                                                                          |
-| ------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `+ [n]` | Delta up     | `n` defaults to 1; negative `n` rejected — flips the sign. Errors: `"Use - for negative deltas."`                                                                                              |
-| `- [n]` | Delta down   | Same defaults / positivity rule.                                                                                                                                                               |
-| `= n`   | Set absolute | `n` **required**; bare `=` errors with `"= needs a value (e.g. /vital xp = 12)."` Negatives allowed. **Only accepted on `/vital`, `/bonds`, `/failures`** — not on the three overloaded verbs. |
-
-Both spaced and jammed forms parse: `/vital momentum + 2`, `/vital
-momentum +2`, `/vital xp=12`, `/vital momentum = -3`. Whitespace around
-the sign is optional.
-
-## Autocomplete
-
-The suggestion strip floats above the input and updates on every
-keystroke. Discovery flow — the goal is that no one memorises syntax:
-
-- **Verb** — `/` alone lists all verbs with one-line hints. Fuzzy prefix
-  match narrows as you type.
-- **Resource** (`/vital <?>`) — six aliases: `momentum`, `health`,
-  `spirit`, `supply`, `experience`, `xp`. `xp` shows `alias for
-experience`.
-- **Operator** (`/vital <res> <?>`, `/bonds <?>`, `/failures <?>`) — `+`,
-  `-`, `=` with per-op hints.
-- **Debility name** then **state** (`/debility <?>` then `/debility <name>
-  <?>`) — two-stage autocomplete for the 8 × 3 combinations.
-- **Initiative value** (`/initiative <?>`) — three enum values with
-  "who holds it" hints.
-- **Overloaded verbs** — when the corresponding entity is active,
-  `/char`, `/foe`, `/exp` show the operator tokens _and_ the entity
-  names in the same strip, prefix-filtered together. `/foe` also shows
-  `vanquish`. `/char -` hint is dynamic: when a foe is active it reads
-  `take N harm (active foe rank)` where `N` is the rank harm — so the
-  behavior is discoverable _before_ Enter.
-
-Keys:
-
-- <kbd>Tab</kbd> — complete the highlighted suggestion.
-- <kbd>↑</kbd> / <kbd>↓</kbd> — move through suggestions.
-- <kbd>Enter</kbd> — fire the highlighted suggestion (name-arg verbs) or
-  parse-and-dispatch the raw input.
-- <kbd>Esc</kbd> — clear the input.
-
-## Dispatch — where each command lands
-
-Most commands route through infrastructure that already existed for
-log-link clicks; the command bar is just another producer on the same
-buses.
-
-| Command family                       | Producer                                                  | Consumer                                                              | Bus / method    |
-| ------------------------------------ | --------------------------------------------------------- | --------------------------------------------------------------------- | --------------- |
-| `/note`                              | `appendLog('Note', …)`                                    | LogPanel                                                              | direct write    |
-| `/help`                              | `helpDialogRef.open(focus)`                               | CommandHelpDialog                                                     | ref call        |
-| `/move`, `/oracle`                   | `CustomEvent('ironledger:open-move' / 'open-oracle')`     | `+layout.svelte` opens the dialog                                     | DOM event       |
-| `/char`, `/foe`, `/exp` (set-active) | `setActive*Id(id)`                                        | Active-context store                                                  | direct write    |
-| `/char + / -`                        | `triggerAction({type: 'resource', key: 'health', …})`     | CharactersArea drain                                                  | LogAction bus   |
-| `/vital`, `/bonds`, `/failures`      | `triggerAction({type: 'resource'\|'set', …})`             | CharactersArea drain                                                  | LogAction bus   |
-| `/debility`                          | `triggerAction({type: 'debility', …})`                    | CharactersArea drain                                                  | LogAction bus   |
-| `/initiative`                        | `triggerAction({type: 'initiative', …})`                  | CharactersArea drain (new applier)                                    | LogAction bus   |
-| `/foe + / - / vanquish`              | `CustomEvent('ironledger:foe-progress' / 'foe-vanquish')` | `/home/+page.svelte` → `foeAreaRef.applyMenace` / `vanquishActiveFoe` | DOM event → ref |
-| `/exp + / -`                         | `CustomEvent('ironledger:exp-progress')`                  | `/home/+page.svelte` → `expAreaRef.applyProgress`                     | DOM event → ref |
-| `/start`, `/end`                     | `setStart(id)` / `setEnd(id)`                             | sectionStore                                                          | direct write    |
-| `/story`                             | `CustomEvent('ironledger:story-generate')`                | LogPanel → StoryDialog.open                                           | DOM event       |
-
-The action bus (`LogAction`) is drained inside `CharactersArea` — see
-[log.md § Action Bus](log.md#generalized-action-bus). CharactersArea
-runs a Svelte `$effect` that watches the bus nonce and dispatches to
-`applyResourceChange` / `applyDebilityToggle` / `applySet` /
-`applyInitiative`. Those mutations write to `activeData` (a reactive
-`$state`) so the character sheet UI updates as soon as the command
-returns, and each applier calls `appendLog(…)` so the log entry is
-written in the same shape a click would produce.
-
-The bus/CustomEvent split is deliberate: character-sheet mutations flow
-through the typed action bus (so non-active characters can be updated
-too, and every applier lives in one place), while cross-component
-"open this dialog on this thing" signals use the CustomEvent bus (so
-the CommandBar doesn't need refs to unrelated dialogs).
-
-## Empty-args behavior
-
-- `/char`, `/foe`, `/exp` — empty args open the help dialog _focused on
-  that verb_ (row scrolls into view + accent-tint highlight, fades after
-  ~2.5s). The overloaded grammar is the reason: an inline error is a
-  worse tour than showing the grammar next to it in the dialog.
-- Every other command with a required arg (`/note`, `/oracle`, `/move`,
-  `/vital`, `/debility`, `/bonds`, `/failures`, `/initiative`) errors
-  inline with a one-line message. These grammars fit in a status pill;
-  the dialog would be overkill.
+Log links still go through the [action bus](log.md#generalized-action-bus)
+until they become commands too ([command-language.md → Log
+links](command-language.md#log-links)); the bus and the commands hold values
+to the same ranges, and a content pack's global field (YRT's mana) takes its
+range from its declaration in both.
 
 ## Mobile
 
-Nothing in the command bar is mobile-hidden — every command works from
-the phone keyboard. The story-selection UI _around_ the log is hidden
-below 768px (see [mobile.md](mobile.md#ai-story-selection--desktop-only)),
-but `/start`, `/end`, `/story` still function; they mutate the same
-`sectionStore` state, and a section pinned via commands is highlighted
-in the log the moment the user returns to desktop.
+Every command works from a phone keyboard. The story-selection UI around the
+log is hidden below 768px (see
+[mobile.md](mobile.md#ai-story-selection--desktop-only)), but `/story start`,
+`end` and `write` still work: they change the same `sectionStore`.
 
 ## Tests
 
-Parser is pure and unit-tested:
-[`apps/web/tests/unit/commandBar.test.ts`](../apps/web/tests/unit/commandBar.test.ts)
-covers every verb — happy paths, defaults, case-insensitivity, error
-routing (including the `= is not supported` message on the delta-only
-overloaded verbs), the `defaulted` flag on `char-harm`, jammed vs
-spaced operator forms, and each verb's specific edge cases (the eight
-debilities enumerated, mana rejected from `/vital`, `/foe vanquished`
-not matching the subcommand, etc.). 105+ tests over the parser alone.
+- **Unit** ([`apps/web/tests/unit/commands.test.ts`](../apps/web/tests/unit/commands.test.ts)),
+  on a world built by hand: the parser (spaces, where names end, quotes,
+  qualifiers, amounts), every kind of value and operator, units on tracks,
+  harm, read-only and party values, owners by keyword, name, id and given
+  name, collisions and the references that resolve them, making something
+  active, the verbs, and the typeahead rows and top row.
+- **Browser** ([`command-bar.spec.ts`](../apps/web/tests/e2e/command-bar.spec.ts)):
+  changes reach the sheet, the log and the server; foes and expeditions by
+  keyword and name; mana held to its declared range and a read-only field
+  refused; Tab, Enter, ↑ and the dialogs; the phone's operator keys. The
+  ranges are also covered in `log-inject.spec.ts` (`/health=9`) and party
+  supply in `supply-sync.spec.ts` (`/supply=1`).
 
-Dispatch is exercised end-to-end by the existing E2E specs — story
-sections in `story.spec.ts`, and each character-sheet mutation shares
-the log-link click paths already covered by `characters` / `foes` /
-`log-link` specs.
+## Adding to it
 
-## When to add a new command
-
-Fitting rule:
-
-- **Fits a bar command** — a session-loop action a player takes many
-  times per session (mutate a resource, tick progress, open a dialog on
-  a specific thing).
-- **Doesn't fit** — anything requiring interactive selection (creating
-  entities, portrait uploads, multi-step wizards), or anything rare
-  enough that finding the toolbar button once per session is fine
-  (settings, admin, import/export).
-
-Adding a new command touches four files uniformly:
-
-1. `apps/web/src/lib/commandBar.ts` — extend the `Command` union, add
-   the verb to `COMMAND_NAMES`, add a parser case.
-2. `apps/web/src/lib/components/CommandBar.svelte` — dispatch case,
-   `verbHint()` entry, autocomplete branch if the args are enumerable.
-3. `apps/web/src/lib/components/CommandHelpDialog.svelte` — a `Row`
-   entry with the syntax + one-sentence hint. Set the `verb` field for
-   focus-scroll.
-4. `apps/web/tests/unit/commandBar.test.ts` — happy path + at least
-   two error paths.
-
-If the command needs a new mutation shape:
-
-- **Character-sheet field** — add a new `type` to `LogAction` and a new
-  applier + branch in CharactersArea's drain effect and its
-  `applyActionToData` (non-active char branch).
-- **Cross-component signal** — dispatch a `CustomEvent` with an
-  `ironledger:` prefix; register a listener in `/home/+page.svelte`
-  (component refs live there) or `/routes/+layout.svelte` (dialog refs
-  live there).
-
-Keep the parser strict, put discoverability into the autocomplete.
+- **A value** — a content pack declares a field ([command-language.md →
+  Declaring fields](command-language.md#declaring-fields)) and it's a value
+  at once: shown, changed, suggested. A new built-in value goes in
+  `values.ts` (`characterValues` or the owner's case in `valuesOf`).
+- **A verb** — add it to `VERBS` in `parse.ts`, its plan in `resolve.ts`
+  (`onVerb`), its rows in `suggest.ts` (`verbSlot`, `VERB_HINTS`), its
+  running in `run.svelte.ts`, a row in `CommandHelpDialog`, and tests.
+  Verbs are for what isn't a value; a thing with a value is better reached
+  as one.
+- **A cross-component signal** — a `CustomEvent` named `ironledger:…`,
+  listened for in `/home/+page.svelte` (area refs) or `+layout.svelte`
+  (dialog refs).
