@@ -26,6 +26,9 @@ import { readFile, writeFile, readdir, copyFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+// From source, not the built package: this runs before packages/shared is
+// built (CI's manifest check, the API's prebuild).
+import { parseCondition, conditionTests } from '../packages/shared/src/condition.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const REPO = path.resolve(__dirname, '..');
@@ -46,33 +49,28 @@ const CONTENT_DIRS = ['moves', 'oracles', 'foes', 'assets', 'delve', 'cultures']
 
 const readJson = async (p) => JSON.parse(await readFile(p, 'utf-8'));
 
-/** Precondition keys preconditions.ts answers itself; a character field can't
- *  take one as its id. Keep in step with apps/web/src/lib/preconditions.ts. */
-const BUILTIN_PRECONDITION_KEYS = new Set([
-  'hasCharacter',
-  'hasSite',
-  'hasJourney',
-  'hasScene',
-  'hasFoe',
-  'hasAnyAsset',
-  'initiative',
+/** Names a condition reads (docs/command-language.md → Conditions), as
+ *  apps/web/src/lib/preconditions.ts answers them. A field can't take one as
+ *  its id, nor a keyword. Keep in step with preconditions.ts. */
+const CONTEXT_NAMES = new Set(['character', 'foe', 'journey', 'site', 'scene']);
+const NUMBER_NAMES = new Set([
   'momentum',
   'health',
   'spirit',
   'supply',
-  'mana',
-  'experience',
+  'xp',
   'edge',
   'heart',
   'iron',
   'shadow',
   'wits',
-  'bonds',
-  'failures',
   'vowCount',
   'assetCount',
   'companionCount',
   'rarityCount',
+]);
+const TRACK_NAMES = new Set(['bonds', 'failures']);
+const DEBILITY_NAMES = new Set([
   'wounded',
   'shaken',
   'unprepared',
@@ -82,56 +80,136 @@ const BUILTIN_PRECONDITION_KEYS = new Set([
   'cursed',
   'tormented',
 ]);
+const INITIATIVE = ['none', 'character', 'foe'];
+const RESERVED_NAMES = new Set([
+  ...CONTEXT_NAMES,
+  ...NUMBER_NAMES,
+  ...TRACK_NAMES,
+  ...DEBILITY_NAMES,
+  'initiative',
+  'self',
+  'vow',
+  'companion',
+  'party',
+  'harm',
+]);
+
+/** What a name in a condition reads, for checking a comparison against it:
+ *  `{ kind, options? }` where options are a list's option ids and labels. */
+function fieldKind(f) {
+  if (f.type === 'counter') return { kind: 'number' };
+  if (f.type === 'switch') return { kind: 'bool' };
+  if (f.type === 'dropdown' || f.type === 'radio')
+    return {
+      kind: 'list',
+      options: (f.options ?? []).flatMap((o) => [String(o.id), String(o.label).toLowerCase()]),
+      choices: (f.options ?? []).map((o) => o.id).join(', '),
+    };
+  return { kind: 'text' };
+}
 
 /**
- * Check every `preconditions` array in an extension's moves, move overrides
- * and assets (data-schema.md → Preconditions); throws on the first problem.
- * A key is a built-in one, a character field that isn't text, or an asset's
- * id (`hasAnyAsset` takes asset ids in `ids`). An asset is never named by its
- * display name: a name can read differently from one language, or one
- * content pack's rename, to another, so preconditions.ts matches ids only.
+ * Check one condition expression (docs/command-language.md → Conditions);
+ * throws on the first problem, with its position in the string. `resolve`
+ * says what a test's name reads, or returns null for an unknown name.
+ */
+function checkCondition(src, at, resolve) {
+  if (typeof src !== 'string')
+    throw new Error(`${at}: a condition is an expression string, e.g. "character & foe"`);
+  const r = parseCondition(src);
+  if (!r.ok) throw new Error(`${at}: condition "${src}": ${r.error} (at ${r.at})`);
+  for (const t of conditionTests(r.node)) {
+    const name = t.owner ? `${t.owner}.${t.name}` : t.name;
+    const here = `${at}: condition "${src}", "${name}" (at ${t.at})`;
+    const what = resolve(t, here);
+    if (!t.op) continue;
+    const lv = t.level;
+    switch (what.kind) {
+      case 'context':
+      case 'asset':
+      case 'bool':
+      case 'text':
+        throw new Error(`${here} can't be compared: name it alone, or with ! for "not"`);
+      case 'initiative':
+        if (lv.kind !== 'word' || !INITIATIVE.includes(lv.word))
+          throw new Error(`${here}: initiative compares with none, character or foe`);
+        if (t.op !== '==' && t.op !== '!=') throw new Error(`${here}: initiative takes == or !=`);
+        break;
+      case 'number':
+        if (lv.kind !== 'number' || lv.unit)
+          throw new Error(`${here} is a number: compare it with a plain number`);
+        break;
+      case 'track':
+        if (lv.kind !== 'number')
+          throw new Error(`${here} is a track: compare it with a number (b boxes, t ticks)`);
+        break;
+      case 'list':
+        if (lv.kind !== 'word' || !what.options.includes(lv.word.toLowerCase()))
+          throw new Error(
+            `${here} is a list: compare it with one of its options (${what.choices})`,
+          );
+        break;
+    }
+  }
+}
+
+/**
+ * Check every `preconditions` expression in an extension's moves, move
+ * overrides and assets (docs/command-language.md → Conditions); throws on
+ * the first problem. A name is a context keyword, initiative, a stat, a
+ * track, a debility, a count, a character field, a global counter, or an
+ * asset's id, with `self.<field>` and `<asset id>.<field>` for an asset's
+ * own fields. An asset is never named by its display name: a name can read
+ * differently from one language, or one content pack's rename, to another,
+ * so preconditions.ts matches ids only.
  */
 function validatePreconditions(where, data, fields, assets) {
   const byName = new Map([...assets.values()].map((a) => [a.name, a.id]));
-  const check = (pre, at) => {
-    if (!pre || typeof pre !== 'object' || typeof pre.key !== 'string' || !pre.key)
-      throw new Error(`${at}: each precondition needs a key`);
-    const { key } = pre;
-    if (key === 'hasAnyAsset') {
-      if (!Array.isArray(pre.ids) || pre.ids.length === 0)
-        throw new Error(`${at}: hasAnyAsset needs a list of asset ids in "ids"`);
-      for (const id of pre.ids)
-        if (!assets.has(id))
-          throw new Error(
-            `${at}: hasAnyAsset names "${id}", which isn't an asset id` +
-              (byName.has(id) ? ` (that asset's id is "${byName.get(id)}")` : ''),
-          );
-      return;
-    }
-    if (BUILTIN_PRECONDITION_KEYS.has(key) || assets.has(key)) return;
-    const field = fields.get(key);
-    if (field) {
-      if (field.type === 'string' || field.type === 'markdown')
-        throw new Error(`${at}: precondition "${key}" names a text field, which can't be compared`);
-      return;
-    }
-    if (byName.has(key))
-      throw new Error(
-        `${at}: precondition "${key}" names an asset by its name; use its id, "${byName.get(key)}"`,
-      );
-    throw new Error(
-      `${at}: precondition "${key}" is neither a built-in key, a character field, nor an asset id`,
-    );
+  const globals = new Map();
+  for (const a of assets.values())
+    for (const cf of a.customFields ?? []) if (cf.global) globals.set(cf.id, cf);
+  /** An asset's own field, by the asset (or `self`'s) definition. */
+  const assetField = (asset, t, here) => {
+    const cf = (asset?.customFields ?? []).find((f) => f.id === t.name);
+    if (!cf) throw new Error(`${here}: ${asset?.id ?? t.owner} has no field "${t.name}"`);
+    return fieldKind(cf);
   };
+  const check = (src, at, self) =>
+    checkCondition(src, at, (t, here) => {
+      if (t.owner) {
+        if (t.owner === 'self') {
+          if (!self) throw new Error(`${here}: self is an asset's own; this isn't an asset`);
+          return assetField(self, t, here);
+        }
+        if (!assets.has(t.owner)) throw new Error(`${here}: "${t.owner}" isn't an asset id`);
+        return assetField(assets.get(t.owner), t, here);
+      }
+      const key = t.name;
+      if (CONTEXT_NAMES.has(key)) return { kind: 'context' };
+      if (key === 'initiative') return { kind: 'initiative' };
+      if (NUMBER_NAMES.has(key)) return { kind: 'number' };
+      if (TRACK_NAMES.has(key)) return { kind: 'track' };
+      if (DEBILITY_NAMES.has(key)) return { kind: 'bool' };
+      const field = fields.get(key);
+      if (field) return fieldKind(field);
+      const counter = globals.get(key);
+      if (counter) return fieldKind(counter);
+      if (assets.has(key)) return { kind: 'asset' };
+      if (byName.has(key))
+        throw new Error(`${here} names an asset by its name; use its id, "${byName.get(key)}"`);
+      throw new Error(
+        `${here} is neither a built-in name, a character field, a global counter, nor an asset id`,
+      );
+    });
   const walk = (node, at) => {
     if (Array.isArray(node)) return node.forEach((n) => walk(n, at));
     if (!node || typeof node !== 'object') return;
     const here = typeof node.id === 'string' ? `${where}: ${node.id}` : at;
+    // An asset (its id is in the catalogue) is `self` to its own conditions.
+    const self = typeof node.id === 'string' && assets.get(node.id) === node ? node : null;
     for (const [k, v] of Object.entries(node)) {
-      if (k === 'preconditions') {
-        if (!Array.isArray(v)) throw new Error(`${here}: preconditions must be an array`);
-        for (const pre of v) check(pre, here);
-      } else walk(v, here);
+      if (k === 'preconditions') check(v, here, self);
+      else walk(v, here);
     }
   };
   walk(data, where);
@@ -178,8 +256,8 @@ function validateCharacterFields(id, m, oracles, core = new Map()) {
     const at = `${where}: character field "${f.id}"`;
     if (typeof f.id !== 'string' || !/^[a-z][a-zA-Z0-9]*$/.test(f.id))
       throw new Error(`${where}: character field id "${f.id}" must be camelCase`);
-    if (BUILTIN_PRECONDITION_KEYS.has(f.id))
-      throw new Error(`${at}: the id is a built-in precondition key`);
+    if (RESERVED_NAMES.has(f.id))
+      throw new Error(`${at}: the id is a built-in name or keyword in conditions`);
     if (declared.has(f.id)) throw new Error(`${at}: declared twice`);
     if (typeof f.label !== 'string' || !f.label.trim())
       throw new Error(`${at}: label must be a non-empty string`);
@@ -188,6 +266,8 @@ function validateCharacterFields(id, m, oracles, core = new Map()) {
       throw new Error(`${at}: type must be one of ${FIELD_TYPES.map((t) => `"${t}"`).join(', ')}`);
     if (typeof f.default !== 'string') throw new Error(`${at}: default must be a string`);
     const choice = f.type === 'dropdown' || f.type === 'radio';
+    /** A choice's option ids, for checking conditions that compare with them. */
+    let optionIds = null;
     if (!choice && (f.options !== undefined || f.optionsFrom !== undefined))
       throw new Error(`${at}: only a dropdown or radio has options`);
     if (f.maxValue !== undefined && f.type !== 'counter')
@@ -223,6 +303,7 @@ function validateCharacterFields(id, m, oracles, core = new Map()) {
       if (new Set(ids).size !== ids.length) throw new Error(`${at}: repeats an option id`);
       if (f.default !== '' && !ids.includes(f.default))
         throw new Error(`${at}: default "${f.default}" is neither an option id nor ""`);
+      optionIds = ids;
     }
     /** A field a condition can read (not text), declared above this one, in
      *  this extension or base. */
@@ -236,10 +317,11 @@ function validateCharacterFields(id, m, oracles, core = new Map()) {
         throw new Error(`${at}: ${what} names "${key}", a text field`);
       return d;
     };
-    if (f.if !== undefined) {
-      if (!Array.isArray(f.if)) throw new Error(`${at}: if must be an array of preconditions`);
-      for (const c of f.if) above(c?.key, 'if');
-    }
+    if (f.if !== undefined)
+      checkCondition(f.if, `${at}: if`, (t, here) => {
+        if (t.owner) throw new Error(`${here}: a field's if reads other fields, by id`);
+        return fieldKind(above(t.name, 'if'));
+      });
     if (f.roll !== undefined) {
       const rolled = oracle(f.roll?.oracle, 'roll');
       if (f.roll.column !== undefined) {
@@ -252,7 +334,12 @@ function validateCharacterFields(id, m, oracles, core = new Map()) {
           throw new Error(`${at}: roll.column needs a columnSelect oracle`);
       }
     }
-    declared.set(f.id, f);
+    // An optionsFrom field's options are its oracle's rows: keep their ids, so
+    // a condition that compares with one can be checked.
+    declared.set(
+      f.id,
+      optionIds && !f.options ? { ...f, options: optionIds.map((i) => ({ id: i, label: i })) } : f,
+    );
   }
   return declared;
 }

@@ -72,7 +72,8 @@ export interface AssetDefinition {
   preamble?: string;
   postamble?: string;
   abilities: AssetAbility[];
-  preconditions?: AssetPrecondition[];
+  /** When it can be used: a condition expression (docs/command-language.md → Conditions). */
+  preconditions?: string;
   /** Max number of pips in the counter/health tracker. Renders a pip row in the asset card. */
   counterMax?: number;
   /** Label shown next to the pip row — e.g. "Health", "Doses", "Charges". */
@@ -93,14 +94,6 @@ export interface AssetAbility {
   enabled: boolean;
   text: string;
   name?: string;
-}
-
-export interface AssetPrecondition {
-  key: string;
-  eq?: number;
-  min?: number;
-  max?: number;
-  ne?: number;
 }
 
 /**
@@ -201,7 +194,8 @@ export interface CharacterFieldDef {
   placeholder?: string;
   /** Preconditions on fields declared above it in the same extension; while
    *  they fail the field is hidden (its value is kept). */
-  if?: Array<{ key: string; min?: number; max?: number; eq?: number; ne?: number }>;
+  /** While this condition is false the field is hidden (and keeps its value). */
+  if?: string;
   /** The oracle New Character's die rolls, by key. */
   roll?: { oracle: string; from?: string; column?: { field: string; from: string } };
   tooltip?: string;
@@ -230,7 +224,8 @@ export interface MoveDefinition {
    * flexible End the Fight: you may roll it without initiative, at greater risk.
    */
   initiativeDowngrade?: boolean;
-  preconditions?: AssetPrecondition[];
+  /** When it can be used: a condition expression (docs/command-language.md → Conditions). */
+  preconditions?: string;
   /**
    * Optional log entry title template. Supports placeholders:
    *   {character}   active character's name

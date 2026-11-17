@@ -26,12 +26,7 @@
       "weak": "[They'll do what you want or share what they know. [Take +1 momentum](resource:momentum?value=+1). If you use this exchange to [Gather Information](move:gather-information), make that move now and add +1. ]{.log-only}[As above, but they]{.dialog-only}[They]{.log-only} ask something of you in return. Envision what they want ([Ask the Oracle](move:ask-the-oracle) if unsure).",
       "miss": "They refuse or make a demand which costs you greatly. [Pay the Price](move:pay-the-price).",
       "notes": "The bond bonus (+1) only applies when you charm, pacify, barter, or convince using +heart. Use the modifier control to add it when applicable.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "source": "base",
       "logTitle": "{character} tries to persuade using {stat}"
     },
@@ -51,12 +46,7 @@
       "weak": "[As above, but choose]{.dialog-only}[Choose]{.log-only} **one**. If you share a bond, choose one more.[\n**Clear a Condition**\n- Mend: Clear a [wounded](debility:wounded?value=0) debility and take [+1 health](resource:health?value=+1).\n- Hearten: Clear a [shaken](debility:shaken?value=0) debility and take [+1 spirit](resource:spirit?value=+1).\n- Equip: Clear an [unprepared](debility:unprepared?value=0) debility and take [+1 supply](resource:supply?value=+1).**Recover**\n- Recuperate: Take [+2 health](resource:health?value=+2) for yourself and any companions.\n- Consort: Take [+2 spirit](resource:spirit?value=+2).\n- Provision: Take [+2 supply](resource:supply?value=+2).\n- Plan: Take [+2 momentum](resource:momentum?value=+2).**Provide Aid**\n- Take a quest: Envision what this community needs ([Ask the Oracle](move:ask-the-oracle) if unsure). If you choose to help, [Swear an Iron Vow](move:swear-an-iron-vow) and add +1.]{.log-only}",
       "miss": "You find no help here. [Pay the Price](move:pay-the-price).",
       "notes": "On a hit, you may also focus on one chosen recover action and roll +heart again (add +1 if bonded). Strong hit: take +2 more for that action. Weak hit: take +1 more. Miss: lose all benefits for that action.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "source": "base",
       "logTitle": "{character} spends time in community seeking assistance using {stat}"
     },
@@ -76,12 +66,7 @@
       "weak": "[You may choose one boast in exchange for [+1 momentum](resource:momentum?value=+1).]{.dialog-only}[You may choose one boast in exchange for [+1 momentum](resource:momentum?value=+1).\n- Grant first strike: [Your foe has initiative](initiative:foe).\n- Bare yourself: Take no benefit of armor or shield; your foe's harm is +1.\n- Hold no iron: Take no benefit of weapons; your harm is 1.\n- Bloody yourself: [Endure Harm](move:endure-harm?harm=1) (1 harm).\n- To the death: One way or another, this fight must end with death.]{.log-only}",
       "miss": "You begin the duel at a disadvantage. [Your foe has initiative](initiative:foe). [Pay the Price](move:pay-the-price).",
       "notes": "Then, make moves to resolve the fight. If you are the victor, you may make a lawful demand, and your opponent must comply or forfeit their honor and standing. If you refuse the challenge, surrender, or are defeated, they make a demand of you.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "source": "base",
       "logTitle": "{character} draws the circle using {stat}"
     },
@@ -101,12 +86,7 @@
       "weak": "They ask something more of you first. Envision what it is ([Ask the Oracle](move:ask-the-oracle) if unsure), do it (or [Swear an Iron Vow](move:swear-an-iron-vow)), and [mark the bond](resource:bonds?value=+1). If you decline or fail, [Pay the Price](move:pay-the-price).",
       "miss": "You are refused. [Pay the Price](move:pay-the-price).",
       "notes": "If you make this move after you [Fulfill Your Vow](move:fulfill-your-vow) to the benefit of the person or community, you may reroll any dice. Use the reroll button when applicable.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "source": "base",
       "logTitle": "{character} forges a bond using {stat}"
     },
@@ -126,16 +106,7 @@
       "weak": "Your bond is fragile and you must prove your loyalty. Envision what they ask of you ([Ask the Oracle](move:ask-the-oracle) if unsure), and do it (or [Swear an Iron Vow](move:swear-an-iron-vow)). If you decline or fail, clear the bond and [Pay the Price](move:pay-the-price).",
       "miss": "Or if you have no interest in maintaining this relationship, clear the bond and [Pay the Price](move:pay-the-price).",
       "notes": "Triggered by the fiction, not player choice. If something happens that would logically strain a meaningful relationship, this move is prompted. The miss text also applies if you simply have no interest in maintaining the relationship.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        },
-        {
-          "key": "bonds",
-          "min": 1
-        }
-      ],
+      "preconditions": "character & bonds >= 1b",
       "source": "base",
       "logTitle": "{character} tests a bond using {stat}"
     },
@@ -150,12 +121,7 @@
       "weak": "",
       "miss": "",
       "notes": "This is not a separate roll — you make a Secure an Advantage roll and can give the benefits to your ally instead. In combat, a strong hit grants initiative to both of you.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "source": "base"
     },
     {
@@ -175,16 +141,7 @@
       "weak": "Your life takes an unexpected turn, but not necessarily for the worse. You find yourself spending your days with someone or in a place you did not foresee. Envision it ([Ask the Oracle](move:ask-the-oracle) if unsure).",
       "miss": "Your fears are realized.",
       "notes": "A progress move — roll challenge dice against your bond progress track. No action die. You may not burn momentum on this roll, and you are not affected by negative momentum.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        },
-        {
-          "key": "bonds",
-          "min": 1
-        }
-      ],
+      "preconditions": "character & bonds >= 1b",
       "progressSource": "bonds",
       "source": "base",
       "logTitle": "{character} writes their epilogue"

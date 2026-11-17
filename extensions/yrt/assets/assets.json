@@ -7,12 +7,7 @@
       "summary": "Salamandrine-touched: wounds that knit closed, skin that breathes underwater, and a slowed body that outlasts cold and hunger.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [
-        {
-          "key": "touched",
-          "min": 1
-        }
-      ],
+      "preconditions": "touched >= prime",
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touched": {
@@ -51,12 +46,7 @@
       "summary": "Feline-touched: night hunter’s senses, impossible leaps, and predator stealth.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [
-        {
-          "key": "touched",
-          "min": 1
-        }
-      ],
+      "preconditions": "touched >= prime",
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touched": {
@@ -95,12 +85,7 @@
       "summary": "Porcine-touched: unerring nose for hidden threats, iron constitution, and an instinct for finding sustenance.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [
-        {
-          "key": "touched",
-          "min": 1
-        }
-      ],
+      "preconditions": "touched >= prime",
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touched": {
@@ -139,12 +124,7 @@
       "summary": "Bovine-touched: an unstoppable charge, an unbreakable will, and a voice that bends a room to silence.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [
-        {
-          "key": "touched",
-          "min": 1
-        }
-      ],
+      "preconditions": "touched >= prime",
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touched": {
@@ -183,12 +163,7 @@
       "summary": "Ursine-touched: looming presence that bends nerve, crushing strength behind every blow, and a body built to weather the longest winter.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [
-        {
-          "key": "touched",
-          "min": 1
-        }
-      ],
+      "preconditions": "touched >= prime",
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touched": {
@@ -227,12 +202,7 @@
       "summary": "Hircine-touched: surefooted on lethal heights, a gut that shrugs off poison and rot, and a wrongness of aspect that unsettles every room.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [
-        {
-          "key": "touched",
-          "min": 1
-        }
-      ],
+      "preconditions": "touched >= prime",
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touched": {
@@ -271,12 +241,7 @@
       "summary": "Varanine-touched: a patient ambush and a killing rush, a tongue that reads blood on the wind, and bony scale beneath the skin that turns a blow.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [
-        {
-          "key": "touched",
-          "min": 1
-        }
-      ],
+      "preconditions": "touched >= prime",
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touched": {
@@ -315,12 +280,7 @@
       "summary": "Lupine-touched: a tracker's nose for blood, a pack-hunter's instinct in company, and a crippling bite for the straggler.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [
-        {
-          "key": "touched",
-          "min": 1
-        }
-      ],
+      "preconditions": "touched >= prime",
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touched": {
@@ -359,12 +319,7 @@
       "summary": "Marine-touched: lungs that drink the deep, a voice the sea answers to, and a tongue the whales understand.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [
-        {
-          "key": "touched",
-          "min": 1
-        }
-      ],
+      "preconditions": "touched >= prime",
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touched": {
@@ -403,12 +358,7 @@
       "summary": "Vulpine-touched: a liar's ease, a trail that doubles back, and an eye for what other people walk past.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [
-        {
-          "key": "touched",
-          "min": 1
-        }
-      ],
+      "preconditions": "touched >= prime",
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touched": {
@@ -447,12 +397,7 @@
       "summary": "Ovine-touched: a fleece that turns weather and edges, a knack for vanishing into a crowd, and eyes that miss little at your sides.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [
-        {
-          "key": "touched",
-          "min": 1
-        }
-      ],
+      "preconditions": "touched >= prime",
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touched": {
@@ -491,12 +436,7 @@
       "summary": "Trochiline-touched: fierce out of all proportion to your size, a shimmer that turns heads, and a body that sleeps cold and wakes mended.",
       "preamble": "You have been touched by YRT and exhibit animal traits. Roll on the [YRT – Touched](oracle:yrtTouched) oracle to determine the extent and conditions of your nature.",
       "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-      "preconditions": [
-        {
-          "key": "touched",
-          "min": 1
-        }
-      ],
+      "preconditions": "touched >= prime",
       "exclusiveGroup": "touched",
       "abilityMaxByField": {
         "touched": {

@@ -12,16 +12,7 @@
       "weak": "The ritual succeeds, but the outcome is degraded. Downgrade factors of the spell equal to the difference between the highest challenge die and your action score. If you cannot downgrade any further, the spell dissipates without effect. The mana is wasted.",
       "miss": "The casting fails. [Pay the Price](move:pay-the-price). Choose something appropriate or roll on the [Mana Backlash Oracle](oracle:manaBacklash).",
       "logTitle": "{character} casts a Conclave Ritual",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        },
-        {
-          "key": "mana",
-          "min": 1
-        }
-      ],
+      "preconditions": "character & mana >= 1",
       "source": "yrt"
     },
     {
@@ -46,16 +37,7 @@
       "miss": "You bungle the operation and the item is ruined. [Consume −1 supply](resource:supply?value=-1). [Pay the Price](move:pay-the-price).",
       "notes": "This move is only available to those who have a specific Path that enables it, such as Bittercraft or Quillwise. The asset provides the context for what is being crafted and any additional flavor for the outcome.",
       "logTitle": "{character} crafts an item using {stat}",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        },
-        {
-          "key": "supply",
-          "min": 1
-        }
-      ],
+      "preconditions": "character & supply >= 1",
       "source": "yrt"
     }
   ],

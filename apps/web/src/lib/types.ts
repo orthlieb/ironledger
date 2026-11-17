@@ -131,8 +131,9 @@ export interface CharacterFieldDef {
 	 *  choice. New Character starts every field empty. */
 	default: string;
 	placeholder?: string;
-	/** While these fail, the field is hidden (and keeps its value). */
-	if?: Array<{ key: string; min?: number; max?: number; eq?: number; ne?: number }>;
+	/** While this condition is false the field is hidden (and keeps its value):
+	 *  an expression over the fields above it (docs/command-language.md). */
+	if?: string;
 	/** The oracle New Character's die rolls, by key. */
 	roll?: { oracle: string; from?: string; column?: { field: string; from: string } };
 	tooltip?: string;

@@ -17,12 +17,7 @@
       "weak": "You are determined but burdened by the nature of your quest. Take [+1 momentum](resource:momentum?value=+1).",
       "miss": "You face a significant obstacle before you can begin your quest. Envision what stands in your way ([Ask the Oracle](move:ask-the-oracle) if unsure), and choose one:\n- You press on: Suffer [−2 momentum](resource:momentum?value=-2), and do what you must to overcome this obstacle.\n- You give up: [Forsake Your Vow](move:forsake-your-vow).",
       "notes": "The vow must be meaningful — something you'd risk your life for. The rank (Troublesome through Epic) determines the difficulty of the progress track. The iron is literal in Ironsworn — swear on iron you carry. Vows drive the game.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "source": "base",
       "logTitle": "{character} swears an iron vow using {stat}"
     },
@@ -37,16 +32,7 @@
       "weak": "",
       "miss": "",
       "notes": "No roll — just mark progress when the fiction clearly warrants it. A milestone is a meaningful step: defeating a key obstacle, uncovering a vital secret, completing a significant sub-goal. Don't mark milestones for minor victories.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        },
-        {
-          "key": "vowCount",
-          "min": 1
-        }
-      ],
+      "preconditions": "character & vowCount >= 1",
       "source": "base"
     },
     {
@@ -60,16 +46,7 @@
       "weak": "There is more to be done, or you realize the truth of your quest. Envision what you discover ([Ask the Oracle](move:ask-the-oracle) if unsure). Mark **experience** at one rank lower (Troublesome: 0, Dangerous: 1, Formidable: 2, Extreme: 3, Epic: 4). You may [Swear an Iron Vow](move:swear-an-iron-vow) to set things right. If you do, add +1.",
       "miss": "Your quest is undone. Envision what happens ([Ask the Oracle](move:ask-the-oracle) if unsure), and choose one:\n- You recommit: Clear all but one filled progress, and raise the quest's rank by one (if not already epic).\n- You give up: [Forsake Your Vow](move:forsake-your-vow).",
       "notes": "Progress roll against the vow's track. No action die. Momentum is ignored. Use the progress spinner to enter your vow's current progress score (0–10).",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        },
-        {
-          "key": "vowCount",
-          "min": 1
-        }
-      ],
+      "preconditions": "character & vowCount >= 1",
       "progressSource": "vows",
       "source": "base",
       "logTitle": "{character} fulfills their vow"
@@ -85,16 +62,7 @@
       "weak": "",
       "miss": "",
       "notes": "No roll — just the consequence. Use it when a vow becomes impossible or when the character deliberately walks away from their oath. Breaking an iron vow is a serious act that costs spirit proportional to the gravity of the abandoned quest.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        },
-        {
-          "key": "vowCount",
-          "min": 1
-        }
-      ],
+      "preconditions": "character & vowCount >= 1",
       "source": "base"
     },
     {
@@ -108,12 +76,7 @@
       "weak": "",
       "miss": "",
       "notes": "No roll. Spend experience earned from Fulfill Your Vow. Assets are permanent abilities that define your character's specialties. Choose assets that fit your concept — interesting is better than optimal.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "source": "base"
     }
   ],

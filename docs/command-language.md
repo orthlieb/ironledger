@@ -1,9 +1,9 @@
 # Command language — spec
 
-**Status: agreed design, not built yet.** The command bar still runs the
-syntax in [command-bar.md](command-bar.md), and moves, assets and fields
-still use the old link and precondition forms. This page is what replaces
-them; [Build order](#build-order) says how.
+**Status: agreed design, being built.** [Conditions](#conditions) are
+built: moves, assets and fields use expressions. The command bar still runs
+the syntax in [command-bar.md](command-bar.md), and log links the old link
+forms, until the later stages; [Build order](#build-order) says how.
 
 One language for three things:
 
@@ -328,8 +328,9 @@ A condition is one expression, a string:
 | `!`                         | Not (written before what it negates).                         |
 | `( )`                       | Group.                                                        |
 
-`!` binds tightest, then comparisons, then `&`, then `|`:
-`!wounded & mana >= 2 | self.health >= 1` means
+Comparisons bind tightest, then `!`, then `&`, then `|`; `!` negates the
+test or group after it, so `!touched >= prime` is "not (touched >= prime)",
+and `!wounded & mana >= 2 | self.health >= 1` means
 `((!wounded) & (mana >= 2)) | (self.health >= 1)`.
 
 A value on its own is true when it's above 0, set, or exists: `wounded` (a
@@ -362,10 +363,11 @@ The same values and owners as commands, with ids only:
 - A move's or an asset's `preconditions`: one expression.
 - A field's `if`: one expression; while it's false the field is hidden.
 
-### Today's conditions
+### Conversion from the object form
 
-The 102 conditions in content today use two operators, `eq` and `min`. A
-one-off script converts them; the object form is then rejected.
+The 102 condition objects in content used two operators, `eq` and `min`. A
+one-off script converted them to 70 expressions (one per move, asset or
+field); the object form is now rejected.
 
 | Today                                       | Expression                  |
 | ------------------------------------------- | --------------------------- |

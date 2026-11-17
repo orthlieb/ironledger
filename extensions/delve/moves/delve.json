@@ -12,12 +12,7 @@
       "weak": "",
       "miss": "",
       "notes": "No roll — this is the setup move for entering a delve site. Choose theme and domain, set the rank, then immediately Delve the Depths. Returning to a site: roll 2d10, take the lower, clear that many progress boxes.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "references": ["expedition"],
       "source": "delve"
     },
@@ -80,16 +75,7 @@
           "value": "[Mark progress twice](progress:delve?value=2) and Reveal a Danger."
         }
       ],
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        },
-        {
-          "key": "hasSite",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character & site",
       "source": "delve"
     },
     {
@@ -103,12 +89,7 @@
       "miss": "",
       "tableRoll": true,
       "notes": "Triggered by a strong hit on Delve the Depths (or encountered directly). On a strong hit from Delve the Depths, you may skip the roll and simply choose or envision the opportunity.",
-      "preconditions": [
-        {
-          "key": "hasSite",
-          "eq": 1
-        }
-      ],
+      "preconditions": "site",
       "table": [
         {
           "topRange": 25,
@@ -166,12 +147,7 @@
       "miss": "",
       "tableRoll": true,
       "notes": "Not a player-rolled move — triggered by miss results on Delve the Depths or Find an Opportunity. Dangers can be traps, monsters, environmental hazards, or complications. After revealing it, respond with other moves (Face Danger, Strike, etc.).",
-      "preconditions": [
-        {
-          "key": "hasSite",
-          "eq": 1
-        }
-      ],
+      "preconditions": "site",
       "table": [
         {
           "topRange": 30,
@@ -242,16 +218,7 @@
       "weak": "You have it, but your resources are diminished. Take [+1 momentum](resource:momentum?value=+1) and suffer [−1 supply](resource:supply?value=-1).",
       "miss": "You don't have it and the situation grows more perilous. [Pay the Price](move:pay-the-price).",
       "notes": "Use this when a specific item or resource is the deciding factor. If it makes narrative sense you'd have it, consider just narrating success instead of rolling.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        },
-        {
-          "key": "hasSite",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character & site",
       "source": "delve",
       "logTitle": "The party checks its gear"
     },
@@ -266,12 +233,7 @@
       "weak": "You locate your objective but face an unforeseen hazard or complication. Envision what you find ([Ask the Oracle](move:ask-the-oracle) if unsure).",
       "miss": "Your objective falls out of reach, you have been misled about the nature of your objective, or you discover that this site holds unexpected depths. If you continue your exploration, clear all but one filled progress and raise the site's rank by one (if not already epic).",
       "notes": "Progress move — roll the challenge dice against your Delve progress track. Do not add a stat. Momentum is ignored.",
-      "preconditions": [
-        {
-          "key": "hasSite",
-          "eq": 1
-        }
-      ],
+      "preconditions": "site",
       "progressSource": "delve",
       "source": "delve",
       "logTitle": "{character} — Locate Your Objective"
@@ -302,16 +264,7 @@
         }
       ],
       "references": ["expedition"],
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        },
-        {
-          "key": "vowCount",
-          "min": 1
-        }
-      ],
+      "preconditions": "character & vowCount >= 1",
       "source": "delve",
       "logTitle": "{character} advances a threat"
     },
@@ -325,16 +278,7 @@
       "weak": "",
       "miss": "",
       "notes": "This move has no roll. Take the recovery benefits freely, but each active threat advances — the world does not stand still while you rest.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        },
-        {
-          "key": "vowCount",
-          "min": 1
-        }
-      ],
+      "preconditions": "character & vowCount >= 1",
       "source": "delve",
       "logTitle": "{character} takes a hiatus"
     },
@@ -372,16 +316,7 @@
       "miss": "A dire threat or imposing obstacle stands in your way. [Reveal a Danger](move:reveal-a-danger). If you survive, you may make your escape.",
       "notes": "Use this when a deliberate retreat is the goal. On a miss, you don't automatically escape — you must face the revealed danger first. If you survive that, you may then attempt to escape again.",
       "logTitle": "{character} escapes the depths of {expedition} using {stat}",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        },
-        {
-          "key": "hasSite",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character & site",
       "source": "delve"
     }
   ],

@@ -17,12 +17,7 @@
       "strong": "Everything loads, merges, and filters. Take [+1 momentum](resource:momentum?value=+1).",
       "weak": "It works, but something wants a second look. Roll on the [Sample – Gizmo](oracle:sampleGizmo) oracle for what.",
       "miss": "Something is broken. [Pay the Price](move:pay-the-price).",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "logTitle": "{character} tries a Sample Gambit"
     }
   ]

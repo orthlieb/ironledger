@@ -81,7 +81,7 @@
 	import { appIcon } from '#lib/liveryIcons.js';
 	import type { AssetDefinition, CharacterData, CharacterAsset } from '#lib/types.js';
 	import { escHtml } from '#lib/markdown.js';
-	import { firstPreconditionFailure, type Precondition } from '#lib/preconditions.js';
+	import { firstPreconditionFailure } from '#lib/preconditions.js';
 	import AssetCard from '#lib/components/AssetCard.svelte';
 	import AssetPicker from '#lib/components/AssetPicker.svelte';
 	import MarkdownNotes from '#lib/components/MarkdownNotes.svelte';
@@ -285,7 +285,9 @@
 	 *  Touched asset on a Pure character), or null. */
 	function assetBlocked(def: AssetDefinition | undefined): string | null {
 		if (!def || !activeData) return null;
-		return firstPreconditionFailure(def.preconditions as Precondition[] | undefined, activeData);
+		return firstPreconditionFailure(def.preconditions as string | undefined, activeData, {
+			self: activeData.assets.find((a) => a.assetId === def.id),
+		});
 	}
 
 	/** A change to an extension field on the sheet: stored, logged, and — for

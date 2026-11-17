@@ -13,7 +13,7 @@
 	import chevronDownSvg from '#icons/chevron-down-solid.svg?raw';
 	import searchIconSvg from '#icons/magnifying-glass-solid.svg?raw';
 	import { getVisibleAssets, isAssetsLoading, findAsset } from '#lib/assetStore.svelte.js';
-	import { firstPreconditionFailure, type Precondition } from '#lib/preconditions.js';
+	import { firstPreconditionFailure } from '#lib/preconditions.js';
 	import { headingText } from '#lib/fontStore.svelte.js';
 	import { Dialog } from 'bits-ui';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
@@ -69,7 +69,9 @@
 
 	/** Returns a human-readable failure reason, or null if OK to add. */
 	function preconditionFailure(def: AssetDefinition): string | null {
-		return firstPreconditionFailure(def.preconditions as Precondition[] | undefined, characterData);
+		return firstPreconditionFailure(def.preconditions as string | undefined, characterData, {
+			self: { assetId: def.id },
+		});
 	}
 
 	/** Returns a human-readable conflict reason if the character already owns

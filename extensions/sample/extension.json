@@ -45,7 +45,7 @@
       "type": "markdown",
       "default": "",
       "placeholder": "Anything the other fields don't hold…",
-      "if": [{ "key": "sampleSworn", "eq": 1 }]
+      "if": "sampleSworn"
     }
   ]
 }

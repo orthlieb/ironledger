@@ -130,12 +130,7 @@
           "value": "Roll twice more on this table. Both results occur. If they are the same result, make it worse."
         }
       ],
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "source": "base"
     }
   ],

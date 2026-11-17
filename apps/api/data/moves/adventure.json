@@ -34,12 +34,7 @@
       "weak": "You succeed, but face a troublesome cost. Choose one:\n- You are delayed, lose advantage, or face a new danger: Suffer [−1 momentum](resource:momentum?value=-1).\n- You are tired or hurt: [Endure Harm](move:endure-harm?harm=1) (1 harm).\n- You are dispirited or afraid: [Endure Stress](move:endure-stress?harm=1) (1 stress).\n- You sacrifice resources: Suffer [−1 supply](resource:supply?value=-1).",
       "miss": "You fail, or your progress is undermined by a dramatic and costly turn of events. [Pay the Price](move:pay-the-price).",
       "notes": "The default move for most uncertain actions. If it's dangerous and the outcome isn't certain, it's probably Face Danger. Don't confuse with Clash (fighting back against an attack) or Secure an Advantage (setting yourself up before acting).",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "source": "base",
       "logTitle": "{character} faces danger using {stat}"
     },
@@ -76,12 +71,7 @@
       "weak": "Your advantage is short-lived. Take [+1 momentum](resource:momentum?value=+1).",
       "miss": "You fail or your assumptions betray you. [Pay the Price](move:pay-the-price).",
       "notes": "Use this when you're actively improving your position before acting — scouting ahead, setting a trap, treating a wound before a fight. Not for actions under immediate threat (that's Face Danger).",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "source": "base",
       "logTitle": "{character} secures an advantage using {stat}"
     },
@@ -101,12 +91,7 @@
       "weak": "The information complicates your quest or introduces a new danger. Envision what you discover ([Ask the Oracle](move:ask-the-oracle) if unsure), and take [+1 momentum](resource:momentum?value=+1).",
       "miss": "Your investigation unearths a dire threat or reveals an unwelcome truth that undermines your quest. [Pay the Price](move:pay-the-price).",
       "notes": "The bond bonus (+1) applies when you act within a bonded community or ask questions of a bonded person. Use the modifier control to add it when applicable.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "source": "base",
       "logTitle": "{character} gathers information using {stat}"
     },
@@ -130,12 +115,7 @@
       "weak": "[Your care is helpful. If you (or the ally under your care) have the [wounded](debility:wounded?value=0) condition, you may clear it. Then, take or give up to [+2 health](resource:health?value=+2). ]{.log-only}[As above, but you]{.dialog-only}[You]{.log-only} must suffer [−1 supply](resource:supply?value=-1) or [−1 momentum](resource:momentum?value=-1) (your choice).",
       "miss": "Your aid is ineffective. [Pay the Price](move:pay-the-price).",
       "notes": "Requires time and supplies (or a willing healer). You cannot Heal in the middle of a fight without first creating space (Face Danger to disengage). If you have no supplies, that affects whether the roll applies at all.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "source": "base",
       "logTitle": "{character} heals using {stat}"
     },
@@ -155,12 +135,7 @@
       "weak": "Take up to [+2 supply](resource:supply?value=+2), but suffer [−1 momentum](resource:momentum?value=-1) for each.",
       "miss": "You find nothing helpful. [Pay the Price](move:pay-the-price).",
       "notes": "Foraging, looting, or scrounging in the wild. Not for buying goods in a settlement (typically just a narrative beat). On a weak hit, you choose how much supply to take (1 or 2) and pay the momentum cost for each.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "source": "base",
       "logTitle": "{character} resupplies using {stat}"
     },
@@ -180,12 +155,7 @@
       "weak": "[Choose **one** from the list above.]{.dialog-only}[Choose **one**:\n- Recuperate: Take [+1 health](resource:health?value=+1) for you and any companions.\n- Partake: Suffer [−1 supply](resource:supply?value=-1) and take [+1 health](resource:health?value=+1) for you and any companions.\n- Relax: Take [+1 spirit](resource:spirit?value=+1).\n- Focus: Take [+1 momentum](resource:momentum?value=+1).\n- Prepare: When you break camp, add **+1** if you [Undertake a Journey](move:undertake-a-journey).]{.log-only}",
       "miss": "You take no comfort. [Pay the Price](move:pay-the-price).",
       "notes": "Requires a relatively safe place and reasonable supplies. Recuperate heals you without cost; Partake trades supply for health. If conditions are hostile, you may need to Face Danger first to secure a campsite.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "source": "base",
       "logTitle": "{character} makes camp using {stat}"
     },
@@ -205,16 +175,7 @@
       "weak": "You reach a waypoint and [mark progress](progress:journey?value=1), but [suffer −1 supply](resource:supply?value=-1).",
       "miss": "You are waylaid by a perilous event. [Pay the Price](move:pay-the-price).",
       "notes": "Roll once per segment of travel, not every step. On a strong hit, the speed option lets you trade supply for momentum — useful when you need to arrive quickly. The bond bonus (+1) only applies to your first roll when setting off from a bonded community.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        },
-        {
-          "key": "hasJourney",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character & journey",
       "source": "base",
       "logTitle": "{character} undertakes a journey to {expedition} using {stat}"
     },
@@ -229,12 +190,7 @@
       "weak": "You arrive, but face an unforeseen complication or cost. Envision the situation.",
       "miss": "You have gone hopelessly astray, your objective is lost to you, or you were misled about your destination. If your journey continues, clear all but one filled progress, and raise the journey's rank by one (if not already epic).",
       "notes": "Progress roll — roll 2d10 against your journey track score. No action die. Momentum is ignored. Use the progress spinner to enter your journey's current progress score (0–10).",
-      "preconditions": [
-        {
-          "key": "hasJourney",
-          "eq": 1
-        }
-      ],
+      "preconditions": "journey",
       "progressSource": "journey",
       "source": "base",
       "logTitle": "{character} tries to reach the destination for {expedition}"

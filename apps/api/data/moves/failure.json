@@ -11,12 +11,7 @@
       "weak": "",
       "miss": "",
       "notes": "No roll — automatically triggered on any miss. Mark 1 tick on your failure track. On a miss from a progress move (Reach Your Destination, Locate Your Objective, etc.), mark 2 ticks instead.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "logBody": "Mark [+1 tick](resource:failures?value=+1) on your failure track.\nMark [+2 ticks](resource:failures?value=+2) if your failure was the result of a progress move.",
       "source": "base",
       "logTitle": "{character} marks a failure"
@@ -38,16 +33,7 @@
       "weak": "You learn from your mistakes. Take [+2 experience](resource:xp?value=+2) and [clear all progress](reset:failures).",
       "miss": "You've learned the wrong lessons. Take [+1 experience](resource:xp?value=+1) and [clear all progress](reset:failures). Then, envision how you set off on an ill-fated path.",
       "notes": "Progress move — roll the challenge dice against your failure track. No action die. Momentum is ignored. Requires failure track to be +6 or greater. Always clears all failure track progress regardless of outcome.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        },
-        {
-          "key": "failures",
-          "min": 6
-        }
-      ],
+      "preconditions": "character & failures >= 6b",
       "progressSource": "failures",
       "source": "base",
       "logTitle": "{character} learns from their failure"

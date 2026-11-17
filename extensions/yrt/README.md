@@ -57,7 +57,7 @@ The Touched are characters physically altered by manite exposure. Touched assets
   "category": "Touched",
   "summary": "One-line summary shown in the picker tile.",
   "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-  "preconditions": [{ "key": "touched", "min": 1 }],
+  "preconditions": "touched >= prime",
   "exclusiveGroup": "touched",
   "abilityMaxByField": { "touched": { "pure": 0, "prime": 1, "second": 2, "third": 3, "feral": 3 } },
   "characterFields": ["touched", "touchedAnimal"],

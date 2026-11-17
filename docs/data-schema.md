@@ -87,92 +87,70 @@ Each file contains one category of moves:
 
 ### Preconditions
 
-The `preconditions` array gates availability in the picker for both moves and assets. Every condition must pass (AND logic) for the tile to be enabled. Each precondition is an object with a `key` and one or more comparison operators. For moves, disabled tiles appear faded with a tooltip. For assets, tiles that fail preconditions are faded out and non-clickable, alongside already-acquired assets.
+`preconditions` gates availability in the picker for both moves and assets.
+It's one condition expression, a string
+([command-language.md → Conditions](command-language.md#conditions) has the
+whole language). For moves, a tile whose condition fails appears faded, with
+the reason on hover. For assets, it's faded and can't be picked; an owned
+asset whose condition fails is faded on the sheet.
 
-#### Precondition Object Fields
+```json
+"preconditions": "character & foe & initiative == character"
+```
 
-| Field | Type    | Required | Description                                   |
-| ----- | ------- | -------- | --------------------------------------------- |
-| `key` | string  | yes      | The value to check (see key categories below) |
-| `min` | integer | no       | Value must be ≥ this (range 1–10)             |
-| `max` | integer | no       | Value must be ≤ this (range 1–10)             |
-| `eq`  | integer | no       | Value must equal this exactly                 |
-| `ne`  | integer | no       | Value must not equal this                     |
+| Operator                    | Meaning                                                                             |
+| --------------------------- | ----------------------------------------------------------------------------------- |
+| `==` `!=` `>=` `<=` `>` `<` | Compare a value with a number (`2`, `2b` boxes, `3t` ticks) or an option (`prime`). |
+| `&` `\|` `!` `( )`          | And, or, not, group. Comparisons bind tightest, then `!`, then `&`, then `\|`.      |
 
-Multiple operators on one precondition are AND'd (e.g., `min: 2, max: 8` means "between 2 and 8 inclusive").
+A name on its own is true when it's above 0, chosen, or exists.
 
-#### Key Categories
+#### Names
 
-| Category             | Valid Keys                                                                                                | Values                                                                    | Notes                                                                                                                                     |
-| -------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| **Global Selection** | `hasCharacter`, `hasSite`, `hasJourney`, `hasFoe`                                                         | `eq: 1` (selected) or `eq: 0` (not selected)                              | Whether the corresponding dropdown has an active selection                                                                                |
-| **Character Values** | `momentum`, `health`, `spirit`, `supply`, `mana`, `experience`, `edge`, `heart`, `iron`, `shadow`, `wits` | Numeric, use `min`/`max`/`eq`/`ne`                                        | Direct character stat or resource read                                                                                                    |
-| **Progress Tracks**  | `bonds`, `failures`                                                                                       | 1–10 (boxes)                                                              | Stored as ticks internally; divided by 4 for comparison                                                                                   |
-| **Computed Counts**  | `vowCount`, `assetCount`, `companionCount`, `rarityCount`                                                 | Numeric                                                                   | Count of active vows, total assets, companion assets, or assets with a rarity                                                             |
-| **Initiative**       | `initiative`                                                                                              | 0=none, 1=character, 2=foe                                                | Combat initiative state; use `eq` to gate on who has initiative                                                                           |
-| **Debilities**       | `wounded`, `shaken`, `unprepared`, `encumbered`, `maimed`, `corrupted`, `cursed`, `tormented`             | `eq: 0` (off) or `eq: 1` (on)                                             | Boolean debility flags                                                                                                                    |
-| **Character fields** | Any dropdown or radio field an extension declares (e.g. YRT's `touched`)                                  | The option's position from 0; −1 when unset (`touched`: 0=pure … 4=feral) | Use `min`/`max` for thresholds (e.g. `{ "key": "touched", "min": 1 }` = Prime or higher). See [character-fields.md](character-fields.md). |
-| **Assets**           | An asset's id (e.g., `"path/ritualist"`); `hasAnyAsset` with `ids: [ … ]` for any one of several          | `eq: 0` (lacks) or `eq: 1` (has); `hasAnyAsset` takes no operator         | By id, never by display name, which can read differently by language or pack. `npm run gen:manifest` fails on a key that names nothing    |
+| Category              | Names                                                                                         | Reads as                                                                                                                                          |
+| --------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Context**           | `character`, `foe`, `journey`, `site`, `scene`                                                | True when one is active.                                                                                                                          |
+| **Initiative**        | `initiative`                                                                                  | `none`, `character` or `foe`: `initiative == character`.                                                                                          |
+| **Character values**  | `momentum`, `health`, `spirit`, `supply`, `xp`, `edge`, `heart`, `iron`, `shadow`, `wits`     | Numbers.                                                                                                                                          |
+| **Tracks**            | `bonds`, `failures`                                                                           | Ticks; `b` counts boxes: `failures >= 6b`. They have no rank, so a plain number is ticks.                                                         |
+| **Counts**            | `vowCount`, `assetCount`, `companionCount`, `rarityCount`                                     | Numbers.                                                                                                                                          |
+| **Debilities**        | `wounded`, `shaken`, `unprepared`, `encumbered`, `maimed`, `corrupted`, `cursed`, `tormented` | True/false: `wounded`, `!shaken`.                                                                                                                 |
+| **Character fields**  | Any field an extension declares (YRT's `touched`)                                             | A list by its options' order (`touched >= prime`), a counter as a number, a switch as true/false. See [character-fields.md](character-fields.md). |
+| **Global counters**   | A counter shared by the assets that declare it (YRT's `mana`)                                 | A number: `mana >= 1`.                                                                                                                            |
+| **Assets**            | An asset's id (`companion/hawk`); `a \| b` for any one of several                             | True when owned. By id, never by display name, which can read differently by language or pack.                                                    |
+| **An asset's fields** | `self.<field>` (the asset the condition belongs to), `<asset id>.<field>`                     | As the field's type: `self.health >= 1`.                                                                                                          |
+
+`npm run gen:manifest` fails on a condition that doesn't parse, names
+nothing, or compares a value with something it can't be (a word with a
+number, a unit off a track, an option the list doesn't have), with the
+position in the string.
 
 #### Examples
 
-```json
-// Combat move — requires character and foe selected
-"preconditions": [
-  { "key": "hasCharacter", "eq": 1 },
-  { "key": "hasFoe", "eq": 1 }
-]
+```jsonc
+// Combat move — a character and a foe
+"preconditions": "character & foe"
 
-// Strike — requires character has initiative
-"preconditions": [
-  { "key": "hasCharacter", "eq": 1 },
-  { "key": "hasFoe", "eq": 1 },
-  { "key": "initiative", "eq": 1 }
-]
+// Strike — the character has initiative
+"preconditions": "character & foe & initiative == character"
 
-// Clash — requires foe has initiative
-"preconditions": [
-  { "key": "hasCharacter", "eq": 1 },
-  { "key": "hasFoe", "eq": 1 },
-  { "key": "initiative", "eq": 2 }
-]
+// Face Death — health at 0
+"preconditions": "character & health == 0"
 
-// Face Death — requires health at 0
-"preconditions": [
-  { "key": "hasCharacter", "eq": 1 },
-  { "key": "health", "eq": 0 }
-]
+// Companion Endure Harm — at least one companion
+"preconditions": "character & companionCount >= 1"
 
-// Companion Endure Harm — requires at least one companion asset
-"preconditions": [
-  { "key": "hasCharacter", "eq": 1 },
-  { "key": "companionCount", "min": 1 }
-]
+// Cast Conclave Ritual — mana available
+"preconditions": "character & mana >= 1"
 
-// Cast Conclave Ritual — requires mana available
-"preconditions": [
-  { "key": "hasCharacter", "eq": 1 },
-  { "key": "mana", "min": 1 }
-]
+// Learn From Your Failures — the failure track at 6 boxes or more
+"preconditions": "character & failures >= 6b"
 
-// Learn From Your Failures — requires failure track ≥ 6 boxes
-"preconditions": [
-  { "key": "hasCharacter", "eq": 1 },
-  { "key": "failures", "min": 6 }
-]
+// A Touched asset — Prime or higher
+"preconditions": "touched >= prime"
 
-// Hypothetical — requires Ritualist asset and touched prime or worse
-"preconditions": [
-  { "key": "hasCharacter", "eq": 1 },
-  { "key": "Ritualist", "eq": 1 },
-  { "key": "touched", "min": 1 }
-]
-
-// Hypothetical — must not be wounded, spirit > 0
-"preconditions": [
-  { "key": "wounded", "eq": 0 },
-  { "key": "spirit", "min": 1 }
-]
+// Either of two assets, and not wounded
+"preconditions": "(path/ritualist | ritual/bind) & !wounded"
 ```
 
 ### Stat Entries
@@ -699,7 +677,7 @@ Touched assets also start with none marked: how many can be marked follows
 the character's Touched field on the Details tab (`abilityMaxByField`), one at
 Prime, two at Second, all three at Third and Feral. A character whose touched
 level is Pure cannot use a Touched asset: each requires
-`{ "key": "touched", "min": 1 }`.
+`"touched >= prime"`.
 
 ### XP Cost and Gating
 

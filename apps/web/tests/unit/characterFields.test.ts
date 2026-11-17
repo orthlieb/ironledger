@@ -332,7 +332,7 @@ describe('the asset field types', () => {
 	});
 
 	it('shows a field whose if names a counter only while it passes', () => {
-		const gated = { ...sf('sampleNotes'), if: [{ key: 'sampleResolve', min: 3 }] };
+		const gated = { ...sf('sampleNotes'), if: 'sampleResolve >= 3' };
 		const by = (id: string) => sample.find((f) => f.id === id);
 		expect(fieldShown(gated, {}, by)).toBe(false);
 		expect(fieldShown(gated, { sampleResolve: '3' }, by)).toBe(true);

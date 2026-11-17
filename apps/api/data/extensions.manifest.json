@@ -436,12 +436,7 @@
           "type": "string",
           "default": "",
           "placeholder": "Animal…",
-          "if": [
-            {
-              "key": "touched",
-              "min": 1
-            }
-          ],
+          "if": "touched >= prime",
           "roll": {
             "oracle": "yrtAnimal"
           },
@@ -566,12 +561,7 @@
           "type": "markdown",
           "default": "",
           "placeholder": "Anything the other fields don't hold…",
-          "if": [
-            {
-              "key": "sampleSworn",
-              "eq": 1
-            }
-          ]
+          "if": "sampleSworn"
         }
       ],
       "root": "extensions/sample",

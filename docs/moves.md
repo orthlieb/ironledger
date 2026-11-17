@@ -115,14 +115,14 @@ clicked to prevent double-application.
 
 ## Preconditions
 
-Moves can have preconditions checked via `firstPreconditionFailure()`:
+A move's `preconditions` is one condition expression
+([command-language.md → Conditions](command-language.md#conditions)), checked
+by `movePreconditionFailure()`:
 
-- `hasCharacter` — requires a character selected
-- `hasFoe` — requires a foe encounter active
-- `hasSite` — requires a site expedition active
-- `hasJourney` — requires a journey expedition active
-- `initiative` — requires specific initiative state
-- Stat thresholds (momentum, health, etc.)
+- `character`, `foe`, `site`, `journey`, `scene`: one is active.
+- `initiative == character` (`foe`, `none`): who has initiative.
+- Values and thresholds: `health == 0`, `mana >= 1`, `failures >= 6b`.
+- Combined with `&`, `|`, `!` and parentheses: `character & foe & initiative == character`.
 
 Moves that fail preconditions appear dimmed in the picker with a tooltip showing the reason.
 

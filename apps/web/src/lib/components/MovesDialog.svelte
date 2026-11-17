@@ -48,7 +48,7 @@
 		isTableRollMove,
 		hasRollableStats,
 	} from '#lib/moveStore.svelte.js';
-	import { movePreconditionFailure, type Precondition } from '#lib/preconditions.js';
+	import { movePreconditionFailure } from '#lib/preconditions.js';
 	import { applyInitiativeDowngrade } from '#lib/initiativeDowngrade.js';
 	import { appendLog, enrichOutcomeLinks, triggerAction } from '#lib/log.svelte.js';
 	import { renderRich } from '#lib/dsl.js';
@@ -264,7 +264,7 @@
 	// Precondition check
 	// ---------------------------------------------------------------------------
 	function moveFailReason(m: MoveDefinition): string | null {
-		return movePreconditionFailure(m.preconditions as Precondition[] | undefined, ctx?.data, pctx);
+		return movePreconditionFailure(m.preconditions as string | undefined, ctx?.data, pctx);
 	}
 
 	// ---------------------------------------------------------------------------

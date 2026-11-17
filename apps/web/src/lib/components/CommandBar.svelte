@@ -62,7 +62,7 @@
 	} from '#lib/activeContext.svelte.js';
 	import { getActiveDiceCtx } from '#lib/diceContext.svelte.js';
 	import { movePreconditionFailure } from '#lib/preconditions.js';
-	import type { PreconditionContext, Precondition } from '#lib/preconditions.js';
+	import type { PreconditionContext } from '#lib/preconditions.js';
 	import { getExpeditions } from '#lib/expeditionStore.svelte.js';
 	import { ENTITY_KIND_META } from '#lib/entityKinds.js';
 	import { FOE_RANKS } from '#lib/foeStore.svelte.js';
@@ -164,7 +164,7 @@
 	 *  MovesDialog greys moves out by). */
 	function isMoveAvailable(m: MoveDefinition): boolean {
 		return !movePreconditionFailure(
-			m.preconditions as Precondition[] | undefined,
+			m.preconditions as string | undefined,
 			getActiveDiceCtx()?.data,
 			preconditionCtx,
 		);
