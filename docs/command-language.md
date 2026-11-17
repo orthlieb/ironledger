@@ -87,13 +87,19 @@ the sheet only.
 boxes of 4. A number on a track counts by the game's rules unless it carries
 a unit:
 
-| Written | Means                                                                                                                                                                          | Example             |
-| ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------- |
-| `n`     | Mark progress `n` times, by the track's rank: Troublesome 12 ticks a mark, Dangerous 8, Formidable 4, Extreme 2, Epic 1. Bonds and failures have no rank, so a mark is 1 tick. | `/foe.progress+=2`  |
-| `nb`    | `n` boxes, 4 ticks each, whatever the rank.                                                                                                                                    | `/foe.progress=4b`  |
-| `nt`    | `n` ticks.                                                                                                                                                                     | `/foe.progress+=3t` |
+| Written | Means                                                                                                                                                                                   | Example             |
+| ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- |
+| `n`     | `n` marks: counted by the game condition the track depends on, its rank (Troublesome 12 ticks a mark, Dangerous 8, Formidable 4, Extreme 2, Epic 1). With no such condition, `n` ticks. | `/foe.progress+=2`  |
+| `nb`    | `n` boxes, 4 ticks each, whatever the rank.                                                                                                                                             | `/foe.progress=4b`  |
+| `nt`    | `n` ticks.                                                                                                                                                                              | `/foe.progress+=3t` |
 
-`++` and `--` are one mark. Showing a track gives boxes and ticks:
+So `=1`, `=1t` and `=1b` differ: on a Dangerous foe, `/foe.progress=1` is 8
+ticks, `=1t` is 1 tick and `=1b` is 4. A track with no condition to count by
+treats a plain number as ticks: bonds and failures, which have no rank, and
+a track whose rank isn't set.
+
+`++` and `--` are one mark, so the same rule applies: one mark by rank, or
+one tick with none. Showing a track gives boxes and ticks:
 `/foe` → "Wolf (Dangerous): 3 boxes, 2 ticks".
 
 **Harm** is the harm of the foe by its rank, Troublesome 1 to Epic 5. It's
@@ -311,19 +317,19 @@ is "flip". They never meet: a command doesn't take an expression.
 
 The same values and owners as commands, with ids only:
 
-| Name                                                      | True / reads as                                 |
-| --------------------------------------------------------- | ----------------------------------------------- |
-| `character`                                               | There's an active character.                    |
-| `foe`, `journey`, `site`, `scene`                         | There's an active one of that kind.             |
-| `initiative == character` (`foe`, `none`)                 | Who has initiative.                             |
-| `momentum`, `health`, `edge`, `mana`, …                   | The value, as a number.                         |
-| `bonds >= 2b`                                             | A track: in marks, or with `b` or `t`.          |
-| `wounded`, `!shaken`                                      | A debility.                                     |
-| `touched >= prime`                                        | A list: by its options' order.                  |
-| `companion/hawk`                                          | The active character owns that asset.           |
-| `companion/hawk \| companion/raven`                       | Owns either.                                    |
-| `self.health >= 1`                                        | A value of the asset this condition belongs to. |
-| `vowCount`, `assetCount`, `companionCount`, `rarityCount` | Counts.                                         |
+| Name                                                      | True / reads as                                                                               |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| `character`                                               | There's an active character.                                                                  |
+| `foe`, `journey`, `site`, `scene`                         | There's an active one of that kind.                                                           |
+| `initiative == character` (`foe`, `none`)                 | Who has initiative.                                                                           |
+| `momentum`, `health`, `edge`, `mana`, …                   | The value, as a number.                                                                       |
+| `bonds >= 2b`                                             | A track: a plain number as for commands (marks by rank, ticks with none), or with `b` or `t`. |
+| `wounded`, `!shaken`                                      | A debility.                                                                                   |
+| `touched >= prime`                                        | A list: by its options' order.                                                                |
+| `companion/hawk`                                          | The active character owns that asset.                                                         |
+| `companion/hawk \| companion/raven`                       | Owns either.                                                                                  |
+| `self.health >= 1`                                        | A value of the asset this condition belongs to.                                               |
+| `vowCount`, `assetCount`, `companionCount`, `rarityCount` | Counts.                                                                                       |
 
 ### Where they go
 
