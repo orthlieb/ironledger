@@ -117,6 +117,7 @@ active foe's; in a log link, the foe the entry was made against.
 | An asset, by name or id              | `/hawk.health--`, `/companion/hawk.health--`   | One of the active character's assets.        |
 | A companion, by the name you gave it | `/Ash.health--`                                |                                              |
 | `self` (content only)                | `self.health >= 1`                             | The asset a condition or link belongs to.    |
+| `vow`, `companion` (content only)    | `/vow.menace++`                                | The one chosen in the Moves dialog.          |
 
 Typed commands may use the names you gave things. Content (links in move and
 asset text, conditions) uses ids and keywords only, because a display name
@@ -124,6 +125,31 @@ can read differently from one language or content pack to another.
 
 A party value has one home, so it takes no owner: `/Bjorn.supply++` is
 refused ("Supply is the party's: /supply++").
+
+`vow` and `companion` are content-only keywords too: in a move's links they
+mean the vow or companion chosen in the Moves dialog ([below](#moves-that-act-on-a-vow-or-a-companion)).
+
+### When names collide
+
+Names you give things needn't be unique: a character and a foe can both be
+called Wolf, and two foes can both be called Raider. Content never meets the
+problem, since it uses ids and keywords. Typed commands resolve a name in
+three steps:
+
+1. **Only things that have the value count.** Foes have no `health` and
+   characters no `progress`, so `/Wolf.health--` is the character and
+   `/Wolf.progress++` the foe. Most collisions end here.
+2. **Keywords and built-in values win over names.** A foe called "Supply" is
+   reached by quoting it: `/"Supply".progress++`.
+3. **Still more than one?** The command is refused, listing them ("Barrow is
+   a foe and a site"), and typeahead shows one row each, with its kind and
+   current value. Choosing a row inserts a qualifier: the kind before the
+   name, `/foe:Barrow.progress++`, `/site:Barrow.progress++`; and, between
+   two of the same kind, its place in that area's list, `/foe:Raider#2`.
+
+A qualifier is never wrong, so it's always accepted, but typeahead only
+writes one when it's needed. `=` on a kind looks only at that kind, so
+`/foe=Wolf` needs a qualifier only between two foes called Wolf.
 
 ### Making something active
 
@@ -454,16 +480,31 @@ gone.
 
 The checker fails the build on a field id that's declared twice, clashes
 with a built-in value or a keyword (`character`, `foe`, `journey`, `site`,
-`scene`, `self`, `harm` and the verbs), or a `{ "field" }` that
+`scene`, `self`, `vow`, `companion`, `harm` and the verbs), or a `{ "field" }` that
 names no global field in its pack or base.
 
-## Open items
+## Moves that act on a vow or a companion
 
-- **Menace.** Delve's Advance a Threat has three "mark menace" links. Today
-  they add progress to the active foe, but menace is a vow's threat track
-  (`vow.menace`, 0–10). The move needs to name its vow, for instance by
-  choosing one in the Moves dialog, before its links can say
-  `/vow.menace++`.
+A foe, a journey, a site and a scene can be active, so a move's links reach
+them through the active one. A vow and a companion are never active, so a
+move that acts on one asks for it in the Moves dialog:
+
+| Move                                                                            | Asks for                                | Its links                          |
+| ------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------- |
+| Reach a Milestone                                                               | a vow                                   | `[mark progress](/vow.progress++)` |
+| Fulfill Your Vow                                                                | a vow                                   | Rolls against that vow's progress. |
+| Forsake Your Vow                                                                | a vow                                   | Endure Stress at that vow's rank.  |
+| Advance a Threat (Delve)                                                        | a vow                                   | `[mark menace](/vow.menace++)`     |
+| Companion Endure Harm, and the companion parts of Make Camp, Sojourn and Battle | a companion, when there's more than one | `[-1 health](/companion.health--)` |
+
+The choice binds `vow` and `companion` in the move's links, as the active
+foe binds `foe`, and the log entry records it like the foe and expedition.
+Typed, `vow` and `companion` have nothing to refer to:
+`/vow.menace++` answers "Which vow? Name it: /Avenge Bjorn.menace++".
+
+This also fixes two things that are wrong today: Fulfill Your Vow rolls
+against a progress of 0, because nothing tells the dialog which vow; and
+Advance a Threat's "mark menace" links add progress to the active foe.
 
 ## Build order
 
