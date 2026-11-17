@@ -119,6 +119,7 @@
 	// the route tree.
 	import { onMount } from 'svelte';
 	import { cycleViewMode, viewMode } from '#lib/viewModeStore.svelte.js';
+	import { guardStrayFileDrops } from '#lib/actions/dropImage.js';
 	onMount(() => {
 		// Adopt the persisted livery: fontStore's module-level `_font` starts at
 		// DEFAULT_LIVERY on both server and client (so SSR + first client paint
@@ -169,10 +170,14 @@
 		document.addEventListener('ironledger:open-move', openMove);
 		document.addEventListener('ironledger:open-oracle', openOracle);
 		document.addEventListener('keydown', onKey);
+		// A file dropped beside a drop target would otherwise open in place of
+		// the app (#lib/actions/dropImage.ts).
+		const unguardDrops = guardStrayFileDrops();
 		return () => {
 			document.removeEventListener('ironledger:open-move', openMove);
 			document.removeEventListener('ironledger:open-oracle', openOracle);
 			document.removeEventListener('keydown', onKey);
+			unguardDrops();
 		};
 	});
 
