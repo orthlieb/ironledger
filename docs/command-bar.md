@@ -1,5 +1,10 @@
 # Command Bar
 
+> A new command language is agreed but not built yet:
+> [command-language.md](command-language.md). It replaces the syntax below,
+> and the log-link and precondition forms, with no aliases. Until it ships,
+> this page describes what runs.
+
 The command bar is the always-visible input strip at the bottom of `/home`. It
 accepts freeform prose (added to the log as a Note) or slash commands that
 drive the same surfaces the buttons and dialogs do — moves, oracles, active
