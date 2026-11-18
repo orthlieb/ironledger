@@ -97,16 +97,6 @@ export function bindCommandLinks(html: string, entryId: string, bind: LinkBindin
 	});
 }
 
-/** Give each command link in some HTML a binding it doesn't carry yet,
- *  before the entry it goes into binds the rest: an asset ability's links
- *  get `self`, its asset. */
-export function presetCommandLinks(html: string, bind: LinkBinding): string {
-	return html.replace(/<a class="cmd-link"([^>]*)>/g, (_m, rest: string) => {
-		const have = new Set([...rest.matchAll(/\s(data-[a-z-]+)=/g)].map((x) => x[1]!));
-		return `<a class="${CMD_LINK}"${rest}${bindingAttrs(bind, have)}>`;
-	});
-}
-
 /** A clicked link's command, binding, entry and place in it. */
 export function readCommandLink(el: HTMLElement): {
 	cmd: string;

@@ -119,7 +119,7 @@ active foe's; in a log link, the foe the entry was made against.
 | `companions`                         | `/companions.health++`                         | Every companion of the active character.     |
 | `allies`                             | `/allies.spirit++`                             | Every other character.                       |
 | `everyone`                           | `/everyone.momentum+=2`                        | The active character and every ally.         |
-| `self` (content only)                | `self.health >= 1`                             | The asset a condition or link belongs to.    |
+| `self` (content only)                | `self.health >= 1`                             | The asset a condition belongs to.            |
 | `vow`, `companion` (content only)    | `/vow.menace++`                                | The one chosen in the Moves dialog.          |
 
 Typed commands may use the names you gave things. Content (links in move and
@@ -300,12 +300,13 @@ In move, asset and oracle text, a link's target is a command:
 [Inflict double harm](/foe.progress+=2)
 [suffer -1 supply](/supply--)
 [mark wounded](/wounded++)
-[Endure Harm](/move endure harm)
+[Endure Harm](/move endure-harm)
 [Roll on Region](/oracle region)
 ```
 
 A link in content uses ids and keywords (`foe`, `journey`, `site`, `scene`,
-`self`, `companion/hawk`), never display names. The content linter
+`vow`, `companion`, `companions`, `allies`, `everyone`, `companion/hawk`),
+never display names. The content linter
 (`scripts/lint-dsl.mjs`) and the manifest checker parse every link's command
 and fail the build on one that doesn't parse or names nothing.
 
@@ -540,10 +541,11 @@ Recuperate and Partake and Sojourn's Recuperate link "any companions" to
 health, and Take a Hiatus (Delve) writes one link per companion below its
 maximum, bound to it: "Ash +2 health" is `/companion.health=3`.
 
-An asset ability's links that change a value (Herbalist's restorative meal:
-"you and [your companions] take [+1 health]. Any allies who choose to
-partake also take [+1 health]") are clicked in the log: a marked ability
-that names the move is copied into the move's entry, after its outcome
+An asset's text links moves and oracles only, never a value: an asset
+doesn't write to the log. What an ability gives is the player's to take,
+with the Moves dialog's Relevant Assets row as the reminder; the groups make
+it one command (Herbalist's meal: `/companions.health++`,
+`/allies.health++`)
 ([data-schema.md → Move Links in Ability Text](data-schema.md#move-links-in-ability-text)).
 
 Typed, `vow` and `companion` have nothing to refer to:

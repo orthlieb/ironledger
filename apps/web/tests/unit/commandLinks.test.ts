@@ -9,7 +9,6 @@ import {
 	commandLinkHtml,
 	commandLinksIn,
 	linkVerb,
-	presetCommandLinks,
 	readCommandLink,
 	spendCommandLink,
 } from '../../src/lib/commands/links.js';
@@ -146,21 +145,5 @@ describe('linkVerb and commandLinksIn', () => {
 			{ cmd: '/hawk.name="A&B"', label: 'a &amp; b' },
 			{ cmd: '/momentum++', label: 'x' },
 		]);
-	});
-});
-
-describe('presetCommandLinks', () => {
-	it('gives links a binding before their entry binds the rest', () => {
-		const html = presetCommandLinks(
-			commandLinkHtml('+1', '/health++') + commandLinkHtml('x', '/self.health--', { selfId: 'a' }),
-			{ selfId: 'path/herbalist' },
-		);
-		expect(html).toBe(
-			'<a class="cmd-link" data-cmd="/health++" data-self-id="path/herbalist">+1</a>' +
-				'<a class="cmd-link" data-cmd="/self.health--" data-self-id="a">x</a>',
-		);
-		expect(bindCommandLinks(html, 'e1', { charId: 'c1' })).toContain(
-			'data-self-id="path/herbalist" data-entry-id="e1" data-link="0" data-char-id="c1"',
-		);
 	});
 });

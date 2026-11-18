@@ -36,7 +36,6 @@
 		stripHtml,
 		tableRollHtml,
 		takeAHiatusHtml,
-		abilityLinksHtml,
 		delveDepthsColumn,
 	} from '#lib/moveRoll.js';
 	import {
@@ -581,8 +580,6 @@
 			if (isDelveDepthsMove) outcomeHtml = delveDepthsColumn(outcomeHtml, stat);
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
-		// The character's abilities for this move that have links to click.
-		parts.push(abilityLinksHtml(relevantAbilities));
 
 		// On a miss for a character move, offer +1 failure (Delve-only mechanic)
 		if (!hits1 && !hits2 && isSourceEnabled('delve')) {
@@ -689,7 +686,6 @@
 			});
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
-		parts.push(abilityLinksHtml(relevantAbilities));
 
 		const html = bindCommandLinks(parts.join(''), entryId, entryBinding());
 

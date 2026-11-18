@@ -241,12 +241,15 @@ function checkCommand(cmd, cat, self) {
 }
 
 // ── Scan one text blob; push {token, reason} errors ──────────────────────────
-function scanText(text, cat, { strayHtml, self }, errs) {
+function scanText(text, cat, { strayHtml, self, verbsOnly }, errs) {
   if (typeof text !== 'string' || !text) return;
   for (const m of text.matchAll(LINK)) {
     const target = m[2];
     let reason = null;
-    if (target.startsWith('/')) reason = checkCommand(target, cat, self);
+    if (target.startsWith('/') && verbsOnly && parseCommand(target).kind !== 'verb')
+      reason =
+        "asset text links moves and oracles only: what an ability gives is the player's to take";
+    else if (target.startsWith('/')) reason = checkCommand(target, cat, self);
     else if (target.startsWith('roll:')) reason = checkRoll(target.slice(5), cat);
     else if (/^[a-z]+:/.test(target))
       reason = `old link form: a link's target is a command now, e.g. [+1 momentum](/momentum++)`;
@@ -328,7 +331,9 @@ async function main() {
     for (const a of data.assets ?? []) {
       if (a.html) continue;
       const errs = [];
-      const opts = { strayHtml: false, self: a };
+      // An asset never writes to the log: its text links moves and oracles,
+      // and the Moves dialog lists the abilities that name the move made.
+      const opts = { strayHtml: false, self: a, verbsOnly: true };
       scanText(a.preamble, cat, opts, errs);
       scanText(a.description, cat, opts, errs);
       for (const ab of a.abilities ?? []) scanText(ab.text, cat, opts, errs);

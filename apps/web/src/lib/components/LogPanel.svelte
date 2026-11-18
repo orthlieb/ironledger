@@ -225,12 +225,15 @@
 			`</div>` +
 			matchNoteHtml(newHits1, newHits2, isMatch);
 
-		// The new outcome's text.
+		// The new outcome's text, its links bound as the roll's were.
 		const move = findMove(moveId);
 		let outcomeTextHtml = '';
 		if (move) {
 			const outcome = moveOutcomeHtml(move, newHits1, newHits2);
-			if (outcome) outcomeTextHtml = `<div class="move-outcome">${outcome}</div>`;
+			if (outcome) {
+				const bound = bindCommandLinks(outcome, entry.id, { charId, ...entry.roll.bind });
+				outcomeTextHtml = `<div class="move-outcome">${bound}</div>`;
+			}
 		}
 
 		// Rebuild HTML: keep roll-line and roll-cancel, replace everything after
@@ -238,17 +241,8 @@
 		// Find the end of the roll-line div(s) — everything before the outcome class
 		const outcomeIdx = existingHtml.search(/<div class="roll-outcome/);
 		const prefix = outcomeIdx >= 0 ? existingHtml.substring(0, outcomeIdx) : existingHtml;
-		// The asset abilities the roll carried stay, what was spent in them
-		// too; their links take new places beside the new outcome's.
-		const abilities = (existingHtml.match(/<div class="move-ability">[\s\S]*?<\/div>/g) ?? [])
-			.join('')
-			.replace(/\sdata-(?:link|entry-id)="[^"]*"/g, '');
-		const tail = bindCommandLinks(outcomeTextHtml + abilities, entry.id, {
-			charId,
-			...entry.roll.bind,
-		});
 
-		const newHtml = prefix + burnLine + newOutcomeLine + tail;
+		const newHtml = prefix + burnLine + newOutcomeLine + outcomeTextHtml;
 
 		// Update log entry and clear roll meta (prevents double-burn)
 		updateLogEntryHtml(entry.id, newHtml, undefined, true);
@@ -1168,16 +1162,6 @@
 	.entry-body :global(.move-failure-row a.cmd-link) {
 		color: var(--color-danger, #ef4444);
 		font-weight: 600;
-	}
-	/* An asset ability the move brought in (moveRoll.ts → abilityLinksHtml). */
-	.entry-body :global(.move-ability) {
-		margin-top: 4px;
-		padding-left: 8px;
-		border-left: 2px solid var(--border);
-		font-size: 0.95em;
-	}
-	.entry-body :global(.move-ability p) {
-		margin: 0;
 	}
 	.entry-body :global(.resource-spent),
 	.entry-body :global(.xp-spent) {

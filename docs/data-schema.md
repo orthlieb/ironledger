@@ -229,7 +229,7 @@ take.
 | `[any companions](/companions.health++)`                                                      | Every companion the character has, alike (Make Camp, Sojourn): no `choose`.                                                              |
 | `[+1 health](/allies.health++)`, `/everyone.momentum+=2`                                      | Every other character (`allies`), or the character and every ally (`everyone`), alike. Not a party value: `/allies.supply++` is refused. |
 | `[-harm health](/health-=harm)`, `[-harm spirit](/spirit-=harm)`                              | Endure Harm / Endure Stress: the dialog shows the amount resolved, and its Apply button applies it.                                      |
-| `/companion/hawk.health--`, `/self.health--`                                                  | An asset's field: by its id, or `self` in the asset's own text.                                                                          |
+| `/companion/hawk.health--`                                                                    | An asset's field, by its id. (Asset text itself links moves and oracles only.)                                                           |
 
 A link can change a value, `/burn`, or open a move, an oracle or a site's
 picker (`/site.theme`). It can't make something active, write a note, mark a
@@ -474,16 +474,13 @@ Each ability object:
 Ability `text` (and `preamble` / `description`) use the same **markdown with
 command links** as move outcomes — a move reference is a `[label](/move <id>)` link. Click
 delegation is wired up in the asset dialog, so move and oracle links in asset
-ability text open them. A link that changes a value reads as plain text on
-the card and is clicked in the log instead: when a move is made, each marked
-ability that names it in `moves` and has such a link is copied into the
-move's log entry, after the outcome (`div.move-ability`, "Herbalist: …"),
-its links bound to the entry with `self` as the asset. A momentum burn keeps
-those blocks. An ability that only names moves isn't copied. Herbalist's
-restorative meal reads "you and [your companions](/companions.health++) take
-[+1 health](/health++). Any allies who choose to partake also take
-[+1 health](/allies.health++)". See [Links are commands](#links-are-commands)
-for the forms.
+ability text open them. Asset text links **moves and oracles only**: an
+asset never writes to the log. What an ability gives ("take +1 momentum on a
+hit", "you and your companions take +1 health") stays text, the player's to
+take (by hand, or with a command: `/companions.health++`). The Moves dialog's
+**Relevant Assets** row lists the marked abilities that name the move being
+made. The lint refuses a value link in asset text. See
+[Links are commands](#links-are-commands) for the forms.
 
 ```text
 <!-- Example: Archer ability 1 -->
