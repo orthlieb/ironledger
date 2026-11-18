@@ -402,35 +402,37 @@
 							</ToggleGroup.Root>
 						</div>
 
-						<!-- Sound + appearance depend on 3D. The wrapper dims + blocks
+						<!-- Sound: the 3D dice's rattle and the scream on a miss. Not
+						     under the 3D switch: the scream plays without 3D too, so
+						     it has to be possible to turn it off there. -->
+						{#if isDiceSoundSupported()}
+							<div class="sd-row">
+								<span class="sd-label">Sound</span>
+								<ToggleGroup.Root
+									type="single"
+									value={diceSound ? 'on' : 'off'}
+									onValueChange={(v) => v && applyDiceSound(v === 'on')}
+									class="sd-seg"
+									aria-label="Sound"
+								>
+									<ToggleGroup.Item
+										value="on"
+										class="sd-seg-btn"
+										data-tooltip="Dice rattle, and a scream on a miss">On</ToggleGroup.Item
+									>
+									<ToggleGroup.Item value="off" class="sd-seg-btn" data-tooltip="Roll silently"
+										>Off</ToggleGroup.Item
+									>
+								</ToggleGroup.Root>
+							</div>
+						{/if}
+
+						<!-- Appearance depends on 3D. The wrapper dims + blocks
 						     the whole group when 3D is off (per-control `disabled` also
 						     stops ColorPicker from mounting its popover); the wrapper is
 						     the reliable gate since bits-ui controls don't reflect their
 						     `disabled` prop to the DOM. -->
 						<div class="sd-dice-gated" class:sd-dice-gated--off={!dice3d}>
-							{#if isDiceSoundSupported()}
-								<div class="sd-row">
-									<span class="sd-label">Sound</span>
-									<ToggleGroup.Root
-										type="single"
-										value={diceSound ? 'on' : 'off'}
-										onValueChange={(v) => v && applyDiceSound(v === 'on')}
-										class="sd-seg"
-										aria-label="Dice rattle sound"
-										disabled={!dice3d}
-									>
-										<ToggleGroup.Item
-											value="on"
-											class="sd-seg-btn"
-											data-tooltip="Play a dice rattle while the dice roll">On</ToggleGroup.Item
-										>
-										<ToggleGroup.Item value="off" class="sd-seg-btn" data-tooltip="Roll silently"
-											>Off</ToggleGroup.Item
-										>
-									</ToggleGroup.Root>
-								</div>
-							{/if}
-
 							<div class="sd-row">
 								<span class="sd-label">Texture</span>
 								<Select
