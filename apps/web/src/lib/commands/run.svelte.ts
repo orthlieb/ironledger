@@ -46,7 +46,12 @@ import { renderNote, escHtml } from '#lib/markdown.js';
 import { rollDie, animateDice, type DiceSpec } from '#lib/dice.js';
 import { getEndId, getStartId, hasSection, setEnd, setStart } from '#lib/sectionStore.svelte.js';
 import { capAbilitiesForField, maxMomentum } from '#lib/character.js';
-import { FLOOR_RULES, FLOOR_OVERFLOW_RULES, OVERFLOW_RULES } from '#lib/cascadeRules.js';
+import {
+	COMPANION_HEALTH_OVERFLOW,
+	FLOOR_RULES,
+	FLOOR_OVERFLOW_RULES,
+	OVERFLOW_RULES,
+} from '#lib/cascadeRules.js';
 import { DEBILITIES } from './values.js';
 import type { CharacterData, FoeEncounter } from '#lib/types.js';
 
@@ -284,6 +289,30 @@ function runChange(p: Extract<Plan, { kind: 'change' }>): RunResult {
 		else setPartyFields({ [spec.key]: String(p.to) });
 	} else save(owner);
 	if (owner.kind === 'character' && ch) cascade(ch, spec.key, p.from, p.to, p.wanted);
+	// A companion's health taken past 0: the rest comes off momentum.
+	const asked = p.wanted ?? Number(p.to);
+	if (
+		owner.kind === 'asset' &&
+		owner.def?.category === 'Companion' &&
+		spec.key === 'health' &&
+		typeof p.from === 'number' &&
+		asked < 0 &&
+		asked < p.from
+	) {
+		const entryId = crypto.randomUUID();
+		appendLog(
+			COMPANION_HEALTH_OVERFLOW.logTitle,
+			bindCommandLinks(
+				COMPANION_HEALTH_OVERFLOW.logHtml({
+					overflow: -asked,
+					charId: owner.character.id,
+					name: ownerLabel(owner),
+				}),
+				entryId,
+			),
+			entryId,
+		);
+	}
 	return { ok: true, message: p.summary };
 }
 

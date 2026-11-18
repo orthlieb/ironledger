@@ -111,6 +111,7 @@ active foe's; in a log link, the foe the entry was made against.
 | Owner                                | Example                                        | Notes                                        |
 | ------------------------------------ | ---------------------------------------------- | -------------------------------------------- |
 | (left out)                           | `/health-=2`                                   | The active character; for supply, the party. |
+| `me`                                 | `/me.health-=harm`                             | The active character, said: the same.        |
 | Another character, by name           | `/Bjorn.health-=2`                             | Acts on Bjorn without making him active.     |
 | `foe`, `journey`, `site`, `scene`    | `/foe.progress++`                              | The active one of that kind.                 |
 | A foe, expedition or vow, by name    | `/Wolf.progress++`, `/Avenge Bjorn.progress++` | A vow: one of the active character's.        |
@@ -140,6 +141,13 @@ asset (the hawk, horse, hound and the rest of the animals, and Kindred); not
 another character, and not an asset that only has health, like Awakening's
 simulacrum, which "is not a companion and may not be healed". A character
 with none answers "Bjorn has no companions."
+
+`me` is you: the active character, or in a link the character its entry
+was made for. `/me.health-=harm` is `/health-=harm` with the owner said, and
+reads well beside `/allies.` and `/everyone.`. It's also initiative's
+setting for you: `/initiative=me` (`none`, `me`, `foe`), and Strike's
+condition is `initiative == me`. `/me` shows you; it chooses no one
+(`/character=Edda` does).
 
 `allies` is every other character ("everyone but me"; the rules' own word:
 "any allies who choose to partake also take +1 health"), and `everyone` is
@@ -347,7 +355,7 @@ the old form.
 A condition is one expression, a string:
 
 ```json
-"preconditions": "character & foe & initiative == character"
+"preconditions": "character & foe & initiative == me"
 ```
 
 | Operator                    | Meaning                                                       |
@@ -378,7 +386,7 @@ The same values and owners as commands, with ids only:
 | --------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | `character`                                               | There's an active character.                                                                  |
 | `foe`, `journey`, `site`, `scene`                         | There's an active one of that kind.                                                           |
-| `initiative == character` (`foe`, `none`)                 | Who has initiative.                                                                           |
+| `initiative == me` (`foe`, `none`)                        | Who has initiative.                                                                           |
 | `momentum`, `health`, `edge`, `mana`, …                   | The value, as a number.                                                                       |
 | `bonds >= 2b`                                             | A track: a plain number as for commands (marks by rank, ticks with none), or with `b` or `t`. |
 | `wounded`, `!shaken`                                      | A debility.                                                                                   |
@@ -399,17 +407,17 @@ The 102 condition objects in content used two operators, `eq` and `min`. A
 one-off script converted them to 70 expressions (one per move, asset or
 field); the object form is now rejected.
 
-| Today                                       | Expression                  |
-| ------------------------------------------- | --------------------------- |
-| `[{ "key": "hasCharacter", "eq": 1 }]`      | `"character"`               |
-| `[{ "key": "hasFoe", "eq": 0 }]`            | `"!foe"`                    |
-| `[{ "key": "initiative", "eq": 1 }]`        | `"initiative == character"` |
-| `[{ "key": "touched", "min": 1 }]`          | `"touched >= prime"`        |
-| `[{ "key": "supply", "min": 1 }]`           | `"supply >= 1"`             |
-| `[{ "key": "bonds", "min": 2 }]` (boxes)    | `"bonds >= 2b"`             |
-| `[{ "key": "companion/hawk", "eq": 1 }]`    | `"companion/hawk"`          |
-| `[{ "key": "hasAnyAsset", "ids": [a, b] }]` | `"a \| b"`                  |
-| A list of several                           | Joined with `&`             |
+| Today                                       | Expression           |
+| ------------------------------------------- | -------------------- |
+| `[{ "key": "hasCharacter", "eq": 1 }]`      | `"character"`        |
+| `[{ "key": "hasFoe", "eq": 0 }]`            | `"!foe"`             |
+| `[{ "key": "initiative", "eq": 1 }]`        | `"initiative == me"` |
+| `[{ "key": "touched", "min": 1 }]`          | `"touched >= prime"` |
+| `[{ "key": "supply", "min": 1 }]`           | `"supply >= 1"`      |
+| `[{ "key": "bonds", "min": 2 }]` (boxes)    | `"bonds >= 2b"`      |
+| `[{ "key": "companion/hawk", "eq": 1 }]`    | `"companion/hawk"`   |
+| `[{ "key": "hasAnyAsset", "ids": [a, b] }]` | `"a \| b"`           |
+| A list of several                           | Joined with `&`      |
 
 ### Failure messages
 
@@ -438,7 +446,7 @@ position in the string.
 | `edge`, `heart`, `iron`, `shadow`, `wits`                                                     | character                      | 0–4                                   | yes      |
 | `bonds`, `failures`                                                                           | character                      | track, 0–40 ticks                     | yes      |
 | `wounded`, `shaken`, `unprepared`, `encumbered`, `maimed`, `corrupted`, `cursed`, `tormented` | character                      | true/false                            | yes      |
-| `initiative`                                                                                  | character                      | `none`, `character`, `foe`            | yes      |
+| `initiative`                                                                                  | character                      | `none`, `me`, `foe`                   | yes      |
 | `progress`                                                                                    | foe, journey, site, scene, vow | track, 0–40 ticks, by its rank        | yes      |
 | `vanquished`                                                                                  | foe                            | true/false                            | yes      |
 | `complete`                                                                                    | journey, site, scene           | true/false                            | yes      |
@@ -521,13 +529,13 @@ A foe, a journey, a site and a scene can be active, so a move's links reach
 them through the active one. A vow and a companion are never active, so a
 move that acts on one asks for it in the Moves dialog:
 
-| Move                     | Asks for    | Its links                          |
-| ------------------------ | ----------- | ---------------------------------- |
-| Reach a Milestone        | a vow       | `[mark progress](/vow.progress++)` |
-| Fulfill Your Vow         | a vow       | Rolls against that vow's progress. |
-| Forsake Your Vow         | a vow       | Endure Stress at that vow's rank.  |
-| Advance a Threat (Delve) | a vow       | `[mark menace](/vow.menace++)`     |
-| Companion Endure Harm    | a companion | `[+1 health](/companion.health++)` |
+| Move                     | Asks for    | Its links                                                                     |
+| ------------------------ | ----------- | ----------------------------------------------------------------------------- |
+| Reach a Milestone        | a vow       | `[mark progress](/vow.progress++)`                                            |
+| Fulfill Your Vow         | a vow       | Rolls against that vow's progress.                                            |
+| Forsake Your Vow         | a vow       | Endure Stress at that vow's rank.                                             |
+| Advance a Threat (Delve) | a vow       | `[mark menace](/vow.menace++)`                                                |
+| Companion Endure Harm    | a companion | `[-harm health](/companion.health-=harm)`, `[+1 health](/companion.health++)` |
 
 A move says what it asks for with `"choose": "vow"` or `"choose":
 "companion"`; the lint fails a move that links to `vow` or `companion`

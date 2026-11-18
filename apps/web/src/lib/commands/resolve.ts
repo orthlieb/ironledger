@@ -87,6 +87,9 @@ export const SELECT_KINDS = ['character', 'foe', 'journey', 'site', 'scene'] as 
 export type SelectKind = (typeof SELECT_KINDS)[number];
 /** Keywords for what a move or a link chooses; typed, they're refused. */
 export const BOUND_KEYWORDS = ['vow', 'companion', 'self'] as const;
+/** You: the active character (in a link, the one its entry was made for).
+ *  `/me.health-=harm` is `/health-=harm` with the owner said. */
+export const ME = 'me';
 /** Several owners at once, each changed alike: `companions` (every
  *  companion of the active character: Make Camp's "+1 health for you and any
  *  companions"), `allies` (every other character: "any allies who choose to
@@ -313,6 +316,7 @@ export function isReserved(name: string, w: World): boolean {
 		(SELECT_KINDS as readonly string[]).includes(t) ||
 		(BOUND_KEYWORDS as readonly string[]).includes(t) ||
 		(GROUP_KEYWORDS as readonly string[]).includes(t) ||
+		t === ME ||
 		t === 'harm' ||
 		characterValueKeys(w.cat).some((k) => k.toLowerCase() === t)
 	);
@@ -387,6 +391,7 @@ export function resolveOwner(
 		const ch = activeCharacter(w);
 		switch (t) {
 			case 'character':
+			case ME:
 				return ch ?? { error: 'No active character.' };
 			case 'foe':
 				return activeFoe(w) ?? { error: 'No active foe.' };
@@ -612,6 +617,17 @@ function onValueCommand(p: Extract<Parsed, { kind: 'value' }>, w: World): Plan {
 	}
 	if (p.partialOp) return incomplete('Needs an operator: ++ -- += -= = !');
 
+	// `/me`: you, shown; `/me=Edda` would choose, which is /character=.
+	if (!p.owner && !p.value.quoted && !p.value.qualifier && normName(p.value.text) === ME) {
+		const ch = activeCharacter(w);
+		if (!ch) return error('No active character.');
+		if (p.op === '=')
+			return error(
+				`/me is you, the active character: choose another with /character=${p.operand ?? ''}`,
+			);
+		if (p.op) return error(`Change one of your values: /me.health${opText(p)}`);
+		return { kind: 'show', text: showOwner(ch, w.cat) };
+	}
 	const group = p.owner ? groupKeyword(p.owner) : undefined;
 	if (group) return onGroup(group, p, w);
 	const alone = p.owner ? undefined : groupKeyword(p.value);

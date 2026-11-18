@@ -191,6 +191,8 @@ export interface HarmContext {
 	foeHarm?: number;
 	curHealth?: number;
 	curSpirit?: number;
+	/** Companion Endure Harm: the chosen companion's health. */
+	curCompanionHealth?: number;
 }
 
 /**
@@ -232,6 +234,13 @@ export function resolveHarmLinks(html: string, ctx?: HarmContext): string {
 		/<a class="cmd-link" data-cmd="\/health-=harm"[^>]*>-harm health<\/a>/g,
 		moveId === 'move/endure-harm' && ctx?.foeHarm !== undefined
 			? harmSplit('health', ctx.curHealth)
+			: '<span class="harm-note">-harm health</span>',
+	);
+	// Companion Endure Harm: the amount, split at the companion's health.
+	html = html.replace(
+		/<a class="cmd-link" data-cmd="\/companion\.health-=harm"[^>]*>-harm health<\/a>/g,
+		moveId === 'move/companion-endure-harm' && ctx?.foeHarm !== undefined
+			? harmSplit('health', ctx.curCompanionHealth)
 			: '<span class="harm-note">-harm health</span>',
 	);
 	// Spirit harm-links: known foe → the amount; no foe → plain placeholder text.

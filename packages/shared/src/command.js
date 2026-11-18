@@ -384,7 +384,7 @@ export const BUILTIN_VALUES = {
     corrupted: { kind: 'bool' },
     cursed: { kind: 'bool' },
     tormented: { kind: 'bool' },
-    initiative: { kind: 'list', options: ['none', 'character', 'foe'] },
+    initiative: { kind: 'list', options: ['none', 'me', 'foe'] },
     vowCount: { kind: 'count' },
     assetCount: { kind: 'count' },
     companionCount: { kind: 'count' },
@@ -434,8 +434,9 @@ export const BUILTIN_VALUES = {
   },
 };
 
-/** Keywords a content link names an owner by: the active one of a kind,
- *  what a move or link chose (vow, companion) or belongs to (self), or a
+/** Keywords a content link names an owner by: the active one of a kind
+ *  (`me` is the active character, as `character` is), what a move or link
+ *  chose (vow, companion) or belongs to (self), or a
  *  group, each changed alike: every companion of the character (companions),
  *  every other character (allies), the character and every ally (everyone). */
 export const OWNER_KEYWORDS = /** @type {const} */ ([
@@ -449,6 +450,7 @@ export const OWNER_KEYWORDS = /** @type {const} */ ([
   'companions',
   'allies',
   'everyone',
+  'me',
   'self',
 ]);
 

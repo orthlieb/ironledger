@@ -143,6 +143,10 @@ the same follow-ups a change on the sheet does (`#lib/commands/run.svelte.ts`
 
 - **Overflow** (`OVERFLOW_RULES`): health or spirit taken below 0 — an entry
   offers the rest as momentum lost (`/momentum-=n`).
+- **A companion's overflow** (`COMPANION_HEALTH_OVERFLOW`): a companion's
+  health taken below 0, typed (`/Ash.health-=harm`) or applied in Companion
+  Endure Harm — "Ash's health is zero. You lose −n momentum instead.", the
+  link bound to the companion's character.
 - **Floor overflow** (`FLOOR_OVERFLOW_RULES`): a value already at its minimum
   taken further:
   - Momentum at −6 → "Face a Setback", with per-point exchange links

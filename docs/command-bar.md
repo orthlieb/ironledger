@@ -28,6 +28,7 @@ reference, shorter.
 | `/foe.progress+=2`               | Two marks on the active foe's track, by its rank (`b` boxes, `t` ticks).          |
 | `/Bjorn.health-=2`               | Another character's value, without making them active.                            |
 | `/Ash.health--`                  | A companion by the name you gave it (or `/hawk.health--`).                        |
+| `/me.health-=harm`               | You, said: the same as `/health-=harm`.                                           |
 | `/companions.health++`           | Every companion of the active character, each changed alike.                      |
 | `/allies.spirit++`               | Every other character (`/everyone.spirit++`: you and them).                       |
 | `/Avenge Bjorn.menace++`         | A vow by its name.                                                                |

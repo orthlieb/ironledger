@@ -106,7 +106,11 @@ runs for the dialog's character, and move and oracle links open what they
 name.
 
 `/health-=harm` and `/spirit-=harm` in Endure Harm and Endure Stress show the
-amount resolved (`resolveHarmLinks`); the Apply button applies it.
+amount resolved (`resolveHarmLinks`); the Apply button applies it. Companion
+Endure Harm works the same way on the companion chosen:
+`/companion.health-=harm` shows the amount, split at the companion's health,
+and Apply takes it off the companion through the command runner, which logs
+it and offers any leftover as −momentum.
 
 **Special case**: `/move ask-the-oracle` opens the Oracles dialog instead of
 the Moves dialog.
@@ -118,9 +122,9 @@ A move's `preconditions` is one condition expression
 by `movePreconditionFailure()`:
 
 - `character`, `foe`, `site`, `journey`, `scene`: one is active.
-- `initiative == character` (`foe`, `none`): who has initiative.
+- `initiative == me` (`foe`, `none`): who has initiative.
 - Values and thresholds: `health == 0`, `mana >= 1`, `failures >= 6b`.
-- Combined with `&`, `|`, `!` and parentheses: `character & foe & initiative == character`.
+- Combined with `&`, `|`, `!` and parentheses: `character & foe & initiative == me`.
 
 Moves that fail preconditions appear dimmed in the picker with a tooltip showing the reason.
 

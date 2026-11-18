@@ -183,7 +183,7 @@ function checkCommand(cmd, cat, self) {
   } else {
     const o = p.owner.text;
     where = ` on ${o}`;
-    if (o === 'character') v = characterKind(key, cat);
+    if (o === 'character' || o === 'me') v = characterKind(key, cat);
     else if (['foe', 'journey', 'site', 'scene', 'vow'].includes(o)) v = builtinKind(o, key);
     else if (o === 'companion')
       v = cat.companions.map((a) => assetFieldKind(a, key, cat)).find(Boolean) ?? null;

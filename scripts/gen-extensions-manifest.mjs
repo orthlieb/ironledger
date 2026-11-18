@@ -80,7 +80,7 @@ const DEBILITY_NAMES = new Set([
   'cursed',
   'tormented',
 ]);
-const INITIATIVE = ['none', 'character', 'foe'];
+const INITIATIVE = ['none', 'me', 'foe'];
 const RESERVED_NAMES = new Set([
   ...CONTEXT_NAMES,
   ...NUMBER_NAMES,
@@ -90,6 +90,10 @@ const RESERVED_NAMES = new Set([
   'self',
   'vow',
   'companion',
+  'companions',
+  'allies',
+  'everyone',
+  'me',
   'party',
   'harm',
 ]);
@@ -138,7 +142,7 @@ function checkCondition(src, at, resolve) {
         );
       case 'initiative':
         if (lv.kind !== 'word' || !INITIATIVE.includes(lv.word))
-          throw new Error(`${here}: initiative compares with none, character or foe`);
+          throw new Error(`${here}: initiative compares with none, me or foe`);
         if (t.op !== '==' && t.op !== '!=') throw new Error(`${here}: initiative takes == or !=`);
         break;
       case 'number':

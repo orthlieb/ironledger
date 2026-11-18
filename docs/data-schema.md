@@ -96,7 +96,7 @@ the reason on hover. For assets, it's faded and can't be picked; an owned
 asset whose condition fails is faded on the sheet.
 
 ```json
-"preconditions": "character & foe & initiative == character"
+"preconditions": "character & foe & initiative == me"
 ```
 
 | Operator                    | Meaning                                                                             |
@@ -111,7 +111,7 @@ A name on its own is true when it's above 0, chosen, or exists.
 | Category              | Names                                                                                         | Reads as                                                                                                                                          |
 | --------------------- | --------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
 | **Context**           | `character`, `foe`, `journey`, `site`, `scene`                                                | True when one is active.                                                                                                                          |
-| **Initiative**        | `initiative`                                                                                  | `none`, `character` or `foe`: `initiative == character`.                                                                                          |
+| **Initiative**        | `initiative`                                                                                  | `none`, `me` or `foe`: `initiative == me`.                                                                                                        |
 | **Character values**  | `momentum`, `health`, `spirit`, `supply`, `xp`, `edge`, `heart`, `iron`, `shadow`, `wits`     | Numbers.                                                                                                                                          |
 | **Tracks**            | `bonds`, `failures`                                                                           | Ticks; `b` counts boxes: `failures >= 6b`. They have no rank, so a plain number is ticks.                                                         |
 | **Counts**            | `vowCount`, `assetCount`, `companionCount`, `rarityCount`                                     | Numbers.                                                                                                                                          |
@@ -133,7 +133,7 @@ position in the string.
 "preconditions": "character & foe"
 
 // Strike — the character has initiative
-"preconditions": "character & foe & initiative == character"
+"preconditions": "character & foe & initiative == me"
 
 // Face Death — health at 0
 "preconditions": "character & health == 0"
@@ -219,7 +219,7 @@ take.
 | `[+1 momentum](/momentum++)`, `[+2 health](/health+=2)`, `[−1 supply](/supply--)`             | Changes a value of the character: momentum, health, spirit, supply (the party's), xp, a stat, a content pack's field (`/mana--`).        |
 | `[mark a tick](/bonds++)`, `[+2 failures](/failures+=2)`, `[clear all progress](/failures=0)` | Bonds and failures: ticks (they have no rank).                                                                                           |
 | `[wounded](/wounded++)`, `[wounded](/wounded--)`                                              | Marks or clears a debility.                                                                                                              |
-| `[You have initiative](/initiative=character)`                                                | Sets initiative: `none`, `character`, `foe`.                                                                                             |
+| `[You have initiative](/initiative=me)`                                                       | Sets initiative: `none`, `me`, `foe`.                                                                                                    |
 | `[Inflict your harm](/foe.progress++)`, `[Inflict double harm](/foe.progress+=2)`             | The foe's progress, in marks by its rank (`b` boxes, `t` ticks).                                                                         |
 | `/journey.progress++`, `/site.progress++`, `/scene.progress++`                                | The expedition's progress, by its rank.                                                                                                  |
 | `[mark a countdown segment](/scene.countdown++)`                                              | The scene's countdown.                                                                                                                   |
@@ -268,7 +268,10 @@ and:
   (Troublesome 1 … Epic 5).
 - **Reach a Milestone** marks the chosen vow's progress (`/vow.progress++`).
 - **Advance a Threat** (Delve) marks its menace (`/vow.menace++`).
-- **Companion Endure Harm** heals the chosen companion (`/companion.health++`).
+- **Companion Endure Harm** takes the harm off the chosen companion (its
+  trigger's `[-harm health](/companion.health-=harm)`, with the dialog's amount
+  and Apply, as Endure Harm's) and heals it (`/companion.health++`). Harm past
+  its 0 health comes off the character's momentum, as a link.
 
 The lint fails a move that links to `vow` or `companion` without the
 matching `choose`.

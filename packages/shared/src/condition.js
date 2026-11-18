@@ -3,7 +3,7 @@
  * Condition expressions — when a move can be made, an asset taken, a field
  * shown (docs/command-language.md → Conditions).
  *
- *   character & foe & initiative == character
+ *   character & foe & initiative == me
  *   touched >= prime
  *   companion/hawk | companion/raven
  *   !wounded & (mana >= 2 | self.health >= 1)

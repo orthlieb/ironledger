@@ -5,7 +5,7 @@
  * this module says what each name reads on a character and in the current
  * context, and why a condition fails, for the UI.
  *
- *   character & foe & initiative == character
+ *   character & foe & initiative == me
  *   touched >= prime
  *   companion/hawk | companion/raven
  *   bonds >= 2b
@@ -58,7 +58,7 @@ export interface PreconditionContext {
 	hasJourney?: boolean;
 	hasScene?: boolean;
 	hasFoe?: boolean;
-	/** 0 = none, 1 = character has initiative, 2 = foe has initiative */
+	/** 0 = none, 1 = the character has initiative (`me`), 2 = the foe has it */
 	initiative?: number;
 	/** Harm dealt by the active foe per hit (from FOE_RANKS). Used to resolve harm-links at roll time. */
 	foeHarm?: number;
@@ -118,7 +118,7 @@ const COUNTS: Record<string, string> = {
 	rarityCount: 'Rarity items',
 };
 
-const INITIATIVE = ['none', 'character', 'foe'];
+const INITIATIVE = ['none', 'me', 'foe'];
 
 const cap = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
@@ -285,7 +285,7 @@ function testMessage(t: TestNode, s: Subject, negated: boolean): string {
 		case 'initiative': {
 			const want = t.level?.kind === 'word' ? t.level.word : '';
 			if (op === '==' && want === 'none') return 'Combat already in progress';
-			if (op === '==' && want === 'character') return 'Requires character initiative';
+			if (op === '==' && want === 'me') return 'Requires character initiative';
 			if (op === '==' && want === 'foe') return 'Requires foe initiative';
 			return 'Initiative requirement not met';
 		}

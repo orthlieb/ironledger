@@ -542,7 +542,7 @@ describe('typeahead', () => {
 		const opts = rowsOf('/initiative=');
 		expect(opts.map((r) => [r.label, !!r.current])).toEqual([
 			['None', true],
-			['Character', false],
+			['Me', false],
 			['Foe', false],
 		]);
 		expect(rowsOf('/home=Mou').at(-1)).toMatchObject({ label: 'Use “Mou”', apply: '/home=Mou' });
@@ -726,5 +726,36 @@ describe('allies and everyone: the other characters, and you with them', () => {
 		const alone = world({ characters: [world().characters[0]!] });
 		expect(labels('/alli', alone)).not.toContain('allies');
 		expect(labels('/every', alone)).not.toContain('everyone');
+	});
+});
+
+describe('me: you, the active character', () => {
+	it('names the active character, as leaving the owner out does', () => {
+		expect(says('/me.health-=harm')).toBe('Health 4 → 2 (Wolf’s harm)');
+		expect(says('/me.health-=harm')).toBe(says('/health-=harm'));
+		const bound = world({ activeCharacterId: 'c2' });
+		expect(plan('/me.spirit++', bound)).toMatchObject({ kind: 'change', owner: { id: 'c2' } });
+		expect(says('/me')).toMatch(/^Bjorn: Health 4\/5/);
+	});
+
+	it('is you: it chooses no one and changes only through a value', () => {
+		expect(says('/me=Edda')).toBe(
+			'/me is you, the active character: choose another with /character=Edda',
+		);
+		expect(says('/me++')).toBe('Change one of your values: /me.health++');
+		expect(says('/me.health++', world({ activeCharacterId: null }))).toBe('No active character.');
+	});
+
+	it('is initiative’s setting for you', () => {
+		expect(says('/initiative=me')).toBe('Initiative: None → Me');
+		expect(says('/initiative=character')).toBe(
+			'Initiative has no option "character": None, Me, Foe',
+		);
+	});
+
+	it('is offered while typing, after your values', () => {
+		expect(rowsOf('/me')[0]).toMatchObject({ label: 'me', detail: 'you — Bjorn', apply: '/me.' });
+		expect(rowsOf('/m')[0]!.label).toBe('momentum');
+		expect(labels('/me.he')).toContain('health');
 	});
 });

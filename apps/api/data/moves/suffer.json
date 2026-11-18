@@ -32,7 +32,7 @@
       "name": "Companion Endure Harm",
       "category": "Suffer",
       "triggerShort": "When your companion faces physical damage.",
-      "trigger": "When your **companion faces physical damage**, they suffer −health equal to the amount of harm inflicted. If your companion's health is 0, exchange any leftover −health for −momentum. Then, roll **+heart** or **+your companion's health**, whichever is higher.",
+      "trigger": "When your **companion faces physical damage**, they suffer [-harm health](/companion.health-=harm) — equal to the amount of harm inflicted. If your companion's health is 0, exchange any leftover −health for −momentum. Then, roll **+heart** or **+your companion's health**, whichever is higher.",
       "stats": [
         {
           "stat": "heart",

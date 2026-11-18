@@ -141,7 +141,7 @@ export const DEBILITIES = [
 ] as const;
 const INITIATIVE: ValueOption[] = [
 	{ id: 'none', label: 'None' },
-	{ id: 'character', label: 'Character' },
+	{ id: 'me', label: 'Me' },
 	{ id: 'foe', label: 'Foe' },
 ];
 const VOW_STATUS: ValueOption[] = [

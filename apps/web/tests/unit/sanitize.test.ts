@@ -205,14 +205,14 @@ describe('sanitizeLogHtml — data attribute preservation (regression guard)', (
       <div class="roll-outcome-strong"><strong>Strong Hit</strong></div>
       <div class="move-outcome">Take
         <a class="cmd-link" data-cmd="/momentum+=2" data-entry-id="eid-full" data-link="0" data-char-id="cid-full">+2 momentum</a>.
-        <a class="cmd-link" data-cmd="/initiative=character" data-entry-id="eid-full" data-link="1" data-char-id="cid-full">You have initiative</a>.
+        <a class="cmd-link" data-cmd="/initiative=me" data-entry-id="eid-full" data-link="1" data-char-id="cid-full">You have initiative</a>.
       </div>
     `;
 		const out = sanitizeLogHtml(html);
 		expect(out.match(/data-entry-id="eid-full"/g)?.length).toBe(2);
 		expect(out.match(/data-char-id="cid-full"/g)?.length).toBe(2);
 		expect(out).toContain('data-cmd="/momentum+=2"');
-		expect(out).toContain('data-cmd="/initiative=character"');
+		expect(out).toContain('data-cmd="/initiative=me"');
 	});
 
 	it('strips an old link’s data, leaving its text (old links do nothing now)', () => {

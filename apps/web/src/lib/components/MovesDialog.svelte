@@ -129,6 +129,12 @@
 	// active foe's rank when a move is opened, but is editable so the player can
 	// set it "as appropriate to the situation" (a fall, a trap, no foe at all).
 	let harmValue = $state(1);
+	/** The moves that take an amount of harm or stress, with − + and Apply. */
+	const ENDURE_MOVES = new Set([
+		'move/endure-harm',
+		'move/endure-stress',
+		'move/companion-endure-harm',
+	]);
 	// Whether the Apply button has already committed this harm to the character
 	// (locks the amount and the button to prevent a double-apply). Reset when the
 	// move is (re)opened.
@@ -136,9 +142,9 @@
 	// Declared here (before progressValue, rollStatusHtml, isOracleRollMove, oracleTable)
 	// so all derived values that reference it are in TDZ-safe order.
 	const selectedMove = $derived(selectedId ? (findMove(selectedId) ?? null) : null);
-	const isEndureMove = $derived(
-		selectedMove?.id === 'move/endure-harm' || selectedMove?.id === 'move/endure-stress',
-	);
+	const isEndureMove = $derived(!!selectedMove && ENDURE_MOVES.has(selectedMove.id));
+	/** Companion Endure Harm: the harm comes off the companion chosen. */
+	const isCompanionHarm = $derived(selectedMove?.id === 'move/companion-endure-harm');
 	// The harm value that drives the harm-links: the editable input for Endure
 	// Harm/Stress, otherwise the active foe's rank.
 	const effectiveHarm = $derived(isEndureMove ? harmValue : pctx.foeHarm);
@@ -375,14 +381,18 @@
 				'data-cmd="/move endure-stress"',
 				`data-cmd="/move endure-stress ${VOW_FORSAKE_STRESS[chosenVow.difficulty]}"`,
 			);
-		if (m.id !== 'move/endure-harm' && m.id !== 'move/endure-stress') return raw;
+		if (!ENDURE_MOVES.has(m.id)) return raw;
 		const harm = effectiveHarm; // tracked — recompute when the player edits the amount
+		const companionId = chosenCompanionId; // tracked — and when another companion is picked
 		return untrack(() =>
 			resolveHarmLinks(raw, {
 				moveId: m.id,
 				foeHarm: harm,
 				curHealth: resourceValue('health'),
 				curSpirit: resourceValue('spirit'),
+				curCompanionHealth: ctx
+					? companionHealth(ctx.charId).find((c) => c.id === companionId)?.health
+					: undefined,
 			}),
 		);
 	});
@@ -394,6 +404,14 @@
 	 */
 	function applyHarm() {
 		if (!ctx || harmApplied || !isEndureMove) return;
+		// The companion's: through the runner, which logs it and offers any
+		// leftover as −momentum (cascadeRules → COMPANION_HEALTH_OVERFLOW).
+		if (isCompanionHarm) {
+			const r = runLink(`/companion.health-=${harmValue}`, entryBinding());
+			reportCommandResult(r);
+			if (r.ok) harmApplied = true;
+			return;
+		}
 		const resource = selectedMove?.id === 'move/endure-stress' ? 'spirit' : 'health';
 		const curVal = resourceValue(resource) ?? 0;
 		const resourceLoss = Math.min(harmValue, curVal);
@@ -416,7 +434,7 @@
 		if (moveId) {
 			selectedId = moveId;
 			view = 'detail';
-			if (moveId === 'move/endure-harm' || moveId === 'move/endure-stress') {
+			if (ENDURE_MOVES.has(moveId)) {
 				// A link that carries an explicit amount (e.g. forsaking a vow →
 				// Endure Stress at the vow's rank) overrides the active-foe default.
 				harmValue = harm ?? pctx.foeHarm ?? 1;
@@ -456,7 +474,7 @@
 		selectedOddsIdx = 2;
 		factorLevels = {};
 		factorsManuallySet = false;
-		if (m.id === 'move/endure-harm' || m.id === 'move/endure-stress') {
+		if (ENDURE_MOVES.has(m.id)) {
 			harmValue = harm ?? pctx.foeHarm ?? 1;
 			harmApplied = false;
 		}
@@ -1114,7 +1132,7 @@
 									disabled={harmApplied || !ctx}
 									use:tooltip={harmApplied
 										? 'Harm applied'
-										: `Apply ${harmValue} ${harmWord.toLowerCase()} to the character`}
+										: `Apply ${harmValue} ${harmWord.toLowerCase()} to ${isCompanionHarm ? (companionOptions.find((o) => o.value === chosenCompanionId)?.label ?? 'the companion') : 'the character'}`}
 								>
 									{harmApplied ? 'Applied ✓' : 'Apply'}
 								</button>

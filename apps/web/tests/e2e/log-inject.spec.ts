@@ -473,7 +473,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await injectBound(
 			page,
 			'Mock Outcome',
-			`<p>${cmdLink('You have initiative', '/initiative=character')}</p>` +
+			`<p>${cmdLink('You have initiative', '/initiative=me')}</p>` +
 				`<p>${cmdLink('Foe has initiative', '/initiative=foe')}</p>`,
 			id,
 			{ charId },
@@ -483,7 +483,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 				`${CHAR_AREA} .sr[aria-label="Initiative"] .sr-btn[aria-label="${label}"][aria-checked="true"]`,
 			);
 
-		await linkIn(page, id, '/initiative=character').click();
+		await linkIn(page, id, '/initiative=me').click();
 		await switchCharTab(page, 'Core');
 		await expect(radio('You have initiative')).toBeVisible({ timeout: 5_000 });
 

@@ -25,6 +25,7 @@
 // =============================================================================
 
 import { commandLinkHtml } from './commands/links.js';
+import { escHtml } from './markdown.js';
 
 /** A command link for the character a cascade is about. */
 const link = (label: string, cmd: string, charId: string) =>
@@ -61,6 +62,21 @@ export const OVERFLOW_RULES: OverflowRule[] = [
 			`.</p>`,
 	},
 ];
+
+/**
+ * A companion's health taken past 0 (Companion Endure Harm: "If your
+ * companion's health is 0, exchange any leftover −health for −momentum"):
+ * the rest comes off the character's momentum, as a link to click, like
+ * the character's own health. The runner checks it on every change to a
+ * companion's health, typed or clicked (`/Ash.health-=harm`).
+ */
+export const COMPANION_HEALTH_OVERFLOW = {
+	logTitle: 'Companion Health: Zero',
+	logHtml: ({ overflow, charId, name }: { overflow: number; charId: string; name: string }) =>
+		`<p>${escHtml(name)}’s health is zero. You lose ` +
+		link(`-${overflow} momentum`, `/momentum-=${overflow}`, charId) +
+		` instead.</p>`,
+};
 
 // ---------------------------------------------------------------------------
 // Floor Rules  (CharacterSheet — applyResourceChange)

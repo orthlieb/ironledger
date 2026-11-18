@@ -38,7 +38,7 @@ describe('parseCondition', () => {
 	it('reads the conditions content uses', () => {
 		expect(show(parse('character'))).toBe('character');
 		expect(show(parse('!foe'))).toBe('!foe');
-		expect(show(parse('initiative == character'))).toBe('[initiative == character]');
+		expect(show(parse('initiative == me'))).toBe('[initiative == me]');
 		expect(show(parse('touched >= prime'))).toBe('[touched >= prime]');
 		expect(show(parse('bonds >= 2b'))).toBe('[bonds >= 2b]');
 		expect(show(parse('companion/hawk | companion/raven'))).toBe(
@@ -58,8 +58,8 @@ describe('parseCondition', () => {
 	});
 
 	it('takes spaces anywhere outside names, and negative numbers and units', () => {
-		expect(show(parse('character&foe&initiative==character'))).toBe(
-			'(character & foe & [initiative == character])',
+		expect(show(parse('character&foe&initiative==me'))).toBe(
+			'(character & foe & [initiative == me])',
 		);
 		expect(show(parse('momentum>=-2'))).toBe('[momentum >= -2]');
 		expect(show(parse('foe.progress < 3t'))).toBe('[foe.progress < 3t]');

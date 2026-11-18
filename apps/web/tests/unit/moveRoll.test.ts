@@ -140,6 +140,27 @@ describe('resolveHarmLinks', () => {
 		);
 	});
 
+	it('writes the harm on the chosen companion in Companion Endure Harm', () => {
+		const companion =
+			'<a class="cmd-link" data-cmd="/companion.health-=harm" data-verb="x">-harm health</a>';
+		const at = (curCompanionHealth: number, foeHarm?: number) =>
+			resolveHarmLinks(companion, {
+				moveId: 'move/companion-endure-harm',
+				foeHarm,
+				curHealth: 5,
+				curCompanionHealth,
+			});
+		expect(at(3, 2)).toBe('<span class="harm-amount">2 harm</span>');
+		// Ash at 1, 3 harm: the leftover 2 comes off momentum.
+		expect(at(1, 3)).toBe(
+			'<span class="harm-amount">1 harm</span> and <span class="harm-amount">-2 momentum</span> <span class="harm-note">(overflow)</span>',
+		);
+		expect(at(1)).toBe('<span class="harm-note">-harm health</span>');
+		expect(resolveHarmLinks(companion, { moveId: 'move/endure-harm', foeHarm: 2 })).toBe(
+			'<span class="harm-note">-harm health</span>',
+		);
+	});
+
 	it('leaves the placeholder as plain text elsewhere, or with no foe', () => {
 		expect(resolveHarmLinks(health, { moveId: 'move/face-danger', foeHarm: 2 })).toBe(
 			'<span class="harm-note">-harm health</span>',
@@ -251,6 +272,17 @@ describe('delveDepthsColumn', () => {
 			'<p>Roll on the <a class="cmd-link" data-cmd="/oracle delveDepths" data-verb="oracle">Delve the Depths Weak Hit Oracle</a>.</p>';
 		expect(delveDepthsColumn(html, 'edge')).toBe(
 			'<p>Roll on the <a class="cmd-link" data-cmd="/oracle delveDepths" data-verb="oracle" data-stat="edge">Delve the Depths Weak Hit Oracle (Edge column)</a>.</p>',
+		);
+	});
+});
+
+import { COMPANION_HEALTH_OVERFLOW } from '../../src/lib/cascadeRules.js';
+
+describe('COMPANION_HEALTH_OVERFLOW', () => {
+	it('offers the leftover as −momentum, for the companion’s character', () => {
+		expect(COMPANION_HEALTH_OVERFLOW.logHtml({ overflow: 2, charId: 'c1', name: 'Ash & Co' })).toBe(
+			'<p>Ash &amp; Co’s health is zero. You lose ' +
+				'<a class="cmd-link" data-cmd="/momentum-=2" data-char-id="c1">-2 momentum</a> instead.</p>',
 		);
 	});
 });

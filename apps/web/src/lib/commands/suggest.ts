@@ -27,6 +27,7 @@ import {
 	groupKeyword,
 	groupOwners,
 	GROUP_KEYWORDS,
+	ME,
 	namedOwners,
 	ownerLabel,
 	ownerRef,
@@ -248,6 +249,12 @@ function firstSlot(typed: string, w: World): Suggestion[] {
 				apply: v === 'burn' ? '/burn' : `/${v} `,
 			},
 			names: [v],
+		});
+	// me: you, after your values and the verbs, so `/m` is still momentum.
+	if (ch)
+		rows.push({
+			row: { label: ME, detail: `you — ${ch.name}`, icon: 'character', apply: `/${ME}.` },
+			names: [ME],
 		});
 	for (const o of namedOwners(w)) {
 		const ref = ownerRef(o, w);

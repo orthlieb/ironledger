@@ -226,6 +226,35 @@ test.describe('Moves that act on a vow or a companion', () => {
 		}
 	});
 
+	test('Companion Endure Harm takes the harm off the companion chosen, the rest off momentum', async ({
+		page,
+	}) => {
+		await openHome(page);
+		// Opened with an amount: 2 harm.
+		await openMove(page, 'companion-endure-harm 2');
+		await expect(page.locator(`${DIALOG} [data-tour="move-choose"]`)).toContainText('Ash');
+		// Ash has 1 health: 1 harm, and the leftover 1 off momentum.
+		await expect(page.locator(`${DIALOG} .md-trigger`)).toContainText(
+			'they suffer 1 harm and -1 momentum (overflow)',
+		);
+		await page.locator(`${DIALOG} .md-harm-apply`).click();
+		await expect(page.locator('.cb-status')).toHaveText('Ash: Health 1 → 0 (min 0)');
+		await expect(page.locator(`${DIALOG} .md-harm-apply`)).toHaveText('Applied ✓');
+		// The leftover, as a link to click.
+		const zero = page.locator('.log-entry', { hasText: 'Companion Health: Zero' }).first();
+		await expect(zero).toContainText('Ash’s health is zero. You lose -1 momentum instead.');
+		await page.keyboard.press('Escape');
+		await zero.locator('a.cmd-link[data-cmd="/momentum-=1"]').click();
+		await expect(page.locator('.cb-status')).toHaveText('Momentum 2 → 1');
+		await expect
+			.poll(async () => {
+				const d = await bjorn(page);
+				const assets = d.assets as Array<{ customValues: Record<string, string> }>;
+				return [assets.map((a) => a.customValues.health), d.momentum];
+			})
+			.toEqual([['0', '2'], 1]);
+	});
+
 	test('Companion Endure Harm heals the companion, not the character', async ({ page }) => {
 		await loadDice(page);
 		await openHome(page);

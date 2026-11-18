@@ -69,7 +69,7 @@
 			},
 			{ syntax: '/xp=12', hint: 'Set it: a number, a list’s option, or text. =-2 sets −2.' },
 			{ syntax: '/wounded!', hint: 'Flip a true/false value.' },
-			{ syntax: '/initiative=foe', hint: 'A list takes one of its options: none, character, foe.' },
+			{ syntax: '/initiative=foe', hint: 'A list takes one of its options: none, me, foe.' },
 			{
 				syntax: 'Values',
 				hint: 'momentum, health, spirit, supply (the party’s), xp, edge, heart, iron, shadow, wits, bonds, failures, the debilities (wounded, shaken … tormented), initiative, and content-pack fields such as mana or touched. A change is held to the value’s range, refused if it’s read-only, and logged as a click on the sheet would be.',
@@ -87,6 +87,10 @@
 			{ syntax: '/bonds++', hint: 'Bonds and failures have no rank: a plain number is ticks.' },
 		],
 		owners: [
+			{
+				syntax: '/me.health-=harm',
+				hint: 'You, the active character: the same as /health-=harm. /initiative=me gives you initiative.',
+			},
 			{
 				syntax: '/Bjorn.health-=2',
 				hint: 'Another character’s value, without making them active.',

@@ -104,10 +104,10 @@ describe('context, initiative and the character’s values', () => {
 		);
 	});
 
-	it('reads initiative as none, character or foe', () => {
+	it('reads initiative as none, me or foe', () => {
 		const ctx = { initiative: 2 };
 		expect(firstPreconditionFailure('initiative == foe', owning(), ctx)).toBeNull();
-		expect(firstPreconditionFailure('initiative == character', owning(), ctx)).toBe(
+		expect(firstPreconditionFailure('initiative == me', owning(), ctx)).toBe(
 			'Requires character initiative',
 		);
 		expect(firstPreconditionFailure('initiative == none', owning(), ctx)).toBe(

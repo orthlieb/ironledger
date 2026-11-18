@@ -22,8 +22,8 @@
           "desc": "Ambushed"
         }
       ],
-      "strong": "Take [+2 momentum](/momentum+=2). [You have initiative](/initiative=character).",
-      "weak": "Choose one:\n- Bolster your position: Take [+2 momentum](/momentum+=2).\n- Prepare to act: [Take initiative](/initiative=character).",
+      "strong": "Take [+2 momentum](/momentum+=2). [You have initiative](/initiative=me).",
+      "weak": "Choose one:\n- Bolster your position: Take [+2 momentum](/momentum+=2).\n- Prepare to act: [Take initiative](/initiative=me).",
       "miss": "Combat begins with you at a disadvantage. [Pay the Price](/move pay-the-price). [Your foe has initiative](/initiative=foe).",
       "notes": "The outcome determines who has initiative at the start of combat. Having initiative lets you Strike rather than Clash on the first exchange — a significant advantage.",
       "preconditions": "character & foe & initiative == none",
@@ -47,11 +47,11 @@
           "desc": "Attack at range"
         }
       ],
-      "strong": "[Inflict double harm](/foe.progress+=2). [You retain initiative](/initiative=character).",
+      "strong": "[Inflict double harm](/foe.progress+=2). [You retain initiative](/initiative=me).",
       "weak": "[Inflict your harm](/foe.progress++) and [lose initiative](/initiative=foe).",
       "miss": "Your attack fails and you must [Pay the Price](/move pay-the-price). [Your foe has initiative](/initiative=foe).",
       "notes": "You must have initiative to Strike. If you don't, use Clash instead. On a strong hit, you deal your weapon's harm +1 bonus and keep initiative for follow-up attacks.",
-      "preconditions": "character & foe & initiative == character",
+      "preconditions": "character & foe & initiative == me",
       "source": "base",
       "logTitle": "{character} strikes {foe} using {stat}"
     },
@@ -72,7 +72,7 @@
           "desc": "Exchange a volley at range, or shoot at an advancing foe"
         }
       ],
-      "strong": "[Inflict your harm](/foe.progress++), [you have the initiative](/initiative=character), and choose one:\n- You bolster your position: Take [+1 momentum](/momentum++).\n- You find an opening: [Inflict double harm](/foe.progress++).",
+      "strong": "[Inflict your harm](/foe.progress++), [you have the initiative](/initiative=me), and choose one:\n- You bolster your position: Take [+1 momentum](/momentum++).\n- You find an opening: [Inflict double harm](/foe.progress++).",
       "weak": "[Inflict your harm](/foe.progress++), but then [Pay the Price](/move pay-the-price). [Your foe has initiative](/initiative=foe).",
       "miss": "You are outmatched and must [Pay the Price](/move pay-the-price). [Your foe has initiative](/initiative=foe).",
       "notes": "Clash is your response when the enemy has initiative. The key difference from Strike: you're reacting, not attacking from a position of strength. On a strong hit you seize initiative and choose a bonus. Use Face Danger instead if you're trying to dodge or endure the attack rather than counter-attack.",
@@ -89,7 +89,7 @@
       "strong": "",
       "weak": "",
       "miss": "",
-      "logBody": "You turn the tide and [seize the initiative](/initiative=character). Add +1 to your next move and take [+1 momentum on a hit](/momentum++). If you fail to score a hit on that move, you must suffer a dire outcome. [Pay the Price](/move pay-the-price).",
+      "logBody": "You turn the tide and [seize the initiative](/initiative=me). Add +1 to your next move and take [+1 momentum on a hit](/momentum++). If you fail to score a hit on that move, you must suffer a dire outcome. [Pay the Price](/move pay-the-price).",
       "notes": "Once per fight only. This lets you steal initiative and make any non-progress move at +1. On a hit you also get +1 momentum. But if you miss, the consequences are severe — Pay the Price with a dire outcome. Use it when you're desperate.",
       "preconditions": "character & foe & initiative == foe",
       "source": "base",
@@ -143,7 +143,7 @@
       "weak": "As above. [Vanquish Foe](vanquish) But you must also choose one:\n- It's worse than you thought: [Endure Harm](/move endure-harm).\n- You are overcome: [Endure Stress](/move endure-stress).\n- Your victory is short-lived: A new danger or foe appears, or an existing danger worsens.\n- You suffer collateral damage: Something of value is lost or broken, or someone important must pay the cost.\n- You'll pay for it: An objective falls out of reach.\n- Others won't forget: You are marked for vengeance.",
       "miss": "You have lost this fight. [Pay the Price](/move pay-the-price).",
       "notes": "Progress move — roll challenge dice against your foe's progress track, not a stat. Momentum is ignored. You can only attempt this after scoring a strong hit on a decisive action. A miss means you've lost the fight entirely.",
-      "preconditions": "foe & initiative == character",
+      "preconditions": "foe & initiative == me",
       "progressSource": "combat",
       "source": "base",
       "logTitle": "{character} ends the fight with {foe}"
