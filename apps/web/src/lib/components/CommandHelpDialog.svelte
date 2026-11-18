@@ -100,6 +100,10 @@
 				syntax: '/hawk.health--',
 				hint: 'An asset of the active character, by name or id (/companion/hawk.health--), or a companion by the name you gave it (/Ash.health--).',
 			},
+			{
+				syntax: '/companions.health++',
+				hint: 'Every companion of the active character at once (not other characters).',
+			},
 			{ syntax: '/Avenge Bjorn.menace++', hint: 'A vow’s progress, menace or status.' },
 			{
 				syntax: '/foe.vanquished++',

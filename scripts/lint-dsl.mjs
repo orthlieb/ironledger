@@ -187,7 +187,11 @@ function checkCommand(cmd, cat, self) {
     else if (['foe', 'journey', 'site', 'scene', 'vow'].includes(o)) v = builtinKind(o, key);
     else if (o === 'companion')
       v = cat.companions.map((a) => assetFieldKind(a, key, cat)).find(Boolean) ?? null;
-    else if (o === 'self') {
+    else if (o === 'companions') {
+      // Every companion at once: a value each of them has.
+      const kinds = cat.companions.map((a) => assetFieldKind(a, key, cat));
+      v = kinds.every(Boolean) ? kinds[0] : null;
+    } else if (o === 'self') {
       if (!self) return 'self is the asset a link belongs to: only in an asset’s text';
       v = assetFieldKind(self, key, cat);
     } else if (o.includes('/')) {

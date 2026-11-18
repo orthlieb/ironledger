@@ -6,7 +6,9 @@
  * Covers: Fulfill Your Vow rolls against the chosen vow's progress (not 0);
  * Reach a Milestone marks progress on it; Advance a Threat's "mark menace"
  * marks the chosen vow's menace (not a foe's progress); Companion Endure
- * Harm's "+1 health" heals the companion, not the character.
+ * Harm's "+1 health" heals the companion, not the character; Make Camp's
+ * "any companions" heals every one; Take a Hiatus restores each to its
+ * maximum.
  */
 import { test, expect, type Page } from '@playwright/test';
 import {
@@ -71,6 +73,7 @@ test.describe('Moves that act on a vow or a companion', () => {
 		await resetAll(tok);
 		await seedCharacter('Bjorn', tok, {
 			health: 3,
+			supply: 3,
 			momentum: 2,
 			vows: [
 				{ id: 'v1', name: 'Avenge Edda', difficulty: 'dangerous', ticks: 8, menace: 1, threat: '' },
@@ -97,6 +100,11 @@ test.describe('Moves that act on a vow or a companion', () => {
 					assetId: 'companion/hawk',
 					abilities: [true, false, false],
 					customValues: { 'companion-name': 'Ash', health: '1' },
+				},
+				{
+					assetId: 'companion/horse',
+					abilities: [true, false, false],
+					customValues: { 'companion-name': 'Bran', health: '2' },
 				},
 			],
 		});
@@ -161,6 +169,63 @@ test.describe('Moves that act on a vow or a companion', () => {
 		}
 	});
 
+	/** Each companion's health and Bjorn's, as the server has them. */
+	async function healths(page: Page): Promise<[string[], number]> {
+		const d = await bjorn(page);
+		const assets = d.assets as Array<{ customValues: Record<string, string> }>;
+		return [assets.map((a) => a.customValues.health!), d.health as number];
+	}
+
+	test('Make Camp’s “any companions” heals every companion at once', async ({ page }) => {
+		await loadDice(page);
+		await openHome(page);
+		await openMove(page, 'make-camp');
+		// A strong hit: action die 6 (+3 supply), challenge dice 1 and 1.
+		await page.evaluate(() =>
+			(window as unknown as { __dice: number[] }).__dice.push(...[6, 1, 1].map((f) => f - 1)),
+		);
+		await page.locator(`${DIALOG} [data-tour="move-roll"]`).click();
+		// The Make Camp entry, by its id: the heals log entries above it.
+		const top = page.locator('.log-entry').first();
+		await expect(top).toContainText('makes camp', { timeout: 8_000 });
+		const id = await top.getAttribute('data-entry-id');
+		const camp = page.locator(`.log-entry[data-entry-id="${id}"]`);
+		const all = camp.locator('a.cmd-link[data-cmd="/companions.health++"]');
+		// Recuperate and Partake.
+		await expect(all).toHaveCount(2);
+		await expect(all.first()).toHaveText('any companions');
+		await all.first().click();
+		await expect(page.locator('.cb-status')).toHaveText('Ash: Health 1 → 2; Bran: Health 2 → 3');
+		await expect(camp.locator('s.resource-spent')).toHaveText('any companions');
+		// Each companion's change is its own entry.
+		await expect(page.locator('.log-entry').nth(0)).toContainText('Bran');
+		await expect(page.locator('.log-entry').nth(1)).toContainText('Ash');
+		await expect.poll(() => healths(page)).toEqual([['2', '3'], 3]);
+	});
+
+	test('Take a Hiatus restores each companion to its maximum', async ({ page }) => {
+		await setExpansions({ delve: true });
+		try {
+			await openHome(page);
+			await openMove(page, 'take-a-hiatus');
+			await page.locator(`${DIALOG} .md-roll-btn`).click();
+			const top = page.locator('.log-entry').first();
+			await expect(top).toContainText('takes a hiatus', { timeout: 8_000 });
+			const entry = page.locator(
+				`.log-entry[data-entry-id="${await top.getAttribute('data-entry-id')}"]`,
+			);
+			// The hawk tops out at 3, the horse at 5.
+			const links = entry.locator('a.cmd-link[data-cmd^="/companion.health="]');
+			await expect(links).toHaveText(['Ash +2 health', 'Bran +3 health']);
+			await links.nth(1).click();
+			await expect(page.locator('.cb-status')).toHaveText('Bran: Health 2 → 5');
+			await expect(entry.locator('s.resource-spent')).toHaveText('Bran +3 health');
+			await expect.poll(() => healths(page)).toEqual([['1', '5'], 3]);
+		} finally {
+			await resetExpansions();
+		}
+	});
+
 	test('Companion Endure Harm heals the companion, not the character', async ({ page }) => {
 		await loadDice(page);
 		await openHome(page);
@@ -178,12 +243,7 @@ test.describe('Moves that act on a vow or a companion', () => {
 		await expect(heal).toBeVisible({ timeout: 8_000 });
 		await heal.click();
 		await expect(page.locator('.cb-status')).toHaveText('Ash: Health 1 → 2');
-		await expect
-			.poll(async () => {
-				const d = await bjorn(page);
-				const hawk = (d.assets as Array<{ customValues: Record<string, string> }>)[0]!;
-				return [hawk.customValues.health, d.health];
-			})
-			.toEqual(['2', 3]);
+		// The first companion, Ash, is chosen: Bran is untouched.
+		await expect.poll(() => healths(page)).toEqual([['2', '2'], 3]);
 	});
 });

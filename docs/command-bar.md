@@ -28,6 +28,7 @@ reference, shorter.
 | `/foe.progress+=2`               | Two marks on the active foe's track, by its rank (`b` boxes, `t` ticks).          |
 | `/Bjorn.health-=2`               | Another character's value, without making them active.                            |
 | `/Ash.health--`                  | A companion by the name you gave it (or `/hawk.health--`).                        |
+| `/companions.health++`           | Every companion of the active character, each changed alike.                      |
 | `/Avenge Bjorn.menace++`         | A vow by its name.                                                                |
 | `/foe=Wolf`                      | Makes Wolf the active foe (also `/character=`, `/journey=`, `/site=`, `/scene=`). |
 | `/foe:Raider#2.progress++`       | A name two things share: the kind before it, and which of two.                    |

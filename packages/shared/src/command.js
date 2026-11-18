@@ -434,8 +434,9 @@ export const BUILTIN_VALUES = {
   },
 };
 
-/** Keywords a content link names an owner by: the active one of a kind, or
- *  what a move or link chose (vow, companion) or belongs to (self). */
+/** Keywords a content link names an owner by: the active one of a kind,
+ *  what a move or link chose (vow, companion) or belongs to (self), or every
+ *  companion of the character (companions). */
 export const OWNER_KEYWORDS = /** @type {const} */ ([
   'character',
   'foe',
@@ -444,6 +445,7 @@ export const OWNER_KEYWORDS = /** @type {const} */ ([
   'scene',
   'vow',
   'companion',
+  'companions',
   'self',
 ]);
 

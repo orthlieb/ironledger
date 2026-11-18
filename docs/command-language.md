@@ -116,6 +116,7 @@ active foe's; in a log link, the foe the entry was made against.
 | A foe, expedition or vow, by name    | `/Wolf.progress++`, `/Avenge Bjorn.progress++` | A vow: one of the active character's.        |
 | An asset, by name or id              | `/hawk.health--`, `/companion/hawk.health--`   | One of the active character's assets.        |
 | A companion, by the name you gave it | `/Ash.health--`                                |                                              |
+| `companions`                         | `/companions.health++`                         | Every companion of the active character.     |
 | `self` (content only)                | `self.health >= 1`                             | The asset a condition or link belongs to.    |
 | `vow`, `companion` (content only)    | `/vow.menace++`                                | The one chosen in the Moves dialog.          |
 
@@ -128,6 +129,15 @@ refused ("Supply is the party's: /supply++").
 
 `vow` and `companion` are content-only keywords too: in a move's links they
 mean the vow or companion chosen in the Moves dialog ([below](#moves-that-act-on-a-vow-or-a-companion)).
+
+`companions` is every companion the active character has: one command (or
+one click) gives each the same change, and each gets its own log entry, as
+if it were typed by name: `/companions.health++` with Ash at 1 and Bran at 2
+reads "Ash: Health 1 → 2; Bran: Health 2 → 3". A companion is a Companion
+asset (the hawk, horse, hound and the rest of the animals, and Kindred); not
+another character, and not an asset that only has health, like Awakening's
+simulacrum, which "is not a companion and may not be healed". A character
+with none answers "Bjorn has no companions."
 
 ### When names collide
 
@@ -511,9 +521,14 @@ A move says what it asks for with `"choose": "vow"` or `"choose":
 "companion"`; the lint fails a move that links to `vow` or `companion`
 without it. The choice binds `vow` and `companion` in the move's links, as
 the active foe binds `foe`, and the log entry records it like the foe and
-expedition. Make Camp, Sojourn and Battle say "you and any companions" with
-one link, the character's; they'd need a companion link of their own (a
-change to their text) to ask for a companion too.
+expedition.
+
+The moves that give something to every companion don't ask: Make Camp's
+Recuperate and Partake and Sojourn's Recuperate link "any companions" to
+`/companions.health++` (`+=2` for Sojourn), beside the character's own
+health, and Take a Hiatus (Delve) writes one link per companion below its
+maximum, bound to it: "Ash +2 health" is `/companion.health=3`.
+
 Typed, `vow` and `companion` have nothing to refer to:
 `/vow.menace++` answers "Which vow? Name it: /Avenge Bjorn.menace++".
 

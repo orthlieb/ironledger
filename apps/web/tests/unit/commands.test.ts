@@ -608,3 +608,77 @@ describe('BUILTIN_VALUES, which the content linter checks links against', () => 
 		expect(keys(vowOwners(w.characters[0]!)[0]!)).toEqual(table('vow'));
 	});
 });
+
+// ---------------------------------------------------------------------------
+// Every companion at once
+// ---------------------------------------------------------------------------
+
+describe('companions: every companion of the active character', () => {
+	/** Bjorn with Ash (a hawk, 2/3) and Bran (a raven, 3/3), and a ritual. */
+	function withTwo(): World {
+		const w = world();
+		const bjorn = w.characters[0]!;
+		bjorn.data.assets = [
+			...(bjorn.data.assets ?? []),
+			{
+				assetId: 'companion/raven',
+				abilities: [true, false, false],
+				customValues: { 'companion-name': 'Bran', health: '3' },
+			},
+			{ assetId: 'ritual/scry', abilities: [true, false, false], customValues: {} },
+		] as CharacterData['assets'];
+		return w;
+	}
+
+	it('changes each companion alike, one change apiece', () => {
+		const p = plan('/companions.health++', withTwo());
+		expect(p.kind).toBe('changes');
+		if (p.kind !== 'changes') return;
+		expect(p.changes.map((c) => c.owner.kind === 'asset' && c.owner.id)).toEqual([
+			'companion/hawk',
+			'companion/raven',
+		]);
+		expect(p.summary).toBe('Ash: Health 2 → 3; Bran: Health 3 → 3 (max 3)');
+		expect(p.nothing).toBe(false);
+		expect(says('/companions.health-=harm', withTwo())).toBe(
+			'Ash: Health 2 → 0 (Wolf’s harm); Bran: Health 3 → 1 (Wolf’s harm)',
+		);
+	});
+
+	it('is nothing to do when every one is already so', () => {
+		const p = plan('/companions.health=3', world());
+		expect(p).toMatchObject({ kind: 'changes', nothing: false });
+		const full = plan('/companions.companion-name="Ash"', world());
+		expect(full).toMatchObject({ kind: 'changes', nothing: true });
+	});
+
+	it('shows them, and says what’s wrong', () => {
+		expect(says('/companions', withTwo())).toMatch(/^Hawk \(Ash\): .*; Raven \(Bran\): /);
+		expect(says('/companions.health', withTwo())).toBe('Ash: Health 2/3; Bran: Health 3/3');
+		expect(says('/companions++')).toBe('Change one of their values: /companions.health++');
+		expect(says('/companions.mana++', withTwo())).toBe('Ash has no mana.');
+		const edda = world({ activeCharacterId: 'c2' });
+		expect(says('/companions.health++', edda)).toBe('Edda has no companions.');
+		expect(says('/companions', edda)).toBe('Edda has no companions.');
+	});
+
+	it('is offered while typing, each operator saying what it does to them all', () => {
+		const w = withTwo();
+		expect(rowsOf('/compan', w)[0]).toMatchObject({
+			label: 'companions',
+			detail: 'every companion — Ash, Bran',
+			apply: '/companions.',
+		});
+		expect(labels('/companions.', w)).toEqual(['companion-name', 'health']);
+		const ops = rowsOf('/companions.health', w);
+		expect(ops.find((r) => r.label === '++')!.detail).toBe(
+			'Ash: Health 2 → 3; Bran: Health 3 → 3 (max 3)',
+		);
+		expect(suggest('/companions.health++', w).top).toEqual({
+			text: 'Enter: Ash: Health 2 → 3; Bran: Health 3 → 3 (max 3)',
+			tone: 'ok',
+		});
+		// No companions, no row.
+		expect(labels('/compan', world({ activeCharacterId: 'c2' }))).not.toContain('companions');
+	});
+});

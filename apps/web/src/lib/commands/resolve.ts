@@ -87,10 +87,29 @@ export const SELECT_KINDS = ['character', 'foe', 'journey', 'site', 'scene'] as 
 export type SelectKind = (typeof SELECT_KINDS)[number];
 /** Keywords for what a move or a link chooses; typed, they're refused. */
 export const BOUND_KEYWORDS = ['vow', 'companion', 'self'] as const;
+/** Every companion of the active character, at once: Make Camp's "+1 health
+ *  for you and any companions". */
+export const COMPANIONS = 'companions';
 
 // ---------------------------------------------------------------------------
 // Plans
 // ---------------------------------------------------------------------------
+
+/** One value of one owner, changed. */
+export interface ChangePlan {
+	kind: 'change';
+	owner: Owner;
+	spec: ValueSpec;
+	from: number | string;
+	to: number | string;
+	/** Already so: nothing to change, nothing to log. */
+	nothing: boolean;
+	/** A number's target before its range held it. */
+	wanted?: number;
+	title: string;
+	line: string;
+	summary: string;
+}
 
 export type Plan =
 	| { kind: 'empty' }
@@ -101,18 +120,13 @@ export type Plan =
 			/** `/site.theme`: open the site's picker too. */
 			picker?: { expId: string; which: 'theme' | 'domain' };
 	  }
+	| ChangePlan
 	| {
-			kind: 'change';
-			owner: Owner;
-			spec: ValueSpec;
-			from: number | string;
-			to: number | string;
-			/** Already so: nothing to change, nothing to log. */
+			/** `/companions.health++`: the same change to each companion. */
+			kind: 'changes';
+			changes: ChangePlan[];
+			/** Every one already so. */
 			nothing: boolean;
-			/** A number's target before its range held it. */
-			wanted?: number;
-			title: string;
-			line: string;
 			summary: string;
 	  }
 	| { kind: 'select'; owner: Owner; summary: string }
@@ -173,6 +187,13 @@ export function assetOwners(ch: CharacterOwner, cat: Catalogue): AssetOwner[] {
 			character: ch,
 		};
 	});
+}
+
+/** A character's companions (its Companion assets) as owners. Not other
+ *  characters, and not an asset that only has health, like Awakening's
+ *  simulacrum ("not a companion and may not be healed"). */
+export function companionOwners(ch: CharacterOwner, cat: Catalogue): AssetOwner[] {
+	return assetOwners(ch, cat).filter((o) => o.def?.category === 'Companion');
 }
 
 /** Everything a typed name can stand for, in list order: characters, foes,
@@ -262,6 +283,7 @@ export function isReserved(name: string, w: World): boolean {
 	return (
 		(SELECT_KINDS as readonly string[]).includes(t) ||
 		(BOUND_KEYWORDS as readonly string[]).includes(t) ||
+		t === COMPANIONS ||
 		t === 'harm' ||
 		characterValueKeys(w.cat).some((k) => k.toLowerCase() === t)
 	);
@@ -465,6 +487,32 @@ function onValue(
 	};
 }
 
+/** `/companions.health++`: one value of every companion the active
+ *  character has, changed alike (or shown, with no operator). */
+function onCompanions(p: Extract<Parsed, { kind: 'value' }>, w: World): Plan {
+	const ch = activeCharacter(w);
+	if (!ch) return error('No active character.');
+	const list = companionOwners(ch, w.cat);
+	if (!list.length) return error(`${ch.name} has no companions.`);
+	const changes: ChangePlan[] = [];
+	const shown: string[] = [];
+	for (const o of list) {
+		const spec = findValue(o, p.value.text, w.cat);
+		if (!spec) return error(`${ownerLabel(o)} has no ${p.value.text}.`);
+		const one = onValue(o, spec, p, w);
+		if (one.kind === 'change') changes.push(one);
+		else if (one.kind === 'show') shown.push(one.text);
+		else return one;
+	}
+	if (!p.op) return { kind: 'show', text: shown.join('; ') };
+	return {
+		kind: 'changes',
+		changes,
+		nothing: changes.every((c) => c.nothing),
+		summary: changes.map((c) => c.summary).join('; '),
+	};
+}
+
 /** The text of an operator as typed, for a "do it this way" message. */
 function opText(p: Extract<Parsed, { kind: 'value' }>): string {
 	if (!p.op) return '';
@@ -533,6 +581,18 @@ function onValueCommand(p: Extract<Parsed, { kind: 'value' }>, w: World): Plan {
 		return incomplete('Type a value, a name, or a command: /health, /foe, /move');
 	}
 	if (p.partialOp) return incomplete('Needs an operator: ++ -- += -= = !');
+
+	const isCompanions = (n: NamePart) =>
+		!n.quoted && !n.qualifier && normName(n.text) === COMPANIONS;
+	if (p.owner && isCompanions(p.owner)) return onCompanions(p, w);
+	if (!p.owner && isCompanions(p.value)) {
+		if (p.op) return error(`Change one of their values: /companions.health${opText(p)}`);
+		const ch = activeCharacter(w);
+		if (!ch) return error('No active character.');
+		const list = companionOwners(ch, w.cat);
+		if (!list.length) return { kind: 'show', text: `${ch.name} has no companions.` };
+		return { kind: 'show', text: list.map((o) => showOwner(o, w.cat)).join('; ') };
+	}
 
 	if (p.owner) {
 		const owner = resolveOwner(p.owner, w, p.value.text);

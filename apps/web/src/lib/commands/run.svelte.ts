@@ -11,7 +11,8 @@
 // =============================================================================
 
 import type { Plan, World, MoveRef, OracleRef } from './resolve.js';
-import { plan as planCommand } from './resolve.js';
+import { companionOwners, ownerLabel, plan as planCommand } from './resolve.js';
+import type { CompanionHealth } from '#lib/moveRoll.js';
 import { bindCommandLinks, type LinkBinding } from './links.js';
 import type { Catalogue, CharacterOwner, ExpeditionOwner, FoeOwner, Owner } from './values.js';
 import { findValue } from './values.js';
@@ -170,6 +171,21 @@ export function buildWorld(bind?: LinkBinding): World {
 				}
 			: undefined,
 	};
+}
+
+/** A character's companions with their health and its maximum (which their
+ *  abilities may raise): what Take a Hiatus restores. */
+export function companionHealth(charId: string): CompanionHealth[] {
+	const c = getCharacters().find((x) => x.id === charId);
+	if (!c) return [];
+	const data = c.data as unknown as CharacterData;
+	const ch: CharacterOwner = { kind: 'character', id: c.id, name: data.name || c.name, data };
+	const cat = liveCatalogue();
+	return companionOwners(ch, cat).flatMap((o) => {
+		const spec = findValue(o, 'health', cat);
+		if (!spec || spec.max === undefined) return [];
+		return [{ id: o.id, name: ownerLabel(o), health: Number(spec.get()) || 0, max: spec.max }];
+	});
 }
 
 // ---------------------------------------------------------------------------
@@ -372,6 +388,10 @@ export function runPlan(p: Plan, ui: RunUi): RunResult {
 			return { ok: true, message: p.text };
 		case 'change':
 			return runChange(p);
+		case 'changes':
+			// Each companion's change is its own entry, as if typed by name.
+			for (const c of p.changes) runChange(c);
+			return { ok: true, message: p.summary };
 		case 'select': {
 			const o = p.owner;
 			if (o.kind === 'character') setActiveCharacterId(o.id);
@@ -433,7 +453,8 @@ export function runLink(cmd: string, bind: LinkBinding = {}): LinkResult {
 		return fail(p.message);
 	}
 	switch (p.kind) {
-		case 'change': {
+		case 'change':
+		case 'changes': {
 			const r = runPlan(p, { openHelp: () => {} });
 			return { ...r, spend: r.ok && !p.nothing };
 		}

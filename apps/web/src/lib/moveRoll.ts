@@ -12,6 +12,7 @@
 import { commandLinkHtml } from './commands/links.js';
 import type { MoveDefinition } from '@ironledger/shared';
 import { renderRich } from '#lib/dsl.js';
+import { escHtml } from '#lib/markdown.js';
 import { actionScoreHtml } from '#lib/rules/actionScore.js';
 
 // ── Outcome ──────────────────────────────────────────────────────────────────
@@ -317,12 +318,27 @@ const HIATUS_DEBILITIES: Array<[key: string, label: string]> = [
 	['encumbered', 'Encumbered'],
 ];
 
+/** A companion's health, for Take a Hiatus's link to restore it. */
+export interface CompanionHealth {
+	/** Its asset id, which the link binds as `companion`. */
+	id: string;
+	/** What it's called: the name given it, else its asset's. */
+	name: string;
+	health: number;
+	max: number;
+}
+
 /**
  * Take a Hiatus's log body, from the character as it stands: a link to clear
- * each marked debility, to restore health, spirit and supply to 5, and to
- * reset momentum, then the reminders (companion health, Advance a Threat).
+ * each marked debility, to restore health, spirit and supply to 5, each
+ * companion's health to its maximum, and to reset momentum, then the
+ * reminder to Advance a Threat.
  */
-export function takeAHiatusHtml(data: Record<string, unknown>, momentumResetValue: number): string {
+export function takeAHiatusHtml(
+	data: Record<string, unknown>,
+	momentumResetValue: number,
+	companions: CompanionHealth[] = [],
+): string {
 	const parts: string[] = [];
 	// 1. Clear marked conditions
 	const marked = HIATUS_DEBILITIES.filter(([key]) => data[key]);
@@ -343,6 +359,19 @@ export function takeAHiatusHtml(data: Record<string, unknown>, momentumResetValu
 	if (restoreLinks.length > 0) {
 		parts.push(`<p><strong>Resources:</strong> ${restoreLinks.join(' · ')}</p>`);
 	}
+	// Each companion's health to its maximum, bound to that companion.
+	const companionLinks = companions
+		.filter((c) => c.health < c.max)
+		.map((c) =>
+			commandLinkHtml(
+				`${escHtml(c.name)} +${c.max - c.health} health`,
+				`/companion.health=${c.max}`,
+				{ companionId: c.id },
+			),
+		);
+	if (companionLinks.length > 0) {
+		parts.push(`<p><strong>Companions:</strong> ${companionLinks.join(' · ')}</p>`);
+	}
 	// 3. Momentum reset
 	const momDelta = momentumResetValue - ((data['momentum'] as number) ?? 0);
 	if (momDelta !== 0) {
@@ -358,8 +387,7 @@ export function takeAHiatusHtml(data: Record<string, unknown>, momentumResetValu
 	}
 	// 4. Static reminders (always shown)
 	parts.push(
-		`<p>Set companion health to max if applicable.</p>` +
-			`<p>For each active threat: ` +
+		`<p>For each active threat: ` +
 			commandLinkHtml('Advance a Threat', '/move advance-a-threat') +
 			`.</p>`,
 	);

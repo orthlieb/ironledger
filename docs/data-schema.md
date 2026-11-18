@@ -226,6 +226,7 @@ take.
 | `/foe.vanquished++`, `/journey.complete++`                                                    | Vanquish a foe, complete an expedition (`--` undoes).                                                                                   |
 | `[progress](/vow.progress++)`, `[mark menace](/vow.menace++)`                                 | The vow the Moves dialog asked for: the move needs `"choose": "vow"` (below).                                                           |
 | `[+1 health](/companion.health++)`                                                            | The companion the Moves dialog asked for: `"choose": "companion"`.                                                                      |
+| `[any companions](/companions.health++)`                                                      | Every companion the character has, alike (Make Camp, Sojourn): no `choose`.                                                             |
 | `[-harm health](/health-=harm)`, `[-harm spirit](/spirit-=harm)`                              | Endure Harm / Endure Stress: the dialog shows the amount resolved, and its Apply button applies it.                                     |
 | `/companion/hawk.health--`, `/self.health--`                                                  | An asset's field: by its id, or `self` in the asset's own text.                                                                         |
 

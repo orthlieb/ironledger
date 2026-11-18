@@ -57,7 +57,7 @@
 		readCommandLink,
 		type LinkBinding,
 	} from '#lib/commands/links.js';
-	import { runLink, reportCommandResult } from '#lib/commands/run.svelte.js';
+	import { companionHealth, runLink, reportCommandResult } from '#lib/commands/run.svelte.js';
 	import { renderRich } from '#lib/dsl.js';
 	import { getActiveFoeId, getActiveExpeditionId } from '#lib/activeContext.svelte.js';
 	import { untrack } from 'svelte';
@@ -825,6 +825,7 @@
 			const body = takeAHiatusHtml(
 				ctx.data as unknown as Record<string, unknown>,
 				momentumReset(ctx.data),
+				companionHealth(ctx.charId),
 			);
 			const enriched = bindCommandLinks(body, entryId, entryBinding());
 			close();

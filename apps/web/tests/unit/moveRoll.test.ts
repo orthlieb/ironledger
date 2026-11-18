@@ -213,10 +213,28 @@ describe('takeAHiatusHtml', () => {
 	});
 
 	it('leaves out what needs nothing', () => {
-		const html = takeAHiatusHtml({ health: 5, spirit: 5, supply: 5, momentum: 2 }, 2);
+		const html = takeAHiatusHtml({ health: 5, spirit: 5, supply: 5, momentum: 2 }, 2, [
+			{ id: 'companion/hawk', name: 'Ash', health: 3, max: 3 },
+		]);
 		expect(html).not.toContain('Conditions');
 		expect(html).not.toContain('Resources');
+		expect(html).not.toContain('Companions');
 		expect(html).not.toContain('Momentum:');
+	});
+
+	it('restores each companion to its own maximum, bound to it', () => {
+		const html = takeAHiatusHtml({ health: 5, spirit: 5, supply: 5, momentum: 2 }, 2, [
+			{ id: 'companion/hawk', name: 'Ash', health: 1, max: 3 },
+			{ id: 'companion/horse', name: 'Bran & Co', health: 5, max: 5 },
+			{ id: 'companion/mammoth', name: 'Tusk', health: 2, max: 5 },
+		]);
+		expect(html).toContain(
+			'<p><strong>Companions:</strong> ' +
+				'<a class="cmd-link" data-cmd="/companion.health=3" data-companion-id="companion/hawk">Ash +2 health</a> · ' +
+				'<a class="cmd-link" data-cmd="/companion.health=5" data-companion-id="companion/mammoth">Tusk +3 health</a></p>',
+		);
+		expect(html).not.toContain('Bran');
+		expect(html).not.toContain('if applicable');
 	});
 });
 

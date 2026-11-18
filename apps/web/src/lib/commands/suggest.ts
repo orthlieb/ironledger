@@ -14,6 +14,7 @@ import {
 	parseCommand,
 	quoteName,
 	VERBS,
+	type NamePart,
 	type Op,
 	type Parsed,
 	type Verb,
@@ -23,6 +24,8 @@ import {
 	activeCharacter,
 	activeExpedition,
 	activeFoe,
+	companionOwners,
+	COMPANIONS,
 	namedOwners,
 	ownerLabel,
 	ownerRef,
@@ -192,6 +195,17 @@ function firstSlot(typed: string, w: World): Suggestion[] {
 			names: [k],
 		});
 	const ch = activeCharacter(w);
+	const companions = ch ? companionOwners(ch, w.cat) : [];
+	if (companions.length)
+		rows.push({
+			row: {
+				label: COMPANIONS,
+				detail: `every companion — ${companions.map(ownerLabel).join(', ')}`,
+				icon: 'asset',
+				apply: `/${COMPANIONS}.`,
+			},
+			names: [COMPANIONS],
+		});
 	if (ch)
 		for (const spec of valuesOf(ch, w.cat))
 			rows.push({ row: valueRow(spec, `/${spec.key}`), names: [spec.key, spec.label] });
@@ -477,13 +491,23 @@ function rowsFor(input: string, w: World): Suggestion[] {
 
 	// Typing a value after `owner.`.
 	if (p.dot && p.owner) {
-		const owner = resolveOwner(p.owner, w, undefined);
+		const stand = companionsStandIn(p.owner, w);
+		const owner = stand ?? resolveOwner(p.owner, w, undefined);
 		if ('error' in owner) return [];
 		const spec = findValue(owner, valueTyped, w.cat);
 		const ownerText = input.slice(input.indexOf('/') + 1, input.lastIndexOf('.')).trim();
+		// For every companion, each operator says what it does to them all.
+		const ops = (partial: string) => {
+			const rows = operatorSlot(target, spec!, partial, w);
+			if (!stand) return rows;
+			return rows.map((r) => {
+				const pl = plan(r.apply, w);
+				return pl.kind === 'changes' ? { ...r, detail: pl.summary } : r;
+			});
+		};
 		if (spec && normName(spec.key) === normName(valueTyped) && !p.partialOp && /\S$/.test(input))
-			return operatorSlot(target, spec, '', w);
-		if (spec && p.partialOp) return operatorSlot(target, spec, p.partialOp, w);
+			return ops('');
+		if (spec && p.partialOp) return ops(p.partialOp);
 		return valueSlot(ownerText, valueTyped, owner, w);
 	}
 
@@ -511,9 +535,19 @@ function rowsFor(input: string, w: World): Suggestion[] {
 	return firstSlot(valueTyped, w);
 }
 
+/** `companions` as an owner: its first companion stands in for the rest
+ *  (they share their values), so the value and operator rows can be built. */
+function companionsStandIn(n: NamePart, w: World): Owner | undefined {
+	if (n.quoted || n.qualifier || normName(n.text) !== COMPANIONS) return undefined;
+	const ch = activeCharacter(w);
+	return ch ? companionOwners(ch, w.cat)[0] : undefined;
+}
+
 /** The value a parsed command names, if it names one. */
 function specFor(p: Extract<Parsed, { kind: 'value' }>, w: World): ValueSpec | undefined {
 	if (p.owner) {
+		const stand = companionsStandIn(p.owner, w);
+		if (stand) return findValue(stand, p.value.text, w.cat);
 		const o = resolveOwner(p.owner, w, p.value.text);
 		return 'error' in o ? undefined : findValue(o, p.value.text, w.cat);
 	}
@@ -533,6 +567,7 @@ export function topRow(pl: Plan): TopRow {
 		case 'show':
 			return { text: `Enter: ${pl.text}`, tone: 'ok' };
 		case 'change':
+		case 'changes':
 			return { text: `Enter: ${pl.summary}`, tone: pl.nothing ? 'none' : 'ok' };
 		default:
 			return { text: `Enter: ${pl.summary}`, tone: 'ok' };
