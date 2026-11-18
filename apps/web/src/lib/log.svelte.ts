@@ -10,6 +10,8 @@
 // fine-grained dependency on it.
 // =============================================================================
 
+import type { LinkBinding } from '#lib/commands/links.js';
+
 /** Metadata for action rolls — enables burn-momentum after the fact. */
 export interface RollMeta {
 	moveId: string; // to look up outcome HTML from move definition
@@ -22,6 +24,9 @@ export interface RollMeta {
 	foeId?: string;
 	/** Active expedition id — set on moves whose title references {expedition}. */
 	expeditionId?: string;
+	/** What the roll's links were bound to (foe, expedition, vow, companion,
+	 *  harm), so a burn's new outcome binds its links the same way. */
+	bind?: LinkBinding;
 }
 
 export interface LogEntry {
@@ -250,47 +255,11 @@ export function updateLogEntryNote(entryId: string, note: string): void {
 }
 
 // ---------------------------------------------------------------------------
-// enrichOutcomeLinks
+// bindCommandLinks
 // ---------------------------------------------------------------------------
 
-/**
- * Enrich outcome HTML with entry-id and char-id on interactive links
- * so LogPanel click delegation can identify the entry and character.
- *
- * When `expId` is given (the expedition active at roll time), the
- * expedition-targeting links — `progress-link` and `countdown-link` — also get
- * `data-exp-id`, so clicking them later marks the expedition the entry was
- * rolled against, not whichever one happens to be active now. Character links
- * already bind this way via `data-char-id`.
- */
-export function enrichOutcomeLinks(
-	html: string,
-	entryId: string,
-	charId: string,
-	expId = '',
-	foeId = '',
-): string {
-	let out = html.replace(
-		/<a\s+class="(resource-link|debility-link|progress-link|countdown-link|initiative-link|menace-link|vanquish-foe-link|reset-track-link)"/g,
-		`<a data-entry-id="${entryId}" data-char-id="${charId}" class="$1"`,
-	);
-	if (expId) {
-		out = out.replace(
-			/(<a data-entry-id="[^"]*" data-char-id="[^"]*") class="(progress-link|countdown-link)"/g,
-			`$1 data-exp-id="${expId}" class="$2"`,
-		);
-	}
-	// Foe-targeting links bind to the foe rolled against so a later click acts on
-	// THAT foe (or no-ops if it's been deleted/vanquished) rather than whatever
-	// foe is active now. `[^>]*?` tolerates a data-exp-id already inserted above.
-	if (foeId) {
-		out = out.replace(
-			/(<a [^>]*?) class="(progress-link|menace-link|vanquish-foe-link)"/g,
-			`$1 data-foe-id="${foeId}" class="$2"`,
-		);
-	}
-	return out;
-}
+/** Bind an entry's command links to it: see #lib/commands/links.ts. */
+export { bindCommandLinks } from '#lib/commands/links.js';
 
 // ---------------------------------------------------------------------------
 // clearLog — optimistic + DELETE all
@@ -303,56 +272,12 @@ export function clearLog(): void {
 }
 
 // ---------------------------------------------------------------------------
-// XP Spend Bus
-// ---------------------------------------------------------------------------
-// LogPanel calls triggerXpSpend() when the user clicks an XP cost link.
-// CharacterSheet has a $effect that reads getXpSpendNonce() to subscribe
-// reactively, then calls drainXpSpend() to consume pending amounts.
-//
-// This avoids two failure modes of the previous Map-based approach:
-//   1. Handler lost when CharacterSheet unmounts (tab change) — items remain
-//      in the queue until the component re-mounts and drains them.
-//   2. $state mutation from a plain Map callback (outside Svelte's reactive
-//      context) not propagating through bind:value — here the mutation
-//      happens inside the $effect, which IS Svelte's reactive context.
-
-let _xpSpendNonce = $state(0);
-const _xpSpendQueue: Array<{ charId: string; amount: number }> = [];
-
-/** Read inside $effect to subscribe to XP spend events (reactive signal). */
-export function getXpSpendNonce(): number {
-	return _xpSpendNonce;
-}
-
-/** Queue an XP spend and signal all watching $effects. Called by LogPanel. */
-export function triggerXpSpend(charId: string, amount: number): void {
-	_xpSpendQueue.push({ charId, amount });
-	_xpSpendNonce++;
-}
-
-/**
- * Drain all queued XP spend amounts for a character and return the total.
- * Call this inside the $effect that reads getXpSpendNonce().
- */
-export function drainXpSpend(charId: string): number {
-	let total = 0;
-	let i = _xpSpendQueue.length;
-	while (i--) {
-		const item = _xpSpendQueue[i];
-		if (item.charId === charId) {
-			total += item.amount;
-			_xpSpendQueue.splice(i, 1);
-		}
-	}
-	return total;
-}
-
-// ---------------------------------------------------------------------------
 // Generalized Action Bus (resource changes, debility toggles)
 // ---------------------------------------------------------------------------
-// Same pattern as XP Spend Bus. LogPanel calls triggerAction() when the user
-// clicks a resource-link or debility-link. CharacterSheet $effect drains and
-// applies the mutation inside Svelte's reactive context.
+// The Moves dialog (Endure Harm's Apply) and LogPanel (a burn's momentum
+// reset) call triggerAction(); CharactersArea's $effect drains and applies
+// the change inside Svelte's reactive context. Log links are commands now
+// (#lib/commands/), which write values themselves.
 
 export interface LogAction {
 	charId: string;

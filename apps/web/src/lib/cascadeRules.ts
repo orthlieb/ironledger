@@ -2,14 +2,19 @@
 // Iron Ledger — Cascade Rules
 // Defines automatic secondary effects triggered by resource/debility changes.
 //
+// Each rule's log HTML holds command links bound to the character
+// (#lib/commands/links.ts); the caller binds them to the entry. The command
+// runner checks these on every change to a character's value
+// (#lib/commands/run.svelte.ts → cascade).
+//
 // Rule categories:
-//   OVERFLOW_RULES         — checked in LogPanel (resource-link click handler):
+//   OVERFLOW_RULES         — a decrease past 0:
 //                            resource drops below 0, excess converts to another
 //                            resource via a clickable log entry.
-//   FLOOR_RULES            — checked in CharacterSheet.applyResourceChange:
+//   FLOOR_RULES            — a decrease that lands on the floor:
 //                            resource lands at its minimum, appends a note with
 //                            optional debility-link (supply → mark Unprepared).
-//   FLOOR_OVERFLOW_RULES   — checked in LogPanel (resource-link click handler):
+//   FLOOR_OVERFLOW_RULES   — a decrease of a value already at its floor:
 //                            resource is already at its minimum and additional
 //                            reduction is attempted; appends a cascade entry so
 //                            the player can resolve Face a Setback, Face Death,
@@ -19,15 +24,22 @@
 //                            current momentum exceeds the new cap, it is reduced.
 // =============================================================================
 
+import { commandLinkHtml } from './commands/links.js';
+import { escHtml } from './markdown.js';
+
+/** A command link for the character a cascade is about. */
+const link = (label: string, cmd: string, charId: string) =>
+	commandLinkHtml(label, cmd, { charId });
+
 // ---------------------------------------------------------------------------
-// Overflow Rules  (LogPanel — resource-link click handler)
+// Overflow Rules
 // ---------------------------------------------------------------------------
 
 export interface OverflowRule {
 	resource: string; // which resource triggers the overflow ('health' | 'spirit')
 	overflowTo: string; // where excess damage flows ('momentum')
 	logTitle: string;
-	logHtml: (ctx: { overflow: number; charId: string; entryId: string }) => string;
+	logHtml: (ctx: { overflow: number; charId: string }) => string;
 }
 
 export const OVERFLOW_RULES: OverflowRule[] = [
@@ -35,21 +47,36 @@ export const OVERFLOW_RULES: OverflowRule[] = [
 		resource: 'health',
 		overflowTo: 'momentum',
 		logTitle: 'Health: Zero',
-		logHtml: ({ overflow, charId, entryId }) =>
+		logHtml: ({ overflow, charId }) =>
 			`<p>Your health is zero. You also lose ` +
-			`<a class="resource-link" data-resource="momentum" data-value="-${overflow}" ` +
-			`data-entry-id="${entryId}" data-char-id="${charId}">-${overflow} momentum</a>.</p>`,
+			link(`-${overflow} momentum`, `/momentum-=${overflow}`, charId) +
+			`.</p>`,
 	},
 	{
 		resource: 'spirit',
 		overflowTo: 'momentum',
 		logTitle: 'Spirit: Zero',
-		logHtml: ({ overflow, charId, entryId }) =>
+		logHtml: ({ overflow, charId }) =>
 			`<p>Your spirit is zero. You also lose ` +
-			`<a class="resource-link" data-resource="momentum" data-value="-${overflow}" ` +
-			`data-entry-id="${entryId}" data-char-id="${charId}">-${overflow} momentum</a>.</p>`,
+			link(`-${overflow} momentum`, `/momentum-=${overflow}`, charId) +
+			`.</p>`,
 	},
 ];
+
+/**
+ * A companion's health taken past 0 (Companion Endure Harm: "If your
+ * companion's health is 0, exchange any leftover −health for −momentum"):
+ * the rest comes off the character's momentum, as a link to click, like
+ * the character's own health. The runner checks it on every change to a
+ * companion's health, typed or clicked (`/Ash.health-=harm`).
+ */
+export const COMPANION_HEALTH_OVERFLOW = {
+	logTitle: 'Companion Health: Zero',
+	logHtml: ({ overflow, charId, name }: { overflow: number; charId: string; name: string }) =>
+		`<p>${escHtml(name)}’s health is zero. You lose ` +
+		link(`-${overflow} momentum`, `/momentum-=${overflow}`, charId) +
+		` instead.</p>`,
+};
 
 // ---------------------------------------------------------------------------
 // Floor Rules  (CharacterSheet — applyResourceChange)
@@ -62,7 +89,7 @@ export interface FloorRule {
 	resource: string; // 'momentum' | 'supply'
 	floor: number; //  -6        |  0
 	logTitle: string;
-	logHtml: (ctx: { charId: string; entryId: string }) => string;
+	logHtml: (ctx: { charId: string }) => string;
 }
 
 export const FLOOR_RULES: FloorRule[] = [
@@ -77,13 +104,14 @@ export const FLOOR_RULES: FloorRule[] = [
 		resource: 'supply',
 		floor: 0,
 		logTitle: 'Supply: Exhausted',
-		logHtml: ({ charId, entryId }) =>
+		logHtml: ({ charId }) =>
 			`<p>Your supply is exhausted. Mark ` +
-			`<a class="debility-link" data-debility="unprepared" data-value="1" ` +
-			`data-entry-id="${entryId}" data-char-id="${charId}">Unprepared</a>. ` +
-			`Make a move to ` +
-			`<a class="move-link" data-id="move/resupply">Resupply</a> or ` +
-			`<a class="move-link" data-id="move/sojourn">Sojourn</a> to recover.</p>`,
+			link('Unprepared', '/unprepared++', charId) +
+			`. Make a move to ` +
+			link('Resupply', '/move resupply', charId) +
+			` or ` +
+			link('Sojourn', '/move sojourn', charId) +
+			` to recover.</p>`,
 	},
 ];
 
@@ -98,27 +126,20 @@ export interface FloorOverflowRule {
 	resource: string; // 'momentum' | 'health' | 'spirit' | 'supply'
 	floor: number; //  -6        |  0       |  0       |  0
 	logTitle: string;
-	logHtml: (ctx: { overflow: number; charId: string; entryId: string }) => string;
+	logHtml: (ctx: { overflow: number; charId: string }) => string;
 }
 
-/** Build N rows of exchange resource-links (one row per overflow point). */
+/** Build N rows of exchange links (one row per overflow point). */
 function makeOverflowRows(
 	overflow: number,
 	stats: Array<{ resource: string; label: string }>,
 	charId: string,
-	entryId: string,
 ): string {
 	const rows = Array.from(
 		{ length: overflow },
 		() =>
 			`<li>` +
-			stats
-				.map(
-					(s) =>
-						`<a class="resource-link" data-resource="${s.resource}" data-value="-1" ` +
-						`data-entry-id="${entryId}" data-char-id="${charId}">\u22121\u00a0${s.label}</a>`,
-				)
-				.join(' / ') +
+			stats.map((s) => link(`\u22121\u00a0${s.label}`, `/${s.resource}--`, charId)).join(' / ') +
 			`</li>`,
 	).join('');
 	return `<ul>${rows}</ul>`;
@@ -129,7 +150,7 @@ export const FLOOR_OVERFLOW_RULES: FloorOverflowRule[] = [
 		resource: 'momentum',
 		floor: -6,
 		logTitle: 'Face a Setback',
-		logHtml: ({ overflow, charId, entryId }) =>
+		logHtml: ({ overflow, charId }) =>
 			`<p>Your momentum is at its minimum of \u22126. Distribute ${overflow} overflow ` +
 			`\u2014 choose one per point:</p>` +
 			makeOverflowRows(
@@ -140,34 +161,31 @@ export const FLOOR_OVERFLOW_RULES: FloorOverflowRule[] = [
 					{ resource: 'supply', label: 'supply' },
 				],
 				charId,
-				entryId,
 			) +
-			`<p>Or <a class="move-link" data-id="move/face-a-setback">Face a Setback</a> ` +
+			`<p>Or ${link('Face a Setback', '/move face-a-setback', charId)} ` +
 			`to lose progress on a track instead.</p>`,
 	},
 	{
 		resource: 'health',
 		floor: 0,
 		logTitle: 'Face Death',
-		logHtml: () =>
+		logHtml: ({ charId }) =>
 			`<p>Your health is at zero and you suffer further harm. You must ` +
-			`<a class="move-link" data-id="move/face-death">Face Death</a> ` +
-			`and roll +heart.</p>`,
+			`${link('Face Death', '/move face-death', charId)} and roll +heart.</p>`,
 	},
 	{
 		resource: 'spirit',
 		floor: 0,
 		logTitle: 'Face Desolation',
-		logHtml: () =>
+		logHtml: ({ charId }) =>
 			`<p>Your spirit is at zero and you suffer further stress. You must ` +
-			`<a class="move-link" data-id="move/face-desolation">Face Desolation</a> ` +
-			`and roll +heart.</p>`,
+			`${link('Face Desolation', '/move face-desolation', charId)} and roll +heart.</p>`,
 	},
 	{
 		resource: 'supply',
 		floor: 0,
 		logTitle: 'Out of Supply',
-		logHtml: ({ overflow, charId, entryId }) =>
+		logHtml: ({ overflow, charId }) =>
 			`<p>Your supply is exhausted. Exchange ${overflow} overflow ` +
 			`\u2014 choose one per point:</p>` +
 			makeOverflowRows(
@@ -178,7 +196,6 @@ export const FLOOR_OVERFLOW_RULES: FloorOverflowRule[] = [
 					{ resource: 'momentum', label: 'momentum' },
 				],
 				charId,
-				entryId,
 			),
 	},
 ];

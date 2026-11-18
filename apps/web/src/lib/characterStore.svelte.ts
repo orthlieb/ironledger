@@ -19,6 +19,7 @@
 import type { CharacterFull } from '#lib/api.js';
 import { characters as api } from '#lib/api.js';
 import { hydrateCharacterInPlace } from '#lib/character.js';
+import { allCharacterFields } from '#lib/characterFields.svelte.js';
 
 // ---------------------------------------------------------------------------
 // Module-level state
@@ -110,6 +111,15 @@ export async function createCharacter(
 		dataForApi = { ...initialData, supply: _partySupply };
 	}
 
+	// Party fields (a content pack's `scope: "party"`) hold one value the
+	// whole party shares: a new character takes the party's, whatever it
+	// brought.
+	const party = partyFieldValues();
+	if (Object.keys(party).length) {
+		const fields = (dataForApi.fields as Record<string, string> | undefined) ?? {};
+		dataForApi = { ...dataForApi, fields: { ...fields, ...party } };
+	}
+
 	const newChar = await api.create(name, dataForApi);
 	// Hydrate defaults so bind:value directives never receive undefined.
 	hydrateCharacterInPlace(newChar.data as Record<string, unknown>);
@@ -128,6 +138,50 @@ export async function createCharacter(
 		setPartySupply(newCharSupply);
 	}
 	return newChar;
+}
+
+/** The ids of the party fields content packs declare. */
+function partyFieldIds(): string[] {
+	return allCharacterFields()
+		.filter((f) => f.scope === 'party')
+		.map((f) => f.id);
+}
+
+/** The party's values for its party fields, from any character that has
+ *  them (every character holds the same ones). Empty with no characters. */
+export function partyFieldValues(): Record<string, string> {
+	const out: Record<string, string> = {};
+	for (const id of partyFieldIds()) {
+		for (const c of _characters) {
+			const v = (
+				(c.data as Record<string, unknown>).fields as Record<string, string> | undefined
+			)?.[id];
+			if (v !== undefined) {
+				out[id] = v;
+				break;
+			}
+		}
+	}
+	return out;
+}
+
+/**
+ * Set party field values on every character and persist each, as
+ * setPartySupply does for supply: a party value is one the whole party
+ * shares (docs/command-language.md → Scopes).
+ */
+export function setPartyFields(values: Record<string, string>): void {
+	if (!Object.keys(values).length) return;
+	const withValues = (data: Record<string, unknown>) => ({
+		...data,
+		fields: { ...((data.fields as Record<string, string> | undefined) ?? {}), ...values },
+	});
+	for (const c of _characters)
+		api.update(c.id, { data: withValues(c.data as Record<string, unknown>) }).catch(() => {});
+	_characters = _characters.map((c) => ({
+		...c,
+		data: withValues(c.data as Record<string, unknown>) as typeof c.data,
+	}));
 }
 
 /** Delete a character by id. */

@@ -125,7 +125,7 @@
         "label": "Ironsworn",
         "url": "https://ironsworn-rpg.fandom.com/wiki/Special:AllPages"
       },
-      "characterFields": [
+      "fields": [
         {
           "id": "origin",
           "label": "Region of origin",
@@ -134,13 +134,14 @@
             "oracle": "region"
           },
           "default": "",
+          "writable": false,
           "roll": {
             "oracle": "region"
           },
           "tooltip": "Where your character was born, from the Location: Region oracle."
         }
       ],
-      "characterFieldsHeading": false,
+      "fieldsHeading": false,
       "root": "apps/api/data",
       "provides": {
         "assets": [
@@ -225,7 +226,7 @@
           "color": "#C0392B"
         }
       ],
-      "characterFieldsHeading": false,
+      "fieldsHeading": false,
       "root": "extensions/delve",
       "provides": {
         "assets": [
@@ -315,7 +316,7 @@
           "color": "#2A9D8F"
         }
       ],
-      "characterFieldsHeading": false,
+      "fieldsHeading": false,
       "root": "extensions/lodestar",
       "provides": {
         "moves": [
@@ -378,7 +379,7 @@
         "label": "YRT",
         "url": "http://yrt.iron-ledger.org"
       },
-      "characterFields": [
+      "fields": [
         {
           "id": "religion",
           "label": "Religion",
@@ -388,6 +389,7 @@
             "label": "name"
           },
           "default": "",
+          "writable": false,
           "roll": {
             "oracle": "yrtReligion",
             "from": "name",
@@ -424,6 +426,7 @@
             }
           ],
           "default": "pure",
+          "writable": false,
           "roll": {
             "oracle": "yrtTouched",
             "from": "className"
@@ -436,16 +439,21 @@
           "type": "string",
           "default": "",
           "placeholder": "Animal…",
-          "if": [
-            {
-              "key": "touched",
-              "min": 1
-            }
-          ],
+          "if": "touched >= prime",
           "roll": {
             "oracle": "yrtAnimal"
           },
           "tooltip": "From the Character: Touched Aspect oracle."
+        },
+        {
+          "id": "mana",
+          "scope": "global",
+          "label": "Mana",
+          "shortLabel": "Mana",
+          "type": "counter",
+          "maxValue": 10,
+          "default": "0",
+          "icon": "mana"
         }
       ],
       "root": "extensions/yrt",
@@ -502,7 +510,7 @@
           "order": 900
         }
       ],
-      "characterFields": [
+      "fields": [
         {
           "id": "sampleTrinket",
           "label": "Trinket",
@@ -561,17 +569,43 @@
           }
         },
         {
+          "id": "sampleHome",
+          "label": "Home",
+          "type": "dropdown",
+          "custom": true,
+          "options": [
+            {
+              "id": "hearth",
+              "label": "Hearth"
+            },
+            {
+              "id": "road",
+              "label": "Road"
+            },
+            {
+              "id": "sea",
+              "label": "Sea"
+            }
+          ],
+          "default": "",
+          "tooltip": "One of the three, or anywhere typed in."
+        },
+        {
+          "id": "sampleBanner",
+          "label": "Banner",
+          "type": "string",
+          "scope": "party",
+          "default": "",
+          "placeholder": "Banner…",
+          "tooltip": "The party's banner: one for every character."
+        },
+        {
           "id": "sampleNotes",
           "label": "Notes",
           "type": "markdown",
           "default": "",
           "placeholder": "Anything the other fields don't hold…",
-          "if": [
-            {
-              "key": "sampleSworn",
-              "eq": 1
-            }
-          ]
+          "if": "sampleSworn"
         }
       ],
       "root": "extensions/sample",

@@ -10,6 +10,8 @@
 import type { CharacterFieldDef } from '#lib/types.js';
 import type { OracleEntry, OracleFile } from '#lib/oracleStore.svelte.js';
 import { stripInline } from '#lib/markdown.js';
+import { evaluateCondition, type CompareOp, type Reading } from '@ironledger/shared';
+import { parsedCondition } from '#lib/conditionCache.js';
 
 /** One choice of a dropdown or radio field; `row` is its oracle row, for an
  *  `optionsFrom` field. */
@@ -26,7 +28,14 @@ export interface ResolvedField extends CharacterFieldDef {
 }
 
 type Values = Record<string, string> | undefined;
-type Condition = NonNullable<CharacterFieldDef['if']>[number];
+/** A comparison as bounds on a number, for messages: `touched >= prime` is
+ *  `{ min: 1 }`. */
+export interface Bound {
+	min?: number;
+	max?: number;
+	eq?: number;
+	ne?: number;
+}
 
 /** A dropdown or radio: a choice among options, stored as the option id. */
 export const isChoice = (f: { type: string }) => f.type === 'dropdown' || f.type === 'radio';
@@ -115,7 +124,7 @@ export function valueLabel(field: ResolvedField, value: string): string {
 }
 
 /** Whether a number passes a precondition's operators. */
-export function passes(v: number, c: Omit<Condition, 'key'>): boolean {
+export function passes(v: number, c: Bound): boolean {
 	if (c.min !== undefined && v < c.min) return false;
 	if (c.max !== undefined && v > c.max) return false;
 	if (c.eq !== undefined && v !== c.eq) return false;
@@ -125,17 +134,80 @@ export function passes(v: number, c: Omit<Condition, 'key'>): boolean {
 
 /** Whether a field shows: its `if` conditions pass against the fields they
  *  name (declared above it, in its extension). */
+/**
+ * A field as a condition reads it (docs/command-language.md → Conditions): a
+ * dropdown or radio as a list (its option's position, −1 unset), a counter
+ * as a number, a switch as true/false, text as its length.
+ */
+export function fieldReading(field: ResolvedField, value: string): Reading {
+	if (isChoice(field))
+		return {
+			kind: 'list',
+			// A custom value (a `custom` dropdown's typed text) is chosen but has
+			// no place in the options' order: it reads past the last one, which
+			// only "is one chosen?" looks at (the content checker allows nothing
+			// else on such a field).
+			value:
+				field.custom && value && optionIndex(field, value) < 0
+					? field.options.length
+					: optionIndex(field, value),
+			option: (word) => {
+				const id = matchOption(field, word);
+				return id === null ? -1 : optionIndex(field, id);
+			},
+		};
+	if (field.type === 'counter') return { kind: 'number', value: counterValue(field, value) };
+	if (field.type === 'switch') return { kind: 'bool', value: value === '1' ? 1 : 0 };
+	return { kind: 'text', value: value.length };
+}
+
+/** Whether a field shows: its `if` holds, read against the other fields. A
+ *  name that isn't a field reads as unset (the content checker allows only
+ *  fields declared above it). */
 export function fieldShown(
 	field: CharacterFieldDef,
 	values: Values,
 	byId: (id: string) => ResolvedField | undefined,
 ): boolean {
-	for (const c of field.if ?? []) {
-		const other = byId(c.key);
-		if (!other) continue;
-		if (!passes(fieldNumber(other, fieldValue(other, values)), c)) return false;
+	if (!field.if) return true;
+	const node = parsedCondition(field.if);
+	if (!node) return true;
+	return evaluateCondition(node, (t) => {
+		const other = t.owner ? undefined : byId(t.name);
+		return other ? fieldReading(other, fieldValue(other, values)) : { kind: 'exists', value: 0 };
+	});
+}
+
+/** A comparison as bounds, for fieldRequirement: `>= 1` is `{ min: 1 }`,
+ *  `> 1` is `{ min: 2 }`. */
+export function boundFor(op: CompareOp, n: number): Bound {
+	switch (op) {
+		case '>=':
+			return { min: n };
+		case '>':
+			return { min: n + 1 };
+		case '<=':
+			return { max: n };
+		case '<':
+			return { max: n - 1 };
+		case '==':
+			return { eq: n };
+		case '!=':
+			return { ne: n };
 	}
-	return true;
+}
+
+/** The comparison that holds exactly when `op` doesn't: for "not (a >= 2)". */
+export function negateOp(op: CompareOp): CompareOp {
+	const flip: Record<CompareOp, CompareOp> = {
+		'>=': '<',
+		'<': '>=',
+		'<=': '>',
+		'>': '<=',
+		'==': '!=',
+		'!=': '==',
+	};
+	return flip[op];
 }
 
 /** The option a rolled or typed value names, by id or label, ignoring case;
@@ -316,7 +388,7 @@ export function rollField(
  *  ("Requires Touched: Prime or higher"); for a counter, in numbers
  *  ("Requires Resolve 2 or more"); for a switch, on or off ("Requires Sworn",
  *  "Requires no Sworn"). */
-export function fieldRequirement(field: ResolvedField, c: Omit<Condition, 'key'>): string {
+export function fieldRequirement(field: ResolvedField, c: Bound): string {
 	if (field.type === 'switch') {
 		const wantsOn = c.eq === 1 || c.ne === 0 || (c.min !== undefined && c.min >= 1);
 		return wantsOn ? `Requires ${field.label}` : `Requires no ${field.label}`;

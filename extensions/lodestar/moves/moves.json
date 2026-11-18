@@ -14,16 +14,11 @@
           "desc": "Journeying along a known route"
         }
       ],
-      "strong": "You reach your destination and the situation favors you. Take [+1 momentum](resource:momentum?value=+1).",
-      "weak": "You complete the journey, but face a cost or complication. Choose one or more:\n- You took longer than expected.\n- You pressed on through pain, sickness, or weariness: [Endure Harm](move:endure-harm?harm=1).\n- You suffered under the burden of foul weather, worries, or fearful locations: [Endure Stress](move:endure-stress?harm=1).\n- You wasted resources.\n- You face a complication or hazard at the destination. Envision what you find ([Ask the Oracle](move:ask-the-oracle) if unsure).",
-      "miss": "You are waylaid by a dire threat, and must [Pay the Price](move:pay-the-price). If you overcome this obstacle, you may push on safely to your destination.",
+      "strong": "You reach your destination and the situation favors you. Take [+1 momentum](/momentum++).",
+      "weak": "You complete the journey, but face a cost or complication. Choose one or more:\n- You took longer than expected.\n- You pressed on through pain, sickness, or weariness: [Endure Harm](/move endure-harm 1).\n- You suffered under the burden of foul weather, worries, or fearful locations: [Endure Stress](/move endure-stress 1).\n- You wasted resources.\n- You face a complication or hazard at the destination. Envision what you find ([Ask the Oracle](/move ask-the-oracle) if unsure).",
+      "miss": "You are waylaid by a dire threat, and must [Pay the Price](/move pay-the-price). If you overcome this obstacle, you may push on safely to your destination.",
       "notes": "A bonus move adapted from Set a Course (Starforged), itself adapted from Escape the Depths (Delve). It resolves a journey across familiar lands in one roll — travel with uncertainty and risk, but not the full focus of a usual journey; especially useful for the return leg of a round trip. When traveling with allies, let each member of the company suffer one or more weak-hit costs as appropriate. Such are the hardships of the road.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "logTitle": "{character} follows a path using {stat}"
     },
     {
@@ -35,16 +30,11 @@
       "trigger": "When you **take decisive action to resolve the outcome of this fight**, roll the **challenge dice** and compare to your **progress**. Momentum is ignored on this roll. If you do not have initiative, count a strong hit as a weak hit, and a weak hit as a miss.",
       "progressTrack": "combat",
       "initiativeDowngrade": true,
-      "strong": "This foe is no longer in the fight. They are killed, out of action, flee, or surrender as appropriate to the situation and your intent ([Ask the Oracle](move:ask-the-oracle) if unsure). [Vanquish Foe](vanquish)",
-      "weak": "As above. [Vanquish Foe](vanquish) But you must also choose one:\n- It's worse than you thought: [Endure Harm](move:endure-harm).\n- You are overcome: [Endure Stress](move:endure-stress).\n- Your victory is short-lived: A new danger or foe appears, or an existing danger worsens.\n- You suffer collateral damage: Something of value is lost or broken, or someone important must pay the cost.\n- You'll pay for it: An objective falls out of reach.\n- Others won't forget: You are marked for vengeance.",
-      "miss": "You have lost this fight. [Pay the Price](move:pay-the-price).",
+      "strong": "This foe is no longer in the fight. They are killed, out of action, flee, or surrender as appropriate to the situation and your intent ([Ask the Oracle](/move ask-the-oracle) if unsure). [Vanquish Foe](vanquish)",
+      "weak": "As above. [Vanquish Foe](vanquish) But you must also choose one:\n- It's worse than you thought: [Endure Harm](/move endure-harm).\n- You are overcome: [Endure Stress](/move endure-stress).\n- Your victory is short-lived: A new danger or foe appears, or an existing danger worsens.\n- You suffer collateral damage: Something of value is lost or broken, or someone important must pay the cost.\n- You'll pay for it: An objective falls out of reach.\n- Others won't forget: You are marked for vengeance.",
+      "miss": "You have lost this fight. [Pay the Price](/move pay-the-price).",
       "notes": "The Lodestar alternate to End the Fight, adapted from Starforged's flexibility. Unlike the base move, you may make this progress roll without a strong hit on a preceding decisive action, and regardless of initiative — but at greater risk of failure: if you do not have initiative, count a strong hit as a weak hit, and a weak hit as a miss. Momentum is ignored on this roll.",
-      "preconditions": [
-        {
-          "key": "hasFoe",
-          "eq": 1
-        }
-      ],
+      "preconditions": "foe",
       "progressSource": "combat",
       "logTitle": "{character} ends the fight with {foe}"
     },
@@ -54,14 +44,9 @@
       "category": "Scene",
       "source": "lodestar",
       "triggerShort": "When you face an extended or complex challenge.",
-      "trigger": "When you **face an extended or complex challenge**, name your objective and choose a rank as appropriate to the situation:\n- You have a clear advantage: **Troublesome**.\n- You are ready to act: **Dangerous**.\n- You are unprepared or outmatched: **Formidable**.\n\nThen, activate a four-segment countdown track and [Face Danger](move:scene-face-danger) or [Secure an Advantage](move:scene-secure-an-advantage) to take action.",
+      "trigger": "When you **face an extended or complex challenge**, name your objective and choose a rank as appropriate to the situation:\n- You have a clear advantage: **Troublesome**.\n- You are ready to act: **Dangerous**.\n- You are unprepared or outmatched: **Formidable**.\n\nThen, activate a four-segment countdown track and [Face Danger](/move scene-face-danger) or [Secure an Advantage](/move scene-secure-an-advantage) to take action.",
       "notes": "Create the Scene in the Expeditions tab (+ New Scene). It carries a progress track — marked by the scene's rank — plus the four-segment countdown that fills as time runs out.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        }
-      ],
+      "preconditions": "character",
       "logTitle": "{character} begins a scene"
     },
     {
@@ -81,15 +66,10 @@
         { "stat": "shadow", "desc": "With deception, stealth, or trickery" },
         { "stat": "wits", "desc": "With expertise, insight, or observation" }
       ],
-      "strong": "You are successful and [mark progress](progress:scene?value=1). *On a match,* [mark progress twice](progress:scene?value=2) *instead.*",
-      "weak": "You are successful and [mark progress](progress:scene?value=1), but also encounter a complication or setback. Envision what occurs and [mark a countdown segment](countdown:scene?value=1).",
-      "miss": "You fail, or a momentary success is undermined by a dramatic turn of events. [Mark a countdown segment](countdown:scene?value=1) and [Pay the Price](move:pay-the-price). *On a match,* [mark two segments](countdown:scene?value=2) and Pay the Price *instead.*",
-      "preconditions": [
-        {
-          "key": "hasScene",
-          "eq": 1
-        }
-      ],
+      "strong": "You are successful and [mark progress](/scene.progress++). *On a match,* [mark progress twice](/scene.progress+=2) *instead.*",
+      "weak": "You are successful and [mark progress](/scene.progress++), but also encounter a complication or setback. Envision what occurs and [mark a countdown segment](/scene.countdown++).",
+      "miss": "You fail, or a momentary success is undermined by a dramatic turn of events. [Mark a countdown segment](/scene.countdown++) and [Pay the Price](/move pay-the-price). *On a match,* [mark two segments](/scene.countdown+=2) and Pay the Price *instead.*",
+      "preconditions": "scene",
       "logTitle": "{character} faces danger in {expedition} using {stat}"
     },
     {
@@ -109,15 +89,10 @@
         { "stat": "shadow", "desc": "With deception, stealth, or trickery" },
         { "stat": "wits", "desc": "With expertise, insight, or observation" }
       ],
-      "strong": "Take both:\n- Take [+2 momentum](resource:momentum?value=+2).\n- Add +1 on your next move (not a progress move).\n\n*On a strong hit with a match,* also [mark progress](progress:scene?value=1).",
-      "weak": "Choose one:\n- Take [+2 momentum](resource:momentum?value=+2).\n- Add +1 on your next move (not a progress move).",
-      "miss": "You fail or your assumptions betray you. [Mark a countdown segment](countdown:scene?value=1) and [Pay the Price](move:pay-the-price). *On a match,* [mark two segments](countdown:scene?value=2) and Pay the Price *instead.*",
-      "preconditions": [
-        {
-          "key": "hasScene",
-          "eq": 1
-        }
-      ],
+      "strong": "Take both:\n- Take [+2 momentum](/momentum+=2).\n- Add +1 on your next move (not a progress move).\n\n*On a strong hit with a match,* also [mark progress](/scene.progress++).",
+      "weak": "Choose one:\n- Take [+2 momentum](/momentum+=2).\n- Add +1 on your next move (not a progress move).",
+      "miss": "You fail or your assumptions betray you. [Mark a countdown segment](/scene.countdown++) and [Pay the Price](/move pay-the-price). *On a match,* [mark two segments](/scene.countdown+=2) and Pay the Price *instead.*",
+      "preconditions": "scene",
       "logTitle": "{character} secures an advantage in {expedition} using {stat}"
     },
     {
@@ -130,14 +105,9 @@
       "progressTrack": "scene",
       "progressSource": "scene",
       "strong": "You achieve your objective unconditionally.",
-      "weak": "You succeed, but not without cost. You must [Pay the Price](move:pay-the-price). Make this a minor cost relative to the scope of the scene.",
-      "miss": "You fail or are undermined by a dire turn of events. [Pay the Price](move:pay-the-price).",
-      "preconditions": [
-        {
-          "key": "hasScene",
-          "eq": 1
-        }
-      ],
+      "weak": "You succeed, but not without cost. You must [Pay the Price](/move pay-the-price). Make this a minor cost relative to the scope of the scene.",
+      "miss": "You fail or are undermined by a dire turn of events. [Pay the Price](/move pay-the-price).",
+      "preconditions": "scene",
       "logTitle": "{character} finishes {expedition}"
     }
   ]

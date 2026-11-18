@@ -12,21 +12,22 @@ Yrt adds a **mana** resource to characters, representing Conclave spellcraft fue
 | -------- | ----- | ----------------- |
 | `mana`   | 0–10  | amber (`#f59e0b`) |
 
-Mana is a valid resource in the interactive-link DSL, written like any other
-resource link (markup in content is the DSL / markdown — never raw HTML):
+Mana is a value like any other, so a link changes it with a command
+(markup in content is markdown with command links — never raw HTML):
 
 ```
-[−1 mana](resource:mana?value=-1)
+[−1 mana](/mana--)
+[+2 mana](/mana+=2)
 ```
 
-It behaves like the standard resources (momentum, health, spirit, supply)
-wherever resource links appear.
+It's held to its declared range (0–10), and typed in the command bar the same
+way (`/mana`, `/mana+=2`).
 
 ---
 
 ## Character fields
 
-YRT adds three fields to every character (`characterFields` in
+YRT adds three fields to every character (`fields` in
 `extension.json`; see [character-fields.md](../../docs/character-fields.md)),
 shown under a YRT heading at the bottom of the sheet's Core tab and in New
 Character, each with a d6. They follow the core rules' Region of origin,
@@ -57,7 +58,7 @@ The Touched are characters physically altered by manite exposure. Touched assets
   "category": "Touched",
   "summary": "One-line summary shown in the picker tile.",
   "postamble": "Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.",
-  "preconditions": [{ "key": "touched", "min": 1 }],
+  "preconditions": "touched >= prime",
   "exclusiveGroup": "touched",
   "abilityMaxByField": { "touched": { "pure": 0, "prime": 1, "second": 2, "third": 3, "feral": 3 } },
   "characterFields": ["touched", "touchedAnimal"],

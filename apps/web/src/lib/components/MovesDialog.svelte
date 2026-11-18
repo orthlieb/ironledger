@@ -36,6 +36,7 @@
 		stripHtml,
 		tableRollHtml,
 		takeAHiatusHtml,
+		delveDepthsColumn,
 	} from '#lib/moveRoll.js';
 	import {
 		loadMoves,
@@ -48,9 +49,16 @@
 		isTableRollMove,
 		hasRollableStats,
 	} from '#lib/moveStore.svelte.js';
-	import { movePreconditionFailure, type Precondition } from '#lib/preconditions.js';
+	import { movePreconditionFailure } from '#lib/preconditions.js';
 	import { applyInitiativeDowngrade } from '#lib/initiativeDowngrade.js';
-	import { appendLog, enrichOutcomeLinks, triggerAction } from '#lib/log.svelte.js';
+	import { appendLog, bindCommandLinks, triggerAction } from '#lib/log.svelte.js';
+	import {
+		commandLinkHtml,
+		linkVerb,
+		readCommandLink,
+		type LinkBinding,
+	} from '#lib/commands/links.js';
+	import { companionHealth, runLink, reportCommandResult } from '#lib/commands/run.svelte.js';
 	import { renderRich } from '#lib/dsl.js';
 	import { getActiveFoeId, getActiveExpeditionId } from '#lib/activeContext.svelte.js';
 	import { untrack } from 'svelte';
@@ -68,6 +76,9 @@
 	import { tooltip } from '#lib/actions/tooltip.js';
 	import { escHtml } from '#lib/markdown.js';
 	import { loadAssets, findAsset } from '#lib/assetStore.svelte.js';
+	import Select from '#lib/components/Select.svelte';
+	import { vowStatus } from '#lib/commands/values.js';
+	import { VOW_FORSAKE_STRESS, type Vow } from '#lib/types.js';
 	import { getRelevantAbilities } from '#lib/assetMatcherStore.svelte.js';
 	import { getActiveDebilityWarnings } from '#lib/debilityWarnings.js';
 	import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
@@ -118,6 +129,12 @@
 	// active foe's rank when a move is opened, but is editable so the player can
 	// set it "as appropriate to the situation" (a fall, a trap, no foe at all).
 	let harmValue = $state(1);
+	/** The moves that take an amount of harm or stress, with − + and Apply. */
+	const ENDURE_MOVES = new Set([
+		'move/endure-harm',
+		'move/endure-stress',
+		'move/companion-endure-harm',
+	]);
 	// Whether the Apply button has already committed this harm to the character
 	// (locks the amount and the button to prevent a double-apply). Reset when the
 	// move is (re)opened.
@@ -125,15 +142,74 @@
 	// Declared here (before progressValue, rollStatusHtml, isOracleRollMove, oracleTable)
 	// so all derived values that reference it are in TDZ-safe order.
 	const selectedMove = $derived(selectedId ? (findMove(selectedId) ?? null) : null);
-	const isEndureMove = $derived(
-		selectedMove?.id === 'move/endure-harm' || selectedMove?.id === 'move/endure-stress',
-	);
+	const isEndureMove = $derived(!!selectedMove && ENDURE_MOVES.has(selectedMove.id));
+	/** Companion Endure Harm: the harm comes off the companion chosen. */
+	const isCompanionHarm = $derived(selectedMove?.id === 'move/companion-endure-harm');
 	// The harm value that drives the harm-links: the editable input for Endure
 	// Harm/Stress, otherwise the active foe's rank.
 	const effectiveHarm = $derived(isEndureMove ? harmValue : pctx.foeHarm);
+	// ── The vow or companion a move acts on (docs/command-language.md → Moves
+	// that act on a vow or a companion). A move with `choose` asks for one
+	// here; the choice binds `vow` or `companion` in the entry's links, and
+	// Fulfill Your Vow rolls against that vow's progress.
+	const chooseKind = $derived(
+		selectedMove?.choose === 'vow' || selectedMove?.choose === 'companion'
+			? (selectedMove.choose as 'vow' | 'companion')
+			: null,
+	);
+	const vowOptions = $derived(
+		((ctx?.data?.vows ?? []) as Vow[])
+			.filter((v) => vowStatus(v) === 'active')
+			.map((v) => ({
+				value: v.id,
+				label: `${v.name?.trim() || 'Unnamed vow'} (${v.difficulty.charAt(0).toUpperCase()}${v.difficulty.slice(1)})`,
+			})),
+	);
+	const companionOptions = $derived(
+		(ctx?.data?.assets ?? [])
+			.filter((a) => findAsset(a.assetId)?.category === 'Companion')
+			.map((a) => ({
+				value: a.assetId,
+				label:
+					a.customValues?.['companion-name']?.trim() ||
+					a.customValues?.['name']?.trim() ||
+					findAsset(a.assetId)?.name ||
+					a.assetId,
+			})),
+	);
+	const chooseOptions = $derived(
+		chooseKind === 'vow' ? vowOptions : chooseKind === 'companion' ? companionOptions : [],
+	);
+	/** What the picker shows; the first option until one is picked. */
+	let picked = $state('');
+	const chosenId = $derived(
+		chooseOptions.some((o) => o.value === picked) ? picked : (chooseOptions[0]?.value ?? ''),
+	);
+	const chosenVow = $derived(
+		chooseKind === 'vow'
+			? ((ctx?.data?.vows ?? []) as Vow[]).find((v) => v.id === chosenId)
+			: undefined,
+	);
+	const chosenVowId = $derived(chooseKind === 'vow' ? chosenId : '');
+	const chosenCompanionId = $derived(chooseKind === 'companion' ? chosenId : '');
+	/** What an entry's command links act on: the character, foe and
+	 *  expedition it's made for, the vow or companion chosen, and Endure
+	 *  Harm/Stress's amount (#lib/commands/links.ts). */
+	function entryBinding(): LinkBinding {
+		return {
+			charId: ctx?.charId,
+			foeId: getActiveFoeId() || undefined,
+			expId: getActiveExpeditionId() || undefined,
+			vowId: chosenVowId || undefined,
+			companionId: chosenCompanionId || undefined,
+			harm: isEndureMove ? harmValue : undefined,
+		};
+	}
 	// Label + resource for the harm stepper (harm→health, stress→spirit).
 	const harmWord = $derived(selectedMove?.id === 'move/endure-stress' ? 'Stress' : 'Harm');
 	const progressValue = $derived.by(() => {
+		// A move that asks for a vow rolls against its progress.
+		if (chooseKind === 'vow') return Math.floor((chosenVow?.ticks ?? 0) / 4);
 		const src = selectedMove?.progressSource ?? 'combat';
 		const ticks = progressContext[src] ?? 0;
 		return Math.floor(ticks / 4);
@@ -264,7 +340,7 @@
 	// Precondition check
 	// ---------------------------------------------------------------------------
 	function moveFailReason(m: MoveDefinition): string | null {
-		return movePreconditionFailure(m.preconditions as Precondition[] | undefined, ctx?.data, pctx);
+		return movePreconditionFailure(m.preconditions as string | undefined, ctx?.data, pctx);
 	}
 
 	// ---------------------------------------------------------------------------
@@ -298,15 +374,25 @@
 	const resolvedTriggerHtml = $derived.by(() => {
 		const m = selectedMove;
 		if (!m) return '';
-		const raw = moveMd(m, ((m as Record<string, unknown>).triggerPreamble as string) ?? m.trigger);
-		if (m.id !== 'move/endure-harm' && m.id !== 'move/endure-stress') return raw;
+		let raw = moveMd(m, ((m as Record<string, unknown>).triggerPreamble as string) ?? m.trigger);
+		// Forsaking a vow: Endure Stress at the chosen vow's rank.
+		if (m.id === 'move/forsake-your-vow' && chosenVow)
+			raw = raw.replace(
+				'data-cmd="/move endure-stress"',
+				`data-cmd="/move endure-stress ${VOW_FORSAKE_STRESS[chosenVow.difficulty]}"`,
+			);
+		if (!ENDURE_MOVES.has(m.id)) return raw;
 		const harm = effectiveHarm; // tracked — recompute when the player edits the amount
+		const companionId = chosenCompanionId; // tracked — and when another companion is picked
 		return untrack(() =>
 			resolveHarmLinks(raw, {
 				moveId: m.id,
 				foeHarm: harm,
 				curHealth: resourceValue('health'),
 				curSpirit: resourceValue('spirit'),
+				curCompanionHealth: ctx
+					? companionHealth(ctx.charId).find((c) => c.id === companionId)?.health
+					: undefined,
 			}),
 		);
 	});
@@ -318,6 +404,14 @@
 	 */
 	function applyHarm() {
 		if (!ctx || harmApplied || !isEndureMove) return;
+		// The companion's: through the runner, which logs it and offers any
+		// leftover as −momentum (cascadeRules → COMPANION_HEALTH_OVERFLOW).
+		if (isCompanionHarm) {
+			const r = runLink(`/companion.health-=${harmValue}`, entryBinding());
+			reportCommandResult(r);
+			if (r.ok) harmApplied = true;
+			return;
+		}
 		const resource = selectedMove?.id === 'move/endure-stress' ? 'spirit' : 'health';
 		const curVal = resourceValue(resource) ?? 0;
 		const resourceLoss = Math.min(harmValue, curVal);
@@ -336,10 +430,11 @@
 		// Pre-warm the Wilhelm scream buffer so a miss outcome doesn't
 		// have to wait on the fetch (idempotent — cached after first call).
 		preloadMissScream();
+		picked = '';
 		if (moveId) {
 			selectedId = moveId;
 			view = 'detail';
-			if (moveId === 'move/endure-harm' || moveId === 'move/endure-stress') {
+			if (ENDURE_MOVES.has(moveId)) {
 				// A link that carries an explicit amount (e.g. forsaking a vow →
 				// Endure Stress at the vow's rank) overrides the active-foe default.
 				harmValue = harm ?? pctx.foeHarm ?? 1;
@@ -369,8 +464,9 @@
 	// ---------------------------------------------------------------------------
 	// Navigation
 	// ---------------------------------------------------------------------------
-	function selectMove(m: MoveDefinition) {
+	function selectMove(m: MoveDefinition, harm?: number) {
 		selectedId = m.id;
+		picked = '';
 		view = 'detail';
 		adds = 0;
 		spellDifficulty = 1;
@@ -378,8 +474,8 @@
 		selectedOddsIdx = 2;
 		factorLevels = {};
 		factorsManuallySet = false;
-		if (m.id === 'move/endure-harm' || m.id === 'move/endure-stress') {
-			harmValue = pctx.foeHarm ?? 1;
+		if (ENDURE_MOVES.has(m.id)) {
+			harmValue = harm ?? pctx.foeHarm ?? 1;
 			harmApplied = false;
 		}
 		// Auto-select first stat
@@ -397,34 +493,37 @@
 	/** Click delegation inside the detail view: trigger harm links + move-link nav. */
 	function handleDetailClick(e: MouseEvent) {
 		const target = e.target as HTMLElement;
-
-		// Trigger harm links (Endure Harm/Stress): apply the resource change on
-		// click. Scoped to `.md-trigger` so outcome previews stay read-only — those
-		// are committed by rolling, then clicked in the log. The link is struck so
-		// it can't be applied twice (the trigger HTML is snapshotted, so this
-		// mutation survives — see resolvedTriggerHtml).
-		const resLink = target.closest('.resource-link') as HTMLElement | null;
-		if (resLink && resLink.closest('.md-trigger') && !resLink.closest('s') && ctx) {
-			e.preventDefault();
-			const resource = resLink.dataset['resource'] ?? '';
-			const value = parseInt(resLink.dataset['value'] ?? '', 10);
-			if (!resource || Number.isNaN(value) || !value) return;
-			triggerAction({ charId: ctx.charId, type: 'resource', key: resource, value });
-			const struck = document.createElement('s');
-			struck.className = 'resource-spent';
-			struck.textContent = resLink.textContent;
-			resLink.replaceWith(struck);
+		const link = target.closest('a.cmd-link') as HTMLElement | null;
+		if (!link || link.closest('s')) return;
+		e.preventDefault();
+		const { cmd } = readCommandLink(link);
+		const verb = linkVerb(cmd);
+		// A move's link opens that move here.
+		if (verb?.verb === 'move') {
+			const m = verb.arg.match(/^(.*?)(?:\s+(\d+))?$/);
+			const id = `move/${(m?.[1] ?? '').trim().toLowerCase().replace(/\s+/g, '-')}`;
+			const targetMove = findMove(id);
+			if (targetMove) selectMove(targetMove, m?.[2] ? Number(m[2]) : undefined);
 			return;
 		}
-
-		const link = target.closest('.move-link') as HTMLElement | null;
-		if (!link) return;
-		e.preventDefault();
-		const moveId = link.dataset['id'];
-		if (moveId) {
-			const targetMove = findMove(moveId);
-			if (targetMove) selectMove(targetMove);
+		if (verb?.verb === 'oracle') {
+			reportCommandResult(runLink(cmd, {}));
+			return;
 		}
+		// A value link in the trigger (Endure Harm's, say) applies to the
+		// character on a click, and is struck so it can't be applied twice (the
+		// trigger HTML is snapshotted, so this survives — see
+		// resolvedTriggerHtml). Outcome previews stay read-only: those are
+		// committed by rolling, then clicked in the log.
+		if (!link.closest('.md-trigger') || !ctx) return;
+		const r = runLink(cmd, entryBinding());
+		if (r.spend) {
+			const struck = document.createElement('s');
+			struck.className = 'resource-spent';
+			struck.textContent = link.textContent;
+			link.replaceWith(struck);
+		}
+		reportCommandResult(r);
 	}
 
 	// ---------------------------------------------------------------------------
@@ -496,19 +595,7 @@
 			// Delve the Depths weak hit: inject the rolled stat into the oracle-link so
 			// clicking it opens the oracle with the correct column pre-selected.
 			// Also append "(Edge column)" etc. to the link text.
-			if (isDelveDepthsMove) {
-				outcomeHtml = outcomeHtml.replace(
-					/(data-oracle="delveDepths")>(Delve the Depths Weak Hit Oracle)<\/a>/g,
-					`$1 data-stat="${stat}">$2 (${statLabel} column)</a>`,
-				);
-			}
-			outcomeHtml = enrichOutcomeLinks(
-				outcomeHtml,
-				entryId,
-				ctx.charId,
-				getActiveExpeditionId(),
-				getActiveFoeId(),
-			);
+			if (isDelveDepthsMove) outcomeHtml = delveDepthsColumn(outcomeHtml, stat);
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
 
@@ -516,12 +603,13 @@
 		if (!hits1 && !hits2 && isSourceEnabled('delve')) {
 			parts.push(
 				`<div class="move-failure-row">` +
-					`<a class="failure-link" data-entry-id="${entryId}" data-char-id="${ctx.charId}" href="#">+1 failure</a>` +
+					commandLinkHtml('+1 failure', '/failures++', { charId: ctx.charId }) +
 					`</div>`,
 			);
 		}
 
-		const html = parts.join('');
+		// Bound in one piece, so each link's place in the entry is its own.
+		const html = bindCommandLinks(parts.join(''), entryId, entryBinding());
 
 		close();
 		await animateDice([
@@ -543,6 +631,7 @@
 			charId: ctx.charId,
 			...(foeId ? { foeId } : {}),
 			...(expeditionId ? { expeditionId } : {}),
+			bind: entryBinding(),
 		});
 
 		// Burn momentum suggestion: auto-append a clickable log entry when burn would improve outcome.
@@ -552,17 +641,12 @@
 			const burnEntryId = crypto.randomUUID();
 			const burnHtml = burnMomentumHtml({
 				rollEntryId: entryId,
-				entryId: burnEntryId,
-				moveId: selectedMove.id,
 				charId: ctx.charId,
-				actionScore: total,
-				c1,
-				c2,
 				momentum: mom,
 				reset: momentumReset(ctx.data),
 				...burn,
 			});
-			appendLog(BURN_MOMENTUM_TITLE, burnHtml, burnEntryId);
+			appendLog(BURN_MOMENTUM_TITLE, bindCommandLinks(burnHtml, burnEntryId), burnEntryId);
 		}
 
 		rolling = false;
@@ -598,7 +682,6 @@
 
 		// Pre-generate entry id for link enrichment
 		const entryId = crypto.randomUUID();
-		const charId = ctx?.charId ?? '';
 
 		const parts: string[] = [
 			progressRollHtml(progressValue, adds, c1, c2),
@@ -619,18 +702,10 @@
 				curHealth: resourceValue('health'),
 				curSpirit: resourceValue('spirit'),
 			});
-			if (charId)
-				outcomeHtml = enrichOutcomeLinks(
-					outcomeHtml,
-					entryId,
-					charId,
-					getActiveExpeditionId(),
-					getActiveFoeId(),
-				);
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
 
-		const html = parts.join('');
+		const html = bindCommandLinks(parts.join(''), entryId, entryBinding());
 
 		close();
 		await animateDice([
@@ -680,16 +755,10 @@
 			bodyHtml += `<div class="move-outcome">${outcomeHtml}</div>`;
 		}
 		if (mana > 0) {
-			bodyHtml += `<div class="move-outcome"><a class="resource-link" data-resource="mana" data-value="-${mana}">-${mana} mana</a> committed.</div>`;
+			bodyHtml += `<div class="move-outcome">${commandLinkHtml(`-${mana} mana`, `/mana-=${mana}`)} committed.</div>`;
 		}
 		if (bodyHtml) {
-			bodyHtml = enrichOutcomeLinks(
-				bodyHtml,
-				entryId,
-				ctx.charId,
-				getActiveExpeditionId(),
-				getActiveFoeId(),
-			);
+			bodyHtml = bindCommandLinks(bodyHtml, entryId, entryBinding());
 			parts.push(bodyHtml);
 		}
 
@@ -744,7 +813,7 @@
 		const roll = rollDie(100);
 		const found = raw.find((e) => roll <= e.topRange) ?? raw[raw.length - 1];
 		const rendered = moveMd(selectedMove, found.value);
-		const enriched = ctx ? enrichOutcomeLinks(rendered, entryId, ctx.charId) : rendered;
+		const enriched = bindCommandLinks(rendered, entryId, entryBinding());
 		// A d100 table roll is an oracle-style roll — match the oracle log format
 		// (`Roll: d100 → N`) rather than the action-die bracket format.
 		const html = tableRollHtml(roll, enriched);
@@ -767,8 +836,9 @@
 			const body = takeAHiatusHtml(
 				ctx.data as unknown as Record<string, unknown>,
 				momentumReset(ctx.data),
+				companionHealth(ctx.charId),
 			);
-			const enriched = enrichOutcomeLinks(body, entryId, ctx.charId);
+			const enriched = bindCommandLinks(body, entryId, entryBinding());
 			close();
 			appendLog(resolveTitle(selectedMove), enriched, entryId);
 			return;
@@ -780,7 +850,7 @@
 		const entryId = crypto.randomUUID();
 		// logBody is authored in the same markdown + `[label](scheme:args)` DSL as
 		// the outcome text, so render it to HTML before enriching its links.
-		const enriched = enrichOutcomeLinks(renderRich(logBody), entryId, ctx.charId);
+		const enriched = bindCommandLinks(renderRich(logBody), entryId, entryBinding());
 		close();
 		appendLog(resolveTitle(selectedMove), enriched, entryId);
 	}
@@ -1016,6 +1086,26 @@
 							{@html resolvedTriggerHtml}
 						</div>
 
+						<!-- A move that acts on a vow or a companion asks which. -->
+						{#if chooseKind && ctx}
+							<div class="md-choose-row" data-tour="move-choose">
+								<span class="md-harm-label">{chooseKind === 'vow' ? 'Vow' : 'Companion'}</span>
+								{#if chooseOptions.length}
+									<Select
+										value={chosenId}
+										options={chooseOptions}
+										ariaLabel={chooseKind === 'vow' ? 'Vow' : 'Companion'}
+										class="md-choose-select"
+										onchange={(v) => (picked = String(v))}
+									/>
+								{:else}
+									<span class="md-harm-hint"
+										>{chooseKind === 'vow' ? 'No active vow.' : 'No companion.'}</span
+									>
+								{/if}
+							</div>
+						{/if}
+
 						<!-- Endure Harm/Stress: how much harm/stress this blow deals. Defaults to
 				     the foe's rank; editable for "as appropriate to the situation". The
 				     Apply button commits it to the character; then roll. -->
@@ -1042,7 +1132,7 @@
 									disabled={harmApplied || !ctx}
 									use:tooltip={harmApplied
 										? 'Harm applied'
-										: `Apply ${harmValue} ${harmWord.toLowerCase()} to the character`}
+										: `Apply ${harmValue} ${harmWord.toLowerCase()} to ${isCompanionHarm ? (companionOptions.find((o) => o.value === chosenCompanionId)?.label ?? 'the companion') : 'the character'}`}
 								>
 									{harmApplied ? 'Applied ✓' : 'Apply'}
 								</button>
@@ -1949,15 +2039,24 @@
 		text-decoration: underline;
 		cursor: pointer;
 	}
-	/* Make non-move interactive links inert in dialog (only live in session log) */
-	.md-outcome-text :global(a.resource-link),
-	.md-outcome-text :global(a.debility-link),
-	.md-outcome-text :global(a.progress-link),
-	.md-outcome-text :global(a.initiative-link),
-	.md-outcome-text :global(a.menace-link) {
+	/* Value links are inert in an outcome preview: they come alive in the log,
+	   once the roll is made. Move and oracle links stay live. */
+	.md-outcome-text :global(a.cmd-link:not([data-verb])) {
 		pointer-events: none;
 		cursor: default;
 		text-decoration: none;
+	}
+
+	/* The vow or companion a move acts on. */
+	.md-choose-row {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin: 8px 0 4px;
+	}
+	.md-choose-row :global(.md-choose-select) {
+		flex: 1;
+		min-width: 0;
 	}
 
 	/* Harm placeholder: no foe context — player must resolve manually */

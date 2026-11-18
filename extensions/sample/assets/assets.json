@@ -7,7 +7,6 @@
       "source": "sample",
       "icon": "sample-widget",
       "summary": "A test asset proving extension assets merge into the catalogue and resolve an icon bundled with the extension.",
-      "preconditions": [],
       "abilities": [
         {
           "enabled": true,

@@ -107,47 +107,62 @@ Renders:
 - Per-entry notes with markdown support.
 - Empty state: `◊ NO ENTRIES YET.` with sub-text.
 
-#### Interactive Link Click Delegation
+#### Command links
 
-LogPanel handles clicks on 7 interactive link types embedded in move outcome HTML via event delegation on the entries container. Links that modify state (resource, debility, progress, initiative, menace) are replaced with strikethrough after clicking. Move-links and oracle-links open their respective dialogs.
+A link in an entry is a command (`<a class="cmd-link" data-cmd="/momentum++">`;
+see [data-schema.md → Links are commands](data-schema.md#links-are-commands)
+and `#lib/commands/links.ts`). When the app writes an entry — a move's
+outcome, a rolled oracle, a cascade, an asset purchase's XP cost, the offer
+to burn momentum — `bindCommandLinks` binds each link to it: the entry's id,
+its place in the entry (`data-link`), and the character, foe, expedition,
+vow, companion, harm and roll it was made with.
 
-| Link type   | CSS class           | Behavior                                       | After click   |
-| ----------- | ------------------- | ---------------------------------------------- | ------------- |
-| Resource    | `.resource-link`    | Apply ± stat change via action bus             | Strikethrough |
-| Move        | `.move-link`        | Open MovesDialog to that move                  | No change     |
-| Oracle      | `.oracle-link`      | Open OraclesDialog to that oracle              | No change     |
-| Progress    | `.progress-link`    | Mark progress on active track                  | Strikethrough |
-| Initiative  | `.initiative-link`  | Set initiative state                           | Strikethrough |
-| Debility    | `.debility-link`    | Toggle debility via action bus                 | Strikethrough |
-| Menace      | `.menace-link`      | Mark menace on active vow                      | Strikethrough |
-| Reset Track | `.reset-track-link` | Clear named progress track to 0 via action bus | Strikethrough |
+LogPanel delegates clicks on `a.cmd-link` to `runLink`
+(`#lib/commands/run.svelte.ts`), which runs the command against that binding:
 
-Additionally, LogPanel handles two JS-generated link types not present in move JSON data:
+| Command                                          | Does                                              | After          |
+| ------------------------------------------------ | ------------------------------------------------- | -------------- |
+| A value change (`/health--`, `/foe.progress+=2`) | Writes it through the value registry, logs, saves | Struck through |
+| `/burn`                                          | Burns momentum on the roll it was offered on      | Struck through |
+| `/site.theme`, `/site.domain`                    | Opens the site's picker                           | Struck through |
+| `/move …`, `/oracle …`                           | Opens the dialog (any pack's, on or off)          | Unchanged      |
 
-- **`.burn-momentum-link`** — Appears in the auto-appended "Momentum: Burn Available" log entry after action rolls where burning would upgrade the outcome. Clicking it burns the character's momentum and updates the roll entry's outcome text.
-- **`.xp-cost-link`** — Appears in asset log entries. **One link per add/modify dialog session, not per individual change.** When the user opens the asset dialog (add or edit mode), edits accumulate in a draft; on OK/Add the parent computes the total XP cost (asset purchase cost + 2 × newly-enabled abilities + rarity xpCost, if applicable) and emits one log entry with one xp-cost-link for the cumulative total. Clicking the link deducts that total from the character and strikes through to prevent double-use. If the diff is 0 (e.g. user opened the dialog, toggled an ability on then back off, clicked OK), no log entry is written at all.
+The command bar's status line says what happened, or why a link couldn't run
+(the foe it was bound to is gone, the value is read-only): that link stays
+live. A link can't make something active, write a note, mark a story section
+or open help.
+
+Links saved before links were commands (`resource-link`, `progress-link`,
+`move-link`, …) do nothing now: their text stays, styled as plain text.
 
 #### Cascade Rules
 
-LogPanel also auto-appends additional log entries in response to resource-link clicks when cascade conditions are met:
+A change to a character's value (from a link or the command bar) sets off
+the same follow-ups a change on the sheet does (`#lib/commands/run.svelte.ts`
+→ `cascade`), each as its own entry whose links are bound to the character:
 
-- **Overflow** (`OVERFLOW_RULES`): health or spirit drops below 0 — a new entry is appended offering to convert the overflow to momentum loss.
-- **Floor overflow** (`FLOOR_OVERFLOW_RULES`): resource is already at its minimum and further reduction is attempted:
-  - Momentum at −6 → "Face a Setback" entry with per-point clickable exchange links (−health / −spirit / −supply) and a Face a Setback move-link
-  - Health at 0 → "Face Death" entry with a Face Death move-link
-  - Spirit at 0 → "Face Desolation" entry with a Face Desolation move-link
-  - Supply at 0 → "Out of Supply" entry with per-point clickable exchange links (−health / −spirit / −momentum)
-
-CharacterSheet auto-appends entries from **floor rules** (`FLOOR_RULES`) when a resource transitions into its minimum:
-
-- Momentum hits −6 → "Momentum: Desperate" note appended
-- Supply hits 0 → "Supply: Exhausted" note with clickable Unprepared debility link
+- **Overflow** (`OVERFLOW_RULES`): health or spirit taken below 0 — an entry
+  offers the rest as momentum lost (`/momentum-=n`).
+- **A companion's overflow** (`COMPANION_HEALTH_OVERFLOW`): a companion's
+  health taken below 0, typed (`/Ash.health-=harm`) or applied in Companion
+  Endure Harm — "Ash's health is zero. You lose −n momentum instead.", the
+  link bound to the companion's character.
+- **Floor overflow** (`FLOOR_OVERFLOW_RULES`): a value already at its minimum
+  taken further:
+  - Momentum at −6 → "Face a Setback", with per-point exchange links
+    (`/health--` / `/spirit--` / `/supply--`) and a Face a Setback link
+  - Health at 0 → "Face Death"
+  - Spirit at 0 → "Face Desolation"
+  - Supply at 0 → "Out of Supply", with per-point exchange links
+- **Floor** (`FLOOR_RULES`): a value landing on its minimum this change —
+  momentum −6 ("Momentum: Desperate"), supply 0 ("Supply: Exhausted", with an
+  `/unprepared++` link).
+- **A debility marked** brings momentum down to its new top, in a line of its
+  own.
 
 There is no cascade at the top of a range: a change it cuts short says so in
 its own line, `Health: 4 → 5 (+2, max 5)` (see
-[Resource Links](data-schema.md#resource-links)).
-
-Callback props: `onMoveLink`, `onOracleLink`, `onProgressLink`, `onInitiativeLink`, `onMenaceLink`.
+[data-schema.md → Links are commands](data-schema.md#links-are-commands)).
 
 ---
 
@@ -235,15 +250,13 @@ Three surfaces write to the store; all funnel through `toggleStart`/
    Edit / Delete; the active marker stays visible even without hover so the
    user can see where the pins are. The ▼ button is disabled until a ▲ is
    set (a bare end has no meaning).
-2. **Command bar** — see [`docs/global-context-bar.md`](global-context-bar.md)
-   for the surface, and `apps/web/src/lib/commandBar.ts` for the parser. Three
-   verbs mutate the store:
-   - `/start` — pin ▲ on the current newest entry (opens an open, growing
-     section).
-   - `/end` — pin ▼ on the current newest entry (closes the section).
-   - `/story` — dispatch `ironledger:story-generate`, which LogPanel handles
-     by opening the Story dialog on the current section. No-ops with a status
-     message when nothing is pinned.
+2. **Command bar** ([command-bar.md](command-bar.md)):
+   - `/story start` — pin ▲ on the current newest entry (opens an open,
+     growing section).
+   - `/story end` — pin ▼ on the current newest entry (closes the section).
+   - `/story write` — dispatch `ironledger:story-generate`, which LogPanel
+     handles by opening the Story dialog on the current section. Refused,
+     saying why, when nothing is pinned.
 3. **Toolbar Generate button + floating strip** at the bottom of the log —
    both call `storyDialogRef?.open()` on the current section, which reads
    `sectionEntries()`. The strip also has a **Clear** button that calls
@@ -286,20 +299,16 @@ itself is one dialog downstream.
 
 ## Command Bar
 
-The always-visible strip at the bottom of `/home` writes into the same log
-and drives the same buses documented above. Full reference (all 14 verbs,
-overloaded grammar for `/char`/`/foe`/`/exp`, autocomplete behavior, regex
-grammar reference, dispatch map) lives in
+The strip at the bottom of `/home` writes into the same log. Its commands are
+the [command language](command-language.md); how the bar runs them is in
 [`command-bar.md`](command-bar.md). In short:
 
 - **Prose** → Note.
-- **`/vital`, `/debility`, `/bonds`, `/failures`, `/initiative`, `/char + / -`**
-  → dispatch through the LogAction bus above; CharactersArea's drain effect
-  applies the mutation and appends the log entry.
-- **`/foe + / -`, `/foe vanquish`, `/exp + / -`** → dispatch as
-  `ironledger:foe-progress` / `foe-vanquish` / `exp-progress` CustomEvents;
-  `+page.svelte` forwards to `FoesArea.applyMenace` /
-  `vanquishActiveFoe` / `ExpeditionsArea.applyProgress`. Progress is
-  rank-aware (foes) / difficulty-aware (expeditions).
-- **`/start`, `/end`, `/story`** → mutate `sectionStore` directly (see
-  above).
+- **A value command** (`/health-=2`, `/foe.progress+=2`, `/wounded++`) →
+  written through the value registry (`apps/web/src/lib/commands/values.ts`)
+  onto the store's live object, logged with the line the sheet writes
+  (`Health: 4 → 2 (−2)`), and saved. Party values reach every character.
+- **`/burn`** → `ironledger:burn`, which LogPanel answers by burning momentum
+  on the newest action roll, as its burn link would.
+- **`/story start`, `/story end`, `/story write`** → `sectionStore`, as
+  above.

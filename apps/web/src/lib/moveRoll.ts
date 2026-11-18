@@ -9,8 +9,10 @@
 // outcome class and label.
 // =============================================================================
 
+import { commandLinkHtml } from './commands/links.js';
 import type { MoveDefinition } from '@ironledger/shared';
 import { renderRich } from '#lib/dsl.js';
+import { escHtml } from '#lib/markdown.js';
 import { actionScoreHtml } from '#lib/rules/actionScore.js';
 
 // ── Outcome ──────────────────────────────────────────────────────────────────
@@ -189,10 +191,12 @@ export interface HarmContext {
 	foeHarm?: number;
 	curHealth?: number;
 	curSpirit?: number;
+	/** Companion Endure Harm: the chosen companion's health. */
+	curCompanionHealth?: number;
 }
 
 /**
- * Resolve a move's `<a class="harm-link">` placeholders. In Endure Harm or
+ * Resolve a move's `-harm` links (`/health-=harm`, `/spirit-=harm`). In Endure Harm or
  * Endure Stress with a known amount, "-harm health/spirit" becomes the amount
  * ("3 harm"), split into the resource down to 0 and the momentum overflow
  * when the amount is more than the character has. Anywhere else it's plain
@@ -227,14 +231,21 @@ export function resolveHarmLinks(html: string, ctx?: HarmContext): string {
 
 	// Health harm-links: known foe → the amount; no foe → plain placeholder text.
 	html = html.replace(
-		/<a class="harm-link" data-resource="health">-harm health<\/a>/g,
+		/<a class="cmd-link" data-cmd="\/health-=harm"[^>]*>-harm health<\/a>/g,
 		moveId === 'move/endure-harm' && ctx?.foeHarm !== undefined
 			? harmSplit('health', ctx.curHealth)
 			: '<span class="harm-note">-harm health</span>',
 	);
+	// Companion Endure Harm: the amount, split at the companion's health.
+	html = html.replace(
+		/<a class="cmd-link" data-cmd="\/companion\.health-=harm"[^>]*>-harm health<\/a>/g,
+		moveId === 'move/companion-endure-harm' && ctx?.foeHarm !== undefined
+			? harmSplit('health', ctx.curCompanionHealth)
+			: '<span class="harm-note">-harm health</span>',
+	);
 	// Spirit harm-links: known foe → the amount; no foe → plain placeholder text.
 	html = html.replace(
-		/<a class="harm-link" data-resource="spirit">-harm spirit<\/a>/g,
+		/<a class="cmd-link" data-cmd="\/spirit-=harm"[^>]*>-harm spirit<\/a>/g,
 		moveId === 'move/endure-stress' && ctx?.foeHarm !== undefined
 			? harmSplit('spirit', ctx.curSpirit)
 			: '<span class="harm-note">-harm spirit</span>',
@@ -286,30 +297,33 @@ export function burnMomentumOffer(r: {
 	return { from: outcomeLabel(r.hits1, r.hits2), to: outcomeLabel(burn1, burn2) };
 }
 
-/** The log entry that offers the burn: a link LogPanel turns into the burn. */
+/** The log entry that offers the burn: a `/burn` link bound to the roll
+ *  (and the character), which LogPanel turns into the burn. */
 export function burnMomentumHtml(r: {
 	rollEntryId: string;
-	entryId: string;
-	moveId: string;
 	charId: string;
-	actionScore: number;
-	c1: number;
-	c2: number;
 	momentum: number;
 	reset: number;
 	from: string;
 	to: string;
 }): string {
-	return (
-		`<p>You may <a class="burn-momentum-link" ` +
-		`data-roll-entry-id="${r.rollEntryId}" ` +
-		`data-move-id="${r.moveId}" ` +
-		`data-action-score="${r.actionScore}" ` +
-		`data-c1="${r.c1}" data-c2="${r.c2}" ` +
-		`data-char-id="${r.charId}" ` +
-		`data-entry-id="${r.entryId}">` +
-		`burn momentum (${r.momentum} → reset ${r.reset})` +
-		`</a> to improve this from <em>${r.from}</em> to <em>${r.to}</em>.</p>`
+	const link = commandLinkHtml(`burn momentum (${r.momentum} → reset ${r.reset})`, '/burn', {
+		charId: r.charId,
+		rollId: r.rollEntryId,
+	});
+	return `<p>You may ${link} to improve this from <em>${r.from}</em> to <em>${r.to}</em>.</p>`;
+}
+
+// ── Delve the Depths ─────────────────────────────────────────────────────────
+
+/** Delve the Depths' weak hit: its oracle link opens on the column of the
+ *  stat rolled, and says which ("… Oracle (Edge column)"). */
+export function delveDepthsColumn(html: string, stat: string): string {
+	const label = stat.charAt(0).toUpperCase() + stat.slice(1);
+	return html.replace(
+		/(<a class="cmd-link" data-cmd="\/oracle delveDepths"[^>]*)>([^<]*)<\/a>/g,
+		(_m, open: string, text: string) =>
+			`${open} data-stat="${escHtml(stat)}">${text} (${escHtml(label)} column)</a>`,
 	);
 }
 
@@ -326,21 +340,33 @@ const HIATUS_DEBILITIES: Array<[key: string, label: string]> = [
 	['encumbered', 'Encumbered'],
 ];
 
+/** A companion's health, for Take a Hiatus's link to restore it. */
+export interface CompanionHealth {
+	/** Its asset id, which the link binds as `companion`. */
+	id: string;
+	/** What it's called: the name given it, else its asset's. */
+	name: string;
+	health: number;
+	max: number;
+}
+
 /**
  * Take a Hiatus's log body, from the character as it stands: a link to clear
- * each marked debility, to restore health, spirit and supply to 5, and to
- * reset momentum, then the reminders (companion health, Advance a Threat).
+ * each marked debility, to restore health, spirit and supply to 5, each
+ * companion's health to its maximum, and to reset momentum, then the
+ * reminder to Advance a Threat.
  */
-export function takeAHiatusHtml(data: Record<string, unknown>, momentumResetValue: number): string {
+export function takeAHiatusHtml(
+	data: Record<string, unknown>,
+	momentumResetValue: number,
+	companions: CompanionHealth[] = [],
+): string {
 	const parts: string[] = [];
 	// 1. Clear marked conditions
 	const marked = HIATUS_DEBILITIES.filter(([key]) => data[key]);
 	if (marked.length > 0) {
 		const links = marked
-			.map(
-				([key, label]) =>
-					`<a class="debility-link" data-debility="${key}" data-value="0">Clear ${label}</a>`,
-			)
+			.map(([key, label]) => commandLinkHtml(`Clear ${label}`, `/${key}--`))
 			.join(' · ');
 		parts.push(`<p><strong>Conditions:</strong> ${links}</p>`);
 	}
@@ -349,31 +375,43 @@ export function takeAHiatusHtml(data: Record<string, unknown>, momentumResetValu
 	for (const key of ['health', 'spirit', 'supply']) {
 		const delta = 5 - ((data[key] as number) ?? 0);
 		if (delta > 0) {
-			restoreLinks.push(
-				`<a class="resource-link" data-resource="${key}" data-value="+${delta}">+${delta} ${key}</a>`,
-			);
+			restoreLinks.push(commandLinkHtml(`+${delta} ${key}`, `/${key}=5`));
 		}
 	}
 	if (restoreLinks.length > 0) {
 		parts.push(`<p><strong>Resources:</strong> ${restoreLinks.join(' · ')}</p>`);
 	}
+	// Each companion's health to its maximum, bound to that companion.
+	const companionLinks = companions
+		.filter((c) => c.health < c.max)
+		.map((c) =>
+			commandLinkHtml(
+				`${escHtml(c.name)} +${c.max - c.health} health`,
+				`/companion.health=${c.max}`,
+				{ companionId: c.id },
+			),
+		);
+	if (companionLinks.length > 0) {
+		parts.push(`<p><strong>Companions:</strong> ${companionLinks.join(' · ')}</p>`);
+	}
 	// 3. Momentum reset
 	const momDelta = momentumResetValue - ((data['momentum'] as number) ?? 0);
 	if (momDelta !== 0) {
-		// data-value is parsed as a number → keep the ASCII sign; the visible
-		// label uses a real +/− sign for display consistency.
 		const disp = `${momDelta > 0 ? '+' : '−'}${Math.abs(momDelta)}`;
 		parts.push(
 			`<p><strong>Momentum:</strong> ` +
-				`<a class="resource-link" data-resource="momentum" data-value="${momDelta}">` +
-				`${disp} momentum (reset to ${momentumResetValue})</a></p>`,
+				commandLinkHtml(
+					`${disp} momentum (reset to ${momentumResetValue})`,
+					`/momentum=${momentumResetValue}`,
+				) +
+				`</p>`,
 		);
 	}
 	// 4. Static reminders (always shown)
 	parts.push(
-		`<p>Set companion health to max if applicable.</p>` +
-			`<p>For each active threat: ` +
-			`<a class="move-link" data-id="move/advance-a-threat">Advance a Threat</a>.</p>`,
+		`<p>For each active threat: ` +
+			commandLinkHtml('Advance a Threat', '/move advance-a-threat') +
+			`.</p>`,
 	);
 	return parts.join('');
 }

@@ -3,8 +3,8 @@
  *
  * Pins the three behaviours the whole migration leans on:
  *   • parseDslHref  — lenient query parsing (`+` stays literal, not a space)
- *   • dslActionLink — every scheme → the EXACT interactive HTML the app's click
- *                     handlers match on, with `class` emitted first
+ *   • dslLink       — a `/command` target → a command link, `class` first; any
+ *                     other target (a `roll:` blank, an old scheme) left alone
  *   • renderRich    — protect DSL → renderNote formatting → restore, so link
  *                     HTML is never escaped and `&` between args never appears
  *
@@ -13,7 +13,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
 	parseDslHref,
-	dslActionLink,
+	dslLink,
 	renderRich,
 	parseRollSpec,
 	pillBadge,
@@ -43,45 +43,27 @@ describe('parseDslHref', () => {
 	});
 });
 
-describe('dslActionLink', () => {
-	const link = (href: string, label = 'X') => dslActionLink(label, parseDslHref(href));
-
-	it('emits class first (so enrichOutcomeLinks regex matches)', () => {
-		expect(link('resource:momentum?value=+1')).toMatch(/^<a class="resource-link"/);
+describe('dslLink', () => {
+	it('renders a command target as a command link, class first', () => {
+		expect(dslLink('+1 momentum', '/momentum++')).toBe(
+			'<a class="cmd-link" data-cmd="/momentum++">+1 momentum</a>',
+		);
+		expect(dslLink('Endure Harm', '/move endure-harm 1')).toBe(
+			'<a class="cmd-link" data-cmd="/move endure-harm 1" data-verb="move">Endure Harm</a>',
+		);
+		expect(dslLink('mark progress', '/foe.progress+=2')).toBe(
+			'<a class="cmd-link" data-cmd="/foe.progress+=2">mark progress</a>',
+		);
 	});
 
-	it('maps every scheme to the exact interactive HTML', () => {
-		expect(link('move:heal', 'Heal')).toBe('<a class="move-link" data-id="move/heal">Heal</a>');
-		expect(link('move:endure-harm?harm=1', 'Endure Harm')).toBe(
-			'<a class="move-link" data-id="move/endure-harm" data-harm="1">Endure Harm</a>',
-		);
-		expect(link('resource:momentum?value=+1')).toBe(
-			'<a class="resource-link" data-resource="momentum" data-value="+1">X</a>',
-		);
-		expect(link('progress:journey?value=1')).toBe(
-			'<a class="progress-link" data-track="journey" data-value="1">X</a>',
-		);
-		expect(link('debility:wounded?value=0')).toBe(
-			'<a class="debility-link" data-debility="wounded" data-value="0">X</a>',
-		);
-		expect(link('initiative:foe')).toBe('<a class="initiative-link" data-value="foe">X</a>');
-		expect(link('oracle:endureExtremeHarm')).toBe(
-			'<a class="oracle-link" data-oracle="endureExtremeHarm">X</a>',
-		);
-		expect(link('reset:failures')).toBe('<a class="reset-track-link" data-track="failures">X</a>');
-		expect(link('harm:health')).toBe('<a class="harm-link" data-resource="health">X</a>');
-		expect(link('menace:2')).toBe('<a class="menace-link" data-value="2">X</a>');
-		expect(link('vanquish', 'vanquish it')).toBe('<a class="vanquish-foe-link">vanquish it</a>');
+	it('returns null for anything else: a roll: blank, an old scheme', () => {
+		expect(dslLink('again', 'roll:self?times=2')).toBeNull();
+		expect(dslLink('X', 'resource:momentum?value=+1')).toBeNull();
 	});
 
-	it('returns null for a scheme it does not own (roll: is the oracle renderer)', () => {
-		expect(link('roll:self?times=2')).toBeNull();
-		expect(link('bogus:1')).toBeNull();
-	});
-
-	it('escapes the label', () => {
-		expect(link('move:heal', 'a<b>&c')).toBe(
-			'<a class="move-link" data-id="move/heal">a&lt;b&gt;&amp;c</a>',
+	it('escapes the label and the command', () => {
+		expect(dslLink('a<b>&c', '/hawk.name="A&B"')).toBe(
+			'<a class="cmd-link" data-cmd="/hawk.name=&quot;A&amp;B&quot;">a&lt;b&gt;&amp;c</a>',
 		);
 	});
 });
@@ -89,15 +71,15 @@ describe('dslActionLink', () => {
 describe('renderRich', () => {
 	it('renders a link + list combo without escaping the link HTML', () => {
 		const md =
-			'Make note, [mark a tick](resource:bonds?value=+1) and choose one:\n' +
-			'- Take [+1 spirit](resource:spirit?value=+1).\n' +
-			'- Take [+2 momentum](resource:momentum?value=+2).';
+			'Make note, [mark a tick](/bonds++) and choose one:\n' +
+			'- Take [+1 spirit](/spirit++).\n' +
+			'- Take [+2 momentum](/momentum+=2).';
 		const html = renderRich(md);
 		expect(html).toBe(
-			'<p>Make note, <a class="resource-link" data-resource="bonds" data-value="+1">mark a tick</a> and choose one:</p>' +
+			'<p>Make note, <a class="cmd-link" data-cmd="/bonds++">mark a tick</a> and choose one:</p>' +
 				'<ul>' +
-				'<li>Take <a class="resource-link" data-resource="spirit" data-value="+1">+1 spirit</a>.</li>' +
-				'<li>Take <a class="resource-link" data-resource="momentum" data-value="+2">+2 momentum</a>.</li>' +
+				'<li>Take <a class="cmd-link" data-cmd="/spirit++">+1 spirit</a>.</li>' +
+				'<li>Take <a class="cmd-link" data-cmd="/momentum+=2">+2 momentum</a>.</li>' +
 				'</ul>',
 		);
 	});
@@ -109,9 +91,11 @@ describe('renderRich', () => {
 		);
 	});
 
-	it('leaves an unknown-scheme link as literal text (dslActionLink returned null)', () => {
+	it('leaves an old-scheme link as literal text (dslLink returned null)', () => {
 		// renderNote has no link syntax, so the bracket text survives verbatim.
-		expect(renderRich('see [x](bogus:1)')).toContain('[x](bogus:1)');
+		expect(renderRich('see [x](resource:momentum?value=+1)')).toContain(
+			'[x](resource:momentum?value=+1)',
+		);
 	});
 
 	it('is empty for empty input', () => {
@@ -138,31 +122,31 @@ describe('renderRich', () => {
 	});
 
 	it('protects a link nested inside a bold list item (no escaping, emphasis applied)', () => {
-		expect(renderRich('- **[Heal](move:heal) now**')).toBe(
-			'<ul><li><strong><a class="move-link" data-id="move/heal">Heal</a> now</strong></li></ul>',
+		expect(renderRich('- **[Heal](/move heal) now**')).toBe(
+			'<ul><li><strong><a class="cmd-link" data-cmd="/move heal" data-verb="move">Heal</a> now</strong></li></ul>',
 		);
 	});
 
 	it('renders a {.class} span that WRAPS a link (nested brackets, looped restore)', () => {
 		// The outer log-only span's `[` must not be swallowed into the inner
 		// resource-link label, and the inner link must survive the restore.
-		const md = '[Take [+1 momentum](resource:momentum?value=+1) now.]{.log-only}';
+		const md = '[Take [+1 momentum](/momentum++) now.]{.log-only}';
 		expect(renderRich(md)).toBe(
 			'<p><span class="log-only">Take ' +
-				'<a class="resource-link" data-resource="momentum" data-value="+1">+1 momentum</a>' +
+				'<a class="cmd-link" data-cmd="/momentum++">+1 momentum</a>' +
 				' now.</span></p>',
 		);
 	});
 
 	it('renders adjacent dialog-only / log-only spans wrapping links', () => {
 		const md =
-			'[As above, but [+1 spirit](resource:spirit?value=+1).]{.dialog-only}' +
-			'[Plain [+2 supply](resource:supply?value=+2).]{.log-only}';
+			'[As above, but [+1 spirit](/spirit++).]{.dialog-only}' +
+			'[Plain [+2 supply](/supply+=2).]{.log-only}';
 		expect(renderRich(md)).toBe(
 			'<p><span class="dialog-only">As above, but ' +
-				'<a class="resource-link" data-resource="spirit" data-value="+1">+1 spirit</a>.</span>' +
+				'<a class="cmd-link" data-cmd="/spirit++">+1 spirit</a>.</span>' +
 				'<span class="log-only">Plain ' +
-				'<a class="resource-link" data-resource="supply" data-value="+2">+2 supply</a>.</span></p>',
+				'<a class="cmd-link" data-cmd="/supply+=2">+2 supply</a>.</span></p>',
 		);
 	});
 
@@ -175,11 +159,11 @@ describe('renderRich', () => {
 	it('renders a span across lines as a block of its own, after the paragraph (Make Camp)', () => {
 		const md =
 			'[Choose **one** from the list above.]{.dialog-only}' +
-			'[Choose **one**:\n- Relax: Take [+1 spirit](resource:spirit?value=+1).\n- Focus: Take +1 momentum.]{.log-only}';
+			'[Choose **one**:\n- Relax: Take [+1 spirit](/spirit++).\n- Focus: Take +1 momentum.]{.log-only}';
 		expect(renderRich(md)).toBe(
 			'<p><span class="dialog-only">Choose <strong>one</strong> from the list above.</span></p>' +
 				'<div class="log-only"><p>Choose <strong>one</strong>:</p><ul>' +
-				'<li>Relax: Take <a class="resource-link" data-resource="spirit" data-value="+1">+1 spirit</a>.</li>' +
+				'<li>Relax: Take <a class="cmd-link" data-cmd="/spirit++">+1 spirit</a>.</li>' +
 				'<li>Focus: Take +1 momentum.</li></ul></div>',
 		);
 	});

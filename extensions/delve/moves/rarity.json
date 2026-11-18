@@ -7,22 +7,13 @@
       "logTitle": "{character} wields a rarity",
       "category": "Rarity",
       "triggerShort": "When you make a move aided by an augmented asset.",
-      "trigger": "When you **make a move aided by an augmented asset**, roll your rarity die in place of your action die.\n- On **any result** with **6** showing on the rarity die: The power of the rarity manifests in a dramatic and obvious way. You score an automatic **strong hit** and take [+1 momentum](resource:momentum?value=+1).\n- On a **hit** with **5** showing on the rarity die: The power of the rarity manifests in a subtle way. Take [+1 momentum](resource:momentum?value=+1).\n- On a **miss** with **1** showing on the rarity die: The rarity's power fails or works against you.",
+      "trigger": "When you **make a move aided by an augmented asset**, roll your rarity die in place of your action die.\n- On **any result** with **6** showing on the rarity die: The power of the rarity manifests in a dramatic and obvious way. You score an automatic **strong hit** and take [+1 momentum](/momentum++).\n- On a **hit** with **5** showing on the rarity die: The power of the rarity manifests in a subtle way. Take [+1 momentum](/momentum++).\n- On a **miss** with **1** showing on the rarity die: The rarity's power fails or works against you.",
       "strong": "",
       "weak": "",
       "miss": "",
       "rarityRoll": true,
       "notes": "Replaces your action die (d6) with a rarity die (also d6) when invoking an augmented asset. Results depend on the face showing: 6 = automatic strong hit + momentum, 5 on a hit = momentum, 1 on a miss = power fails or backfires. Other results resolve normally.",
-      "preconditions": [
-        {
-          "key": "hasCharacter",
-          "eq": 1
-        },
-        {
-          "key": "rarityCount",
-          "min": 1
-        }
-      ],
+      "preconditions": "character & rarityCount >= 1",
       "source": "delve"
     }
   ],

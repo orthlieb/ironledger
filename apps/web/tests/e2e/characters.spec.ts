@@ -541,9 +541,9 @@ test.describe('Characters area (v2)', () => {
 			'aria-checked',
 			'true',
 		);
-		// The forsake wrote a log entry with an Endure Stress move-link.
+		// The forsake wrote a log entry with an Endure Stress link.
 		await expect(
-			page.locator('.entry-body .move-link[data-id="move/endure-stress"]').first(),
+			page.locator('.entry-body a.cmd-link[data-cmd^="/move endure-stress"]').first(),
 		).toBeVisible({ timeout: 3_000 });
 	});
 

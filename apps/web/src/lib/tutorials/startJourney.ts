@@ -20,7 +20,7 @@
 import { getActiveDiceCtx } from '#lib/diceContext.svelte.js';
 import { getExpeditions } from '#lib/expeditionStore.svelte.js';
 import { MOVE } from './keys.js';
-import { closeMoves, logWatch, use } from './moves.js';
+import { closeMoves, LINK, logWatch, use } from './moves.js';
 import { tourTarget, type TourStep, type Tutorial } from './tour.js';
 
 export const startJourney: Tutorial = {
@@ -130,7 +130,7 @@ export const startJourney: Tutorial = {
 				beforeNext: (roll) => {
 					closeMoves();
 					// None of its links used: take the waypoint's progress.
-					if (roll && !roll.querySelector('.resource-spent')) use(roll, 'progress-link');
+					if (roll && !roll.querySelector('.resource-spent')) use(roll, LINK.progress);
 					log.done();
 				},
 			},

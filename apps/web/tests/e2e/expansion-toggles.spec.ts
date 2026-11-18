@@ -256,14 +256,14 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				(window as any).__testLog.appendLog(
 					'E2E Delve link',
-					`<div>See <a class="move-link" data-id="move/discover-a-site">Discover a Site</a></div>`,
+					`<div>See <a class="cmd-link" data-cmd="/move discover-a-site" data-verb="move">Discover a Site</a></div>`,
 					id,
 				);
 			},
 			{ id: entryId },
 		);
 
-		const link = page.locator(`.log-entry[data-entry-id="${entryId}"] .move-link`);
+		const link = page.locator(`.log-entry[data-entry-id="${entryId}"] a.cmd-link`);
 		await expect(link).toBeVisible({ timeout: 5_000 });
 		await link.click();
 

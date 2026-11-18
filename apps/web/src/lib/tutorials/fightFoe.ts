@@ -24,7 +24,7 @@ import { getActiveFoeId } from '#lib/activeContext.svelte.js';
 import { getActiveDiceCtx } from '#lib/diceContext.svelte.js';
 import { getEncounters } from '#lib/encounterStore.svelte.js';
 import { triggerAction } from '#lib/log.svelte.js';
-import { closeMoves, logWatch, pickHighest, searchFor, tabbed, use } from './moves.js';
+import { closeMoves, LINK, logWatch, pickHighest, searchFor, tabbed, use } from './moves.js';
 import { tourTarget, type TourStep, type Tutorial } from './tour.js';
 import { MOVE } from './keys.js';
 
@@ -155,9 +155,9 @@ export const fightFoe: Tutorial = {
 					closeMoves();
 					if (initiative() === NONE) {
 						// A weak hit's choice: momentum leaves your foe to act first.
-						const tookMomentum = !roll?.querySelector('a.resource-link');
+						const tookMomentum = !roll?.querySelector(LINK.momentum);
 						if (roll?.querySelector('.roll-outcome-weak') && tookMomentum) setInitiative(FOE);
-						else use(roll, 'initiative-link');
+						else use(roll, LINK.initiative);
 					}
 					log.done();
 				},
@@ -208,8 +208,8 @@ export const fightFoe: Tutorial = {
 				pageClass: 'il-tour-log',
 				beforeNext: (roll) => {
 					closeMoves();
-					use(roll, 'progress-link');
-					use(roll, 'initiative-link');
+					use(roll, LINK.progress);
+					use(roll, LINK.initiative);
 					log.done();
 				},
 			},

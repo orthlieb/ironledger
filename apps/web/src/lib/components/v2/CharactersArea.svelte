@@ -27,6 +27,7 @@
 		flushCharacterToApi,
 		persistCharacterNow,
 		setPartySupply,
+		setPartyFields,
 	} from '#lib/characterStore.svelte.js';
 	import { setActiveDiceCtx } from '#lib/diceContext.svelte.js';
 	import { getActiveCharacterId, setActiveCharacterId } from '#lib/activeContext.svelte.js';
@@ -49,9 +50,11 @@
 	import CharacterFields from '#lib/components/CharacterFields.svelte';
 	import {
 		characterFieldGroups,
+		counterValue,
 		fieldShown,
 		fieldValue,
 		findCharacterField,
+		findGlobalField,
 		rollCharacterField,
 		valueLabel,
 		type ResolvedField,
@@ -71,6 +74,7 @@
 		hydrateCharacterInPlace,
 		maxMomentum,
 		momentumReset,
+		capAbilitiesForField,
 		changeResource,
 		setResource,
 		computeAssetXpDiff,
@@ -81,7 +85,7 @@
 	import { appIcon } from '#lib/liveryIcons.js';
 	import type { AssetDefinition, CharacterData, CharacterAsset } from '#lib/types.js';
 	import { escHtml } from '#lib/markdown.js';
-	import { firstPreconditionFailure, type Precondition } from '#lib/preconditions.js';
+	import { firstPreconditionFailure } from '#lib/preconditions.js';
 	import AssetCard from '#lib/components/AssetCard.svelte';
 	import AssetPicker from '#lib/components/AssetPicker.svelte';
 	import MarkdownNotes from '#lib/components/MarkdownNotes.svelte';
@@ -96,14 +100,14 @@
 	import SheetAssets from '#lib/components/v2/sheet/SheetAssets.svelte';
 	import {
 		appendLog,
-		enrichOutcomeLinks,
-		getXpSpendNonce,
-		drainXpSpend,
+		bindCommandLinks,
 		getActionNonce,
 		drainActions,
 		type LogAction,
 	} from '#lib/log.svelte.js';
 	import { renderRich } from '#lib/dsl.js';
+	import { commandLinkHtml, readCommandLink } from '#lib/commands/links.js';
+	import { runLink, reportCommandResult } from '#lib/commands/run.svelte.js';
 	import { FLOOR_RULES, DEBILITY_MOMENTUM_TITLE } from '#lib/cascadeRules.js';
 	import { type Vow, type VowDifficulty, VOW_FORSAKE_STRESS } from '#lib/types.js';
 	import iconGearSvg from '#icons/gear-solid.svg?raw';
@@ -285,7 +289,9 @@
 	 *  Touched asset on a Pure character), or null. */
 	function assetBlocked(def: AssetDefinition | undefined): string | null {
 		if (!def || !activeData) return null;
-		return firstPreconditionFailure(def.preconditions as Precondition[] | undefined, activeData);
+		return firstPreconditionFailure(def.preconditions as string | undefined, activeData, {
+			self: activeData.assets.find((a) => a.assetId === def.id),
+		});
 	}
 
 	/** A change to an extension field on the sheet: stored, logged, and — for
@@ -299,28 +305,9 @@
 		const old = fieldValue(field, data.fields);
 		if (value === old) return;
 		data.fields = { ...(data.fields ?? {}), [field.id]: value };
-		const notes: string[] = [];
-		for (const a of (data.assets ?? []) as CharacterAsset[]) {
-			const def = findAsset(a.assetId);
-			const limits = def?.abilityMaxByField?.[field.id];
-			if (!def || !limits || (a.customValues && field.id in a.customValues)) continue;
-			const cap = limits[value] ?? Infinity;
-			let kept = 0;
-			let dropped = 0;
-			const next = a.abilities.map((on) => {
-				if (!on) return false;
-				if (kept < cap) {
-					kept++;
-					return true;
-				}
-				dropped++;
-				return false;
-			});
-			if (dropped) {
-				a.abilities = next;
-				notes.push(`unmarked ${dropped} ${dropped === 1 ? 'ability' : 'abilities'} on ${def.name}`);
-			}
-		}
+		// A party field is the whole party's: every character gets the value.
+		if (field.scope === 'party') setPartyFields({ [field.id]: value });
+		const notes = capAbilitiesForField(data, field.id, value, findAsset);
 		// Notes aren't logged as they're typed, as the background isn't.
 		if (field.type === 'markdown') return;
 		const show = (v: string) => escHtml(valueLabel(field, v) || '—');
@@ -358,18 +345,21 @@
 		delta: number,
 		title: (label: string) => string,
 	): { old: number; next: number } | null {
-		// Global counters (e.g. mana) live in data.globalValues as numeric strings.
+		// A content pack's global field (YRT's mana) lives in data.globalValues
+		// as a numeric string, held to the range its declaration gives.
+		const global = findGlobalField(key);
 		const gv = data.globalValues ?? {};
 		const rec = data as unknown as Record<string, number>;
-		const old = key === 'mana' ? parseInt(gv['mana'] ?? '0') : (rec[key] ?? 0);
-		const change = changeResource(key, old, delta, data);
+		const old = global ? counterValue(global, fieldValue(global, gv)) : (rec[key] ?? 0);
+		const range = global ? { min: 0, max: global.maxValue ?? Infinity } : undefined;
+		const change = changeResource(key, old, delta, data, range);
 		if (!change || (change.next === old && !change.capped)) return null;
 		const { next } = change;
 		if (next !== old) {
-			if (key === 'mana') data.globalValues = { ...gv, mana: String(next) };
+			if (global) data.globalValues = { ...gv, [key]: String(next) };
 			else rec[key] = next;
 		}
-		const label = key.charAt(0).toUpperCase() + key.slice(1);
+		const label = global?.label ?? key.charAt(0).toUpperCase() + key.slice(1);
 		appendLog(title(label), resourceLine(label, old, delta, change));
 		// Supply is party-wide — broadcast to every character.
 		if (key === 'supply' && next !== old) setPartySupply(next);
@@ -385,7 +375,11 @@
 		if (floorRule) {
 			const entryId = crypto.randomUUID();
 			const charId = activeCharId ?? '';
-			appendLog(floorRule.logTitle, floorRule.logHtml({ charId, entryId }), entryId);
+			appendLog(
+				floorRule.logTitle,
+				bindCommandLinks(floorRule.logHtml({ charId }), entryId),
+				entryId,
+			);
 		}
 	}
 
@@ -408,15 +402,16 @@
 				const resetVal = momentumReset(data);
 				if (data.momentum > newMax) {
 					const cappedFrom = data.momentum;
-					const delta = newMax - cappedFrom;
 					const entryId = crypto.randomUUID();
 					const charId = activeCharId ?? '';
-					const html =
+					const html = bindCommandLinks(
 						`<p>Max momentum reduced to <strong>${newMax}</strong>. ` +
-						`<a class="resource-link" data-resource="momentum" data-value="${delta}" ` +
-						`data-entry-id="${entryId}" data-char-id="${charId}">` +
-						`Reduce momentum to ${newMax}</a> ` +
-						`(currently ${cappedFrom}). Reset value is now <strong>${resetVal}</strong>.</p>`;
+							commandLinkHtml(`Reduce momentum to ${newMax}`, `/momentum=${newMax}`, {
+								charId,
+							}) +
+							` (currently ${cappedFrom}). Reset value is now <strong>${resetVal}</strong>.</p>`,
+						entryId,
+					);
 					appendLog(DEBILITY_MOMENTUM_TITLE, html, entryId);
 				}
 			}
@@ -435,8 +430,8 @@
 	}
 
 	/**
-	 * Set (not add) a field to an absolute value: initiative, and `/vital`,
-	 * `/bonds`, `/failures` with `=`. A resource is held to its range
+	 * Set (not add) a field to an absolute value, for a log link that sets
+	 * one (initiative, a resource). A resource is held to its range
 	 * (setResource), and a value the range cuts says so in the log line,
 	 * `Health: 4 → 5 (= 9, max 5)`, even when nothing moves. Supply, being
 	 * party-wide, is shared with the party.
@@ -538,52 +533,11 @@
 		}
 	}
 
-	// ── XP spend bus drain — fires when AssetCard logs an XP cost via
-	//     triggerXpSpend(charId, amount). Drains the active character first,
-	//     then sweeps all other loaded characters so a click on a non-active
-	//     character's XP link is applied to the correct character. ──────────
-	$effect(() => {
-		getXpSpendNonce(); // subscribe
-		// Active character fast path.
-		if (activeData && activeCharId) {
-			const amount = drainXpSpend(activeCharId);
-			if (amount > 0) {
-				const old = activeData.xp;
-				const next = Math.max(0, old - amount);
-				if (next !== old) {
-					activeData.xp = next;
-					appendLog(
-						charTitle('Experience'),
-						`<div>XP spent: <strong>−${amount}</strong> (${old} → <strong>${next}</strong>)</div>`,
-					);
-				}
-			}
-		}
-		// Non-active characters — apply directly and persist.
-		for (const char of getCharacters()) {
-			if (char.id === activeCharId) continue;
-			const amount = drainXpSpend(char.id);
-			if (amount <= 0) continue;
-			const data = $state.snapshot(char.data) as Record<string, unknown>;
-			const old = (data.xp as number) ?? 0;
-			const next = Math.max(0, old - amount);
-			if (next !== old) {
-				data.xp = next;
-				const name = char.name || 'Character';
-				appendLog(
-					`${name} — Experience`,
-					`<div>XP spent: <strong>−${amount}</strong> (${old} → <strong>${next}</strong>)</div>`,
-				);
-				persistCharacterNow(char.id, { name: char.name, data });
-			}
-		}
-	});
-
-	// ── Action bus drain — handles clicks on interactive log links
-	//     (resource / debility / reset-track / set). LogPanel's click handler
-	//     calls triggerAction({ type, key, value, charId }) and we consume
-	//     them here. Active character uses the fast reactive path; non-active
-	//     characters are updated directly in the store and persisted. ────────
+	// ── Action bus drain — Endure Harm's Apply and a burn's momentum reset
+	//     call triggerAction({ type, key, value, charId }) and we consume them
+	//     here. (Log links are commands now: #lib/commands/.) Active character
+	//     uses the fast reactive path; non-active characters are updated
+	//     directly in the store and persisted. ─────────────────────────────
 	$effect(() => {
 		getActionNonce();
 		// Active character fast path — mutations via activeData are reactive.
@@ -690,10 +644,15 @@
 			const def = findAsset(dialogDraft.assetId);
 			const action = dialogMode === 'add' ? 'added' : 'modified';
 			const entryId = crypto.randomUUID();
-			const xpLink = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="${totalCost}" data-char-id="${activeChar.id}" href="#">−${totalCost} experience</a>`;
+			const xpLink = commandLinkHtml(`−${totalCost} experience`, `/xp-=${totalCost}`, {
+				charId: activeChar.id,
+			});
 			appendLog(
 				charTitle('Assets'),
-				`<div>Asset ${action}: <strong>${def?.name ?? dialogDraft.assetId}</strong> ${xpLink}</div>`,
+				bindCommandLinks(
+					`<div>Asset ${action}: <strong>${escHtml(def?.name ?? dialogDraft.assetId)}</strong> ${xpLink}</div>`,
+					entryId,
+				),
 				entryId,
 			);
 		}
@@ -787,9 +746,12 @@
 		const label = VOW_DIFFICULTIES.find((d) => d.value === vow.difficulty)?.label ?? vow.difficulty;
 		const md =
 			`Forsook the iron vow **${vow.name || 'Unnamed Vow'}** (${label}) — ` +
-			`[Endure Stress](move:endure-stress?harm=${rank}) (−${rank}) for its rank.`;
+			`[Endure Stress](/move endure-stress ${rank}) (−${rank}) for its rank.`;
 		const entryId = crypto.randomUUID();
-		const html = enrichOutcomeLinks(renderRich(md), entryId, activeCharId ?? '');
+		const html = bindCommandLinks(renderRich(md), entryId, {
+			charId: activeCharId ?? undefined,
+			vowId: vow.id,
+		});
 		appendLog(charTitle('Vow'), html, entryId);
 	}
 
@@ -1196,37 +1158,15 @@
 						commitAssetDialog();
 					}}
 					onclick={(e) => {
-						// Delegate move-links / oracle-links inside asset abilities to
-						// the layout-level dialogs via a custom DOM event. AssetCard
-						// has no internal handler for these; without this delegation
-						// clicking e.g. "Face Danger" inside an ability text is a no-op.
-						const ml = (e.target as HTMLElement).closest('a.move-link') as HTMLElement | null;
-						if (ml) {
-							e.preventDefault();
-							const h = ml.dataset['harm'];
-							document.dispatchEvent(
-								new CustomEvent('ironledger:open-move', {
-									detail: {
-										id: ml.dataset['id'] ?? '',
-										harm: h != null && h !== '' ? Number(h) : undefined,
-									},
-								}),
-							);
-							return;
-						}
-						const ol = (e.target as HTMLElement).closest('a.oracle-link') as HTMLElement | null;
-						if (ol) {
-							e.preventDefault();
-							document.dispatchEvent(
-								new CustomEvent('ironledger:open-oracle', {
-									detail: {
-										key: ol.dataset['oracle'] ?? '',
-										stat: ol.dataset['stat'] ?? '',
-									},
-								}),
-							);
-							return;
-						}
+						// A move or an oracle link in an asset's text opens it, through
+						// the layout-level dialogs (#lib/commands/links.ts). Value
+						// links in an asset's text are for the log, not here.
+						const link = (e.target as HTMLElement).closest(
+							'a.cmd-link[data-verb]',
+						) as HTMLElement | null;
+						if (!link) return;
+						e.preventDefault();
+						reportCommandResult(runLink(readCommandLink(link).cmd, { charId: activeChar?.id }));
 					}}
 				>
 					<AssetCard

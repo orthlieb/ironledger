@@ -19,6 +19,7 @@
 	} from '#lib/characterFields.svelte.js';
 	import { renderNote } from '#lib/markdown.js';
 	import { renderRich } from '#lib/dsl.js';
+	import { linkVerb } from '#lib/commands/links.js';
 	import { draggable } from '#lib/actions/draggable.js';
 	import { tooltip } from '#lib/actions/tooltip.js';
 	import Select from '#lib/components/Select.svelte';
@@ -287,6 +288,15 @@
 	 *  DSL migration flipped the default (Phase 4). */
 	const abilityHtml = (text: string): string => renderRich(text);
 
+	/** The oracle an `/oracle` link in the preamble names, or null. */
+	function oracleLinkKey(target: EventTarget | null): string | null {
+		const link = (target as HTMLElement | null)?.closest(
+			'a.cmd-link[data-verb="oracle"]',
+		) as HTMLElement | null;
+		const verb = link ? linkVerb(link.dataset['cmd'] ?? '') : null;
+		return verb?.verb === 'oracle' ? verb.arg : null;
+	}
+
 	function toggleAbility(i: number) {
 		const enabling = !asset.abilities[i];
 		// Level cap: cannot enable more abilities than the current level allows
@@ -437,18 +447,18 @@
 			<p
 				class="asset-preamble"
 				onclick={(e) => {
-					const link = (e.target as HTMLElement).closest('.oracle-link') as HTMLElement | null;
-					if (link) {
+					const key = oracleLinkKey(e.target);
+					if (key !== null) {
 						e.preventDefault();
-						onOracleLink?.(link.dataset['oracle'] ?? '');
+						onOracleLink?.(key);
 					}
 				}}
 				onkeydown={(e) => {
 					if (e.key === 'Enter' || e.key === ' ') {
-						const link = (e.target as HTMLElement).closest('.oracle-link') as HTMLElement | null;
-						if (link) {
+						const key = oracleLinkKey(e.target);
+						if (key !== null) {
 							e.preventDefault();
-							onOracleLink?.(link.dataset['oracle'] ?? '');
+							onOracleLink?.(key);
 						}
 					}
 				}}
@@ -980,12 +990,12 @@
 		margin: 0;
 	}
 
-	.asset-preamble :global(a.oracle-link) {
+	.asset-preamble :global(a.cmd-link[data-verb='oracle']) {
 		color: var(--text-accent);
 		text-decoration: underline;
 		cursor: pointer;
 	}
-	.asset-preamble :global(a.oracle-link:hover) {
+	.asset-preamble :global(a.cmd-link[data-verb='oracle']:hover) {
 		opacity: 0.8;
 	}
 

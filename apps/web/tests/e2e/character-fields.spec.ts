@@ -21,7 +21,7 @@ import {
 	seedCharacter,
 	setExpansions,
 } from './helpers/reset';
-import { settleHome, selectCharacterByName } from './helpers/home';
+import { settleHome, selectCharacterByName, createCharacter } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
 const field = (page: Page, id: string) => page.locator(`[data-tour="char-field-${id}"]`);
@@ -92,6 +92,55 @@ test('The asset field types: a dropdown, a radio, a counter, a switch, text and 
 	await expect(field(page, 'sampleNotes')).toContainText('Owes the ferryman.');
 	await expect(page.locator('.log-entry').first()).toContainText('Epithet: — → Iron');
 	await setExpansions({ yrt: true, sample: null });
+});
+
+test('A custom dropdown takes typed text, and a party field is every character’s (the sample extension)', async ({
+	page,
+}) => {
+	await setExpansions({ yrt: true, sample: true });
+	await seedCharacter('Partya', undefined, { fields: { touched: 'prime' } });
+	await seedCharacter('Partyb', undefined, { fields: { touched: 'prime' } });
+	await openSheet(page, 'Partya');
+
+	// Home: one of its options, or anywhere typed in.
+	const home = (p: Page) => field(p, 'sampleHome').locator('.cb-trigger');
+	await home(page).click();
+	await page.locator('.cb-search').fill('Timbuktu');
+	await page.locator('.cb-item--action', { hasText: 'Use “Timbuktu”' }).click();
+	await expect(home(page)).toContainText('Timbuktu');
+	// Typing an option's name offers no "Use" row: it's in the list already.
+	await home(page).click();
+	await page.locator('.cb-search').fill('road');
+	await expect(page.locator('.cb-item--action')).toHaveCount(0);
+	await page.locator('.cb-item', { hasText: 'Road' }).click();
+	await expect(home(page)).toContainText('Road');
+	await home(page).click();
+	await page.locator('.cb-search').fill('Timbuktu');
+	await page.locator('.cb-item--action', { hasText: 'Use “Timbuktu”' }).click();
+
+	// Banner: set on one character, every character has it.
+	const banner = (p: Page) => field(p, 'sampleBanner').locator('input');
+	await banner(page).fill('Red Wolf');
+	await banner(page).blur();
+	await expect(page.locator('.log-entry').first()).toContainText('Banner: — → Red Wolf');
+
+	await openSheet(page, 'Partyb');
+	await expect(banner(page)).toHaveValue('Red Wolf');
+	// Home is each character's own.
+	await expect(home(page)).not.toContainText('Timbuktu');
+
+	// A new character takes the party's banner.
+	await createCharacter(page);
+	await page.locator(`${CHAR_AREA} [data-tour="char-tab-details"]`).click();
+	await expect(banner(page)).toHaveValue('Red Wolf');
+
+	// Saved: Partya's typed Home is there after a reload.
+	await openSheet(page, 'Partya');
+	await expect(home(page)).toContainText('Timbuktu');
+	await setExpansions({ yrt: true, sample: null });
+	// The party's banner would go to every character made after this one:
+	// leave no party behind for the tests that follow.
+	await resetCharacters();
 });
 
 test('The sample in New Character: Trinket and Epithet roll, and Notes waits for Sworn', async ({

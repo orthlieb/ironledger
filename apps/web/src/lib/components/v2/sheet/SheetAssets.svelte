@@ -12,7 +12,7 @@
 	import { findAsset, findRaritiesForAsset, getGlobalCounterDef } from '#lib/assetStore.svelte.js';
 	import { assetDisplayName } from '#lib/character.js';
 	import { fieldShown, fieldValue, findCharacterField } from '#lib/characterFields.svelte.js';
-	import { firstPreconditionFailure, type Precondition } from '#lib/preconditions.js';
+	import { firstPreconditionFailure } from '#lib/preconditions.js';
 	import { assetIcon } from '#lib/iconRegistry.js';
 	import type { AssetDefinition, CharacterAsset, CharacterData } from '#lib/types.js';
 	import gemSvg from '#icons/gem-solid.svg?raw';
@@ -130,7 +130,9 @@
 	 *  Touched asset on a Pure character), or null. */
 	function assetBlocked(def: AssetDefinition | undefined): string | null {
 		if (!def) return null;
-		return firstPreconditionFailure(def.preconditions as Precondition[] | undefined, cd);
+		return firstPreconditionFailure(def.preconditions as string | undefined, cd, {
+			self: cd.assets.find((a) => a.assetId === def.id),
+		});
 	}
 
 	/** An asset's chit name from the character fields it shows (a Touched

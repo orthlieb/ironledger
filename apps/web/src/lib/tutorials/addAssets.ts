@@ -8,7 +8,7 @@
  * char-switcher, char-add-asset and char-assets (CharactersArea),
  * asset-picker-search / asset-picker-grid (AssetPicker), asset-card and
  * asset-card-add (the asset's card and its Add button); and the log's
- * .xp-cost-link.
+ * the `/xp-=n` command link.
  */
 import { getActiveDiceCtx } from '#lib/diceContext.svelte.js';
 import { ADD_ASSET } from './keys.js';
@@ -76,9 +76,9 @@ export const addAssets: Tutorial = {
 				backIfGone: true,
 			},
 			{
-				// The log is written as HTML, so this one goes by its class: the
+				// The log is written as HTML, so this one goes by its command: the
 				// newest purchase's link is the first (the log runs newest first).
-				selector: '.xp-cost-link',
+				selector: 'a.cmd-link[data-cmd^="/xp-="]',
 				title: 'Spend the experience',
 				body: 'The log records each purchase. Click −3 experience to spend it.',
 				wait: 3000,

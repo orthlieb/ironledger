@@ -23,6 +23,7 @@ import {
 	stripHtml,
 	tableRollHtml,
 	takeAHiatusHtml,
+	delveDepthsColumn,
 } from '../../src/lib/moveRoll.js';
 
 const move = (extra: Partial<MoveDefinition> = {}) =>
@@ -128,7 +129,7 @@ describe('moveLogTitle', () => {
 });
 
 describe('resolveHarmLinks', () => {
-	const health = '<a class="harm-link" data-resource="health">-harm health</a>';
+	const health = '<a class="cmd-link" data-cmd="/health-=harm">-harm health</a>';
 
 	it('writes the harm in Endure Harm, and the momentum overflow past 0 health', () => {
 		expect(resolveHarmLinks(health, { moveId: 'move/endure-harm', foeHarm: 2, curHealth: 4 })).toBe(
@@ -136,6 +137,27 @@ describe('resolveHarmLinks', () => {
 		);
 		expect(resolveHarmLinks(health, { moveId: 'move/endure-harm', foeHarm: 3, curHealth: 1 })).toBe(
 			'<span class="harm-amount">1 harm</span> and <span class="harm-amount">-2 momentum</span> <span class="harm-note">(overflow)</span>',
+		);
+	});
+
+	it('writes the harm on the chosen companion in Companion Endure Harm', () => {
+		const companion =
+			'<a class="cmd-link" data-cmd="/companion.health-=harm" data-verb="x">-harm health</a>';
+		const at = (curCompanionHealth: number, foeHarm?: number) =>
+			resolveHarmLinks(companion, {
+				moveId: 'move/companion-endure-harm',
+				foeHarm,
+				curHealth: 5,
+				curCompanionHealth,
+			});
+		expect(at(3, 2)).toBe('<span class="harm-amount">2 harm</span>');
+		// Ash at 1, 3 harm: the leftover 2 comes off momentum.
+		expect(at(1, 3)).toBe(
+			'<span class="harm-amount">1 harm</span> and <span class="harm-amount">-2 momentum</span> <span class="harm-note">(overflow)</span>',
+		);
+		expect(at(1)).toBe('<span class="harm-note">-harm health</span>');
+		expect(resolveHarmLinks(companion, { moveId: 'move/endure-harm', foeHarm: 2 })).toBe(
+			'<span class="harm-note">-harm health</span>',
 		);
 	});
 
@@ -150,7 +172,7 @@ describe('resolveHarmLinks', () => {
 
 	it("disables the miss clause's links when this blow can't bring health to 0", () => {
 		const clause =
-			'If you are at 0 health, you must mark <a class="debility-link" data-debility="wounded">wounded</a> or roll on the <a class="oracle-link" data-oracle="x">oracle</a>.';
+			'If you are at 0 health, you must mark <a class="cmd-link" data-cmd="/wounded++">wounded</a> or roll on the <a class="cmd-link" data-cmd="/oracle x" data-verb="oracle">oracle</a>.';
 		const safe = resolveHarmLinks(clause, {
 			moveId: 'move/endure-harm',
 			foeHarm: 1,
@@ -179,22 +201,18 @@ describe('burn momentum', () => {
 		expect(burnMomentumOffer({ ...base, momentum: 5 })).toBeNull();
 	});
 
-	it('carries what LogPanel needs to burn it', () => {
+	it('is a /burn link bound to the roll and the character', () => {
 		const html = burnMomentumHtml({
 			rollEntryId: 'r1',
-			entryId: 'b1',
-			moveId: 'move/strike',
 			charId: 'c1',
-			actionScore: 6,
-			c1: 7,
-			c2: 3,
 			momentum: 8,
 			reset: 2,
 			from: 'Weak Hit',
 			to: 'Strong Hit',
 		});
+		expect(html).toContain('data-cmd="/burn"');
 		expect(html).toContain('data-roll-entry-id="r1"');
-		expect(html).toContain('data-action-score="6"');
+		expect(html).toContain('data-char-id="c1"');
 		expect(html).toContain('burn momentum (8 → reset 2)');
 		expect(html).toContain('from <em>Weak Hit</em> to <em>Strong Hit</em>');
 	});
@@ -207,24 +225,64 @@ describe('takeAHiatusHtml', () => {
 			2,
 		);
 		expect(html).toContain(
-			'<a class="debility-link" data-debility="wounded" data-value="0">Clear Wounded</a> · <a class="debility-link" data-debility="shaken" data-value="0">Clear Shaken</a>',
+			'<a class="cmd-link" data-cmd="/wounded--">Clear Wounded</a> · <a class="cmd-link" data-cmd="/shaken--">Clear Shaken</a>',
 		);
-		expect(html).toContain('data-resource="health" data-value="+3">+3 health</a>');
+		expect(html).toContain('data-cmd="/health=5">+3 health</a>');
 		expect(html).not.toContain('+0 spirit');
-		expect(html).toContain('data-resource="momentum" data-value="-3">−3 momentum (reset to 2)');
+		expect(html).toContain('data-cmd="/momentum=2">−3 momentum (reset to 2)');
+		expect(html).toContain('data-cmd="/move advance-a-threat" data-verb="move">Advance a Threat');
 		expect(html).toContain('Advance a Threat');
 	});
 
 	it('leaves out what needs nothing', () => {
-		const html = takeAHiatusHtml({ health: 5, spirit: 5, supply: 5, momentum: 2 }, 2);
+		const html = takeAHiatusHtml({ health: 5, spirit: 5, supply: 5, momentum: 2 }, 2, [
+			{ id: 'companion/hawk', name: 'Ash', health: 3, max: 3 },
+		]);
 		expect(html).not.toContain('Conditions');
 		expect(html).not.toContain('Resources');
+		expect(html).not.toContain('Companions');
 		expect(html).not.toContain('Momentum:');
+	});
+
+	it('restores each companion to its own maximum, bound to it', () => {
+		const html = takeAHiatusHtml({ health: 5, spirit: 5, supply: 5, momentum: 2 }, 2, [
+			{ id: 'companion/hawk', name: 'Ash', health: 1, max: 3 },
+			{ id: 'companion/horse', name: 'Bran & Co', health: 5, max: 5 },
+			{ id: 'companion/mammoth', name: 'Tusk', health: 2, max: 5 },
+		]);
+		expect(html).toContain(
+			'<p><strong>Companions:</strong> ' +
+				'<a class="cmd-link" data-cmd="/companion.health=3" data-companion-id="companion/hawk">Ash +2 health</a> · ' +
+				'<a class="cmd-link" data-cmd="/companion.health=5" data-companion-id="companion/mammoth">Tusk +3 health</a></p>',
+		);
+		expect(html).not.toContain('Bran');
+		expect(html).not.toContain('if applicable');
 	});
 });
 
 describe('stripHtml', () => {
 	it('drops tags, decodes entities and collapses spaces', () => {
 		expect(stripHtml('<p>Ward &amp; <em>shield</em>\n  it</p>')).toBe('Ward & shield it');
+	});
+});
+
+describe('delveDepthsColumn', () => {
+	it('opens the weak-hit oracle on the column of the stat rolled', () => {
+		const html =
+			'<p>Roll on the <a class="cmd-link" data-cmd="/oracle delveDepths" data-verb="oracle">Delve the Depths Weak Hit Oracle</a>.</p>';
+		expect(delveDepthsColumn(html, 'edge')).toBe(
+			'<p>Roll on the <a class="cmd-link" data-cmd="/oracle delveDepths" data-verb="oracle" data-stat="edge">Delve the Depths Weak Hit Oracle (Edge column)</a>.</p>',
+		);
+	});
+});
+
+import { COMPANION_HEALTH_OVERFLOW } from '../../src/lib/cascadeRules.js';
+
+describe('COMPANION_HEALTH_OVERFLOW', () => {
+	it('offers the leftover as −momentum, for the companion’s character', () => {
+		expect(COMPANION_HEALTH_OVERFLOW.logHtml({ overflow: 2, charId: 'c1', name: 'Ash & Co' })).toBe(
+			'<p>Ash &amp; Co’s health is zero. You lose ' +
+				'<a class="cmd-link" data-cmd="/momentum-=2" data-char-id="c1">-2 momentum</a> instead.</p>',
+		);
 	});
 });

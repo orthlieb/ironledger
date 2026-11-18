@@ -17,8 +17,10 @@
 import type { LogEntry } from './log.svelte.js';
 import { inertBody } from './inertHtml.js';
 
-/** Link classes that represent a takeable choice/action in a move outcome. */
-const ACTION_LINK_CLASSES = [
+/** Link classes of the old forms that were a takeable choice (a saved log
+ *  can still hold them; they do nothing now, but an unstruck one was still a
+ *  choice not taken). */
+const OLD_ACTION_LINK_CLASSES = [
 	'resource-link',
 	'debility-link',
 	'progress-link',
@@ -33,7 +35,12 @@ const ACTION_LINK_CLASSES = [
 	'xp-cost-link',
 ];
 
-const ACTION_SELECTOR = ACTION_LINK_CLASSES.map((c) => `a.${c}`).join(', ');
+/** A takeable choice: a command link that changes something (not one that
+ *  opens a move or an oracle, `data-verb`), or an old-form one. */
+const ACTION_SELECTOR = [
+	'a.cmd-link:not([data-verb])',
+	...OLD_ACTION_LINK_CLASSES.map((c) => `a.${c}`),
+].join(', ');
 
 /** True if the element (or any descendant) contains an unstruck action link. */
 function hasUnstruckAction(el: Element): boolean {

@@ -20,7 +20,7 @@ import { describe, it, expect } from 'vitest';
 import { readFileSync } from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { toPublicExtension } from '../../src/routes/catalogue.js';
+import { toPublicExtension, resolveAssetFields } from '../../src/routes/catalogue.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA = path.resolve(__dirname, '../../data');
@@ -39,8 +39,8 @@ interface ManifestEntry {
   supersedesOracles?: Record<string, string>;
   supersedesCultures?: Record<string, string>;
   infoLink?: { label: string; url: string };
-  characterFields?: Array<{ id: string }>;
-  characterFieldsHeading?: string | false;
+  fields?: Array<{ id: string; scope?: string; writable?: boolean }>;
+  fieldsHeading?: string | false;
   provides?: Record<string, string[]>;
   root?: string;
 }
@@ -155,26 +155,103 @@ describe('toPublicExtension — /catalogue/extensions contract', () => {
     expect(byId.yrt?.infoLink?.label).toBe('YRT');
   });
 
-  it('forwards characterFields and characterFieldsHeading verbatim', () => {
-    // The sheet, New Character and the Touched assets' precondition all read
+  it('forwards fields and fieldsHeading verbatim', () => {
+    // The sheet, New Character and the Touched assets' condition all read
     // these; a dropped field would leave a YRT character with no Touched
     // level and every Touched asset ungated.
-    const project = (
-      entries: Array<{ id: string; characterFields?: unknown; characterFieldsHeading?: unknown }>,
-    ) =>
-      Object.fromEntries(
-        entries.map((e) => [e.id, [e.characterFields ?? null, e.characterFieldsHeading ?? null]]),
-      );
+    const project = (entries: Array<{ id: string; fields?: unknown; fieldsHeading?: unknown }>) =>
+      Object.fromEntries(entries.map((e) => [e.id, [e.fields ?? null, e.fieldsHeading ?? null]]));
     expect(project(publicList)).toEqual(project(manifest.extensions));
     const byId = Object.fromEntries(publicList.map((e) => [e.id, e]));
-    expect(byId.base?.characterFields?.map((f) => f.id)).toEqual(['origin']);
-    expect(byId.yrt?.characterFields?.map((f) => f.id)).toEqual([
+    expect(byId.base?.fields?.map((f) => f.id)).toEqual(['origin']);
+    expect(byId.yrt?.fields?.map((f) => f.id)).toEqual([
       'religion',
       'touched',
       'touchedAnimal',
+      'mana',
     ]);
-    expect(byId.base?.characterFieldsHeading).toBe(false);
-    expect(byId.delve?.characterFieldsHeading).toBe(false);
-    expect(byId.lodestar?.characterFieldsHeading).toBe(false);
+    expect(byId.yrt?.fields?.find((f) => f.id === 'mana')?.scope).toBe('global');
+    // Who the character is stays the sheet's: links and commands can't set it.
+    expect(byId.base?.fields?.find((f) => f.id === 'origin')?.writable).toBe(false);
+    expect(byId.yrt?.fields?.find((f) => f.id === 'touched')?.writable).toBe(false);
+    expect(byId.yrt?.fields?.find((f) => f.id === 'religion')?.writable).toBe(false);
+    expect(byId.base?.fieldsHeading).toBe(false);
+    expect(byId.delve?.fieldsHeading).toBe(false);
+    expect(byId.lodestar?.fieldsHeading).toBe(false);
+  });
+});
+
+describe('resolveAssetFields', () => {
+  const globals = new Map<string, Record<string, unknown>>([
+    [
+      'mana',
+      {
+        id: 'mana',
+        scope: 'global',
+        type: 'counter',
+        label: 'Mana',
+        shortLabel: 'Mana',
+        maxValue: 10,
+        default: '0',
+        icon: 'mana',
+      },
+    ],
+  ]);
+
+  it('makes a reference to a global field the whole field, placed by the asset', () => {
+    const ritual = {
+      id: 'ritual/x',
+      customFields: [
+        { field: 'mana', position: 'bottom', tooltipLabel: 'Conclave Ritual' },
+        { id: 'notes', type: 'markdown', label: 'Notes' },
+      ],
+    };
+    const out = resolveAssetFields(ritual, globals) as typeof ritual;
+    expect(out.customFields[0]).toEqual({
+      id: 'mana',
+      type: 'counter',
+      label: 'Mana',
+      shortLabel: 'Mana',
+      maxValue: 10,
+      default: 0,
+      icon: 'mana',
+      position: 'bottom',
+      tooltipLabel: 'Conclave Ritual',
+      global: true,
+    });
+    expect(out.customFields[1]).toEqual(ritual.customFields[1]);
+  });
+
+  it('leaves an asset with no references as it is', () => {
+    const hawk = { id: 'companion/hawk', customFields: [{ id: 'health', type: 'counter' }] };
+    expect(resolveAssetFields(hawk, globals)).toBe(hawk);
+  });
+
+  it('resolves the YRT rituals’ mana from the extension’s one declaration', () => {
+    const yrt = manifest.extensions.find((e) => e.id === 'yrt');
+    const declared = new Map(
+      (yrt?.fields ?? [])
+        .filter((f) => f.scope === 'global')
+        .map((f) => [f.id, f as unknown as Record<string, unknown>]),
+    );
+    const assets = JSON.parse(
+      readFileSync(path.resolve(DATA, '../../../extensions/yrt/assets/assets.json'), 'utf-8'),
+    ) as { assets: Array<{ id: string; customFields?: Array<Record<string, unknown>> }> };
+    const rituals = assets.assets
+      .map((a) => resolveAssetFields(a, declared) as typeof a)
+      .filter((a) => a.customFields?.some((cf) => cf.id === 'mana'));
+    expect(rituals.map((a) => a.id)).toEqual([
+      'ritual/yrt-cantrip',
+      'ritual/yrt-arcane-inspection',
+      'ritual/yrt-vizion-illusion',
+      'ritual/yrt-compulsion',
+    ]);
+    for (const a of rituals)
+      expect(a.customFields?.find((cf) => cf.id === 'mana')).toMatchObject({
+        global: true,
+        maxValue: 10,
+        default: 0,
+        icon: 'mana',
+      });
   });
 });
