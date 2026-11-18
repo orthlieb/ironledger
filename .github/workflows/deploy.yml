@@ -86,6 +86,11 @@ jobs:
             echo "▶ Building API..."
             NODE_ENV=production npm run build --workspace=apps/api
 
+            # apps/web imports runtime code from @ironledger/shared, whose
+            # exports point at its gitignored dist/ — build it first.
+            echo "▶ Building shared package..."
+            npm run build --workspace=packages/shared
+
             echo "▶ Building web app..."
             NODE_ENV=production npm run build --workspace=apps/web
 

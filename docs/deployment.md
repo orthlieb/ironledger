@@ -222,7 +222,7 @@ In GitHub Settings > Environments, create a `production` environment with requir
 2. SSHs to VPS
 3. `git fetch origin main && git reset --hard origin/main`
 4. `npm ci`
-5. `npm run build --workspace=apps/api` + `npm run build --workspace=apps/web`
+5. `npm run build --workspace=apps/api`, then `packages/shared` (the web app imports its runtime code from the gitignored `dist/`), then `apps/web`
 6. `npm run migrate --workspace=apps/api` (schema-first, before restart)
 7. `pm2 reload ironledger-api --update-env && pm2 reload ironledger-web --update-env`
 8. Health check on `/login` (12 retries, 5s intervals)

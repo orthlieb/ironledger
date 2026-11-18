@@ -99,6 +99,11 @@ npm ci
 echo "  ▶ Building API (TypeScript)..."
 NODE_ENV=production npm run build --workspace=apps/api
 
+# apps/web imports runtime code from @ironledger/shared, whose exports
+# point at its gitignored dist/ — build it before the web bundle.
+echo "  ▶ Building shared package..."
+npm run build --workspace=packages/shared
+
 echo "  ▶ Building web (SvelteKit bundle)..."
 # Without this step the web adapter-node server keeps serving the old
 # build/ directory, so UI-only changes never reach users even after deploy.
@@ -182,6 +187,7 @@ ssh "$SERVER" bash -c "
   source ~/.nvm/nvm.sh
   npm ci
   NODE_ENV=production npm run build --workspace=apps/api
+  npm run build --workspace=packages/shared
   NODE_ENV=production npm run build --workspace=apps/web
   pm2 reload ironledger-api --update-env
   pm2 reload ironledger-web --update-env
