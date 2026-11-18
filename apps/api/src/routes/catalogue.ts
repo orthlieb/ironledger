@@ -345,14 +345,14 @@ export const catalogueRoutes: FastifyPluginAsyncZod = async (server) => {
       return;
     }
 
+    // Production: the browser may keep a copy but must ask before each use;
+    // an unchanged catalogue costs a 304. Never a max-age: content changes
+    // shape with a deploy, and new code reading the old shape breaks (an
+    // hour's cached `/extensions` from before fields were renamed left the
+    // sheet's Details tab blank).
     reply
       .header('ETag', entry.etag)
-      .header(
-        'Cache-Control',
-        process.env.NODE_ENV === 'production'
-          ? 'public, max-age=3600, stale-while-revalidate=86400'
-          : 'no-store',
-      )
+      .header('Cache-Control', process.env.NODE_ENV === 'production' ? 'no-cache' : 'no-store')
       .status(200)
       .send(entry.data);
   }

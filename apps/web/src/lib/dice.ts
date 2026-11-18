@@ -207,6 +207,30 @@ let _scriptLoaded: Promise<void> | null = null;
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 let _diceBox: any = null;
 let _diceBoxReady: Promise<void> | null = null;
+let _soundsLoading: Promise<void> | null = null;
+
+/**
+ * Make the dice box follow Settings → Dice → Sound, before each roll. The
+ * library reads `volume` on every die hit, so set it directly: its
+ * `updateConfig()` copies nothing (`Object.apply` where it means
+ * `Object.assign`), and Sound: Off never reached the dice. Sounds are loaded
+ * at init only when Sound is on, so switching it on later loads them here;
+ * `sounds` is set once they're in, since a die hit reads them.
+ */
+function applySoundPreference(): void {
+	if (!_diceBox) return;
+	const on = isDiceSoundEnabled();
+	_diceBox.volume = on ? 60 : 0;
+	if (on && !_diceBox.sounds && !_soundsLoading) {
+		_soundsLoading = Promise.resolve(_diceBox.loadSounds())
+			.then(() => {
+				_diceBox.sounds = true;
+			})
+			.catch(() => {
+				_soundsLoading = null; // try again next roll
+			});
+	}
+}
 
 /**
  * Push the current overlay dimensions into the dice library, so the camera
@@ -493,11 +517,7 @@ export async function animateDice(dice: DiceSpec[]): Promise<void> {
 		// surfaced once user-selectable textures made the load slow enough to
 		// lose the race.
 		await applyTheme(steps[0].theme);
-		// Apply the current sound preference. Effective only when sounds
-		// were loaded at init time (i.e. the toggle was on at last reload
-		// AND the device isn't iOS); otherwise the library has nothing to
-		// mute/unmute and updateConfig is a cheap no-op.
-		_diceBox.updateConfig({ volume: isDiceSoundEnabled() ? 60 : 0 });
+		applySoundPreference();
 		// eslint-disable-next-line @typescript-eslint/no-explicit-any
 		let p: Promise<any> = _diceBox.roll(stepNotation(steps[0]));
 		for (let i = 1; i < steps.length; i++) {

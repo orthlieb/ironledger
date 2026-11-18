@@ -26,6 +26,7 @@
 
 import type { FoeDef, FoeNature, CatalogueSource } from '#lib/types.js';
 import { getExtensions, isSourceEnabled } from '#lib/expansionStore.svelte.js';
+import { fetchCatalogue } from '#lib/catalogueFetch.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -127,7 +128,7 @@ export async function loadFoes(): Promise<void> {
 	if (_loaded || _loading) return;
 	_loading = true;
 	try {
-		const res = await fetch('/api/catalogue/foes', { cache: 'reload' });
+		const res = await fetchCatalogue('/api/catalogue/foes');
 		if (!res.ok) throw new Error(`Foe fetch failed: ${res.status}`);
 		const json = (await res.json()) as { foes: FoeDef[]; overrides?: FoeOverridesFile[] };
 		_foes = json.foes.sort((a, b) => a.name.localeCompare(b.name));
