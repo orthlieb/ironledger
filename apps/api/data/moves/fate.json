@@ -57,7 +57,7 @@
       "name": "Pay the Price",
       "category": "Fate",
       "triggerShort": "When you suffer the outcome of a move.",
-      "trigger": "When you **suffer the outcome of a move**, choose one.\n- Make the most obvious negative outcome happen. E.g. [Endure Harm](move:endure-harm), [Endure Stress](move:endure-stress).\n- Envision two negative outcomes. Rate one as 'likely', and [Ask the Oracle](move:ask-the-oracle) using the yes/no table. On a 'yes', make that outcome happen. Otherwise, make it the other.\n- Roll on the following table. If you have difficulty interpreting the result to fit the current situation, roll again.",
+      "trigger": "When you **suffer the outcome of a move**, choose one.\n- Make the most obvious negative outcome happen. E.g. [Endure Harm](/move endure-harm), [Endure Stress](/move endure-stress).\n- Envision two negative outcomes. Rate one as 'likely', and [Ask the Oracle](/move ask-the-oracle) using the yes/no table. On a 'yes', make that outcome happen. Otherwise, make it the other.\n- Roll on the following table. If you have difficulty interpreting the result to fit the current situation, roll again.",
       "strong": "",
       "weak": "",
       "miss": "",
@@ -67,7 +67,7 @@
       "table": [
         {
           "topRange": 2,
-          "value": "Roll again and apply that result but make it worse. If you roll this result yet again, think of something dreadful that changes the course of your quest ([Ask the Oracle](move:ask-the-oracle) if unsure) and make it happen."
+          "value": "Roll again and apply that result but make it worse. If you roll this result yet again, think of something dreadful that changes the course of your quest ([Ask the Oracle](/move ask-the-oracle) if unsure) and make it happen."
         },
         {
           "topRange": 5,
@@ -103,11 +103,11 @@
         },
         {
           "topRange": 68,
-          "value": "It is harmful. [Endure Harm](move:endure-harm)."
+          "value": "It is harmful. [Endure Harm](/move endure-harm)."
         },
         {
           "topRange": 77,
-          "value": "It is stressful. [Endure Stress](move:endure-stress)."
+          "value": "It is stressful. [Endure Stress](/move endure-stress)."
         },
         {
           "topRange": 85,

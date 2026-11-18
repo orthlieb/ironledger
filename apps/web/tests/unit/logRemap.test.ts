@@ -40,6 +40,29 @@ describe('remapLogEntry', () => {
 		});
 	});
 
+	it('re-points a command link’s binding, and the binding its roll keeps for a burn', () => {
+		const html =
+			'<a class="cmd-link" data-cmd="/foe.progress++" data-entry-id="old-entry" data-link="0" data-char-id="old-char" data-foe-id="old-foe" data-exp-id="old-exp" data-vow-id="v1">Mark</a>';
+		const roll = {
+			moveId: 'move/strike',
+			actionScore: 6,
+			c1: 3,
+			c2: 9,
+			charId: 'old-char',
+			bind: { charId: 'old-char', foeId: 'old-foe', expId: 'old-exp', vowId: 'v1' },
+		};
+		const out = remapLogEntry({ html, roll }, maps);
+		expect(out.html).toBe(
+			'<a class="cmd-link" data-cmd="/foe.progress++" data-entry-id="new-entry" data-link="0" data-char-id="new-char" data-foe-id="new-foe" data-exp-id="new-exp" data-vow-id="v1">Mark</a>',
+		);
+		expect(out.roll?.bind).toEqual({
+			charId: 'new-char',
+			foeId: 'new-foe',
+			expId: 'new-exp',
+			vowId: 'v1',
+		});
+	});
+
 	it('leaves an id with nothing recorded, and a roll without the optional ids', () => {
 		const entry = {
 			html: '<a data-char-id="someone-else" class="resource-link">+1</a>',

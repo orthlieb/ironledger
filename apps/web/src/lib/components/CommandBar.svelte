@@ -63,6 +63,17 @@
 	 *  there). */
 	let caretAtEnd = $state(true);
 
+	// A link clicked in the log or a dialog runs a command too: what it did,
+	// or why it couldn't, shows here (#lib/commands/run.svelte.ts).
+	$effect(() => {
+		const onStatus = (e: Event) => {
+			const d = (e as CustomEvent<{ ok: boolean; message: string }>).detail;
+			if (d?.message) setStatus(d.message, d.ok ? 'info' : 'error');
+		};
+		document.addEventListener('ironledger:command-status', onStatus);
+		return () => document.removeEventListener('ironledger:command-status', onStatus);
+	});
+
 	// `/move` and `/oracle` need the catalogues the dialogs otherwise load on
 	// their first open. Both loads are idempotent.
 	$effect(() => {

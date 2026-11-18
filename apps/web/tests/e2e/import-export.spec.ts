@@ -870,8 +870,8 @@ test.describe('Import / Export — full round-trip', () => {
 						id: LOG_LINKED_ID,
 						title: 'Strike',
 						html:
-							`<a data-entry-id="${LOG_LINKED_ID}" data-char-id="${rookId}" class="resource-link" data-resource="momentum" data-value="1" href="#">+1 momentum</a> ` +
-							`<a data-entry-id="${LOG_LINKED_ID}" data-char-id="${rookId}" data-exp-id="rt-journey-1" data-foe-id="rt-foe-1" class="progress-link" data-track="combat" data-value="2" href="#">Mark progress</a>`,
+							`<a class="cmd-link" data-cmd="/momentum++" data-entry-id="${LOG_LINKED_ID}" data-link="0" data-char-id="${rookId}">+1 momentum</a> ` +
+							`<a class="cmd-link" data-cmd="/foe.progress+=2" data-entry-id="${LOG_LINKED_ID}" data-link="1" data-char-id="${rookId}" data-exp-id="rt-journey-1" data-foe-id="rt-foe-1">Mark progress</a>`,
 						ts: '2026-02-14T09:00:00.000Z',
 						roll: {
 							moveId: 'move/strike',

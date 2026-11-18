@@ -11,6 +11,8 @@
 // =============================================================================
 
 import type { Plan, World, MoveRef, OracleRef } from './resolve.js';
+import { plan as planCommand } from './resolve.js';
+import { bindCommandLinks, type LinkBinding } from './links.js';
 import type { Catalogue, CharacterOwner, ExpeditionOwner, FoeOwner, Owner } from './values.js';
 import { findValue } from './values.js';
 import {
@@ -35,15 +37,16 @@ import { characterFieldGroups } from '#lib/characterFields.svelte.js';
 import { isSourceEnabled, getExtensions } from '#lib/expansionStore.svelte.js';
 import { FOE_RANKS, findFoe, resolveFoeName } from '#lib/foeStore.svelte.js';
 import { foeExtraFlag } from '#lib/foeExtras.js';
-import { getVisibleMoves } from '#lib/moveStore.svelte.js';
-import { getVisibleOracles } from '#lib/oracleStore.svelte.js';
+import { getMoves, getVisibleMoves } from '#lib/moveStore.svelte.js';
+import { getOracles, getVisibleOracles } from '#lib/oracleStore.svelte.js';
 import { movePreconditionFailure, type PreconditionContext } from '#lib/preconditions.js';
 import { appendLog, sessionLog } from '#lib/log.svelte.js';
 import { renderNote, escHtml } from '#lib/markdown.js';
 import { rollDie, animateDice, type DiceSpec } from '#lib/dice.js';
 import { getEndId, getStartId, hasSection, setEnd, setStart } from '#lib/sectionStore.svelte.js';
 import { capAbilitiesForField, maxMomentum } from '#lib/character.js';
-import { FLOOR_RULES } from '#lib/cascadeRules.js';
+import { FLOOR_RULES, FLOOR_OVERFLOW_RULES, OVERFLOW_RULES } from '#lib/cascadeRules.js';
+import { DEBILITIES } from './values.js';
 import type { CharacterData, FoeEncounter } from '#lib/types.js';
 
 // ---------------------------------------------------------------------------
@@ -110,8 +113,11 @@ function preconditionContext(): PreconditionContext {
 }
 
 /** Everything a command resolves against, read from the stores. Call it in
- *  a reactive context to follow them. */
-export function buildWorld(): World {
+ *  a reactive context to follow them. A link's binding stands in for what's
+ *  active: the entry's character, foe and expedition, the vow or companion
+ *  its move chose, the harm it was made with. A link opens a move whatever
+ *  its condition (the dialog says why it can't be made). */
+export function buildWorld(bind?: LinkBinding): World {
 	const characters: CharacterOwner[] = getCharacters().map((c) => {
 		const data = c.data as unknown as CharacterData;
 		return { kind: 'character', id: c.id, name: data.name?.trim() || c.name || 'Unnamed', data };
@@ -130,13 +136,17 @@ export function buildWorld(): World {
 	}));
 	const ctx = preconditionContext();
 	const data = getActiveDiceCtx()?.data;
-	const moves: MoveRef[] = getVisibleMoves().map((m) => ({
+	// A link reaches a move or an oracle whatever packs are on (a saved log
+	// can name one from a pack turned off since); typed, only the visible ones.
+	const moves: MoveRef[] = (bind ? getMoves() : getVisibleMoves()).map((m) => ({
 		id: m.id,
 		name: m.name,
 		category: m.category,
-		blocked: movePreconditionFailure(m.preconditions as string | undefined, data, ctx),
+		blocked: bind
+			? null
+			: movePreconditionFailure(m.preconditions as string | undefined, data, ctx),
 	}));
-	const oracles: OracleRef[] = getVisibleOracles().map((o) => ({
+	const oracles: OracleRef[] = (bind ? getOracles() : getVisibleOracles()).map((o) => ({
 		key: o.key,
 		title: o.title,
 		source: o.source,
@@ -145,12 +155,20 @@ export function buildWorld(): World {
 		characters,
 		foes,
 		expeditions,
-		activeCharacterId: getActiveCharacterId() || null,
-		activeFoeId: getActiveFoeId() || null,
-		activeExpeditionId: getActiveExpeditionId() || null,
+		activeCharacterId: bind?.charId || getActiveCharacterId() || null,
+		activeFoeId: bind?.foeId || getActiveFoeId() || null,
+		activeExpeditionId: bind?.expId || getActiveExpeditionId() || null,
 		cat: liveCatalogue(),
 		moves,
 		oracles,
+		bound: bind
+			? {
+					vowId: bind.vowId,
+					companionId: bind.companionId,
+					selfAssetId: bind.selfId,
+					harm: bind.harm,
+				}
+			: undefined,
 	};
 }
 
@@ -190,24 +208,18 @@ function cascade(
 	key: string,
 	from: number | string,
 	to: number | string,
+	wanted?: number,
 ): void {
 	const data = ch.data;
+	/** A cascade's own entry, its links bound to it. */
+	const note = (title: string, html: string) => {
+		const entryId = crypto.randomUUID();
+		appendLog(title, bindCommandLinks(html, entryId), entryId);
+	};
 	// Marking a debility lowers momentum's top: momentum above it comes down.
 	if (typeof to === 'number' && to > 0 && Number(from) === 0) {
 		const top = maxMomentum(data);
-		if (
-			[
-				'wounded',
-				'shaken',
-				'unprepared',
-				'encumbered',
-				'maimed',
-				'corrupted',
-				'cursed',
-				'tormented',
-			].includes(key) &&
-			data.momentum > top
-		) {
+		if ((DEBILITIES as readonly string[]).includes(key) && data.momentum > top) {
 			const old = data.momentum;
 			data.momentum = top;
 			appendLog(
@@ -216,13 +228,20 @@ function cascade(
 			);
 		}
 	}
-	// A resource reaching its floor: what happens next.
-	if (typeof to === 'number' && typeof from === 'number' && to < from) {
+	if (typeof to !== 'number' || typeof from !== 'number') return;
+	const asked = wanted ?? to;
+	if (asked < from) {
+		// Taken past 0: the rest comes off momentum (health, spirit).
+		const over = OVERFLOW_RULES.find((r) => r.resource === key);
+		if (over && asked < 0) note(over.logTitle, over.logHtml({ overflow: -asked, charId: ch.id }));
+		// Already at the floor and taken further: Face Death, Face a Setback, …
+		const past = FLOOR_OVERFLOW_RULES.find((r) => r.resource === key && from <= r.floor);
+		if (past) note(past.logTitle, past.logHtml({ overflow: from - asked, charId: ch.id }));
+	}
+	// Reaching the floor this change: what happens next.
+	if (to < from) {
 		const rule = FLOOR_RULES.find((r) => r.resource === key && to === r.floor);
-		if (rule) {
-			const entryId = crypto.randomUUID();
-			appendLog(rule.logTitle, rule.logHtml({ charId: ch.id, entryId }), entryId);
-		}
+		if (rule) note(rule.logTitle, rule.logHtml({ charId: ch.id }));
 	}
 }
 
@@ -248,7 +267,7 @@ function runChange(p: Extract<Plan, { kind: 'change' }>): RunResult {
 		if (spec.key === 'supply') setPartySupply(Number(p.to));
 		else setPartyFields({ [spec.key]: String(p.to) });
 	} else save(owner);
-	if (owner.kind === 'character' && ch) cascade(ch, spec.key, p.from, p.to);
+	if (owner.kind === 'character' && ch) cascade(ch, spec.key, p.from, p.to, p.wanted);
 	return { ok: true, message: p.summary };
 }
 
@@ -314,18 +333,26 @@ function runStory(action: 'start' | 'end' | 'write'): RunResult {
 	};
 }
 
-/** Burn momentum: the log panel holds the roll, so it's asked to. */
-function runBurn(): RunResult {
+/** Burn momentum: the log panel holds the roll, so it's asked to — the
+ *  newest action roll, or (a burn link) the roll the link was offered on. */
+function runBurn(rollId?: string): RunResult {
 	let result: RunResult = {
 		ok: false,
 		message: 'The log isn’t open: nothing to burn momentum on.',
 	};
 	document.dispatchEvent(
 		new CustomEvent('ironledger:burn', {
-			detail: { reply: (message: string, ok: boolean) => (result = { ok, message }) },
+			detail: { rollId, reply: (message: string, ok: boolean) => (result = { ok, message }) },
 		}),
 	);
 	return result;
+}
+
+/** Open a move: Ask the Oracle is the oracle dialog. */
+function openMove(id: string, harm?: number): void {
+	if (id === 'move/ask-the-oracle')
+		document.dispatchEvent(new CustomEvent('ironledger:open-oracle', { detail: { key: '' } }));
+	else document.dispatchEvent(new CustomEvent('ironledger:open-move', { detail: { id, harm } }));
 }
 
 /** Carry out a plan. */
@@ -353,9 +380,7 @@ export function runPlan(p: Plan, ui: RunUi): RunResult {
 			return { ok: true, message: `${p.summary}.` };
 		}
 		case 'move':
-			document.dispatchEvent(
-				new CustomEvent('ironledger:open-move', { detail: { id: p.move.id, harm: p.amount } }),
-			);
+			openMove(p.move.id, p.amount);
 			return { ok: true, message: `Opened ${p.move.name}.` };
 		case 'oracle':
 			document.dispatchEvent(
@@ -372,4 +397,74 @@ export function runPlan(p: Plan, ui: RunUi): RunResult {
 			ui.openHelp(p.topic);
 			return { ok: true, message: '' };
 	}
+}
+
+// ---------------------------------------------------------------------------
+// Running a link
+// ---------------------------------------------------------------------------
+
+export interface LinkResult extends RunResult {
+	/** It changed something: strike the link through. */
+	spend: boolean;
+}
+
+/**
+ * Run a link's command against its binding (docs/command-language.md →
+ * Clicking them). A link changes a value, burns momentum, opens a move or an
+ * oracle, or opens a site's picker; anything else a command can do (make
+ * something active, write a note, mark a story section, help) is the
+ * command bar's. A link that can't run says why and stays unspent.
+ */
+export function runLink(cmd: string, bind: LinkBinding = {}): LinkResult {
+	const w = buildWorld(bind);
+	const fail = (message: string): LinkResult => ({ ok: false, message, spend: false });
+	if (bind.charId && !w.characters.some((c) => c.id === bind.charId))
+		return fail('The character this entry was for is gone.');
+	const p = planCommand(cmd, w);
+	if (p.kind === 'error' || p.kind === 'incomplete') {
+		if (bind.foeId && !w.foes.some((f) => f.id === bind.foeId) && /^No active foe/.test(p.message))
+			return fail('The foe this entry was made against is gone.');
+		if (
+			bind.expId &&
+			!w.expeditions.some((e) => e.id === bind.expId) &&
+			/^No active (journey|site|scene)/.test(p.message)
+		)
+			return fail('The expedition this entry was made for is gone.');
+		return fail(p.message);
+	}
+	switch (p.kind) {
+		case 'change': {
+			const r = runPlan(p, { openHelp: () => {} });
+			return { ...r, spend: r.ok && !p.nothing };
+		}
+		case 'burn': {
+			const r = runBurn(bind.rollId);
+			return { ...r, spend: r.ok };
+		}
+		case 'move':
+			openMove(p.move.id, p.amount ?? (bind.harm !== undefined ? bind.harm : undefined));
+			return { ok: true, message: '', spend: false };
+		case 'oracle':
+			document.dispatchEvent(
+				new CustomEvent('ironledger:open-oracle', {
+					detail: { key: p.oracle.key, stat: bind.stat },
+				}),
+			);
+			return { ok: true, message: '', spend: false };
+		case 'show':
+			if (p.picker) {
+				document.dispatchEvent(new CustomEvent('ironledger:site-picker', { detail: p.picker }));
+				return { ok: true, message: '', spend: true };
+			}
+			return fail('A link changes a value or opens a move or an oracle; this one only names one.');
+		default:
+			return fail('A link can’t do that: it’s for the command bar.');
+	}
+}
+
+/** Say a command's result in the command bar's status line (a link's,
+ *  clicked in the log or a dialog). */
+export function reportCommandResult(r: RunResult): void {
+	if (!r.message) return;
+	document.dispatchEvent(new CustomEvent('ironledger:command-status', { detail: r }));
 }

@@ -119,11 +119,9 @@ and on Enter hands the plan to `runPlan()`.
 | `/note`, plain text | `appendLog('Note', renderNote(text))`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
 | `/help`             | `CommandHelpDialog.open(topic)`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
-Log links still go through the [action bus](log.md#generalized-action-bus)
-until they become commands too ([command-language.md → Log
-links](command-language.md#log-links)); the bus and the commands hold values
-to the same ranges, and a content pack's global field (YRT's mana) takes its
-range from its declaration in both.
+Log links are commands too (`runLink`, the same runner, bound to the entry
+they're in: [log.md → Command links](log.md#command-links)), so a link and a
+typed command change a value the same way and log the same line.
 
 ## Mobile
 

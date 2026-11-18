@@ -58,8 +58,8 @@ test.describe('A hostile backup', () => {
 					ts: new Date().toISOString(),
 					html:
 						`<p>${RAW(2)}</p>` +
-						`<a class="resource-link" data-resource="momentum" data-value="1" ` +
-						`data-entry-id="${entryId}" href="#">${ESCAPED(3)}</a>`,
+						`<a class="cmd-link" data-cmd="/momentum++" ` +
+						`data-entry-id="${entryId}" data-link="0">${ESCAPED(3)}</a>`,
 				},
 			],
 			encounters: [],
@@ -93,7 +93,7 @@ test.describe('A hostile backup', () => {
 		await page.keyboard.press('Escape');
 
 		// Spending the link writes its text back escaped.
-		const link = page.locator('.log-entry a.resource-link').first();
+		const link = page.locator('.log-entry a.cmd-link').first();
 		await expect(link).toBeVisible({ timeout: 10_000 });
 		await link.click();
 		await expect

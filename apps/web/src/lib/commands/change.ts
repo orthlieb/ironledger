@@ -13,10 +13,11 @@ import { parseAmount } from './parse.js';
 import { listLabel, trackText, TRACK_MAX, type ValueSpec } from './values.js';
 import { escHtml } from '#lib/markdown.js';
 
-/** The harm an amount of `harm` stands for, and whose it is. */
+/** The harm an amount of `harm` stands for, and whose it is (a foe's
+ *  name; none for Endure Harm's amount with no foe). */
 export interface Harm {
 	n: number;
-	from: string;
+	from?: string;
 }
 
 export type ChangeResult =
@@ -30,6 +31,10 @@ export type ChangeResult =
 			line: string;
 			/** "Health 4 → 2", "Wounded: Cleared → Marked". */
 			summary: string;
+			/** A number's target before its range held it: what a change past
+			 *  the edge asked for (`/health-=3` at 1 wants −2), for the cascades
+			 *  that say what becomes of the rest. */
+			wanted?: number;
 	  }
 	| { ok: false; message: string; incomplete?: boolean };
 
@@ -232,7 +237,7 @@ function numberChange(spec: ValueSpec, op: Op, operand: string, harm?: Harm): Ch
 		}
 		const amount = track ? ticksOf(spec, n, unit) : n;
 		words = track ? trackAmount(spec, n, unit) : String(n);
-		if (a.kind === 'harm') harmNote = `, ${harm!.from}’s harm`;
+		if (a.kind === 'harm') harmNote = harm!.from ? `, ${harm!.from}’s harm` : ', harm';
 		if (op === '=') target = amount;
 		else delta = op === '+=' ? amount : -amount;
 	}
@@ -248,6 +253,7 @@ function numberChange(spec: ValueSpec, op: Op, operand: string, harm?: Harm): Ch
 			ok: true,
 			from,
 			to,
+			wanted,
 			nothing: true,
 			line: '',
 			summary: `${spec.label}: already ${text(from)}${edgeText ? ` (${edgeText})` : ''}`,
@@ -267,6 +273,7 @@ function numberChange(spec: ValueSpec, op: Op, operand: string, harm?: Harm): Ch
 		ok: true,
 		from,
 		to,
+		wanted,
 		nothing: false,
 		line: `<div>${escHtml(spec.label)}: ${fromText} → <strong>${toText}</strong>${escHtml(note)}</div>`,
 		summary: `${spec.label} ${text(from)} → ${text(to)}${edge || harmNote ? ` (${[harmNote.slice(2), edgeText].filter(Boolean).join(', ')})` : ''}`,

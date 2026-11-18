@@ -100,14 +100,14 @@
 	import SheetAssets from '#lib/components/v2/sheet/SheetAssets.svelte';
 	import {
 		appendLog,
-		enrichOutcomeLinks,
-		getXpSpendNonce,
-		drainXpSpend,
+		bindCommandLinks,
 		getActionNonce,
 		drainActions,
 		type LogAction,
 	} from '#lib/log.svelte.js';
 	import { renderRich } from '#lib/dsl.js';
+	import { commandLinkHtml, readCommandLink } from '#lib/commands/links.js';
+	import { runLink, reportCommandResult } from '#lib/commands/run.svelte.js';
 	import { FLOOR_RULES, DEBILITY_MOMENTUM_TITLE } from '#lib/cascadeRules.js';
 	import { type Vow, type VowDifficulty, VOW_FORSAKE_STRESS } from '#lib/types.js';
 	import iconGearSvg from '#icons/gear-solid.svg?raw';
@@ -375,7 +375,11 @@
 		if (floorRule) {
 			const entryId = crypto.randomUUID();
 			const charId = activeCharId ?? '';
-			appendLog(floorRule.logTitle, floorRule.logHtml({ charId, entryId }), entryId);
+			appendLog(
+				floorRule.logTitle,
+				bindCommandLinks(floorRule.logHtml({ charId }), entryId),
+				entryId,
+			);
 		}
 	}
 
@@ -398,15 +402,16 @@
 				const resetVal = momentumReset(data);
 				if (data.momentum > newMax) {
 					const cappedFrom = data.momentum;
-					const delta = newMax - cappedFrom;
 					const entryId = crypto.randomUUID();
 					const charId = activeCharId ?? '';
-					const html =
+					const html = bindCommandLinks(
 						`<p>Max momentum reduced to <strong>${newMax}</strong>. ` +
-						`<a class="resource-link" data-resource="momentum" data-value="${delta}" ` +
-						`data-entry-id="${entryId}" data-char-id="${charId}">` +
-						`Reduce momentum to ${newMax}</a> ` +
-						`(currently ${cappedFrom}). Reset value is now <strong>${resetVal}</strong>.</p>`;
+							commandLinkHtml(`Reduce momentum to ${newMax}`, `/momentum=${newMax}`, {
+								charId,
+							}) +
+							` (currently ${cappedFrom}). Reset value is now <strong>${resetVal}</strong>.</p>`,
+						entryId,
+					);
 					appendLog(DEBILITY_MOMENTUM_TITLE, html, entryId);
 				}
 			}
@@ -528,52 +533,11 @@
 		}
 	}
 
-	// ── XP spend bus drain — fires when AssetCard logs an XP cost via
-	//     triggerXpSpend(charId, amount). Drains the active character first,
-	//     then sweeps all other loaded characters so a click on a non-active
-	//     character's XP link is applied to the correct character. ──────────
-	$effect(() => {
-		getXpSpendNonce(); // subscribe
-		// Active character fast path.
-		if (activeData && activeCharId) {
-			const amount = drainXpSpend(activeCharId);
-			if (amount > 0) {
-				const old = activeData.xp;
-				const next = Math.max(0, old - amount);
-				if (next !== old) {
-					activeData.xp = next;
-					appendLog(
-						charTitle('Experience'),
-						`<div>XP spent: <strong>−${amount}</strong> (${old} → <strong>${next}</strong>)</div>`,
-					);
-				}
-			}
-		}
-		// Non-active characters — apply directly and persist.
-		for (const char of getCharacters()) {
-			if (char.id === activeCharId) continue;
-			const amount = drainXpSpend(char.id);
-			if (amount <= 0) continue;
-			const data = $state.snapshot(char.data) as Record<string, unknown>;
-			const old = (data.xp as number) ?? 0;
-			const next = Math.max(0, old - amount);
-			if (next !== old) {
-				data.xp = next;
-				const name = char.name || 'Character';
-				appendLog(
-					`${name} — Experience`,
-					`<div>XP spent: <strong>−${amount}</strong> (${old} → <strong>${next}</strong>)</div>`,
-				);
-				persistCharacterNow(char.id, { name: char.name, data });
-			}
-		}
-	});
-
-	// ── Action bus drain — handles clicks on interactive log links
-	//     (resource / debility / reset-track / set). LogPanel's click handler
-	//     calls triggerAction({ type, key, value, charId }) and we consume
-	//     them here. Active character uses the fast reactive path; non-active
-	//     characters are updated directly in the store and persisted. ────────
+	// ── Action bus drain — Endure Harm's Apply and a burn's momentum reset
+	//     call triggerAction({ type, key, value, charId }) and we consume them
+	//     here. (Log links are commands now: #lib/commands/.) Active character
+	//     uses the fast reactive path; non-active characters are updated
+	//     directly in the store and persisted. ─────────────────────────────
 	$effect(() => {
 		getActionNonce();
 		// Active character fast path — mutations via activeData are reactive.
@@ -680,10 +644,15 @@
 			const def = findAsset(dialogDraft.assetId);
 			const action = dialogMode === 'add' ? 'added' : 'modified';
 			const entryId = crypto.randomUUID();
-			const xpLink = `<a class="xp-cost-link" data-entry-id="${entryId}" data-cost="${totalCost}" data-char-id="${activeChar.id}" href="#">−${totalCost} experience</a>`;
+			const xpLink = commandLinkHtml(`−${totalCost} experience`, `/xp-=${totalCost}`, {
+				charId: activeChar.id,
+			});
 			appendLog(
 				charTitle('Assets'),
-				`<div>Asset ${action}: <strong>${def?.name ?? dialogDraft.assetId}</strong> ${xpLink}</div>`,
+				bindCommandLinks(
+					`<div>Asset ${action}: <strong>${escHtml(def?.name ?? dialogDraft.assetId)}</strong> ${xpLink}</div>`,
+					entryId,
+				),
 				entryId,
 			);
 		}
@@ -777,9 +746,12 @@
 		const label = VOW_DIFFICULTIES.find((d) => d.value === vow.difficulty)?.label ?? vow.difficulty;
 		const md =
 			`Forsook the iron vow **${vow.name || 'Unnamed Vow'}** (${label}) — ` +
-			`[Endure Stress](move:endure-stress?harm=${rank}) (−${rank}) for its rank.`;
+			`[Endure Stress](/move endure-stress ${rank}) (−${rank}) for its rank.`;
 		const entryId = crypto.randomUUID();
-		const html = enrichOutcomeLinks(renderRich(md), entryId, activeCharId ?? '');
+		const html = bindCommandLinks(renderRich(md), entryId, {
+			charId: activeCharId ?? undefined,
+			vowId: vow.id,
+		});
 		appendLog(charTitle('Vow'), html, entryId);
 	}
 
@@ -1186,37 +1158,15 @@
 						commitAssetDialog();
 					}}
 					onclick={(e) => {
-						// Delegate move-links / oracle-links inside asset abilities to
-						// the layout-level dialogs via a custom DOM event. AssetCard
-						// has no internal handler for these; without this delegation
-						// clicking e.g. "Face Danger" inside an ability text is a no-op.
-						const ml = (e.target as HTMLElement).closest('a.move-link') as HTMLElement | null;
-						if (ml) {
-							e.preventDefault();
-							const h = ml.dataset['harm'];
-							document.dispatchEvent(
-								new CustomEvent('ironledger:open-move', {
-									detail: {
-										id: ml.dataset['id'] ?? '',
-										harm: h != null && h !== '' ? Number(h) : undefined,
-									},
-								}),
-							);
-							return;
-						}
-						const ol = (e.target as HTMLElement).closest('a.oracle-link') as HTMLElement | null;
-						if (ol) {
-							e.preventDefault();
-							document.dispatchEvent(
-								new CustomEvent('ironledger:open-oracle', {
-									detail: {
-										key: ol.dataset['oracle'] ?? '',
-										stat: ol.dataset['stat'] ?? '',
-									},
-								}),
-							);
-							return;
-						}
+						// A move or an oracle link in an asset's text opens it, through
+						// the layout-level dialogs (#lib/commands/links.ts). Value
+						// links in an asset's text are for the log, not here.
+						const link = (e.target as HTMLElement).closest(
+							'a.cmd-link[data-verb]',
+						) as HTMLElement | null;
+						if (!link) return;
+						e.preventDefault();
+						reportCommandResult(runLink(readCommandLink(link).cmd, { charId: activeChar?.id }));
 					}}
 				>
 					<AssetCard

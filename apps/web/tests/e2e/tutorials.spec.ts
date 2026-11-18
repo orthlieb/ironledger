@@ -175,7 +175,7 @@ async function takeAsset(page: Page, first: number, total: number, tap = false) 
 	await expectStep(page, 'Take it', n(4));
 	await press(target(page, 'asset-card-add'));
 	await expectStep(page, 'Spend the experience', n(5));
-	await press(page.locator('.xp-cost-link').first());
+	await press(page.locator('a.cmd-link[data-cmd^="/xp-="]').first());
 	await expectStep(page, 'Two more to go', n(6));
 	await expect(target(page, 'char-assets')).toContainText('Hawk');
 	await next(page); // Done
@@ -572,8 +572,8 @@ async function fight(page: Page, total: number, phone = false) {
 	// The roll just made; its momentum taken, its initiative left to Next.
 	await expectStep(page, 'What happened');
 	await expect(highlighted(page)).toContainText('Strong Hit');
-	await press(highlighted(page).locator('a.resource-link'));
-	await expect(highlighted(page).locator('a.resource-link')).toHaveCount(0);
+	await press(highlighted(page).locator('a.cmd-link[data-cmd^="/momentum"]'));
+	await expect(highlighted(page).locator('a.cmd-link[data-cmd^="/momentum"]')).toHaveCount(0);
 	await next(page);
 	await expect(page.getByRole('radio', { name: 'You have initiative' })).toHaveAttribute(
 		'aria-checked',
@@ -600,7 +600,7 @@ async function fight(page: Page, total: number, phone = false) {
 	await roll(page, STRONG, phone);
 	await expectStep(page, 'Harm your foe');
 	await expect(highlighted(page)).toContainText('Inflict double harm');
-	await press(highlighted(page).locator('a.progress-link'));
+	await press(highlighted(page).locator('a.cmd-link[data-cmd*=".progress"]'));
 	await expect(tally).not.toHaveText(progress);
 	await next(page);
 	if (phone) {
@@ -718,7 +718,7 @@ async function rest(page: Page, total: number, phone = false) {
 	await roll(page, STRONG, phone);
 	await expectStep(page, 'Take the health', n(6));
 	await expect(highlighted(page)).toContainText('Strong Hit');
-	await press(highlighted(page).locator('a.resource-link', { hasText: '+2 health' }));
+	await press(highlighted(page).locator('a.cmd-link', { hasText: '+2 health' }));
 	await expect(vital('Health')).toHaveText('4');
 	await next(page);
 
@@ -740,9 +740,9 @@ async function rest(page: Page, total: number, phone = false) {
 
 	// Recuperate and Focus: +1 health, +1 momentum.
 	await expectStep(page, 'Choose', n(12));
-	await press(highlighted(page).locator('a.resource-link', { hasText: '+1 health' }).first());
+	await press(highlighted(page).locator('a.cmd-link', { hasText: '+1 health' }).first());
 	await expect(vital('Health')).toHaveText('5');
-	const focus = highlighted(page).locator('a.resource-link', { hasText: '+1 momentum' });
+	const focus = highlighted(page).locator('a.cmd-link', { hasText: '+1 momentum' });
 	await press(focus);
 	await expect(focus).toHaveCount(0);
 	await next(page);

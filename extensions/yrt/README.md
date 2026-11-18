@@ -12,15 +12,16 @@ Yrt adds a **mana** resource to characters, representing Conclave spellcraft fue
 | -------- | ----- | ----------------- |
 | `mana`   | 0–10  | amber (`#f59e0b`) |
 
-Mana is a valid resource in the interactive-link DSL, written like any other
-resource link (markup in content is the DSL / markdown — never raw HTML):
+Mana is a value like any other, so a link changes it with a command
+(markup in content is markdown with command links — never raw HTML):
 
 ```
-[−1 mana](resource:mana?value=-1)
+[−1 mana](/mana--)
+[+2 mana](/mana+=2)
 ```
 
-It behaves like the standard resources (momentum, health, spirit, supply)
-wherever resource links appear.
+It's held to its declared range (0–10), and typed in the command bar the same
+way (`/mana`, `/mana+=2`).
 
 ---
 

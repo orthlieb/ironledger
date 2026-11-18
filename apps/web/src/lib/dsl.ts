@@ -1,18 +1,19 @@
 // =============================================================================
-// Iron Ledger — Interactive-link DSL for moves & oracles (proof of concept)
+// Iron Ledger — the markdown DSL for moves, assets and oracles
 //
-// Authors write markdown links `[label](scheme:path?query)`; this maps the
-// known schemes to the app's interactive `<a class="…" data-…>` HTML (which
-// `enrichOutcomeLinks` / `resolveHarmLinks` then wire up), and `[text]{.class}`
-// to a class-tagged span (e.g. `.log-only`).
+// Authors write markdown. A link's target is a command
+// (docs/command-language.md → Log links): `[take +1 momentum](/momentum++)`
+// renders as a command link, which the log binds to its entry and runs on a
+// click (#lib/commands/links.ts). `[text]{.class}` tags a span (e.g.
+// `.log-only`). Oracle values also take `[label](roll:…)` blanks, filled by
+// rolling another oracle (below); those aren't links.
 //
-// Query args are parsed **leniently** — `+` stays literal (NOT decoded to a
-// space, as a strict query string would). Resolution happens here on the raw
-// href, never on serialized HTML, so the `&` between args is never seen as
-// `&amp;`.
+// The old link schemes (`resource:`, `progress:`, `move:`, …) are gone: the
+// content linter rejects them, and an old one renders as its plain text.
 // =============================================================================
 
 import { renderNote, renderInline } from './markdown.js';
+import { commandLinkHtml } from './commands/links.js';
 
 export interface DslRef {
 	scheme: string;
@@ -20,8 +21,8 @@ export interface DslRef {
 	args: Record<string, string>;
 }
 
-/** Parse a DSL href `scheme:path?a=1&b=+2` → `{ scheme, path, args }`. Lenient:
- *  no percent-decoding, `+` kept literal. */
+/** Parse a `roll:` href `roll:path?a=1&b=+2` → `{ scheme, path, args }`.
+ *  Lenient: no percent-decoding, `+` kept literal. */
 export function parseDslHref(href: string): DslRef {
 	const colon = href.indexOf(':');
 	const scheme = colon < 0 ? href : href.slice(0, colon);
@@ -43,45 +44,13 @@ export function parseDslHref(href: string): DslRef {
 	return { scheme, path: rest, args };
 }
 
-const attr = (v: string): string => v.replace(/&/g, '&amp;').replace(/"/g, '&quot;');
 const esc = (s: string): string =>
 	s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 
-/** Map one DSL action link to the app's interactive HTML. Class is emitted
- *  **first** so `enrichOutcomeLinks`' `<a\s+class="…"` regex still matches.
- *  Returns null for a scheme this map doesn't own (e.g. `roll:`, handled by the
- *  oracle renderer) so the caller can leave the token untouched. */
-export function dslActionLink(label: string, ref: DslRef): string | null {
-	const { scheme, path, args } = ref;
-	const L = esc(label);
-	switch (scheme) {
-		case 'move': {
-			const harm = args.harm ? ` data-harm="${attr(args.harm)}"` : '';
-			return `<a class="move-link" data-id="move/${attr(path)}"${harm}>${L}</a>`;
-		}
-		case 'resource':
-			return `<a class="resource-link" data-resource="${attr(path)}" data-value="${attr(args.value ?? '')}">${L}</a>`;
-		case 'progress':
-			return `<a class="progress-link" data-track="${attr(path)}" data-value="${attr(args.value ?? '')}">${L}</a>`;
-		case 'countdown':
-			return `<a class="countdown-link" data-track="${attr(path)}" data-value="${attr(args.value ?? '')}">${L}</a>`;
-		case 'debility':
-			return `<a class="debility-link" data-debility="${attr(path)}" data-value="${attr(args.value ?? '')}">${L}</a>`;
-		case 'initiative':
-			return `<a class="initiative-link" data-value="${attr(path)}">${L}</a>`;
-		case 'menace':
-			return `<a class="menace-link" data-value="${attr(path)}">${L}</a>`;
-		case 'oracle':
-			return `<a class="oracle-link" data-oracle="${attr(path)}">${L}</a>`;
-		case 'reset':
-			return `<a class="reset-track-link" data-track="${attr(path)}">${L}</a>`;
-		case 'harm':
-			return `<a class="harm-link" data-resource="${attr(path)}">${L}</a>`;
-		case 'vanquish':
-			return `<a class="vanquish-foe-link">${L}</a>`;
-		default:
-			return null;
-	}
+/** A link's HTML: a command link for a `/command` target; null for anything
+ *  else (a `roll:` blank, an old scheme), which stays as written. */
+export function dslLink(label: string, href: string): string | null {
+	return href.startsWith('/') ? commandLinkHtml(esc(label), href.trim()) : null;
 }
 
 // Placeholder sentinels (private-use chars) survive renderNote's escaping +
@@ -104,7 +73,7 @@ function renderRichWith(md: string | undefined, format: (s: string) => string): 
 	const stash: string[] = [];
 	const protect = (html: string): string => `${P0}${stash.push(html) - 1}${P1}`;
 	let s = md.replace(LINK, (m, label: string, href: string) => {
-		const html = dslActionLink(label, parseDslHref(href));
+		const html = dslLink(label, href);
 		return html == null ? m : protect(html);
 	});
 	// A span's text gets its own markdown: **bold** within a line; across

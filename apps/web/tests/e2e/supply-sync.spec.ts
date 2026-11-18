@@ -6,7 +6,7 @@
  *   • Imported character syncs all chars to max(existing, imported) supply
  *   • Increasing supply on one char syncs all others (+ button)
  *   • Decreasing supply on one char syncs all others (− button)
- *   • Supply resource-link click in the log echoes the change to all chars
+ *   • A supply link clicked in the log echoes the change to all chars
  *   • `/supply=N` in the command bar echoes it to all chars
  *
  * v2: only the active character's vitals are visible at a time. To verify
@@ -98,7 +98,7 @@ async function expectAllCharsSupply(page: Page, expected: number) {
 
 /**
  * An existing character's id, from the BFF. Supply is a party-wide sync, so
- * the specific character a resource-link targets doesn't change the outcome —
+ * the specific character a supply link targets doesn't change the outcome —
  * the first character's id is a valid target.
  */
 async function getActiveCharId(page: Page): Promise<string> {
@@ -242,9 +242,9 @@ test.describe('Party supply sync (v2)', () => {
 		await expectAllCharsSupply(page, 2);
 	});
 
-	// ── Log resource-link click syncs all ─────────────────────────────────────
+	// ── A supply link clicked in the log syncs all ────────────────────────────
 
-	test('supply resource-link click in log syncs all chars', async ({ page }) => {
+	test('a supply link clicked in the log syncs all chars', async ({ page }) => {
 		await ensureCharCount(page, 2);
 
 		await selectSpine(page, 0);
@@ -257,11 +257,11 @@ test.describe('Party supply sync (v2)', () => {
 		const charId = await getActiveCharId(page);
 		expect(charId).toBeTruthy();
 
-		// Inject a fake log entry with a supply resource link for that char.
+		// Inject a fake log entry with a supply link bound to that char.
 		const entryId = 'test-supply-link-entry';
 		await page.evaluate(
 			({ cId, eId }) => {
-				const html = `<div>Resupply: <a class="resource-link" data-resource="supply" data-value="-1" data-entry-id="${eId}" data-char-id="${cId}">−1 supply</a></div>`;
+				const html = `<div>Resupply: <a class="cmd-link" data-cmd="/supply--" data-entry-id="${eId}" data-link="0" data-char-id="${cId}">−1 supply</a></div>`;
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				(window as any).__testLog?.appendLog('Test — Supply', html, eId);
 			},
@@ -269,7 +269,7 @@ test.describe('Party supply sync (v2)', () => {
 		);
 
 		// Log is always visible in v2 (right column). Click the link.
-		const supplyLink = page.locator(`.resource-link[data-entry-id="${entryId}"]`).first();
+		const supplyLink = page.locator(`a.cmd-link[data-entry-id="${entryId}"]`).first();
 		await supplyLink.waitFor({ timeout: 5_000 });
 		await supplyLink.click();
 		await page.waitForTimeout(300);

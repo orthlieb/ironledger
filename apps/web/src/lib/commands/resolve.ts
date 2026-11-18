@@ -64,6 +64,8 @@ export interface Binding {
 	vowId?: string;
 	companionId?: string;
 	selfAssetId?: string;
+	/** What `harm` stands for, when the entry says (Endure Harm's amount). */
+	harm?: number;
 }
 
 export interface World {
@@ -107,6 +109,8 @@ export type Plan =
 			to: number | string;
 			/** Already so: nothing to change, nothing to log. */
 			nothing: boolean;
+			/** A number's target before its range held it. */
+			wanted?: number;
 			title: string;
 			line: string;
 			summary: string;
@@ -407,6 +411,7 @@ export function resolveOwner(
 /** The active foe's harm, if it can deal any. */
 function activeHarm(w: World): Harm | undefined {
 	const f = activeFoe(w);
+	if (w.bound?.harm !== undefined) return { n: w.bound.harm, from: f?.name };
 	if (!f || f.enc.vanquished) return undefined;
 	return { n: w.cat.foe(f.enc).harm, from: f.name };
 }
@@ -452,6 +457,7 @@ function onValue(
 		spec,
 		from: r.from,
 		to: r.to,
+		wanted: r.wanted,
 		nothing: r.nothing,
 		title: logTitle(owner, spec),
 		line: r.line,

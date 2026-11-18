@@ -106,16 +106,19 @@ filtered).
 ### Authoring prose — markdown + link DSL
 
 All authored game text — move outcomes/triggers/notes, asset preambles and
-ability text, oracle values — is written in **markdown + an interactive-link
-DSL**, not raw HTML:
+ability text, oracle values — is written in **markdown with command links**,
+not raw HTML:
 
 - **Formatting** is mini-markdown: `**bold**`, `*italic*`, `-` / `*` bullets,
   `1.` ordered lists, blank-line paragraphs.
-- **Cross-references** are markdown links with a known scheme —
-  `[Pay the Price](move:pay-the-price)`, `[+1 momentum](resource:momentum?value=+1)`,
-  `[Mana Backlash](oracle:manaBacklash)`. Query args parse leniently (`+` stays
-  literal). The full scheme table is in
-  [data-schema.md → Data-Driven Links](data-schema.md#data-driven-links).
+- **A link's target is a command** in the
+  [command language](command-language.md) —
+  `[Pay the Price](/move pay-the-price)`, `[+1 momentum](/momentum++)`,
+  `[Mana Backlash](/oracle manaBacklash)`, `[mark menace](/vow.menace++)`.
+  Name things by id or keyword, never by display name. The forms are in
+  [data-schema.md → Links are commands](data-schema.md#links-are-commands);
+  the lint (`npm run lint:dsl`) checks each one. Oracle values also take
+  `[label](roll:…)` blanks, filled by rolling another oracle.
 - **Context spans** `[…]{.log-only}` / `[…]{.dialog-only}` show text in only the
   log or only the dialog.
 - **Oracle substitution blanks** use the `roll:` scheme —

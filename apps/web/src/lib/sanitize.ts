@@ -16,9 +16,9 @@
  *
  * The log allowlist is deliberately tight: only the tags and attributes
  * the log templates actually need. In particular we permit the `data-*`
- * attributes that drive the interactive log-links (resource / move /
- * oracle / progress / initiative / debility / menace / burn / xp-cost),
- * and the handful of CSS classes used to style them.
+ * attributes of a command link (#lib/commands/links.ts): its command and
+ * what it's bound to. A link saved in an older form loses its data
+ * attributes here, which is fine: old links do nothing now.
  */
 import DOMPurify from 'isomorphic-dompurify';
 
@@ -39,35 +39,30 @@ export const LOG_TAGS = [
 	'h3', // renderNote emits <h3>/<h4>/<h5> for # / ## / ### — used by AI story
 	'h4', //   entries (and any markdown note surfaced in the log). Without these
 	'h5', //   the heading text would survive but flatten to a plain line.
-	's', // <s class="resource-spent"> / <s class="xp-spent"> — written by markLinkSpent
+	's', // <s class="resource-spent"> — a spent link (spendCommandLink)
 ];
 
 export const LOG_ATTRS = [
 	'class',
-	'href', // move-links sometimes point somewhere; xp/failure links use href="#"
+	'href',
 
-	// ── Shared across multiple link types ──────────────────────────────────
-	'data-value', // resource-link, progress-link, initiative-link, menace-link
-	'data-entry-id', // all stateful links (for markLinkSpent + guard checks)
-	'data-char-id', // resource-link, debility-link, failure-link, burn-momentum-link, xp-cost-link
-	'data-exp-id', // progress-link, countdown-link — bind to the expedition the entry was rolled against
-	'data-foe-id', // progress/menace/vanquish links — bind to the foe the entry was rolled against
-
-	// ── Per-link-type data attributes ──────────────────────────────────────
-	'data-resource', // resource-link  — which stat to change (momentum, health, …)
-	'data-track', // progress-link  — which track to mark (combat, journey, delve, …)
-	'data-debility', // debility-link  — which debility to set/clear
-	'data-id', // move-link      — move id to open in MovesDialog
-	'data-harm', // move-link      — Endure Harm/Stress amount, overrides the foe-rank default
-	'data-oracle', // oracle-link    — oracle key to open in OraclesDialog
-	'data-stat', // oracle-link    — stat column pre-selected in the oracle
-	'data-expedition-id', // change-theme/domain-link — which expedition to modify
-	'data-cost', // xp-cost-link   — XP amount to deduct
-	'data-roll-entry-id', // burn-momentum-link — id of the original roll log entry
-	'data-move-id', // burn-momentum-link — move id (used by burnMomentum)
-	'data-action-score', // burn-momentum-link — action score (used by burnMomentum)
-	'data-menace', // kept for forward compat; menace-link currently uses data-value
-	'data-xp', // kept for backwards compat with old saved log entries
+	// ── A command link (#lib/commands/links.ts) ────────────────────────────
+	'data-cmd', // the command a click runs: `/momentum++`, `/move endure-harm`
+	'data-verb', // `move` / `oracle`: a link that opens something (live in dialogs)
+	'data-link', // its place in the entry, so the one clicked is the one struck
+	'data-entry-id', // the entry it belongs to
+	// What it's bound to — the entry's character, foe and expedition, the
+	// vow or companion its move chose, the asset it belongs to, the harm it
+	// was made with, the roll a burn is for, the oracle column to open on.
+	'data-char-id',
+	'data-foe-id',
+	'data-exp-id',
+	'data-vow-id',
+	'data-companion-id',
+	'data-self-id',
+	'data-harm',
+	'data-roll-entry-id',
+	'data-stat',
 ];
 
 export function sanitizeLogHtml(html: string | null | undefined): string {

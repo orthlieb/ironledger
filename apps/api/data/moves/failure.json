@@ -6,13 +6,13 @@
       "name": "Mark Your Failure",
       "category": "Failure",
       "triggerShort": "When you make a move and score a miss.",
-      "trigger": "When you **make a move and score a miss**, [mark a tick](resource:failures?value=+1) on your failure track. If you score a miss when making a progress move, [mark two ticks](resource:failures?value=+2).",
+      "trigger": "When you **make a move and score a miss**, [mark a tick](/failures++) on your failure track. If you score a miss when making a progress move, [mark two ticks](/failures+=2).",
       "strong": "",
       "weak": "",
       "miss": "",
       "notes": "No roll — automatically triggered on any miss. Mark 1 tick on your failure track. On a miss from a progress move (Reach Your Destination, Locate Your Objective, etc.), mark 2 ticks instead.",
       "preconditions": "character",
-      "logBody": "Mark [+1 tick](resource:failures?value=+1) on your failure track.\nMark [+2 ticks](resource:failures?value=+2) if your failure was the result of a progress move.",
+      "logBody": "Mark [+1 tick](/failures++) on your failure track.\nMark [+2 ticks](/failures+=2) if your failure was the result of a progress move.",
       "source": "base",
       "logTitle": "{character} marks a failure"
     },
@@ -29,9 +29,9 @@
           "desc": "Roll against your failure progress track"
         }
       ],
-      "strong": "You commit to making a dramatic change. Take [+3 experience](resource:xp?value=+3) and [clear all progress](reset:failures). Then, choose one:\n- **Adjust your approach:** Discard a single asset, and take 2 experience for each marked ability.\n- **Make an oath:** [Swear an Iron Vow](move:swear-an-iron-vow), and reroll any dice.\n- **Ready your next steps:** Take [+3 momentum](resource:momentum?value=+3).",
-      "weak": "You learn from your mistakes. Take [+2 experience](resource:xp?value=+2) and [clear all progress](reset:failures).",
-      "miss": "You've learned the wrong lessons. Take [+1 experience](resource:xp?value=+1) and [clear all progress](reset:failures). Then, envision how you set off on an ill-fated path.",
+      "strong": "You commit to making a dramatic change. Take [+3 experience](/xp+=3) and [clear all progress](/failures=0). Then, choose one:\n- **Adjust your approach:** Discard a single asset, and take 2 experience for each marked ability.\n- **Make an oath:** [Swear an Iron Vow](/move swear-an-iron-vow), and reroll any dice.\n- **Ready your next steps:** Take [+3 momentum](/momentum+=3).",
+      "weak": "You learn from your mistakes. Take [+2 experience](/xp+=2) and [clear all progress](/failures=0).",
+      "miss": "You've learned the wrong lessons. Take [+1 experience](/xp++) and [clear all progress](/failures=0). Then, envision how you set off on an ill-fated path.",
       "notes": "Progress move — roll the challenge dice against your failure track. No action die. Momentum is ignored. Requires failure track to be +6 or greater. Always clears all failure track progress regardless of outcome.",
       "preconditions": "character & failures >= 6b",
       "progressSource": "failures",

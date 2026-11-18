@@ -285,7 +285,11 @@ test.describe('Command bar — the command language', () => {
 				);
 				log.appendLog(
 					'Burn Momentum',
-					`<p>You may <a class="burn-momentum-link" data-roll-entry-id="${rollId}" data-entry-id="${offerId}" data-char-id="${charId}">burn momentum</a>.</p>`,
+					log.bindCommandLinks(
+						'<p>You may <a class="cmd-link" data-cmd="/burn">burn momentum</a>.</p>',
+						offerId,
+						{ charId, rollId },
+					),
 					offerId,
 				);
 			},
@@ -294,7 +298,7 @@ test.describe('Command bar — the command language', () => {
 
 		await expect(await run(page, '/burn')).toHaveText('Burned momentum (6 → reset 2).');
 		const offer = page.locator(`.log-entry[data-entry-id="${offerId}"]`);
-		await expect(offer.locator('a.burn-momentum-link')).toHaveCount(0);
+		await expect(offer.locator('a.cmd-link')).toHaveCount(0);
 		await expect(offer.locator('s.resource-spent')).toHaveText('burn momentum');
 		await expect(page.locator(`.log-entry[data-entry-id="${rollId}"] .roll-burn`)).toBeVisible();
 		await expect.poll(async () => (await run(page, '/momentum')).textContent()).toBe('Momentum 2');

@@ -44,7 +44,6 @@
 	import type { CollisionItems, CollisionStrategy } from '#lib/components/importCollision.js';
 	import { getActiveDiceCtx } from '#lib/diceContext.svelte.js';
 	import { getActiveFoeId, getActiveExpeditionId } from '#lib/activeContext.svelte.js';
-	import { triggerAction } from '#lib/log.svelte.js';
 	import type { ExportSelection } from '#lib/exportSelection.js';
 	import { CampaignImport } from '#lib/campaignImport.svelte.js';
 	import { CampaignExport } from '#lib/campaignExport.svelte.js';
@@ -116,18 +115,14 @@
 	let expAreaRef = $state<{
 		openChangeThemeForExp(expId: string): void;
 		openChangeDomainForExp(expId: string): void;
-		applyProgress(marks: number, expId?: string): void;
-		applyCountdown(n: number, expId?: string): void;
 	} | null>(null);
 
-	/** Ref to FoesArea — forwards vanquish / menace from log links. */
+	/** Ref to FoesArea. */
 	let foeAreaRef = $state<{
 		selectFoe(id: string): void;
-		vanquishFoe(foeId?: string): void;
-		applyMenace(value: number, foeId?: string): void;
 	} | null>(null);
 
-	/** Active dice context — provides charId + data for LogPanel's link handlers. */
+	/** Active dice context — the active character, for LogPanel's burn. */
 	const activeDiceCtx = $derived(getActiveDiceCtx());
 
 	/** The hidden file input the menu's Import and a dropped file feed. */
@@ -690,36 +685,7 @@
 	     stays in flow — the corresponding expedition is selected and the
 	     change dialog opens. -->
 	<aside class="home-log">
-		<LogPanel
-			ctx={activeDiceCtx}
-			onMoveLink={(moveId, harm) =>
-				document.dispatchEvent(
-					new CustomEvent('ironledger:open-move', { detail: { id: moveId, harm } }),
-				)}
-			onOracleLink={(key, stat) =>
-				document.dispatchEvent(
-					new CustomEvent('ironledger:open-oracle', { detail: { key, stat } }),
-				)}
-			onProgressLink={(track, value, expId, foeId) => {
-				if (track === 'combat') {
-					foeAreaRef?.applyMenace(value, foeId);
-				} else if (track === 'journey' || track === 'delve' || track === 'scene') {
-					expAreaRef?.applyProgress(value, expId);
-				}
-			}}
-			onCountdownLink={(_track, value, expId) => expAreaRef?.applyCountdown(value, expId)}
-			onInitiativeLink={(value, charId) => {
-				const id = charId || activeDiceCtx?.charId;
-				if (id) {
-					const numVal = value === 'character' ? 1 : value === 'foe' ? 2 : 0;
-					triggerAction({ charId: id, type: 'set', key: 'initiative', value: numVal });
-				}
-			}}
-			onMenaceLink={(value, foeId) => foeAreaRef?.applyMenace(value, foeId)}
-			onVanquishFoe={(foeId) => foeAreaRef?.vanquishFoe(foeId)}
-			onChangeTheme={(id) => expAreaRef?.openChangeThemeForExp(id)}
-			onChangeDomain={(id) => expAreaRef?.openChangeDomainForExp(id)}
-		/>
+		<LogPanel ctx={activeDiceCtx} />
 		<CommandBar />
 	</aside>
 </div>

@@ -128,7 +128,7 @@ describe('moveLogTitle', () => {
 });
 
 describe('resolveHarmLinks', () => {
-	const health = '<a class="harm-link" data-resource="health">-harm health</a>';
+	const health = '<a class="cmd-link" data-cmd="/health-=harm">-harm health</a>';
 
 	it('writes the harm in Endure Harm, and the momentum overflow past 0 health', () => {
 		expect(resolveHarmLinks(health, { moveId: 'move/endure-harm', foeHarm: 2, curHealth: 4 })).toBe(
@@ -150,7 +150,7 @@ describe('resolveHarmLinks', () => {
 
 	it("disables the miss clause's links when this blow can't bring health to 0", () => {
 		const clause =
-			'If you are at 0 health, you must mark <a class="debility-link" data-debility="wounded">wounded</a> or roll on the <a class="oracle-link" data-oracle="x">oracle</a>.';
+			'If you are at 0 health, you must mark <a class="cmd-link" data-cmd="/wounded++">wounded</a> or roll on the <a class="cmd-link" data-cmd="/oracle x" data-verb="oracle">oracle</a>.';
 		const safe = resolveHarmLinks(clause, {
 			moveId: 'move/endure-harm',
 			foeHarm: 1,
@@ -179,22 +179,18 @@ describe('burn momentum', () => {
 		expect(burnMomentumOffer({ ...base, momentum: 5 })).toBeNull();
 	});
 
-	it('carries what LogPanel needs to burn it', () => {
+	it('is a /burn link bound to the roll and the character', () => {
 		const html = burnMomentumHtml({
 			rollEntryId: 'r1',
-			entryId: 'b1',
-			moveId: 'move/strike',
 			charId: 'c1',
-			actionScore: 6,
-			c1: 7,
-			c2: 3,
 			momentum: 8,
 			reset: 2,
 			from: 'Weak Hit',
 			to: 'Strong Hit',
 		});
+		expect(html).toContain('data-cmd="/burn"');
 		expect(html).toContain('data-roll-entry-id="r1"');
-		expect(html).toContain('data-action-score="6"');
+		expect(html).toContain('data-char-id="c1"');
 		expect(html).toContain('burn momentum (8 → reset 2)');
 		expect(html).toContain('from <em>Weak Hit</em> to <em>Strong Hit</em>');
 	});
@@ -207,11 +203,12 @@ describe('takeAHiatusHtml', () => {
 			2,
 		);
 		expect(html).toContain(
-			'<a class="debility-link" data-debility="wounded" data-value="0">Clear Wounded</a> · <a class="debility-link" data-debility="shaken" data-value="0">Clear Shaken</a>',
+			'<a class="cmd-link" data-cmd="/wounded--">Clear Wounded</a> · <a class="cmd-link" data-cmd="/shaken--">Clear Shaken</a>',
 		);
-		expect(html).toContain('data-resource="health" data-value="+3">+3 health</a>');
+		expect(html).toContain('data-cmd="/health=5">+3 health</a>');
 		expect(html).not.toContain('+0 spirit');
-		expect(html).toContain('data-resource="momentum" data-value="-3">−3 momentum (reset to 2)');
+		expect(html).toContain('data-cmd="/momentum=2">−3 momentum (reset to 2)');
+		expect(html).toContain('data-cmd="/move advance-a-threat" data-verb="move">Advance a Threat');
 		expect(html).toContain('Advance a Threat');
 	});
 

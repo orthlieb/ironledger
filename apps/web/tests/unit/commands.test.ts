@@ -582,3 +582,29 @@ describe('typeahead', () => {
 		expect(suggest('/foe=Raider#2', world()).top.text).toBe('Enter: Raider becomes the active foe');
 	});
 });
+
+// ---------------------------------------------------------------------------
+// The linter's table of built-in values
+// ---------------------------------------------------------------------------
+
+import { BUILTIN_VALUES } from '@ironledger/shared';
+import { valuesOf } from '../../src/lib/commands/values.js';
+import { vowOwners } from '../../src/lib/commands/resolve.js';
+
+describe('BUILTIN_VALUES, which the content linter checks links against', () => {
+	it('holds the keys the value registry builds, owner by owner', () => {
+		const bare: Catalogue = { ...cat, fields: [], globals: [] };
+		const w = world({ cat: bare });
+		const keys = (o: Parameters<typeof valuesOf>[0]) =>
+			valuesOf(o, bare)
+				.map((v) => v.key)
+				.sort();
+		const table = (k: keyof typeof BUILTIN_VALUES) => Object.keys(BUILTIN_VALUES[k]).sort();
+		expect(keys(w.characters[0]!)).toEqual(table('character'));
+		expect(keys(w.foes[0]!)).toEqual(table('foe'));
+		expect(keys(w.expeditions[0]!)).toEqual(table('journey'));
+		expect(keys(w.expeditions[1]!)).toEqual(table('site'));
+		expect(keys(w.expeditions[2]!)).toEqual(table('scene'));
+		expect(keys(vowOwners(w.characters[0]!)[0]!)).toEqual(table('vow'));
+	});
+});

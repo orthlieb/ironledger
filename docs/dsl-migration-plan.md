@@ -1,5 +1,11 @@
 # Markdown + link-DSL migration plan
 
+> **Superseded.** Links are commands now ([command-language.md → Log
+> links](command-language.md#log-links)): `[+1 momentum](/momentum++)`, not
+> `[+1 momentum](resource:momentum?value=+1)`. The `scheme:` forms below were
+> rewritten to commands and the lint rejects them. This page is kept as the
+> record of the markdown migration.
+
 Move all authored game text — **moves, oracles, assets** (base + extensions) —
 off hand-written HTML and onto one shared renderer (`renderRich`) plus a
 `[label](scheme:path?query)` interactive-link DSL.

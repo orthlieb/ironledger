@@ -1,13 +1,9 @@
 # Command language — spec
 
-**Status: agreed design, being built.** Built so far:
-[conditions](#conditions) (moves, assets and fields use expressions),
-[field declarations](#declaring-fields) (`fields` with `scope`, `writable`
-and `custom`; mana declared once; party fields copied to every character),
-the value registry, and [typed commands](#commands) with
-[typeahead](#typeahead): the command bar runs this language (how, in
-[command-bar.md](command-bar.md)). Log links still use the old link forms
-until stage 3; [Build order](#build-order) says how.
+**Status: built.** Conditions, field declarations, the value registry, typed
+commands with typeahead ([command-bar.md](command-bar.md)), and log links as
+commands, with the Moves dialog asking for a vow or a companion. Where the
+build settled something the design left open, it's said where it applies.
 
 One language for three things:
 
@@ -296,15 +292,23 @@ and fail the build on one that doesn't parse or names nothing.
 
 When the app writes a log entry (a move's outcome, a rolled oracle), each
 link records its command and the character, foe and expedition the entry
-was made for. Clicking it runs the command for that character, against that
-foe and expedition, not whatever is active now. The log line is the one
-typing the command writes, and the link is struck through, spent.
+was made for (plus the vow or companion its move chose, Endure Harm's amount,
+and, for a `/burn` offer, the roll it's offered on). Clicking it runs the
+command for that character, against that foe and expedition, not whatever is
+active now; a binding the entry didn't record (an oracle rolled with no foe)
+falls back to what's active. The log line is the one typing the command
+writes, and the link is struck through, spent.
 
 A link runs only commands that change a value, `/burn`, `/move` and
-`/oracle`. It can't make something active, write a note, mark a story
-section or open help. A link whose command can't run (a read-only field, an
-asset the character no longer has, a deleted foe) says why and stays
-unspent.
+`/oracle` (and `/site.theme`, `/site.domain`, which open the site's picker).
+It can't make something active, write a note, mark a story section or open
+help. A link whose command can't run (a read-only field, an asset the
+character no longer has, a deleted foe) says why in the command bar's status
+line and stays unspent. A `/move` or `/oracle` link opens it even when its
+content pack is off, as a saved log can name one from a pack turned off
+since. Clicking does what the sheet would: the cascades (momentum lost past
+0 health, Face Death at 0, …) follow a link as they follow a change on the
+sheet.
 
 ### Old links
 
@@ -495,16 +499,21 @@ A foe, a journey, a site and a scene can be active, so a move's links reach
 them through the active one. A vow and a companion are never active, so a
 move that acts on one asks for it in the Moves dialog:
 
-| Move                                                                            | Asks for                                | Its links                          |
-| ------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------- |
-| Reach a Milestone                                                               | a vow                                   | `[mark progress](/vow.progress++)` |
-| Fulfill Your Vow                                                                | a vow                                   | Rolls against that vow's progress. |
-| Forsake Your Vow                                                                | a vow                                   | Endure Stress at that vow's rank.  |
-| Advance a Threat (Delve)                                                        | a vow                                   | `[mark menace](/vow.menace++)`     |
-| Companion Endure Harm, and the companion parts of Make Camp, Sojourn and Battle | a companion, when there's more than one | `[-1 health](/companion.health--)` |
+| Move                     | Asks for    | Its links                          |
+| ------------------------ | ----------- | ---------------------------------- |
+| Reach a Milestone        | a vow       | `[mark progress](/vow.progress++)` |
+| Fulfill Your Vow         | a vow       | Rolls against that vow's progress. |
+| Forsake Your Vow         | a vow       | Endure Stress at that vow's rank.  |
+| Advance a Threat (Delve) | a vow       | `[mark menace](/vow.menace++)`     |
+| Companion Endure Harm    | a companion | `[+1 health](/companion.health++)` |
 
-The choice binds `vow` and `companion` in the move's links, as the active
-foe binds `foe`, and the log entry records it like the foe and expedition.
+A move says what it asks for with `"choose": "vow"` or `"choose":
+"companion"`; the lint fails a move that links to `vow` or `companion`
+without it. The choice binds `vow` and `companion` in the move's links, as
+the active foe binds `foe`, and the log entry records it like the foe and
+expedition. Make Camp, Sojourn and Battle say "you and any companions" with
+one link, the character's; they'd need a companion link of their own (a
+change to their text) to ask for a companion too.
 Typed, `vow` and `companion` have nothing to refer to:
 `/vow.menace++` answers "Which vow? Name it: /Avenge Bjorn.menace++".
 

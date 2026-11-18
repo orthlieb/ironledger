@@ -239,6 +239,12 @@ export interface MoveDefinition {
   initiativeDowngrade?: boolean;
   /** When it can be used: a condition expression (docs/command-language.md → Conditions). */
   preconditions?: string;
+  /** What the move acts on, asked for in the Moves dialog: a vow (Reach a
+   *  Milestone, Fulfill Your Vow, Forsake Your Vow, Advance a Threat) or a
+   *  companion (Companion Endure Harm). The choice binds `vow` or `companion`
+   *  in the move's links (docs/command-language.md → Moves that act on a vow
+   *  or a companion). */
+  choose?: 'vow' | 'companion';
   /**
    * Optional log entry title template. Supports placeholders:
    *   {character}   active character's name
@@ -404,3 +410,4 @@ export interface SystemStatus {
 // Condition expressions (docs/command-language.md → Conditions). Plain JS so
 // the build-time content checker can import it from source.
 export * from './condition.js';
+export * from './command.js';

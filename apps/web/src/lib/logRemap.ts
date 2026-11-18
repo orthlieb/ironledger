@@ -5,7 +5,8 @@
 // expedition in its roll data (Burn momentum reads them), and the same ids on
 // its links (`data-char-id` on "+1 failure", `data-foe-id` on a foe's
 // progress, `data-exp-id` / `data-expedition-id` on a journey's or site's),
-// plus its own id on each link (`data-entry-id`, `data-roll-entry-id`).
+// plus its own id on each link (`data-entry-id`, `data-roll-entry-id`), and
+// the binding its roll keeps for a burn (`roll.bind`).
 // Import gives some rows new ids (a character always gets one), so it records
 // old → new per kind as rows land and runs the log through here before it
 // goes up. An id with nothing recorded is left as it is.
@@ -34,7 +35,12 @@ const ATTR_RE = /\b(data-(?:char|foe|exp|expedition|entry|roll-entry)-id)="([^"]
 
 interface RemappableEntry {
 	html: string;
-	roll?: { charId?: string; foeId?: string; expeditionId?: string } | null;
+	roll?: {
+		charId?: string;
+		foeId?: string;
+		expeditionId?: string;
+		bind?: { charId?: string; foeId?: string; expId?: string; rollId?: string };
+	} | null;
 }
 
 /** One entry with every id it names re-pointed through `maps`. */
@@ -53,6 +59,15 @@ export function remapLogEntry<T extends RemappableEntry>(entry: T, maps: LogIdMa
 			...(typeof r.foeId === 'string' ? { foeId: to('foe', r.foeId) } : {}),
 			...(typeof r.expeditionId === 'string' ? { expeditionId: to('exp', r.expeditionId) } : {}),
 		};
+		const b = r.bind;
+		if (b && typeof b === 'object')
+			out.roll.bind = {
+				...b,
+				...(typeof b.charId === 'string' ? { charId: to('char', b.charId) } : {}),
+				...(typeof b.foeId === 'string' ? { foeId: to('foe', b.foeId) } : {}),
+				...(typeof b.expId === 'string' ? { expId: to('exp', b.expId) } : {}),
+				...(typeof b.rollId === 'string' ? { rollId: to('entry', b.rollId) } : {}),
+			};
 	}
 	return out;
 }
