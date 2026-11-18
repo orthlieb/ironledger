@@ -682,3 +682,49 @@ describe('companions: every companion of the active character', () => {
 		expect(labels('/compan', world({ activeCharacterId: 'c2' }))).not.toContain('companions');
 	});
 });
+
+describe('allies and everyone: the other characters, and you with them', () => {
+	it('changes each ally alike, or everyone with you first', () => {
+		expect(says('/allies.spirit++')).toBe('Edda: Spirit 3 → 4; Wolf: Spirit 3 → 4');
+		const p = plan('/everyone.momentum+=2', world());
+		expect(p.kind === 'changes' && p.changes.map((c) => c.owner.id)).toEqual(['c1', 'c2', 'c3']);
+		expect(says('/everyone.momentum+=2')).toBe(
+			'Bjorn: Momentum 2 → 4; Edda: Momentum 2 → 4; Wolf: Momentum 2 → 4',
+		);
+		expect(says('/allies.health-=harm')).toBe(
+			'Edda: Health 4 → 2 (Wolf’s harm); Wolf: Health 4 → 2 (Wolf’s harm)',
+		);
+	});
+
+	it('acts for the character a link is bound to', () => {
+		const w = world({ activeCharacterId: 'c2' });
+		expect(says('/allies.spirit++', w)).toBe('Bjorn: Spirit 3 → 4; Wolf: Spirit 3 → 4');
+	});
+
+	it('says what’s wrong', () => {
+		expect(says('/allies.supply++')).toBe("Supply is the party's: /supply++");
+		expect(says('/allies++')).toBe('Change one of their values: /allies.spirit++');
+		const alone = world({ characters: [world().characters[0]!] });
+		expect(says('/allies.health++', alone)).toBe('Bjorn has no allies.');
+		expect(says('/everyone.health++', alone)).toBe('Bjorn: Health 4 → 5');
+		expect(says('/allies', alone)).toBe('Bjorn has no allies.');
+	});
+
+	it('is offered while typing', () => {
+		expect(rowsOf('/alli')[0]).toMatchObject({
+			label: 'allies',
+			detail: 'every other character — Edda, Wolf',
+			apply: '/allies.',
+		});
+		expect(rowsOf('/every')[0]).toMatchObject({
+			label: 'everyone',
+			detail: 'you and every other character — Bjorn, Edda, Wolf',
+		});
+		expect(rowsOf('/allies.spirit').find((r) => r.label === '++')!.detail).toBe(
+			'Edda: Spirit 3 → 4; Wolf: Spirit 3 → 4',
+		);
+		const alone = world({ characters: [world().characters[0]!] });
+		expect(labels('/alli', alone)).not.toContain('allies');
+		expect(labels('/every', alone)).not.toContain('everyone');
+	});
+});

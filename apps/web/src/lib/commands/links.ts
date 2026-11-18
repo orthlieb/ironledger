@@ -97,6 +97,16 @@ export function bindCommandLinks(html: string, entryId: string, bind: LinkBindin
 	});
 }
 
+/** Give each command link in some HTML a binding it doesn't carry yet,
+ *  before the entry it goes into binds the rest: an asset ability's links
+ *  get `self`, its asset. */
+export function presetCommandLinks(html: string, bind: LinkBinding): string {
+	return html.replace(/<a class="cmd-link"([^>]*)>/g, (_m, rest: string) => {
+		const have = new Set([...rest.matchAll(/\s(data-[a-z-]+)=/g)].map((x) => x[1]!));
+		return `<a class="${CMD_LINK}"${rest}${bindingAttrs(bind, have)}>`;
+	});
+}
+
 /** A clicked link's command, binding, entry and place in it. */
 export function readCommandLink(el: HTMLElement): {
 	cmd: string;
@@ -126,16 +136,19 @@ export function readCommandLink(el: HTMLElement): {
 	};
 }
 
-/** Strike a spent link through in an entry's HTML: the link at that place,
- *  or, unbound, the first with that command. */
+/** Strike a spent link through in an entry's HTML: the link at that place
+ *  with that command (an entry saved before it was bound in one piece can
+ *  hold two links at one place), else the one at that place; unbound, the
+ *  first with that command. */
 export function spendCommandLink(html: string, index: number | undefined, cmd: string): string {
-	const re =
-		index !== undefined
-			? new RegExp(`<a class="cmd-link"(?=[^>]*\\sdata-link="${index}")[^>]*>([\\s\\S]*?)</a>`)
-			: new RegExp(
-					`<a class="cmd-link"(?=[^>]*\\sdata-cmd="${attr(cmd).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}")[^>]*>([\\s\\S]*?)</a>`,
-				);
-	return html.replace(re, (_m, inner: string) => `<s class="resource-spent">${inner}</s>`);
+	const atCmd = `(?=[^>]*\\sdata-cmd="${attr(cmd).replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}")`;
+	const at = index !== undefined ? `(?=[^>]*\\sdata-link="${index}")` : '';
+	const strike = (re: RegExp) =>
+		html.replace(re, (_m, inner: string) => `<s class="resource-spent">${inner}</s>`);
+	const tail = '[^>]*>([\\s\\S]*?)</a>';
+	const both = new RegExp(`<a class="cmd-link"${at}${atCmd}${tail}`);
+	if (both.test(html) || index === undefined) return strike(both);
+	return strike(new RegExp(`<a class="cmd-link"${at}${tail}`));
 }
 
 /** A link's verb, if its command is one (`/move …`, `/oracle …`). */

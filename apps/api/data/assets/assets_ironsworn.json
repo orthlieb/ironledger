@@ -1175,7 +1175,7 @@
         },
         {
           "enabled": false,
-          "text": "When you [Make Camp](/move make-camp) and choose the option to partake, you can create a restorative meal. If you do, you and your companions take +1 health. Any allies who choose to partake also take +1 health, and do not suffer -supply.",
+          "text": "When you [Make Camp](/move make-camp) and choose the option to partake, you can create a restorative meal. If you do, you and [your companions](/companions.health++) take [+1 health](/health++). Any allies who choose to partake also take [+1 health](/allies.health++), and do not suffer -supply.",
           "moves": ["move/make-camp"]
         }
       ],
@@ -1584,7 +1584,7 @@
         },
         {
           "enabled": false,
-          "text": "When you [Make Camp](/move make-camp) and choose the option to relax, you may share a story with your allies or compose a new story if alone. If you do, envision the story you tell and take +1 spirit or +1 momentum. Any allies who choose to relax in your company may also take +1 spirit or +1 momentum.",
+          "text": "When you [Make Camp](/move make-camp) and choose the option to relax, you may share a story with your allies or compose a new story if alone. If you do, envision the story you tell and take [+1 spirit](/spirit++) or [+1 momentum](/momentum++). Any allies who choose to relax in your company may also take [+1 spirit](/allies.spirit++) or [+1 momentum](/allies.momentum++).",
           "moves": ["move/make-camp"]
         },
         {

@@ -24,8 +24,9 @@ import {
 	activeCharacter,
 	activeExpedition,
 	activeFoe,
-	companionOwners,
-	COMPANIONS,
+	groupKeyword,
+	groupOwners,
+	GROUP_KEYWORDS,
 	namedOwners,
 	ownerLabel,
 	ownerRef,
@@ -109,6 +110,13 @@ export const HELP_TOPICS: { id: string; label: string }[] = [
 	{ id: 'verbs', label: 'Moves, oracles, dice, notes' },
 	{ id: 'keys', label: 'Keys and typeahead' },
 ];
+
+/** What each group keyword's row says it is. */
+const GROUP_HINT: Record<(typeof GROUP_KEYWORDS)[number], string> = {
+	companions: 'every companion',
+	allies: 'every other character',
+	everyone: 'you and every other character',
+};
 
 const ROLL_PRESETS: { label: string; detail: string }[] = [
 	{ label: '2d10 1d6', detail: 'action roll: challenge dice and action die' },
@@ -195,17 +203,20 @@ function firstSlot(typed: string, w: World): Suggestion[] {
 			names: [k],
 		});
 	const ch = activeCharacter(w);
-	const companions = ch ? companionOwners(ch, w.cat) : [];
-	if (companions.length)
+	// companions, allies, everyone: when they stand for someone.
+	for (const kw of GROUP_KEYWORDS) {
+		const list = groupOwners(kw, w);
+		if ('error' in list || (kw === 'everyone' && list.length < 2)) continue;
 		rows.push({
 			row: {
-				label: COMPANIONS,
-				detail: `every companion — ${companions.map(ownerLabel).join(', ')}`,
-				icon: 'asset',
-				apply: `/${COMPANIONS}.`,
+				label: kw,
+				detail: `${GROUP_HINT[kw]} — ${list.map(ownerLabel).join(', ')}`,
+				icon: kw === 'companions' ? 'asset' : 'character',
+				apply: `/${kw}.`,
 			},
-			names: [COMPANIONS],
+			names: [kw],
 		});
+	}
 	if (ch)
 		for (const spec of valuesOf(ch, w.cat))
 			rows.push({ row: valueRow(spec, `/${spec.key}`), names: [spec.key, spec.label] });
@@ -491,7 +502,7 @@ function rowsFor(input: string, w: World): Suggestion[] {
 
 	// Typing a value after `owner.`.
 	if (p.dot && p.owner) {
-		const stand = companionsStandIn(p.owner, w);
+		const stand = groupStandIn(p.owner, w);
 		const owner = stand ?? resolveOwner(p.owner, w, undefined);
 		if ('error' in owner) return [];
 		const spec = findValue(owner, valueTyped, w.cat);
@@ -535,18 +546,19 @@ function rowsFor(input: string, w: World): Suggestion[] {
 	return firstSlot(valueTyped, w);
 }
 
-/** `companions` as an owner: its first companion stands in for the rest
+/** A group keyword as an owner: its first member stands in for the rest
  *  (they share their values), so the value and operator rows can be built. */
-function companionsStandIn(n: NamePart, w: World): Owner | undefined {
-	if (n.quoted || n.qualifier || normName(n.text) !== COMPANIONS) return undefined;
-	const ch = activeCharacter(w);
-	return ch ? companionOwners(ch, w.cat)[0] : undefined;
+function groupStandIn(n: NamePart, w: World): Owner | undefined {
+	const kw = groupKeyword(n);
+	if (!kw) return undefined;
+	const list = groupOwners(kw, w);
+	return 'error' in list ? undefined : list[0];
 }
 
 /** The value a parsed command names, if it names one. */
 function specFor(p: Extract<Parsed, { kind: 'value' }>, w: World): ValueSpec | undefined {
 	if (p.owner) {
-		const stand = companionsStandIn(p.owner, w);
+		const stand = groupStandIn(p.owner, w);
 		if (stand) return findValue(stand, p.value.text, w.cat);
 		const o = resolveOwner(p.owner, w, p.value.text);
 		return 'error' in o ? undefined : findValue(o, p.value.text, w.cat);

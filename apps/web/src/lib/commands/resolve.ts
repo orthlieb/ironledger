@@ -87,9 +87,38 @@ export const SELECT_KINDS = ['character', 'foe', 'journey', 'site', 'scene'] as 
 export type SelectKind = (typeof SELECT_KINDS)[number];
 /** Keywords for what a move or a link chooses; typed, they're refused. */
 export const BOUND_KEYWORDS = ['vow', 'companion', 'self'] as const;
-/** Every companion of the active character, at once: Make Camp's "+1 health
- *  for you and any companions". */
-export const COMPANIONS = 'companions';
+/** Several owners at once, each changed alike: `companions` (every
+ *  companion of the active character: Make Camp's "+1 health for you and any
+ *  companions"), `allies` (every other character: "any allies who choose to
+ *  partake also take +1 health") and `everyone` (the active character and
+ *  every ally). */
+export const GROUP_KEYWORDS = ['companions', 'allies', 'everyone'] as const;
+export type GroupKeyword = (typeof GROUP_KEYWORDS)[number];
+
+/** The group keyword a name part is, if it is one. */
+export function groupKeyword(n: NamePart): GroupKeyword | undefined {
+	if (n.quoted || n.qualifier) return undefined;
+	const t = normName(n.text);
+	return (GROUP_KEYWORDS as readonly string[]).includes(t) ? (t as GroupKeyword) : undefined;
+}
+
+/** Who a group keyword stands for, in list order: companions in the
+ *  character's asset order, allies in the character list's. */
+export function groupOwners(kw: GroupKeyword, w: World): Owner[] | { error: string } {
+	const ch = activeCharacter(w);
+	if (!ch) return { error: 'No active character.' };
+	const allies = w.characters.filter((c) => c.id !== ch.id);
+	switch (kw) {
+		case 'companions': {
+			const list = companionOwners(ch, w.cat);
+			return list.length ? list : { error: `${ch.name} has no companions.` };
+		}
+		case 'allies':
+			return allies.length ? allies : { error: `${ch.name} has no allies.` };
+		case 'everyone':
+			return [ch, ...allies];
+	}
+}
 
 // ---------------------------------------------------------------------------
 // Plans
@@ -283,7 +312,7 @@ export function isReserved(name: string, w: World): boolean {
 	return (
 		(SELECT_KINDS as readonly string[]).includes(t) ||
 		(BOUND_KEYWORDS as readonly string[]).includes(t) ||
-		t === COMPANIONS ||
+		(GROUP_KEYWORDS as readonly string[]).includes(t) ||
 		t === 'harm' ||
 		characterValueKeys(w.cat).some((k) => k.toLowerCase() === t)
 	);
@@ -487,21 +516,22 @@ function onValue(
 	};
 }
 
-/** `/companions.health++`: one value of every companion the active
- *  character has, changed alike (or shown, with no operator). */
-function onCompanions(p: Extract<Parsed, { kind: 'value' }>, w: World): Plan {
-	const ch = activeCharacter(w);
-	if (!ch) return error('No active character.');
-	const list = companionOwners(ch, w.cat);
-	if (!list.length) return error(`${ch.name} has no companions.`);
+/** `/companions.health++`, `/allies.spirit++`, `/everyone.momentum+=2`:
+ *  one value of each owner a group keyword stands for, changed alike (or
+ *  shown, with no operator). Each summary names its owner. */
+function onGroup(kw: GroupKeyword, p: Extract<Parsed, { kind: 'value' }>, w: World): Plan {
+	const list = groupOwners(kw, w);
+	if ('error' in list) return error(list.error);
 	const changes: ChangePlan[] = [];
 	const shown: string[] = [];
+	const named = (o: Owner, text: string) => (prefix(o, w) ? text : `${ownerLabel(o)}: ${text}`);
 	for (const o of list) {
 		const spec = findValue(o, p.value.text, w.cat);
 		if (!spec) return error(`${ownerLabel(o)} has no ${p.value.text}.`);
+		if (spec.party) return error(`${spec.label} is the party's: /${spec.key}${opText(p)}`);
 		const one = onValue(o, spec, p, w);
-		if (one.kind === 'change') changes.push(one);
-		else if (one.kind === 'show') shown.push(one.text);
+		if (one.kind === 'change') changes.push({ ...one, summary: named(o, one.summary) });
+		else if (one.kind === 'show') shown.push(named(o, one.text));
 		else return one;
 	}
 	if (!p.op) return { kind: 'show', text: shown.join('; ') };
@@ -582,15 +612,14 @@ function onValueCommand(p: Extract<Parsed, { kind: 'value' }>, w: World): Plan {
 	}
 	if (p.partialOp) return incomplete('Needs an operator: ++ -- += -= = !');
 
-	const isCompanions = (n: NamePart) =>
-		!n.quoted && !n.qualifier && normName(n.text) === COMPANIONS;
-	if (p.owner && isCompanions(p.owner)) return onCompanions(p, w);
-	if (!p.owner && isCompanions(p.value)) {
-		if (p.op) return error(`Change one of their values: /companions.health${opText(p)}`);
-		const ch = activeCharacter(w);
-		if (!ch) return error('No active character.');
-		const list = companionOwners(ch, w.cat);
-		if (!list.length) return { kind: 'show', text: `${ch.name} has no companions.` };
+	const group = p.owner ? groupKeyword(p.owner) : undefined;
+	if (group) return onGroup(group, p, w);
+	const alone = p.owner ? undefined : groupKeyword(p.value);
+	if (alone) {
+		const eg = alone === 'companions' ? 'health' : 'spirit';
+		if (p.op) return error(`Change one of their values: /${alone}.${eg}${opText(p)}`);
+		const list = groupOwners(alone, w);
+		if ('error' in list) return { kind: 'show', text: list.error };
 		return { kind: 'show', text: list.map((o) => showOwner(o, w.cat)).join('; ') };
 	}
 

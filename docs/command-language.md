@@ -117,6 +117,8 @@ active foe's; in a log link, the foe the entry was made against.
 | An asset, by name or id              | `/hawk.health--`, `/companion/hawk.health--`   | One of the active character's assets.        |
 | A companion, by the name you gave it | `/Ash.health--`                                |                                              |
 | `companions`                         | `/companions.health++`                         | Every companion of the active character.     |
+| `allies`                             | `/allies.spirit++`                             | Every other character.                       |
+| `everyone`                           | `/everyone.momentum+=2`                        | The active character and every ally.         |
 | `self` (content only)                | `self.health >= 1`                             | The asset a condition or link belongs to.    |
 | `vow`, `companion` (content only)    | `/vow.menace++`                                | The one chosen in the Moves dialog.          |
 
@@ -138,6 +140,15 @@ asset (the hawk, horse, hound and the rest of the animals, and Kindred); not
 another character, and not an asset that only has health, like Awakening's
 simulacrum, which "is not a companion and may not be healed". A character
 with none answers "Bjorn has no companions."
+
+`allies` is every other character ("everyone but me"; the rules' own word:
+"any allies who choose to partake also take +1 health"), and `everyone` is
+the active character and every ally: `/everyone.momentum+=2` reads "Bjorn:
+Momentum 2 → 4; Edda: Momentum 2 → 4". In a link, "the active character" is
+the one the entry was made for. A party value has one home, so
+`/allies.supply++` is refused like `/Bjorn.supply++`. A move whose allies
+"may each choose" (Make Camp, Sojourn) leaves the choosing to each: its
+links are the roller's, and an ally's choice is typed (`/Edda.health++`).
 
 ### When names collide
 
@@ -528,6 +539,12 @@ Recuperate and Partake and Sojourn's Recuperate link "any companions" to
 `/companions.health++` (`+=2` for Sojourn), beside the character's own
 health, and Take a Hiatus (Delve) writes one link per companion below its
 maximum, bound to it: "Ash +2 health" is `/companion.health=3`.
+
+An asset ability's links that change a value (Herbalist's restorative meal:
+"you and [your companions] take [+1 health]. Any allies who choose to
+partake also take [+1 health]") are clicked in the log: a marked ability
+that names the move is copied into the move's entry, after its outcome
+([data-schema.md → Move Links in Ability Text](data-schema.md#move-links-in-ability-text)).
 
 Typed, `vow` and `companion` have nothing to refer to:
 `/vow.menace++` answers "Which vow? Name it: /Avenge Bjorn.menace++".

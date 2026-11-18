@@ -187,7 +187,13 @@ function checkCommand(cmd, cat, self) {
     else if (['foe', 'journey', 'site', 'scene', 'vow'].includes(o)) v = builtinKind(o, key);
     else if (o === 'companion')
       v = cat.companions.map((a) => assetFieldKind(a, key, cat)).find(Boolean) ?? null;
-    else if (o === 'companions') {
+    else if (o === 'allies' || o === 'everyone') {
+      // Every other character (and, for everyone, the character too): a
+      // character's value, but not the party's, which has one home.
+      if (key === 'supply' || cat.fields.get(key)?.scope === 'party')
+        return `${key} is the party's: /${key}…, with no owner`;
+      v = characterKind(key, cat);
+    } else if (o === 'companions') {
       // Every companion at once: a value each of them has.
       const kinds = cat.companions.map((a) => assetFieldKind(a, key, cat));
       v = kinds.every(Boolean) ? kinds[0] : null;

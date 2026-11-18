@@ -23,6 +23,8 @@ import {
 	stripHtml,
 	tableRollHtml,
 	takeAHiatusHtml,
+	abilityLinksHtml,
+	delveDepthsColumn,
 } from '../../src/lib/moveRoll.js';
 
 const move = (extra: Partial<MoveDefinition> = {}) =>
@@ -241,5 +243,47 @@ describe('takeAHiatusHtml', () => {
 describe('stripHtml', () => {
 	it('drops tags, decodes entities and collapses spaces', () => {
 		expect(stripHtml('<p>Ward &amp; <em>shield</em>\n  it</p>')).toBe('Ward & shield it');
+	});
+});
+
+describe('abilityLinksHtml', () => {
+	const herbalist = {
+		assetId: 'path/herbalist',
+		assetName: 'Herbalist',
+		abilityText:
+			'When you [Make Camp](/move make-camp) and choose to partake, you and [your companions](/companions.health++) take [+1 health](/health++).',
+	};
+	const hawk = {
+		assetId: 'companion/hawk',
+		assetName: 'Hawk',
+		abilityText: 'When you [Undertake a Journey](/move undertake-a-journey), add +1.',
+	};
+
+	it('carries the abilities with a link that changes a value, after the asset’s name', () => {
+		const html = abilityLinksHtml([hawk, herbalist]);
+		expect(html).toBe(
+			'<div class="move-ability"><strong>Herbalist:</strong> When you ' +
+				'<a class="cmd-link" data-cmd="/move make-camp" data-verb="move" data-self-id="path/herbalist">Make Camp</a>' +
+				' and choose to partake, you and ' +
+				'<a class="cmd-link" data-cmd="/companions.health++" data-self-id="path/herbalist">your companions</a>' +
+				' take <a class="cmd-link" data-cmd="/health++" data-self-id="path/herbalist">+1 health</a>.</div>',
+		);
+	});
+
+	it('leaves out an ability that only names moves, and escapes the name', () => {
+		expect(abilityLinksHtml([hawk])).toBe('');
+		expect(abilityLinksHtml([{ ...herbalist, assetName: 'A <b>' }])).toContain(
+			'<strong>A &lt;b&gt;:</strong>',
+		);
+	});
+});
+
+describe('delveDepthsColumn', () => {
+	it('opens the weak-hit oracle on the column of the stat rolled', () => {
+		const html =
+			'<p>Roll on the <a class="cmd-link" data-cmd="/oracle delveDepths" data-verb="oracle">Delve the Depths Weak Hit Oracle</a>.</p>';
+		expect(delveDepthsColumn(html, 'edge')).toBe(
+			'<p>Roll on the <a class="cmd-link" data-cmd="/oracle delveDepths" data-verb="oracle" data-stat="edge">Delve the Depths Weak Hit Oracle (Edge column)</a>.</p>',
+		);
 	});
 });

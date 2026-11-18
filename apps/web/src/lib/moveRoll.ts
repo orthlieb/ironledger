@@ -9,7 +9,7 @@
 // outcome class and label.
 // =============================================================================
 
-import { commandLinkHtml } from './commands/links.js';
+import { commandLinkHtml, linkVerb, presetCommandLinks } from './commands/links.js';
 import type { MoveDefinition } from '@ironledger/shared';
 import { renderRich } from '#lib/dsl.js';
 import { escHtml } from '#lib/markdown.js';
@@ -303,6 +303,53 @@ export function burnMomentumHtml(r: {
 		rollId: r.rollEntryId,
 	});
 	return `<p>You may ${link} to improve this from <em>${r.from}</em> to <em>${r.to}</em>.</p>`;
+}
+
+// ── Delve the Depths ─────────────────────────────────────────────────────────
+
+/** Delve the Depths' weak hit: its oracle link opens on the column of the
+ *  stat rolled, and says which ("… Oracle (Edge column)"). */
+export function delveDepthsColumn(html: string, stat: string): string {
+	const label = stat.charAt(0).toUpperCase() + stat.slice(1);
+	return html.replace(
+		/(<a class="cmd-link" data-cmd="\/oracle delveDepths"[^>]*)>([^<]*)<\/a>/g,
+		(_m, open: string, text: string) =>
+			`${open} data-stat="${escHtml(stat)}">${text} (${escHtml(label)} column)</a>`,
+	);
+}
+
+// ── Asset abilities in the entry ─────────────────────────────────────────────
+
+/** A marked ability of the character's that names the move being made. */
+export interface EntryAbility {
+	assetId: string;
+	assetName: string;
+	abilityText: string;
+}
+
+const MD_LINK = /\[[^\]]*\]\((\/[^)]*)\)/g;
+
+/**
+ * The abilities a move's log entry carries, after its outcome: each marked
+ * ability that names the move and has a link that changes a value
+ * (Herbalist's "you and [your companions] take [+1 health]"), so that link
+ * can be clicked when the move is made. An ability that only names moves
+ * isn't copied. Each link's `self` is its asset; the entry binds the rest.
+ * One `div.move-ability` apiece, with no div inside, so a momentum burn can
+ * carry them over (LogPanel).
+ */
+export function abilityLinksHtml(abilities: EntryAbility[]): string {
+	return abilities
+		.filter((a) => [...a.abilityText.matchAll(MD_LINK)].some((m) => !linkVerb(m[1]!.trim())))
+		.map((a) => {
+			let body = renderRich(a.abilityText).trim();
+			// One paragraph: inline, after the asset's name.
+			const lone = body.match(/^<p>([\s\S]*)<\/p>$/);
+			if (lone && !lone[1]!.includes('<p>')) body = lone[1]!;
+			body = presetCommandLinks(body, { selfId: a.assetId }).replace(/<\/?div[^>]*>/g, '');
+			return `<div class="move-ability"><strong>${escHtml(a.assetName)}:</strong> ${body}</div>`;
+		})
+		.join('');
 }
 
 // ── Take a Hiatus ────────────────────────────────────────────────────────────

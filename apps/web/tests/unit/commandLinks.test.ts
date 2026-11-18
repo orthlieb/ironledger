@@ -9,6 +9,7 @@ import {
 	commandLinkHtml,
 	commandLinksIn,
 	linkVerb,
+	presetCommandLinks,
 	readCommandLink,
 	spendCommandLink,
 } from '../../src/lib/commands/links.js';
@@ -113,6 +114,17 @@ describe('spendCommandLink', () => {
 		expect(out).toContain('<li><s class="resource-spent">+1 health</s></li>');
 	});
 
+	it('strikes the one with that command when two share a place', () => {
+		// Saved before an entry was bound in one piece: two links at place 0.
+		const html =
+			'<a class="cmd-link" data-cmd="/move pay-the-price" data-link="0">Pay the Price</a> ' +
+			'<a class="cmd-link" data-cmd="/failures++" data-link="0">+1 failure</a>';
+		expect(spendCommandLink(html, 0, '/failures++')).toBe(
+			'<a class="cmd-link" data-cmd="/move pay-the-price" data-link="0">Pay the Price</a> ' +
+				'<s class="resource-spent">+1 failure</s>',
+		);
+	});
+
 	it('strikes the first with that command when the link has no place', () => {
 		const html = '<a class="cmd-link" data-cmd="/foe.progress+=2">harm</a>';
 		expect(spendCommandLink(html, undefined, '/foe.progress+=2')).toBe(
@@ -134,5 +146,21 @@ describe('linkVerb and commandLinksIn', () => {
 			{ cmd: '/hawk.name="A&B"', label: 'a &amp; b' },
 			{ cmd: '/momentum++', label: 'x' },
 		]);
+	});
+});
+
+describe('presetCommandLinks', () => {
+	it('gives links a binding before their entry binds the rest', () => {
+		const html = presetCommandLinks(
+			commandLinkHtml('+1', '/health++') + commandLinkHtml('x', '/self.health--', { selfId: 'a' }),
+			{ selfId: 'path/herbalist' },
+		);
+		expect(html).toBe(
+			'<a class="cmd-link" data-cmd="/health++" data-self-id="path/herbalist">+1</a>' +
+				'<a class="cmd-link" data-cmd="/self.health--" data-self-id="a">x</a>',
+		);
+		expect(bindCommandLinks(html, 'e1', { charId: 'c1' })).toContain(
+			'data-self-id="path/herbalist" data-entry-id="e1" data-link="0" data-char-id="c1"',
+		);
 	});
 });

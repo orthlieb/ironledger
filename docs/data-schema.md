@@ -212,23 +212,24 @@ reads the same in any language or content pack. The lint
 one that doesn't parse, names nothing, or uses an operator its value doesn't
 take.
 
-| Link                                                                                          | Does                                                                                                                                    |
-| --------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `[Pay the Price](/move pay-the-price)`                                                        | Opens a move, by its id without `move/`. A number after it is the harm or amount it asks for: `[Endure Stress](/move endure-stress 2)`. |
-| `[Mana Backlash Oracle](/oracle manaBacklash)`                                                | Opens an oracle, by its key.                                                                                                            |
-| `[+1 momentum](/momentum++)`, `[+2 health](/health+=2)`, `[−1 supply](/supply--)`             | Changes a value of the character: momentum, health, spirit, supply (the party's), xp, a stat, a content pack's field (`/mana--`).       |
-| `[mark a tick](/bonds++)`, `[+2 failures](/failures+=2)`, `[clear all progress](/failures=0)` | Bonds and failures: ticks (they have no rank).                                                                                          |
-| `[wounded](/wounded++)`, `[wounded](/wounded--)`                                              | Marks or clears a debility.                                                                                                             |
-| `[You have initiative](/initiative=character)`                                                | Sets initiative: `none`, `character`, `foe`.                                                                                            |
-| `[Inflict your harm](/foe.progress++)`, `[Inflict double harm](/foe.progress+=2)`             | The foe's progress, in marks by its rank (`b` boxes, `t` ticks).                                                                        |
-| `/journey.progress++`, `/site.progress++`, `/scene.progress++`                                | The expedition's progress, by its rank.                                                                                                 |
-| `[mark a countdown segment](/scene.countdown++)`                                              | The scene's countdown.                                                                                                                  |
-| `/foe.vanquished++`, `/journey.complete++`                                                    | Vanquish a foe, complete an expedition (`--` undoes).                                                                                   |
-| `[progress](/vow.progress++)`, `[mark menace](/vow.menace++)`                                 | The vow the Moves dialog asked for: the move needs `"choose": "vow"` (below).                                                           |
-| `[+1 health](/companion.health++)`                                                            | The companion the Moves dialog asked for: `"choose": "companion"`.                                                                      |
-| `[any companions](/companions.health++)`                                                      | Every companion the character has, alike (Make Camp, Sojourn): no `choose`.                                                             |
-| `[-harm health](/health-=harm)`, `[-harm spirit](/spirit-=harm)`                              | Endure Harm / Endure Stress: the dialog shows the amount resolved, and its Apply button applies it.                                     |
-| `/companion/hawk.health--`, `/self.health--`                                                  | An asset's field: by its id, or `self` in the asset's own text.                                                                         |
+| Link                                                                                          | Does                                                                                                                                     |
+| --------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `[Pay the Price](/move pay-the-price)`                                                        | Opens a move, by its id without `move/`. A number after it is the harm or amount it asks for: `[Endure Stress](/move endure-stress 2)`.  |
+| `[Mana Backlash Oracle](/oracle manaBacklash)`                                                | Opens an oracle, by its key.                                                                                                             |
+| `[+1 momentum](/momentum++)`, `[+2 health](/health+=2)`, `[−1 supply](/supply--)`             | Changes a value of the character: momentum, health, spirit, supply (the party's), xp, a stat, a content pack's field (`/mana--`).        |
+| `[mark a tick](/bonds++)`, `[+2 failures](/failures+=2)`, `[clear all progress](/failures=0)` | Bonds and failures: ticks (they have no rank).                                                                                           |
+| `[wounded](/wounded++)`, `[wounded](/wounded--)`                                              | Marks or clears a debility.                                                                                                              |
+| `[You have initiative](/initiative=character)`                                                | Sets initiative: `none`, `character`, `foe`.                                                                                             |
+| `[Inflict your harm](/foe.progress++)`, `[Inflict double harm](/foe.progress+=2)`             | The foe's progress, in marks by its rank (`b` boxes, `t` ticks).                                                                         |
+| `/journey.progress++`, `/site.progress++`, `/scene.progress++`                                | The expedition's progress, by its rank.                                                                                                  |
+| `[mark a countdown segment](/scene.countdown++)`                                              | The scene's countdown.                                                                                                                   |
+| `/foe.vanquished++`, `/journey.complete++`                                                    | Vanquish a foe, complete an expedition (`--` undoes).                                                                                    |
+| `[progress](/vow.progress++)`, `[mark menace](/vow.menace++)`                                 | The vow the Moves dialog asked for: the move needs `"choose": "vow"` (below).                                                            |
+| `[+1 health](/companion.health++)`                                                            | The companion the Moves dialog asked for: `"choose": "companion"`.                                                                       |
+| `[any companions](/companions.health++)`                                                      | Every companion the character has, alike (Make Camp, Sojourn): no `choose`.                                                              |
+| `[+1 health](/allies.health++)`, `/everyone.momentum+=2`                                      | Every other character (`allies`), or the character and every ally (`everyone`), alike. Not a party value: `/allies.supply++` is refused. |
+| `[-harm health](/health-=harm)`, `[-harm spirit](/spirit-=harm)`                              | Endure Harm / Endure Stress: the dialog shows the amount resolved, and its Apply button applies it.                                      |
+| `/companion/hawk.health--`, `/self.health--`                                                  | An asset's field: by its id, or `self` in the asset's own text.                                                                          |
 
 A link can change a value, `/burn`, or open a move, an oracle or a site's
 picker (`/site.theme`). It can't make something active, write a note, mark a
@@ -473,8 +474,16 @@ Each ability object:
 Ability `text` (and `preamble` / `description`) use the same **markdown with
 command links** as move outcomes — a move reference is a `[label](/move <id>)` link. Click
 delegation is wired up in the asset dialog, so move and oracle links in asset
-ability text open them; value links in an asset's text are for the log. See
-[Links are commands](#links-are-commands) for the forms.
+ability text open them. A link that changes a value reads as plain text on
+the card and is clicked in the log instead: when a move is made, each marked
+ability that names it in `moves` and has such a link is copied into the
+move's log entry, after the outcome (`div.move-ability`, "Herbalist: …"),
+its links bound to the entry with `self` as the asset. A momentum burn keeps
+those blocks. An ability that only names moves isn't copied. Herbalist's
+restorative meal reads "you and [your companions](/companions.health++) take
+[+1 health](/health++). Any allies who choose to partake also take
+[+1 health](/allies.health++)". See [Links are commands](#links-are-commands)
+for the forms.
 
 ```text
 <!-- Example: Archer ability 1 -->
@@ -484,7 +493,7 @@ When you [Secure an Advantage](/move secure-an-advantage) by...
 ...you may reroll any dice when you [Strike](/move strike) or [Clash](/move clash).
 ```
 
-each `move:` link compiling to `<a class="move-link" data-id="move/…">…</a>`.
+each link rendering as `<a class="cmd-link" data-cmd="/move …" data-verb="move">…</a>`.
 
 **Rules:**
 

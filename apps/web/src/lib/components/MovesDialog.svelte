@@ -36,6 +36,8 @@
 		stripHtml,
 		tableRollHtml,
 		takeAHiatusHtml,
+		abilityLinksHtml,
+		delveDepthsColumn,
 	} from '#lib/moveRoll.js';
 	import {
 		loadMoves,
@@ -576,28 +578,23 @@
 			// Delve the Depths weak hit: inject the rolled stat into the oracle-link so
 			// clicking it opens the oracle with the correct column pre-selected.
 			// Also append "(Edge column)" etc. to the link text.
-			if (isDelveDepthsMove) {
-				outcomeHtml = outcomeHtml.replace(
-					/(data-cmd="\/oracle delveDepths")>(Delve the Depths Weak Hit Oracle)<\/a>/g,
-					`$1 data-stat="${stat}">$2 (${statLabel} column)</a>`,
-				);
-			}
-			outcomeHtml = bindCommandLinks(outcomeHtml, entryId, entryBinding());
+			if (isDelveDepthsMove) outcomeHtml = delveDepthsColumn(outcomeHtml, stat);
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
+		// The character's abilities for this move that have links to click.
+		parts.push(abilityLinksHtml(relevantAbilities));
 
 		// On a miss for a character move, offer +1 failure (Delve-only mechanic)
 		if (!hits1 && !hits2 && isSourceEnabled('delve')) {
 			parts.push(
 				`<div class="move-failure-row">` +
-					bindCommandLinks(commandLinkHtml('+1 failure', '/failures++'), entryId, {
-						charId: ctx.charId,
-					}) +
+					commandLinkHtml('+1 failure', '/failures++', { charId: ctx.charId }) +
 					`</div>`,
 			);
 		}
 
-		const html = parts.join('');
+		// Bound in one piece, so each link's place in the entry is its own.
+		const html = bindCommandLinks(parts.join(''), entryId, entryBinding());
 
 		close();
 		await animateDice([
@@ -690,11 +687,11 @@
 				curHealth: resourceValue('health'),
 				curSpirit: resourceValue('spirit'),
 			});
-			outcomeHtml = bindCommandLinks(outcomeHtml, entryId, entryBinding());
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
+		parts.push(abilityLinksHtml(relevantAbilities));
 
-		const html = parts.join('');
+		const html = bindCommandLinks(parts.join(''), entryId, entryBinding());
 
 		close();
 		await animateDice([

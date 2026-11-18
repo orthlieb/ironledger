@@ -104,6 +104,10 @@
 				syntax: '/companions.health++',
 				hint: 'Every companion of the active character at once (not other characters).',
 			},
+			{
+				syntax: '/allies.spirit++',
+				hint: 'Every other character at once; /everyone.spirit++ is you and them.',
+			},
 			{ syntax: '/Avenge Bjorn.menace++', hint: 'A vow’s progress, menace or status.' },
 			{
 				syntax: '/foe.vanquished++',

@@ -435,8 +435,9 @@ export const BUILTIN_VALUES = {
 };
 
 /** Keywords a content link names an owner by: the active one of a kind,
- *  what a move or link chose (vow, companion) or belongs to (self), or every
- *  companion of the character (companions). */
+ *  what a move or link chose (vow, companion) or belongs to (self), or a
+ *  group, each changed alike: every companion of the character (companions),
+ *  every other character (allies), the character and every ally (everyone). */
 export const OWNER_KEYWORDS = /** @type {const} */ ([
   'character',
   'foe',
@@ -446,6 +447,8 @@ export const OWNER_KEYWORDS = /** @type {const} */ ([
   'vow',
   'companion',
   'companions',
+  'allies',
+  'everyone',
   'self',
 ]);
 
