@@ -15,6 +15,7 @@
 // =============================================================================
 
 import type { CatalogueSource } from '#lib/types.js';
+import { fetchCatalogue } from '#lib/catalogueFetch.js';
 import {
 	isSourceEnabled,
 	loadExtensions,
@@ -209,7 +210,7 @@ async function fetchOracles(): Promise<void> {
 		// will render one frame showing suppressed oracles before the
 		// registry lands. Both fetches happen in parallel — no serialization
 		// cost — but the store's public state waits for both.
-		const [res] = await Promise.all([fetch('/api/catalogue/oracles'), loadExtensions()]);
+		const [res] = await Promise.all([fetchCatalogue('/api/catalogue/oracles'), loadExtensions()]);
 		if (!res.ok) throw new Error(`Oracle fetch failed: ${res.status}`);
 
 		const json = (await res.json()) as { oracles: unknown[] };

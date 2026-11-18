@@ -21,6 +21,7 @@
 
 import type { ExtensionInfo } from '#lib/types.js';
 import type { PackChoice } from '#lib/packChoices.js';
+import { fetchCatalogue } from '#lib/catalogueFetch.js';
 
 /** Where a browser kept its choices before they moved to the account. */
 const legacyKey = (id: string) => `ironledger:expansion:${id}`;
@@ -131,7 +132,7 @@ export async function loadExtensions(): Promise<void> {
 	if (_loaded) return;
 	_loaded = true;
 	try {
-		const res = await fetch('/api/catalogue/extensions');
+		const res = await fetchCatalogue('/api/catalogue/extensions');
 		if (!res.ok) {
 			_loaded = false;
 			return;

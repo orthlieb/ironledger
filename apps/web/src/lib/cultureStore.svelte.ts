@@ -14,6 +14,7 @@
 // =============================================================================
 
 import type { Culture } from '#lib/settlement-kit/generate.js';
+import { fetchCatalogue } from '#lib/catalogueFetch.js';
 import {
 	isSourceEnabled,
 	loadExtensions,
@@ -32,7 +33,10 @@ let _loading: Promise<void> | null = null;
 export function loadCultures(): Promise<void> {
 	_loading ??= (async () => {
 		try {
-			const [res] = await Promise.all([fetch('/api/catalogue/cultures'), loadExtensions()]);
+			const [res] = await Promise.all([
+				fetchCatalogue('/api/catalogue/cultures'),
+				loadExtensions(),
+			]);
 			if (!res.ok) throw new Error(String(res.status));
 			_cultures = ((await res.json()) as { cultures: Culture[] }).cultures;
 			_loaded = true;
