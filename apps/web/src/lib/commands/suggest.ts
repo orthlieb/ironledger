@@ -195,6 +195,25 @@ function firstSlot(typed: string, w: World): Suggestion[] {
 	if (ch)
 		for (const spec of valuesOf(ch, w.cat))
 			rows.push({ row: valueRow(spec, `/${spec.key}`), names: [spec.key, spec.label] });
+	// The active foe's and expedition's values, through their keyword, so
+	// `/pro` offers `foe.progress`: the same few keys as the character's.
+	const foe = activeFoe(w);
+	const exp = activeExpedition(w);
+	const actives: [string, Owner][] = [];
+	if (foe) actives.push(['foe', foe]);
+	if (exp) actives.push([exp.kind, exp]);
+	for (const [kw, o] of actives)
+		for (const spec of valuesOf(o, w.cat)) {
+			const key = `${kw}.${spec.key}`;
+			rows.push({
+				row: {
+					...valueRow(spec, `/${key}`),
+					label: key,
+					detail: `${o.name} — ${spec.label} ${valueText(spec)}`,
+				},
+				names: [key, spec.key, spec.label],
+			});
+		}
 	for (const v of VERBS)
 		rows.push({
 			row: {
@@ -249,15 +268,18 @@ function operatorSlot(target: string, spec: ValueSpec, partial: string, w: World
 		rows.push({ label, detail, icon: 'op', apply });
 	switch (spec.kind) {
 		case 'number':
-		case 'track':
+		case 'track': {
+			// In a fight, health most often takes the foe's harm: that comes
+			// first, so `/he`, Tab, Tab, Enter takes it.
+			const foe = activeFoe(w);
+			if (spec.key === 'health' && foe && !foe.enc.vanquished) add('-=harm', result('-=', 'harm'));
 			add('++', result('++'));
 			add('--', result('--'));
 			add('+=', spec.kind === 'track' ? 'add marks (b boxes, t ticks)' : 'add an amount');
 			add('-=', spec.kind === 'track' ? 'take away marks' : 'take away an amount');
-			if (spec.kind === 'number' && activeFoe(w) && !activeFoe(w)!.enc.vanquished)
-				add('-=harm', result('-=', 'harm'));
 			add('=', 'set it');
 			break;
+		}
 		case 'bool':
 			add('++', result('++'));
 			add('--', result('--'));

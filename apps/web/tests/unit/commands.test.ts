@@ -505,6 +505,14 @@ describe('typeahead', () => {
 		expect(ghostText('/he', he[0])).toBe('alth');
 	});
 
+	it('offers the active foe’s and expedition’s values through their keyword', () => {
+		const pro = rowsOf('/pro');
+		expect(pro.map((r) => r.apply)).toEqual(['/foe.progress', '/scene.progress']);
+		expect(pro[0]!.detail).toBe('Wolf — Progress 2 boxes, 2 ticks');
+		expect(labels('/foe.progress')[0]).toBe('++');
+		expect(rowsOf('/foe.progress')[0]!.detail).toBe('Progress 2 boxes, 2 ticks → 4 boxes, 2 ticks');
+	});
+
 	it('offers an owner with its dot, written so it names one thing', () => {
 		expect(rowsOf('/As').find((r) => r.label === 'Ash')).toMatchObject({
 			detail: 'Hawk (companion)',
@@ -515,10 +523,16 @@ describe('typeahead', () => {
 	});
 
 	it('offers the operators that fit, each with its result', () => {
+		// With a foe active, health's first operator takes its harm.
 		const ops = rowsOf('/health');
-		expect(ops.map((r) => r.label)).toEqual(['++', '--', '+=', '-=', '-=harm', '=']);
-		expect(ops[0]).toMatchObject({ detail: 'Health 4 → 5', apply: '/health++' });
-		expect(ops[4]!.detail).toBe('Health 4 → 2 (Wolf’s harm)');
+		expect(ops.map((r) => r.label)).toEqual(['-=harm', '++', '--', '+=', '-=', '=']);
+		expect(ops[0]).toMatchObject({
+			detail: 'Health 4 → 2 (Wolf’s harm)',
+			apply: '/health-=harm',
+		});
+		expect(ops[1]).toMatchObject({ detail: 'Health 4 → 5', apply: '/health++' });
+		expect(labels('/health', world({ activeFoeId: null }))[0]).toBe('++');
+		expect(labels('/momentum')).toEqual(['++', '--', '+=', '-=', '=']);
 		expect(labels('/health+')).toEqual(['++', '+=']);
 		expect(labels('/wounded')).toEqual(['++', '--', '!']);
 		expect(rowsOf('/vowCount')).toMatchObject([{ label: '(show)', icon: 'lock' }]);

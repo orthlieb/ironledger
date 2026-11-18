@@ -312,23 +312,46 @@ test.describe('Command bar — the command language', () => {
 		await expect(page.locator('.cb-ghost')).toContainText('alth');
 		await expect(page.locator('.cb-top')).toHaveText('Enter: /health');
 
+		// With a foe active, health's first operator takes its harm: Tab takes
+		// the value, Tab again the operator, Enter runs it.
 		await bar.press('Tab');
 		await expect(bar).toHaveValue('/health');
 		await expect(page.locator('.cb-sugg-label')).toHaveText([
+			'-=harm',
 			'++',
 			'--',
 			'+=',
 			'-=',
-			'-=harm',
 			'=',
 		]);
-		await expect(page.locator('.cb-sugg-active .cb-sugg-hint')).toHaveText('Health 4 → 5');
+		await expect(page.locator('.cb-sugg-active .cb-sugg-hint')).toHaveText(
+			'Health 4 → 2 (Wolf’s harm)',
+		);
+		await expect(page.locator('.cb-ghost')).toContainText('-=harm');
+		await bar.press('Tab');
+		await expect(bar).toHaveValue('/health-=harm');
+		await bar.press('Enter');
+		await expect(page.locator('.cb-status')).toHaveText('Health 4 → 2 (Wolf’s harm)');
+		await expect(bar).toHaveValue('');
 
-		// ↓ to `--`, Enter takes it and, as it's a whole command, runs it.
+		// ↓ picks another operator; Enter takes it and, as it's a whole
+		// command, runs it.
+		await bar.pressSequentially('/health');
 		await bar.press('ArrowDown');
 		await bar.press('Enter');
-		await expect(page.locator('.cb-status')).toHaveText('Health 4 → 3');
-		await expect(bar).toHaveValue('');
+		await expect(page.locator('.cb-status')).toHaveText('Health 2 → 3');
+
+		// The active foe's track the same way: /pro, Tab, Tab, Enter marks
+		// progress by its rank (Dangerous: 8 ticks).
+		await bar.pressSequentially('/pro');
+		await expect(page.locator('.cb-sugg-active .cb-sugg-label')).toHaveText('foe.progress');
+		await bar.press('Tab');
+		await bar.press('Tab');
+		await expect(bar).toHaveValue('/foe.progress++');
+		await bar.press('Enter');
+		await expect(page.locator('.cb-status')).toHaveText(
+			'Wolf: Progress 2 boxes, 2 ticks → 4 boxes, 2 ticks',
+		);
 
 		// An owner's row brings its dot; its values come next.
 		await bar.pressSequentially('/As');
@@ -339,7 +362,7 @@ test.describe('Command bar — the command language', () => {
 		// ↑ in an empty bar brings back the last command run.
 		await bar.fill('');
 		await bar.press('ArrowUp');
-		await expect(bar).toHaveValue('/health--');
+		await expect(bar).toHaveValue('/foe.progress++');
 
 		// /move opens the Moves dialog at the move.
 		await run(page, '/move face danger');

@@ -46,16 +46,16 @@ are gone, with no aliases.
 Nobody should have to remember the syntax. The suggestion strip above the
 input follows the command slot by slot:
 
-| Typed so far                  | Suggests                                                                                                                                                                                    |
-| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/`, `/he`                    | The kind keywords (with what's active), the active character's values (with their values), the verbs, and the names: characters, foes, expeditions, the active character's vows and assets. |
-| `/hawk.`                      | That owner's values.                                                                                                                                                                        |
-| `/health`                     | The operators that fit, each with its result: `++ Health 4 → 5`, `-=harm Health 4 → 2 (Wolf’s harm)`. A read-only value shows only "(show)".                                                |
-| `/initiative=`                | The options, the current one ticked; a field that takes its own values adds "Use “…”".                                                                                                      |
-| `/foe=`                       | The foes, the active one ticked, two of a name numbered (`Raider#2`).                                                                                                                       |
-| `/foe.progress+=2`            | The units with what each comes to: `2` (marks), `2b`, `2t`.                                                                                                                                 |
-| `/move `, `/oracle `          | Moves (those that can't be made now greyed, saying why) or oracles.                                                                                                                         |
-| `/roll `, `/story `, `/help ` | Dice presets; `start`, `end`, `write`; help topics.                                                                                                                                         |
+| Typed so far                  | Suggests                                                                                                                                                                                                                                                                                        |
+| ----------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `/`, `/he`, `/pro`            | The kind keywords (with what's active), the active character's values (with their values), the active foe's and expedition's values through their keyword (`foe.progress`, `scene.countdown`), the verbs, and the names: characters, foes, expeditions, the active character's vows and assets. |
+| `/hawk.`                      | That owner's values.                                                                                                                                                                                                                                                                            |
+| `/health`                     | The operators that fit, each with its result: `++ Health 4 → 5`. With a foe active, health's first is `-=harm Health 4 → 2 (Wolf’s harm)`. A read-only value shows only "(show)".                                                                                                               |
+| `/initiative=`                | The options, the current one ticked; a field that takes its own values adds "Use “…”".                                                                                                                                                                                                          |
+| `/foe=`                       | The foes, the active one ticked, two of a name numbered (`Raider#2`).                                                                                                                                                                                                                           |
+| `/foe.progress+=2`            | The units with what each comes to: `2` (marks), `2b`, `2t`.                                                                                                                                                                                                                                     |
+| `/move `, `/oracle `          | Moves (those that can't be made now greyed, saying why) or oracles.                                                                                                                                                                                                                             |
+| `/roll `, `/story `, `/help ` | Dice presets; `start`, `end`, `write`; help topics.                                                                                                                                                                                                                                             |
 
 The **top row** says what <kbd>Enter</kbd> does with the input as it stands
 ("Enter: Health 4 → 2", "Enter: Wolf becomes the active foe", or the error
@@ -64,6 +64,12 @@ what Enter will complete it to ("Enter: /health").
 
 **Ghost text**: the rest of the highlighted suggestion shows greyed after
 the caret.
+
+**The quick paths in a fight**: `/he`, Tab, Tab, Enter takes the active
+foe's harm (Tab takes `health`, Tab again its first operator, `-=harm`);
+`/pro`, Tab, Tab, Enter marks progress on the active foe by its rank
+(`/foe.progress++`). Enter on a value alone only shows it: naming a value
+never changes it.
 
 **Keys**
 

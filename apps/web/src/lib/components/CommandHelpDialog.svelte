@@ -166,6 +166,14 @@
 			},
 			{ syntax: 'Esc', hint: 'Clear the bar.' },
 			{
+				syntax: '/he ⇥ ⇥ ↵',
+				hint: 'In a fight: take the active foe’s harm. With a foe active, health’s first operator is -=harm.',
+			},
+			{
+				syntax: '/pro ⇥ ⇥ ↵',
+				hint: 'Mark progress on the active foe by its rank (/foe.progress++).',
+			},
+			{
 				syntax: 'Phone',
 				hint: 'Tap a suggestion to take it. The operator keys (++ -- += -= = ! .) sit under the suggestions.',
 			},
