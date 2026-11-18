@@ -1,11 +1,15 @@
 /**
  * @ironledger/shared
  *
- * TypeScript types shared between the API and the web frontend.
+ * TypeScript types shared between the API and the web frontend, plus the
+ * condition and command parsers (plain JS, re-exported at the bottom).
  * Both apps import from here — no duplication, no drift.
  *
  * Rule: this package must have ZERO runtime dependencies.
- * It contains only type definitions, never executable logic.
+ *
+ * Imports resolve to the compiled, gitignored `dist/`: `npm install` builds
+ * it (the `prepare` script), and the web app's dev, build, check and test
+ * scripts rebuild it first, so a change here reaches them without a step.
  */
 
 // ---------------------------------------------------------------------------
