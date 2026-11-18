@@ -163,6 +163,12 @@ jobs:
       - name: Build API
         run: npm run build --workspace=apps/api
 
+      # apps/web imports runtime code (the condition + command parsers) from
+      # @ironledger/shared, whose package exports point at its gitignored
+      # dist/. Build it first or Vite can't resolve the import.
+      - name: Build shared package
+        run: npm run build --workspace=packages/shared
+
       - name: Build web
         # The web server below is plain http on localhost, so bake that in as
         # the app's origin (vite.config.ts → paths.origin). Without it
