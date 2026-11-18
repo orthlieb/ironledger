@@ -35,7 +35,7 @@ ironledger/
     api/          Fastify REST API (port 3000)
     web/          SvelteKit frontend (port 5173 dev / 3001 prod)
   packages/
-    shared/       Shared TypeScript types and game data
+    shared/       Shared TypeScript types, condition and command parsers
   infra/
     nginx/        Production Nginx config
     scripts/      Server setup, deploy, backup scripts
@@ -56,7 +56,7 @@ ironledger/
 ```bash
 # 1. Clone and install
 git clone <repo-url> && cd ironledger
-npm install
+npm install       # also builds packages/shared, which the web app imports
 
 # 2. Start database services (Docker)
 docker compose up -d
