@@ -169,6 +169,10 @@
 			},
 			{ syntax: '→', hint: 'At the end of the input, take the greyed rest of the suggestion.' },
 			{
+				syntax: 'Space',
+				hint: 'Partway through a word, take the greyed rest of it, as a phone keyboard does. Backspace straight after puts back what you typed. Once a word is whole, Space is a space.',
+			},
+			{
 				syntax: '↑ ↓',
 				hint: 'Move through the suggestions. In an empty bar, step through the commands you’ve run on this device.',
 			},
@@ -187,7 +191,7 @@
 			},
 			{
 				syntax: 'Phone',
-				hint: 'Tap a suggestion to take it. The operator keys (++ -- += -= = ! .) sit under the suggestions.',
+				hint: 'Tap a suggestion to take it, or press Space partway through a word. The ↵ button by the bar (or the keyboard’s send key) is Enter. The operator keys (++ -- += -= = ! .) sit under the suggestions.',
 			},
 		],
 	};

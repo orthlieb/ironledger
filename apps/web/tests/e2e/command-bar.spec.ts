@@ -11,7 +11,9 @@
  *     and a read-only field refused;
  *   • typeahead: Tab completes slot by slot, the top row says what Enter
  *     does, Enter runs, ↑ recalls; /move and /help open their dialogs;
- *   • on a phone: the operator keys, and a tap taking a suggestion.
+ *   • on a phone: the operator keys, a tap taking a suggestion, Space
+ *     taking the grey rest of a word (Backspace straight after undoing it),
+ *     and the ↵ button doing what Return does.
  */
 import { test, expect, type Page } from '@playwright/test';
 import {
@@ -312,6 +314,8 @@ test.describe('Command bar — the command language', () => {
 		const bar = page.locator('.cb-input');
 		await bar.click();
 		await bar.pressSequentially('/he');
+		// The ↵ button is a phone's; a desktop has Enter.
+		await expect(page.locator('.cb-enter-btn')).toBeHidden();
 		await expect(page.locator('.cb-sugg-active .cb-sugg-label')).toHaveText('health');
 		await expect(page.locator('.cb-ghost')).toContainText('alth');
 		await expect(page.locator('.cb-top')).toHaveText('Enter: /health');
@@ -404,5 +408,48 @@ test.describe('Command bar — on a phone', () => {
 		await expect(page.locator('.cb-top')).toHaveText('Enter: Momentum 2 → 4');
 		await bar.press('Enter');
 		await expect(page.locator('.cb-status')).toHaveText('Momentum 2 → 4');
+	});
+
+	test('Space takes the grey rest of a word, as a phone keyboard does', async ({ page }) => {
+		await openHome(page);
+		const bar = page.locator('.cb-input');
+		await bar.tap();
+		await bar.pressSequentially('/mome');
+		await expect(page.locator('.cb-ghost')).toContainText('ntum');
+		await bar.press('Space');
+		await expect(bar).toHaveValue('/momentum');
+
+		// Backspace straight after puts back what was typed, with the space.
+		await bar.press('Backspace');
+		await expect(bar).toHaveValue('/mome ');
+
+		// Once a word is whole, Space is a space: typing every letter, spaces
+		// and all, never trips it.
+		await bar.fill('');
+		await bar.pressSequentially('/move face danger');
+		await expect(bar).toHaveValue('/move face danger');
+		await bar.fill('');
+		await bar.pressSequentially('/momentum += 2');
+		await expect(bar).toHaveValue('/momentum += 2');
+		await expect(page.locator('.cb-top')).toHaveText('Enter: Momentum 2 → 4');
+	});
+
+	test('the ↵ button does what Return does', async ({ page }) => {
+		await openHome(page);
+		const bar = page.locator('.cb-input');
+		const enter = page.getByRole('button', { name: 'Enter', exact: true });
+		await expect(enter).toBeDisabled();
+		await bar.tap();
+		// An unfinished command: ↵ takes the suggestion, as Return does…
+		await bar.pressSequentially('/mome');
+		await enter.tap();
+		await expect(bar).toHaveValue('/momentum');
+		await expect(bar).toBeFocused();
+		// …and a whole one runs.
+		await bar.pressSequentially('++');
+		await enter.tap();
+		await expect(page.locator('.cb-status')).toHaveText('Momentum 2 → 3');
+		await expect(bar).toHaveValue('');
+		await expect(enter).toBeDisabled();
 	});
 });

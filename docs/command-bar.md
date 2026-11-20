@@ -79,6 +79,14 @@ never changes it.
 - <kbd>Tab</kbd> — take the highlighted suggestion. An owner brings its dot,
   so its values come next.
 - <kbd>→</kbd> at the end of the input — take the ghost text.
+- <kbd>Space</kbd> partway through a word — take the ghost text, as a phone
+  keyboard's inline prediction does: `/mome` + Space is `/momentum`. Only
+  while the ghost text carries on the word typed (the last character typed
+  and the ghost's first are both part of a word); once the word is whole the
+  ghost goes on with a space or an operator (`/move face` + ` danger`,
+  `/health` + `-=harm`), and Space is a space, so typing every letter never
+  trips it. <kbd>Backspace</kbd> straight after puts back what was typed, with
+  the space: for a value of your own that starts like one of the options.
 - <kbd>↑</kbd> / <kbd>↓</kbd> — move through the suggestions. In an empty bar
   they step through the commands run before (newest first, kept in
   `localStorage` under `ironledger:command-history`, 50 at most).
@@ -88,9 +96,17 @@ never changes it.
   highlight with ↑/↓ first makes Enter take that row.
 - <kbd>Esc</kbd> — clear the bar.
 
-**On a phone** (a coarse pointer) a tap on a row takes it, as Tab does, and a
-row of operator keys (`++` `--` `+=` `-=` `=` `!` `.`) sits under the
-suggestions, since phone keyboards bury those characters.
+**On a phone** (a coarse pointer) a tap on a row takes it, as Tab does;
+Space partway through a word works as above; a **↵ button** by the input is
+Enter (greyed while the bar is empty), as is the keyboard's Return key, which
+reads "send" (`enterkeyhint`); and a row of operator keys (`++` `--` `+=` `-=`
+`=` `!` `.`) sits under the suggestions, since phone keyboards bury those
+characters. The ↵ button and the operator keys keep the keyboard up (they
+don't take focus). Autocorrect is off while the bar holds a command, so the
+keyboard doesn't "fix" `/mome` before Space or Return sees it. Space is
+caught on `beforeinput`, which an Android keyboard finishing a word may not
+let us cancel: then the space lands and the input event swaps it for the
+suggestion.
 
 ## How it's built
 
