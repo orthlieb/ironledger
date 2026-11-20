@@ -10,7 +10,9 @@
 	 * plan behind it comes from #lib/commands/resolve.ts and runs through
 	 * #lib/commands/run.svelte.ts.
 	 *
-	 * Keys: Tab (or → at the end) takes the highlighted suggestion; ↑/↓ move
+	 * Keys: Tab (or → at the end) takes the highlighted suggestion; Space
+	 * takes it partway through a word, as a phone keyboard's inline prediction
+	 * does, and Backspace straight after puts back what was typed; ↑/↓ move
 	 * through the suggestions, or through the commands run before when the
 	 * input is empty; Enter runs a whole command, else takes the suggestion;
 	 * Esc clears. On a phone a tap on a row is Tab, and a row of operator
@@ -189,6 +191,57 @@
 		setInput(s.apply);
 	}
 
+	// ── Space takes the ghost text ────────────────────────────────────────
+	// As a phone keyboard's inline prediction: partway through a word, Space
+	// takes the grey rest of it. Once the word is whole the ghost text goes on
+	// with a space or an operator (`/move face` + ` danger`, `/health` +
+	// `-=harm`), so Space is a space, and typing every letter never trips it.
+	// Backspace straight after puts back what was typed, with the space, for
+	// a value of your own that starts like an option.
+
+	/** What Space last took: Backspace straight after puts `typed` back. */
+	let spaceTook: { typed: string; took: string } | null = null;
+	/** An edit the browser wouldn't let us cancel (an Android keyboard
+	 *  finishing a word): once the input reads `expect`, it becomes `to`. */
+	let pendingEdit: { expect: string; to: string } | null = null;
+
+	/** Whether the caret, with nothing selected, sits at the end. */
+	function caretAtEndNow(): boolean {
+		const el = inputEl;
+		return !!el && el.selectionStart === input.length && el.selectionEnd === input.length;
+	}
+
+	/** Whether Space would take the ghost text: it carries on the word typed. */
+	function spaceTakes(): boolean {
+		return (
+			isCommand &&
+			!!highlighted &&
+			!highlighted.disabled &&
+			/[\p{L}\p{N}'’-]$/u.test(input) &&
+			/^[-'’]?[\p{L}\p{N}]/u.test(ghost)
+		);
+	}
+
+	function onBeforeInput(e: InputEvent) {
+		const took = spaceTook;
+		spaceTook = null;
+		pendingEdit = null;
+		if (!caretAtEndNow()) return;
+		let edit: { expect: string; to: string } | null = null;
+		if (e.inputType === 'insertText' && e.data === ' ' && spaceTakes()) {
+			edit = { expect: input + ' ', to: highlighted!.apply };
+			spaceTook = { typed: input, took: edit.to };
+		} else if (e.inputType === 'deleteContentBackward' && took && input === took.took) {
+			edit = { expect: input.slice(0, -1), to: took.typed + ' ' };
+		}
+		if (!edit) return;
+		if (e.cancelable) {
+			e.preventDefault();
+			historyIdx = -1;
+			setInput(edit.to);
+		} else pendingEdit = edit;
+	}
+
 	/** Run what's in the input. */
 	function run() {
 		const p = sugg.plan;
@@ -281,6 +334,12 @@
 	function onInput() {
 		idx = 0;
 		historyIdx = -1;
+		const edit = pendingEdit;
+		pendingEdit = null;
+		if (edit && (inputEl?.value ?? input) === edit.expect) {
+			setInput(edit.to);
+			return;
+		}
 		trackCaret();
 	}
 	function trackCaret() {
@@ -382,6 +441,7 @@
 				bind:this={inputEl}
 				bind:value={input}
 				onkeydown={handleKeydown}
+				onbeforeinput={onBeforeInput}
 				oninput={onInput}
 				onclick={trackCaret}
 				onkeyup={trackCaret}

@@ -277,7 +277,10 @@ it would give ("Mana is read-only"). An incomplete command says what's
 missing ("Needs an operator: ++ -- += -= = !").
 
 **Ghost text**: the rest of the highlighted suggestion shows greyed after the
-cursor. <kbd>→</kbd> at the end of the input or <kbd>Tab</kbd> accepts it.
+cursor. <kbd>→</kbd> at the end of the input or <kbd>Tab</kbd> accepts it;
+so does <kbd>Space</kbd> partway through a word, as a phone keyboard's inline
+prediction does (<kbd>Backspace</kbd> straight after undoes it). Once a word
+is whole, Space is a space.
 
 **Keys**
 
@@ -293,7 +296,8 @@ cursor. <kbd>→</kbd> at the end of the input or <kbd>Tab</kbd> accepts it.
 **Names** are inserted as written, spaces and all; quotes are added only
 when a name needs them (it contains a dot or an operator, or is a keyword).
 
-**On a phone** the strip's rows are tap targets: a tap is <kbd>Tab</kbd>. A
+**On a phone** the strip's rows are tap targets: a tap is <kbd>Tab</kbd>.
+Space partway through a word and Return work as on a desktop. A
 row of operator keys (`++` `--` `+=` `-=` `=` `!` `.`) sits at the end of the
 strip, since phone keyboards bury those characters.
 
