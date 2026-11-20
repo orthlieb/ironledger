@@ -97,11 +97,16 @@ never changes it.
 - <kbd>Esc</kbd> — clear the bar.
 
 **On a phone** (a coarse pointer) a tap on a row takes it, as Tab does;
-Space partway through a word and Return work as above; and a row of operator
-keys (`++` `--` `+=` `-=` `=` `!` `.`) sits under the suggestions, since phone
-keyboards bury those characters. Space is caught on `beforeinput`, which an
-Android keyboard finishing a word may not let us cancel: then the space lands
-and the input event swaps it for the suggestion.
+Space partway through a word works as above; a **↵ button** by the input is
+Enter (greyed while the bar is empty), as is the keyboard's Return key, which
+reads "send" (`enterkeyhint`); and a row of operator keys (`++` `--` `+=` `-=`
+`=` `!` `.`) sits under the suggestions, since phone keyboards bury those
+characters. The ↵ button and the operator keys keep the keyboard up (they
+don't take focus). Autocorrect is off while the bar holds a command, so the
+keyboard doesn't "fix" `/mome` before Space or Return sees it. Space is
+caught on `beforeinput`, which an Android keyboard finishing a word may not
+let us cancel: then the space lands and the input event swaps it for the
+suggestion.
 
 ## How it's built
 

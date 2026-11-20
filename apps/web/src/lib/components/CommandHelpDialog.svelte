@@ -191,7 +191,7 @@
 			},
 			{
 				syntax: 'Phone',
-				hint: 'Tap a suggestion to take it, or press Space partway through a word, or Return. The operator keys (++ -- += -= = ! .) sit under the suggestions.',
+				hint: 'Tap a suggestion to take it, or press Space partway through a word. The ↵ button by the bar (or the keyboard’s send key) is Enter. The operator keys (++ -- += -= = ! .) sit under the suggestions.',
 			},
 		],
 	};

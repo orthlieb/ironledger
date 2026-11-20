@@ -297,7 +297,8 @@ is whole, Space is a space.
 when a name needs them (it contains a dot or an operator, or is a keyword).
 
 **On a phone** the strip's rows are tap targets: a tap is <kbd>Tab</kbd>.
-Space partway through a word and Return work as on a desktop. A
+Space partway through a word works as on a desktop, and a ↵ button by the
+input (or the keyboard's send key) is <kbd>Enter</kbd>. A
 row of operator keys (`++` `--` `+=` `-=` `=` `!` `.`) sits at the end of the
 strip, since phone keyboards bury those characters.
 
