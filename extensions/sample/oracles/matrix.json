@@ -3,7 +3,7 @@
   "title": "Sample – Matrix",
   "category": "Other",
   "selectLabel": "Sample – Matrix",
-  "description": "A matrix oracle: roll a single d100, then read the value from the picked column. The name generators (Elf, Other) use this shape — one roll fans out into multiple parallel answers.",
+  "description": "A matrix oracle: roll a single d100, then read the value from the picked column. The name generators (Elf, Other) use this shape: one roll fans out into multiple parallel answers.",
   "source": "sample",
   "tableType": "matrix",
   "columns": [
