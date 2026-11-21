@@ -13,6 +13,9 @@ import {
 	snapCoord,
 	gridLineOffsets,
 	isMajorLine,
+	normalizeAngle,
+	polylineLength,
+	formatMapDistance,
 } from '../../src/lib/mapGeometry.js';
 
 describe('snapToStep', () => {
@@ -81,5 +84,48 @@ describe('isMajorLine', () => {
 		expect(isMajorLine(3)).toBe(true);
 		expect(isMajorLine(3.5)).toBe(false);
 		expect(isMajorLine(3.25)).toBe(false);
+	});
+});
+
+describe('normalizeAngle', () => {
+	it('wraps a rotation into [0, 360)', () => {
+		expect(normalizeAngle(370)).toBe(10);
+		expect(normalizeAngle(-90)).toBe(270);
+		expect(normalizeAngle(360)).toBe(0);
+		expect(normalizeAngle(45)).toBe(45);
+	});
+
+	it('reads a missing or non-finite angle as 0', () => {
+		expect(normalizeAngle(undefined)).toBe(0);
+		expect(normalizeAngle(NaN)).toBe(0);
+		expect(normalizeAngle(Infinity)).toBe(0);
+	});
+});
+
+describe('polylineLength', () => {
+	it('sums the straight segments between the points', () => {
+		expect(
+			polylineLength([
+				{ x: 0, y: 0 },
+				{ x: 3, y: 4 },
+				{ x: 3, y: 10 },
+			]),
+		).toBe(11);
+	});
+
+	it('is 0 for fewer than two points', () => {
+		expect(polylineLength([])).toBe(0);
+		expect(polylineLength([{ x: 2, y: 2 }])).toBe(0);
+	});
+});
+
+describe('formatMapDistance', () => {
+	it("shows a distance in the map's units, to one decimal", () => {
+		expect(formatMapDistance(2.5, 5, 'miles')).toBe('12.5 miles');
+		expect(formatMapDistance(1 / 3, 1, 'km')).toBe('0.3 km');
+	});
+
+	it('rounds to whole units from 100 up', () => {
+		expect(formatMapDistance(20.13, 5, 'miles')).toBe('101 miles');
 	});
 });

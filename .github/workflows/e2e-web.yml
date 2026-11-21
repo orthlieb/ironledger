@@ -31,7 +31,9 @@ jobs:
   playwright:
     name: Playwright E2E
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # The serial suite takes about 15 minutes (341 tests in Nov 2026) and
+    # grows with each feature; 30 leaves room before a slow run is cut off.
+    timeout-minutes: 30
 
     services:
       postgres:
@@ -160,6 +162,12 @@ jobs:
 
       - name: Build API
         run: npm run build --workspace=apps/api
+
+      # apps/web imports runtime code (the condition + command parsers) from
+      # @ironledger/shared, whose package exports point at its gitignored
+      # dist/. Build it first or Vite can't resolve the import.
+      - name: Build shared package
+        run: npm run build --workspace=packages/shared
 
       - name: Build web
         # The web server below is plain http on localhost, so bake that in as

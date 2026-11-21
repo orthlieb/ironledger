@@ -3,8 +3,9 @@
 // Ported from YRT oracles-pure.js + 08-characters.js
 // =============================================================================
 
-import type { CharacterData } from './types.js';
+import type { AssetDefinition, CharacterAsset, CharacterData } from './types.js';
 import { DEFAULT_CHARACTER } from './types.js';
+import { cleanFieldValues, optionId, type ResolvedField } from './characterFieldsCore.js';
 
 /** Count all active debilities (conditions + banes + burdens). */
 export function countDebilities(d: CharacterData): number {
@@ -39,6 +40,116 @@ export function momentumReset(d: CharacterData): number {
 	if (n === 0) return 2;
 	if (n === 1) return 1;
 	return 0;
+}
+
+/** The lowest and highest value a resource can hold. */
+export interface ResourceRange {
+	min: number;
+	max: number;
+}
+
+/**
+ * The range a log link holds a built-in resource to (docs/data-schema.md
+ * → Resource Links), or null for a key that isn't one. Health, spirit and
+ * supply top out at 5 and experience at 30, as their tiles do; momentum's
+ * top falls with each debility (maxMomentum). A content pack's global field
+ * (mana) takes its range from its declaration: see commands/values.ts.
+ */
+export function resourceRange(key: string, d: CharacterData): ResourceRange | null {
+	switch (key) {
+		case 'momentum':
+			return { min: -6, max: maxMomentum(d) };
+		case 'health':
+		case 'spirit':
+		case 'supply':
+			return { min: 0, max: 5 };
+		case 'xp':
+			return { min: 0, max: 30 };
+		case 'bonds':
+		case 'failures':
+			return { min: 0, max: 40 };
+		default:
+			return null;
+	}
+}
+
+/** A resource after a change: its new value, its range's top, and whether
+ *  that top cut the change short. */
+export interface ResourceChange {
+	next: number;
+	max: number;
+	capped: boolean;
+}
+
+/**
+ * A resource after a change of `delta` from `old`, held to its range
+ * (resourceRange, or the one given for a content pack's field): 4 health
+ * +2 → 5, capped at the max of 5. A value already past the top (saved before
+ * links were held to it) comes back to it. Null for a key that isn't a
+ * resource.
+ */
+export function changeResource(
+	key: string,
+	old: number,
+	delta: number,
+	d: CharacterData,
+	range: ResourceRange | null = resourceRange(key, d),
+): ResourceChange | null {
+	if (!range) return null;
+	const wanted = old + delta;
+	return {
+		next: Math.max(range.min, Math.min(range.max, wanted)),
+		max: range.max,
+		capped: wanted > range.max,
+	};
+}
+
+/**
+ * A value a log link sets outright, held to the resource's range
+ * (resourceRange): 9 health → 5, momentum −20 → −6. A key that isn't a
+ * resource (initiative) keeps the value asked.
+ */
+export function setResource(key: string, value: number, d: CharacterData): number {
+	const range = resourceRange(key, d);
+	return range ? Math.max(range.min, Math.min(range.max, value)) : value;
+}
+
+/**
+ * After a field an asset's ability limit follows changes (a Touched asset's
+ * `abilityMaxByField.touched`), unmark the abilities above the new limit,
+ * keeping the first ones. No XP comes back, as when an ability is unmarked
+ * by hand. Returns what it unmarked, for the log line ("unmarked 1 ability
+ * on Varou"). An asset that keeps its own value for the field is left be.
+ */
+export function capAbilitiesForField(
+	data: CharacterData,
+	fieldId: string,
+	value: string,
+	findAsset: (id: string) => AssetDefinition | undefined,
+): string[] {
+	const notes: string[] = [];
+	for (const a of (data.assets ?? []) as CharacterAsset[]) {
+		const def = findAsset(a.assetId);
+		const limits = def?.abilityMaxByField?.[fieldId];
+		if (!def || !limits || (a.customValues && fieldId in a.customValues)) continue;
+		const cap = limits[value] ?? Infinity;
+		let kept = 0;
+		let dropped = 0;
+		const next = a.abilities.map((on) => {
+			if (!on) return false;
+			if (kept < cap) {
+				kept++;
+				return true;
+			}
+			dropped++;
+			return false;
+		});
+		if (dropped) {
+			a.abilities = next;
+			notes.push(`unmarked ${dropped} ${dropped === 1 ? 'ability' : 'abilities'} on ${def.name}`);
+		}
+	}
+	return notes;
 }
 
 /**
@@ -82,6 +193,66 @@ export function hydrateCharacterInPlace(d: Record<string, unknown>): void {
 	for (const [k, v] of Object.entries(DEFAULT_CHARACTER as unknown as Record<string, unknown>)) {
 		if (d[k] === undefined) d[k] = v;
 	}
+	moveLegacyYrtFields(d);
+}
+
+/**
+ * YRT's region of origin, religion, touched level and animal were kept as
+ * prose in the background, and the level and animal also on the Touched asset
+ * (`customValues.touchedLevel` / `animalName`) or, in older saves, as
+ * `data.touched` / `data.touchedAnimal`. They're character fields now
+ * (docs/character-fields.md). Fill each field the character doesn't have yet
+ * from the first copy found, then drop the asset and legacy copies. The
+ * background's `**Region of origin:**` line goes too, once the field holds
+ * the region; the rest of the background is left as written. Only the exact
+ * wording New Character wrote is read. Runs on every load; once a field is
+ * set it's skipped.
+ */
+export function moveLegacyYrtFields(d: Record<string, unknown>): void {
+	const fields = (d.fields ?? {}) as Record<string, string>;
+	const bg = typeof d.background === 'string' ? d.background : '';
+	const assets = (Array.isArray(d.assets) ? d.assets : []) as Array<{
+		customValues?: Record<string, string>;
+	}>;
+	const onAsset = (key: string) =>
+		assets.map((a) => a.customValues?.[key]).find((v) => typeof v === 'string' && v) ?? '';
+	const set = (id: string, value: string | undefined) => {
+		if (fields[id] === undefined && value) fields[id] = value;
+	};
+
+	const originLine = /^\*\*Region of origin:\*\*[ \t]*([^\n]+)\n?\n?/m;
+	set('origin', optionId(bg.match(originLine)?.[1]?.trim() ?? ''));
+	// The field holds the region now: drop the background's copy of it, and
+	// the blank line after it.
+	if (fields.origin && originLine.test(bg)) d.background = bg.replace(originLine, '').trimEnd();
+	set('religion', optionId(bg.match(/\*\*Religion:\*\*[ \t]*\*\*([^*\n]+)\*\*/)?.[1] ?? ''));
+	const level =
+		onAsset('touchedLevel') ||
+		(typeof d.touched === 'string' ? d.touched : '') ||
+		(bg
+			.match(
+				/\*\*(Pure) with no touched features\*\*|\*\*(Prime|Second|Third) with \d+\*\*|\*\*(Feral) with many\*\*/,
+			)
+			?.slice(1)
+			.find(Boolean) ??
+			'');
+	set('touched', level.toLowerCase());
+	const animal =
+		onAsset('animalName') ||
+		(typeof d.touchedAnimal === 'string' ? d.touchedAnimal : '') ||
+		(bg.match(/ features? of an? ([^.\n]+)\./)?.[1]?.trim() ?? '');
+	set('touchedAnimal', animal);
+
+	for (const a of assets) {
+		if (a.customValues && ('touchedLevel' in a.customValues || 'animalName' in a.customValues)) {
+			delete a.customValues.touchedLevel;
+			delete a.customValues.animalName;
+		}
+	}
+	// Only touch what's there: each write to a live character schedules a save.
+	if ('touched' in d) delete d.touched;
+	if ('touchedAnimal' in d) delete d.touchedAnimal;
+	if (d.fields !== fields) d.fields = fields;
 }
 
 /**
@@ -193,4 +364,96 @@ export function reconcileGlobalValues(
 		out[id] = String(clamped);
 	}
 	return out;
+}
+
+/** The character's number and true/false values (CharacterData). */
+const NUMBER_KEYS = [
+	'edge',
+	'heart',
+	'iron',
+	'shadow',
+	'wits',
+	'momentum',
+	'health',
+	'spirit',
+	'supply',
+	'xp',
+	'bonds',
+	'failures',
+	'initiative',
+] as const;
+const BOOLEAN_KEYS = [
+	'wounded',
+	'unprepared',
+	'shaken',
+	'encumbered',
+	'maimed',
+	'corrupted',
+	'cursed',
+	'tormented',
+] as const;
+
+/** A finite number from whatever a backup holds there, else 0. */
+const toNumber = (v: unknown): number => {
+	const n = Number(v);
+	return Number.isFinite(n) ? n : 0;
+};
+
+/**
+ * Give a shared backup's values the types the app assumes. A backup is
+ * untrusted, and several dialogs build HTML from these values as numbers
+ * (the Moves roll line, log entries): a string there would be markup.
+ * Present keys only; vows' numbers too.
+ */
+function coerceImportedShape(data: Record<string, unknown>): void {
+	for (const k of NUMBER_KEYS) if (k in data) data[k] = toNumber(data[k]);
+	for (const k of BOOLEAN_KEYS) if (k in data) data[k] = data[k] === true;
+	if (Array.isArray(data.vows)) {
+		for (const v of data.vows) {
+			if (!v || typeof v !== 'object') continue;
+			const vow = v as Record<string, unknown>;
+			if ('ticks' in vow) vow.ticks = toNumber(vow.ticks);
+			if ('menace' in vow) vow.menace = toNumber(vow.menace);
+		}
+	}
+}
+
+/**
+ * An imported character's data, made ready to save (docs/import-schema.md →
+ * Characters). Import runs this on every character, new or Replacing one of
+ * the same name. Replace writes the result straight onto the character
+ * already open, with no load after it, so whatever loading fixes is fixed
+ * here too (CLAUDE.md: new character data has to survive import and export).
+ *
+ * - `globalValues`: checked against the catalogue's counters
+ *   (reconcileGlobalValues).
+ * - `fields`: tidied (cleanFieldValues), then an older export's YRT values
+ *   moved in (moveLegacyYrtFields).
+ * - Numbers and true/false values get those types (coerceImportedShape):
+ *   a backup is untrusted, and dialogs build HTML from them.
+ * - A missing `data.name` takes the entry's `name`: the sheet shows
+ *   `data.name`, and loading would fill it with "New Character".
+ *
+ * Changes `entry.data` in place (creating it if missing) and returns it.
+ */
+export function reconcileImportedCharacter(
+	entry: { name?: unknown; data?: Record<string, unknown> },
+	counterDefs: Map<string, { maxValue?: number | number[] }>,
+	findField: (id: string) => ResolvedField | undefined,
+): Record<string, unknown> {
+	const data = entry.data ?? {};
+	if (data.globalValues && typeof data.globalValues === 'object') {
+		data.globalValues = reconcileGlobalValues(
+			data.globalValues as Record<string, string>,
+			counterDefs,
+		);
+	}
+	if ('fields' in data) data.fields = cleanFieldValues(data.fields, findField);
+	moveLegacyYrtFields(data);
+	coerceImportedShape(data);
+	const dataName = typeof data.name === 'string' ? data.name.trim() : '';
+	const outerName = typeof entry.name === 'string' ? entry.name.trim() : '';
+	if (!dataName && outerName) data.name = outerName;
+	entry.data = data;
+	return data;
 }

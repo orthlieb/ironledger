@@ -125,6 +125,58 @@ describe('appendEntry / getLog', () => {
 });
 
 // ---------------------------------------------------------------------------
+// appendEntries (an import)
+// ---------------------------------------------------------------------------
+
+describe('appendEntries', () => {
+  it('inserts a batch with its own ids, times and notes, in time order', async () => {
+    const n = await log.appendEntries(userId, [
+      entry('b2', '2026-01-02T00:00:00Z', { note: 'second' }),
+      entry('b1', '2026-01-01T00:00:00Z'),
+      entry('b3', '2026-01-03T00:00:00Z', { source: 'md' }),
+    ]);
+    expect(n).toBe(3);
+    const rows = await log.getLog(userId);
+    expect(rows.map((r) => r.id)).toEqual(['b3', 'b2', 'b1']);
+    expect(rows[1].note).toBe('second');
+    expect(rows[1].ts).toBe('2026-01-02T00:00:00Z');
+    expect(rows[0].source).toBe('md');
+  });
+
+  it('leaves ids already in the log as they are, so a second import adds nothing', async () => {
+    await log.appendEntry(userId, entry('same', '2026-01-01T00:00:00Z', { note: 'mine' }));
+    const batch = [
+      entry('same', '2026-01-01T00:00:00Z', { note: 'imported' }),
+      entry('new', '2026-01-02T00:00:00Z'),
+    ];
+    expect(await log.appendEntries(userId, batch)).toBe(1);
+    expect(await log.appendEntries(userId, batch)).toBe(0);
+    const rows = await log.getLog(userId);
+    expect(rows).toHaveLength(2);
+    expect(rows.find((r) => r.id === 'same')?.note).toBe('mine');
+  });
+
+  it('keeps the newest 1000 across what was there and what came in', async () => {
+    const baseTs = Date.parse('2026-01-01T00:00:00Z');
+    await log.appendEntry(userId, entry('oldest', new Date(baseTs - 60_000).toISOString()));
+    const batch = Array.from({ length: 1000 }, (_, i) =>
+      entry(`i-${i}`, new Date(baseTs + i * 60_000).toISOString()),
+    );
+    await log.appendEntries(userId, batch);
+    const [{ c }] = await adminDb!
+      .select({ c: count() })
+      .from(sessionLogEntries)
+      .where(eq(sessionLogEntries.userId, userId));
+    expect(Number(c)).toBe(1000);
+    expect((await log.getLog(userId, 1000)).some((r) => r.id === 'oldest')).toBe(false);
+  });
+
+  it('is a no-op for an empty batch', async () => {
+    expect(await log.appendEntries(userId, [])).toBe(0);
+  });
+});
+
+// ---------------------------------------------------------------------------
 // updateEntry
 // ---------------------------------------------------------------------------
 

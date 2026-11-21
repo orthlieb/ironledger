@@ -3,6 +3,7 @@
  *
  * GET    /api/v1/session/log              → paginated entries, newest first
  * POST   /api/v1/session/log              → append one entry (idempotent)
+ * POST   /api/v1/session/log/batch        → append many, with their own ids and times (an import)
  * PATCH  /api/v1/session/log/:entryId     → update html / note / source in-place
  * DELETE /api/v1/session/log/:entryId     → remove one entry
  * DELETE /api/v1/session/log              → clear all entries for user
@@ -20,8 +21,9 @@ import * as sl from '../services/sessionLogService.js';
 // Schemas
 // ---------------------------------------------------------------------------
 
+// Up to the whole log (LOG_CAP) in one page, which an export reads.
 const logQuery = z.object({
-  limit: z.coerce.number().int().min(1).max(500).default(100),
+  limit: z.coerce.number().int().min(1).max(sl.LOG_CAP).default(100),
   before: z.string().optional(),
 });
 
@@ -37,6 +39,20 @@ const logEntrySchema = z.object({
   note: z.string().optional(),
   source: z.string().optional(),
   roll: z.unknown().optional(),
+});
+
+// An import's entries, with their own ids and times. The time has to parse,
+// as it becomes the row's occurred_at; the body limit (2 MB) bounds the
+// batch's size, so the client sends a big log in several.
+const logBatchSchema = z.object({
+  entries: z
+    .array(
+      logEntrySchema.extend({
+        ts: z.string().refine((s) => !Number.isNaN(Date.parse(s)), 'Invalid timestamp'),
+      }),
+    )
+    .min(1)
+    .max(sl.LOG_CAP),
 });
 
 const patchEntrySchema = z
@@ -84,6 +100,23 @@ export const sessionLogRoutes: FastifyPluginAsyncZod = async (server) => {
       await sl.appendEntry(req.user!.id, req.body).catch(handleError(reply));
       if (reply.sent) return;
       return reply.status(201).send({ ok: true });
+    },
+  );
+
+  // ── POST /session/log/batch ───────────────────────────────────────────────
+  server.post(
+    '/batch',
+    {
+      schema: {
+        body: logBatchSchema,
+      },
+    },
+    async (req, reply) => {
+      const inserted = await sl
+        .appendEntries(req.user!.id, req.body.entries)
+        .catch(handleError(reply));
+      if (reply.sent) return;
+      return reply.status(201).send({ ok: true, inserted });
     },
   );
 

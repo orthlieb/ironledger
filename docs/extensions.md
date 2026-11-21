@@ -75,6 +75,13 @@ and everything filters out — nothing else changes.
     "label": "Sample",
     "url": "https://example.com/wiki",
   },
+
+  // Optional — fields this extension adds to every character, and the
+  // heading over them on the sheet. See "Character fields" below.
+  "fields": [
+    { "id": "sampleRank", "label": "Rank", "type": "radio", "options": [ … ], "default": "" },
+  ],
+  "fieldsHeading": "Sample", // or false for none; left out: `name`
 }
 ```
 
@@ -99,16 +106,19 @@ filtered).
 ### Authoring prose — markdown + link DSL
 
 All authored game text — move outcomes/triggers/notes, asset preambles and
-ability text, oracle values — is written in **markdown + an interactive-link
-DSL**, not raw HTML:
+ability text, oracle values — is written in **markdown with command links**,
+not raw HTML:
 
 - **Formatting** is mini-markdown: `**bold**`, `*italic*`, `-` / `*` bullets,
   `1.` ordered lists, blank-line paragraphs.
-- **Cross-references** are markdown links with a known scheme —
-  `[Pay the Price](move:pay-the-price)`, `[+1 momentum](resource:momentum?value=+1)`,
-  `[Mana Backlash](oracle:manaBacklash)`. Query args parse leniently (`+` stays
-  literal). The full scheme table is in
-  [data-schema.md → Data-Driven Links](data-schema.md#data-driven-links).
+- **A link's target is a command** in the
+  [command language](command-language.md) —
+  `[Pay the Price](/move pay-the-price)`, `[+1 momentum](/momentum++)`,
+  `[Mana Backlash](/oracle manaBacklash)`, `[mark menace](/vow.menace++)`.
+  Name things by id or keyword, never by display name. The forms are in
+  [data-schema.md → Links are commands](data-schema.md#links-are-commands);
+  the lint (`npm run lint:dsl`) checks each one. Oracle values also take
+  `[label](roll:…)` blanks, filled by rolling another oracle.
 - **Context spans** `[…]{.log-only}` / `[…]{.dialog-only}` show text in only the
   log or only the dialog.
 - **Oracle substitution blanks** use the `roll:` scheme —
@@ -116,8 +126,9 @@ DSL**, not raw HTML:
   [oracles.md → Template blanks](oracles.md#template-blanks--the-roll-dsl).
 
 Raw HTML is not allowed in DSL content — the build-time lint
-(`scripts/lint-dsl.mjs`) rejects it and validates every link's scheme, target,
-and args. A single item that genuinely needs raw HTML can set `"html": true` to
+(`scripts/lint-dsl.mjs`) rejects it and validates every link's command or
+`roll:` target and args; any other target is rejected, as it would show as
+written. Foe and delve-table text is plain: a link there is rejected too. A single item that genuinely needs raw HTML can set `"html": true` to
 opt out of `renderRich` (and the lint); avoid it unless a construct truly can't
 be expressed in the DSL.
 
@@ -264,6 +275,22 @@ per-extension "menu" and the UI budget doesn't have room for that. If
 a pack really needs a hub, point `url` at a landing page and branch
 from there.
 
+### Fields — `fields` / `fieldsHeading`
+
+An extension can add fields to every character, of the same types as an
+asset's custom fields (dropdown, radio, counter, switch, string, markdown),
+shown on the sheet's Details tab and in New
+Character (with a d6 when it rolls from an oracle), stored in
+`character.fields`, and readable as precondition keys. The core rules declare
+Region of origin (from the Region oracle, which YRT supersedes with its own
+regions); YRT declares Religion, Touched and Animal, and its Touched assets
+need `{ "key": "touched", "min": 1 }`. The fields sort by extension `order`, then
+in the order declared, under a heading: the extension's `name`, the
+`fieldsHeading` text, or none when it's `false` (the core rules,
+Delve and Lodestar). The build checks every field (ids unique across extensions and
+clear of built-in precondition keys, options, defaults, the oracles named).
+The full reference is [character-fields.md](character-fields.md).
+
 ---
 
 ## IDs — authored, never derived
@@ -304,7 +331,11 @@ extensions/<id>/            scripts/gen-extensions-manifest.mjs      apps/api/sr
   and the content files it provides, copies foe images into the served static
   dir, and emits the deterministic `apps/api/data/extensions.manifest.json`.
   `node scripts/gen-extensions-manifest.mjs --check` fails if the manifest or
-  the foe-image `.gitignore` is out of date (wire it into CI).
+  the foe-image `.gitignore` is out of date (wire it into CI). Both also fail
+  on a move's or asset's precondition whose key names nothing: not a built-in
+  key, a character field that isn't text, or an asset id (an asset named by
+  its display name is caught, with its id in the message). See
+  [data-schema.md § Preconditions](data-schema.md#preconditions).
 - **Loader** (`catalogue.ts`) reads the manifest and merges the listed files. It
   serves `GET /catalogue/extensions` (the metadata registry) alongside the
   content endpoints. Content resolves relative to each extension's `root`
@@ -348,12 +379,13 @@ harmless unused artifacts. Use it for reference/fixture extensions (like
 
 ## Current extensions
 
-| id       | Layout                                | Notes                                                                         |
-| -------- | ------------------------------------- | ----------------------------------------------------------------------------- |
-| `base`   | legacy (`apps/api/data`)              | Core Ironsworn. Always on, not toggleable.                                    |
-| `delve`  | legacy (`apps/api/data`)              | Ironsworn: Delve. Drives some bespoke UI, so it stays type-organised for now. |
-| `yrt`    | self-contained (`extensions/yrt/`)    | Yrt homebrew — the first fully-relocated extension.                           |
-| `sample` | self-contained (`extensions/sample/`) | **Dev-only** reference extension exercising every surface; not in production. |
+| id         | Layout                                  | Notes                                                                         |
+| ---------- | --------------------------------------- | ----------------------------------------------------------------------------- |
+| `base`     | legacy (`apps/api/data`)                | Core Ironsworn. Always on, not toggleable.                                    |
+| `delve`    | self-contained (`extensions/delve/`)    | Ironsworn: Delve. Also drives some bespoke UI (sites, themes, domains).       |
+| `lodestar` | self-contained (`extensions/lodestar/`) | The Lodestar guide: bonus moves, scenes, settlement oracles.                  |
+| `yrt`      | self-contained (`extensions/yrt/`)      | Yrt homebrew: mana, Touched, cantrips, its bestiary and character fields.     |
+| `sample`   | self-contained (`extensions/sample/`)   | **Dev-only** reference extension exercising every surface; not in production. |
 
-`base` and `delve` still live under `apps/api/data/` (the loader reads them via
-their `apps/api/data` root); relocating them is future work.
+Only `base` still lives under `apps/api/data/` (the loader reads it via that
+root); relocating it is future work.

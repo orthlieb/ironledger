@@ -369,7 +369,7 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="story-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay story-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="story-dialog"
 			style="z-index: {contentZ(stackDepth)}"
@@ -498,12 +498,6 @@
 	   globally. z-index is set inline via dialogStack — see <script>.
 	   Class prefix is `.stry-*` (not `.sd-*`) to avoid colliding with
 	   SettingsDialog's global `.sd-*` selectors. */
-	:global(.story-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000060;
-		backdrop-filter: blur(1px);
-	}
 	:global(.story-dialog) {
 		display: flex;
 		flex-direction: column;

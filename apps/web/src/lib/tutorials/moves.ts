@@ -31,9 +31,18 @@ export function logWatch() {
 	};
 }
 
-/** Click the first link of `kind` left in `entry` (one not yet used). */
-export function use(entry: Element | undefined, kind: string) {
-	entry?.querySelector<HTMLElement>(`a.${kind}`)?.click();
+/** The links in a move's outcome a tutorial clicks for the player when
+ *  they don't: command links (#lib/commands/links.ts), by what they do. */
+export const LINK = {
+	progress: 'a.cmd-link[data-cmd*=".progress"]',
+	initiative: 'a.cmd-link[data-cmd^="/initiative="]',
+	momentum: 'a.cmd-link[data-cmd^="/momentum"]',
+	xpCost: 'a.cmd-link[data-cmd^="/xp-="]',
+} as const;
+
+/** Click an entry's first live link of a kind (`LINK`), if it has one. */
+export function use(entry: Element | undefined, selector: string) {
+	entry?.querySelector<HTMLElement>(selector)?.click();
 }
 
 /** Close the Moves dialog, should an outcome's link have opened it (Pay

@@ -29,15 +29,15 @@
     },
     {
       "topRange": 80,
-      "value": "You hold yourself together through stubborn will. Suffer [-1 momentum](resource:momentum?value=-1)."
+      "value": "You hold yourself together through stubborn will. Suffer [-1 momentum](/momentum--)."
     },
     {
       "topRange": 90,
-      "value": "A thread of hope holds. Recover [+1 spirit](resource:spirit?value=+1)."
+      "value": "A thread of hope holds. Recover [+1 spirit](/spirit++)."
     },
     {
       "topRange": 100,
-      "value": "Something deep within you refuses to be extinguished. Take [+2 momentum](resource:momentum?value=+2)."
+      "value": "Something deep within you refuses to be extinguished. Take [+2 momentum](/momentum+=2)."
     }
   ]
 }

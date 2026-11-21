@@ -10,7 +10,7 @@
 	 *   importing → a determinate bar (once the row count is known) with a live
 	 *               per-category tally; the host holds this stage a 5s minimum
 	 *               so a fast import still reads as feedback, not a flash
-	 *   done      → ✓ + summary
+	 *   done      → ✓ + summary, then any rows that failed and any warnings
 	 *   error     → ⚠ + the ImportError message + "Choose another file"
 	 */
 	import { Dialog, Progress } from 'bits-ui';
@@ -24,6 +24,7 @@
 		summary = '',
 		liveSummary = '',
 		errors = [],
+		warnings = [],
 		validCount = 0,
 		progress = null,
 		onfile,
@@ -40,6 +41,9 @@
 		 *  rows that couldn't be read; on `done` they're the ones that failed while
 		 *  the rest imported. */
 		errors?: string[];
+		/** On `done`: worth knowing, though nothing failed (a content pack the
+		 *  file had on that this app doesn't have). */
+		warnings?: string[];
 		/** Number of valid rows offered on the `review` stage. */
 		validCount?: number;
 		/** Live import progress. `total` of 0 means the row count isn't known
@@ -81,8 +85,12 @@
 
 <Dialog.Root bind:open>
 	<Dialog.Portal>
-		<Dialog.Overlay class="imd-overlay" style="z-index: {overlayZ(stackDepth)}" />
-		<Dialog.Content class="imd-dialog" style="z-index: {contentZ(stackDepth)}">
+		<Dialog.Overlay class="dialog-overlay imd-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Content
+			class="imd-dialog"
+			data-tour="import-dialog"
+			style="z-index: {contentZ(stackDepth)}"
+		>
 			<DialogHeader
 				title={headingText('Import')}
 				onclose={() => (open = false)}
@@ -146,7 +154,9 @@
 				{:else if stage === 'done'}
 					<div class="imd-state">
 						<span
-							class="imd-badge {errors.length ? 'imd-badge--warn' : 'imd-badge--ok'}"
+							class="imd-badge {errors.length || warnings.length
+								? 'imd-badge--warn'
+								: 'imd-badge--ok'}"
 							aria-hidden="true"
 						>
 							<svg
@@ -169,6 +179,14 @@
 								</p>
 								<ul class="imd-errlist">
 									{#each errors as e (e)}<li>{e}</li>{/each}
+								</ul>
+							</div>
+						{/if}
+						{#if warnings.length}
+							<div class="imd-issues" data-testid="import-warnings">
+								<p class="imd-issues-head">Worth knowing:</p>
+								<ul class="imd-errlist">
+									{#each warnings as w (w)}<li>{w}</li>{/each}
 								</ul>
 							</div>
 						{/if}
@@ -266,11 +284,6 @@
 <style>
 	/* z-index is set inline via dialogStack, not here — see the top of the
 	   <script> block. */
-	:global(.imd-overlay) {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.5);
-	}
 	:global(.imd-dialog) {
 		position: fixed;
 		top: 50%;

@@ -315,7 +315,7 @@
 		flex-direction: column;
 		gap: 8px;
 		padding-bottom: 8px;
-		border-bottom: 1px solid #c3baa1;
+		border-bottom: 1px solid var(--border);
 	}
 
 	.vow-pills-row {

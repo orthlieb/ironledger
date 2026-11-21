@@ -78,25 +78,36 @@ set -euo pipefail
 APP_DIR="$1"
 COMMIT="$2"
 
+# A non-interactive SSH shell doesn't read .bashrc, so load nvm for node,
+# npm and pm2. SvelteKit 3 needs Node >= 22.17; check before touching
+# anything, as the deploy workflow does.
+source ~/.nvm/nvm.sh
+node -e 'const [a, b] = process.versions.node.split(".").map(Number); if (a < 22 || (a === 22 && b < 17)) { console.error("Node >= 22.17 is required (SvelteKit 3). On the server: nvm install 22 && nvm alias default 22"); process.exit(1); }'
+
 echo "  ▶ Pulling latest code..."
 cd "$APP_DIR"
 git fetch origin main
 git reset --hard origin/main
 
 echo "  ▶ Installing dependencies..."
-# API runs without devDependencies in prod (Fastify is compiled ahead of time).
-# Web needs its devDependencies to build — vite / svelte-kit / adapter-node /
-# svelte compiler all live in devDependencies.
-npm ci --omit=dev    --workspace=apps/api
-npm ci --include=dev --workspace=apps/web
+# The same steps as .github/workflows/deploy.yml. Both builds need
+# devDependencies (TypeScript for the API; Vite and SvelteKit for the web).
+npm ci
 
+# NODE_ENV=production strips the dev-only Sample content pack from the
+# manifest the API serves, and gives the web build the same signal.
 echo "  ▶ Building API (TypeScript)..."
-npm run build --workspace=apps/api
+NODE_ENV=production npm run build --workspace=apps/api
+
+# apps/web imports runtime code from @ironledger/shared, whose exports
+# point at its gitignored dist/ — build it before the web bundle.
+echo "  ▶ Building shared package..."
+npm run build --workspace=packages/shared
 
 echo "  ▶ Building web (SvelteKit bundle)..."
 # Without this step the web adapter-node server keeps serving the old
 # build/ directory, so UI-only changes never reach users even after deploy.
-npm run build --workspace=apps/web
+NODE_ENV=production npm run build --workspace=apps/web
 
 echo "  ▶ Running database migrations..."
 # Migrations run BEFORE the new app starts (schema-first deploy)
@@ -115,7 +126,6 @@ EXPECTED_COLUMNS=(
   "user_data:communities"
   "user_data:npcs"
   "users:display_name"
-  "webauthn_credentials:credential_id"
 )
 MISSING=()
 for pair in "${EXPECTED_COLUMNS[@]}"; do
@@ -174,10 +184,11 @@ ssh "$SERVER" bash -c "
   cd $APP_DIR
   git rev-parse --short HEAD~1 | xargs -I{} echo 'Rolling back to {}'
   git reset --hard HEAD~1
-  npm ci --omit=dev    --workspace=apps/api
-  npm ci --include=dev --workspace=apps/web
-  npm run build --workspace=apps/api
-  npm run build --workspace=apps/web
+  source ~/.nvm/nvm.sh
+  npm ci
+  NODE_ENV=production npm run build --workspace=apps/api
+  npm run build --workspace=packages/shared
+  NODE_ENV=production npm run build --workspace=apps/web
   pm2 reload ironledger-api --update-env
   pm2 reload ironledger-web --update-env
 "

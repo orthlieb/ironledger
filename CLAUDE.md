@@ -121,6 +121,46 @@ site 5, so both were dropped on every save until the `building` field
 suite exercises them. Skip any of the five sites and the field looks
 wired but doesn't actually travel.
 
+## Standing order — new character data has to survive import and export
+
+The zip export copies a character's `data` whole, so a new key exports
+by itself. Import is where new data gets forgotten:
+`reconcileImportedCharacter()` (`apps/web/src/lib/character.ts`) runs on
+every imported character, new or Replacing one of the same name, and
+Replace writes its output straight onto the open character with no load
+step after it. So when you add character data — a new key, a new
+character field type, a change of shape that a load-time migration fixes:
+
+1. **Import:** make `reconcileImportedCharacter()` tidy it and run any
+   migration that loading does, with a unit test beside its others in
+   `apps/web/tests/unit/characterFields.test.ts`. Character fields go through
+   `cleanFieldValues` and `moveLegacyYrtFields` there; add a branch for a
+   new field type to `cleanFieldValues` (`characterFieldsCore.ts`).
+2. **Markdown export:** add it to `characterMarkdown`
+   (`apps/web/src/lib/exportMarkdown.ts`, unit-tested in
+   `exportMarkdown.test.ts`); the fields arrive as `fieldsMarkdown`'s
+   `## Details`.
+3. **Docs:** `docs/import-schema.md` → Characters and the Character field
+   reference.
+4. **Tests:** the full round trip in `import-export.spec.ts` (seed the new
+   key, assert it after re-import) and, for character fields, the import
+   test in `character-fields.spec.ts`, which covers Replace and the
+   Markdown export.
+
+## Standing order — web server calls to the API go through `apiFetch` + `pathSegment`
+
+Every `+server.ts`, `+page.server.ts` and `hooks.server.ts` call to the
+Fastify API uses `apiFetch` (`#lib/server/apiFetch.js`), never bare `fetch`
+(ESLint enforces it there). It carries the visitor's IP address, which the
+API's per-IP limits and security log depend on; without it every visitor is
+127.0.0.1 and one limit is shared by the whole site.
+
+Any route parameter that goes into an API URL goes through `pathSegment()`
+(`${pathSegment(params.id)}`, never `${params.id}`). SvelteKit decodes
+parameters, so an id of `../log` or `../../admin/users/<id>/role` (ids arrive
+in shared backup files) would otherwise climb out of the route and carry the
+visitor's token somewhere else. See `docs/security-review.md`.
+
 ## App-level scroll architecture
 
 The viewport itself (`html` and `body`) **never** scrolls. `app.css` sets
@@ -409,6 +449,10 @@ through `onOpenAutoFocus`:
   }}
 >
 ```
+
+`<ConfirmDialog>` does this for you: mark the target field in its
+body `autofocus` (as New Character's name input is) and its
+`onOpenAutoFocus` hands the caret to it.
 
 For still-native `<dialog>` elements (until they migrate to
 bits-ui), use HTML `autofocus` on the target input. It fires on

@@ -18,8 +18,7 @@
 	import { Dialog } from 'bits-ui';
 	import DialogHeader from '#lib/components/DialogHeader.svelte';
 	import { pushDialog, popDialog, overlayZ, contentZ } from '#lib/dialogStack.svelte.js';
-
-	const BUG_EMAIL = 'bugs@ironledger.org';
+	import { BUG_EMAIL } from '#lib/contact.js';
 
 	let { user }: { user?: { email?: string; displayName?: string } | null } = $props();
 
@@ -155,7 +154,7 @@
 	}}
 >
 	<Dialog.Portal>
-		<Dialog.Overlay class="bug-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay bug-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="bug-dialog"
 			style="z-index: {contentZ(stackDepth)}"
@@ -179,16 +178,13 @@
 						bind:this={doingEl}
 						rows="2"
 						bind:value={doing}
-						placeholder="e.g. Roll Face Danger from the moves dialog."
+						placeholder="The steps you took, in order…"
 					></textarea>
 				</label>
 
 				<label class="bg-field">
 					<span>What did you expect to happen?</span>
-					<textarea
-						rows="2"
-						bind:value={expected}
-						placeholder="e.g. See a d6 + 2 vs 2d10 animation and a log entry."
+					<textarea rows="2" bind:value={expected} placeholder="What should have happened…"
 					></textarea>
 				</label>
 
@@ -197,7 +193,7 @@
 					<textarea
 						rows="3"
 						bind:value={happened}
-						placeholder="e.g. Dice panel opened but the Roll button did nothing."
+						placeholder="What happened instead, and any message you saw…"
 					></textarea>
 				</label>
 
@@ -247,12 +243,6 @@
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
 	   globally. z-index is set inline via dialogStack — see <script>. */
-	:global(.bug-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000050;
-		backdrop-filter: blur(1px);
-	}
 	:global(.bug-dialog) {
 		display: flex;
 		flex-direction: column;

@@ -16,6 +16,7 @@
 import type { MoveDefinition } from '@ironledger/shared';
 import { isSourceEnabled, loadExtensions } from './expansionStore.svelte.js';
 import { moveCategoryOrder } from './extensionCategories.svelte.js';
+import { fetchCatalogue } from '#lib/catalogueFetch.js';
 
 /** One expansion's patches against base moves. Mirrors the foe override file. */
 export interface MoveOverride {
@@ -60,10 +61,7 @@ export async function loadMoves(): Promise<void> {
 		// Await loadExtensions alongside the fetch so moveCategoryOrder() can
 		// resolve against a populated registry — otherwise the first render
 		// falls back to alphabetical (empty-registry → Infinity for every key).
-		const [res] = await Promise.all([
-			fetch('/api/catalogue/moves', { cache: 'no-store' }),
-			loadExtensions(),
-		]);
+		const [res] = await Promise.all([fetchCatalogue('/api/catalogue/moves'), loadExtensions()]);
 		if (!res.ok) throw new Error(`Moves fetch failed: ${res.status}`);
 		const json = (await res.json()) as {
 			moves: MoveDefinition[];

@@ -1,7 +1,7 @@
 <script lang="ts">
 	/**
 	 * ImportCollisionDialog — three-way prompt shown when an import file
-	 * contains entities (characters / communities / NPCs / journeys / sites)
+	 * contains entities (characters / connections / expeditions / foes)
 	 * whose NAMES already exist in the active session.
 	 *
 	 * Matching is by lower-cased trimmed name — IDs are deliberately ignored
@@ -46,6 +46,7 @@
 		journeys: [],
 		sites: [],
 		scenes: [],
+		foes: [],
 	});
 	let strategy = $state<Exclude<CollisionStrategy, 'cancel'>>('new');
 	let resolver: ((s: CollisionStrategy) => void) | null = null;
@@ -94,17 +95,12 @@
 				label: items.scenes.length === 1 ? 'Scene' : 'Scenes',
 				names: items.scenes,
 			});
+		if (items.foes.length > 0)
+			out.push({ label: items.foes.length === 1 ? 'Foe' : 'Foes', names: items.foes });
 		return out;
 	});
 
-	const totalCount = $derived(
-		items.characters.length +
-			items.communities.length +
-			items.npcs.length +
-			items.places.length +
-			items.journeys.length +
-			items.sites.length,
-	);
+	const totalCount = $derived(groups.reduce((n, g) => n + g.names.length, 0));
 
 	function confirm() {
 		const s = strategy;
@@ -141,7 +137,7 @@
 	}}
 >
 	<Dialog.Portal>
-		<Dialog.Overlay class="icd-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay icd-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content class="icd-dialog" style="z-index: {contentZ(stackDepth)}">
 			<DialogHeader title={headingText('Items already exist')} onclose={cancel} />
 
@@ -228,12 +224,6 @@
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
 	   globally. z-index is set inline via dialogStack — see <script>. */
-	:global(.icd-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000050;
-		backdrop-filter: blur(1px);
-	}
 	:global(.icd-dialog) {
 		position: fixed;
 		top: 50%;

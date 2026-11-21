@@ -6,9 +6,11 @@
 	 * zips them, which for a rich world is a multi-second, partly main-thread
 	 * -blocking wait. This mirrors the ImportDialog's importing stage (bits-ui
 	 * Progress bar when a total is known, spinner otherwise) so the user sees
-	 * what's happening instead of a frozen dialog. It has no dismiss controls —
-	 * the parent opens it before the work and closes it when the download
-	 * fires (or an error is caught).
+	 * what's happening instead of a frozen dialog. It has no dismiss controls
+	 * while it works — the parent opens it before the work and closes it when
+	 * the download fires (or an error is caught). When the export left
+	 * something out (a hidden map layer, a map with no background), it's
+	 * `held`: it lists the `warnings` and waits for Close (or ✕, or Escape).
 	 *
 	 * Drive it with a `{ done, total, label }` progress object: `total: 0`
 	 * renders the indeterminate spinner (e.g. the synchronous compress step,
@@ -23,12 +25,26 @@
 		open = $bindable(false),
 		progress = null,
 		summary = '',
+		warnings = [],
+		held = false,
+		onclose,
 	}: {
 		open?: boolean;
 		progress?: { done: number; total: number; label: string } | null;
 		/** Human-readable content breakdown, e.g. "3 characters, 4 landmarks". */
 		summary?: string;
+		/** What the export left out, and why. */
+		warnings?: string[];
+		/** Done, and waiting on Close to read the warnings. */
+		held?: boolean;
+		onclose?: () => void;
 	} = $props();
+
+	let closeBtn = $state<HTMLButtonElement | null>(null);
+	// Held: the caret goes to Close, the one thing left to do.
+	$effect(() => {
+		if (held) setTimeout(() => closeBtn?.focus(), 0);
+	});
 
 	let stackDepth = $state(1);
 	$effect(() => {
@@ -42,20 +58,37 @@
 	);
 </script>
 
-<Dialog.Root bind:open>
+<Dialog.Root
+	bind:open
+	onOpenChange={(o) => {
+		if (!o) onclose?.();
+	}}
+>
 	<Dialog.Portal>
-		<Dialog.Overlay class="exp-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay exp-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="exp-dialog"
+			data-tour="export-progress"
 			style="z-index: {contentZ(stackDepth)}"
-			escapeKeydownBehavior="ignore"
+			escapeKeydownBehavior={held ? 'close' : 'ignore'}
 			interactOutsideBehavior="ignore"
 			trapFocus={false}
 		>
-			<DialogHeader title={headingText('Export')} radius="10px 10px 0 0" />
+			<DialogHeader
+				title={headingText('Export')}
+				radius="10px 10px 0 0"
+				onclose={held ? onclose : undefined}
+			/>
 			<div class="exp-body">
 				<div class="exp-state">
-					{#if progress && progress.total > 0}
+					{#if held}
+						<p class="exp-state-title">Exported, with some left out</p>
+						<ul class="exp-warnings" data-testid="export-warnings">
+							{#each warnings as w (w)}
+								<li>{w}</li>
+							{/each}
+						</ul>
+					{:else if progress && progress.total > 0}
 						<Progress.Root
 							value={progress.done}
 							max={progress.total}
@@ -69,14 +102,23 @@
 						<span class="exp-spinner" aria-hidden="true"></span>
 						<p class="exp-state-title">Preparing export…</p>
 					{/if}
-					<p class="exp-state-sub exp-state-sub--ellipsis">
-						{progress?.label || 'Gathering your world.'}
-					</p>
+					{#if !held}
+						<p class="exp-state-sub exp-state-sub--ellipsis">
+							{progress?.label || 'Gathering your world.'}
+						</p>
+					{/if}
 					{#if summary}
 						<p class="exp-summary">{summary}</p>
 					{/if}
 				</div>
 			</div>
+			{#if held}
+				<div class="exp-footer">
+					<button class="btn" type="button" bind:this={closeBtn} onclick={() => onclose?.()}
+						>Close</button
+					>
+				</div>
+			{/if}
 		</Dialog.Content>
 	</Dialog.Portal>
 </Dialog.Root>
@@ -84,11 +126,6 @@
 <style>
 	/* Portalled bits-ui content — scope with :global(). Mirrors the .imd-*
 	   importing stage so import and export read as one visual system. */
-	:global(.exp-overlay) {
-		position: fixed;
-		inset: 0;
-		background: rgba(0, 0, 0, 0.5);
-	}
 	:global(.exp-dialog) {
 		position: fixed;
 		top: 50%;
@@ -137,6 +174,23 @@
 		line-height: 1.5;
 		color: var(--text-dimmer);
 		text-align: center;
+	}
+	/* What the export left out: a plain list, left-aligned so a long map name
+	   wraps readably. */
+	:global(.exp-warnings) {
+		margin: 4px 0 0;
+		padding-left: 18px;
+		align-self: stretch;
+		text-align: left;
+		font-size: 12.5px;
+		line-height: 1.5;
+		color: var(--text-muted);
+	}
+	:global(.exp-footer) {
+		display: flex;
+		justify-content: flex-end;
+		padding: 10px 16px;
+		border-top: 1px solid var(--border);
 	}
 	:global(.exp-bar) {
 		width: 100%;

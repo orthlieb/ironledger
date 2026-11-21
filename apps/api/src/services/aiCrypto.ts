@@ -48,12 +48,19 @@ export function encryptSecret(plaintext: string, secret: string): EncryptedSecre
  * (tampering, or the wrong env secret).
  */
 export function decryptSecret(enc: EncryptedSecret, secret: string): string {
+  // Insist on the full 16-byte tag: Node would otherwise accept one as short
+  // as 4 bytes, which is far easier to forge.
+  const tag = Buffer.from(enc.tag, 'base64');
+  if (tag.length !== 16) throw new Error('Bad authentication tag');
   const decipher = crypto.createDecipheriv(
     ALGORITHM,
     deriveKey(secret),
     Buffer.from(enc.iv, 'base64'),
+    {
+      authTagLength: 16,
+    },
   );
-  decipher.setAuthTag(Buffer.from(enc.tag, 'base64'));
+  decipher.setAuthTag(tag);
   const plaintext = Buffer.concat([
     decipher.update(Buffer.from(enc.ciphertext, 'base64')),
     decipher.final(),

@@ -60,7 +60,7 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="co-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay co-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="co-dialog"
 			style="z-index: {contentZ(stackDepth)}"

@@ -8,9 +8,13 @@
  * file exercise that switch.
  */
 import { test, expect } from '@playwright/test';
+import { settleHome } from './helpers/home';
 
 test.beforeEach(async ({ page }) => {
 	await page.goto('/home');
+	// Let the page hydrate first: on the dev server a click that lands before
+	// it does is lost (the Settings menu never opens).
+	await settleHome(page);
 	// Wait for the Characters area to finish initial load — proves the home
 	// page hydrated. The other areas finish around the same time.
 	await expect(page.locator('.home-area--characters .ca-loading')).not.toBeVisible({
@@ -85,4 +89,47 @@ test('mobile tab bar is hidden at desktop widths (>900px)', async ({ page }) => 
 		timeout: 12_000,
 	});
 	await expect(page.locator('.mob-tabbar')).not.toBeVisible();
+});
+
+// ── ☰ on a phone ────────────────────────────────────────────────────────────
+// A tap opens the menu on its touchend. Some browsers then send a click with
+// no count (`detail` 0), which bits-ui's trigger takes for a screen reader's
+// and toggles on, shutting the menu the moment it opened. This browser
+// doesn't send one, so the test sends it, both ways it can come.
+
+test.describe('☰ menu on a phone', () => {
+	test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+	for (const [what, init] of [
+		['marked as a touch', 'touch'],
+		['with no pointer type', ''],
+	] as const) {
+		test(`a tap opens it, and the click after it (${what}) leaves it open`, async ({ page }) => {
+			const menu = page.locator('.hamburger-btn');
+			await menu.tap();
+			await menu.evaluate((el, pointerType) => {
+				const opts = { bubbles: true, cancelable: true, detail: 0 };
+				el.dispatchEvent(
+					pointerType
+						? new PointerEvent('click', { ...opts, pointerType })
+						: new MouseEvent('click', opts),
+				);
+			}, init);
+			const exportItem = page.getByRole('menuitem', { name: 'Export…' });
+			await expect(exportItem).toBeVisible();
+			// Still open once its opening has settled, and its items work.
+			await page.waitForTimeout(400);
+			await exportItem.tap();
+			await expect(page.locator('.exd-dialog')).toBeVisible();
+		});
+	}
+
+	test('a screen reader’s click on its own still opens it', async ({ page }) => {
+		await page
+			.locator('.hamburger-btn')
+			.evaluate((el) =>
+				el.dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, detail: 0 })),
+			);
+		await expect(page.getByRole('menuitem', { name: 'Export…' })).toBeVisible();
+	});
 });

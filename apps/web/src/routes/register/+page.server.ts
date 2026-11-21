@@ -1,6 +1,7 @@
 import { fail, redirect } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { INTERNAL_API_URL, HCAPTCHA_SITE_KEY } from '#lib/server/config.js';
+import { apiFetch } from '#lib/server/apiFetch.js';
 
 export const load: PageServerLoad = async ({ locals }) => {
 	// Already logged in? Skip registration.
@@ -11,7 +12,7 @@ export const load: PageServerLoad = async ({ locals }) => {
 	// page shows the closed-state UI on load (not on submit) whenever any
 	// gate is tripped, so visitors see the wall before typing anything.
 	try {
-		const res = await fetch(`${INTERNAL_API_URL}/api/v1/registration/status`);
+		const res = await apiFetch(`${INTERNAL_API_URL}/api/v1/registration/status`);
 		if (res.ok) {
 			const body = (await res.json()) as {
 				closed: { reason: 'maintenance' | 'locked' | 'quota'; message: string } | null;
@@ -64,7 +65,7 @@ export const actions: Actions = {
 
 		let res: Response;
 		try {
-			res = await fetch(`${INTERNAL_API_URL}/api/v1/auth/register`, {
+			res = await apiFetch(`${INTERNAL_API_URL}/api/v1/auth/register`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({

@@ -1,11 +1,15 @@
 /**
  * @ironledger/shared
  *
- * TypeScript types shared between the API and the web frontend.
+ * TypeScript types shared between the API and the web frontend, plus the
+ * condition and command parsers (plain JS, re-exported at the bottom).
  * Both apps import from here — no duplication, no drift.
  *
  * Rule: this package must have ZERO runtime dependencies.
- * It contains only type definitions, never executable logic.
+ *
+ * Imports resolve to the compiled, gitignored `dist/`: `npm install` builds
+ * it (the `prepare` script), and the web app's dev, build, check and test
+ * scripts rebuild it first, so a change here reaches them without a step.
  */
 
 // ---------------------------------------------------------------------------
@@ -72,7 +76,8 @@ export interface AssetDefinition {
   preamble?: string;
   postamble?: string;
   abilities: AssetAbility[];
-  preconditions?: AssetPrecondition[];
+  /** When it can be used: a condition expression (docs/command-language.md → Conditions). */
+  preconditions?: string;
   /** Max number of pips in the counter/health tracker. Renders a pip row in the asset card. */
   counterMax?: number;
   /** Label shown next to the pip row — e.g. "Health", "Doses", "Charges". */
@@ -93,14 +98,6 @@ export interface AssetAbility {
   enabled: boolean;
   text: string;
   name?: string;
-}
-
-export interface AssetPrecondition {
-  key: string;
-  eq?: number;
-  min?: number;
-  max?: number;
-  ne?: number;
 }
 
 /**
@@ -165,6 +162,60 @@ export interface ExtensionInfo {
    *  one entry per extension. External URL — the HamburgerMenu opens it
    *  with `target="_blank" rel="noopener noreferrer"`. */
   infoLink?: { label: string; url: string };
+  /** Fields this extension declares (docs/character-fields.md), in
+   *  declaration order: party, character and global ones. Checked by
+   *  gen-extensions-manifest. */
+  fields?: CharacterFieldDef[];
+  /** The heading over its party and character fields on the sheet: left
+   *  out, the extension's `name`; text, that text; `false`, no heading. */
+  fieldsHeading?: string | false;
+}
+
+/** One choice of a dropdown or radio character field. */
+export interface CharacterFieldOption {
+  id: string;
+  label: string;
+}
+
+/** A field an extension adds to every character: shown on the sheet and in
+ *  New Character, rolled from an oracle, and readable by preconditions. */
+export interface CharacterFieldDef {
+  /** camelCase, unique across extensions; the key in `character.fields` and
+   *  the precondition key. */
+  id: string;
+  label: string;
+  /** The asset custom field types: dropdown, radio, counter (pips 0 to
+   *  maxValue), switch, string (one line) and markdown (notes). */
+  type: 'dropdown' | 'radio' | 'string' | 'counter' | 'switch' | 'markdown';
+  options?: CharacterFieldOption[];
+  /** counter only: the most pips. */
+  maxValue?: number;
+  /** Instead of `options`: one option per row of an oracle, labelled by the
+   *  row's `label` property (default `value`). */
+  optionsFrom?: { oracle: string; label?: string };
+  /** The value for a character made before the field existed; `""` is no
+   *  choice. New Character starts every field empty. */
+  default: string;
+  placeholder?: string;
+  /** While this condition is false the field is hidden (and keeps its value). */
+  if?: string;
+  /** Whose the value is (docs/command-language.md → Scopes): `party` (one
+   *  value every character shares), `character` (the default), or `global`
+   *  (one per character, shared by the assets that refer to it, like mana).
+   *  Party and character values live in `character.fields`, global ones in
+   *  `character.globalValues`. */
+  scope?: 'party' | 'character' | 'global';
+  /** `false`: commands and log links can show and test the value but not
+   *  change it; the sheet edits it either way. Default true. */
+  writable?: boolean;
+  /** dropdown only: a value that isn't an option is kept as typed. */
+  custom?: boolean;
+  /** global only: the pill label in the context bar, and the icon. */
+  shortLabel?: string;
+  icon?: string;
+  /** The oracle New Character's die rolls, by key. */
+  roll?: { oracle: string; from?: string; column?: { field: string; from: string } };
+  tooltip?: string;
 }
 
 /** Move definition — mirrors the JSON structure in moves/*.json */
@@ -190,7 +241,14 @@ export interface MoveDefinition {
    * flexible End the Fight: you may roll it without initiative, at greater risk.
    */
   initiativeDowngrade?: boolean;
-  preconditions?: AssetPrecondition[];
+  /** When it can be used: a condition expression (docs/command-language.md → Conditions). */
+  preconditions?: string;
+  /** What the move acts on, asked for in the Moves dialog: a vow (Reach a
+   *  Milestone, Fulfill Your Vow, Forsake Your Vow, Advance a Threat) or a
+   *  companion (Companion Endure Harm). The choice binds `vow` or `companion`
+   *  in the move's links (docs/command-language.md → Moves that act on a vow
+   *  or a companion). */
+  choose?: 'vow' | 'companion';
   /**
    * Optional log entry title template. Supports placeholders:
    *   {character}   active character's name
@@ -352,3 +410,8 @@ export interface SystemStatus {
   maintenance: MaintenanceStatus;
   broadcast: BroadcastStatus;
 }
+
+// Condition expressions (docs/command-language.md → Conditions). Plain JS so
+// the build-time content checker can import it from source.
+export * from './condition.js';
+export * from './command.js';

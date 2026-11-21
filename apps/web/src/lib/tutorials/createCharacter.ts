@@ -1,27 +1,39 @@
 /**
  * Tutorial: create a character — open the New Character dialog from the
- * Characters panel's switcher, roll a name, roll stats, roll a region of
- * origin (YRT), leave everything else to be randomized, and create; then,
- * on the sheet's Background tab, rewrite the rolled details as a bio and
- * add a portrait; on Core, initiative; and on Status, the debilities and
- * bonds. Its first vow and its assets have tutorials of their own (addVow,
- * addAssets), which its last step points to.
+ * Characters panel's switcher, roll a name, roll stats, roll the fields the
+ * core rules and extensions add (Region of origin; YRT: Religion, Touched),
+ * leave everything else to be randomized, and create; then, on the sheet's
+ * Background tab, rewrite the rolled details as a bio and add a portrait; and
+ * on Core, initiative, the stats (a double-click edits one), the debilities
+ * and bonds (with the bonds' note button). Its first vow and its assets have
+ * tutorials of their own (addVow, addAssets), which its last step points to.
  *
  * Targets (`data-tour`): tab-characters (home's mobile tab bar),
  * char-switcher + new-char-action (CharactersArea's switcher and its
  * "+ New character…" row), new-char-name / roll-name, new-char-stats /
- * roll-stats (StatAllocator), randomize-origin / roll-origin and
+ * roll-stats (StatAllocator), new-char-fields (CharacterFields) and
  * randomize-also (RandomizeBlock), new-char-dialog-confirm (Create),
  * char-tab-background, char-bio (MarkdownNotes) and char-portrait
- * (PortraitUploader), char-tab-core / char-initiative, and char-tab-status
- * / char-debilities / char-tracks.
+ * (PortraitUploader), and char-tab-core / char-initiative / char-stats /
+ * char-debilities / char-tracks.
  */
 import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
+import { characterFieldGroups } from '#lib/characterFields.svelte.js';
 import { tourSel, tourTarget, type Tutorial } from './tour.js';
 
 /** Click the `data-tour` control `id` inside `root`. */
 function press(root: Element | undefined, id: string) {
 	root?.querySelector<HTMLElement>(tourSel(id))?.click();
+}
+
+/** The labels of the fields enabled extensions add, as a phrase. */
+function fieldList(): string {
+	const labels = characterFieldGroups()
+		.flatMap((g) => g.fields)
+		.filter((f) => !f.if?.length)
+		.map((f) => f.label);
+	if (labels.length < 2) return labels.join('') || 'a few details';
+	return `${labels.slice(0, -1).join(', ')} and ${labels.at(-1)}`;
 }
 
 export const createCharacter: Tutorial = {
@@ -77,16 +89,14 @@ export const createCharacter: Tutorial = {
 			},
 		},
 		{
-			// The region picker is part of the YRT extension.
-			when: () => isSourceEnabled('yrt'),
-			target: 'randomize-origin',
-			title: 'Roll a region of origin',
+			// The fields the core rules and extensions add to a character
+			// (Region of origin; with YRT, Religion and Touched).
+			when: () => characterFieldGroups().length > 0,
+			target: 'new-char-fields',
+			title: 'Roll their details',
 			backIfGone: true,
-			body: 'Choose where your character was born, or click the die for a random region. Their religion is rolled for that region.',
+			body: `Set their ${fieldList()}: click a die to roll one on its oracle, or pick it yourself. Whatever you leave empty is rolled when you click Create.`,
 			back: true,
-			beforeNext: (el) => {
-				if (el?.querySelector('.bui-select-value--placeholder')) press(el, 'roll-origin');
-			},
 		},
 		{
 			target: 'randomize-also',
@@ -140,7 +150,7 @@ export const createCharacter: Tutorial = {
 		{
 			target: 'char-tab-core',
 			title: 'Your character sheet',
-			body: 'Click Core for the rest of your sheet: stats, vitals and initiative.',
+			body: 'Click Core for the rest of your sheet: initiative, stats, vitals, debilities and bonds. What you rolled in New Character is on Details.',
 			continueWhen: 'char-initiative',
 			back: true,
 		},
@@ -151,10 +161,9 @@ export const createCharacter: Tutorial = {
 			back: true,
 		},
 		{
-			target: 'char-tab-status',
-			title: 'Your status',
-			body: 'Click Status for what can go wrong, and the bonds you forge.',
-			continueWhen: 'char-debilities',
+			target: 'char-stats',
+			title: 'Your stats',
+			body: 'The stats you rolled. A move tells you which one to add to its roll. They stay as they are unless an asset changes one; then double-click that stat (double-tap on a phone) to edit it.',
 			back: true,
 		},
 		{
@@ -167,7 +176,7 @@ export const createCharacter: Tutorial = {
 			target: 'char-tracks',
 			title: 'Bonds',
 			body:
-				'When you Forge a Bond, mark progress here and note who or where. At the end of your story, your bonds are your legacy.' +
+				'When you Forge a Bond, mark progress here, and note who or where with the note button at the end of the track. At the end of your story, your bonds are your legacy.' +
 				(isSourceEnabled('delve')
 					? ' With Delve on, Failures tracks your setbacks, and Learn From Your Failures turns them into experience.'
 					: '') +

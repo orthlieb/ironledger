@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
+	import BetaBadge from '#lib/components/BetaBadge.svelte';
 	import PasswordInput from '#lib/components/PasswordInput.svelte';
 	import Checkbox from '#lib/components/Checkbox.svelte';
 	import swordSvg from '#icons/sharp-axe.svg?raw';
@@ -23,7 +24,10 @@
 	<div class="auth-card card">
 		<div class="auth-brand">
 			<div class="auth-brand-rule"></div>
-			<h1><span class="auth-brand-icon" aria-hidden="true">{@html swordSvg}</span>Iron Ledger</h1>
+			<h1>
+				<span class="auth-brand-icon" aria-hidden="true">{@html swordSvg}</span>Iron Ledger<BetaBadge
+				/>
+			</h1>
 			<div class="auth-brand-rule"></div>
 		</div>
 		<div class="hero-image-wrap">
@@ -40,8 +44,24 @@
 				<strong>Under Construction</strong> — {(form as { maintenance?: boolean; message?: string })
 					.message}
 			</div>
+		{:else if data.deleted && !form}
+			<div class="deleted-msg" role="status" data-testid="account-deleted">
+				Your account and everything in it have been deleted. Farewell, Ironsworn.
+			</div>
+		{:else if data.verified && !form}
+			<div class="deleted-msg" role="status" data-testid="email-verified">
+				Your email is verified. Sign in to begin your chronicle.
+			</div>
 		{:else if form?.error}
-			<div class="error-msg">{form.error}</div>
+			<div class="error-msg">
+				{form.error}
+				{#if (form as { unverified?: boolean }).unverified}
+					<a
+						href="/resend-verification?email={encodeURIComponent(form.email ?? '')}"
+						data-testid="login-resend-link">Send a new link</a
+					>
+				{/if}
+			</div>
 		{/if}
 
 		<form method="POST" class="auth-form">
@@ -74,6 +94,7 @@
 			No account yet? <a href="/register">Create one</a> ·
 			<a href="/forgot-password" class="forgot-link">Forgot password?</a>
 			· <a href="/about" class="forgot-link">About</a>
+			· <a href="/privacy" class="forgot-link">Privacy</a>
 		</p>
 	</div>
 </div>
@@ -138,6 +159,17 @@
 		color: var(--text-muted);
 		cursor: pointer;
 		user-select: none;
+	}
+
+	.deleted-msg {
+		font-family: var(--font-ui);
+		font-size: 0.88rem;
+		line-height: 1.55;
+		color: var(--text-muted);
+		background: rgba(52, 211, 153, 0.08);
+		border: 1px solid rgba(52, 211, 153, 0.25);
+		border-radius: 5px;
+		padding: 10px 14px;
 	}
 
 	.forgot-link {

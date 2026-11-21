@@ -66,6 +66,7 @@
 		portalTo,
 		trigger,
 		tour,
+		search = $bindable(''),
 	}: {
 		/** Popover open state. */
 		open?: boolean;
@@ -121,7 +122,18 @@
 		trigger?: Snippet;
 		/** `data-tour` id on the trigger, for tutorials (#lib/tutorials). */
 		tour?: string;
+		/** The search box's text, bindable: lets a caller offer the typed text
+		 *  itself as a choice (an action row "Use "…""), as a custom dropdown
+		 *  does. */
+		search?: string;
 	} = $props();
+
+	// The search box starts empty each time the list opens, as it did when
+	// the input kept its own text: a search typed to pick something mustn't
+	// still filter the list the next time.
+	$effect(() => {
+		if (!open) search = '';
+	});
 
 	// Only pills whose class actually appears in the current items — a class
 	// with nothing to match is a dead pill (e.g. a settlement's Within picker
@@ -228,7 +240,12 @@
 			<Command.Root class="cb-cmd">
 				<div class="cb-search-row">
 					<span class="cb-search-icon" aria-hidden="true">{@html searchIconSvg}</span>
-					<Command.Input class="cb-search" placeholder={searchPlaceholder} autofocus />
+					<Command.Input
+						class="cb-search"
+						placeholder={searchPlaceholder}
+						autofocus
+						bind:value={search}
+					/>
 				</div>
 				{#if showPills}
 					<div class="cb-pills" role="group" aria-label={filterGroupLabel}>
@@ -446,9 +463,6 @@
 	:global(.cb-search:focus) {
 		outline: none;
 		box-shadow: none;
-	}
-	:global(.cb-search::placeholder) {
-		color: var(--text-dimmer);
 	}
 
 	/* Filter-pill row above the list — colour-tinted small caps, filled

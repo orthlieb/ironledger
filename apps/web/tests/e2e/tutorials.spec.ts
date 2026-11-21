@@ -4,9 +4,10 @@
  * each step's control used for real.
  *
  * Create a character: open the switcher, "+ New character…", roll a name,
- * stats and (YRT) a region, leave the rest to be randomized, Create; then
- * on the Background tab, write a bio and add a portrait; initiative; and
- * the Status tab, with the 9 experience a new character starts with.
+ * stats and (YRT) its fields, leave the rest to be randomized, Create; then
+ * on the Background tab, write a bio and add a portrait; initiative; the
+ * stats (a double-click edits one); the debilities and bonds, with the 9
+ * experience a new character starts with.
  *
  * Add your first vow: + ⛓, name and rank it, the vow on the Vows tab. Add
  * your assets: + ◆, find and pick one, Add, and spend its experience from
@@ -38,6 +39,9 @@
  * camp; Make Camp, choosing Recuperate and Focus from its links. The dice are loaded, so each roll comes out as
  * the test says.
  *
+ * Back up your campaign: ☰ → Export…, its checklist and format, a real zip
+ * downloaded through the export overlay, then ☰ → Import…, left open.
+ *
  * The steps find their controls by `data-tour` ids, so these tests also
  * catch a UI change that strands a tutorial (a renamed control, a moved
  * dialog).
@@ -58,6 +62,7 @@ import {
 	setExpansions,
 } from './helpers/reset';
 import { settleHome, characterCount, activeCharacterName } from './helpers/home';
+import { loadDice, queueDice } from './helpers/dice';
 
 const POPOVER = '.driver-popover';
 
@@ -98,7 +103,7 @@ const next = (page: Page) => page.locator(`${POPOVER} .driver-popover-next-btn`)
 /**
  * The character tutorial from its Core tab on: initiative, a first vow, a
  * first asset bought with the starting experience and spent from the log,
- * then the Status tab, to Done. `first` is the number of its first step,
+ * then the debilities and bonds, to Done. `first` is the number of its first step,
  * `total` the tour's length; `tap` taps instead of clicking, as on a phone
  * (the log acts on a tap's touchend and cancels its click).
  */
@@ -110,15 +115,19 @@ async function walkSheet(page: Page, first: number, total: number, tap = false) 
 	await press(target(page, 'char-tab-core'));
 	await expectStep(page, 'Initiative', n(1));
 	await next(page);
+	await expectStep(page, 'Your stats', n(2));
+	await expect(page.locator(`${POPOVER} .driver-popover-description`)).toContainText(
+		'double-click that stat',
+	);
+	await next(page);
 
-	await expectStep(page, 'Your status', n(2));
-	await press(target(page, 'char-tab-status'));
+	// Debilities and bonds are on Core too, so no tab to click.
 	await expectStep(page, 'Debilities', n(3));
 	await next(page);
 	await expectStep(page, 'Bonds', n(4));
-	await expect(page.locator(`${POPOVER} .driver-popover-description`)).toContainText(
-		'Add your first vow, then Add your assets',
-	);
+	const bondsText = page.locator(`${POPOVER} .driver-popover-description`);
+	await expect(bondsText).toContainText('the note button at the end of the track');
+	await expect(bondsText).toContainText('Add your first vow, then Add your assets');
 	await next(page); // Done
 	await expect(page.locator(POPOVER)).toBeHidden();
 
@@ -167,7 +176,7 @@ async function takeAsset(page: Page, first: number, total: number, tap = false) 
 	await expectStep(page, 'Take it', n(4));
 	await press(target(page, 'asset-card-add'));
 	await expectStep(page, 'Spend the experience', n(5));
-	await press(page.locator('.xp-cost-link').first());
+	await press(page.locator('a.cmd-link[data-cmd^="/xp-="]').first());
 	await expectStep(page, 'Two more to go', n(6));
 	await expect(target(page, 'char-assets')).toContainText('Hawk');
 	await next(page); // Done
@@ -199,50 +208,57 @@ test.describe('Tutorial — Create a character', () => {
 		const before = await characterCount(page);
 		await startTutorial(page);
 
-		await expectStep(page, 'Open the character list', '1 of 14');
+		await expectStep(page, 'Open the character list', '1 of 15');
 		await target(page, 'char-switcher').click();
-		await expectStep(page, 'Start a new character', '2 of 14');
+		await expectStep(page, 'Start a new character', '2 of 15');
 		await target(page, 'new-char-action').click();
 
-		await expectStep(page, 'Roll a name', '3 of 14');
+		await expectStep(page, 'Roll a name', '3 of 15');
 		await target(page, 'roll-name').click();
 		const name = await target(page, 'new-char-name').locator('input').inputValue();
 		expect(name.trim(), 'a rolled name').not.toBe('');
 		await next(page);
 
-		await expectStep(page, 'Roll your stats', '4 of 14');
+		await expectStep(page, 'Roll your stats', '4 of 15');
 		await target(page, 'roll-stats').click();
 		await next(page);
 
-		await expectStep(page, 'Randomize the rest', '5 of 14');
+		// Region of origin is a core field: the step shows without YRT too.
+		await expectStep(page, 'Roll their details', '5 of 15');
+		await expect(page.locator(`${POPOVER} .driver-popover-description`)).toContainText(
+			'Set their Region of origin:',
+		);
 		await next(page);
 
-		await expectStep(page, 'Create your character', '6 of 14');
+		await expectStep(page, 'Randomize the rest', '6 of 15');
+		await next(page);
+
+		await expectStep(page, 'Create your character', '7 of 15');
 		await target(page, 'new-char-dialog-confirm').click();
 
-		await expectStep(page, 'Meet your character', '7 of 14');
+		await expectStep(page, 'Meet your character', '8 of 15');
 		await expect.poll(() => activeCharacterName(page)).toBe(name);
 		expect(await characterCount(page)).toBe(before + 1);
 		await next(page);
 
 		// The rolled details, rewritten as a bio. Next closes the editor.
-		await expectStep(page, 'Turn the rolls into a bio', '8 of 14');
+		await expectStep(page, 'Turn the rolls into a bio', '9 of 15');
 		const bio = target(page, 'char-bio');
 		await bio.locator('.md-notes-display').click();
 		await bio.locator('textarea').fill('Born in the Havens; left to keep a promise.');
 		await next(page);
 
-		await expectStep(page, 'Add a portrait', '9 of 14');
+		await expectStep(page, 'Add a portrait', '10 of 15');
 		await expect(bio).toContainText('left to keep a promise');
 		await target(page, 'char-portrait')
 			.locator('input[type="file"]')
 			.setInputFiles({ name: 'portrait.png', mimeType: 'image/png', buffer: PNG });
 		await expect(target(page, 'char-portrait').locator('img')).toBeVisible({ timeout: 5_000 });
 		await next(page);
-		await walkSheet(page, 10, 14);
+		await walkSheet(page, 11, 15);
 	});
 
-	test('rolls whatever is skipped, and with YRT covers the region', async ({ page }) => {
+	test('rolls whatever is skipped, and with YRT covers its fields', async ({ page }) => {
 		await openHome(page, true);
 		await startTutorial(page);
 
@@ -262,7 +278,10 @@ test.describe('Tutorial — Create a character', () => {
 		await expectStep(page, 'Roll your stats');
 		expect(await target(page, 'new-char-name').locator('input').inputValue()).not.toBe('');
 		await next(page);
-		await expectStep(page, 'Roll a region of origin', '5 of 15');
+		await expectStep(page, 'Roll their details', '5 of 15');
+		await expect(page.locator(`${POPOVER} .driver-popover-description`)).toContainText(
+			'Region of origin, Religion and Touched',
+		);
 		const stats = await target(page, 'new-char-stats')
 			.locator('input')
 			.evaluateAll((els) => els.map((e) => Number((e as HTMLInputElement).value)));
@@ -272,15 +291,15 @@ test.describe('Tutorial — Create a character', () => {
 		).toBe(true);
 		await next(page);
 		await expectStep(page, 'Randomize the rest');
-		await expect(
-			target(page, 'randomize-origin').locator('.bui-select-value--placeholder'),
-			'a region rolled',
-		).toHaveCount(0);
 		await next(page);
 
 		await expectStep(page, 'Create your character');
 		await target(page, 'new-char-dialog-confirm').click();
 		await expectStep(page, 'Meet your character', '8 of 15');
+		// The fields left empty were rolled on Create.
+		await expect(page.locator('.log-entry', { hasText: 'New Character' }).first()).toContainText(
+			'Region of origin:',
+		);
 		await next(page);
 		await expectStep(page, 'Turn the rolls into a bio');
 		await next(page);
@@ -301,15 +320,17 @@ test.describe('Tutorial — Create a character, on a phone', () => {
 		await page.locator('.mob-tab', { hasText: 'Foes' }).click();
 		await startTutorial(page);
 
-		await expectStep(page, 'Your characters', '1 of 15');
+		await expectStep(page, 'Your characters', '1 of 16');
 		await target(page, 'tab-characters').click();
-		await expectStep(page, 'Open the character list', '2 of 15');
+		await expectStep(page, 'Open the character list', '2 of 16');
 		await target(page, 'char-switcher').click();
 		await expectStep(page, 'Start a new character');
 		await target(page, 'new-char-action').click();
 		await expectStep(page, 'Roll a name');
 		await next(page);
 		await expectStep(page, 'Roll your stats');
+		await next(page);
+		await expectStep(page, 'Roll their details');
 		await next(page);
 		// Nothing randomized (and it stays that way): the new character's
 		// sheet opens on Core, so the tour brings up Background itself.
@@ -326,9 +347,9 @@ test.describe('Tutorial — Create a character, on a phone', () => {
 		await expectStep(page, 'Turn the rolls into a bio');
 		await expect(target(page, 'char-tab-background')).toHaveAttribute('data-state', 'active');
 		await next(page);
-		await expectStep(page, 'Add a portrait', '10 of 15');
+		await expectStep(page, 'Add a portrait', '11 of 16');
 		await next(page);
-		await walkSheet(page, 11, 15, true);
+		await walkSheet(page, 12, 16, true);
 	});
 });
 
@@ -489,35 +510,13 @@ test.describe('Tutorial — Create your first foe, on a phone', () => {
 	});
 });
 
-/**
- * Load the dice: `rollDie` draws one Uint32 from crypto.getRandomValues per
- * die, so queued values come up in order (`roll()` queues them).
- */
-async function loadDice(page: Page) {
-	await page.addInitScript(() => {
-		const queue: number[] = [];
-		(window as unknown as { __dice: number[] }).__dice = queue;
-		const real = crypto.getRandomValues.bind(crypto);
-		crypto.getRandomValues = ((arr: Uint32Array) => {
-			if (queue.length && arr instanceof Uint32Array && arr.length === 1) {
-				arr[0] = queue.shift() ?? 0;
-				return arr;
-			}
-			return real(arr);
-		}) as typeof crypto.getRandomValues;
-	});
-}
-
 /** An action roll's dice: the action die, then the two challenge dice. */
 const STRONG = [6, 1, 1];
 const MISS = [1, 10, 10];
 
 /** Queue `dice` (faces) and press Roll Move. */
 async function roll(page: Page, dice: number[], tap = false) {
-	await page.evaluate(
-		(faces) => (window as unknown as { __dice: number[] }).__dice.push(...faces.map((f) => f - 1)),
-		dice,
-	);
+	await queueDice(page, dice);
 	await (tap ? target(page, 'move-roll').tap() : target(page, 'move-roll').click());
 }
 
@@ -552,8 +551,8 @@ async function fight(page: Page, total: number, phone = false) {
 	// The roll just made; its momentum taken, its initiative left to Next.
 	await expectStep(page, 'What happened');
 	await expect(highlighted(page)).toContainText('Strong Hit');
-	await press(highlighted(page).locator('a.resource-link'));
-	await expect(highlighted(page).locator('a.resource-link')).toHaveCount(0);
+	await press(highlighted(page).locator('a.cmd-link[data-cmd^="/momentum"]'));
+	await expect(highlighted(page).locator('a.cmd-link[data-cmd^="/momentum"]')).toHaveCount(0);
 	await next(page);
 	await expect(page.getByRole('radio', { name: 'You have initiative' })).toHaveAttribute(
 		'aria-checked',
@@ -580,7 +579,7 @@ async function fight(page: Page, total: number, phone = false) {
 	await roll(page, STRONG, phone);
 	await expectStep(page, 'Harm your foe');
 	await expect(highlighted(page)).toContainText('Inflict double harm');
-	await press(highlighted(page).locator('a.progress-link'));
+	await press(highlighted(page).locator('a.cmd-link[data-cmd*=".progress"]'));
 	await expect(tally).not.toHaveText(progress);
 	await next(page);
 	if (phone) {
@@ -698,7 +697,7 @@ async function rest(page: Page, total: number, phone = false) {
 	await roll(page, STRONG, phone);
 	await expectStep(page, 'Take the health', n(6));
 	await expect(highlighted(page)).toContainText('Strong Hit');
-	await press(highlighted(page).locator('a.resource-link', { hasText: '+2 health' }));
+	await press(highlighted(page).locator('a.cmd-link', { hasText: '+2 health' }));
 	await expect(vital('Health')).toHaveText('4');
 	await next(page);
 
@@ -720,9 +719,9 @@ async function rest(page: Page, total: number, phone = false) {
 
 	// Recuperate and Focus: +1 health, +1 momentum.
 	await expectStep(page, 'Choose', n(12));
-	await press(highlighted(page).locator('a.resource-link', { hasText: '+1 health' }).first());
+	await press(highlighted(page).locator('a.cmd-link', { hasText: '+1 health' }).first());
 	await expect(vital('Health')).toHaveText('5');
-	const focus = highlighted(page).locator('a.resource-link', { hasText: '+1 momentum' });
+	const focus = highlighted(page).locator('a.cmd-link', { hasText: '+1 momentum' });
 	await press(focus);
 	await expect(focus).toHaveCount(0);
 	await next(page);
@@ -1042,5 +1041,77 @@ test.describe('Tutorial — Put your settlement on the map, on a phone', () => {
 		await openHome(page, false);
 		await startTutorial(page, 'Put your settlement on the map');
 		await mapIt(page, 'Ashfen', true);
+	});
+});
+
+/**
+ * Back up your campaign, ☰ to Done: Export… from the menu, its checklist
+ * (with `who` in it) and format, a real export through its overlay, then
+ * Import…, left open when the tour ends. `tap` taps, as on a phone.
+ */
+async function backUp(page: Page, who: string, tap = false) {
+	const n = (i: number) => `${i} of 7`;
+	const press = (l: Locator) => (tap ? l.tap() : l.click());
+	const menu = (name: string) =>
+		press(target(page, 'app-menu')).then(() => press(page.getByRole('menuitem', { name })));
+
+	await expectStep(page, 'Back up your campaign', n(1));
+	await menu('Export…');
+	await expectStep(page, 'What goes in', n(2));
+	await expect(target(page, 'export-list')).toContainText(who);
+	await next(page);
+	await expectStep(page, 'Zip or Markdown', n(3));
+	await next(page);
+
+	// A real export: the zip downloads while the overlay shows.
+	await expectStep(page, 'Export it', n(4));
+	const download = page.waitForEvent('download', { timeout: 30_000 });
+	await press(target(page, 'export-go'));
+	await expectStep(page, 'On its way', n(5));
+	expect((await download).suggestedFilename()).toMatch(/^ironledger-export-.+\.zip$/);
+	await expect(target(page, 'export-progress')).toBeHidden({ timeout: 30_000 });
+
+	await expectStep(page, 'Bringing it back', n(6));
+	await menu('Import…');
+	await expectStep(page, 'Import', n(7));
+	await next(page); // Done
+	await expect(page.locator(POPOVER)).toBeHidden();
+	await expect(target(page, 'import-dialog')).toBeVisible();
+}
+
+test.describe('Tutorial — Back up your campaign', () => {
+	test.beforeAll(async () => {
+		await Promise.all([resetCharacters(), resetFoes(), resetExpeditions(), resetCommunities()]);
+		await resetLog();
+	});
+
+	test('with nothing made yet, says to make a character first', async ({ page }) => {
+		await openHome(page, false);
+		await startTutorial(page, 'Back up your campaign');
+		await expectStep(page, 'Nothing to back up yet');
+		await next(page); // Done
+		await expect(page.locator(POPOVER)).toBeHidden();
+	});
+
+	test('exports a zip, then opens Import', async ({ page }) => {
+		await seedCharacter('Brand');
+		await openHome(page, false);
+		await startTutorial(page, 'Back up your campaign');
+		await backUp(page, 'Brand');
+	});
+});
+
+test.describe('Tutorial — Back up your campaign, on a phone', () => {
+	test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+	test.beforeAll(async () => {
+		await resetCharacters();
+		await seedCharacter('Brand');
+	});
+
+	test('exports a zip, then opens Import, tapping', async ({ page }) => {
+		await openHome(page, false);
+		await startTutorial(page, 'Back up your campaign');
+		await backUp(page, 'Brand', true);
 	});
 });

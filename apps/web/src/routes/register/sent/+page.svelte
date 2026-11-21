@@ -30,7 +30,8 @@
 		</p>
 
 		<p class="auth-info muted">
-			Didn't receive it? Check your spam — even the swiftest ravens go astray. Or
+			Didn't receive it? Check your spam — even the swiftest ravens go astray. The link works for 24
+			hours. Still nothing? <a href="/resend-verification">Send a new link</a>, or
 			<a href="/register">try again</a> with a different address.
 		</p>
 	</div>

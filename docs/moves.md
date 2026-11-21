@@ -87,42 +87,44 @@ The formula updates live as stat selection, adds, mana commit, or difficulty cha
 
 When a character's momentum is negative and `|momentum| === action die value`, the action die is treated as 0. This is displayed in the log as a "Momentum cancel!" warning.
 
-## Interactive Links in Outcome Text
+## Links in Outcome Text
 
-Move outcomes are authored with `[label](scheme:args)` DSL links (see
-[data-schema.md → Data-Driven Links](data-schema.md#data-driven-links)); each
-compiles to one of the interactive link types below. There are 8 interactive
-types plus one display-only type. When a move is rolled, `data-entry-id` and
-`data-char-id` attributes are injected into links that modify state (resource,
-debility, progress, initiative, menace) so LogPanel can identify the log entry
-and character. Links that modify state are drawn in strikethrough after being
-clicked to prevent double-application.
+A link in a move's text is a command: `[take +1 momentum](/momentum++)`,
+`[Inflict double harm](/foe.progress+=2)`, `[Endure Harm](/move endure-harm)`
+(see [data-schema.md → Links are commands](data-schema.md#links-are-commands)).
+When the move is rolled, its links are bound to the log entry and to the
+character, foe and expedition it was rolled for, plus the vow or companion
+the dialog asked for (`choose`, see
+[data-schema.md](data-schema.md#moves-that-act-on-a-vow-or-a-companion-choose))
+and Endure Harm's amount. A click in the log runs the command against those;
+a value link is struck through once it has changed something, a move or
+oracle link opens its dialog.
 
-| Link Type             | CSS Class            | Data Attributes               | Click Behavior                                                                  | After Click   |
-| --------------------- | -------------------- | ----------------------------- | ------------------------------------------------------------------------------- | ------------- |
-| Resource              | `.resource-link`     | `data-resource`, `data-value` | Modify character stat via action bus                                            | Strikethrough |
-| Move                  | `.move-link`         | `data-id`                     | Open MovesDialog to that move                                                   | No change     |
-| Oracle                | `.oracle-link`       | `data-oracle`                 | Open OraclesDialog to that oracle                                               | No change     |
-| Progress              | `.progress-link`     | `data-value`, `data-track`    | Mark progress on active track (combat/journey/delve)                            | Strikethrough |
-| Initiative            | `.initiative-link`   | `data-value`                  | Set initiative state (character/foe)                                            | Strikethrough |
-| Debility              | `.debility-link`     | `data-debility`, `data-value` | Toggle debility on character via action bus                                     | Strikethrough |
-| Menace                | `.menace-link`       | `data-value`                  | Mark menace on active vow                                                       | Strikethrough |
-| Reset Track           | `.reset-track-link`  | `data-track`                  | Clear named progress track to 0 via action bus                                  | Strikethrough |
-| Vanquish              | `.vanquish-foe-link` | _(none)_                      | Resolve the active foe (a decisive blow)                                        | Strikethrough |
-| Harm _(display-only)_ | `.harm-link`         | `data-resource`               | None — styled placeholder for actual harm amount in Endure Harm/Stress outcomes | No change     |
+In the Moves dialog itself, outcome previews are read-only (their value
+links come alive in the log, once the roll is made); a link in the trigger
+runs for the dialog's character, and move and oracle links open what they
+name.
 
-**Special case**: `move/ask-the-oracle` move-link opens OraclesDialog instead of MovesDialog.
+`/health-=harm` and `/spirit-=harm` in Endure Harm and Endure Stress show the
+amount resolved (`resolveHarmLinks`); the Apply button applies it. Companion
+Endure Harm works the same way on the companion chosen:
+`/companion.health-=harm` shows the amount, split at the companion's health,
+and Apply takes it off the companion through the command runner, which logs
+it and offers any leftover as −momentum.
+
+**Special case**: `/move ask-the-oracle` opens the Oracles dialog instead of
+the Moves dialog.
 
 ## Preconditions
 
-Moves can have preconditions checked via `firstPreconditionFailure()`:
+A move's `preconditions` is one condition expression
+([command-language.md → Conditions](command-language.md#conditions)), checked
+by `movePreconditionFailure()`:
 
-- `hasCharacter` — requires a character selected
-- `hasFoe` — requires a foe encounter active
-- `hasSite` — requires a site expedition active
-- `hasJourney` — requires a journey expedition active
-- `initiative` — requires specific initiative state
-- Stat thresholds (momentum, health, etc.)
+- `character`, `foe`, `site`, `journey`, `scene`: one is active.
+- `initiative == me` (`foe`, `none`): who has initiative.
+- Values and thresholds: `health == 0`, `mana >= 1`, `failures >= 6b`.
+- Combined with `&`, `|`, `!` and parentheses: `character & foe & initiative == me`.
 
 Moves that fail preconditions appear dimmed in the picker with a tooltip showing the reason.
 

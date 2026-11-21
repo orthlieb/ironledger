@@ -5,6 +5,7 @@
 import type { RequestHandler } from './$types';
 import { error } from '@sveltejs/kit';
 import { INTERNAL_API_URL } from '#lib/server/config.js';
+import { apiFetch } from '#lib/server/apiFetch.js';
 
 function authHeader(locals: App.Locals): Record<string, string> {
 	if (!locals.accessToken) throw error(401, 'Not authenticated');
@@ -15,7 +16,7 @@ function authHeader(locals: App.Locals): Record<string, string> {
 }
 
 export const GET: RequestHandler = async ({ locals }) => {
-	const res = await fetch(`${INTERNAL_API_URL}/api/v1/admin/registration-lock/status`, {
+	const res = await apiFetch(`${INTERNAL_API_URL}/api/v1/admin/registration-lock/status`, {
 		headers: authHeader(locals),
 	});
 	return new Response(res.body, {
@@ -26,7 +27,7 @@ export const GET: RequestHandler = async ({ locals }) => {
 
 export const POST: RequestHandler = async ({ locals, request }) => {
 	const body = await request.text();
-	const res = await fetch(`${INTERNAL_API_URL}/api/v1/admin/registration-lock`, {
+	const res = await apiFetch(`${INTERNAL_API_URL}/api/v1/admin/registration-lock`, {
 		method: 'POST',
 		headers: authHeader(locals),
 		body,
@@ -39,7 +40,7 @@ export const POST: RequestHandler = async ({ locals, request }) => {
 
 export const DELETE: RequestHandler = async ({ locals }) => {
 	if (!locals.accessToken) throw error(401, 'Not authenticated');
-	const res = await fetch(`${INTERNAL_API_URL}/api/v1/admin/registration-lock`, {
+	const res = await apiFetch(`${INTERNAL_API_URL}/api/v1/admin/registration-lock`, {
 		method: 'DELETE',
 		headers: { Authorization: `Bearer ${locals.accessToken}` },
 	});

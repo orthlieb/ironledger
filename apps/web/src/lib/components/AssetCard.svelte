@@ -11,8 +11,15 @@
 	import { computeAssetXpDiff } from '#lib/character.js';
 	import { assetIcon } from '#lib/iconRegistry.js';
 	import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
+	import {
+		fieldShown,
+		fieldValue,
+		findCharacterField,
+		valueLabel,
+	} from '#lib/characterFields.svelte.js';
 	import { renderNote } from '#lib/markdown.js';
 	import { renderRich } from '#lib/dsl.js';
+	import { linkVerb } from '#lib/commands/links.js';
 	import { draggable } from '#lib/actions/draggable.js';
 	import { tooltip } from '#lib/actions/tooltip.js';
 	import Select from '#lib/components/Select.svelte';
@@ -67,6 +74,8 @@
 		onOracleLink,
 		onCommit,
 		onClose,
+		characterFields,
+		blockedReason = null,
 	}: {
 		asset: CharacterAsset;
 		definition: AssetDefinition;
@@ -91,7 +100,33 @@
 		onCommit?: () => void;
 		/** X close button. Discards the draft without committing. */
 		onClose?: () => void;
+		/** The character's extension field values (`character.fields`): what
+		 *  a Touched asset's ability limit and level line read. */
+		characterFields?: Record<string, string>;
+		/** Why this owned asset can't be used now (its requirement fails), shown
+		 *  at the top of the card; Delete still works. */
+		blockedReason?: string | null;
 	} = $props();
+
+	/** An `abilityMaxByField` key's current value: the asset's own custom
+	 *  field if it has one, else the character field of that id. */
+	function limitValue(fieldId: string): string {
+		const own = asset.customValues?.[fieldId];
+		if (own !== undefined) return own;
+		const f = findCharacterField(fieldId);
+		return f ? fieldValue(f, characterFields) : '';
+	}
+
+	/** The character fields this asset shows (`definition.characterFields`),
+	 *  as text where its inputs used to be: "Second · Wolf". */
+	const fieldLine = $derived(
+		((definition.characterFields as string[] | undefined) ?? [])
+			.map((id) => findCharacterField(id))
+			.filter((f) => !!f && fieldShown(f, characterFields, findCharacterField))
+			.map((f) => valueLabel(f!, fieldValue(f!, characterFields)))
+			.filter(Boolean)
+			.join(' · '),
+	);
 
 	// Selectable-list item shape used by cantrips (and any future similar lists)
 	type SelectableItem = { key: string; name: string; desc: string };
@@ -140,7 +175,7 @@
 		if (!abmf) return Infinity;
 		let cap = Infinity;
 		for (const [fieldId, levelMap] of Object.entries(abmf)) {
-			const currentVal = asset.customValues?.[fieldId] ?? '';
+			const currentVal = limitValue(fieldId);
 			if (currentVal in levelMap) {
 				cap = Math.min(cap, levelMap[currentVal]!);
 			}
@@ -253,6 +288,15 @@
 	 *  DSL migration flipped the default (Phase 4). */
 	const abilityHtml = (text: string): string => renderRich(text);
 
+	/** The oracle an `/oracle` link in the preamble names, or null. */
+	function oracleLinkKey(target: EventTarget | null): string | null {
+		const link = (target as HTMLElement | null)?.closest(
+			'a.cmd-link[data-verb="oracle"]',
+		) as HTMLElement | null;
+		const verb = link ? linkVerb(link.dataset['cmd'] ?? '') : null;
+		return verb?.verb === 'oracle' ? verb.arg : null;
+	}
+
 	function toggleAbility(i: number) {
 		const enabling = !asset.abilities[i];
 		// Level cap: cannot enable more abilities than the current level allows
@@ -327,6 +371,16 @@
 			<span class="asset-cat">{definition.category}</span>
 		</div>
 
+		{#if blockedReason}
+			<p class="asset-blocked" role="note">Can't be used: {blockedReason}.</p>
+		{/if}
+
+		{#if fieldLine}
+			<p class="asset-char-fields" use:tooltip={"Set on the character's Core tab"}>
+				{fieldLine}
+			</p>
+		{/if}
+
 		<!-- Top custom fields (position !== 'bottom') rendered above preamble -->
 		{#each (definition.customFields ?? []).filter((f) => f.position !== 'bottom') as field}
 			{#if field.type === 'string'}
@@ -393,18 +447,18 @@
 			<p
 				class="asset-preamble"
 				onclick={(e) => {
-					const link = (e.target as HTMLElement).closest('.oracle-link') as HTMLElement | null;
-					if (link) {
+					const key = oracleLinkKey(e.target);
+					if (key !== null) {
 						e.preventDefault();
-						onOracleLink?.(link.dataset['oracle'] ?? '');
+						onOracleLink?.(key);
 					}
 				}}
 				onkeydown={(e) => {
 					if (e.key === 'Enter' || e.key === ' ') {
-						const link = (e.target as HTMLElement).closest('.oracle-link') as HTMLElement | null;
-						if (link) {
+						const key = oracleLinkKey(e.target);
+						if (key !== null) {
 							e.preventDefault();
-							onOracleLink?.(link.dataset['oracle'] ?? '');
+							onOracleLink?.(key);
 						}
 					}
 				}}
@@ -936,15 +990,34 @@
 		margin: 0;
 	}
 
-	.asset-preamble :global(a.oracle-link) {
+	.asset-preamble :global(a.cmd-link[data-verb='oracle']) {
 		color: var(--text-accent);
 		text-decoration: underline;
 		cursor: pointer;
 	}
-	.asset-preamble :global(a.oracle-link:hover) {
+	.asset-preamble :global(a.cmd-link[data-verb='oracle']:hover) {
 		opacity: 0.8;
 	}
 
+	/* A Touched asset's line of the character's own values ("Second · Wolf"),
+	   which are set on the sheet, not here. */
+	.asset-blocked {
+		margin: 0 0 6px;
+		padding: 4px 8px;
+		font-family: var(--font-ui);
+		font-size: 0.8rem;
+		color: var(--text);
+		background: color-mix(in srgb, var(--color-danger, #ef4444) 12%, transparent);
+		border-left: 3px solid var(--color-danger, #ef4444);
+		border-radius: 3px;
+	}
+	.asset-char-fields {
+		margin: 0 0 6px;
+		font-family: var(--font-ui);
+		font-size: 0.8rem;
+		font-weight: 700;
+		color: var(--text-accent);
+	}
 	.asset-description {
 		font-family: var(--font-ui);
 		font-size: 0.75rem;

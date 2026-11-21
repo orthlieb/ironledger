@@ -1,11 +1,18 @@
 /**
- * log-inject.spec.ts — Interactive log links via injected mock entries.
+ * log-inject.spec.ts — Log links via injected mock entries.
  *
- * Each test injects a log entry containing a specific link type then verifies
- * the click actually affects the relevant data.  No dice rolls are required.
+ * A link in a log entry is a command (docs/command-language.md → Log links):
+ * `<a class="cmd-link" data-cmd="/health--">`, bound to its entry and to the
+ * character, foe and expedition it was made for. Each test injects an entry
+ * holding command links, bound as the app binds them, then verifies the
+ * click affects the right data and the link is struck through. No dice rolls
+ * are required.
  *
  * Clicking a resource link may prepend cascade notification entries; we always
  * locate the mock entry by data-entry-id (via :has()), never by position.
+ *
+ * Also `/health=n` and the like, typed in the command bar: held to the same
+ * ranges as the resource links (docs/command-language.md).
  *
  * Prerequisites (provided by hooks.client.ts):
  *   window.__testLog.appendLog(title, html, id?, source?, roll?)
@@ -15,7 +22,7 @@
  * the .res-tile / .mt-tile inside the Characters area's Core sub-tab.
  */
 import { test, expect, type Page } from '@playwright/test';
-import { resetAll, resetFoes } from './helpers/reset';
+import { resetAll, resetFoes, resetExpansions, setExpansions } from './helpers/reset';
 import { settleHome, ensureCharacter } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
@@ -143,7 +150,7 @@ async function ensureExpeditionExists(page: Page) {
 	}
 }
 
-/** Inject a log entry into the session log via window.__testLog. */
+/** Inject a log entry into the session log via window.__testLog, as is. */
 async function inject(page: Page, title: string, html: string, id: string) {
 	await page.evaluate(
 		({ id, title, html }) => {
@@ -152,6 +159,34 @@ async function inject(page: Page, title: string, html: string, id: string) {
 		},
 		{ id, title, html },
 	);
+}
+
+/** A command link as content renders one (#lib/commands/links.ts). */
+const cmdLink = (label: string, cmd: string) =>
+	`<a class="cmd-link" data-cmd="${cmd}">${label}</a>`;
+
+/** Inject an entry whose command links are bound to it and to `bind` (the
+ *  character, foe, expedition…), as the app writes a move's outcome. */
+async function injectBound(
+	page: Page,
+	title: string,
+	html: string,
+	id: string,
+	bind: Record<string, string | number | undefined>,
+) {
+	await page.evaluate(
+		({ id, title, html, bind }) => {
+			// eslint-disable-next-line @typescript-eslint/no-explicit-any
+			const log = (window as any).__testLog;
+			log.appendLog(title, log.bindCommandLinks(html, id, bind), id);
+		},
+		{ id, title, html, bind },
+	);
+}
+
+/** An entry's link by its command. */
+function linkIn(page: Page, id: string, cmd: string) {
+	return entryById(page, id).locator(`a.cmd-link[data-cmd="${cmd}"]`);
 }
 
 /** Locate a log entry by its entry ID. */
@@ -171,6 +206,26 @@ async function readVital(
 		.textContent({ timeout: 5_000 })
 		.catch(() => '0');
 	return parseInt((text ?? '0').trim(), 10);
+}
+
+/** A vitals tile's value, on the active character's Core tab. */
+function vitalValue(page: Page, label: 'Health' | 'Spirit' | 'Supply' | 'Experience') {
+	return page.locator(`${CHAR_AREA} .res-tile`).filter({ hasText: label }).locator('.res-value');
+}
+
+/** Step a vitals tile to `target` with its − / + buttons. */
+async function setVital(page: Page, label: 'Health' | 'Spirit' | 'Supply', target: number) {
+	await switchCharTab(page, 'Core');
+	const tile = page.locator(`${CHAR_AREA} .res-tile`).filter({ hasText: label });
+	const value = vitalValue(page, label);
+	for (let i = 0; i < 10; i++) {
+		const cur = parseInt((await value.textContent()) ?? '0', 10);
+		if (cur === target) break;
+		const dir = cur < target ? 'Increase' : 'Decrease';
+		await tile.locator(`button[aria-label="${dir} ${label}"]`).click();
+		await expect(value).not.toHaveText(String(cur));
+	}
+	await expect(value).toHaveText(String(target));
 }
 
 /** Read momentum (a MomentumTile, not a ResourceTile). */
@@ -212,9 +267,9 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await resetAll();
 	});
 
-	// ── Resource links ───────────────────────────────────────────────────────
+	// ── Value links ─────────────────────────────────────────────────────────
 
-	test('resource links update vitals: health, spirit, supply, momentum, xp', async ({ page }) => {
+	test('value links update vitals: health, spirit, supply, momentum, xp', async ({ page }) => {
 		const charId = await goToHomeWithCharacter(page);
 		expect(charId).toBeTruthy();
 		const id = crypto.randomUUID();
@@ -225,108 +280,174 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		const momPre = await readMomentum(page);
 		const xpPre = await readVital(page, 'Experience');
 
-		await inject(
+		await injectBound(
 			page,
 			'Mock Outcome',
-			`
-			<p><a class="resource-link" data-resource="health"   data-value="-1" data-entry-id="${id}" data-char-id="${charId}">-1 health</a></p>
-			<p><a class="resource-link" data-resource="spirit"   data-value="-1" data-entry-id="${id}" data-char-id="${charId}">-1 spirit</a></p>
-			<p><a class="resource-link" data-resource="supply"   data-value="-1" data-entry-id="${id}" data-char-id="${charId}">-1 supply</a></p>
-			<p><a class="resource-link" data-resource="momentum" data-value="+1" data-entry-id="${id}" data-char-id="${charId}">+1 momentum</a></p>
-			<p><a class="resource-link" data-resource="xp"       data-value="+1" data-entry-id="${id}" data-char-id="${charId}">+1 xp</a></p>
-		`,
+			`<p>${cmdLink('-1 health', '/health--')}</p>` +
+				`<p>${cmdLink('-1 spirit', '/spirit--')}</p>` +
+				`<p>${cmdLink('-1 supply', '/supply--')}</p>` +
+				`<p>${cmdLink('+1 momentum', '/momentum++')}</p>` +
+				`<p>${cmdLink('+1 xp', '/xp++')}</p>`,
 			id,
+			{ charId },
 		);
+		await expect(entryById(page, id)).toBeVisible({ timeout: 3_000 });
 
-		const entry = entryById(page, id);
-		await expect(entry).toBeVisible({ timeout: 3_000 });
-
-		await entry.locator('a.resource-link[data-resource="health"]').click();
+		await linkIn(page, id, '/health--').click();
 		expect(await waitVitalChange(page, 'Health', hPre)).toBe(hPre - 1);
-
-		await entry.locator('a.resource-link[data-resource="spirit"]').click();
+		await linkIn(page, id, '/spirit--').click();
 		expect(await waitVitalChange(page, 'Spirit', sPre)).toBe(sPre - 1);
-
-		await entry.locator('a.resource-link[data-resource="supply"]').click();
+		await linkIn(page, id, '/supply--').click();
 		expect(await waitVitalChange(page, 'Supply', supPre)).toBe(supPre - 1);
-
-		await entry.locator('a.resource-link[data-resource="momentum"]').click();
+		await linkIn(page, id, '/momentum++').click();
 		expect(await waitMomentumChange(page, momPre)).toBe(momPre + 1);
-
-		await entry.locator('a.resource-link[data-resource="xp"]').click();
+		await linkIn(page, id, '/xp++').click();
 		expect(await waitVitalChange(page, 'Experience', xpPre)).toBe(xpPre + 1);
+
+		// Each is struck through once spent, and says what it did.
+		await expect(entryById(page, id).locator('s.resource-spent')).toHaveCount(5);
+		await expect(page.locator('.cb-status')).toHaveText(`Experience ${xpPre} → ${xpPre + 1}`);
 	});
 
-	test('mana resource link is marked spent', async ({ page }) => {
+	test('value links stop at the top of the range, and the log line says so', async ({ page }) => {
 		const charId = await goToHomeWithCharacter(page);
-		const id = crypto.randomUUID();
+		for (const label of ['Health', 'Spirit', 'Supply'] as const) await setVital(page, label, 4);
 
-		await inject(
+		const id = crypto.randomUUID();
+		await injectBound(
 			page,
 			'Mock Outcome',
-			`
-			<p><a class="resource-link" data-resource="mana" data-value="-1" data-entry-id="${id}" data-char-id="${charId}">-1 mana</a></p>
-		`,
+			`<p>${cmdLink('+2 health', '/health+=2')}</p>` +
+				`<p>${cmdLink('+2 spirit', '/spirit+=2')}</p>` +
+				`<p>${cmdLink('+2 supply', '/supply+=2')}</p>` +
+				`<p>${cmdLink('+1 health', '/health++')}</p>` +
+				`<p>${cmdLink('+40 xp', '/xp+=40')}</p>`,
 			id,
+			{ charId },
 		);
+		await expect(entryById(page, id)).toBeVisible({ timeout: 3_000 });
+		const logLine = (text: string | RegExp) =>
+			page.locator('.log-entry', { hasText: text }).first();
 
-		const entry = entryById(page, id);
-		const link = entry.locator('a.resource-link[data-resource="mana"]');
-		await expect(link).toBeVisible({ timeout: 3_000 });
-		await link.click();
-		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
+		// 4 and +2 is 5, not 6: health, spirit and supply top out at 5.
+		for (const label of ['Health', 'Spirit', 'Supply'] as const) {
+			await linkIn(page, id, `/${label.toLowerCase()}+=2`).click();
+			await expect(vitalValue(page, label)).toHaveText('5');
+			await expect(logLine(`${label}: 4 → 5 (+2, max 5)`)).toBeVisible();
+		}
+
+		// Already at the top, the link changes nothing, and the log says why.
+		await linkIn(page, id, '/health++').click();
+		await expect(logLine('Health: 5 → 5 (+1, max 5)')).toBeVisible();
+		await expect(vitalValue(page, 'Health')).toHaveText('5');
+
+		// Experience tops out at 30, as its tile does.
+		await linkIn(page, id, '/xp+=40').click();
+		await expect(vitalValue(page, 'Experience')).toHaveText('30');
+		await expect(logLine(/Experience: \d+ → 30 \(\+40, max 30\)/)).toBeVisible();
 	});
 
-	// ── Failure link ─────────────────────────────────────────────────────────
+	// `/health=n` in the command bar sets a value, held to its range as the
+	// sheet's controls are (docs/command-language.md → Operators).
+	test('= holds the value to the range, and the log line says so', async ({ page }) => {
+		await goToHomeWithCharacter(page);
+		await setVital(page, 'Health', 4);
+		const bar = page.locator('.cb-input');
+		const run = async (cmd: string) => {
+			await bar.fill(cmd);
+			await bar.press('Enter');
+		};
+		const logLine = (text: string | RegExp) =>
+			page.locator('.log-entry', { hasText: text }).first();
 
-	test('failure link advances the failure track', async ({ page }) => {
+		await run('/health=9');
+		await expect(page.locator('.cb-status')).toHaveText('Health 4 → 5 (max 5)');
+		await expect(vitalValue(page, 'Health')).toHaveText('5');
+		await expect(logLine('Health: 4 → 5 (= 9, max 5)')).toBeVisible();
+
+		// Already at the top: nothing moves, and the log says why.
+		await run('/health=7');
+		await expect(logLine('Health: 5 → 5 (= 7, max 5)')).toBeVisible();
+		await expect(vitalValue(page, 'Health')).toHaveText('5');
+
+		await run('/xp=50');
+		await expect(vitalValue(page, 'Experience')).toHaveText('30');
+		await expect(logLine(/Experience: \d+ → 30 \(= 50, max 30\)/)).toBeVisible();
+
+		await run('/momentum=-20');
+		await expect(page.locator('.cb-status')).toHaveText(/^Momentum −?\d+ → −6 \(min −6\)$/);
+		await expect.poll(() => readMomentum(page)).toBe(-6);
+		await expect(logLine(/Momentum: -?\d+ → -6 \(= −20, min −6\)/)).toBeVisible();
+
+		// A value inside the range is set as asked, with no note.
+		await run('/health=2');
+		await expect(vitalValue(page, 'Health')).toHaveText('2');
+		await expect(logLine('Health: 5 → 2')).toBeVisible();
+		await expect(page.locator('.log-entry', { hasText: '(= 2,' })).toHaveCount(0);
+
+		// Back to a new character's momentum and health: the tests after this
+		// one share the character, and burning momentum needs it above 0.
+		await run('/momentum=2');
+		await expect.poll(() => readMomentum(page)).toBe(2);
+		await run('/health=5');
+		await expect(vitalValue(page, 'Health')).toHaveText('5');
+	});
+
+	test('a content pack’s global field (mana): its link changes it and is spent', async ({
+		page,
+	}) => {
+		await setExpansions({ yrt: true });
+		try {
+			const charId = await goToHomeWithCharacter(page);
+			const id = crypto.randomUUID();
+			await injectBound(page, 'Mock Outcome', `<p>${cmdLink('+2 mana', '/mana+=2')}</p>`, id, {
+				charId,
+			});
+			await linkIn(page, id, '/mana+=2').click();
+			await expect(entryById(page, id).locator('s.resource-spent')).toHaveText('+2 mana');
+			await expect(page.locator('.log-entry', { hasText: 'Mana: 0 → 2 (+2)' })).toBeVisible();
+		} finally {
+			await resetExpansions();
+		}
+	});
+
+	// ── Tracks ──────────────────────────────────────────────────────────────
+
+	test('a failure link advances the failure track', async ({ page }) => {
 		const charId = await goToHomeWithCharacter(page);
 		const id = crypto.randomUUID();
 
-		// Status tab hosts the failures track (still uses .track-box / data-ticks).
-		// The track now lives inside ProgressTrackPanel, whose root class is .ptp-group
-		// (was .ca-track-group before the panel was extracted).
-		await switchCharTab(page, 'Status');
+		// Core hosts the failures track (.track-box / data-ticks, in ProgressTrackPanel).
+		await switchCharTab(page, 'Core');
 		const failGroup = page.locator(`${CHAR_AREA} .ptp-group`).filter({ hasText: /Failures/i });
-		const tickCountBefore = await failGroup
-			.locator('.track-box')
-			.evaluateAll((boxes: HTMLElement[]) =>
-				boxes.reduce((s, b) => s + parseInt(b.dataset['ticks'] ?? '0', 10), 0),
-			);
-
-		await inject(
-			page,
-			'Mock Miss',
-			`
-			<p><a class="failure-link" data-entry-id="${id}" data-char-id="${charId}">+1 failure</a></p>
-		`,
-			id,
-		);
-
-		const entry = entryById(page, id);
-		await expect(entry.locator('a.failure-link')).toBeVisible({ timeout: 3_000 });
-		await entry.locator('a.failure-link').click();
-		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
-
-		await switchCharTab(page, 'Status');
-		await expect(async () => {
-			const after = await failGroup
+		const ticks = () =>
+			failGroup
 				.locator('.track-box')
 				.evaluateAll((boxes: HTMLElement[]) =>
 					boxes.reduce((s, b) => s + parseInt(b.dataset['ticks'] ?? '0', 10), 0),
 				);
-			expect(after).toBeGreaterThan(tickCountBefore);
-		}).toPass({ timeout: 5_000 });
+		const before = await ticks();
+
+		await injectBound(page, 'Mock Miss', `<p>${cmdLink('+1 failure', '/failures++')}</p>`, id, {
+			charId,
+		});
+		await linkIn(page, id, '/failures++').click();
+		await expect(entryById(page, id).locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
+
+		await switchCharTab(page, 'Core');
+		await expect(async () => expect(await ticks()).toBeGreaterThan(before)).toPass({
+			timeout: 5_000,
+		});
 	});
 
-	// ── Debility link ─────────────────────────────────────────────────────────
+	// ── Debilities and initiative ───────────────────────────────────────────
 
-	test('debility link marks the debility on the character sheet', async ({ page }) => {
+	test('a debility link marks the debility on the character sheet', async ({ page }) => {
 		const charId = await goToHomeWithCharacter(page);
 		const id = crypto.randomUUID();
 
-		// Ensure Shaken is unmarked before the test. Debilities live on the Status tab.
-		await switchCharTab(page, 'Status');
+		// Ensure Shaken is unmarked before the test. Debilities live on Core.
+		await switchCharTab(page, 'Core');
 		const shakenBtn = page.locator(`${CHAR_AREA} .debility-btn`).filter({ hasText: 'Shaken' });
 		await expect(shakenBtn).toBeVisible({ timeout: 3_000 });
 		if (await shakenBtn.evaluate((el) => el.classList.contains('active'))) {
@@ -334,134 +455,83 @@ test.describe('Log interactive links (injected mock entries)', () => {
 			await expect(shakenBtn).not.toHaveClass(/active/, { timeout: 2_000 });
 		}
 
-		await inject(
-			page,
-			'Mock Outcome',
-			`
-			<p><a class="debility-link" data-debility="shaken" data-value="1" data-entry-id="${id}" data-char-id="${charId}">Mark Shaken</a></p>
-		`,
-			id,
-		);
+		await injectBound(page, 'Mock Outcome', `<p>${cmdLink('Mark Shaken', '/shaken++')}</p>`, id, {
+			charId,
+		});
+		await linkIn(page, id, '/shaken++').click();
+		await expect(entryById(page, id).locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
 
-		const entry = entryById(page, id);
-		await expect(entry.locator('a.debility-link')).toBeVisible({ timeout: 3_000 });
-		await entry.locator('a.debility-link').click();
-		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
-
-		await page.waitForTimeout(300);
-
-		await switchCharTab(page, 'Status');
+		await switchCharTab(page, 'Core');
 		await expect(shakenBtn).toHaveClass(/active/, { timeout: 8_000 });
 	});
 
-	// ── Initiative links ──────────────────────────────────────────────────────
-
-	test('initiative link: character has initiative shows in Core tab toggle', async ({ page }) => {
-		const charId = await goToHomeWithCharacter(page);
-		const id = crypto.randomUUID();
-
-		await inject(
-			page,
-			'Mock Outcome',
-			`
-			<p><a class="initiative-link" data-value="character" data-entry-id="${id}" data-char-id="${charId}">You have initiative</a></p>
-		`,
-			id,
-		);
-
-		const entry = entryById(page, id);
-		await expect(entry.locator('a.initiative-link[data-value="character"]')).toBeVisible({
-			timeout: 3_000,
-		});
-		await entry.locator('a.initiative-link[data-value="character"]').click();
-
-		await switchCharTab(page, 'Core');
-		await expect(
-			page.locator(
-				`${CHAR_AREA} .sr[aria-label="Initiative"] .sr-btn[aria-label="You have initiative"][aria-checked="true"]`,
-			),
-		).toBeVisible({
-			timeout: 5_000,
-		});
-	});
-
-	test('initiative link: foe has initiative shows in Core tab toggle', async ({ page }) => {
+	test('initiative links set who has initiative', async ({ page }) => {
 		const charId = await goToHomeWithCharacter(page);
 		await ensureFoeExists(page);
 		const id = crypto.randomUUID();
 
-		await inject(
+		await injectBound(
 			page,
 			'Mock Outcome',
-			`
-			<p><a class="initiative-link" data-value="foe" data-entry-id="${id}" data-char-id="${charId}">Foe has initiative</a></p>
-		`,
+			`<p>${cmdLink('You have initiative', '/initiative=me')}</p>` +
+				`<p>${cmdLink('Foe has initiative', '/initiative=foe')}</p>`,
 			id,
+			{ charId },
 		);
-
-		const entry = entryById(page, id);
-		await expect(entry.locator('a.initiative-link[data-value="foe"]')).toBeVisible({
-			timeout: 3_000,
-		});
-		await entry.locator('a.initiative-link[data-value="foe"]').click();
-
-		await switchCharTab(page, 'Core');
-		await expect(
+		const radio = (label: string) =>
 			page.locator(
-				`${CHAR_AREA} .sr[aria-label="Initiative"] .sr-btn[aria-label="Foe has initiative"][aria-checked="true"]`,
-			),
-		).toBeVisible({
-			timeout: 5_000,
-		});
+				`${CHAR_AREA} .sr[aria-label="Initiative"] .sr-btn[aria-label="${label}"][aria-checked="true"]`,
+			);
+
+		await linkIn(page, id, '/initiative=me').click();
+		await switchCharTab(page, 'Core');
+		await expect(radio('You have initiative')).toBeVisible({ timeout: 5_000 });
+
+		await linkIn(page, id, '/initiative=foe').click();
+		await expect(radio('Foe has initiative')).toBeVisible({ timeout: 5_000 });
 	});
 
-	// ── Vanquish foe link ─────────────────────────────────────────────────────
+	// ── Foes and expeditions ────────────────────────────────────────────────
 
-	test('vanquish-foe link fires and link is marked spent', async ({ page }) => {
+	test('a vanquish link vanquishes the foe and is spent', async ({ page }) => {
 		const charId = await goToHomeWithCharacter(page);
 		await ensureFoeExists(page);
+		const foeId = (await encountersWhenAtLeast(page, 1))[0].id;
 		const id = crypto.randomUUID();
 
-		await inject(
+		await injectBound(
 			page,
 			'Mock Outcome',
-			`
-			<p><a class="vanquish-foe-link" data-entry-id="${id}" data-char-id="${charId}">Vanquish Foe</a></p>
-		`,
+			`<p>${cmdLink('Vanquish Foe', '/foe.vanquished++')}</p>`,
 			id,
+			{ charId, foeId },
 		);
-
-		const entry = entryById(page, id);
-		await expect(entry.locator('a.vanquish-foe-link')).toBeVisible({ timeout: 3_000 });
-		await entry.locator('a.vanquish-foe-link').click();
-		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
+		await linkIn(page, id, '/foe.vanquished++').click();
+		await expect(entryById(page, id).locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
+		await expect
+			.poll(async () => (await getEncounters(page)).find((e) => e.id === foeId)?.vanquished, {
+				timeout: 5_000,
+			})
+			.toBe(true);
 	});
 
-	// ── Progress link ─────────────────────────────────────────────────────────
-
-	test('progress link marks journey progress and link is spent', async ({ page }) => {
+	test('a progress link marks journey progress and is spent', async ({ page }) => {
 		const charId = await goToHomeWithCharacter(page);
 		await ensureExpeditionExists(page);
 		const id = crypto.randomUUID();
 
-		await inject(
+		await injectBound(
 			page,
 			'Mock Outcome',
-			`
-			<p><a class="progress-link" data-track="journey" data-value="1" data-entry-id="${id}" data-char-id="${charId}">Mark progress</a></p>
-		`,
+			`<p>${cmdLink('Mark progress', '/journey.progress++')}</p>`,
 			id,
+			{ charId },
 		);
-
-		const entry = entryById(page, id);
-		await expect(entry.locator('a.progress-link')).toBeVisible({ timeout: 3_000 });
-		await entry.locator('a.progress-link').click();
-		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
+		await linkIn(page, id, '/journey.progress++').click();
+		await expect(entryById(page, id).locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
 	});
 
-	// ── Foe binding (data-foe-id) ─────────────────────────────────────────────
-
-	test('combat progress link acts on its bound foe, not the active one', async ({ page }) => {
+	test('a foe progress link acts on its bound foe, not the active one', async ({ page }) => {
 		const charId = await goToHomeWithCharacter(page);
 		await resetFoes();
 		await page.reload();
@@ -469,7 +539,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await settleHome(page);
 
 		// Foe A (first), then Foe B (becomes active). The injected link is bound
-		// to A via data-foe-id, so the click must advance A — not the active B.
+		// to A, so the click must advance A — not the active B.
 		await ensureFoeExists(page);
 		const foeAId = (await encountersWhenAtLeast(page, 1))[0].id;
 		await addFoe(page);
@@ -478,73 +548,58 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		const foeBId = encs.find((e) => e.id !== foeAId)!.id;
 
 		const id = crypto.randomUUID();
-		await inject(
+		await injectBound(
 			page,
 			'Mock Outcome',
-			`<p><a class="progress-link" data-track="combat" data-value="2" data-foe-id="${foeAId}" data-entry-id="${id}" data-char-id="${charId}">Mark progress</a></p>`,
+			`<p>${cmdLink('Inflict double harm', '/foe.progress+=2')}</p>`,
 			id,
+			{ charId, foeId: foeAId },
 		);
-		const entry = entryById(page, id);
-		await entry.locator('a.progress-link').click();
-		await expect(entry.locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
+		await linkIn(page, id, '/foe.progress+=2').click();
+		await expect(entryById(page, id).locator('s.resource-spent')).toBeVisible({ timeout: 3_000 });
 
-		// Let the 1.5 s debounce persist, then confirm A advanced and B did not.
-		await page.waitForTimeout(2_000);
-		const after = await getEncounters(page);
-		expect(after.find((e) => e.id === foeAId)?.ticks).toBeGreaterThan(0);
-		expect(after.find((e) => e.id === foeBId)?.ticks).toBe(0);
+		// Let the debounce persist, then confirm A advanced and B did not.
+		await expect
+			.poll(async () => (await getEncounters(page)).find((e) => e.id === foeAId)?.ticks, {
+				timeout: 6_000,
+			})
+			.toBeGreaterThan(0);
+		expect((await getEncounters(page)).find((e) => e.id === foeBId)?.ticks).toBe(0);
 	});
 
-	test('combat progress link no-ops when its bound foe has been vanquished', async ({ page }) => {
+	test('a link bound to a foe that is gone says why and stays unspent', async ({ page }) => {
 		const charId = await goToHomeWithCharacter(page);
-		await resetFoes();
-		await page.reload();
-		await waitForCharactersArea(page);
-		await settleHome(page);
-
-		await ensureFoeExists(page);
-		const foeAId = (await encountersWhenAtLeast(page, 1))[0].id;
-
-		// Vanquish the (active) foe A via its status radio.
-		await page
-			.locator(`${FOE_AREA} .sr[aria-label="Foe status"] .sr-btn[aria-label="Mark vanquished"]`)
-			.click();
-
 		const id = crypto.randomUUID();
-		await inject(
+		await injectBound(
 			page,
 			'Mock Outcome',
-			`<p><a class="progress-link" data-track="combat" data-value="2" data-foe-id="${foeAId}" data-entry-id="${id}" data-char-id="${charId}">Mark progress</a></p>`,
+			`<p>${cmdLink('Inflict harm', '/foe.progress++')}</p>`,
 			id,
+			{ charId, foeId: crypto.randomUUID() },
 		);
-		const entry = entryById(page, id);
-		await entry.locator('a.progress-link').click();
-
-		// No-op: a vanquished foe's progress is untouched (stays 0).
-		await page.waitForTimeout(2_000);
-		expect((await getEncounters(page)).find((e) => e.id === foeAId)?.ticks).toBe(0);
+		await linkIn(page, id, '/foe.progress++').click();
+		await expect(page.locator('.cb-status')).toHaveText(
+			'The foe this entry was made against is gone.',
+		);
+		await expect(entryById(page, id).locator('s.resource-spent')).toHaveCount(0);
+		await expect(linkIn(page, id, '/foe.progress++')).toBeVisible();
 	});
 
-	// ── Burn momentum link ────────────────────────────────────────────────────
+	// ── Burn momentum ───────────────────────────────────────────────────────
 
-	test('burn-momentum link resets momentum and shows burn in log', async ({ page }) => {
+	test('a burn link resets momentum and shows the burn in the roll', async ({ page }) => {
 		const charId = await goToHomeWithCharacter(page);
 
-		// Boost momentum to be well above reset.
+		// Momentum well above its reset.
 		const boostId = crypto.randomUUID();
 		const momBefore = await readMomentum(page);
-		await inject(
-			page,
-			'Boost',
-			`
-			<p><a class="resource-link" data-resource="momentum" data-value="+3" data-entry-id="${boostId}" data-char-id="${charId}">+3 momentum</a></p>
-		`,
-			boostId,
-		);
-		await entryById(page, boostId).locator('a.resource-link[data-resource="momentum"]').click();
+		await injectBound(page, 'Boost', `<p>${cmdLink('+3 momentum', '/momentum+=3')}</p>`, boostId, {
+			charId,
+		});
+		await linkIn(page, boostId, '/momentum+=3').click();
 		const momBoosted = await waitMomentumChange(page, momBefore);
 
-		// Inject a roll entry with RollMeta (miss).
+		// A missed roll with its roll data, and the offer to burn on it.
 		const rollId = crypto.randomUUID();
 		await page.evaluate(
 			({ rollId, charId }) => {
@@ -559,69 +614,80 @@ test.describe('Log interactive links (injected mock entries)', () => {
 			},
 			{ rollId, charId },
 		);
-
-		// Burn momentum entry referencing the roll.
 		const burnId = crypto.randomUUID();
-		await inject(
+		await injectBound(
 			page,
 			'Burn Momentum',
-			`
-			<p><a class="burn-momentum-link" data-roll-entry-id="${rollId}" data-entry-id="${burnId}" data-char-id="${charId}">burn momentum</a></p>
-		`,
+			`<p>${cmdLink('burn momentum', '/burn')}</p>`,
 			burnId,
+			{
+				charId,
+				rollId,
+			},
 		);
 
-		const burnEntry = entryById(page, burnId);
-		await expect(burnEntry.locator('a.burn-momentum-link')).toBeVisible({ timeout: 3_000 });
-		await burnEntry.locator('a.burn-momentum-link').click();
-
-		// Momentum should drop after burn.
+		await linkIn(page, burnId, '/burn').click();
 		await waitMomentumChange(page, momBoosted);
 		expect(await readMomentum(page)).toBeLessThan(momBoosted);
+		await expect(entryById(page, burnId).locator('s.resource-spent')).toBeVisible();
+		await expect(entryById(page, rollId).locator('.roll-burn')).toBeVisible();
 	});
 
-	// ── Move link (Pay the Price) ─────────────────────────────────────────────
+	// ── Moves and oracles ───────────────────────────────────────────────────
 
-	test('move-link opens Pay the Price in the moves dialog', async ({ page }) => {
+	test('a move link opens Pay the Price in the moves dialog', async ({ page }) => {
 		const charId = await goToHomeWithCharacter(page);
 		const id = crypto.randomUUID();
-
-		await inject(
+		await injectBound(
 			page,
 			'Mock Outcome',
-			`
-			<p>On a miss: <a class="move-link" data-id="move/pay-the-price" data-entry-id="${id}" data-char-id="${charId}">Pay the Price</a></p>
-		`,
+			`<p>On a miss: ${cmdLink('Pay the Price', '/move pay-the-price')}</p>`,
 			id,
+			{ charId },
 		);
-
-		const entry = entryById(page, id);
-		await expect(entry.locator('a.move-link')).toBeVisible({ timeout: 3_000 });
-		await entry.locator('a.move-link').click();
+		await linkIn(page, id, '/move pay-the-price').click();
 		await expect(page.locator('.moves-dialog')).toBeVisible({ timeout: 5_000 });
+		await expect(page.locator('.moves-dialog')).toContainText('Pay the Price');
 		await page.keyboard.press('Escape');
+		// Opening a move spends nothing.
+		await expect(linkIn(page, id, '/move pay-the-price')).toBeVisible();
 	});
 
-	// ── Oracle link ───────────────────────────────────────────────────────────
-
-	test('oracle-link opens the oracles dialog', async ({ page }) => {
+	test('an oracle link opens the oracles dialog', async ({ page }) => {
 		const charId = await goToHomeWithCharacter(page);
 		const id = crypto.randomUUID();
-
-		await inject(
+		await injectBound(
 			page,
 			'Mock Outcome',
-			`
-			<p>Ask: <a class="oracle-link" data-oracle="action-theme" data-entry-id="${id}" data-char-id="${charId}">Action + Theme</a></p>
-		`,
+			`<p>Ask: ${cmdLink('Region', '/oracle region')}</p>`,
 			id,
+			{
+				charId,
+			},
 		);
-
-		const entry = entryById(page, id);
-		await expect(entry.locator('a.oracle-link')).toBeVisible({ timeout: 3_000 });
-		await entry.locator('a.oracle-link').click();
+		await linkIn(page, id, '/oracle region').click();
 		await expect(page.locator('.oracles-dialog')).toBeVisible({ timeout: 5_000 });
 		await page.keyboard.press('Escape');
+	});
+
+	// ── Old links ───────────────────────────────────────────────────────────
+
+	test('a link saved in an old form does nothing; its text stays', async ({ page }) => {
+		const charId = await goToHomeWithCharacter(page);
+		const momBefore = await readMomentum(page);
+		const id = crypto.randomUUID();
+		await inject(
+			page,
+			'Old Outcome',
+			`<p><a class="resource-link" data-resource="momentum" data-value="+1" data-entry-id="${id}" data-char-id="${charId}">+1 momentum</a></p>`,
+			id,
+		);
+		const old = entryById(page, id).getByText('+1 momentum');
+		await expect(old).toBeVisible();
+		await old.click({ force: true });
+		await page.waitForTimeout(500);
+		expect(await readMomentum(page)).toBe(momBefore);
+		await expect(entryById(page, id).locator('s.resource-spent')).toHaveCount(0);
 	});
 
 	// ── Cleanup ───────────────────────────────────────────────────────────────

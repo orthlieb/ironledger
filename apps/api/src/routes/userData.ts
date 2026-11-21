@@ -39,6 +39,14 @@ import type { FastifyReply } from 'fastify';
 
 const kindParams = z.object({ kind: z.string() });
 const kindIdParams = z.object({ kind: z.string(), id: z.string() });
+
+/**
+ * A new entity's id: letters, digits, _ and -. The web app mints UUIDs; an
+ * id holding "/" or ".." (say, from a doctored backup) would become extra
+ * path segments wherever it's put into a URL. Checked on create only, so an
+ * entity stored before this rule can still be edited and deleted.
+ */
+const ENTITY_ID = /^[A-Za-z0-9_-]{1,64}$/;
 const entityBody = z.record(z.string(), z.unknown());
 const replaceBody = z.record(z.string(), z.unknown()); // { <kind>: Entity[] }
 const portraitBody = z.object({ dataUrl: z.string() });
@@ -155,6 +163,9 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
       const entity = req.body as Record<string, unknown>;
       const id = typeof entity.id === 'string' && entity.id ? entity.id : null;
       if (!id) return badRequest(reply, 'Entity must have a non-empty string id');
+      if (!ENTITY_ID.test(id)) {
+        return badRequest(reply, 'Entity id may hold only letters, digits, _ and -');
+      }
       if (IMAGE_KINDS.has(kind) && !isValidImageUrl(entity.imageUrl)) {
         return badRequest(reply, 'imageUrl is not a valid image data URL or https URL');
       }
@@ -198,6 +209,9 @@ export const userDataRoutes: FastifyPluginAsyncZod = async (server) => {
       for (const [i, e] of entities.entries()) {
         if (typeof e.id !== 'string' || !e.id) {
           return badRequest(reply, `Entity #${i + 1}: missing or non-string id`);
+        }
+        if (!ENTITY_ID.test(e.id)) {
+          return badRequest(reply, `Entity #${i + 1}: id may hold only letters, digits, _ and -`);
         }
         if (IMAGE_KINDS.has(kind) && !isValidImageUrl(e.imageUrl)) {
           return badRequest(

@@ -112,18 +112,28 @@ export function refreshTokenExpiresAt(): Date {
 // Email verification / password reset tokens (opaque random bytes)
 // ---------------------------------------------------------------------------
 
+/** How long a password-reset link works: short, since it changes the password. */
+export const RESET_LINK_TTL_MS = 60 * 60 * 1000; // 1 hour
+
 /**
- * Generates a short-lived single-use token for email verification
- * or password reset. Returns raw (for the email link) + hash (for the DB).
- * Expires after 1 hour.
+ * How long an email-verification link works. Long enough for an email that
+ * lands in spam to be found the next day; a new link can be asked for at
+ * any time (POST /auth/resend-verification).
  */
-export function generateAuthToken(): {
+export const VERIFY_LINK_TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
+
+/**
+ * Generates a single-use token for email verification or password reset.
+ * Returns raw (for the email link) + hash (for the DB). Expires after
+ * `ttlMs`, an hour by default.
+ */
+export function generateAuthToken(ttlMs: number = RESET_LINK_TTL_MS): {
   raw: string;
   hash: string;
   expiresAt: Date;
 } {
   const raw = randomBytes(32).toString('hex');
   const hash = hashToken(raw);
-  const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+  const expiresAt = new Date(Date.now() + ttlMs);
   return { raw, hash, expiresAt };
 }

@@ -15,7 +15,7 @@
 //   Each expansion may ship a foes_overrides_<source>.json that marks
 //   base foes as absent or attaches a setting-specific addendum. Overrides
 //   apply only while that expansion is enabled. They affect the picker
-//   (visibility) and the rendered description; findFoe/findFoeByName are
+//   (visibility) and the rendered description; findFoe/findDenizenFoe are
 //   never filtered so existing FoeEncounter records keep resolving.
 //
 // Constants re-exported for use in components:
@@ -26,6 +26,7 @@
 
 import type { FoeDef, FoeNature, CatalogueSource } from '#lib/types.js';
 import { getExtensions, isSourceEnabled } from '#lib/expansionStore.svelte.js';
+import { fetchCatalogue } from '#lib/catalogueFetch.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -127,7 +128,7 @@ export async function loadFoes(): Promise<void> {
 	if (_loaded || _loading) return;
 	_loading = true;
 	try {
-		const res = await fetch('/api/catalogue/foes', { cache: 'reload' });
+		const res = await fetchCatalogue('/api/catalogue/foes');
 		if (!res.ok) throw new Error(`Foe fetch failed: ${res.status}`);
 		const json = (await res.json()) as { foes: FoeDef[]; overrides?: FoeOverridesFile[] };
 		_foes = json.foes.sort((a, b) => a.name.localeCompare(b.name));
@@ -222,10 +223,27 @@ export function resolveFoeName(foe: FoeDef): string {
 	return foe.name;
 }
 
-/** Case-insensitive lookup by name. Never filtered. */
-export function findFoeByName(name: string): FoeDef | undefined {
-	const lower = name.toLowerCase();
-	return _foes.find((f) => f.name.toLowerCase() === lower);
+// ---------------------------------------------------------------------------
+// Site denizens — a slot holds a foe's id (picked from the list) or the text
+// typed into it. Never filtered.
+// ---------------------------------------------------------------------------
+
+/** The foe a denizen slot names: by id, else by name as typed (the name it
+ *  shows here, or the catalogue's), ignoring case. */
+export function findDenizenFoe(ref: string): FoeDef | undefined {
+	if (!ref) return undefined;
+	const byId = findFoe(ref);
+	if (byId) return byId;
+	const lower = ref.trim().toLowerCase();
+	return _foes.find(
+		(f) => resolveFoeName(f).toLowerCase() === lower || f.name.toLowerCase() === lower,
+	);
+}
+
+/** A denizen slot as shown: a picked foe's name, else the text typed. */
+export function denizenLabel(ref: string): string {
+	const def = ref ? findFoe(ref) : undefined;
+	return def ? resolveFoeName(def) : ref;
 }
 
 // ---------------------------------------------------------------------------

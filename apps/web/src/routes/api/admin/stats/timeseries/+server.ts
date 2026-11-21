@@ -4,6 +4,7 @@
 import type { RequestHandler } from './$types';
 import { error } from '@sveltejs/kit';
 import { INTERNAL_API_URL } from '#lib/server/config.js';
+import { apiFetch } from '#lib/server/apiFetch.js';
 
 function authHeader(locals: App.Locals): Record<string, string> {
 	if (!locals.accessToken) throw error(401, 'Not authenticated');
@@ -12,7 +13,7 @@ function authHeader(locals: App.Locals): Record<string, string> {
 
 export const GET: RequestHandler = async ({ locals, url }) => {
 	const timeframe = url.searchParams.get('timeframe') ?? '1day';
-	const res = await fetch(
+	const res = await apiFetch(
 		`${INTERNAL_API_URL}/api/v1/admin/stats/timeseries?timeframe=${timeframe}`,
 		{
 			headers: authHeader(locals),

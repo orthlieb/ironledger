@@ -7,20 +7,20 @@
 	 * Notes are attached per-entry and persist to localStorage.
 	 * Clearing the log requires confirmation via a native dialog (irreversible).
 	 */
+	import { outcomeClass, outcomeLabel, moveOutcomeHtml } from '#lib/moveRoll.js';
+	import { inertBody } from '#lib/inertHtml.js';
 	import {
 		type LogEntry,
 		initLog,
 		clearLog,
 		deleteLogEntry,
 		updateLogEntryHtml,
-		enrichOutcomeLinks,
-		triggerXpSpend,
-		triggerAction,
-		appendLog,
 		getLog,
 		sessionLog,
+		triggerAction,
 	} from '#lib/log.svelte.js';
-	import { OVERFLOW_RULES, FLOOR_OVERFLOW_RULES } from '#lib/cascadeRules.js';
+	import { bindCommandLinks, readCommandLink, spendCommandLink } from '#lib/commands/links.js';
+	import { runLink, reportCommandResult } from '#lib/commands/run.svelte.js';
 	import type { DiceCtx } from '#lib/diceContext.svelte.js';
 	import { headingText } from '#lib/fontStore.svelte.js';
 	import { matchNoteHtml } from '#lib/rollMatch.js';
@@ -53,30 +53,14 @@
 	import rotateRightSvg from '#icons/arrow-rotate-right-solid.svg?raw';
 
 	// ---------------------------------------------------------------------------
-	// Callback props for interactive log links (Phase 2)
+	// Props. Links in entries are commands (#lib/commands/links.ts): a click
+	// runs one against the entry's binding, so the panel needs only the active
+	// character, for burning momentum.
 	// ---------------------------------------------------------------------------
 	let {
 		ctx = null,
-		onMoveLink,
-		onOracleLink,
-		onProgressLink,
-		onCountdownLink,
-		onInitiativeLink,
-		onMenaceLink,
-		onVanquishFoe,
-		onChangeTheme,
-		onChangeDomain,
 	}: {
 		ctx?: DiceCtx | null;
-		onMoveLink?: (moveId: string, harm?: number) => void;
-		onOracleLink?: (oracleKey: string, stat?: string) => void;
-		onProgressLink?: (track: string, value: number, expId?: string, foeId?: string) => void;
-		onCountdownLink?: (track: string, value: number, expId?: string) => void;
-		onInitiativeLink?: (value: string, charId: string) => void;
-		onMenaceLink?: (value: number, foeId?: string) => void;
-		onVanquishFoe?: (foeId?: string) => void;
-		onChangeTheme?: (expeditionId: string) => void;
-		onChangeDomain?: (expeditionId: string) => void;
 	} = $props();
 
 	// The log is global — no characterId prop needed.
@@ -151,6 +135,59 @@
 		return () => document.removeEventListener('ironledger:story-generate', onStory);
 	});
 
+	// `/burn` in the command bar: burn momentum on the newest action roll, as
+	// its burn link would, and spend that link. The bar hears back through
+	// `reply`.
+	$effect(() => {
+		const onBurn = (e: Event) => {
+			const d = (
+				e as CustomEvent<{ rollId?: string; reply?: (message: string, ok: boolean) => void }>
+			).detail;
+			(d?.reply ?? (() => {}))(...burnRoll(d?.rollId));
+		};
+		document.addEventListener('ironledger:burn', onBurn);
+		return () => document.removeEventListener('ironledger:burn', onBurn);
+	});
+
+	/** Burn momentum on an action roll: the one a burn link was offered on,
+	 *  or, typed, the newest, if a burn is on offer for it (whose link is then
+	 *  spent). The message for the command bar, and whether it burned. */
+	function burnRoll(rollId?: string): [string, boolean] {
+		const entries = getLog();
+		const roll = rollId
+			? entries.find((x) => x.id === rollId)
+			: entries.find((x) => x.roll || x.html.includes('class="roll-burn"'));
+		if (!roll) return ['No action roll to burn momentum on.', false];
+		if (!roll.roll)
+			return [`Momentum is already burned on ${rollId ? 'that' : 'the newest'} roll.`, false];
+		let offer: { id: string; html: string } | undefined;
+		if (!rollId) {
+			offer = entries.find((x) => x.html.includes(`data-cmd="/burn"`) && offerFor(x.html, roll.id));
+			if (!offer) return ['Burning momentum wouldn’t improve the newest roll.', false];
+		}
+		if (!ctx || ctx.charId !== roll.roll.charId)
+			return ['Make the character who rolled active to burn their momentum.', false];
+		if (ctx.data.momentum <= 0) return ['No momentum to burn.', false];
+		const mom = ctx.data.momentum;
+		const reset = momentumReset(ctx.data);
+		if (offer) {
+			const at = offerFor(offer.html, roll.id)!;
+			updateLogEntryHtml(offer.id, spendCommandLink(offer.html, at.index, '/burn'));
+		}
+		burnMomentum(roll);
+		return [`Burned momentum (${mom} → reset ${reset}).`, true];
+	}
+
+	/** An entry's unspent burn link for a roll, and its place. */
+	function offerFor(html: string, rollId: string): { index: number | undefined } | null {
+		const m = html.match(
+			new RegExp(`<a class="cmd-link"(?=[^>]*\\sdata-roll-entry-id="${rollId}")[^>]*>`),
+		);
+		if (!m || !m[0].includes('data-cmd="/burn"')) return null;
+		const i = m[0].match(/\sdata-link="(\d+)"/);
+		return { index: i ? Number(i[1]) : undefined };
+	}
+
 	// Mobile tap-tracking — used by touchend delegation to distinguish taps from scrolls.
 	let _touchStartX = 0;
 	let _touchStartY = 0;
@@ -158,17 +195,6 @@
 	// ---------------------------------------------------------------------------
 	// Burn Momentum
 	// ---------------------------------------------------------------------------
-
-	function outcomeClass(hits1: boolean, hits2: boolean): string {
-		if (hits1 && hits2) return 'roll-outcome-strong';
-		if (hits1 || hits2) return 'roll-outcome-weak';
-		return 'roll-outcome-miss';
-	}
-	function outcomeLabel(hits1: boolean, hits2: boolean): string {
-		if (hits1 && hits2) return 'Strong Hit';
-		if (hits1 || hits2) return 'Weak Hit';
-		return 'Miss';
-	}
 
 	function burnMomentum(entry: LogEntry) {
 		if (!entry.roll || !ctx) return;
@@ -199,17 +225,14 @@
 			`</div>` +
 			matchNoteHtml(newHits1, newHits2, isMatch);
 
-		// New outcome text from move definition
+		// The new outcome's text, its links bound as the roll's were.
 		const move = findMove(moveId);
 		let outcomeTextHtml = '';
 		if (move) {
-			let raw: string;
-			if (newHits1 && newHits2) raw = move.strong ?? '';
-			else if (newHits1 || newHits2) raw = move.weak ?? '';
-			else raw = move.miss ?? '';
-			if (raw) {
-				raw = enrichOutcomeLinks(raw, entry.id, charId);
-				outcomeTextHtml = `<div class="move-outcome">${raw}</div>`;
+			const outcome = moveOutcomeHtml(move, newHits1, newHits2);
+			if (outcome) {
+				const bound = bindCommandLinks(outcome, entry.id, { charId, ...entry.roll.bind });
+				outcomeTextHtml = `<div class="move-outcome">${bound}</div>`;
 			}
 		}
 
@@ -269,8 +292,7 @@
 	 */
 	function htmlToMarkdown(html: string): string {
 		if (typeof document === 'undefined') return html;
-		const tmp = document.createElement('div');
-		tmp.innerHTML = html;
+		const tmp = inertBody(html);
 		const lines: string[] = [];
 
 		function walk(node: Node, prefix = '') {
@@ -398,346 +420,31 @@
 		return entries.length > 0;
 	}
 
-	// ---------------------------------------------------------------------------
-	// Strikethrough helper — mark a link as spent by replacing the <a> tag with
-	// <s class="resource-spent"> in the stored log entry HTML.
-	// ---------------------------------------------------------------------------
-	function markLinkSpent(entryId: string, link: HTMLElement): void {
-		const entry = sessionLog.entries.find((e) => e.id === entryId);
-		if (!entry) return;
-
-		// ⚠  Do NOT use link.outerHTML as the regex pattern.
-		//    The browser re-serialises the DOM: \u00a0 → &nbsp;, attribute order
-		//    may change, etc.  The stored HTML was built from a template literal and
-		//    won't match outerHTML character-for-character.
-		//
-		//    Instead build the pattern from the element's *-link class and its
-		//    data-* attributes using lookaheads, which are attribute-order
-		//    independent and never touch text content at all.
-		const esc = (v: string) => v.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-		const linkClass = [...link.classList].find((c) => c.endsWith('-link'));
-		if (!linkClass) return;
-
-		// One lookahead per data-* attribute — order independent.
-		// Merge link.dataset with entryId (in case DOMPurify stripped data-entry-id
-		// from the DOM element; the stored HTML always has it from enrichOutcomeLinks).
-		const attrs: Record<string, string> = {};
-		for (const [k, v] of Object.entries(link.dataset)) attrs[k] = v ?? '';
-		if (!attrs['entryId'] && entryId) attrs['entryId'] = entryId;
-
-		const dataLookaheads = Object.entries(attrs)
-			.map(([camel, val]) => {
-				const attr = camel.replace(/[A-Z]/g, (c) => `-${c.toLowerCase()}`);
-				return `(?=[^>]*\\bdata-${esc(attr)}="${esc(val)}")`;
-			})
-			.join('');
-
-		const re = new RegExp(
-			`<a\\b(?=[^>]*\\bclass="${esc(linkClass)}")${dataLookaheads}[^>]*>[\\s\\S]*?<\\/a>`,
-		);
-		const newHtml = entry.html.replace(re, `<s class="resource-spent">${link.textContent}</s>`);
-		updateLogEntryHtml(entryId, newHtml);
-	}
-
 	/**
-	 * Event-delegation handler for all interactive links in log entry bodies.
-	 * Handles XP cost links, resource/debility/progress/initiative/menace links,
-	 * and move/oracle reference links.
+	 * Event delegation for the links in log entries. Each is a command
+	 * (#lib/commands/links.ts): a click runs it against the entry's binding —
+	 * its character, foe, expedition, vow or companion — and strikes it
+	 * through once it has changed something. The command bar's status line
+	 * says what happened, or why it couldn't. Old link forms (saved before
+	 * links were commands) do nothing: their text stays.
 	 * Accepts both MouseEvent (desktop click) and TouchEvent (mobile touchend).
 	 */
 	function handleEntriesClick(e: Event) {
 		const target = e.target as HTMLElement;
-
-		// ---- XP cost links ----
-		const xpLink = target.closest('.xp-cost-link') as HTMLElement | null;
-		if (xpLink && !xpLink.classList.contains('xp-spent')) {
-			e.preventDefault();
-			const cost = parseInt(xpLink.dataset['cost'] ?? '0', 10);
-			const entryId =
-				xpLink.dataset['entryId'] ??
-				xpLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
-				'';
-			const charId = xpLink.dataset['charId'] ?? ctx?.charId ?? '';
-			if (!cost || !entryId || !charId) return;
-			const entry = sessionLog.entries.find((ev) => ev.id === entryId);
-			if (entry) {
-				const newHtml = entry.html.replace(
-					/<a\b[^>]*class="xp-cost-link"[^>]*>([^<]*)<\/a>/,
-					'<s class="xp-spent">$1</s>',
-				);
-				updateLogEntryHtml(entryId, newHtml);
-			}
-			triggerXpSpend(charId, cost);
-			return;
+		const link = target.closest('a.cmd-link') as HTMLElement | null;
+		if (!link || link.closest('.resource-spent')) return;
+		e.preventDefault();
+		const { cmd, bind, entryId, index } = readCommandLink(link);
+		const r = runLink(cmd, bind);
+		if (r.spend && entryId) {
+			const entry = sessionLog.entries.find((x) => x.id === entryId);
+			if (entry) updateLogEntryHtml(entryId, spendCommandLink(entry.html, index, cmd));
 		}
-
-		// ---- Resource links ----
-		const resLink = target.closest('.resource-link') as HTMLElement | null;
-		if (resLink && !resLink.closest('.resource-spent')) {
-			e.preventDefault();
-			const resource = resLink.dataset['resource'] ?? '';
-			const value = parseInt(resLink.dataset['value'] ?? '', 10);
-			// data-entry-id / data-char-id may be absent if DOMPurify stripped them;
-			// fall back to the parent .log-entry container which is set by Svelte directly.
-			const entryId =
-				resLink.dataset['entryId'] ??
-				resLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
-				'';
-			const charId = resLink.dataset['charId'] ?? ctx?.charId ?? '';
-			if (!resource || Number.isNaN(value) || !value || !charId) return;
-			markLinkSpent(entryId, resLink);
-			triggerAction({ charId, type: 'resource', key: resource, value });
-			// Overflow and floor-overflow cascades.
-			if (value < 0 && ctx) {
-				const currentVal = (ctx.data as unknown as Record<string, number>)[resource] ?? 0;
-				// Overflow: resource drops below 0 — excess converts to another resource.
-				const overflowRule = OVERFLOW_RULES.find((r) => r.resource === resource);
-				if (overflowRule) {
-					const newVal = currentVal + value;
-					if (newVal < 0) {
-						const overflow = Math.abs(newVal);
-						const overflowId = crypto.randomUUID();
-						const html = overflowRule.logHtml({ overflow, charId, entryId: overflowId });
-						appendLog(overflowRule.logTitle, html, overflowId);
-					}
-				}
-				// Floor overflow: resource already at minimum — trigger cascade move.
-				const floorOverflowRule = FLOOR_OVERFLOW_RULES.find(
-					(r) => r.resource === resource && currentVal <= r.floor,
-				);
-				if (floorOverflowRule) {
-					const overflow = Math.abs(value);
-					const overflowId = crypto.randomUUID();
-					const html = floorOverflowRule.logHtml({ overflow, charId, entryId: overflowId });
-					appendLog(floorOverflowRule.logTitle, html, overflowId);
-				}
-			}
-			return;
-		}
-
-		// ---- Debility links ----
-		const debLink = target.closest('.debility-link') as HTMLElement | null;
-		if (debLink && !debLink.closest('.resource-spent')) {
-			e.preventDefault();
-			const debility = debLink.dataset['debility'] ?? '';
-			const value = parseInt(debLink.dataset['value'] ?? '1', 10);
-			const entryId =
-				debLink.dataset['entryId'] ??
-				debLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
-				'';
-			const charId = debLink.dataset['charId'] ?? ctx?.charId ?? '';
-			if (!debility || !charId) return;
-			if (entryId) markLinkSpent(entryId, debLink);
-			triggerAction({ charId, type: 'debility', key: debility, value });
-			return;
-		}
-
-		// ---- Failure links ----
-		const failureLink = target.closest('.failure-link') as HTMLElement | null;
-		if (failureLink && !failureLink.closest('.resource-spent')) {
-			e.preventDefault();
-			const entryId =
-				failureLink.dataset['entryId'] ??
-				failureLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
-				'';
-			const charId = failureLink.dataset['charId'] ?? ctx?.charId ?? '';
-			if (!entryId || !charId) return;
-			markLinkSpent(entryId, failureLink);
-			triggerAction({ charId, type: 'resource', key: 'failures', value: 1 });
-			return;
-		}
-
-		// ---- Burn momentum links ----
-		const burnLink = target.closest('.burn-momentum-link') as HTMLElement | null;
-		if (burnLink && !burnLink.closest('.resource-spent')) {
-			e.preventDefault();
-			const rollEntryId = burnLink.dataset['rollEntryId'] ?? '';
-			const burnEntryId =
-				burnLink.dataset['entryId'] ??
-				burnLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
-				'';
-			const charId = burnLink.dataset['charId'] ?? ctx?.charId ?? '';
-			if (!rollEntryId || !burnEntryId || !charId) return;
-			if (!ctx || ctx.charId !== charId || ctx.data.momentum <= 0) return;
-			const rollEntry = getLog().find((e) => e.id === rollEntryId);
-			if (!rollEntry) return;
-			markLinkSpent(burnEntryId, burnLink);
-			burnMomentum(rollEntry);
-			return;
-		}
-
-		// ---- Move links ----
-		const moveLink = target.closest('.move-link') as HTMLElement | null;
-		if (moveLink) {
-			e.preventDefault();
-			const moveId = moveLink.dataset['id'] ?? '';
-			if (!moveId) return;
-			// An Endure Harm/Stress link may carry a preset amount (data-harm) that
-			// overrides the active-foe-rank default in MovesDialog.
-			const harmAttr = moveLink.dataset['harm'];
-			const harm = harmAttr != null && harmAttr !== '' ? Number(harmAttr) : undefined;
-			// Special case: "Ask the Oracle" move opens oracles dialog
-			if (moveId === 'move/ask-the-oracle') {
-				onOracleLink?.('');
-			} else {
-				onMoveLink?.(moveId, harm);
-			}
-			return;
-		}
-
-		// ---- Oracle links ----
-		const oracleLink = target.closest('.oracle-link') as HTMLElement | null;
-		if (oracleLink) {
-			e.preventDefault();
-			const oracleKey = oracleLink.dataset['oracle'] ?? '';
-			const oracleStat = oracleLink.dataset['stat'];
-			onOracleLink?.(oracleKey, oracleStat);
-			return;
-		}
-
-		// ---- Progress links ----
-		const progLink = target.closest('.progress-link') as HTMLElement | null;
-		if (progLink && !progLink.closest('.resource-spent')) {
-			e.preventDefault();
-			const track = progLink.dataset['track'] ?? '';
-			const value = parseInt(progLink.dataset['value'] ?? '1', 10);
-			const expId = progLink.dataset['expId'] ?? '';
-			const foeId = progLink.dataset['foeId'] ?? '';
-			const entryId =
-				progLink.dataset['entryId'] ??
-				progLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
-				'';
-			if (!track || !value) return;
-			if (entryId) markLinkSpent(entryId, progLink);
-			onProgressLink?.(track, value, expId, foeId);
-			return;
-		}
-
-		// ---- Countdown links (scene challenge) ----
-		const cdLink = target.closest('.countdown-link') as HTMLElement | null;
-		if (cdLink && !cdLink.closest('.resource-spent')) {
-			e.preventDefault();
-			const track = cdLink.dataset['track'] ?? '';
-			const value = parseInt(cdLink.dataset['value'] ?? '1', 10);
-			const expId = cdLink.dataset['expId'] ?? '';
-			const entryId =
-				cdLink.dataset['entryId'] ??
-				cdLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
-				'';
-			if (!track || !value) return;
-			if (entryId) markLinkSpent(entryId, cdLink);
-			onCountdownLink?.(track, value, expId);
-			return;
-		}
-
-		// ---- Initiative links ----
-		const initLink = target.closest('.initiative-link') as HTMLElement | null;
-		if (initLink && !initLink.closest('.resource-spent')) {
-			e.preventDefault();
-			const value = initLink.dataset['value'] ?? '';
-			const charId = initLink.dataset['charId'] ?? ctx?.charId ?? '';
-			// data-entry-id may be absent if DOMPurify stripped it; fall back to
-			// the parent .log-entry container which is set by Svelte directly.
-			const entryId =
-				initLink.dataset['entryId'] ??
-				initLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
-				'';
-			if (!value) return;
-			if (entryId) markLinkSpent(entryId, initLink);
-			onInitiativeLink?.(value, charId);
-			return;
-		}
-
-		// ---- Menace links ----
-		const menaceLink = target.closest('.menace-link') as HTMLElement | null;
-		if (menaceLink && !menaceLink.closest('.resource-spent')) {
-			e.preventDefault();
-			const value = parseInt(menaceLink.dataset['value'] ?? '1', 10);
-			const foeId = menaceLink.dataset['foeId'] ?? '';
-			const entryId =
-				menaceLink.dataset['entryId'] ??
-				menaceLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
-				'';
-			if (!value) return;
-			if (entryId) markLinkSpent(entryId, menaceLink);
-			onMenaceLink?.(value, foeId);
-			return;
-		}
-
-		// ---- Vanquish foe links ----
-		const vanquishLink = target.closest('.vanquish-foe-link') as HTMLElement | null;
-		if (vanquishLink && !vanquishLink.closest('.resource-spent')) {
-			e.preventDefault();
-			const foeId = vanquishLink.dataset['foeId'] ?? '';
-			const entryId =
-				vanquishLink.dataset['entryId'] ??
-				vanquishLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
-				'';
-			if (entryId) markLinkSpent(entryId, vanquishLink);
-			onVanquishFoe?.(foeId);
-			return;
-		}
-
-		// ---- Reset track links (e.g. "clear all progress" on failure track) ----
-		const resetLink = target.closest('.reset-track-link') as HTMLElement | null;
-		if (resetLink && !resetLink.closest('.resource-spent')) {
-			e.preventDefault();
-			const track = resetLink.dataset['track'] ?? '';
-			const entryId =
-				resetLink.dataset['entryId'] ??
-				resetLink.closest('.log-entry')?.getAttribute('data-entry-id') ??
-				'';
-			const charId = resetLink.dataset['charId'] ?? ctx?.charId ?? '';
-			if (!track || !charId) return;
-			if (entryId) markLinkSpent(entryId, resetLink);
-			triggerAction({ charId, type: 'reset-track', key: track, value: 0 });
-			return;
-		}
-
-		// ---- Change theme links ----
-		const changeThemeLink = target.closest('.change-theme-link') as HTMLElement | null;
-		if (changeThemeLink && !changeThemeLink.closest('.resource-spent')) {
-			e.preventDefault();
-			const expId = changeThemeLink.dataset['expeditionId'] ?? '';
-			const entryId = changeThemeLink.closest('.log-entry')?.getAttribute('data-entry-id') ?? '';
-			if (!expId) return;
-			if (entryId) markLinkSpent(entryId, changeThemeLink);
-			onChangeTheme?.(expId);
-			return;
-		}
-
-		// ---- Change domain links ----
-		const changeDomainLink = target.closest('.change-domain-link') as HTMLElement | null;
-		if (changeDomainLink && !changeDomainLink.closest('.resource-spent')) {
-			e.preventDefault();
-			const expId = changeDomainLink.dataset['expeditionId'] ?? '';
-			const entryId = changeDomainLink.closest('.log-entry')?.getAttribute('data-entry-id') ?? '';
-			if (!expId) return;
-			if (entryId) markLinkSpent(entryId, changeDomainLink);
-			onChangeDomain?.(expId);
-			return;
-		}
+		reportCommandResult(r);
 	}
 
-	/** Selector covering all interactive link classes — used for touchend fast-tap. */
-	const LINK_SELECTOR = [
-		'.resource-link',
-		'.move-link',
-		'.oracle-link',
-		'.initiative-link',
-		'.progress-link',
-		'.countdown-link',
-		'.debility-link',
-		'.menace-link',
-		'.vanquish-foe-link',
-		'.burn-momentum-link',
-		'.xp-cost-link',
-		'.failure-link',
-		'.reset-track-link',
-		'.change-theme-link',
-		'.change-domain-link',
-	].join(', ');
+	/** Selector for the links a fast tap acts on (touchend). */
+	const LINK_SELECTOR = 'a.cmd-link';
 
 	function handleEntriesTouchStart(e: TouchEvent) {
 		_touchStartX = e.touches[0].clientX;
@@ -1441,75 +1148,41 @@
 	.entry-body :global(.move-failure-row) {
 		margin-top: 5px;
 	}
-	.entry-body :global(.failure-link) {
-		color: var(--color-danger, #ef4444);
-		text-decoration: underline;
-		cursor: pointer;
-		font-weight: 600;
-		touch-action: manipulation;
-	}
-	.entry-body :global(.failure-link:hover) {
-		opacity: 0.8;
-	}
-
-	/* Interactive links in move outcomes */
-	.entry-body :global(.resource-link),
-	.entry-body :global(.move-link),
-	.entry-body :global(.oracle-link),
-	.entry-body :global(.initiative-link),
-	.entry-body :global(.progress-link),
-	.entry-body :global(.countdown-link),
-	.entry-body :global(.debility-link),
-	.entry-body :global(.menace-link),
-	.entry-body :global(.vanquish-foe-link),
-	.entry-body :global(.burn-momentum-link),
-	.entry-body :global(.reset-track-link) {
+	/* Command links (#lib/commands/links.ts): a click runs the command. */
+	.entry-body :global(a.cmd-link) {
 		color: var(--text-accent);
 		text-decoration: underline;
 		cursor: pointer;
 		/* Removes 300 ms tap delay on mobile — browser won't wait for double-tap-to-zoom. */
 		touch-action: manipulation;
 	}
-	.entry-body :global(.resource-link:hover),
-	.entry-body :global(.move-link:hover),
-	.entry-body :global(.oracle-link:hover),
-	.entry-body :global(.initiative-link:hover),
-	.entry-body :global(.progress-link:hover),
-	.entry-body :global(.countdown-link:hover),
-	.entry-body :global(.debility-link:hover),
-	.entry-body :global(.menace-link:hover),
-	.entry-body :global(.vanquish-foe-link:hover),
-	.entry-body :global(.burn-momentum-link:hover),
-	.entry-body :global(.reset-track-link:hover) {
+	.entry-body :global(a.cmd-link:hover) {
 		opacity: 0.8;
 	}
-	.entry-body :global(.resource-spent) {
+	.entry-body :global(.move-failure-row a.cmd-link) {
+		color: var(--color-danger, #ef4444);
+		font-weight: 600;
+	}
+	.entry-body :global(.resource-spent),
+	.entry-body :global(.xp-spent) {
 		text-decoration: line-through;
 		color: var(--text-dimmer);
 		cursor: default;
+		font-weight: normal;
+	}
+	/* Links saved before links were commands do nothing now: their text
+	   reads as plain text. */
+	.entry-body :global(a:not(.cmd-link)[class$='-link']) {
+		color: inherit;
+		text-decoration: none;
+		cursor: text;
+		pointer-events: none;
 	}
 
 	/* Harm placeholder: no foe context — player resolves manually */
 	.entry-body :global(.harm-note) {
 		font-style: italic;
 		color: var(--text-dimmer);
-	}
-
-	/* XP cost links (clickable, strike-through after use) */
-	.entry-body :global(.xp-cost-link) {
-		color: var(--text-accent);
-		text-decoration: underline;
-		font-weight: 600;
-		cursor: pointer;
-		touch-action: manipulation;
-	}
-	.entry-body :global(.xp-cost-link):hover {
-		opacity: 0.8;
-	}
-	.entry-body :global(.xp-spent) {
-		text-decoration: line-through;
-		color: var(--text-dimmer);
-		font-weight: normal;
 	}
 
 	/* ---- Inline note editor ---- */

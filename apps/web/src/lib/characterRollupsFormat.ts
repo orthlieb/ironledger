@@ -128,6 +128,29 @@ export function touchedLogHtml(r: TouchedRoll): string {
 	return lines.join('');
 }
 
+/** A character's Touched features for its background, now that the level
+ *  and animal are character fields: a list under **Touched features**, or
+ *  for Feral a note that they're narrative. */
+export function touchedFeaturesMd(r: TouchedRoll): string {
+	if (r.className === 'Feral')
+		return '**Touched features:** all-encompassing; determine them narratively.';
+	if (!r.features.length) return '';
+	return '**Touched features**\n' + r.features.map((f) => `- ${f.value}`).join('\n');
+}
+
+/** Log breakdown of a features-only roll: the count roll (Second/Third), then
+ *  one line per feature; for Feral, the narrative note. */
+export function touchedFeaturesLogHtml(r: TouchedRoll): string {
+	if (r.className === 'Feral')
+		return `<div class="roll-line"><em>Features are all-encompassing — determine narratively.</em></div>`;
+	const lines: string[] = [];
+	if (r.countRange)
+		lines.push(`<div class="roll-line">Features: (${r.countRange} → ${r.features.length})</div>`);
+	for (const f of r.features)
+		lines.push(`<div class="roll-line">— <strong>${f.value}</strong> (d100 → ${f.roll})</div>`);
+	return lines.join('');
+}
+
 // ── RandomizeResult → markdown block ───────────────────────────────────────
 
 /** Format the RandomizeResult as a markdown block suitable for a character's

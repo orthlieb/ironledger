@@ -25,31 +25,31 @@
       "edge": 45,
       "shadow": 30,
       "wits": 40,
-      "value": "[Mark progress](progress:delve?value=1) and [Reveal a Danger](move:reveal-a-danger)."
+      "value": "[Mark progress](/site.progress++) and [Reveal a Danger](/move reveal-a-danger)."
     },
     {
       "edge": 65,
       "shadow": 65,
       "wits": 55,
-      "value": "[Mark progress](progress:delve?value=1)."
+      "value": "[Mark progress](/site.progress++)."
     },
     {
       "edge": 75,
       "shadow": 90,
       "wits": 80,
-      "value": "Choose one: [Mark progress](progress:delve?value=1) or [Find an Opportunity](move:find-an-opportunity)."
+      "value": "Choose one: [Mark progress](/site.progress++) or [Find an Opportunity](/move find-an-opportunity)."
     },
     {
       "edge": 80,
       "shadow": 99,
       "wits": 99,
-      "value": "Take both: [Mark progress](progress:delve?value=1) and [Find an Opportunity](move:find-an-opportunity)."
+      "value": "Take both: [Mark progress](/site.progress++) and [Find an Opportunity](/move find-an-opportunity)."
     },
     {
       "edge": 100,
       "shadow": 100,
       "wits": 100,
-      "value": "[Mark progress twice](progress:delve?value=2) and [Reveal a Danger](move:reveal-a-danger)."
+      "value": "[Mark progress twice](/site.progress+=2) and [Reveal a Danger](/move reveal-a-danger)."
     }
   ]
 }

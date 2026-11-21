@@ -15,7 +15,14 @@ import { test, expect, type Download } from '@playwright/test';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { zipSync, unzipSync, strToU8, strFromU8 } from 'fflate';
-import { resetAll, getTestToken, seedCommunity } from './helpers/reset';
+import {
+	resetAll,
+	getTestToken,
+	seedCommunity,
+	fetchMaps,
+	setExpansions,
+	resetExpansions,
+} from './helpers/reset';
 import { settleHome } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
@@ -32,8 +39,8 @@ const ZIP_INPUT = 'input[type="file"][data-import-root="home"]';
 const IMD_DONE_OK = '.imd-badge--ok';
 const IMD_ERRLIST = '.imd-errlist';
 
-// runImport (home/+page.svelte) holds the "importing" stage for a minimum
-// 5s — matching the export overlay so a fast import doesn't flash past its
+// CampaignImport.run (lib/campaignImport.svelte.ts) holds the "importing"
+// stage for a minimum 5s — matching the export overlay so a fast import doesn't flash past its
 // progress bar. Any assertion that waits for the dialog to leave the
 // importing stage (`.imd-badge--ok` / `--warn` / `--err` on the done stage,
 // or `.imd-errlist` on the error stage) needs a timeout above that hold,
@@ -691,6 +698,14 @@ const V1 = 'http://127.0.0.1:3000/api/v1';
 test.describe('Import / Export — full round-trip', () => {
 	// Distinctive ids/names so we can assert each survived and re-linked.
 	const COMMUNITY_ID = 'rt-comm-1';
+	const LOG_FILLER = 250;
+	const LOG_MARK_ID = '11111111-1111-4111-8111-111111111111';
+	const LOG_MARK_TS = '2026-02-14T09:30:00.000Z';
+	// An entry rolled by Rook against the foe on the journey, with the links
+	// such an entry carries. Rook gets a new id on import; the links follow.
+	const LOG_LINKED_ID = '22222222-2222-4222-8222-222222222222';
+	const LOG_TOTAL = LOG_FILLER + 2;
+	let rookId = '';
 
 	test.beforeAll(async () => {
 		await resetAll();
@@ -698,14 +713,22 @@ test.describe('Import / Export — full round-trip', () => {
 		const h = { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' };
 
 		// One of each entity type, each with a distinctive field to assert on.
-		await fetch(`${V1}/characters`, {
+		const rook = await fetch(`${V1}/characters`, {
 			method: 'POST',
 			headers: h,
 			body: JSON.stringify({
 				name: 'Rook Vanguard',
-				data: { stats: { edge: 3, heart: 1, iron: 2, shadow: 2, wits: 1 }, momentum: 7 },
+				data: {
+					stats: { edge: 3, heart: 1, iron: 2, shadow: 2, wits: 1 },
+					momentum: 7,
+					// Character fields (core and YRT) and the Bonds notes.
+					fields: { origin: 'barrier-islands', touched: 'second', touchedAnimal: 'Heron' },
+					bondsFormed: '- **Bellmark**, which took me in',
+				},
 			}),
-		}).then((r) => expect(r.ok, 'seed character').toBeTruthy());
+		});
+		expect(rook.ok, 'seed character').toBeTruthy();
+		rookId = ((await rook.json()) as { id: string }).id;
 
 		await fetch(`${V1}/session/communities`, {
 			method: 'PATCH',
@@ -800,16 +823,76 @@ test.describe('Import / Export — full round-trip', () => {
 			}),
 		}).then((r) => expect(r.ok, 'seed expeditions').toBeTruthy());
 
-		await fetch(`${V1}/session/log`, {
+		// A foe, with its progress and notes.
+		await fetch(`${V1}/session/encounters`, {
+			method: 'PATCH',
+			headers: h,
+			body: JSON.stringify({
+				encounters: [
+					{
+						id: 'rt-foe-1',
+						foeId: 'ironsworn/bear',
+						quantity: 'few',
+						effectiveRank: 3,
+						ticks: 12,
+						notes: 'Wounded at the ford',
+						customName: 'Old Scar',
+						vanquished: false,
+					},
+				],
+			}),
+		}).then((r) => expect(r.ok, 'seed foe').toBeTruthy());
+
+		// A log longer than the 200 entries the page loads, all of it in the
+		// past, and one with a note on it. The batch endpoint keeps each
+		// entry's id and time.
+		const day = Date.parse('2026-03-01T12:00:00Z');
+		const older = Array.from({ length: LOG_FILLER }, (_, i) => ({
+			id: crypto.randomUUID(),
+			title: `Filler ${i}`,
+			html: `<div>Filler ${i}</div>`,
+			ts: new Date(day + i * 60_000).toISOString(),
+		}));
+		await fetch(`${V1}/session/log/batch`, {
 			method: 'POST',
 			headers: h,
 			body: JSON.stringify({
-				id: '11111111-1111-4111-8111-111111111111',
-				title: 'Round-trip Marker',
-				html: '<div>A distinctive log line.</div>',
-				ts: new Date().toISOString(),
+				entries: [
+					...older,
+					{
+						id: LOG_MARK_ID,
+						title: 'Round-trip Marker',
+						html: '<div>A distinctive log line.</div>',
+						ts: LOG_MARK_TS,
+						note: 'Remember the ferryman',
+					},
+					{
+						id: LOG_LINKED_ID,
+						title: 'Strike',
+						html:
+							`<a class="cmd-link" data-cmd="/momentum++" data-entry-id="${LOG_LINKED_ID}" data-link="0" data-char-id="${rookId}">+1 momentum</a> ` +
+							`<a class="cmd-link" data-cmd="/foe.progress+=2" data-entry-id="${LOG_LINKED_ID}" data-link="1" data-char-id="${rookId}" data-exp-id="rt-journey-1" data-foe-id="rt-foe-1">Mark progress</a>`,
+						ts: '2026-02-14T09:00:00.000Z',
+						roll: {
+							moveId: 'move/strike',
+							actionScore: 7,
+							c1: 3,
+							c2: 5,
+							charId: rookId,
+							foeId: 'rt-foe-1',
+							expeditionId: 'rt-journey-1',
+						},
+					},
+				],
 			}),
 		}).then((r) => expect(r.ok, 'seed log').toBeTruthy());
+
+		// Content packs away from their defaults: YRT on, Lodestar off.
+		await setExpansions({ yrt: true, lodestar: false }, tok);
+	});
+
+	test.afterAll(async () => {
+		await resetExpansions();
 	});
 
 	test('export everything, wipe, re-import, and every type returns intact', async ({ page }) => {
@@ -823,6 +906,23 @@ test.describe('Import / Export — full round-trip', () => {
 		]);
 		const zipBytes = await downloadBuffer(download);
 		expect(zipBytes.length).toBeGreaterThan(0);
+		// The whole log is in it, not just the 200 the page loaded, and the foe.
+		const body = JSON.parse(strFromU8(unzipSync(new Uint8Array(zipBytes))['everything.json']!)) as {
+			log?: unknown[];
+			encounters?: unknown[];
+			extensions?: Array<{ id: string; name: string; enabled: boolean }>;
+		};
+		expect(body.log, 'the whole log').toHaveLength(LOG_TOTAL);
+		expect(body.encounters, 'the foe').toHaveLength(1);
+		// Which content packs were on, each by id and name; core isn't listed.
+		expect(body.extensions).toEqual(
+			expect.arrayContaining([
+				{ id: 'delve', name: 'Delve', enabled: true },
+				{ id: 'yrt', name: 'YRT', enabled: true },
+				{ id: 'lodestar', name: 'Lodestar', enabled: false },
+			]),
+		);
+		expect(body.extensions?.some((e) => e.id === 'base')).toBe(false);
 
 		// 2. Wipe the account and confirm it's empty on a fresh load.
 		await resetAll();
@@ -832,15 +932,34 @@ test.describe('Import / Export — full round-trip', () => {
 			const chars = await fetch('/api/characters', { credentials: 'include' }).then((r) =>
 				r.json(),
 			);
+			const log = await fetch('/api/session/log?limit=1000', { credentials: 'include' }).then((r) =>
+				r.json(),
+			);
+			const packs = await fetch('/api/session/extensions', { credentials: 'include' }).then((r) =>
+				r.json(),
+			);
 			return {
 				chars: chars.length,
 				communities: (s.communities ?? []).length,
 				npcs: (s.npcs ?? []).length,
 				places: (s.places ?? []).length,
 				expeditions: (s.expeditions ?? []).length,
+				foes: (s.encounters ?? []).length,
+				log: log.length,
+				packs: packs.extensions,
 			};
 		});
-		expect(empty).toEqual({ chars: 0, communities: 0, npcs: 0, places: 0, expeditions: 0 });
+		expect(empty).toEqual({
+			chars: 0,
+			communities: 0,
+			npcs: 0,
+			places: 0,
+			expeditions: 0,
+			foes: 0,
+			log: 0,
+			// Every pack back to its default (YRT off, Lodestar on).
+			packs: {},
+		});
 
 		// 3. Re-import the produced zip.
 		await page.locator(ZIP_INPUT).setInputFiles({
@@ -850,6 +969,7 @@ test.describe('Import / Export — full round-trip', () => {
 		});
 		await expect(page.locator('.imd-badge--ok')).toBeVisible({ timeout: 10_000 });
 		await expect(page.locator('.imd-errlist')).toHaveCount(0);
+		await expect(page.locator('.imd-state-sub')).toContainText('Switched on the YRT content pack.');
 
 		// 4. Verify every type came back with its data intact.
 		const state = await page.evaluate(async () => {
@@ -857,7 +977,7 @@ test.describe('Import / Export — full round-trip', () => {
 			const chars = await fetch('/api/characters', { credentials: 'include' }).then((r) =>
 				r.json(),
 			);
-			const log = await fetch('/api/session/log?limit=100', { credentials: 'include' }).then((r) =>
+			const log = await fetch('/api/session/log?limit=1000', { credentials: 'include' }).then((r) =>
 				r.json(),
 			);
 			return {
@@ -866,14 +986,24 @@ test.describe('Import / Export — full round-trip', () => {
 				npcs: s.npcs ?? [],
 				places: s.places ?? [],
 				expeditions: s.expeditions ?? [],
+				foes: s.encounters ?? [],
 				log: Array.isArray(log) ? log : (log.entries ?? []),
+				packs: (
+					await fetch('/api/session/extensions', { credentials: 'include' }).then((r) => r.json())
+				).extensions,
 			};
 		});
 
-		// Character — name + a distinctive stat.
+		// Character — name, a distinctive stat, its fields and its Bonds notes.
 		const rook = state.chars.find((c: { name: string }) => c.name === 'Rook Vanguard');
 		expect(rook, 'character round-tripped').toBeDefined();
 		expect(rook.data?.stats?.edge).toBe(3);
+		expect(rook.data?.fields).toEqual({
+			origin: 'barrier-islands',
+			touched: 'second',
+			touchedAnimal: 'Heron',
+		});
+		expect(rook.data?.bondsFormed).toBe('- **Bellmark**, which took me in');
 
 		// Community — name + region.
 		const bellmark = state.communities.find((c: { name: string }) => c.name === 'Bellmark');
@@ -899,11 +1029,98 @@ test.describe('Import / Export — full round-trip', () => {
 		expect(site?.type).toBe('site');
 		expect(site?.domain).toBe('Barrow');
 
-		// Log — the distinctive entry is back.
-		expect(
-			state.log.some((e: { title?: string }) => e.title === 'Round-trip Marker'),
-			'log entry round-tripped',
-		).toBeTruthy();
+		// Foe — its progress, rank and notes.
+		expect(state.foes).toHaveLength(1);
+		expect(state.foes[0]).toMatchObject({
+			foeId: 'ironsworn/bear',
+			customName: 'Old Scar',
+			effectiveRank: 3,
+			ticks: 12,
+			notes: 'Wounded at the ford',
+		});
+
+		// Log — every entry, each as it was: its id, time and note.
+		expect(state.log).toHaveLength(LOG_TOTAL);
+		const mark = state.log.find((e: { title?: string }) => e.title === 'Round-trip Marker');
+		expect(mark, 'log entry round-tripped').toBeDefined();
+		expect(mark).toMatchObject({ id: LOG_MARK_ID, ts: LOG_MARK_TS, note: 'Remember the ferryman' });
+		// Newest first, by its own time: the filler is newer than the marker.
+		expect(state.log[0].title).toBe(`Filler ${LOG_FILLER - 1}`);
+
+		// Rook has a new id; the entry rolled by Rook points at it now, in its
+		// roll and on its links. The foe and journey kept theirs.
+		expect(rook.id).not.toBe(rookId);
+		const linked = state.log.find((e: { id: string }) => e.id === LOG_LINKED_ID);
+		expect(linked?.roll).toMatchObject({
+			charId: rook.id,
+			foeId: state.foes[0].id,
+			expeditionId: journey.id,
+		});
+		expect(linked?.html).not.toContain(rookId);
+		expect(linked?.html.match(/data-char-id="([^"]*)"/g)).toEqual([
+			`data-char-id="${rook.id}"`,
+			`data-char-id="${rook.id}"`,
+		]);
+		expect(linked?.html).toContain(`data-exp-id="${journey.id}" data-foe-id="${state.foes[0].id}"`);
+
+		// Content packs — YRT, on in the backup, is on again. Lodestar, off in
+		// the backup, is left as it is here: a restore never switches one off.
+		expect(state.packs).toEqual({ yrt: true });
+	});
+});
+
+// ---------------------------------------------------------------------------
+// A backup with a content pack this app doesn't have: the pack is named, and
+// everything in the backup still imports (the packs it does have go on).
+// ---------------------------------------------------------------------------
+
+test.describe('Import — a content pack this app does not have', () => {
+	test.beforeAll(async () => {
+		await resetAll();
+	});
+	test.afterAll(async () => {
+		await resetExpansions();
+	});
+
+	test('warns about the missing pack and imports the rest anyway', async ({ page }) => {
+		await gotoHome(page);
+		await uploadImport(
+			page,
+			makeManifest('everything', {
+				characters: [{ name: 'Far Wanderer', data: { fields: { lostField: 'Kept anyway' } } }],
+				extensions: [
+					{ id: 'lost-pack', name: 'Lost Pack', enabled: true },
+					{ id: 'yrt', name: 'YRT', enabled: true },
+					{ id: 'gone-off', name: 'Gone Off', enabled: false },
+				],
+			}),
+		);
+		const notes = page.getByTestId('import-warnings');
+		await expect(notes).toBeVisible({ timeout: IMD_TIMEOUT });
+		await expect(notes).toContainText('“Lost Pack” content pack');
+		// One that was off in the backup needs nothing, so isn't named.
+		await expect(notes).not.toContainText('Gone Off');
+		await expect(notes.locator('li')).toHaveCount(1);
+		await expect(page.locator('.imd-badge--warn')).toBeVisible();
+		await expect(page.locator('.imd-state-title')).toHaveText('Import complete');
+		await expect(page.locator('.imd-state-sub')).toContainText(
+			'Imported 1 character. Switched on the YRT content pack.',
+		);
+
+		const after = await page.evaluate(async () => {
+			const chars = await fetch('/api/characters', { credentials: 'include' }).then((r) =>
+				r.json(),
+			);
+			const packs = await fetch('/api/session/extensions', { credentials: 'include' }).then((r) =>
+				r.json(),
+			);
+			return { chars, packs: packs.extensions };
+		});
+		const wanderer = after.chars.find((c: { name: string }) => c.name === 'Far Wanderer');
+		expect(wanderer, 'the character imported').toBeDefined();
+		// A field no pack here declares is kept as it was.
+		expect(wanderer.data?.fields).toEqual({ lostField: 'Kept anyway' });
+		expect(after.packs).toEqual({ yrt: true });
 	});
 });
 
@@ -1438,6 +1655,194 @@ test.describe('Import / Export — Markdown structure', () => {
 		// The old single-file / json data dump is gone.
 		expect(names).not.toContain('maps.md');
 		expect(names.some((n) => n.endsWith('/map.json'))).toBe(false);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Markdown maps: a marker on a hidden layer stays off the map and its legend,
+// quietly; a map with no background is skipped, and the export overlay lists
+// it, then waits for Close.
+// ---------------------------------------------------------------------------
+test.describe('Import / Export — Markdown maps leave out hidden layers and blank maps', () => {
+	test.beforeAll(async () => {
+		await resetAll();
+		const tok = await getTestToken();
+		const h = { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' };
+		const newMap = async (name: string) => {
+			const res = await fetch(`${V1}/session/maps`, {
+				method: 'POST',
+				headers: h,
+				body: JSON.stringify({ name }),
+			});
+			return ((await res.json()) as { id: string }).id;
+		};
+		const TINY_PNG =
+			'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI6QAAAABJRU5ErkJggg==';
+		const layered = await newMap('Layered Map');
+		const ok = (what: string) => (r: Response) => expect(r.ok, what).toBeTruthy();
+		await fetch(`${V1}/session/maps/${layered}/background`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({ dataUrl: `data:image/png;base64,${TINY_PNG}` }),
+		}).then(ok('seed background'));
+		await fetch(`${V1}/session/maps/${layered}/settings`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({
+				settings: {
+					layers: [
+						{ id: 'default', name: 'Default' },
+						{ id: 'secret', name: 'Secret', hidden: true },
+					],
+				},
+			}),
+		}).then(ok('seed layers'));
+		await fetch(`${V1}/session/maps/${layered}/markers`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({
+				markers: [
+					{ id: 'open', x: 2, y: 2, label: 'Open Pin', icon: 'landmark' },
+					{ id: 'hid', x: 4, y: 4, label: 'Secret Pin', icon: 'landmark', layer: 'secret' },
+				],
+			}),
+		}).then(ok('seed markers'));
+		await newMap('Sketch'); // no background
+	});
+
+	test('the hidden marker and the blank map are left out; only the blank map is a warning', async ({
+		page,
+	}) => {
+		await gotoHome(page);
+		await openExportDialog(page);
+		await page.locator('.exd-segbtn', { hasText: 'Markdown' }).click();
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.exd-dialog .btn-primary').click(),
+		]);
+		const entries = unzipSync(new Uint8Array(await downloadBuffer(download)));
+		const names = Object.keys(entries);
+		expect(names).toContain('maps/layered-map.md');
+		expect(names).not.toContain('maps/sketch.md');
+		const md = strFromU8(entries['maps/layered-map.md']!);
+		expect(md).toContain('1. Open Pin');
+		expect(md).not.toContain('Secret Pin');
+		const svg = strFromU8(entries['images/map-layered-map.svg']!);
+		expect(svg).toContain('>1</text>');
+		expect(svg).not.toContain('>2</text>');
+		expect(strFromU8(entries['README.md']!)).not.toContain('Sketch');
+
+		// The overlay holds on what was left out until Close: the blank map,
+		// not the hidden marker, which is off the map by the map's own choice.
+		const warnings = page.getByTestId('export-warnings');
+		await expect(warnings).toBeVisible({ timeout: 10_000 });
+		await expect(warnings).toContainText("Sketch: no background, so it's left out.");
+		await expect(warnings).not.toContainText('Layered Map');
+		await expect(warnings.locator('li')).toHaveCount(1);
+		// The tally counts the maps written, not the maps picked.
+		await expect(page.locator('.exp-summary')).toContainText('1/2 maps');
+		const close = page.locator('.exp-footer').getByRole('button', { name: 'Close' });
+		await expect(close).toBeFocused();
+		await close.click();
+		await expect(page.locator('.exp-dialog')).toHaveCount(0);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// Zip maps keep their layers: every marker goes in, those on a hidden layer
+// too, and the layer list goes with them, so a map exported, wiped and
+// imported again has the same layers, the same one hidden, and each marker on
+// its own layer.
+// ---------------------------------------------------------------------------
+test.describe('Import / Export — Zip maps keep their layers, hidden ones hidden', () => {
+	const LAYERS = [
+		{ id: 'default', name: 'Default' },
+		{ id: 'roads', name: 'Roads' },
+		{ id: 'secret', name: 'Secret', hidden: true },
+	];
+
+	test.beforeAll(async () => {
+		await resetAll();
+		const tok = await getTestToken();
+		const h = { Authorization: `Bearer ${tok}`, 'Content-Type': 'application/json' };
+		const ok = (what: string) => (r: Response) => expect(r.ok, what).toBeTruthy();
+		// Something besides the map, as a real campaign has.
+		await seedCommunity('Layer Town');
+		const res = await fetch(`${V1}/session/maps`, {
+			method: 'POST',
+			headers: h,
+			body: JSON.stringify({ name: 'Layered Map' }),
+		});
+		const id = ((await res.json()) as { id: string }).id;
+		await fetch(`${V1}/session/maps/${id}/background`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({
+				dataUrl:
+					'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI6QAAAABJRU5ErkJggg==',
+			}),
+		}).then(ok('seed background'));
+		await fetch(`${V1}/session/maps/${id}/settings`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({ settings: { layers: LAYERS, activeLayer: 'roads' } }),
+		}).then(ok('seed layers'));
+		await fetch(`${V1}/session/maps/${id}/markers`, {
+			method: 'PUT',
+			headers: h,
+			body: JSON.stringify({
+				markers: [
+					{ id: 'open', x: 2, y: 2, label: 'Open Pin', icon: 'landmark' },
+					{ id: 'road', x: 3, y: 3, label: 'Road Pin', icon: 'landmark', layer: 'roads' },
+					{ id: 'hid', x: 4, y: 4, label: 'Secret Pin', icon: 'landmark', layer: 'secret' },
+				],
+			}),
+		}).then(ok('seed markers'));
+	});
+
+	test('export, wipe and import: the layers, the hidden one and every marker come back', async ({
+		page,
+	}) => {
+		await gotoHome(page);
+		await openExportDialog(page);
+		const [download] = await Promise.all([
+			page.waitForEvent('download'),
+			page.locator('.exd-dialog .btn-primary').click(),
+		]);
+		const zipBytes = await downloadBuffer(download);
+
+		// The zip has the hidden marker, and the layer list with its flag.
+		const entries = unzipSync(new Uint8Array(zipBytes));
+		const mapJson = Object.keys(entries).find((n) => /^maps\/[^/]+\/map\.json$/.test(n));
+		expect(mapJson, 'the map is in the zip').toBeTruthy();
+		const body = JSON.parse(strFromU8(entries[mapJson as string]!)) as {
+			markers: Array<{ label: string; layer?: string }>;
+			settings: { layers?: unknown; activeLayer?: string };
+		};
+		expect(body.markers.map((m) => m.label).sort()).toEqual(['Open Pin', 'Road Pin', 'Secret Pin']);
+		expect(body.settings.layers).toEqual(LAYERS);
+
+		// Wipe, and bring it back.
+		await resetAll();
+		expect(await fetchMaps(), 'wiped').toHaveLength(0);
+		await gotoHome(page);
+		await page.locator(ZIP_INPUT).setInputFiles({
+			name: 'layers.zip',
+			mimeType: 'application/zip',
+			buffer: zipBytes,
+		});
+		await expectImportOk(page, 15_000);
+
+		const map = (await fetchMaps()).find((m) => m.name === 'Layered Map');
+		expect(map, 'the map came back').toBeDefined();
+		// The same layers, Secret still hidden, new markers still going on Roads.
+		expect(map!.settings.layers).toEqual(LAYERS);
+		expect(map!.settings.activeLayer).toBe('roads');
+		// Every marker, each on its own layer (ids are new; labels aren't).
+		const layerOf = Object.fromEntries(
+			map!.markers.map((m) => [m.label ?? '', m.layer ?? 'default']),
+		);
+		expect(layerOf).toEqual({ 'Open Pin': 'default', 'Road Pin': 'roads', 'Secret Pin': 'secret' });
 	});
 });
 

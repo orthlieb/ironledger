@@ -13,6 +13,9 @@
 	 *
 	 * Every field auto-commits the moment it changes — no Save button.
 	 *
+	 * Export as PNG downloads a picture of the map as it's drawn (the parent
+	 * makes it from its live map; see exportMapPng in mapExport.ts).
+	 *
 	 * bits-ui Dialog — nested inside MapDialog. `.mo-dialog` z-index sits
 	 * one tier above the outer `.mp-dialog` so it renders on top.
 	 */
@@ -36,8 +39,25 @@
 		/** Fires when the user clicks "Replace background image…". Wired
 		 *  by MapDialog to trigger its own hidden background file input. */
 		onReplaceBackground?: () => void;
+		/** Export as PNG: MapDialog draws its live map to a PNG and downloads it. */
+		onExportPng?: () => Promise<void>;
 	}
-	let { onReplaceBackground }: Props = $props();
+	let { onReplaceBackground, onExportPng }: Props = $props();
+
+	let exporting = $state(false);
+	let exportError = $state('');
+	async function onExportPngClicked() {
+		if (!onExportPng || exporting) return;
+		exporting = true;
+		exportError = '';
+		try {
+			await onExportPng();
+		} catch {
+			exportError = "The picture couldn't be made. Try again.";
+		} finally {
+			exporting = false;
+		}
+	}
 
 	let dialogOpen = $state(false);
 	let stackDepth = $state(1);
@@ -124,7 +144,7 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="mo-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay mo-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content class="mo-dialog" style="z-index: {contentZ(stackDepth)}">
 			<DialogHeader title={headingText('Map Options')} onclose={close} radius="8px 8px 0 0" />
 
@@ -235,6 +255,29 @@
 					</div>
 				</section>
 
+				<section class="mo-section">
+					<div class="mo-danger-row">
+						<button
+							class="btn"
+							type="button"
+							onclick={onExportPngClicked}
+							disabled={!onExportPng || !mapState.backgroundHash || exporting}
+							>{exporting ? 'Exporting…' : 'Export as PNG'}</button
+						>
+						<span class="mo-hint">
+							{#if mapState.backgroundHash}
+								A picture of the map as it's drawn: background, grid, markers and labels, at the
+								background image's size. Hidden layers and the scale bar aren't in it.
+							{:else}
+								Add a background image first.
+							{/if}
+						</span>
+					</div>
+					{#if exportError}
+						<p class="mo-error" role="alert">{exportError}</p>
+					{/if}
+				</section>
+
 				<section class="mo-section mo-section-danger">
 					<div class="mo-danger-header">Danger zone</div>
 					<div class="mo-danger-row">
@@ -303,11 +346,6 @@
 	/* z-index is set inline via dialogStack — see <script>. Opens over
 	   MapDialog when triggered from inside it; the stack primitive puts
 	   this one tier above whatever's underneath. */
-	:global(.mo-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000060;
-	}
 	:global(.mo-dialog) {
 		position: fixed;
 		top: 50%;
@@ -421,6 +459,12 @@
 		font-weight: 700;
 		text-transform: uppercase;
 		letter-spacing: 0.08em;
+		color: var(--color-danger, #ef4444);
+	}
+	:global(.mo-error) {
+		margin: 0;
+		font-family: var(--font-ui);
+		font-size: 0.75rem;
 		color: var(--color-danger, #ef4444);
 	}
 	:global(.mo-danger-row) {

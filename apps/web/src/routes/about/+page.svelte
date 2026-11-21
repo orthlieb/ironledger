@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { appIcon } from '#lib/liveryIcons.js';
+	import BetaBadge from '#lib/components/BetaBadge.svelte';
 	import adventureSvg from '#icons/Adventure.svg?raw';
 	import eyeSvg from '#icons/eye-solid.svg?raw';
 	import noteSvg from '#icons/note-sticky-solid.svg?raw';
@@ -40,7 +41,7 @@
 			body: "Stats, vows, bonds, debilities, XP — everything the Ironlands will hurl at you, and everything you'll cling to when the dice betray you. Auto-saved, because the darkness waits for no one.",
 			color: 'var(--color-edge)',
 			image: '/about/characters.webp',
-			alt: 'A character sheet in Iron Ledger: initiative, the five stats with their icons, and the momentum, health, spirit, supply and experience trackers',
+			alt: 'A character sheet in Iron Ledger: initiative, the five stats with their icons, the momentum, health, spirit, supply and experience trackers, and the debilities',
 		},
 		{
 			get icon() {
@@ -218,7 +219,7 @@
 <section class="hero">
 	<div class="hero-text">
 		<p class="hero-eyebrow">Forged in JavaScript. Tempered by coffee.</p>
-		<h1 class="hero-title">{headingText('Iron Ledger')}</h1>
+		<h1 class="hero-title">{headingText('Iron Ledger')}<BetaBadge size="lg" /></h1>
 		<p class="hero-subtitle">
 			The Ironlands are brutal, the dice are fickle, and paper character sheets have a way of
 			disappearing right before a climactic vow. Iron Ledger remembers so you don't have to.
@@ -487,7 +488,7 @@
 			>. Iron Ledger is free and open source — source available on
 			<a href="https://github.com/orthlieb/ironledger" target="_blank" rel="noopener noreferrer"
 				>GitHub</a
-			>.
+			>. How it handles your data is in the <a href="/privacy">privacy notice</a>.
 		</p>
 	</div>
 </section>

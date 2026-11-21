@@ -323,6 +323,17 @@ select option {
 	background: var(--bg-card);
 }
 
+/* Suggested text, everywhere: the colour of an empty field's hint (the Notes
+   hint, a Select's or Combobox's "Select…"), not the browser's own grey,
+   which reads much brighter on the dark theme. `opacity` because Firefox
+   fades placeholders by default; the fill colour because WebKit paints a
+   placeholder with an input's -webkit-text-fill-color when one is set. */
+::placeholder {
+	color: var(--text-dimmer);
+	-webkit-text-fill-color: var(--text-dimmer);
+	opacity: 1;
+}
+
 /* --------------------------------------------------------------------------
    Buttons
    -------------------------------------------------------------------------- */
@@ -384,6 +395,24 @@ select option {
 }
 .btn-danger:hover:not(:disabled) {
 	background: var(--bg-hover);
+}
+
+/* Dialog backdrop — the dimmed, lightly blurred layer behind every modal.
+   Put it on the bits-ui Dialog.Overlay / AlertDialog.Overlay, beside the
+   dialog's own *-overlay class (kept as a hook for tests and tweaks such as
+   the asset dialog's fade-in): class="dialog-overlay nd-overlay". bits-ui
+   portals the overlay to <body>, so this rule has to be global; z-index is
+   set inline via dialogStack. */
+.dialog-overlay {
+	position: fixed;
+	inset: 0;
+	background: #00000060;
+	backdrop-filter: blur(1px);
+}
+/* Behind a full-size picture (Lightbox): darker, so the image stands out. */
+.dialog-overlay--dark {
+	background: #000000c0;
+	backdrop-filter: blur(2px);
 }
 
 /* Drag gripper — shared visual indicator used in every draggable dialog header.
@@ -541,6 +570,9 @@ dialog label {
 	display: flex;
 	align-items: center;
 	justify-content: space-between;
+	/* The least room between the brand and the toolbar: on a phone the brand
+	   wraps to fill whatever room it has, which would leave none. */
+	gap: 0.75rem;
 	/* Safe-area: extend the nav up under the notch and pad its content down. */
 	padding: env(safe-area-inset-top) max(1.5rem, env(safe-area-inset-right)) 0
 		max(1.5rem, env(safe-area-inset-left));
@@ -556,6 +588,15 @@ dialog label {
 	box-shadow:
 		inset 0 2px 0 var(--accent-dim),
 		0 4px 20px #00000055;
+}
+
+/* A small phone: less side padding, so the brand, its β mark and the
+   toolbar fit with a gap between them (the toolbar ran into the padding). */
+@media (max-width: 400px) {
+	.app-nav {
+		padding-left: max(0.75rem, env(safe-area-inset-left));
+		padding-right: max(0.75rem, env(safe-area-inset-right));
+	}
 }
 
 /* Admin mode used to paint the nav red for "elevated privilege" — dropped

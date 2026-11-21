@@ -1,11 +1,12 @@
 import { fail } from '@sveltejs/kit';
 import type { Actions, PageServerLoad } from './$types';
 import { INTERNAL_API_URL } from '#lib/server/config.js';
+import { apiFetch } from '#lib/server/apiFetch.js';
 
 export const load: PageServerLoad = async ({ url }) => {
 	// Block password reset during maintenance — same gate as /forgot-password.
 	try {
-		const maintRes = await fetch(`${INTERNAL_API_URL}/api/v1/maintenance/status`);
+		const maintRes = await apiFetch(`${INTERNAL_API_URL}/api/v1/maintenance/status`);
 		if (maintRes.ok) {
 			const maint = (await maintRes.json()) as { enabled?: boolean; message?: string };
 			if (maint.enabled) {
@@ -50,7 +51,7 @@ export const actions: Actions = {
 
 		let res: Response;
 		try {
-			res = await fetch(`${INTERNAL_API_URL}/api/v1/auth/reset-password`, {
+			res = await apiFetch(`${INTERNAL_API_URL}/api/v1/auth/reset-password`, {
 				method: 'POST',
 				headers: { 'Content-Type': 'application/json' },
 				body: JSON.stringify({ token, password }),

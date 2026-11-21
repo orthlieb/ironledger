@@ -18,6 +18,13 @@ apps/web/src/lib/generated/
 .env
 .env.local
 .env.*.local
+.env.production
+.env.test
+*.pem
+*.key
+
+# Redis snapshot written next to wherever redis-server was started
+dump.rdb
 
 # Logs
 logs/

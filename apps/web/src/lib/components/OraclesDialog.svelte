@@ -22,7 +22,8 @@
 	import { oracleCategoryIcon } from '#lib/iconRegistry.js';
 	import { oracleCategoryMeta } from '#lib/extensionCategories.svelte.js';
 	import { renderNote } from '#lib/markdown.js';
-	import { appendLog, enrichOutcomeLinks } from '#lib/log.svelte.js';
+	import { appendLog, bindCommandLinks } from '#lib/log.svelte.js';
+	import { getActiveFoeId, getActiveExpeditionId } from '#lib/activeContext.svelte.js';
 	import { animateDice, DIE_BLACK, DIE_WHITE } from '#lib/dice.js';
 	import { getActiveDiceCtx } from '#lib/diceContext.svelte.js';
 
@@ -223,12 +224,15 @@
 			{ sides: 10, value: tensV, color: DIE_BLACK },
 			{ sides: 10, value: onesV, color: DIE_WHITE },
 		]);
-		// Enrich interactive links (resource/debility/progress etc.) with entry + char IDs
-		// so LogPanel click delegation can identify them. Always enrich — entryId is
-		// needed for strikethrough even when there is no active character context.
+		// Bind the result's command links to the entry and to who and what it
+		// was rolled for, so a later click acts on them (#lib/commands/links.ts).
 		const entryId = crypto.randomUUID();
 		const activeCtx = getActiveDiceCtx();
-		const html = enrichOutcomeLinks(result.html, entryId, activeCtx?.charId ?? '');
+		const html = bindCommandLinks(result.html, entryId, {
+			charId: activeCtx?.charId,
+			foeId: getActiveFoeId() || undefined,
+			expId: getActiveExpeditionId() || undefined,
+		});
 		appendLog(`Oracle ${result.title}`, html, entryId);
 		if (fillFn && result.value) fillFn(result.value);
 		rolling = false;
@@ -244,7 +248,10 @@
      ========================================================================= -->
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="oracles-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay
+			class="dialog-overlay oracles-overlay"
+			style="z-index: {overlayZ(stackDepth)}"
+		/>
 		<Dialog.Content
 			class="oracles-dialog"
 			style="z-index: {contentZ(stackDepth)}"
@@ -456,12 +463,6 @@
 <style>
 	/* bits-ui portals Content + Overlay to <body>; scope everything
 	   globally. z-index is set inline via dialogStack — see <script>. */
-	:global(.oracles-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000060;
-		backdrop-filter: blur(1px);
-	}
 	:global(.oracles-dialog) {
 		display: flex;
 		flex-direction: column;

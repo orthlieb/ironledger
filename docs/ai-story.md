@@ -20,8 +20,8 @@ normalized text back.
    Setup Instructions, seeded from that default, but edits there are a
    **per-story tweak** that applies to just that generation and never write back
    to the global default.
-3. **Mark a section** (hover a log entry → ▲ / ▼, or type `/start` / `/end` in
-   the [command bar](command-bar.md)): two markers define the section — ▲ pins
+3. **Mark a section** (hover a log entry → ▲ / ▼, or type `/story start` /
+   `/story end` in the [command bar](command-bar.md)): two markers define the section — ▲ pins
    the oldest entry included, ▼ pins the newest. Semantics:
    - **Only ▲ set**: the section is open — it grows as new entries land at the
      top of the log (equivalent to the old "record forward" behavior).
@@ -29,7 +29,7 @@ normalized text back.
      The two marker ids are persisted to `localStorage` so a reload keeps the
      selection.
 4. **Generate** (Log toolbar → Generate, or the floating strip at the bottom of
-   the log, or `/story`): the captured section is serialized to prompt text, an
+   the log, or `/story write`): the captured section is serialized to prompt text, an
    optional preface is prepended, and the prompt is streamed to the active
    storyteller via `/api/ai/generate`. Live markdown preview.
 5. **Edit** (after streaming): toggle **Edit** on the output box to tweak the raw
@@ -67,7 +67,7 @@ normalized text back.
 | `lib/components/AiConfigDialog.svelte` | Per-provider key / model / Test dialog                                                                |
 | `lib/components/LogPanel.svelte`       | ▲ / ▼ per-entry marker buttons, section highlight, Generate button + floating strip, ⟳ regenerate     |
 | `routes/api/ai/[...path]/+server.ts`   | BFF proxy → Fastify `/api/v1/ai/*` (streams the generate SSE through)                                 |
-| `routes/home/+page.svelte`             | `storiesToMarkdown()` + the Stories export                                                            |
+| `lib/exportMarkdown.ts`                | `storiesToMarkdown()`: the stories as Markdown (not yet wired to an export)                           |
 
 ### API (`apps/api`)
 

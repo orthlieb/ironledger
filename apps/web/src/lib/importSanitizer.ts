@@ -248,28 +248,6 @@ function bytesToDataUrl(path: string, bytes: Uint8Array): string {
 	return `data:${mime};base64,${btoa(binary)}`;
 }
 
-/**
- * Strip dangerous HTML from a log entry's `html` field before rendering.
- * Removes script tags, event-handler attributes, and dangerous protocols.
- */
-export function sanitizeLogHtml(html: string): string {
-	return (
-		html
-			// Remove <script> blocks (including multiline)
-			.replace(/<script\b[\s\S]*?<\/script>/gi, '')
-			// Remove dangerous embedding elements
-			.replace(/<(iframe|object|embed|link|meta|base)\b[^>]*>[\s\S]*?<\/\1>/gi, '')
-			.replace(/<(iframe|object|embed|link|meta|base)\b[^>]*\/?>/gi, '')
-			// Remove event-handler attributes (onclick=, onerror=, onload=, …)
-			.replace(/\bon\w+\s*=/gi, 'data-removed=')
-			// Remove dangerous URL protocols
-			.replace(/javascript\s*:/gi, 'removed:')
-			.replace(/data\s*:\s*text\/html/gi, 'removed:text/html')
-			// Remove vbscript: protocol
-			.replace(/vbscript\s*:/gi, 'removed:')
-	);
-}
-
 // ---------------------------------------------------------------------------
 // Internal recursion
 // ---------------------------------------------------------------------------

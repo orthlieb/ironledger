@@ -146,9 +146,6 @@
 		border-radius: 4px;
 		padding: 5px 8px 5px 28px;
 	}
-	.fb-input::placeholder {
-		color: var(--text-dimmer);
-	}
 
 	.fb-toggle {
 		font-family: var(--font-ui);

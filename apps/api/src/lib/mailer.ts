@@ -21,6 +21,16 @@ interface MailOptions {
   text: string; // plain-text fallback (important for spam filters)
 }
 
+/** Text for an email's HTML part: the display name is typed by an admin. */
+function escapeHtml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 async function send(opts: MailOptions): Promise<void> {
   if (config.EMAIL_PROVIDER === 'resend') {
     await sendViaResend(opts);
@@ -149,7 +159,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
       'Verify your email address by visiting:',
       link,
       '',
-      'This link expires in 1 hour.',
+      'This link expires in 24 hours.',
       '',
       "If you didn't create an account, you can safely ignore this email.",
     ].join('\n'),
@@ -202,7 +212,7 @@ export async function sendVerificationEmail(to: string, token: string): Promise<
               <p style="margin:0 0 20px;
                         font-family:'Roboto',Arial,Helvetica,sans-serif;
                         font-size:0.82rem;color:#64748b;line-height:1.6;">
-                This link expires in&nbsp;1&nbsp;hour. If you didn&rsquo;t create an account,
+                This link expires in&nbsp;24&nbsp;hours. If you didn&rsquo;t create an account,
                 you can safely ignore this email.
               </p>
 
@@ -368,7 +378,7 @@ export async function sendInviteEmail(
               <p style="margin:0 0 18px;
                         font-family:'Roboto',Arial,Helvetica,sans-serif;
                         font-size:0.9rem;color:#334155;line-height:1.65;">
-                ${hello} An Iron Ledger admin has opened a seat at the fire for
+                ${escapeHtml(hello)} An Iron Ledger admin has opened a seat at the fire for
                 you. Click below to set your password and claim your account.
               </p>
 

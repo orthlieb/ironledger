@@ -4,8 +4,8 @@
 	 *
 	 * A thin wrapper around the shared FoeRollDialog. All it supplies is the
 	 * site's denizen table — the fixed DENIZEN_CELLS frequency bands zipped with
-	 * this site's twelve denizen names — plus a resolver that maps a rolled
-	 * denizen name to a foe (case-insensitive). Every bit of the roll / detail /
+	 * this site's twelve denizens — plus a resolver that maps a rolled denizen
+	 * (a foe's id, or a name as typed) to a foe. Every bit of the roll / detail /
 	 * add-to-foes UI lives in FoeRollDialog, which also backs the extension
 	 * per-site denizen tables that resolve foes by name.
 	 *
@@ -16,7 +16,7 @@
 	 */
 	import type { Site, FoeDef, FoeQuantity, FoeRollRow } from '#lib/types.js';
 	import { DENIZEN_CELLS } from '#lib/types.js';
-	import { loadFoes, getFoes } from '#lib/foeStore.svelte.js';
+	import { loadFoes, findDenizenFoe } from '#lib/foeStore.svelte.js';
 	import FoeRollDialog from '#lib/components/FoeRollDialog.svelte';
 
 	let {
@@ -28,8 +28,8 @@
 	let inner = $state<{ open(): void; close(): void } | null>(null);
 	let site = $state<Site | null>(null);
 
-	/** Zip the fixed frequency bands with this site's denizen names into rows
-	 *  the shared dialog understands (ref = denizen name, resolved below). */
+	/** Zip the fixed frequency bands with this site's denizens into rows the
+	 *  shared dialog understands (ref = the slot as stored, resolved below). */
 	const rows = $derived<FoeRollRow[]>(
 		site
 			? DENIZEN_CELLS.map((c, i) => ({
@@ -43,11 +43,10 @@
 	);
 	const logLabel = $derived(`Site — ${site?.name || 'Unnamed Site'}`);
 
-	/** Resolve a denizen name → foe (case-insensitive). Names are human-authored
-	 *  per site, so there's no id to key on — match on the foe catalogue name. */
+	/** Resolve a denizen slot → foe: the id a pick from the list stores, else
+	 *  a name as typed (case-insensitive). */
 	function resolve(ref: string): FoeDef | undefined {
-		if (!ref) return undefined;
-		return getFoes().find((f) => f.name.toLowerCase() === ref.toLowerCase());
+		return findDenizenFoe(ref);
 	}
 
 	export async function open(s: Site): Promise<void> {

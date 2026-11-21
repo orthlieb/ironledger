@@ -10,6 +10,7 @@
 	 * 3D dice animation runs via @3d-dice/dice-box-threejs (CDN, lazy-loaded).
 	 */
 	import { appendLog } from '#lib/log.svelte.js';
+	import { outcomeClass, outcomeLabel } from '#lib/moveRoll.js';
 	import { matchNoteHtml } from '#lib/rollMatch.js';
 	import { actionScore, actionScoreHtml } from '#lib/rules/actionScore.js';
 	import { rollDie, rollD100, animateDice, DIE_BLACK, DIE_WHITE } from '#lib/dice.js';
@@ -72,16 +73,6 @@
 	// ---------------------------------------------------------------------------
 	// Helpers
 	// ---------------------------------------------------------------------------
-	function outcomeClass(hits1: boolean, hits2: boolean): string {
-		if (hits1 && hits2) return 'roll-outcome-strong';
-		if (hits1 || hits2) return 'roll-outcome-weak';
-		return 'roll-outcome-miss';
-	}
-	function outcomeLabel(hits1: boolean, hits2: boolean): string {
-		if (hits1 && hits2) return 'Strong Hit';
-		if (hits1 || hits2) return 'Weak Hit';
-		return 'Miss';
-	}
 
 	// ---------------------------------------------------------------------------
 	// Quick rolls — always available; log only when a character is active
@@ -202,7 +193,7 @@
      ========================================================================= -->
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="dice-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay dice-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content class="dice-dialog" style="z-index: {contentZ(stackDepth)}">
 			<DialogHeader title={headingText('Roll Dice')} onclose={close} />
 
@@ -320,12 +311,6 @@
 <style>
 	/* bits-ui portals Content + Overlay to <body> — scope everything
 	   globally. z-index is set inline via dialogStack — see <script>. */
-	:global(.dice-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000060;
-		backdrop-filter: blur(1px);
-	}
 	:global(.dice-dialog) {
 		display: flex;
 		flex-direction: column;

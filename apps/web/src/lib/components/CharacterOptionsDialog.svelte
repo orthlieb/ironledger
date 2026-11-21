@@ -61,7 +61,7 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="co-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay co-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="co-dialog"
 			style="z-index: {contentZ(stackDepth)}"
@@ -124,12 +124,6 @@
 <style>
 	/* z-index for .co-overlay / .co-dialog is set inline via dialogStack —
 	   see the <script> of each *OptionsDialog that uses this class. */
-	:global(.co-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000050;
-		backdrop-filter: blur(1px);
-	}
 	:global(.co-dialog) {
 		position: fixed;
 		top: 50%;

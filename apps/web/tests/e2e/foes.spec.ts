@@ -5,9 +5,23 @@
  * the FoePickerDialog (`.foe-dialog`); the picked foe becomes the active
  * encounter. Live count is on `.fa-area` (`data-foe-count`); deleting the
  * active foe is the trash button (`.fa-hdr-settings-btn`) → confirm.
+ *
+ * Also: End the Fight's Vanquish Foe link, in the log entry a hit writes,
+ * vanquishes the foe it was rolled against (Lodestar's version and the base
+ * move's).
  */
 import { test, expect, type Page } from '@playwright/test';
-import { resetFoes } from './helpers/reset';
+import {
+	resetAll,
+	resetExpansions,
+	resetFoes,
+	getTestToken,
+	seedCharacter,
+	seedFoeEncounter,
+	setExpansions,
+} from './helpers/reset';
+import { expectSwitcherShowsActiveIcon, settleHome } from './helpers/home';
+import { loadDice, queueDice } from './helpers/dice';
 
 const FOE_AREA = '.home-area--foes';
 const FOE_HEADER = `${FOE_AREA} .fa-header`;
@@ -107,4 +121,118 @@ test.describe('Foes area (v2)', () => {
 		expect(await foeCount(page)).toBe(0);
 		await expect(page.locator(`${FOE_AREA} .fa-empty`)).toBeVisible({ timeout: 5_000 });
 	});
+});
+
+// ── The switcher's icon ─────────────────────────────────────────────────────
+
+test.describe('Foes switcher icon', () => {
+	const API = 'http://127.0.0.1:3000/api/v1';
+	const foe = (customName: string, foeId: string) => ({
+		id: crypto.randomUUID(),
+		foeId,
+		quantity: 'solo',
+		effectiveRank: 2,
+		ticks: 0,
+		notes: '',
+		customName,
+		vanquished: false,
+	});
+
+	test.beforeAll(async () => {
+		// An animal and a person: two natures, two icons, two colours.
+		const res = await fetch(`${API}/session/encounters`, {
+			method: 'PATCH',
+			headers: {
+				Authorization: `Bearer ${await getTestToken()}`,
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				encounters: [foe('Icon Bear', 'ironsworn/bear'), foe('Icon Broken', 'ironsworn/broken')],
+			}),
+		});
+		expect(res.ok, 'seed foes').toBeTruthy();
+	});
+	test.afterAll(async () => {
+		await resetFoes();
+	});
+
+	test('the switcher shows the selected foe’s icon, an animal’s or a person’s', async ({
+		page,
+	}) => {
+		await page.goto('/home');
+		await waitForFoesLoaded(page);
+		const pick = async (name: string) => {
+			await page.locator(FOE_COMBOBOX).click();
+			await page.locator('.cb-popover .cb-item', { hasText: name }).click();
+			await expect(page.locator('.cb-popover')).toBeHidden({ timeout: 3_000 });
+		};
+
+		await pick('Icon Bear');
+		await expectSwitcherShowsActiveIcon(page, FOE_COMBOBOX);
+		const bearIcon = await page.locator(`${FOE_COMBOBOX} .cb-item-icon`).innerHTML();
+
+		await pick('Icon Broken');
+		await expectSwitcherShowsActiveIcon(page, FOE_COMBOBOX);
+		expect(await page.locator(`${FOE_COMBOBOX} .cb-item-icon`).innerHTML()).not.toBe(bearIcon);
+	});
+});
+
+// ── Vanquished by End the Fight ─────────────────────────────────────────────
+
+test.describe('End the Fight', () => {
+	let foeId = '';
+	test.beforeEach(async () => {
+		const tok = await getTestToken();
+		await resetAll(tok);
+		// With initiative, so Lodestar's End the Fight keeps a strong hit strong.
+		await seedCharacter('Bjorn', tok, { initiative: 1 });
+		// 32 ticks: 8 boxes of progress.
+		foeId = await seedFoeEncounter({ name: 'Raider', foeId: 'ironsworn/raider', ticks: 32 }, tok);
+	});
+	test.afterAll(async () => {
+		await resetFoes();
+		await resetExpansions();
+	});
+
+	// Lodestar's End the Fight stands in for the base move while Lodestar is on
+	// (the default).
+	for (const { name, move, lodestar } of [
+		{ name: 'Lodestar’s', move: 'end-the-fight-lodestar', lodestar: true },
+		{ name: 'the base move’s', move: 'end-the-fight', lodestar: false },
+	])
+		test(`${name} Vanquish Foe link, in the log, vanquishes the foe`, async ({ page }) => {
+			await setExpansions({ lodestar });
+			await loadDice(page);
+			await page.goto('/home');
+			await waitForFoesLoaded(page);
+			await settleHome(page);
+			const bar = page.locator('.cb-input');
+			await bar.fill(`/move ${move}`);
+			await bar.press('Enter');
+			const dialog = page.locator('.moves-dialog');
+			await expect(dialog).toBeVisible({ timeout: 5_000 });
+			// A strong hit: progress 8 beats challenge dice 1 and 1.
+			await queueDice(page, [1, 1]);
+			await dialog.locator('.md-roll-btn').click();
+			const top = page.locator('.log-entry').first();
+			await expect(top).toContainText('Strong Hit', { timeout: 8_000 });
+			// By its id: vanquishing the foe logs an entry above it.
+			const entry = page.locator(
+				`.log-entry[data-entry-id="${await top.getAttribute('data-entry-id')}"]`,
+			);
+			const link = entry.locator('a.cmd-link[data-cmd="/foe.vanquished++"]');
+			await expect(link).toHaveText('Vanquish Foe');
+			await link.click();
+			await expect(page.locator('.cb-status')).toHaveText('Raider: Vanquished: No → Yes');
+			await expect(entry.locator('s.resource-spent')).toHaveText('Vanquish Foe');
+			await expect
+				.poll(async () => {
+					const res = await page.evaluate(async () =>
+						(await fetch('/api/session', { credentials: 'include' })).json(),
+					);
+					const encs = (res.encounters ?? []) as Array<{ id: string; vanquished: boolean }>;
+					return encs.find((e) => e.id === foeId)?.vanquished;
+				})
+				.toBe(true);
+		});
 });

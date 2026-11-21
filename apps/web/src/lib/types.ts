@@ -3,8 +3,6 @@
 // Mirrors the YRT character model (stored as JSONB in PostgreSQL)
 // =============================================================================
 
-export type TouchedLevel = 'pure' | 'prime' | 'second' | 'third' | 'feral';
-
 export type VowDifficulty = 'troublesome' | 'dangerous' | 'formidable' | 'extreme' | 'epic';
 
 /** A vow's lifecycle state. Active → in progress; Fulfilled → completed;
@@ -99,6 +97,60 @@ export interface ExtensionInfo {
 	 *  adds one item that opens `url` in a new tab, labelled `label`. Mirrors
 	 *  ExtensionInfo in @ironledger/shared. */
 	infoLink?: { label: string; url: string };
+	/** Fields this extension declares, in declaration order: party, character
+	 *  and global ones (characterFields.svelte.ts, docs/character-fields.md). */
+	fields?: CharacterFieldDef[];
+	/** The heading over its party and character fields: left out, `name`;
+	 *  text, that text; `false`, none. */
+	fieldsHeading?: string | false;
+}
+
+/** One choice of a dropdown or radio character field. */
+export interface CharacterFieldOption {
+	id: string;
+	label: string;
+}
+
+/** A field an extension adds to every character. Mirrors CharacterFieldDef in
+ *  @ironledger/shared. */
+export interface CharacterFieldDef {
+	/** camelCase, unique across extensions: the key in `character.fields`
+	 *  and the precondition key. */
+	id: string;
+	label: string;
+	/** The asset custom field types: a choice (dropdown, radio), a count
+	 *  (counter, pips 0 to maxValue), on or off (switch), one line of text
+	 *  (string) or notes (markdown). */
+	type: 'dropdown' | 'radio' | 'string' | 'counter' | 'switch' | 'markdown';
+	options?: CharacterFieldOption[];
+	/** counter only: the most pips. */
+	maxValue?: number;
+	/** Instead of `options`: one option per row of an oracle. */
+	optionsFrom?: { oracle: string; label?: string };
+	/** The value of a character made before the field existed; `""` is no
+	 *  choice. New Character starts every field empty. */
+	default: string;
+	placeholder?: string;
+	/** While this condition is false the field is hidden (and keeps its value):
+	 *  an expression over the fields above it (docs/command-language.md). */
+	if?: string;
+	/** The oracle New Character's die rolls, by key. */
+	roll?: { oracle: string; from?: string; column?: { field: string; from: string } };
+	tooltip?: string;
+	/** Whose the value is (docs/command-language.md → Scopes): `party` (one
+	 * value every character shares), `character` (the default), or `global`
+	 * (one per character, shared by the assets that refer to it, like mana).
+	 * Party and character values live in `character.fields`, global ones in
+	 * `character.globalValues`. */
+	scope?: 'party' | 'character' | 'global';
+	/** `false`: commands and log links can show and test the value but not
+	 * change it; the sheet edits it either way. Default true. */
+	writable?: boolean;
+	/** dropdown only: a value that isn't an option is kept as typed. */
+	custom?: boolean;
+	/** global only: the pill label in the context bar, and the icon. */
+	shortLabel?: string;
+	icon?: string;
 }
 
 export interface FoeDef {
@@ -349,11 +401,12 @@ export interface CharacterData {
 	shadow: number;
 	wits: number;
 
-	// YRT homebrew
-	/** @deprecated Moved to the Touched asset card's customValues.touchedLevel — kept for old-save migration. */
-	touched?: TouchedLevel;
-	/** @deprecated Moved to the Touched asset card's customValues.animalName — kept for old-save migration. */
-	touchedAnimal?: string;
+	/** Values of the fields the core rules and extensions add to a character
+	 *  (Region of origin; YRT's religion, touched level and animal), keyed by
+	 *  field id: an
+	 *  option id, or text. A missing key reads as the field's default. See
+	 *  characterFields.svelte.ts. */
+	fields?: Record<string, string>;
 
 	// Resources
 	momentum: number; // –6 to dynamic max (10 − debilityCount)
@@ -434,8 +487,11 @@ export interface CustomFieldDef {
 	// counter
 	maxValue?: number | number[]; // array = per-ability-level
 	icon?: string;
-	/** If true, all counter fields with the same id share one value across the character (e.g. supply). */
+	/** One value per character, shared by every asset with this field: a
+	 *  reference to a global field (mana), resolved by the API. */
 	global?: boolean;
+	/** `false`: commands and log links can show it but not change it. */
+	writable?: boolean;
 	// radio | dropdown
 	options?: CustomFieldOption[];
 }
@@ -473,6 +529,10 @@ export interface AssetDefinition {
 	 * When the selected level changes downward the excess abilities are cleared.
 	 */
 	abilityMaxByField?: Record<string, Record<string, number>>;
+	/** Character fields (ids) the card shows as a line of text, e.g. a Touched
+	 *  asset's ["touched", "touchedAnimal"] → "Second · Wolf". The first text
+	 *  one with a value also names the asset's chit on the sheet. */
+	characterFields?: string[];
 	[key: string]: unknown;
 }
 
@@ -499,6 +559,7 @@ export const DEFAULT_CHARACTER: CharacterData = {
 	spirit: 5,
 	supply: 5,
 	globalValues: {},
+	fields: {},
 	xp: 0,
 	bonds: 0,
 	failures: 0,

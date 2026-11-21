@@ -12,6 +12,10 @@
 	 * bar is the drag handle. Form-style confirms (New* dialogs) turn
 	 * it on so they can be moved aside to see the panel behind them.
 	 *
+	 * Focus: a field in the body marked `autofocus` gets the caret when the
+	 * dialog opens (New Character's name). Without one, bits-ui's default
+	 * applies.
+	 *
 	 * Usage:
 	 *   let ref = $state<ReturnType<typeof ConfirmDialog> | null>(null);
 	 *   <ConfirmDialog bind:this={ref} title="Delete?" onconfirm={doDelete} confirmLabel="Delete">
@@ -32,6 +36,7 @@
 		accentColor = 'var(--color-danger)',
 		draggable = false,
 		width,
+		maxHeight,
 		confirmLabel = 'Confirm',
 		confirmClass = 'btn-danger',
 		cancelLabel = 'Cancel',
@@ -53,6 +58,10 @@
 		draggable?: boolean;
 		/** Optional dialog width (CSS length, e.g. "420px"). Defaults to 340px. */
 		width?: string;
+		/** Optional height cap (CSS length, e.g. "80dvh"). The content between
+		 *  the title bar and the buttons scrolls when it doesn't fit; the
+		 *  title bar and buttons stay put. Uncapped by default. */
+		maxHeight?: string;
 		confirmLabel?: string;
 		confirmClass?: string;
 		cancelLabel?: string;
@@ -77,6 +86,18 @@
 	} = $props();
 
 	let open = $state(false);
+	let contentEl = $state<HTMLElement | null>(null);
+
+	// bits-ui focuses the dialog itself on open, after a body field's own
+	// `autofocus` has fired, so hand the caret back to that field.
+	function onOpenAutoFocus(e: Event) {
+		const field = contentEl?.querySelector<HTMLElement>('[autofocus]');
+		if (!field) return;
+		e.preventDefault();
+		// setTimeout(0) so bits-ui finishes its own focus routine first.
+		setTimeout(() => field.focus(), 0);
+	}
+
 	// Tracks how the dialog closed. bits-ui doesn't distinguish
 	// Cancel-button close from Escape/outside close — we watch the
 	// `open → false` transition and, if no explicit intent was
@@ -134,13 +155,18 @@
 
 <AlertDialog.Root bind:open {onOpenChange}>
 	<AlertDialog.Portal to={portalTo}>
-		<AlertDialog.Overlay class="cm-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<AlertDialog.Overlay
+			class="dialog-overlay cm-overlay"
+			style="z-index: {overlayZ(stackDepth)}"
+		/>
 		<AlertDialog.Content
-			class="confirm-modal"
+			bind:ref={contentEl}
+			{onOpenAutoFocus}
+			class={maxHeight ? 'confirm-modal confirm-modal--capped' : 'confirm-modal'}
 			data-tour={tour}
 			style="--accent: {accentColor}; z-index: {contentZ(stackDepth)}{width
 				? `; width: ${width}`
-				: ''}"
+				: ''}{maxHeight ? `; max-height: ${maxHeight}` : ''}"
 		>
 			<div class="cm-header" use:dragAction={draggable}>
 				{#if draggable}
@@ -154,7 +180,9 @@
 				{/if}
 			</div>
 			<div class="cm-body">
-				{@render children?.()}
+				{#if children}
+					<div class="cm-content">{@render children()}</div>
+				{/if}
 				<div class="cm-actions">
 					{#if showCancelButton}
 						<AlertDialog.Cancel class="btn" onclick={handleCancel}>{cancelLabel}</AlertDialog.Cancel
@@ -186,12 +214,6 @@
 	 * base tier. See <script>. Popovers/menus (at 90+) still win by design,
 	 * which is correct: a picker opened from inside a confirm must beat
 	 * the confirm. */
-	:global(.cm-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000050;
-		backdrop-filter: blur(1px);
-	}
 	/* Standard neutral dialog surface — matches every other bits-ui
 	   Dialog in the app. The `--accent` prop only surfaces as a 3px
 	   LHS band (mirroring `.ea-stage` / `.cm-stage` / `.fa-stage` on
@@ -261,9 +283,15 @@
 		color: var(--text);
 	}
 
-	/* Body */
+	/* Body: the content, then the buttons. The padding sits on each part
+	   rather than the body, so a capped dialog's scrolling content keeps
+	   room for its fields' focus rings. */
 	:global(.confirm-modal .cm-body) {
-		padding: 12px 14px;
+		display: flex;
+		flex-direction: column;
+	}
+	:global(.confirm-modal .cm-content) {
+		padding: 12px 14px 0;
 		display: flex;
 		flex-direction: column;
 		gap: 8px;
@@ -272,7 +300,33 @@
 		display: flex;
 		flex-wrap: wrap;
 		gap: 6px;
-		margin-top: 4px;
+		padding: 12px 14px;
 		justify-content: flex-end;
+	}
+
+	/* maxHeight: header and buttons stay, the content scrolls between them. */
+	:global(.confirm-modal--capped) {
+		display: flex;
+		flex-direction: column;
+	}
+	:global(.confirm-modal--capped .cm-header) {
+		flex-shrink: 0;
+	}
+	:global(.confirm-modal--capped .cm-body) {
+		flex: 1;
+		min-height: 0;
+	}
+	:global(.confirm-modal--capped .cm-content) {
+		flex: 1;
+		min-height: 0;
+		overflow-y: auto;
+		overscroll-behavior: contain;
+		padding-bottom: 10px;
+	}
+	/* A rule over the buttons, so content scrolled under it reads as cut. */
+	:global(.confirm-modal--capped .cm-actions) {
+		flex-shrink: 0;
+		padding-top: 10px;
+		border-top: 1px solid var(--border);
 	}
 </style>

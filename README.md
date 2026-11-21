@@ -35,7 +35,7 @@ ironledger/
     api/          Fastify REST API (port 3000)
     web/          SvelteKit frontend (port 5173 dev / 3001 prod)
   packages/
-    shared/       Shared TypeScript types and game data
+    shared/       Shared TypeScript types, condition and command parsers
   infra/
     nginx/        Production Nginx config
     scripts/      Server setup, deploy, backup scripts
@@ -56,7 +56,7 @@ ironledger/
 ```bash
 # 1. Clone and install
 git clone <repo-url> && cd ironledger
-npm install
+npm install       # also builds packages/shared, which the web app imports
 
 # 2. Start database services (Docker)
 docker compose up -d
@@ -253,7 +253,7 @@ Feature docs are in the `docs/` directory:
 | [architecture_decisions.md](docs/architecture_decisions.md) | Architecture and design decisions                                        |
 | [campaign-map.md](docs/campaign-map.md)                     | Campaign map — markers, connections, icons                               |
 | [character-sheet.md](docs/character-sheet.md)               | Character sheet component                                                |
-| [command-bar.md](docs/command-bar.md)                       | Command bar — slash commands and completion                              |
+| [command-bar.md](docs/command-bar.md)                       | Command bar — the command language typed, typeahead, how it runs         |
 | [communities.md](docs/communities.md)                       | Communities & NPCs — data model, oracle generation                       |
 | [data-schema.md](docs/data-schema.md)                       | Catalogue data format spec (moves, assets, oracles, foes)                |
 | [deployment.md](docs/deployment.md)                         | IONOS VPS deployment guide                                               |

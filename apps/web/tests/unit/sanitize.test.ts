@@ -73,84 +73,24 @@ describe('LOG_TAGS allowlist', () => {
 });
 
 // ── Attributes shared by multiple link types ─────────────────────────────────
-describe('LOG_ATTRS — shared attributes', () => {
-	expectAttr('class', 'every link needs its CSS class to be clickable');
-	expectAttr('href', 'failure/xp links use href="#"; move-links use a path');
-	expectAttr('data-value', 'resource-link, progress-link, initiative-link, menace-link');
-	expectAttr('data-entry-id', 'all stateful links — markLinkSpent + early-return guard');
-	expectAttr(
-		'data-char-id',
-		'resource-link, debility-link, failure-link, burn-momentum-link, xp-cost-link',
-	);
+describe('LOG_ATTRS — a command link (#lib/commands/links.ts)', () => {
+	expectAttr('class', 'cmd-link, and resource-spent once it is struck');
+	expectAttr('data-cmd', 'the command a click runs');
+	expectAttr('data-verb', 'marks a move or oracle link, live in dialogs');
+	expectAttr('data-link', 'its place in the entry, so the link clicked is the one struck');
+	expectAttr('data-entry-id', 'the entry it belongs to');
 });
 
-// ── resource-link ────────────────────────────────────────────────────────────
-describe('LOG_ATTRS — resource-link', () => {
-	expectAttr('data-resource', 'identifies which stat to change (momentum, health, spirit, …)');
-});
-
-// ── progress-link ────────────────────────────────────────────────────────────
-describe('LOG_ATTRS — progress-link', () => {
-	// Handler: const track = progLink.dataset['track'] ?? ''; if (!track …) return;
-	expectAttr('data-track', 'identifies which progress track to mark (combat, journey, delve)');
-});
-
-// ── debility-link ─────────────────────────────────────────────────────────────
-describe('LOG_ATTRS — debility-link', () => {
-	// Handler: const debility = debLink.dataset['debility'] ?? ''; if (!debility …) return;
-	expectAttr('data-debility', 'identifies which debility to set or clear');
-});
-
-// ── move-link ─────────────────────────────────────────────────────────────────
-describe('LOG_ATTRS — move-link', () => {
-	expectAttr('data-id', 'move id to open in MovesDialog');
-});
-
-// ── oracle-link ───────────────────────────────────────────────────────────────
-describe('LOG_ATTRS — oracle-link', () => {
-	expectAttr('data-oracle', 'oracle key to open in OraclesDialog');
-	// oracleLink.dataset['stat'] is passed to the oracle dialog for column pre-selection
-	expectAttr('data-stat', 'stat column pre-selected in the oracle (e.g. "edge")');
-});
-
-// ── failure-link (no extra attrs — uses shared data-entry-id / data-char-id)
-describe('LOG_ATTRS — failure-link', () => {
-	// All required attrs already covered by the shared block above
-	it('all required attrs (data-entry-id, data-char-id, href) are covered by shared tests', () => {
-		expect(LOG_ATTRS).toContain('data-entry-id');
-		expect(LOG_ATTRS).toContain('data-char-id');
-		expect(LOG_ATTRS).toContain('href');
-	});
-});
-
-// ── burn-momentum-link ───────────────────────────────────────────────────────
-describe('LOG_ATTRS — burn-momentum-link', () => {
-	// Handler: const rollEntryId = burnLink.dataset['rollEntryId'] ?? ''; if (!rollEntryId …) return;
-	expectAttr(
-		'data-roll-entry-id',
-		'id of the original roll log entry — handler returns early if missing',
-	);
-	// Also stored on the element for burnMomentum() context:
-	expectAttr('data-move-id', 'move id passed to burnMomentum()');
-	expectAttr('data-action-score', 'action score passed to burnMomentum()');
-});
-
-// ── xp-cost-link ─────────────────────────────────────────────────────────────
-describe('LOG_ATTRS — xp-cost-link', () => {
-	// Handler: const cost = parseInt(xpLink.dataset['cost'] ?? '0', 10); if (!cost …) return;
-	expectAttr('data-cost', 'XP amount to deduct — handler returns early if 0/missing');
-});
-
-// ── change-theme / change-domain links ───────────────────────────────────────
-describe('LOG_ATTRS — change-theme-link / change-domain-link', () => {
-	expectAttr('data-expedition-id', 'which expedition to modify');
-});
-
-// ── <s> tag coverage (attribute side) ────────────────────────────────────────
-describe('LOG_ATTRS — <s class="resource-spent/xp-spent">', () => {
-	it('class is in ALLOWED_ATTR so resource-spent / xp-spent classes survive', () => {
-		expect(LOG_ATTRS).toContain('class');
-	});
+describe('LOG_ATTRS — what a command link is bound to', () => {
+	expectAttr('data-char-id', 'the character the entry was made for');
+	expectAttr('data-foe-id', 'the foe it was made against');
+	expectAttr('data-exp-id', 'the journey, site or scene it was made for');
+	expectAttr('data-vow-id', 'the vow its move chose');
+	expectAttr('data-companion-id', 'the companion its move chose');
+	expectAttr('data-self-id', 'the asset the link belongs to');
+	expectAttr('data-harm', 'what `harm` stands for (Endure Harm’s amount)');
+	expectAttr('data-roll-entry-id', 'the action roll a /burn link burns momentum on');
+	expectAttr('data-stat', 'the column an /oracle link opens on');
 });
 
 // ---------------------------------------------------------------------------
@@ -228,74 +168,59 @@ describe('sanitizeLogHtml — XSS / injection is blocked', () => {
 // ---------------------------------------------------------------------------
 
 describe('sanitizeLogHtml — data attribute preservation (regression guard)', () => {
-	// ── resource-link (as enrichOutcomeLinks produces it: data-* before class) ─
-
-	it('preserves all data-* attrs on a resource-link in enrichOutcomeLinks output format', () => {
-		// enrichOutcomeLinks puts data-entry-id and data-char-id BEFORE the class attr
+	it('keeps a bound command link whole', () => {
 		const html =
-			'<a data-entry-id="eid-123" data-char-id="cid-456" class="resource-link" data-resource="momentum" data-value="+2">+2 momentum</a>';
+			'<a class="cmd-link" data-cmd="/foe.progress+=2" data-entry-id="eid-1" data-link="0" ' +
+			'data-char-id="cid-1" data-foe-id="fid-1" data-exp-id="xid-1" data-vow-id="vid-1" ' +
+			'data-companion-id="companion/hawk" data-harm="2">Inflict double harm</a>';
 		const out = sanitizeLogHtml(html);
-		expect(out).toContain('class="resource-link"');
-		expect(out).toContain('data-entry-id="eid-123"');
-		expect(out).toContain('data-char-id="cid-456"');
-		expect(out).toContain('data-resource="momentum"');
-		expect(out).toContain('data-value="+2"');
-		expect(out).toContain('+2 momentum');
+		for (const attr of [
+			'class="cmd-link"',
+			'data-cmd="/foe.progress+=2"',
+			'data-entry-id="eid-1"',
+			'data-link="0"',
+			'data-char-id="cid-1"',
+			'data-foe-id="fid-1"',
+			'data-exp-id="xid-1"',
+			'data-vow-id="vid-1"',
+			'data-companion-id="companion/hawk"',
+			'data-harm="2"',
+		])
+			expect(out).toContain(attr);
+		expect(out).toContain('Inflict double harm');
 	});
 
-	// ── initiative-link ───────────────────────────────────────────────────────
-
-	it('preserves data-value and data-entry-id on initiative-link', () => {
-		const html =
-			'<a data-entry-id="eid-789" data-char-id="cid-456" class="initiative-link" data-value="character">You have initiative</a>';
-		const out = sanitizeLogHtml(html);
-		expect(out).toContain('class="initiative-link"');
-		expect(out).toContain('data-entry-id="eid-789"');
-		expect(out).toContain('data-char-id="cid-456"');
-		expect(out).toContain('data-value="character"');
+	it('keeps a burn link’s roll and a move link’s verb', () => {
+		const out = sanitizeLogHtml(
+			'<a class="cmd-link" data-cmd="/burn" data-roll-entry-id="roll-1">burn momentum</a> ' +
+				'<a class="cmd-link" data-cmd="/move endure-harm" data-verb="move">Endure Harm</a>',
+		);
+		expect(out).toContain('data-roll-entry-id="roll-1"');
+		expect(out).toContain('data-verb="move"');
 	});
 
-	// ── debility-link ─────────────────────────────────────────────────────────
-
-	it('preserves data-debility, data-value, data-entry-id, data-char-id on debility-link', () => {
-		const html =
-			'<a data-entry-id="eid-abc" data-char-id="cid-def" class="debility-link" data-debility="shaken" data-value="1">Mark Shaken</a>';
-		const out = sanitizeLogHtml(html);
-		expect(out).toContain('data-debility="shaken"');
-		expect(out).toContain('data-value="1"');
-		expect(out).toContain('data-entry-id="eid-abc"');
-		expect(out).toContain('data-char-id="cid-def"');
-	});
-
-	// ── burn-momentum-link ────────────────────────────────────────────────────
-
-	it('preserves data-roll-entry-id and data-entry-id on burn-momentum-link', () => {
-		const html =
-			'<a data-entry-id="burn-001" data-char-id="cid-456" data-roll-entry-id="roll-001" class="burn-momentum-link">Burn momentum</a>';
-		const out = sanitizeLogHtml(html);
-		expect(out).toContain('data-roll-entry-id="roll-001"');
-		expect(out).toContain('data-entry-id="burn-001"');
-		expect(out).toContain('data-char-id="cid-456"');
-	});
-
-	// ── full move-outcome block (real-world shape) ────────────────────────────
-
-	it('preserves data attrs on all links in a full move-outcome block', () => {
+	it('keeps every link of a full move outcome', () => {
 		const html = `
       <div class="roll-line">1d6 [4] + heart[1] = <strong>5</strong> vs 2d10 [1] [3]</div>
       <div class="roll-outcome-strong"><strong>Strong Hit</strong></div>
       <div class="move-outcome">Take
-        <a data-entry-id="eid-full" data-char-id="cid-full" class="resource-link" data-resource="momentum" data-value="+2">+2 momentum</a>.
-        <a data-entry-id="eid-full" data-char-id="cid-full" class="initiative-link" data-value="character">You have initiative</a>.
+        <a class="cmd-link" data-cmd="/momentum+=2" data-entry-id="eid-full" data-link="0" data-char-id="cid-full">+2 momentum</a>.
+        <a class="cmd-link" data-cmd="/initiative=me" data-entry-id="eid-full" data-link="1" data-char-id="cid-full">You have initiative</a>.
       </div>
     `;
 		const out = sanitizeLogHtml(html);
-		// Both links should have all their attrs
 		expect(out.match(/data-entry-id="eid-full"/g)?.length).toBe(2);
 		expect(out.match(/data-char-id="cid-full"/g)?.length).toBe(2);
-		expect(out).toContain('data-resource="momentum"');
-		expect(out).toContain('data-value="+2"');
-		expect(out).toContain('data-value="character"');
+		expect(out).toContain('data-cmd="/momentum+=2"');
+		expect(out).toContain('data-cmd="/initiative=me"');
+	});
+
+	it('strips an old link’s data, leaving its text (old links do nothing now)', () => {
+		const out = sanitizeLogHtml(
+			'<a class="resource-link" data-resource="momentum" data-value="+2">+2 momentum</a>',
+		);
+		expect(out).not.toContain('data-resource');
+		expect(out).toContain('+2 momentum');
 	});
 
 	// ── ALLOWED_URI_REGEXP regression guard ───────────────────────────────────
@@ -312,10 +237,9 @@ describe('sanitizeLogHtml — data attribute preservation (regression guard)', (
 	});
 
 	it('strips unlisted data-* attributes (ALLOW_DATA_ATTR:false enforced)', () => {
-		const html =
-			'<a class="resource-link" data-evil="injected" data-resource="momentum" data-value="+1">test</a>';
+		const html = '<a class="cmd-link" data-evil="injected" data-cmd="/momentum++">test</a>';
 		const out = sanitizeLogHtml(html);
 		expect(out).not.toContain('data-evil');
-		expect(out).toContain('data-resource="momentum"');
+		expect(out).toContain('data-cmd="/momentum++"');
 	});
 });

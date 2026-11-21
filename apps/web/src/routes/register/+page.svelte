@@ -1,5 +1,6 @@
 <script lang="ts">
 	import type { ActionData, PageData } from './$types';
+	import BetaBadge from '#lib/components/BetaBadge.svelte';
 	import PasswordInput from '#lib/components/PasswordInput.svelte';
 	import swordSvg from '#icons/sharp-axe.svg?raw';
 	import { browser } from '$app/env';
@@ -46,7 +47,10 @@
 		<div class="auth-card card">
 			<div class="auth-brand">
 				<div class="auth-brand-rule"></div>
-				<h1><span class="auth-brand-icon" aria-hidden="true">{@html swordSvg}</span>Iron Ledger</h1>
+				<h1>
+					<span class="auth-brand-icon" aria-hidden="true">{@html swordSvg}</span>Iron Ledger<BetaBadge
+					/>
+				</h1>
 				<div class="auth-brand-rule"></div>
 			</div>
 			<div class="hero-image-wrap">
@@ -127,7 +131,8 @@
 			</form>
 
 			<p class="auth-link">
-				Already sworn in? <a href="/login">Sign in</a>
+				Already sworn in? <a href="/login">Sign in</a> ·
+				<a href="/privacy" data-testid="register-privacy">How we handle your data</a>
 			</p>
 		</div>
 	</div>

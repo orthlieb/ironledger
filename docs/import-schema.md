@@ -10,10 +10,16 @@ from the **Hamburger → Export…** dialog and accepts via
 > data (moves, assets, oracles, foes, delve tables) shipped under `data/`,
 > see [data-schema.md](data-schema.md).
 
-The export/import logic lives in
-[`apps/web/src/routes/home/+page.svelte`](../apps/web/src/routes/home/+page.svelte);
-the import hardening + zip decompression lives in
+The export lives in
+[`apps/web/src/lib/campaignExport.svelte.ts`](../apps/web/src/lib/campaignExport.svelte.ts)
+(with the Markdown pieces in
+[`exportMarkdown.ts`](../apps/web/src/lib/exportMarkdown.ts)), the import in
+[`apps/web/src/lib/campaignImport.svelte.ts`](../apps/web/src/lib/campaignImport.svelte.ts),
+and what both share (portraits, containment refs) in
+[`campaignTransfer.ts`](../apps/web/src/lib/campaignTransfer.ts). The import
+hardening + zip decompression lives in
 [`apps/web/src/lib/importSanitizer.ts`](../apps/web/src/lib/importSanitizer.ts).
+The home page (`routes/home/+page.svelte`) only wires the dialogs to them.
 
 ---
 
@@ -72,23 +78,25 @@ Import dispatches **solely on `manifest.type`**.
 
 ### Export types
 
-| `type`           | Export menu item  | `data` shape                                                                                    | Body filename           | Zip filename                    |
-| ---------------- | ----------------- | ----------------------------------------------------------------------------------------------- | ----------------------- | ------------------------------- |
-| `character`      | Current Character | `{ name, data }`                                                                                | `character.json`        | `<slug-of-name>.zip`            |
-| `all-characters` | All Characters    | `Array<{ name, data }>`                                                                         | `characters.json`       | `all-characters-<stamp>.zip`    |
-| `communities`    | Connections       | `{ communities: Community[], npcs: Npc[], places: Place[] }`                                    | `communities.json`      | `communities-<stamp>.zip`       |
-| `expeditions`    | Expeditions       | `Array<Expedition>` (Journey \| Site \| Scene)                                                  | `expeditions.json`      | `expeditions-<stamp>.zip`       |
-| `everything`     | Everything        | `{ characters, log, communities, npcs, places, expeditions, session }` (foes are Markdown-only) | `everything.json`       | `ironledger-export-<stamp>.zip` |
-| `log`            | Session Log       | `Array<LogEntry>` (oldest-first)                                                                | _(no zip — plain JSON)_ | `session-log-<stamp>.json`      |
+| `type`           | Export menu item  | `data` shape                                                                                   | Body filename           | Zip filename                    |
+| ---------------- | ----------------- | ---------------------------------------------------------------------------------------------- | ----------------------- | ------------------------------- |
+| `character`      | Current Character | `{ name, data }`                                                                               | `character.json`        | `<slug-of-name>.zip`            |
+| `all-characters` | All Characters    | `Array<{ name, data }>`                                                                        | `characters.json`       | `all-characters-<stamp>.zip`    |
+| `communities`    | Connections       | `{ communities: Community[], npcs: Npc[], places: Place[] }`                                   | `communities.json`      | `communities-<stamp>.zip`       |
+| `expeditions`    | Expeditions       | `Array<Expedition>` (Journey \| Site \| Scene)                                                 | `expeditions.json`      | `expeditions-<stamp>.zip`       |
+| `everything`     | Everything        | `{ characters, log, communities, npcs, places, expeditions, encounters, extensions, session }` | `everything.json`       | `ironledger-export-<stamp>.zip` |
+| `log`            | Session Log       | `Array<LogEntry>` (oldest-first)                                                               | _(no zip — plain JSON)_ | `session-log-<stamp>.json`      |
 
 `<stamp>` is local time formatted `YYYY-MM-DD_HHmm` (e.g. `2026-06-18_1504`).
 
 This document covers the **zip / JSON body** format only — the zip
 exports are the re-importable form and the contract this doc defines.
-Separate human-readable **Markdown** exports exist in the UI (Session
-Log, Everything-as-zip, and **Stories** — the AI-generated prose entries
-only, `stories-<stamp>.md`); these are one-way (not re-importable) and
-out of scope here.
+Separate human-readable **Markdown** exports exist in the UI (the Session
+Log alone as `session-log-<stamp>.md`, or anything selected as a Markdown
+zip); these are one-way (not re-importable) and out of scope here. How
+maps come out in the Markdown zip (a numbered SVG and a legend; markers on
+hidden layers and maps with no background left out) is in
+[campaign-map.md → Markdown](campaign-map.md#markdown-numbered-map--legend).
 
 > **Maps.** Campaign maps ride along inside `everything` as nested
 > `maps/<mapId>/` dirs (`manifest.json` + `map.json` with the marker list +
@@ -96,28 +104,35 @@ out of scope here.
 > records the map's owner **by name** (`ownerKind` + `ownerName`) so import can
 > re-link it to the owning community / place / journey / site after entities
 > land (ids regenerate, names don't). A map's **layers** travel too — the
-> layer list (`settings.layers`) and every marker's `layer` id are in
-> `map.json`, so a round-tripped map keeps its layers and which marker sits on
-> each (a marker whose layer id no longer resolves falls back to Default). Each
+> layer list (`settings.layers`, each layer's `hidden` flag with it) and every
+> marker's `layer` id are in `map.json`, markers on hidden layers included, so
+> a round-tripped map keeps its layers, which of them are hidden, and which
+> marker sits on each (a marker whose layer id no longer resolves falls back
+> to Default). Each
 > marker's **display `type`** (`both` / `label` / `icon`) travels as well;
 > export always writes one, and import backfills a derived `type` on any older
 > marker that predates the field, so imported markers are never ambiguous about
 > whether they show their icon, their label, or both. On a
 > merge import where that owner
 > already has a map, the user is prompted **Replace** (overwrite it) or
-> **Skip** (import the incoming map standalone); an owner that can't be matched
-> also imports standalone. The Export dialog also offers a standalone
-> **All Maps** (`type: "map"`) bundle of the same `maps/<id>/` dirs, plus a
-> one-way PNG snapshot. The single-map zip shape — shared by both paths — is
-> documented in [campaign-map.md § Exports](campaign-map.md#exports).
+> **Skip** (keep the existing map; the incoming one isn't imported); an owner
+> that can't be matched imports standalone. Each `maps/<id>/` dir has the
+> single-map zip's layout, which older versions also exported on its own and
+> which still imports — see [campaign-map.md § Exports](campaign-map.md#exports).
+> The Markdown export draws each map as a numbered SVG instead.
 
 ---
 
 ## Characters
 
-A character is exported as `{ name, data }`, where `name` is the display name
+A character is exported as `{ id, name, data }`, where `id` is the one it had
+when exported, `name` is the display name
 and `data` is the full per-character saved state (stats, momentum/health/
 spirit/supply, experience, initiative, vows, owned assets, debilities, etc.).
+The `id` isn't kept (an imported character always gets a new one); it's how
+the log's entries for the character are re-pointed at it (see
+[Session log entries point at the rows as they landed](#collision-resolution)).
+Older exports have no `id`, and import takes them as they are.
 The inner `data` object is the character's persisted blob; its fields mirror
 the runtime `Character.data` type (see `apps/web/src/lib/types.ts`).
 
@@ -133,6 +148,7 @@ the runtime `Character.data` type (see `apps/web/src/lib/types.ts`).
     "count": 1
   },
   "data": {
+    "id": "…",
     "name": "Mr. Pibbles",
     "data": { "stats": { "edge": 2, "heart": 2, "iron": 2, "shadow": 3, "wits": 1 }, "...": "…" }
   }
@@ -143,8 +159,48 @@ the runtime `Character.data` type (see `apps/web/src/lib/types.ts`).
 `{ name, data }` entries.
 
 On import each entry is created as a **new** character (a fresh id is
-allocated; nothing is overwritten). Imported character data is run through
-`reconcileImportedChar()` so stale/unknown fields are normalized before save.
+allocated; nothing is overwritten) unless its name collides and the player
+picks Replace (see [Collision resolution](#collision-resolution)). Imported
+character data is run through `reconcileImportedCharacter()`
+(`apps/web/src/lib/character.ts`) so stale/unknown
+fields are normalized before save, on both paths:
+
+- `globalValues` goes through `reconcileGlobalValues` (unknown counter ids
+  and non-numeric values dropped, counts clamped).
+- `fields` (the character fields: Region of origin and the extensions' —
+  see [character-fields.md](character-fields.md#storage)) goes
+  through `cleanFieldValues`. A dropdown or radio given by its label
+  (`"Oray Hills"`) or any case of its id is stored as the id; one that names
+  no option keeps its text. A counter is clamped to its maximum, a switch
+  becomes `"1"` / `"0"`, and numbers and booleans become text. A value that's
+  an object or a list is dropped. A field id no extension declares is
+  **kept**: the extension may be off or missing on this install.
+- Then `moveLegacyYrtFields` moves an older export's YRT values into
+  `fields`: the `**Region of origin:**` and `**Religion:**` lines New
+  Character wrote into `background`, the touched level and animal from the
+  Touched asset's `customValues` or the old `data.touched` /
+  `data.touchedAnimal`. Loading a character does the same, but Replace
+  writes the imported data straight onto the existing character.
+- A `data` with no `name` takes the entry's `name`. The sheet shows
+  `data.name`, and loading would otherwise fill it with "New Character".
+
+```json
+{
+  "name": "Ivy",
+  "data": {
+    "fields": {
+      "origin": "oray-hills",
+      "religion": "puritan",
+      "touched": "second",
+      "touchedAnimal": "Heron"
+    },
+    "...": "…"
+  }
+}
+```
+
+The Markdown export lists the same fields on each character's page, under
+`## Details`, each extension's under its heading.
 
 ---
 
@@ -278,6 +334,10 @@ they export and import exactly like any other field:
 | **NPC**       | Lodestar / Delve | `firstLook`, `activity`, `disposition`, `situationalNotes`, `within` / `withinRef`                                                                                 |
 | **Place**     | (always)         | `locationDescription`, `situationalNotes`, `shortDescription`, `within` / `withinRef` (modern), `withinSettlementId` / `withinSettlementName` (legacy, place-only) |
 
+Characters carry their extension fields (YRT's religion, touched level and
+animal; the core Region of origin) in one map, `data.fields`; see
+[Characters](#characters) for how import tidies it.
+
 `Place` currently shares the `Community` field set (it renders in the same
 card), but is stored as its own entity kind so future place-specific fields
 don't need a schema shuffle. `Place.trouble` is deprecated (kept for
@@ -331,7 +391,10 @@ Two fields are worth calling out:
 
 `type: "log"` — `data` is an array of `LogEntry` objects. The store keeps
 entries **newest-first**; the export **reverses** them so the file reads
-**oldest-first** (chronological).
+**oldest-first** (chronological). An export carries the **whole** log the
+server keeps (up to 1000 entries, read with `GET /session/log?limit=1000`),
+not just the newest 200 the page loads; if that read fails, it carries what
+the page has and the export overlay says so.
 
 ```json
 {
@@ -409,12 +472,14 @@ entities exactly instead of by name.
     "npcs": [{ "id": "…", "name": "…" }],
     "places": [{ "id": "…", "name": "…" }],
     "expeditions": [{ "id": "…", "type": "journey" }],
+    "encounters": [{ "id": "…", "foeId": "ironsworn/bear", "customName": "…", "ticks": 12 }],
+    "extensions": [{ "id": "yrt", "name": "YRT", "enabled": true }],
     "session": { "activeCharId": "…", "activeFoeId": "…", "activeExpeditionId": "…" }
   }
 }
 ```
 
-`count` is the sum of `characters + log + communities + npcs + places + expeditions`
+`count` is the sum of `characters + log + communities + npcs + places + expeditions + encounters`
 lengths. `places` is optional on import — legacy exports without it load as `[]`. `session` records which entities were active at export time (not
 re-applied on import).
 
@@ -427,11 +492,33 @@ re-applied on import).
 > omitted from `count`. See
 > [campaign-map.md § Exports](campaign-map.md#exports).
 
-> **Foes are Markdown-only.** Foe encounters are transient — they vary from
-> campaign and session to session and are routinely deleted — so they are
-> **excluded from the JSON export** entirely (and were never restored on
-> import). They appear only in the **Markdown** export, as `foes.md` in the
-> `everything` Markdown ZIP, as a human-readable record.
+> **Foes.** `encounters` holds the foes picked in the dialog's Foes section,
+> each a `FoeEncounter` (`id`, `foeId` — the catalogue foe, e.g.
+> `ironsworn/bear` — `quantity`, `effectiveRank`, `ticks`, `notes`,
+> `customName`, `vanquished`, and YRT's `currentHarm` / `currentDefense`),
+> copied whole. Import needs a non-empty `foeId`; the catalogue foe needn't
+> be enabled on the importing account (the foe imports anyway, and shows once
+> that content is on). Older exports have no `encounters`; the Markdown
+> export also lists the foes, as `foes.md`.
+
+> **Content packs.** `extensions` lists every content pack but core
+> (`base`, always on) with whether it was on, whatever the dialog had picked:
+> what's in the file may need them to show. Import switches on each pack that
+> was on, before any rows, and never switches one off; the done stage's
+> summary names the packs it switched on ("Switched on the YRT content
+> pack."). A pack that was on but that this app doesn't have (a dev-only
+> pack, say) is named under **Worth knowing** on the done stage, and the
+> import goes on: everything in the file still imports, and what comes from
+> that pack is kept but doesn't show. A pack that was off is ignored. Rows
+> that aren't `{ id, name, enabled }` with an id the account's choices take
+> are skipped. Older exports have no `extensions`, and nothing is switched.
+> The rules live in `#lib/packChoices.ts`; the choices themselves are the
+> account's ([expansion-toggles.md](expansion-toggles.md)).
+
+> **Nothing goes quietly.** A picture, a map, or a map's background that
+> can't be downloaded at export time is left out with a warning in the export
+> overlay, which then waits for Close. So is the list of content packs, if it
+> can't be read.
 
 ---
 
@@ -530,16 +617,16 @@ oracle-driven fields.
 
 **Site** (`type: "site"`, Delve):
 
-| Key                                           | Contains              | Oracle                                                            |
-| --------------------------------------------- | --------------------- | ----------------------------------------------------------------- |
-| `name`                                        | Site name             | **Delve Site: Name (Template)** (`siteName`), base                |
-| `theme`                                       | Delve theme           | **Delve Site: Theme** (`siteNatureTheme`), base                   |
-| `domain`                                      | Delve domain          | **Delve Site: Domain** (`siteNatureDomain`), base                 |
-| `currentFeature`                              | last-rolled feature   | Combined **Feature** table for the site's theme + domain (Delve)  |
-| `currentDanger`                               | last-rolled danger    | Combined **Danger** table for theme + domain (Delve)              |
-| `denizens[]`                                  | 12-row denizen matrix | Delve **denizen** tables (theme + domain), via the Denizen dialog |
-| `objective`                                   | the site's objective  | —                                                                 |
-| `difficulty` / `ticks` / `notes` / `complete` | mechanical            | —                                                                 |
+| Key                                           | Contains                                                                                                              | Oracle                                                            |
+| --------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------- |
+| `name`                                        | Site name                                                                                                             | **Delve Site: Name (Template)** (`siteName`), base                |
+| `theme`                                       | Delve theme                                                                                                           | **Delve Site: Theme** (`siteNatureTheme`), base                   |
+| `domain`                                      | Delve domain                                                                                                          | **Delve Site: Domain** (`siteNatureDomain`), base                 |
+| `currentFeature`                              | last-rolled feature                                                                                                   | Combined **Feature** table for the site's theme + domain (Delve)  |
+| `currentDanger`                               | last-rolled danger                                                                                                    | Combined **Danger** table for theme + domain (Delve)              |
+| `denizens[]`                                  | 12-row denizen matrix: each a catalogue foe's `id` (picked from the list, e.g. `ironsworn/bear`) or the text typed in | Delve **denizen** tables (theme + domain), via the Denizen dialog |
+| `objective`                                   | the site's objective                                                                                                  | —                                                                 |
+| `difficulty` / `ticks` / `notes` / `complete` | mechanical                                                                                                            | —                                                                 |
 
 **Scene** (`type: "scene"`, Lodestar Scene Challenge) — `name`, `objective`,
 `consequences`, `countdownFilled` (0–4), `difficulty` (rank), `ticks`,
@@ -550,8 +637,19 @@ oracle-driven fields.
 `name` comes from the **Character: Name** oracles; `data` is the full
 persisted blob (stats — point-buy, not rolled; momentum / health / spirit /
 supply; experience; initiative; vows; owned assets; debilities;
-`globalValues`; portrait). Stats and tracks are mechanical, not
+`globalValues`; `fields`; portrait). Stats and tracks are mechanical, not
 oracle-populated. Full field list mirrors `Character.data` in `types.ts`.
+
+`fields` holds the character fields, keyed by field id. Those with a d6 in
+New Character roll from an oracle:
+
+| Key (`fields.…`) | Contains                               | Oracle                                                                                                   |
+| ---------------- | -------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| `origin`         | Region of origin (option id)           | **Location: Region** (`region`), base; YRT replaces with its own **Location: Region** (`yrtRegion`)      |
+| `religion`       | Religion (option id)                   | **Character: Religion** (`yrtReligion`), **YRT**                                                         |
+| `touched`        | Touched level: `pure` … `feral`        | **Character: Touched** (`yrtTouched`), **YRT**                                                           |
+| `touchedAnimal`  | The animal (text), shown from Prime on | **Character: Touched Aspect** (`yrtAnimal`), **YRT**                                                     |
+| _(other ids)_    | another extension's fields, kept as-is | per that extension's `extension.json` (see [character-fields.md](character-fields.md#declaring-a-field)) |
 
 ### Session-log entry (`log[]`)
 
@@ -559,31 +657,38 @@ oracle-populated. Full field list mirrors `Character.data` in `types.ts`.
 **recorded results** of oracle / move rolls, not fields an oracle fills. See
 [Session log](#session-log) for the shape.
 
+### Foe (`encounters[]`)
+
+`id`, `foeId`, `quantity`, `effectiveRank`, `ticks`, `notes`, `customName`,
+`vanquished`, `currentHarm?`, `currentDefense?` — a foe being fought, not an
+oracle result. See [Everything](#everything).
+
 ---
 
 ## Import behavior
 
 Import dispatches by `manifest.type` (see the export-types table). Every
 section that carries user-visible rows participates in collision detection
-(see below); only the session log entries are always appended (deduplicated
-internally by entry id).
+(see below); only the session log entries are always added (each keeping its
+own id, so one already in the log is left as it is).
 
 ### The import dialog
 
 Import runs behind the **`ImportDialog`** (`#lib/components/ImportDialog.svelte`),
-which the Hamburger → Import… action opens and the page's `runImport()` drives
+which the Hamburger → Import… action opens and `CampaignImport.run()`
+(`#lib/campaignImport.svelte.ts`, which also holds the dialog's state) drives
 through a small set of stages:
 
-| Stage         | When                                                    | What the user sees                                           |
-| ------------- | ------------------------------------------------------- | ------------------------------------------------------------ |
-| **idle**      | Dialog just opened.                                     | Drop zone + "choose a file".                                 |
-| **importing** | Reading + applying the archive.                         | Spinner.                                                     |
-| **review**    | The validate pass dropped one or more rows (see below). | ⚠ list of unreadable rows + "Import the _N_ valid items?".   |
-| **done**      | Finished (cleanly, or with skipped rows).               | ✓ summary; a warn badge + issue list when rows were skipped. |
-| **error**     | A structural `ImportError` aborted the whole archive.   | ⚠ the readable error message; "Choose another file".         |
+| Stage         | When                                                    | What the user sees                                                                                                                  |
+| ------------- | ------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| **idle**      | Dialog just opened.                                     | Drop zone + "choose a file".                                                                                                        |
+| **importing** | Reading + applying the archive.                         | Spinner.                                                                                                                            |
+| **review**    | The validate pass dropped one or more rows (see below). | ⚠ list of unreadable rows + "Import the _N_ valid items?".                                                                          |
+| **done**      | Finished (cleanly, or with skipped rows).               | ✓ summary; a warn badge + issue list when rows were skipped, and a **Worth knowing** list for a content pack this app doesn't have. |
+| **error**     | A structural `ImportError` aborted the whole archive.   | ⚠ the readable error message; "Choose another file".                                                                                |
 
 A drag-and-drop onto the page and the starter-seed both feed the same
-`runImport()`; the seed path runs **silently** (no dialog), importing whatever
+`CampaignImport.run()`; the seed path runs **silently** (no dialog), importing whatever
 is valid and logging the rest.
 
 ### Validate, then confirm (partial import)
@@ -645,16 +750,18 @@ lower-cased, trimmed `name`** (not by `id`). Matching by name lets a file
 exported from one user be imported by another — IDs are minted independently
 per user, so an `id`-based match would never fire on a cross-user transfer.
 
-The collision dialog covers six categories:
+The collision dialog covers eight categories:
 
-| Category        | Detected against                                      |
-| --------------- | ----------------------------------------------------- |
-| **Characters**  | existing `Character.name`                             |
-| **Communities** | existing `Community.name`                             |
-| **NPCs**        | existing `Npc.name`                                   |
-| **Places**      | existing `Place.name`                                 |
-| **Journeys**    | existing `Expedition.name` where `type === "journey"` |
-| **Sites**       | existing `Expedition.name` where `type === "site"`    |
+| Category        | Detected against                                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| **Characters**  | existing `Character.name`                                                                                                |
+| **Communities** | existing `Community.name`                                                                                                |
+| **NPCs**        | existing `Npc.name`                                                                                                      |
+| **Places**      | existing `Place.name`                                                                                                    |
+| **Journeys**    | existing `Expedition.name` where `type === "journey"`                                                                    |
+| **Sites**       | existing `Expedition.name` where `type === "site"`                                                                       |
+| **Scenes**      | existing `Expedition.name` where `type === "scene"`                                                                      |
+| **Foes**        | its `customName`; one with none matches another of the same catalogue foe (`foeId`), listed under the name it shows here |
 
 If **any** incoming row's name matches an existing row's name (in the same
 category), the **`ImportCollisionDialog`** opens, lists the colliding names
@@ -673,9 +780,32 @@ no collisions at all, the dialog is skipped and every row is simply added
 (the implicit `new` path). The strategy is chosen once and applied
 uniformly across every category in the file.
 
-Session log entries never trigger the collision dialog — `appendSafeLog()`
-mints a fresh entry id on insert, so re-imported logs append (with their
-existing id; duplicates are ignored by the per-id append guard).
+A row whose **id** is already in use here but whose name isn't (renamed
+since the backup, say) gets a fresh id and comes in beside the other: an
+import only ever replaces by name, as asked.
+
+Session log entries never trigger the collision dialog. Each keeps its own
+`id`, `ts` (so it lands in its place in the log, not at the top), `note`,
+`source` and `roll`, and goes up in batches through
+`POST /session/log/batch` (`importLogEntries` in `lib/log.svelte.ts`); an id
+already in the log is left as it is, so importing the same backup twice adds
+no entries the second time. The log keeps its newest 1000 entries either way.
+An entry with a malformed `id` gets a new one, and one with an unreadable
+`ts` gets the import's time.
+
+**Session log entries point at the rows as they landed.** An entry names the
+character, foe and expedition it was rolled with by id: in its `roll`
+(`charId`, `foeId`, `expeditionId`, which Burn momentum reads) and on its
+links (`data-char-id` on "+1 failure" or "+1 momentum", `data-foe-id` on a
+foe's progress, `data-exp-id` / `data-expedition-id` on a journey's or a
+site's), with its own id on each link (`data-entry-id`,
+`data-roll-entry-id`). An import gives some of those rows new ids: a
+character always gets one, and a foe or expedition does on **New**, or when
+its id is taken here. So the import records, per kind, the id each row
+landed with (or, on **Skip** and **Replace**, the id of the one here it
+matched), imports the log **last**, and re-points each entry's ids through
+those first (`#lib/logRemap.ts`). An id the file has nothing for is left as
+it is.
 
 ### Backwards compatibility
 
@@ -705,8 +835,8 @@ The fields that accept it:
 | Entity                 | Field              | Notes                                                                                                                                                     |
 | ---------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `Character` (`data`)   | `background`       | Character sheet → Background tab — origin, upbringing, major traits                                                                                       |
-| `Character` (`data`)   | `bondsFormed`      | Character sheet → Bonds → notes column                                                                                                                    |
-| `Character` (`data`)   | `lessonsLearned`   | Character sheet → Failures → notes column                                                                                                                 |
+| `Character` (`data`)   | `bondsFormed`      | Character sheet → Core → the note button at the end of the Bonds track (a dialog)                                                                         |
+| `Character` (`data`)   | `lessonsLearned`   | Character sheet → Core → the note button at the end of the Failures track (a dialog)                                                                      |
 | `Vow` (in `data.vows`) | `notes`            | Per-vow notes block                                                                                                                                       |
 | `Community`            | `notes`            | Long-form description of the place (Description tab)                                                                                                      |
 | `Community`            | `situationalNotes` | Conditions / aspects of the current trouble (Core tab)                                                                                                    |
@@ -727,7 +857,9 @@ In a character's `data.assets[].customValues`, any value keyed by a
 `customField` whose `type` is `"markdown"` (see
 [data-schema.md → CustomFieldDef](data-schema.md#customfielddef-schema))
 is also rendered as Markdown. The catalogue defines the field type; the
-import format just preserves the stored string.
+import format just preserves the stored string. The same goes for a
+character field (`data.fields`) whose `extension.json` declaration has
+`"type": "markdown"`, such as the sample extension's Notes.
 
 ---
 
@@ -810,22 +942,31 @@ through this pipeline:
    prototype-pollution keys at every level. The result is the
    `{ manifest, data }` envelope the rest of the import flow consumes.
 6. **Log-HTML scrub** — each log entry's `html` is passed through
-   `sanitizeLogHtml()` (and added via `appendSafeLog()`) so no active
-   content can reach the renderer.
+   `sanitizeLogHtml()` (`lib/sanitize.ts`, DOMPurify with the same tag and
+   attribute allowlist the log is shown through) before it's added, so no
+   active content is stored. Code that reads stored log HTML for text (the
+   Markdown export, the Story dialog) parses it with `inertBody()`
+   (`lib/inertHtml.ts`), never `innerHTML` on a page element.
+7. **Type coercion** — an imported character's numbers and true/false values
+   are given those types (`reconcileImportedCharacter`), since dialogs build
+   HTML from them. Entity ids that aren't letters, digits, `_` and `-` get a
+   fresh id (the API refuses others on create).
 
 ### Limits and filters
 
-| Guard                   | Limit / behavior                                                                                                          |
-| ----------------------- | ------------------------------------------------------------------------------------------------------------------------- |
-| Outer file size         | **20 MB** max (`MAX_BYTES`) on the raw `.zip` bytes.                                                                      |
-| Total decompressed size | **40 MB** max (`MAX_DECOMPRESSED`) — zip-bomb guard.                                                                      |
-| Body file size          | **20 MB** max (`MAX_BYTES`) on the unpacked `<type>.json`.                                                                |
-| Nesting depth           | **12** levels max (`MAX_DEPTH`).                                                                                          |
-| Array length            | **1000** items max per array (`MAX_ARRAY_ITEMS`).                                                                         |
-| String length           | Capped at the file-size limit (`MAX_STR_LEN = MAX_BYTES`, 20 MB) — large enough for a single re-embedded portrait.        |
-| Prototype pollution     | Keys `__proto__`, `constructor`, `prototype` are stripped from every object (the `POISON_KEYS` set).                      |
-| Missing portrait file   | Silently dropped — the entity imports without a portrait rather than aborting the whole zip.                              |
-| Log HTML                | `sanitizeLogHtml()` strips `<script>` blocks, `on*=` event handlers, and `javascript:` URLs before any entry is rendered. |
+| Guard                   | Limit / behavior                                                                                                             |
+| ----------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| Outer file size         | **20 MB** max (`MAX_BYTES`) on the raw `.zip` bytes.                                                                         |
+| Total decompressed size | **40 MB** max (`MAX_DECOMPRESSED`) — zip-bomb guard.                                                                         |
+| Body file size          | **20 MB** max (`MAX_BYTES`) on the unpacked `<type>.json`.                                                                   |
+| Nesting depth           | **12** levels max (`MAX_DEPTH`).                                                                                             |
+| Array length            | **1000** items max per array (`MAX_ARRAY_ITEMS`).                                                                            |
+| String length           | Capped at the file-size limit (`MAX_STR_LEN = MAX_BYTES`, 20 MB) — large enough for a single re-embedded portrait.           |
+| Prototype pollution     | Keys `__proto__`, `constructor`, `prototype` are stripped from every object (the `POISON_KEYS` set).                         |
+| Missing portrait file   | Silently dropped — the entity imports without a portrait rather than aborting the whole zip.                                 |
+| Log HTML                | `sanitizeLogHtml()` (DOMPurify) keeps only the log's tags and attributes; scripts, event handlers and `javascript:` URLs go. |
+| Character numbers       | Stats, resources, XP, tracks and vow ticks become numbers (anything else → 0); debilities become true/false.                 |
+| Entity ids              | Anything outside `[A-Za-z0-9_-]{1,64}` is replaced with a fresh UUID, and references follow it.                              |
 
 Any violated limit throws an `ImportError`. That is caught at the import call
 site, surfaced on the dialog's **error** stage as a readable message, and

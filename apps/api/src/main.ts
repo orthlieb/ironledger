@@ -11,6 +11,7 @@ import './loadEnv.js';
 
 import { buildServer, redis } from './server.js';
 import { pool } from './db/index.js';
+import { scheduleSecurityLogPruning } from './services/retentionService.js';
 
 const server = await buildServer();
 
@@ -73,3 +74,6 @@ try {
   server.log.error(err, 'Failed to start server');
   process.exit(1);
 }
+
+// Keep the security log to its retention period (see the privacy notice).
+scheduleSecurityLogPruning(server.log);

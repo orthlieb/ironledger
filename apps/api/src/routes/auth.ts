@@ -13,6 +13,7 @@
  */
 
 import { z } from 'zod';
+import { passwordSchema } from '../lib/passwordSchema.js';
 import type { FastifyPluginAsyncZod } from 'fastify-type-provider-zod';
 import { authenticate } from '../middleware/authenticate.js';
 import { logSecurityEvent } from '../middleware/securityLogger.js';
@@ -43,20 +44,6 @@ function cookieOptions() {
 // Input schemas (Zod)
 // ---------------------------------------------------------------------------
 
-const passwordSchema = z
-  .string()
-  .min(12, 'Password must be at least 12 characters')
-  .max(1000, 'Password is too long')
-  // HIBP catches known-breached passwords at the service layer. This gate
-  // catches low-entropy passwords that haven't been breached yet —
-  // "aaaaaaaaaaaa" is a valid 12-char string but trivially brute-forceable.
-  // Minimum 5 distinct characters rejects the obvious degenerate cases
-  // (single-char repeats, "ababababab", "1234512345") without nagging
-  // realistic pass-phrases.
-  .refine((pw) => new Set(pw).size >= 5, {
-    message: 'Password is too repetitive — use at least 5 distinct characters',
-  });
-
 const registerBody = z.object({
   email: z.string().email('Invalid email address').max(254),
   password: passwordSchema,
@@ -70,7 +57,8 @@ const loginBody = z.object({
   captchaToken: z.string().min(1, 'CAPTCHA is required'),
 });
 
-const forgotBody = z.object({
+/** An email address and a captcha: forgot-password and resend-verification. */
+const emailCaptchaBody = z.object({
   email: z.string().email().max(254),
   captchaToken: z.string().min(1, 'CAPTCHA is required'),
 });
@@ -82,6 +70,10 @@ const resetBody = z.object({
 
 const verifyBody = z.object({
   token: z.string().min(1),
+});
+
+const deleteAccountBody = z.object({
+  password: z.string().min(1).max(1000),
 });
 
 // ---------------------------------------------------------------------------
@@ -145,17 +137,14 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
       },
     },
     async (req, reply) => {
+      // Verifying proves the inbox, not the password, so it signs no one in
+      // (see authService.verifyEmail): the player signs in next.
       const result = await auth.verifyEmail(req.body.token).catch(handleAuthError(reply));
       if (!result || reply.sent) return;
 
-      logSecurityEvent({ eventType: 'email_verified', req, userId: result.user.id });
+      logSecurityEvent({ eventType: 'email_verified', req, metadata: { email: result.email } });
 
-      reply.setCookie(REFRESH_COOKIE, result.refreshToken, cookieOptions());
-
-      return reply.status(200).send({
-        user: result.user,
-        accessToken: result.accessToken,
-      });
+      return reply.status(200).send({ message: 'Email verified. Sign in to continue.' });
     },
   );
 
@@ -179,18 +168,25 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
       await verifyCaptcha(captchaToken, req.ip).catch(handleCaptchaError(reply));
       if (reply.sent) return;
 
-      const result = await auth.login({ email, password }).catch((err: unknown) => {
+      const result = await auth.login({ email, password, ip: req.ip }).catch((err: unknown) => {
         if (err instanceof auth.AuthError) {
           const eventType =
             err.code === 'EMAIL_UNVERIFIED'
               ? 'login_unverified'
               : err.code === 'ACCOUNT_DISABLED'
                 ? 'account_disabled'
-                : 'login_failed';
+                : err.code === 'LOGIN_LOCKED'
+                  ? 'login_locked'
+                  : 'login_failed';
           logSecurityEvent({ eventType, req, metadata: { email } });
-          reply
-            .status(err.statusCode)
-            .send({ statusCode: err.statusCode, error: err.name, message: err.message });
+          // `code` lets the login page offer "Send a new link" for an
+          // unverified account. It's only reached with the right password.
+          reply.status(err.statusCode).send({
+            statusCode: err.statusCode,
+            error: err.name,
+            code: err.code,
+            message: err.message,
+          });
         } else {
           reply
             .status(500)
@@ -276,7 +272,7 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
     '/forgot-password',
     {
       schema: {
-        body: forgotBody,
+        body: emailCaptchaBody,
         response: { 202: z.object({ message: z.string() }) },
       },
       config: {
@@ -302,6 +298,69 @@ export const authRoutes: FastifyPluginAsyncZod = async (server) => {
       return reply.status(202).send({
         message: 'If an account exists for that email, a reset link is on its way.',
       });
+    },
+  );
+
+  // ── POST /resend-verification ─────────────────────────────────────────────
+  server.post(
+    '/resend-verification',
+    {
+      schema: {
+        body: emailCaptchaBody,
+        response: { 202: z.object({ message: z.string() }) },
+      },
+      config: {
+        rateLimit: {
+          max: config.RATE_LIMIT_REGISTER,
+          timeWindow: '1 hour',
+        },
+      },
+    },
+    async (req, reply) => {
+      const { email, captchaToken } = req.body;
+
+      await verifyCaptcha(captchaToken, req.ip).catch(handleCaptchaError(reply));
+      if (reply.sent) return;
+
+      // Always returns 202 — prevents email enumeration
+      await auth.resendVerification(email).catch((err: unknown) => req.log.error(err));
+
+      logSecurityEvent({ eventType: 'verify_resend_req', req, metadata: { email } });
+
+      return reply.status(202).send({
+        message: 'If that address has an account waiting to be verified, a new link is on its way.',
+      });
+    },
+  );
+
+  // ── POST /delete-account ──────────────────────────────────────────────────
+  // The signed-in player deletes their own account, password re-checked.
+  // A POST, not a DELETE with a body, which some proxies drop.
+  server.post(
+    '/delete-account',
+    {
+      preHandler: authenticate,
+      schema: {
+        body: deleteAccountBody,
+        response: { 200: z.object({ message: z.string() }) },
+      },
+      config: {
+        // Stops a stolen session guessing the password here.
+        rateLimit: {
+          max: config.RATE_LIMIT_LOGIN,
+          timeWindow: '15 minutes',
+        },
+      },
+    },
+    async (req, reply) => {
+      const userId = req.user!.id;
+      await auth.deleteAccount(userId, req.body.password).catch(handleAuthError(reply));
+      if (reply.sent) return;
+
+      logSecurityEvent({ eventType: 'account_deleted', req, userId });
+
+      reply.clearCookie(REFRESH_COOKIE, { path: '/api/v1/auth' });
+      return reply.status(200).send({ message: 'Account deleted.' });
     },
   );
 
@@ -339,6 +398,7 @@ function handleAuthError(reply: FastifyReply) {
       reply.status(err.statusCode).send({
         statusCode: err.statusCode,
         error: err.name,
+        code: err.code,
         message: err.message,
       });
     } else if (err instanceof PwnedPasswordError) {

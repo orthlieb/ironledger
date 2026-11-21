@@ -12,6 +12,7 @@
 	 */
 
 	import { DropdownMenu } from 'bits-ui';
+	import { touchSafeTrigger } from '#lib/touchSafeTrigger.js';
 	import chevronRightSvg from '#icons/chevron-right-solid.svg?raw';
 	import ExportDialog from './ExportDialog.svelte';
 	import type { ExportSelection } from '#lib/exportSelection.js';
@@ -19,6 +20,8 @@
 	import { getExtensions, isSourceEnabled } from '#lib/expansionStore.svelte.js';
 	import { TUTORIALS, startTutorial } from '#lib/tutorials/index.js';
 	import { onMount } from 'svelte';
+
+	const touchGuard = touchSafeTrigger();
 
 	// The View submenu is only meaningful on desktop / tablet — mobile
 	// (<900 px) always renders the tabs layout regardless of stored
@@ -84,7 +87,13 @@
 </script>
 
 <DropdownMenu.Root>
-	<DropdownMenu.Trigger class="hamburger-btn" aria-label="Menu">
+	<!-- touchSafeTrigger: a tap opens the menu and leaves it open (see it). -->
+	<DropdownMenu.Trigger
+		class="hamburger-btn"
+		aria-label="Menu"
+		data-tour="app-menu"
+		{...touchGuard}
+	>
 		<svg width="16" height="16" viewBox="0 0 16 16" fill="none">
 			<rect y="2" width="16" height="2" rx="1" fill="currentColor" />
 			<rect y="7" width="16" height="2" rx="1" fill="currentColor" />

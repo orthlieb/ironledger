@@ -10,6 +10,7 @@ import { browser } from '$app/env';
 import type { AssetDefinition, CustomFieldDef, RarityDefinition } from '#lib/types.js';
 import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
 import { buildGlobalCounterRegistry } from '#lib/globalCounters.js';
+import { fetchCatalogue } from '#lib/catalogueFetch.js';
 
 const CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
 
@@ -30,7 +31,7 @@ export async function loadAssets(): Promise<void> {
 	if (_lastFetched && Date.now() - _lastFetched < CACHE_TTL_MS) return;
 	_loading = true;
 	try {
-		const res = await fetch('/api/catalogue');
+		const res = await fetchCatalogue('/api/catalogue');
 		if (!res.ok) throw new Error(`Catalogue fetch failed: ${res.status}`);
 
 		const json = (await res.json()) as { assets: AssetDefinition[]; rarities: RarityDefinition[] };

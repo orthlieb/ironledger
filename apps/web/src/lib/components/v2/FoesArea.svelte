@@ -22,7 +22,6 @@
 	import { setActiveFoeId } from '#lib/activeContext.svelte.js';
 	import { createDebouncedSave } from '#lib/debouncedSave.js';
 	import { initialSelection, rememberSelection } from '#lib/rememberedSelection.js';
-	import { appendLog } from '#lib/log.svelte.js';
 	import { tooltip } from '#lib/actions/tooltip.js';
 	import { rankBadgeStyle } from '#lib/badgeStyles.js';
 	import {
@@ -215,84 +214,6 @@
 		update({ ticks: next });
 	}
 
-	/**
-	 * Resolve the target encounter for a log-link action: a specific foe by id
-	 * (the link is bound to the foe it was rolled against) or the active one when
-	 * unbound. Returns undefined if a bound foe no longer exists (deleted) so the
-	 * caller no-ops rather than acting on whatever foe is active now.
-	 */
-	function resolveTargetEnc(foeId?: string): FoeEncounter | undefined {
-		return foeId ? encounters.find((e) => e.id === foeId) : activeEnc;
-	}
-	/** Mutate one encounter (active or not) and schedule a debounced save. The
-	 *  active-encounter $effect above only watches the active one, so a change to
-	 *  a non-active foe must schedule its own flush. */
-	function updateEnc(enc: FoeEncounter, patch: Partial<FoeEncounter>) {
-		Object.assign(enc as object, patch);
-		_save.schedule(() => void flushEncountersToApi());
-	}
-	/** Ticks per progress box for a specific foe (rank − escalating defense),
-	 *  the target-aware version of the active-only `progressTickVal`. */
-	function progressTickValFor(enc: FoeEncounter): number {
-		const per = FOE_RANKS[enc.effectiveRank]?.progressPerHit ?? 0;
-		return foeExtraFlag(findFoe(enc.foeId), 'yrt', 'escalatesDefense')
-			? Math.max(1, (per || 1) - (enc.currentDefense ?? 0))
-			: per;
-	}
-
-	/**
-	 * Foe name for log entries — mirror CharactersArea.charTitle so the log
-	 * formatting for "took harm" reads the same on both sides.
-	 */
-	function foeTitleFor(enc: FoeEncounter | undefined, suffix: string): string {
-		if (!enc) return suffix;
-		const def = findFoe(enc.foeId);
-		const name = enc.customName?.trim() || (def ? resolveFoeName(def) : null) || enc.foeId;
-		return `${name} — ${suffix}`;
-	}
-	const foeTitle = (suffix: string) => foeTitleFor(activeEnc, suffix);
-
-	// Vanquish — a specific foe (from a bound log link) or the active one. No-ops
-	// when the foe is gone (deleted) or already vanquished.
-	export function vanquishFoe(foeId?: string) {
-		const enc = resolveTargetEnc(foeId);
-		if (!enc || enc.vanquished) return;
-		updateEnc(enc, { vanquished: true });
-		appendLog(foeTitleFor(enc, 'Vanquished'), `<div><strong>Vanquished.</strong></div>`);
-	}
-	export function vanquishActiveFoe() {
-		vanquishFoe();
-	}
-
-	// Un-vanquish the active foe. Sibling to vanquish; no-ops when the state
-	// already matches so the caller doesn't have to check first.
-	export function reactivateActiveFoe() {
-		if (!activeEnc || !activeEnc.vanquished) return;
-		update({ vanquished: false });
-		appendLog(foeTitle('Reactivated'), `<div><strong>Reactivated.</strong></div>`);
-	}
-
-	// Menace / combat-progress from a log-entry link. Acts on the foe the entry
-	// was rolled against (or the active one when unbound), and no-ops if that foe
-	// is gone or already vanquished. Value is in progress boxes; each box is that
-	// foe's progressTickVal ticks. Logs in the same shape as character harm.
-	export function applyMenace(value: number, foeId?: string) {
-		const enc = resolveTargetEnc(foeId);
-		if (!enc || enc.vanquished || !value) return;
-		const tickVal = progressTickValFor(enc);
-		const oldTicks = enc.ticks;
-		const nextTicks = Math.max(0, Math.min(40, oldTicks + value * tickVal));
-		if (nextTicks === oldTicks) return;
-		updateEnc(enc, { ticks: nextTicks });
-		const oldBoxes = Math.floor(oldTicks / tickVal);
-		const nextBoxes = Math.floor(nextTicks / tickVal);
-		const sign = value > 0 ? '+' : '−';
-		appendLog(
-			foeTitleFor(enc, 'Progress'),
-			`<div>Progress: ${oldBoxes} → <strong>${nextBoxes}</strong> boxes (${sign}${Math.abs(value)})</div>`,
-		);
-	}
-
 	function imageUrl(def: FoeDef): string {
 		return foePortraitUrl(def.name, def.images);
 	}
@@ -322,6 +243,8 @@
 				activeKey={activeFoeId}
 				onselect={(enc) => selectFoe(enc.id)}
 				triggerValue={activeEnc ? displayName : ''}
+				triggerIcon={activeEnc ? foeIcon(activeDef) : undefined}
+				triggerColor={activeEnc ? foeItemColor(activeEnc) : undefined}
 				placeholder="— No foes yet —"
 				searchPlaceholder="Search foes…"
 				emptyText="No matching foes."
@@ -722,7 +645,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		padding-bottom: 8px;
-		border-bottom: 1px solid #c3baa1;
+		border-bottom: 1px solid var(--border);
 	}
 	.fa-status-label {
 		font-family: var(--font-ui);
@@ -864,7 +787,7 @@
 		flex-wrap: wrap;
 		gap: 5px;
 		align-items: center;
-		border-bottom: 1px solid #c3baa1;
+		border-bottom: 1px solid var(--border);
 		padding-bottom: 8px;
 	}
 	.fa-badge {
@@ -906,7 +829,7 @@
 		flex-wrap: wrap;
 		align-items: center;
 		gap: 10px;
-		border-bottom: 1px solid #c3baa1;
+		border-bottom: 1px solid var(--border);
 		padding-bottom: 8px;
 	}
 	.fa-escalate-label {

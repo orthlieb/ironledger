@@ -173,7 +173,7 @@ Animation failures (CDN unavailable, WebGL not supported) are caught silently. T
 | ----------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
 | `apps/web/src/lib/dice.ts`                            | Roll engine (`rollDie`, `rollD100`, `animateDice`, `preloadDice`) + appearance getters/setters (colours, texture) |
 | `apps/web/src/lib/components/DiceRollerDialog.svelte` | Modal UI — quick rolls + action roll                                                                              |
-| `apps/web/src/lib/components/SettingsDialog.svelte`   | Settings → Dice: 3D toggle, sound, texture, per-die colour pickers                                                |
+| `apps/web/src/lib/components/SettingsDialog.svelte`   | Settings → Dice: 3D toggle, sound (rattle + miss scream, on with or without 3D), texture, per-die colour pickers  |
 | `apps/web/src/lib/icons/dice-d6-solid.svg`            | Dice button icon in character sheet header                                                                        |
 | `apps/web/src/app.css`                                | Global `.roll-*` CSS classes                                                                                      |
 

@@ -151,7 +151,8 @@ export async function clearAllMaps(token?: string): Promise<void> {
 export interface MapDetail {
 	id: string;
 	name: string;
-	markers: Array<{ label?: string }>;
+	markers: Array<{ label?: string; layer?: string }>;
+	settings: { layers?: unknown; activeLayer?: string };
 	ownerKind: 'community' | 'place' | 'journey' | 'site' | null;
 	ownerId: string | null;
 }
@@ -177,12 +178,17 @@ export async function fetchMaps(token?: string): Promise<MapDetail[]> {
  * Call after resetCharacters() so specs that need a character can skip the
  * slow UI-based creation path in beforeEach.
  */
-export async function seedCharacter(name = 'Test Character', token?: string): Promise<void> {
+export async function seedCharacter(
+	name = 'Test Character',
+	token?: string,
+	/** Character data to start with (fields, assets, background, …). */
+	data?: Record<string, unknown>,
+): Promise<void> {
 	const tok = token ?? (await getTestToken());
 	const res = await fetch(`${API}/characters`, {
 		method: 'POST',
 		headers: json(tok),
-		body: JSON.stringify({ name }),
+		body: JSON.stringify(data ? { name, data: { name, ...data } } : { name }),
 	});
 	if (!res.ok) throw new Error(`POST /characters failed: ${res.status} ${await res.text()}`);
 }
@@ -223,7 +229,11 @@ export async function seedCommunity(name = 'Seed Community', token?: string): Pr
  * customName.
  */
 export async function seedFoeEncounter(
-	{ name = 'Seed Foe', foeId = 'brigands' }: { name?: string; foeId?: string } = {},
+	{
+		name = 'Seed Foe',
+		foeId = 'brigands',
+		ticks = 0,
+	}: { name?: string; foeId?: string; ticks?: number } = {},
 	token?: string,
 ): Promise<string> {
 	const tok = token ?? (await getTestToken());
@@ -233,7 +243,7 @@ export async function seedFoeEncounter(
 		foeId,
 		quantity: 'few',
 		effectiveRank: 2,
-		ticks: 0,
+		ticks,
 		notes: '',
 		customName: name,
 		vanquished: false,

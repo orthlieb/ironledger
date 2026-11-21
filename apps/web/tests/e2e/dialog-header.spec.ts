@@ -7,6 +7,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { resetCharacters, seedCharacter } from './helpers/reset';
+import { settleHome } from './helpers/home';
 
 test.describe('DialogHeader', () => {
 	test.beforeAll(async () => {
@@ -20,6 +21,8 @@ test.describe('DialogHeader', () => {
 
 	test('dragging a dialog by its header moves it', async ({ page }) => {
 		await page.goto('/home');
+		// Hydrated first: on the dev server an earlier click on Roll is lost.
+		await settleHome(page);
 
 		// Open the Roll Dice dialog (a single-view <DialogHeader> dialog).
 		// DialogHeader's `use:draggable` works on both native `<dialog>` and

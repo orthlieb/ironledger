@@ -40,6 +40,7 @@
 	import { loadDelveData, buildCombinedTable } from '#lib/delveStore.svelte.js';
 	import { rollFromRangeTable, rollOracle, getOracles } from '#lib/oracleStore.svelte.js';
 	import { appendLog } from '#lib/log.svelte.js';
+	import { bindCommandLinks, commandLinkHtml } from '#lib/commands/links.js';
 	import { addEncounter } from '#lib/encounterStore.svelte.js';
 	import { onMount } from 'svelte';
 
@@ -60,6 +61,7 @@
 		type EntityMarkerRef,
 	} from '#lib/mapStore.svelte.js';
 	import { formatEntityId } from '#lib/mapEntityLinks.js';
+	import { denizenLabel } from '#lib/foeStore.svelte.js';
 	import iconGearSvg from '#icons/gear-solid.svg?raw';
 	import checkSvg from '#icons/circle-check-solid.svg?raw';
 	import locationSvg from '#icons/location-dot-solid.svg?raw';
@@ -306,60 +308,12 @@
 	let newThemeValue = $state<string>('');
 	let newDomainValue = $state<string>('');
 
-	// Exported handlers for LogPanel's change-theme-link / change-domain-link
-	// click delegation. Switch active expedition to the linked one, switch to
+	// Exported handlers for a `/site.theme` or `/site.domain` link or command
+	// (the home page's `ironledger:site-picker` listener). Switch active expedition to the linked one, switch to
 	// the Core tab, then open the existing theme/domain dialog so the user
 	// confirms the choice (matches the v1 confirm flow). The dialog reads
 	// activeSite, so we have to wait one tick after activeExpId changes
 	// before opening, or activeSite will still be stale.
-	/** Resolve a log-link target: the expedition the entry references (`expId`,
-	 *  from the entry's roll-time context), else the active one. */
-	function resolveTargetExp(expId?: string): Expedition | undefined {
-		return expId ? expeditions.find((e) => e.id === expId) : activeExp;
-	}
-	/** Mutate one expedition (active or not) and schedule a save. The reactive
-	 *  array holds the object by reference, so this updates the card when that
-	 *  expedition is shown and persists the whole set. */
-	function commitExpChange(exp: Expedition, patch: Partial<Expedition>) {
-		Object.assign(exp as object, patch);
-		_save.schedule(() =>
-			persistExpeditionsNow().catch((err) => console.error('[v2] expedition save failed', err)),
-		);
-	}
-	/** Mark progress on the referenced expedition (or the active one). `marks` =
-	 *  number of progress marks, each worth that expedition's rank-based ticks. */
-	export function applyProgress(marks: number, expId?: string) {
-		const exp = resolveTargetExp(expId);
-		// No-op if the bound expedition is gone (deleted → find fails) or complete.
-		if (!exp || exp.complete) return;
-		const ticks = EXPEDITION_MARK_TICKS[exp.difficulty];
-		commitExpChange(exp, { ticks: Math.min(40, exp.ticks + marks * ticks) });
-	}
-	/** Fill `n` segments of the referenced scene's countdown (clamped 0–4). Backs
-	 *  the `countdown-link` in Scene-Mode move outcomes. No-op off a scene, or if
-	 *  the bound scene is gone/complete. */
-	export function applyCountdown(n: number, expId?: string) {
-		const exp = resolveTargetExp(expId);
-		if (exp?.type !== 'scene' || exp.complete) return;
-		commitExpChange(exp, { countdownFilled: Math.max(0, Math.min(4, exp.countdownFilled + n)) });
-	}
-	/** Mark the active expedition complete. Sibling to /foe vanquish — no-op
-	 *  if already complete. */
-	export function completeActiveExpedition() {
-		if (!activeExp || activeExp.complete) return;
-		const name = activeExp.name || 'Expedition';
-		updateExp({ complete: true });
-		appendLog(`${name} — Completed`, `<div><strong>Completed.</strong></div>`);
-	}
-	/** Reactivate a completed expedition. Sibling to /foe active — no-op if
-	 *  already active. */
-	export function reactivateActiveExpedition() {
-		if (!activeExp || !activeExp.complete) return;
-		const name = activeExp.name || 'Expedition';
-		updateExp({ complete: false });
-		appendLog(`${name} — Reactivated`, `<div><strong>Reactivated.</strong></div>`);
-	}
-
 	export function openChangeThemeForExp(expId: string) {
 		_save.flush();
 		activeExpId = expId;
@@ -464,9 +418,10 @@
 		denizenPickIndex = index;
 		foePickerRef?.openForDenizen();
 	}
-	function handleDenizenFoePick(foeName: string) {
+	/** A foe picked from the list goes in as its id; the slot shows its name. */
+	function handleDenizenFoePick(foeId: string) {
 		if (denizenPickIndex < 0) return;
-		handleDenizenChange(denizenPickIndex, foeName);
+		handleDenizenChange(denizenPickIndex, foeId);
 		denizenPickIndex = -1;
 	}
 
@@ -635,13 +590,18 @@
 			const valueStr = typeof result.value === 'string' ? result.value : String(result.value);
 			let resultHtml = `<div>Result: <strong>${valueStr}</strong>`;
 			if (result.roll === 99)
-				resultHtml += ` <a class="change-theme-link"  data-expedition-id="${site.id}" href="#">Change Theme ↗</a>`;
+				resultHtml += ` ${commandLinkHtml('Change Theme ↗', '/site.theme', { expId: site.id })}`;
 			if (result.roll === 100)
-				resultHtml += ` <a class="change-domain-link" data-expedition-id="${site.id}" href="#">Change Domain ↗</a>`;
+				resultHtml += ` ${commandLinkHtml('Change Domain ↗', '/site.domain', { expId: site.id })}`;
 			resultHtml += '</div>';
+			const entryId = crypto.randomUUID();
 			appendLog(
 				`Features: ${site.theme} + ${site.domain}`,
-				`<div class="roll-line">Roll: d100 → ${result.roll}</div>` + resultHtml,
+				bindCommandLinks(
+					`<div class="roll-line">Roll: d100 → ${result.roll}</div>` + resultHtml,
+					entryId,
+				),
+				entryId,
 			);
 			updateExp({ currentFeature: valueStr });
 		} finally {
@@ -665,13 +625,18 @@
 			const valueStr = typeof result.value === 'string' ? result.value : String(result.value);
 			let resultHtml = `<div>Result: <strong>${valueStr}</strong>`;
 			if (result.roll === 99)
-				resultHtml += ` <a class="change-theme-link"  data-expedition-id="${site.id}" href="#">Change Theme ↗</a>`;
+				resultHtml += ` ${commandLinkHtml('Change Theme ↗', '/site.theme', { expId: site.id })}`;
 			if (result.roll === 100)
-				resultHtml += ` <a class="change-domain-link" data-expedition-id="${site.id}" href="#">Change Domain ↗</a>`;
+				resultHtml += ` ${commandLinkHtml('Change Domain ↗', '/site.domain', { expId: site.id })}`;
 			resultHtml += '</div>';
+			const entryId = crypto.randomUUID();
 			appendLog(
 				`Dangers: ${site.theme} + ${site.domain}`,
-				`<div class="roll-line">Roll: d100 → ${result.roll}</div>` + resultHtml,
+				bindCommandLinks(
+					`<div class="roll-line">Roll: d100 → ${result.roll}</div>` + resultHtml,
+					entryId,
+				),
+				entryId,
 			);
 			updateExp({ currentDanger: valueStr });
 		} finally {
@@ -742,6 +707,8 @@
 				activeKey={activeExpId}
 				onselect={(e) => selectExp(e.id)}
 				triggerValue={activeExp ? expDisplayName(activeExp) : ''}
+				triggerIcon={activeExp ? EXP_ICON[activeExp.type as ExpKind] : undefined}
+				triggerColor={activeExp ? EXP_COLOR[activeExp.type as ExpKind] : undefined}
 				placeholder="— No expeditions yet —"
 				searchPlaceholder="Search expeditions…"
 				emptyText="No matching expeditions."
@@ -829,7 +796,7 @@
 										bind:editing={editingShortDesc}
 										value={activeExp.shortDescription ?? ''}
 										oninput={(v) => updateExp({ shortDescription: v })}
-										placeholder="A line or two — shown when its map marker is selected…"
+										placeholder="A line or two, shown when its map marker is selected…"
 										rows={3}
 									/>
 								</div>
@@ -1127,7 +1094,7 @@
 												class="ea-denizen-input"
 												type="text"
 												placeholder="—"
-												value={activeSite.denizens[i] ?? ''}
+												value={denizenLabel(activeSite.denizens[i] ?? '')}
 												oninput={(e) =>
 													handleDenizenChange(i, (e.target as HTMLInputElement).value)}
 											/>
@@ -1173,7 +1140,7 @@
 	</ConfirmDialog>
 {/if}
 
-<!-- Foe picker — used by Denizens tab to pick a foe name for any of the 12 cells. -->
+<!-- Foe picker — used by Denizens tab to pick a foe for any of the 12 cells. -->
 <FoePickerDialog
 	bind:this={foePickerRef}
 	onSelect={() => {}}
@@ -1579,7 +1546,7 @@
 		align-items: center;
 		gap: 0.5rem;
 		padding-bottom: 8px;
-		border-bottom: 1px solid #c3baa1;
+		border-bottom: 1px solid var(--border);
 	}
 	.ea-status-label {
 		font-family: var(--font-ui);
@@ -1693,7 +1660,7 @@
 		flex-wrap: wrap;
 		gap: 5px;
 		align-items: center;
-		border-bottom: 1px solid #c3baa1;
+		border-bottom: 1px solid var(--border);
 		padding-bottom: 8px;
 	}
 	.ea-badge {

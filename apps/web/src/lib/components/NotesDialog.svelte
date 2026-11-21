@@ -62,7 +62,7 @@
 
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="nd-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay nd-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="notes-dialog"
 			style="z-index: {contentZ(stackDepth)}"
@@ -102,12 +102,6 @@
 	/* bits-ui portals Content + Overlay to <body>, so every selector
 	   below needs :global() — Svelte's CSS pruning can't see through
 	   the portal. z-index is set inline via dialogStack — see <script>. */
-	:global(.nd-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000060;
-		backdrop-filter: blur(1px);
-	}
 	:global(.notes-dialog) {
 		display: flex;
 		flex-direction: column;
@@ -150,7 +144,6 @@
 		box-shadow: 0 0 0 2px var(--accent-glow);
 	}
 	:global(.nd-textarea::placeholder) {
-		color: var(--text-dimmer);
 		font-style: italic;
 	}
 	:global(.nd-hint) {

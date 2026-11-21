@@ -19,7 +19,25 @@
 	import { moveCategoryIcon } from '#lib/iconRegistry.js';
 	import { moveCategoryMeta } from '#lib/extensionCategories.svelte.js';
 	import { matchNoteHtml } from '#lib/rollMatch.js';
-	import { actionScore, actionScoreHtml } from '#lib/rules/actionScore.js';
+	import { actionScore } from '#lib/rules/actionScore.js';
+	import {
+		actionRollHtml,
+		askOracleHtml,
+		burnMomentumHtml,
+		burnMomentumOffer,
+		d100Faces,
+		moveLogTitle,
+		moveMd,
+		moveOutcomeHtml,
+		outcomeHeaderHtml,
+		progressRollHtml,
+		resolveHarmLinks,
+		spellRollHtml,
+		stripHtml,
+		tableRollHtml,
+		takeAHiatusHtml,
+		delveDepthsColumn,
+	} from '#lib/moveRoll.js';
 	import {
 		loadMoves,
 		getVisibleMoves,
@@ -31,9 +49,16 @@
 		isTableRollMove,
 		hasRollableStats,
 	} from '#lib/moveStore.svelte.js';
-	import { firstPreconditionFailure } from '#lib/preconditions.js';
+	import { movePreconditionFailure } from '#lib/preconditions.js';
 	import { applyInitiativeDowngrade } from '#lib/initiativeDowngrade.js';
-	import { appendLog, enrichOutcomeLinks, triggerAction } from '#lib/log.svelte.js';
+	import { appendLog, bindCommandLinks, triggerAction } from '#lib/log.svelte.js';
+	import {
+		commandLinkHtml,
+		linkVerb,
+		readCommandLink,
+		type LinkBinding,
+	} from '#lib/commands/links.js';
+	import { companionHealth, runLink, reportCommandResult } from '#lib/commands/run.svelte.js';
 	import { renderRich } from '#lib/dsl.js';
 	import { getActiveFoeId, getActiveExpeditionId } from '#lib/activeContext.svelte.js';
 	import { untrack } from 'svelte';
@@ -49,7 +74,11 @@
 	import DialogHeader from '#lib/components/DialogHeader.svelte';
 	import FilterBar from '#lib/components/FilterBar.svelte';
 	import { tooltip } from '#lib/actions/tooltip.js';
+	import { escHtml } from '#lib/markdown.js';
 	import { loadAssets, findAsset } from '#lib/assetStore.svelte.js';
+	import Select from '#lib/components/Select.svelte';
+	import { vowStatus } from '#lib/commands/values.js';
+	import { VOW_FORSAKE_STRESS, type Vow } from '#lib/types.js';
 	import { getRelevantAbilities } from '#lib/assetMatcherStore.svelte.js';
 	import { getActiveDebilityWarnings } from '#lib/debilityWarnings.js';
 	import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
@@ -100,6 +129,12 @@
 	// active foe's rank when a move is opened, but is editable so the player can
 	// set it "as appropriate to the situation" (a fall, a trap, no foe at all).
 	let harmValue = $state(1);
+	/** The moves that take an amount of harm or stress, with − + and Apply. */
+	const ENDURE_MOVES = new Set([
+		'move/endure-harm',
+		'move/endure-stress',
+		'move/companion-endure-harm',
+	]);
 	// Whether the Apply button has already committed this harm to the character
 	// (locks the amount and the button to prevent a double-apply). Reset when the
 	// move is (re)opened.
@@ -107,15 +142,74 @@
 	// Declared here (before progressValue, rollStatusHtml, isOracleRollMove, oracleTable)
 	// so all derived values that reference it are in TDZ-safe order.
 	const selectedMove = $derived(selectedId ? (findMove(selectedId) ?? null) : null);
-	const isEndureMove = $derived(
-		selectedMove?.id === 'move/endure-harm' || selectedMove?.id === 'move/endure-stress',
-	);
+	const isEndureMove = $derived(!!selectedMove && ENDURE_MOVES.has(selectedMove.id));
+	/** Companion Endure Harm: the harm comes off the companion chosen. */
+	const isCompanionHarm = $derived(selectedMove?.id === 'move/companion-endure-harm');
 	// The harm value that drives the harm-links: the editable input for Endure
 	// Harm/Stress, otherwise the active foe's rank.
 	const effectiveHarm = $derived(isEndureMove ? harmValue : pctx.foeHarm);
+	// ── The vow or companion a move acts on (docs/command-language.md → Moves
+	// that act on a vow or a companion). A move with `choose` asks for one
+	// here; the choice binds `vow` or `companion` in the entry's links, and
+	// Fulfill Your Vow rolls against that vow's progress.
+	const chooseKind = $derived(
+		selectedMove?.choose === 'vow' || selectedMove?.choose === 'companion'
+			? (selectedMove.choose as 'vow' | 'companion')
+			: null,
+	);
+	const vowOptions = $derived(
+		((ctx?.data?.vows ?? []) as Vow[])
+			.filter((v) => vowStatus(v) === 'active')
+			.map((v) => ({
+				value: v.id,
+				label: `${v.name?.trim() || 'Unnamed vow'} (${v.difficulty.charAt(0).toUpperCase()}${v.difficulty.slice(1)})`,
+			})),
+	);
+	const companionOptions = $derived(
+		(ctx?.data?.assets ?? [])
+			.filter((a) => findAsset(a.assetId)?.category === 'Companion')
+			.map((a) => ({
+				value: a.assetId,
+				label:
+					a.customValues?.['companion-name']?.trim() ||
+					a.customValues?.['name']?.trim() ||
+					findAsset(a.assetId)?.name ||
+					a.assetId,
+			})),
+	);
+	const chooseOptions = $derived(
+		chooseKind === 'vow' ? vowOptions : chooseKind === 'companion' ? companionOptions : [],
+	);
+	/** What the picker shows; the first option until one is picked. */
+	let picked = $state('');
+	const chosenId = $derived(
+		chooseOptions.some((o) => o.value === picked) ? picked : (chooseOptions[0]?.value ?? ''),
+	);
+	const chosenVow = $derived(
+		chooseKind === 'vow'
+			? ((ctx?.data?.vows ?? []) as Vow[]).find((v) => v.id === chosenId)
+			: undefined,
+	);
+	const chosenVowId = $derived(chooseKind === 'vow' ? chosenId : '');
+	const chosenCompanionId = $derived(chooseKind === 'companion' ? chosenId : '');
+	/** What an entry's command links act on: the character, foe and
+	 *  expedition it's made for, the vow or companion chosen, and Endure
+	 *  Harm/Stress's amount (#lib/commands/links.ts). */
+	function entryBinding(): LinkBinding {
+		return {
+			charId: ctx?.charId,
+			foeId: getActiveFoeId() || undefined,
+			expId: getActiveExpeditionId() || undefined,
+			vowId: chosenVowId || undefined,
+			companionId: chosenCompanionId || undefined,
+			harm: isEndureMove ? harmValue : undefined,
+		};
+	}
 	// Label + resource for the harm stepper (harm→health, stress→spirit).
 	const harmWord = $derived(selectedMove?.id === 'move/endure-stress' ? 'Stress' : 'Harm');
 	const progressValue = $derived.by(() => {
+		// A move that asks for a vow rolls against its progress.
+		if (chooseKind === 'vow') return Math.floor((chosenVow?.ticks ?? 0) / 4);
 		const src = selectedMove?.progressSource ?? 'combat';
 		const ticks = progressContext[src] ?? 0;
 		return Math.floor(ticks / 4);
@@ -136,8 +230,10 @@
 			return `${d6Icon} + mana[${manaCommit}] + adds[${adds >= 0 ? '+' : ''}${adds}] vs difficulty[${spellDifficulty}] &amp; ${d10Icon}`;
 		}
 		if (selectedStat && ctx) {
-			const val = ((ctx.data as unknown as Record<string, unknown>)[selectedStat] as number) ?? 0;
-			return `${d6Icon} + ${selectedStat}[${val}]${addsStr(adds)} vs ${d10Icon} &amp; ${d10Icon}`;
+			// Number(): a character's data can come from a shared backup, and
+			// this string is rendered as HTML.
+			const val = Number((ctx.data as unknown as Record<string, unknown>)[selectedStat]) || 0;
+			return `${d6Icon} + ${escHtml(selectedStat)}[${val}]${addsStr(adds)} vs ${d10Icon} &amp; ${d10Icon}`;
 		}
 		if (isOracleRollMove && oracleTable.length) {
 			const threshold = oracleTable[selectedOddsIdx]?.value?.threshold ?? '?';
@@ -244,143 +340,19 @@
 	// Precondition check
 	// ---------------------------------------------------------------------------
 	function moveFailReason(m: MoveDefinition): string | null {
-		if (!ctx) {
-			return m.preconditions?.length ? 'No character selected' : null;
-		}
-		return firstPreconditionFailure(
-			m.preconditions as import('#lib/preconditions.js').Precondition[] | undefined,
-			ctx.data,
-			pctx,
-		);
+		return movePreconditionFailure(m.preconditions as string | undefined, ctx?.data, pctx);
 	}
 
 	// ---------------------------------------------------------------------------
-	// Outcome helpers
+	// Log text — the pure builders live in lib/moveRoll.ts
 	// ---------------------------------------------------------------------------
-	function outcomeClass(hits1: boolean, hits2: boolean): string {
-		if (hits1 && hits2) return 'roll-outcome-strong';
-		if (hits1 || hits2) return 'roll-outcome-weak';
-		return 'roll-outcome-miss';
-	}
-	function outcomeLabel(hits1: boolean, hits2: boolean): string {
-		if (hits1 && hits2) return 'Strong Hit';
-		if (hits1 || hits2) return 'Weak Hit';
-		return 'Miss';
-	}
-
-	function stripHtml(html: string): string {
-		return html
-			.replace(/<[^>]*>/g, '')
-			.replace(/&amp;/g, '&')
-			.replace(/&lt;/g, '<')
-			.replace(/&gt;/g, '>')
-			.replace(/&quot;/g, '"')
-			.replace(/&#39;/g, "'")
-			.replace(/\s+/g, ' ')
-			.trim();
-	}
-
-	/**
-	 * Resolve a log entry title for a move roll.
-	 *
-	 * Uses the move's optional `logTitle` template when present, otherwise
-	 * falls back to the canonical pattern:
-	 *   "{character} — {move name} ({stat})"   when stat is provided
-	 *   "{character} — {move name}"            otherwise
-	 *
-	 * Supported placeholders: {character}, {stat}, {expedition}, {foe}, {move}.
-	 */
+	/** A roll's log title for this character, expedition and foe. */
 	function resolveTitle(move: MoveDefinition, stat?: string): string {
-		const tpl =
-			move.logTitle ??
-			(stat ? `{character} \u2014 ${move.name} ({stat})` : `{character} \u2014 ${move.name}`);
-		return tpl
-			.replace('{character}', ctx?.charName ?? '')
-			.replace('{stat}', stat ?? '')
-			.replace('{expedition}', pctx.expeditionName ?? 'unknown expedition')
-			.replace('{foe}', pctx.foeName ?? 'unknown foe')
-			.replace('{move}', move.name);
-	}
-
-	/** Move text renders through `renderRich` (markdown formatting + `[label](scheme:args)`
-	 *  link DSL) before the existing harm/enrich passes — the default since the DSL
-	 *  migration flipped it (Phase 4). A move opts BACK OUT to raw HTML with `html: true`. */
-	const moveMd = (m: MoveDefinition | null, text: string | undefined): string =>
-		(m as Record<string, unknown> | null)?.html ? (text ?? '') : renderRich(text);
-
-	function getOutcomeHtml(m: MoveDefinition, hits1: boolean, hits2: boolean): string {
-		const raw = hits1 && hits2 ? m.strong : hits1 || hits2 ? m.weak : m.miss;
-		return moveMd(m, raw);
-	}
-
-	// Resolve <a class="harm-link"> placeholders.
-	// ctx.moveId + ctx.foeHarm present (Endure Harm/Stress) → real resource-link.
-	// Otherwise → move-link so the player can navigate to the appropriate suffer move.
-	function resolveHarmLinks(
-		html: string,
-		ctx?: { moveId?: string; foeHarm?: number; curHealth?: number; curSpirit?: number },
-	): string {
-		const harm = ctx?.foeHarm ?? 1;
-		const moveId = ctx?.moveId ?? '';
-
-		// Endure Harm/Stress: suffer -harm to the resource; per the move, if that
-		// would drop it below 0 the remainder converts to -momentum. When the
-		// current value is known and smaller than the harm, split the display into
-		// the resource amount (down to exactly 0) plus the momentum overflow. This
-		// is descriptive text only — the Apply button commits it (see applyHarm).
-		function harmSplit(resource: 'health' | 'spirit', curVal?: number): string {
-			// Canonical wording: you suffer "harm" (to health) / "stress" (to spirit).
-			const harmWord = resource === 'health' ? 'harm' : 'stress';
-			if (curVal !== undefined && harm > curVal) {
-				const overflow = harm - curVal;
-				const resPart =
-					curVal > 0 ? `<span class="harm-amount">${curVal} ${harmWord}</span> and ` : '';
-				return (
-					resPart +
-					`<span class="harm-amount">-${overflow} momentum</span>` +
-					` <span class="harm-note">(overflow)</span>`
-				);
-			}
-			return `<span class="harm-amount">${harm} ${harmWord}</span>`;
-		}
-
-		// Health harm-links: known foe → clickable resource-link; no foe → plain placeholder text.
-		html = html.replace(
-			/<a class="harm-link" data-resource="health">-harm health<\/a>/g,
-			moveId === 'move/endure-harm' && ctx?.foeHarm !== undefined
-				? harmSplit('health', ctx.curHealth)
-				: '<span class="harm-note">-harm health</span>',
+		return moveLogTitle(
+			move,
+			{ character: ctx?.charName ?? '', expedition: pctx.expeditionName, foe: pctx.foeName },
+			stat,
 		);
-		// Spirit harm-links: known foe → clickable resource-link; no foe → plain placeholder text.
-		html = html.replace(
-			/<a class="harm-link" data-resource="spirit">-harm spirit<\/a>/g,
-			moveId === 'move/endure-stress' && ctx?.foeHarm !== undefined
-				? harmSplit('spirit', ctx.curSpirit)
-				: '<span class="harm-note">-harm spirit</span>',
-		);
-
-		// Endure Harm/Stress miss text carries a debility clause: "If you are at 0
-		// <resource>, you must mark <X> or <Y> … or roll on the <oracle>." Rules text
-		// is canon, so it always renders verbatim — but when we KNOW this blow won't
-		// bring the resource to 0 (foe rank < current), the mark/oracle actions don't
-		// apply, so their links are disabled (rendered as inert text). When the clause
-		// applies, or the outcome can't be determined (no foe/character), links stay live.
-		if (moveId === 'move/endure-harm' || moveId === 'move/endure-stress') {
-			html = html.replace(
-				/If you are at 0 (health|spirit), you must mark [\s\S]*?oracle<\/a>\./,
-				(clause, resource) => {
-					const curVal = resource === 'health' ? ctx?.curHealth : ctx?.curSpirit;
-					const survives =
-						ctx?.foeHarm !== undefined && curVal !== undefined && ctx.foeHarm < curVal;
-					if (!survives) return clause; // clause applies, or can't tell → links live
-					return clause.replace(
-						/<a class="[^"]*-link"[^>]*>([\s\S]*?)<\/a>/g,
-						'<span class="rule-disabled">$1</span>',
-					);
-				},
-			);
-		}
-		return html;
 	}
 
 	// Resolve harm links for display in the dialog outcome preview.
@@ -402,15 +374,25 @@
 	const resolvedTriggerHtml = $derived.by(() => {
 		const m = selectedMove;
 		if (!m) return '';
-		const raw = moveMd(m, ((m as Record<string, unknown>).triggerPreamble as string) ?? m.trigger);
-		if (m.id !== 'move/endure-harm' && m.id !== 'move/endure-stress') return raw;
+		let raw = moveMd(m, ((m as Record<string, unknown>).triggerPreamble as string) ?? m.trigger);
+		// Forsaking a vow: Endure Stress at the chosen vow's rank.
+		if (m.id === 'move/forsake-your-vow' && chosenVow)
+			raw = raw.replace(
+				'data-cmd="/move endure-stress"',
+				`data-cmd="/move endure-stress ${VOW_FORSAKE_STRESS[chosenVow.difficulty]}"`,
+			);
+		if (!ENDURE_MOVES.has(m.id)) return raw;
 		const harm = effectiveHarm; // tracked — recompute when the player edits the amount
+		const companionId = chosenCompanionId; // tracked — and when another companion is picked
 		return untrack(() =>
 			resolveHarmLinks(raw, {
 				moveId: m.id,
 				foeHarm: harm,
 				curHealth: resourceValue('health'),
 				curSpirit: resourceValue('spirit'),
+				curCompanionHealth: ctx
+					? companionHealth(ctx.charId).find((c) => c.id === companionId)?.health
+					: undefined,
 			}),
 		);
 	});
@@ -422,6 +404,14 @@
 	 */
 	function applyHarm() {
 		if (!ctx || harmApplied || !isEndureMove) return;
+		// The companion's: through the runner, which logs it and offers any
+		// leftover as −momentum (cascadeRules → COMPANION_HEALTH_OVERFLOW).
+		if (isCompanionHarm) {
+			const r = runLink(`/companion.health-=${harmValue}`, entryBinding());
+			reportCommandResult(r);
+			if (r.ok) harmApplied = true;
+			return;
+		}
 		const resource = selectedMove?.id === 'move/endure-stress' ? 'spirit' : 'health';
 		const curVal = resourceValue(resource) ?? 0;
 		const resourceLoss = Math.min(harmValue, curVal);
@@ -440,10 +430,11 @@
 		// Pre-warm the Wilhelm scream buffer so a miss outcome doesn't
 		// have to wait on the fetch (idempotent — cached after first call).
 		preloadMissScream();
+		picked = '';
 		if (moveId) {
 			selectedId = moveId;
 			view = 'detail';
-			if (moveId === 'move/endure-harm' || moveId === 'move/endure-stress') {
+			if (ENDURE_MOVES.has(moveId)) {
 				// A link that carries an explicit amount (e.g. forsaking a vow →
 				// Endure Stress at the vow's rank) overrides the active-foe default.
 				harmValue = harm ?? pctx.foeHarm ?? 1;
@@ -473,8 +464,9 @@
 	// ---------------------------------------------------------------------------
 	// Navigation
 	// ---------------------------------------------------------------------------
-	function selectMove(m: MoveDefinition) {
+	function selectMove(m: MoveDefinition, harm?: number) {
 		selectedId = m.id;
+		picked = '';
 		view = 'detail';
 		adds = 0;
 		spellDifficulty = 1;
@@ -482,8 +474,8 @@
 		selectedOddsIdx = 2;
 		factorLevels = {};
 		factorsManuallySet = false;
-		if (m.id === 'move/endure-harm' || m.id === 'move/endure-stress') {
-			harmValue = pctx.foeHarm ?? 1;
+		if (ENDURE_MOVES.has(m.id)) {
+			harmValue = harm ?? pctx.foeHarm ?? 1;
 			harmApplied = false;
 		}
 		// Auto-select first stat
@@ -501,34 +493,37 @@
 	/** Click delegation inside the detail view: trigger harm links + move-link nav. */
 	function handleDetailClick(e: MouseEvent) {
 		const target = e.target as HTMLElement;
-
-		// Trigger harm links (Endure Harm/Stress): apply the resource change on
-		// click. Scoped to `.md-trigger` so outcome previews stay read-only — those
-		// are committed by rolling, then clicked in the log. The link is struck so
-		// it can't be applied twice (the trigger HTML is snapshotted, so this
-		// mutation survives — see resolvedTriggerHtml).
-		const resLink = target.closest('.resource-link') as HTMLElement | null;
-		if (resLink && resLink.closest('.md-trigger') && !resLink.closest('s') && ctx) {
-			e.preventDefault();
-			const resource = resLink.dataset['resource'] ?? '';
-			const value = parseInt(resLink.dataset['value'] ?? '', 10);
-			if (!resource || Number.isNaN(value) || !value) return;
-			triggerAction({ charId: ctx.charId, type: 'resource', key: resource, value });
-			const struck = document.createElement('s');
-			struck.className = 'resource-spent';
-			struck.textContent = resLink.textContent;
-			resLink.replaceWith(struck);
+		const link = target.closest('a.cmd-link') as HTMLElement | null;
+		if (!link || link.closest('s')) return;
+		e.preventDefault();
+		const { cmd } = readCommandLink(link);
+		const verb = linkVerb(cmd);
+		// A move's link opens that move here.
+		if (verb?.verb === 'move') {
+			const m = verb.arg.match(/^(.*?)(?:\s+(\d+))?$/);
+			const id = `move/${(m?.[1] ?? '').trim().toLowerCase().replace(/\s+/g, '-')}`;
+			const targetMove = findMove(id);
+			if (targetMove) selectMove(targetMove, m?.[2] ? Number(m[2]) : undefined);
 			return;
 		}
-
-		const link = target.closest('.move-link') as HTMLElement | null;
-		if (!link) return;
-		e.preventDefault();
-		const moveId = link.dataset['id'];
-		if (moveId) {
-			const targetMove = findMove(moveId);
-			if (targetMove) selectMove(targetMove);
+		if (verb?.verb === 'oracle') {
+			reportCommandResult(runLink(cmd, {}));
+			return;
 		}
+		// A value link in the trigger (Endure Harm's, say) applies to the
+		// character on a click, and is struck so it can't be applied twice (the
+		// trigger HTML is snapshotted, so this survives — see
+		// resolvedTriggerHtml). Outcome previews stay read-only: those are
+		// committed by rolling, then clicked in the log.
+		if (!link.closest('.md-trigger') || !ctx) return;
+		const r = runLink(cmd, entryBinding());
+		if (r.spend) {
+			const struck = document.createElement('s');
+			struck.className = 'resource-spent';
+			struck.textContent = link.textContent;
+			link.replaceWith(struck);
+		}
+		reportCommandResult(r);
 	}
 
 	// ---------------------------------------------------------------------------
@@ -551,11 +546,12 @@
 		rolling = true;
 
 		const stat = selectedStat;
-		const sVal = (ctx.data as unknown as Record<string, number>)[stat] ?? 0;
+		// Number(): imported data is untrusted, and both values go into log HTML.
+		const sVal = Number((ctx.data as unknown as Record<string, unknown>)[stat]) || 0;
 		const aDie = rollDie(6);
 		const c1 = rollDie(10);
 		const c2 = rollDie(10);
-		const mom = ctx.data.momentum;
+		const mom = Number(ctx.data.momentum) || 0;
 
 		// Momentum cancellation
 		const cancelled = mom < 0 && Math.abs(mom) === aDie;
@@ -571,34 +567,24 @@
 		const entryId = crypto.randomUUID();
 
 		// Build log HTML
-		const parts: string[] = [];
-		if (cancelled) {
-			parts.push(
-				`<div class="roll-cancel">Momentum cancel! Momentum is ${mom}, ` +
-					`action die ${aDie} \u2192 0.</div>`,
-			);
-		}
-
-		const dieStr = cancelled ? `<s>${aDie}</s>&thinsp;0` : `${aDie}`;
-		const addsStr = adds !== 0 ? ` + adds[${adds > 0 ? '+' : '−'}${Math.abs(adds)}]` : '';
 		const statLabel = stat.charAt(0).toUpperCase() + stat.slice(1);
+		const parts: string[] = [
+			actionRollHtml({
+				actionDie: aDie,
+				cancelled,
+				momentum: mom,
+				stat,
+				statValue: sVal,
+				adds,
+				action,
+				c1,
+				c2,
+			}),
+			outcomeHeaderHtml(hits1, hits2, isMatch),
+			matchNoteHtml(hits1, hits2, isMatch),
+		];
 
-		parts.push(
-			`<div class="roll-line">` +
-				`1d6 [${dieStr}] + ${statLabel.toLowerCase()}[${sVal}]${addsStr}` +
-				` = ${actionScoreHtml(action)} vs 2d10 [${c1}] [${c2}]` +
-				`</div>`,
-		);
-
-		const matchSpan = isMatch ? ' <span class="roll-match">with a match!</span>' : '';
-		parts.push(
-			`<div class="${outcomeClass(hits1, hits2)}">` +
-				`<strong>${outcomeLabel(hits1, hits2)}</strong>${matchSpan}` +
-				`</div>`,
-		);
-		parts.push(matchNoteHtml(hits1, hits2, isMatch));
-
-		let outcomeHtml = getOutcomeHtml(selectedMove, hits1, hits2);
+		let outcomeHtml = moveOutcomeHtml(selectedMove, hits1, hits2);
 		if (outcomeHtml) {
 			outcomeHtml = resolveHarmLinks(outcomeHtml, {
 				moveId: selectedMove.id,
@@ -609,19 +595,7 @@
 			// Delve the Depths weak hit: inject the rolled stat into the oracle-link so
 			// clicking it opens the oracle with the correct column pre-selected.
 			// Also append "(Edge column)" etc. to the link text.
-			if (isDelveDepthsMove) {
-				outcomeHtml = outcomeHtml.replace(
-					/(data-oracle="delveDepths")>(Delve the Depths Weak Hit Oracle)<\/a>/g,
-					`$1 data-stat="${stat}">$2 (${statLabel} column)</a>`,
-				);
-			}
-			outcomeHtml = enrichOutcomeLinks(
-				outcomeHtml,
-				entryId,
-				ctx.charId,
-				getActiveExpeditionId(),
-				getActiveFoeId(),
-			);
+			if (isDelveDepthsMove) outcomeHtml = delveDepthsColumn(outcomeHtml, stat);
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
 
@@ -629,12 +603,13 @@
 		if (!hits1 && !hits2 && isSourceEnabled('delve')) {
 			parts.push(
 				`<div class="move-failure-row">` +
-					`<a class="failure-link" data-entry-id="${entryId}" data-char-id="${ctx.charId}" href="#">+1 failure</a>` +
+					commandLinkHtml('+1 failure', '/failures++', { charId: ctx.charId }) +
 					`</div>`,
 			);
 		}
 
-		const html = parts.join('');
+		// Bound in one piece, so each link's place in the entry is its own.
+		const html = bindCommandLinks(parts.join(''), entryId, entryBinding());
 
 		close();
 		await animateDice([
@@ -656,33 +631,22 @@
 			charId: ctx.charId,
 			...(foeId ? { foeId } : {}),
 			...(expeditionId ? { expeditionId } : {}),
+			bind: entryBinding(),
 		});
 
 		// Burn momentum suggestion: auto-append a clickable log entry when burn would improve outcome.
 		// Consistent with overflow/floor/debility cascade pattern — player decides whether to click.
-		const burnHits1 = mom > c1 ? true : hits1;
-		const burnHits2 = mom > c2 ? true : hits2;
-		if (
-			!cancelled &&
-			mom > 0 &&
-			!(hits1 && hits2) &&
-			(burnHits1 !== hits1 || burnHits2 !== hits2)
-		) {
-			const resetVal = momentumReset(ctx.data);
-			const currentLabel = outcomeLabel(hits1, hits2);
-			const burnLabel = outcomeLabel(burnHits1, burnHits2);
+		const burn = burnMomentumOffer({ momentum: mom, cancelled, c1, c2, hits1, hits2 });
+		if (burn) {
 			const burnEntryId = crypto.randomUUID();
-			const burnHtml =
-				`<p>You may <a class="burn-momentum-link" ` +
-				`data-roll-entry-id="${entryId}" ` +
-				`data-move-id="${selectedMove.id}" ` +
-				`data-action-score="${total}" ` +
-				`data-c1="${c1}" data-c2="${c2}" ` +
-				`data-char-id="${ctx.charId}" ` +
-				`data-entry-id="${burnEntryId}">` +
-				`burn momentum (${mom} → reset ${resetVal})` +
-				`</a> to improve this from <em>${currentLabel}</em> to <em>${burnLabel}</em>.</p>`;
-			appendLog(BURN_MOMENTUM_TITLE, burnHtml, burnEntryId);
+			const burnHtml = burnMomentumHtml({
+				rollEntryId: entryId,
+				charId: ctx.charId,
+				momentum: mom,
+				reset: momentumReset(ctx.data),
+				...burn,
+			});
+			appendLog(BURN_MOMENTUM_TITLE, bindCommandLinks(burnHtml, burnEntryId), burnEntryId);
 		}
 
 		rolling = false;
@@ -718,26 +682,11 @@
 
 		// Pre-generate entry id for link enrichment
 		const entryId = crypto.randomUUID();
-		const charId = ctx?.charId ?? '';
 
-		const addsStr =
-			adds !== 0
-				? ` + Adds [<strong>${adds > 0 ? '+' : '−'}${Math.abs(adds)}</strong>] = [<strong>${total}</strong>]`
-				: '';
-
-		const parts: string[] = [];
-		parts.push(
-			`<div class="roll-line">` +
-				`Progress [<strong>${progressValue}</strong>]${addsStr} vs 2d10 [${c1}] [${c2}]` +
-				`</div>`,
-		);
-
-		const matchSpan = isMatch ? ' <span class="roll-match">with a match!</span>' : '';
-		parts.push(
-			`<div class="${outcomeClass(eh1, eh2)}">` +
-				`<strong>${outcomeLabel(eh1, eh2)}</strong>${matchSpan}` +
-				`</div>`,
-		);
+		const parts: string[] = [
+			progressRollHtml(progressValue, adds, c1, c2),
+			outcomeHeaderHtml(eh1, eh2, isMatch),
+		];
 		if (downgraded) {
 			parts.push(
 				'<div class="roll-match-note">Downgraded — you did not have initiative (strong hit counts as weak, weak hit as miss).</div>',
@@ -745,7 +694,7 @@
 		}
 		parts.push(matchNoteHtml(eh1, eh2, isMatch));
 
-		let outcomeHtml = getOutcomeHtml(selectedMove, eh1, eh2);
+		let outcomeHtml = moveOutcomeHtml(selectedMove, eh1, eh2);
 		if (outcomeHtml) {
 			outcomeHtml = resolveHarmLinks(outcomeHtml, {
 				moveId: selectedMove.id,
@@ -753,18 +702,10 @@
 				curHealth: resourceValue('health'),
 				curSpirit: resourceValue('spirit'),
 			});
-			if (charId)
-				outcomeHtml = enrichOutcomeLinks(
-					outcomeHtml,
-					entryId,
-					charId,
-					getActiveExpeditionId(),
-					getActiveFoeId(),
-				);
 			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
 		}
 
-		const html = parts.join('');
+		const html = bindCommandLinks(parts.join(''), entryId, entryBinding());
 
 		close();
 		await animateDice([
@@ -796,23 +737,14 @@
 		const entryId = crypto.randomUUID();
 		const parts: string[] = [];
 
-		const addsStr = adds !== 0 ? ` + adds[${adds > 0 ? '+' : '−'}${Math.abs(adds)}]` : '';
-		const manaStr = mana > 0 ? ` + mana[${mana}]` : '';
 		parts.push(
-			`<div class="roll-line">` +
-				`1d6 [${aDie}]${addsStr}${manaStr}` +
-				` = <strong>${total}</strong> vs difficulty[<strong>${diff}</strong>] 1d10[${c1}]` +
-				`</div>`,
-		);
-		parts.push(
-			`<div class="${outcomeClass(hitsDiff, hitsC1)}">` +
-				`<strong>${outcomeLabel(hitsDiff, hitsC1)}</strong>` +
-				`</div>`,
+			spellRollHtml({ actionDie: aDie, adds, mana, difficulty: diff, c1 }),
+			outcomeHeaderHtml(hitsDiff, hitsC1),
 		);
 
 		// Build body: outcome text + mandatory mana cost (always spent)
 		let bodyHtml = '';
-		let outcomeHtml = getOutcomeHtml(selectedMove, hitsDiff, hitsC1);
+		let outcomeHtml = moveOutcomeHtml(selectedMove, hitsDiff, hitsC1);
 		if (outcomeHtml) {
 			outcomeHtml = resolveHarmLinks(outcomeHtml, {
 				moveId: selectedMove.id,
@@ -823,16 +755,10 @@
 			bodyHtml += `<div class="move-outcome">${outcomeHtml}</div>`;
 		}
 		if (mana > 0) {
-			bodyHtml += `<div class="move-outcome"><a class="resource-link" data-resource="mana" data-value="-${mana}">-${mana} mana</a> committed.</div>`;
+			bodyHtml += `<div class="move-outcome">${commandLinkHtml(`-${mana} mana`, `/mana-=${mana}`)} committed.</div>`;
 		}
 		if (bodyHtml) {
-			bodyHtml = enrichOutcomeLinks(
-				bodyHtml,
-				entryId,
-				ctx.charId,
-				getActiveExpeditionId(),
-				getActiveFoeId(),
-			);
+			bodyHtml = bindCommandLinks(bodyHtml, entryId, entryBinding());
 			parts.push(bodyHtml);
 		}
 
@@ -855,13 +781,8 @@
 		rolling = true;
 		const { odds, threshold } = entry.value;
 		const roll = rollDie(100);
-		const isYes = roll >= threshold;
-		const outcomeClass = isYes ? 'roll-outcome-strong' : 'roll-outcome-miss';
-		const html =
-			`<div class="roll-line">1d100 [${roll}]</div>` +
-			`<div class="${outcomeClass}"><strong>${isYes ? 'Yes' : 'No'}</strong> \u2014 ${odds} (\u2265${threshold})</div>`;
-		const tensV = Math.floor((roll % 100) / 10) || 10;
-		const onesV = roll % 10 || 10;
+		const html = askOracleHtml(roll, odds, threshold);
+		const [tensV, onesV] = d100Faces(roll);
 		close();
 		await animateDice([
 			{ sides: 10, value: tensV, color: DIE_BLACK },
@@ -892,14 +813,11 @@
 		const roll = rollDie(100);
 		const found = raw.find((e) => roll <= e.topRange) ?? raw[raw.length - 1];
 		const rendered = moveMd(selectedMove, found.value);
-		const enriched = ctx ? enrichOutcomeLinks(rendered, entryId, ctx.charId) : rendered;
+		const enriched = bindCommandLinks(rendered, entryId, entryBinding());
 		// A d100 table roll is an oracle-style roll — match the oracle log format
 		// (`Roll: d100 → N`) rather than the action-die bracket format.
-		const html =
-			`<div class="roll-line">Roll: d100 → ${roll}</div>` +
-			`<div class="move-outcome">${enriched}</div>`;
-		const tensV = Math.floor((roll % 100) / 10) || 10;
-		const onesV = roll % 10 || 10;
+		const html = tableRollHtml(roll, enriched);
+		const [tensV, onesV] = d100Faces(roll);
 		close();
 		await animateDice([
 			{ sides: 10, value: tensV, color: DIE_BLACK },
@@ -912,72 +830,15 @@
 	async function doApplyNoRollMove() {
 		if (!ctx || !selectedMove) return;
 
-		// \u2500\u2500 Take a Hiatus: build logBody dynamically from character state \u2500\u2500
+		// Take a Hiatus: the log body comes from the character as it stands.
 		if (selectedMove.id === 'move/take-a-hiatus') {
-			const data = ctx.data as unknown as Record<string, unknown>;
-			const parts: string[] = [];
-			// 1. Clear marked conditions
-			const allDebilities: Array<[string, string]> = [
-				['wounded', 'Wounded'],
-				['maimed', 'Maimed'],
-				['shaken', 'Shaken'],
-				['corrupted', 'Corrupted'],
-				['cursed', 'Cursed'],
-				['tormented', 'Tormented'],
-				['unprepared', 'Unprepared'],
-				['encumbered', 'Encumbered'],
-			];
-			const markedDebilities = allDebilities.filter(([key]) => data[key]);
-			if (markedDebilities.length > 0) {
-				const links = markedDebilities
-					.map(
-						([key, label]) =>
-							`<a class="debility-link" data-debility="${key}" data-value="0">Clear ${label}</a>`,
-					)
-					.join(' \u00b7 ');
-				parts.push(`<p><strong>Conditions:</strong> ${links}</p>`);
-			}
-			// 2. Restore resources to max
-			const restoreLinks: string[] = [];
-			const toRestore: Array<[string, string, number]> = [
-				['health', 'health', 5],
-				['spirit', 'spirit', 5],
-				['supply', 'supply', 5],
-			];
-			for (const [key, label, max] of toRestore) {
-				const current = (data[key] as number) ?? 0;
-				const delta = max - current;
-				if (delta > 0) {
-					restoreLinks.push(
-						`<a class="resource-link" data-resource="${key}" data-value="+${delta}">+${delta} ${label}</a>`,
-					);
-				}
-			}
-			if (restoreLinks.length > 0) {
-				parts.push(`<p><strong>Resources:</strong> ${restoreLinks.join(' \u00b7 ')}</p>`);
-			}
-			// 3. Momentum reset
-			const resetVal = momentumReset(ctx.data);
-			const momCurrent = (data['momentum'] as number) ?? 0;
-			const momDelta = resetVal - momCurrent;
-			if (momDelta !== 0) {
-				// data-value is parsed as a number → keep the ASCII sign; the visible
-				// label uses a real +/− sign for display consistency.
-				const disp = `${momDelta > 0 ? '+' : '−'}${Math.abs(momDelta)}`;
-				parts.push(
-					`<p><strong>Momentum:</strong> ` +
-						`<a class="resource-link" data-resource="momentum" data-value="${momDelta}">` +
-						`${disp} momentum (reset to ${resetVal})</a></p>`,
-				);
-			}
-			// 4. Static reminders (always shown)
-			parts.push(
-				`<p>Set companion health to max if applicable.</p>` +
-					`<p>For each active threat: ` +
-					`<a class="move-link" data-id="move/advance-a-threat">Advance a Threat</a>.</p>`,
-			);
 			const entryId = crypto.randomUUID();
-			const enriched = enrichOutcomeLinks(parts.join(''), entryId, ctx.charId);
+			const body = takeAHiatusHtml(
+				ctx.data as unknown as Record<string, unknown>,
+				momentumReset(ctx.data),
+				companionHealth(ctx.charId),
+			);
+			const enriched = bindCommandLinks(body, entryId, entryBinding());
 			close();
 			appendLog(resolveTitle(selectedMove), enriched, entryId);
 			return;
@@ -989,7 +850,7 @@
 		const entryId = crypto.randomUUID();
 		// logBody is authored in the same markdown + `[label](scheme:args)` DSL as
 		// the outcome text, so render it to HTML before enriching its links.
-		const enriched = enrichOutcomeLinks(renderRich(logBody), entryId, ctx.charId);
+		const enriched = bindCommandLinks(renderRich(logBody), entryId, entryBinding());
 		close();
 		appendLog(resolveTitle(selectedMove), enriched, entryId);
 	}
@@ -1016,13 +877,61 @@
 	});
 </script>
 
+<!-- A move's three outcomes as the detail view previews them. `tour` marks
+     the first view's block for the tutorials. -->
+{#snippet outcomesPreview(m: MoveDefinition, tour?: string)}
+	{#if m.strong || m.weak || m.miss}
+		<div class="md-outcomes" data-tour={tour}>
+			{#if m.strong}
+				<div class="md-outcome-section" style:--outcome-color="var(--color-success, #34d399)">
+					<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
+					<div class="md-outcome-text">{@html displayHtml(m.strong)}</div>
+				</div>
+			{/if}
+			{#if m.weak}
+				<div class="md-outcome-section" style:--outcome-color="var(--color-momentum, #60a5fa)">
+					<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
+					<div class="md-outcome-text">{@html displayHtml(m.weak)}</div>
+				</div>
+			{/if}
+			{#if m.miss}
+				<div class="md-outcome-section" style:--outcome-color="var(--color-danger, #ef4444)">
+					<div class="md-outcome-label md-outcome-miss">Miss</div>
+					<div class="md-outcome-text">{@html displayHtml(m.miss)}</div>
+				</div>
+			{/if}
+		</div>
+	{/if}
+{/snippet}
+
+<!-- The Adds stepper, −5 to +5. `needsChar`: off without a character (an
+     action or spell roll); a progress roll needs none. -->
+{#snippet addsStepper(needsChar: boolean)}
+	<span class="md-adds-label">Adds</span>
+	<button
+		class="md-adj"
+		onclick={() => (adds = Math.max(-5, adds - 1))}
+		disabled={rolling || (needsChar && !ctx) || adds <= -5}
+		aria-label="Decrease adds">−</button
+	>
+	<span class="md-adds-val" class:positive={adds > 0} class:negative={adds < 0}
+		>{adds >= 0 ? '+' : ''}{adds}</span
+	>
+	<button
+		class="md-adj"
+		onclick={() => (adds = Math.min(5, adds + 1))}
+		disabled={rolling || (needsChar && !ctx) || adds >= 5}
+		aria-label="Increase adds">+</button
+	>
+{/snippet}
+
 <!-- =========================================================================
      Dialog — bits-ui Dialog primitive. Portals into `document.body`,
      manages Escape / focus trap / body scroll lock automatically.
      ========================================================================= -->
 <Dialog.Root bind:open={dialogOpen}>
 	<Dialog.Portal>
-		<Dialog.Overlay class="md-overlay" style="z-index: {overlayZ(stackDepth)}" />
+		<Dialog.Overlay class="dialog-overlay md-overlay" style="z-index: {overlayZ(stackDepth)}" />
 		<Dialog.Content
 			class="moves-dialog"
 			style="z-index: {contentZ(stackDepth)}"
@@ -1177,6 +1086,26 @@
 							{@html resolvedTriggerHtml}
 						</div>
 
+						<!-- A move that acts on a vow or a companion asks which. -->
+						{#if chooseKind && ctx}
+							<div class="md-choose-row" data-tour="move-choose">
+								<span class="md-harm-label">{chooseKind === 'vow' ? 'Vow' : 'Companion'}</span>
+								{#if chooseOptions.length}
+									<Select
+										value={chosenId}
+										options={chooseOptions}
+										ariaLabel={chooseKind === 'vow' ? 'Vow' : 'Companion'}
+										class="md-choose-select"
+										onchange={(v) => (picked = String(v))}
+									/>
+								{:else}
+									<span class="md-harm-hint"
+										>{chooseKind === 'vow' ? 'No active vow.' : 'No companion.'}</span
+									>
+								{/if}
+							</div>
+						{/if}
+
 						<!-- Endure Harm/Stress: how much harm/stress this blow deals. Defaults to
 				     the foe's rank; editable for "as appropriate to the situation". The
 				     Apply button commits it to the character; then roll. -->
@@ -1203,7 +1132,7 @@
 									disabled={harmApplied || !ctx}
 									use:tooltip={harmApplied
 										? 'Harm applied'
-										: `Apply ${harmValue} ${harmWord.toLowerCase()} to the character`}
+										: `Apply ${harmValue} ${harmWord.toLowerCase()} to ${isCompanionHarm ? (companionOptions.find((o) => o.value === chosenCompanionId)?.label ?? 'the companion') : 'the character'}`}
 								>
 									{harmApplied ? 'Applied ✓' : 'Apply'}
 								</button>
@@ -1237,71 +1166,11 @@
 								</div>
 							{/if}
 							<!-- Outcomes -->
-							{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-								<div class="md-outcomes" data-tour="move-outcomes">
-									{#if selectedMove.strong}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-success, #34d399)"
-										>
-											<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
-										</div>
-									{/if}
-									{#if selectedMove.weak}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-momentum, #60a5fa)"
-										>
-											<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
-										</div>
-									{/if}
-									{#if selectedMove.miss}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-danger, #ef4444)"
-										>
-											<div class="md-outcome-label md-outcome-miss">Miss</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
-										</div>
-									{/if}
-								</div>
-							{/if}
+							{@render outcomesPreview(selectedMove, 'move-outcomes')}
 
 							<!-- ── Spell roll move ── -->
 						{:else if isSpellRollMove(selectedMove)}
-							{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-								<div class="md-outcomes">
-									{#if selectedMove.strong}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-success, #34d399)"
-										>
-											<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
-										</div>
-									{/if}
-									{#if selectedMove.weak}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-momentum, #60a5fa)"
-										>
-											<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
-										</div>
-									{/if}
-									{#if selectedMove.miss}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-danger, #ef4444)"
-										>
-											<div class="md-outcome-label md-outcome-miss">Miss</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
-										</div>
-									{/if}
-								</div>
-							{/if}
+							{@render outcomesPreview(selectedMove)}
 							<!-- Difficulty factors collapsible -->
 							{#if pctx.ritualAssets && pctx.ritualAssets.length > 0}
 								<details class="md-factors">
@@ -1341,37 +1210,7 @@
 
 							<!-- ── Progress move ── -->
 						{:else if isProgressMove(selectedMove)}
-							{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-								<div class="md-outcomes">
-									{#if selectedMove.strong}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-success, #34d399)"
-										>
-											<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
-										</div>
-									{/if}
-									{#if selectedMove.weak}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-momentum, #60a5fa)"
-										>
-											<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
-										</div>
-									{/if}
-									{#if selectedMove.miss}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-danger, #ef4444)"
-										>
-											<div class="md-outcome-label md-outcome-miss">Miss</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
-										</div>
-									{/if}
-								</div>
-							{/if}
+							{@render outcomesPreview(selectedMove)}
 
 							<!-- ── Ask the Oracle ── -->
 						{:else if isOracleRollMove}
@@ -1417,37 +1256,7 @@
 
 							<!-- ── No-roll move ── -->
 						{:else if isNoRollMove(selectedMove)}
-							{#if selectedMove.strong || selectedMove.weak || selectedMove.miss}
-								<div class="md-outcomes">
-									{#if selectedMove.strong}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-success, #34d399)"
-										>
-											<div class="md-outcome-label md-outcome-strong">Strong Hit</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.strong)}</div>
-										</div>
-									{/if}
-									{#if selectedMove.weak}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-momentum, #60a5fa)"
-										>
-											<div class="md-outcome-label md-outcome-weak">Weak Hit</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.weak)}</div>
-										</div>
-									{/if}
-									{#if selectedMove.miss}
-										<div
-											class="md-outcome-section"
-											style:--outcome-color="var(--color-danger, #ef4444)"
-										>
-											<div class="md-outcome-label md-outcome-miss">Miss</div>
-											<div class="md-outcome-text">{@html displayHtml(selectedMove.miss)}</div>
-										</div>
-									{/if}
-								</div>
-							{/if}
+							{@render outcomesPreview(selectedMove)}
 						{/if}
 
 						<!-- Notes -->
@@ -1500,22 +1309,7 @@
 							{@const fail = moveFailReason(selectedMove)}
 							<div class="md-footer-top">
 								<div class="md-adds-row">
-									<span class="md-adds-label">Adds</span>
-									<button
-										class="md-adj"
-										onclick={() => (adds = Math.max(-5, adds - 1))}
-										disabled={rolling || !ctx || adds <= -5}
-										aria-label="Decrease adds">−</button
-									>
-									<span class="md-adds-val" class:positive={adds > 0} class:negative={adds < 0}
-										>{adds >= 0 ? '+' : ''}{adds}</span
-									>
-									<button
-										class="md-adj"
-										onclick={() => (adds = Math.min(5, adds + 1))}
-										disabled={rolling || !ctx || adds >= 5}
-										aria-label="Increase adds">+</button
-									>
+									{@render addsStepper(true)}
 								</div>
 								<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
 							</div>
@@ -1538,22 +1332,7 @@
 						{:else if isSpellRollMove(selectedMove)}
 							<div class="md-footer-top">
 								<div class="md-adds-row">
-									<span class="md-adds-label">Adds</span>
-									<button
-										class="md-adj"
-										onclick={() => (adds = Math.max(-5, adds - 1))}
-										disabled={rolling || !ctx || adds <= -5}
-										aria-label="Decrease adds">−</button
-									>
-									<span class="md-adds-val" class:positive={adds > 0} class:negative={adds < 0}
-										>{adds >= 0 ? '+' : ''}{adds}</span
-									>
-									<button
-										class="md-adj"
-										onclick={() => (adds = Math.min(5, adds + 1))}
-										disabled={rolling || !ctx || adds >= 5}
-										aria-label="Increase adds">+</button
-									>
+									{@render addsStepper(true)}
 									<span class="md-adds-label md-adds-label--gap">Mana</span>
 									<button
 										class="md-adj"
@@ -1606,22 +1385,7 @@
 						{:else if isProgressMove(selectedMove)}
 							<div class="md-footer-top">
 								<div class="md-adds-row">
-									<span class="md-adds-label">Adds</span>
-									<button
-										class="md-adj"
-										onclick={() => (adds = Math.max(-5, adds - 1))}
-										disabled={rolling || adds <= -5}
-										aria-label="Decrease adds">−</button
-									>
-									<span class="md-adds-val" class:positive={adds > 0} class:negative={adds < 0}
-										>{adds >= 0 ? '+' : ''}{adds}</span
-									>
-									<button
-										class="md-adj"
-										onclick={() => (adds = Math.min(5, adds + 1))}
-										disabled={rolling || adds >= 5}
-										aria-label="Increase adds">+</button
-									>
+									{@render addsStepper(false)}
 								</div>
 								<div class="md-roll-status" aria-live="polite">{@html rollStatusHtml}</div>
 							</div>
@@ -1716,12 +1480,6 @@
 		overflow: hidden;
 	}
 	/* z-index is set inline via dialogStack — see <script>. */
-	:global(.md-overlay) {
-		position: fixed;
-		inset: 0;
-		background: #00000060;
-		backdrop-filter: blur(1px);
-	}
 
 	/* ── Header ─────────────────────────────────────────────────────────── */
 	.md-category-badge {
@@ -2281,15 +2039,24 @@
 		text-decoration: underline;
 		cursor: pointer;
 	}
-	/* Make non-move interactive links inert in dialog (only live in session log) */
-	.md-outcome-text :global(a.resource-link),
-	.md-outcome-text :global(a.debility-link),
-	.md-outcome-text :global(a.progress-link),
-	.md-outcome-text :global(a.initiative-link),
-	.md-outcome-text :global(a.menace-link) {
+	/* Value links are inert in an outcome preview: they come alive in the log,
+	   once the roll is made. Move and oracle links stay live. */
+	.md-outcome-text :global(a.cmd-link:not([data-verb])) {
 		pointer-events: none;
 		cursor: default;
 		text-decoration: none;
+	}
+
+	/* The vow or companion a move acts on. */
+	.md-choose-row {
+		display: flex;
+		align-items: center;
+		gap: 10px;
+		margin: 8px 0 4px;
+	}
+	.md-choose-row :global(.md-choose-select) {
+		flex: 1;
+		min-width: 0;
 	}
 
 	/* Harm placeholder: no foe context — player must resolve manually */

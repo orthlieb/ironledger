@@ -10,6 +10,8 @@
 // fine-grained dependency on it.
 // =============================================================================
 
+import type { LinkBinding } from '#lib/commands/links.js';
+
 /** Metadata for action rolls — enables burn-momentum after the fact. */
 export interface RollMeta {
 	moveId: string; // to look up outcome HTML from move definition
@@ -22,6 +24,9 @@ export interface RollMeta {
 	foeId?: string;
 	/** Active expedition id — set on moves whose title references {expedition}. */
 	expeditionId?: string;
+	/** What the roll's links were bound to (foe, expedition, vow, companion,
+	 *  harm), so a burn's new outcome binds its links the same way. */
+	bind?: LinkBinding;
 }
 
 export interface LogEntry {
@@ -120,8 +125,8 @@ export function appendLog(
 		...(roll ? { roll } : {}),
 	};
 
-	// Optimistic: prepend immediately; rolling cap matches server-side 1000
-	sessionLog.entries = [entry, ...sessionLog.entries].slice(0, 1000);
+	// Optimistic: prepend immediately; rolling cap matches the server's
+	sessionLog.entries = [entry, ...sessionLog.entries].slice(0, LOG_CAP);
 
 	// Persist to server in background
 	apiPost(entry).catch(() => {
@@ -164,6 +169,67 @@ export function deleteLogEntry(entryId: string): void {
 }
 
 // ---------------------------------------------------------------------------
+// The whole log, for an export; many entries at once, for an import
+// ---------------------------------------------------------------------------
+
+/** The most entries the server keeps, and the most one request returns. */
+export const LOG_CAP = 1000;
+
+/** Every entry the server keeps, newest first — more than the page loads
+ *  (its newest 200). Null if it can't be read. */
+export async function fetchWholeLog(): Promise<LogEntry[] | null> {
+	try {
+		const res = await apiGet(`?limit=${LOG_CAP}`);
+		if (!res.ok) return null;
+		const rows = (await res.json()) as unknown;
+		return Array.isArray(rows) ? (rows as LogEntry[]) : null;
+	} catch {
+		return null;
+	}
+}
+
+/** The batches an import's entries go up in: the API takes 2 MB a request. */
+const BATCH_BYTES = 1_500_000;
+const BATCH_ENTRIES = 250;
+
+/**
+ * Add a backup's entries to the log as they were — each with its own id,
+ * time, note and roll — and show them in their places. An id already in the
+ * log is left as it is (server and here), so importing the same backup
+ * twice adds nothing; the log keeps its newest LOG_CAP either way. Throws if
+ * a batch is refused, having added the batches before it.
+ */
+export async function importLogEntries(entries: LogEntry[]): Promise<void> {
+	if (entries.length === 0) return;
+	let batch: LogEntry[] = [];
+	let bytes = 0;
+	const send = async () => {
+		if (batch.length === 0) return;
+		const res = await fetch('/api/session/log/batch', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ entries: batch }),
+		});
+		if (!res.ok) throw new Error(`the log couldn't be saved (${res.status})`);
+		const have = new Set(sessionLog.entries.map((e) => e.id));
+		const added = batch.filter((e) => !have.has(e.id));
+		sessionLog.entries = [...sessionLog.entries, ...added]
+			.sort((a, b) => Date.parse(b.ts) - Date.parse(a.ts))
+			.slice(0, LOG_CAP);
+		batch = [];
+		bytes = 0;
+	};
+	for (const e of entries) {
+		const size = JSON.stringify(e).length;
+		if (batch.length >= BATCH_ENTRIES || (batch.length > 0 && bytes + size > BATCH_BYTES))
+			await send();
+		batch.push(e);
+		bytes += size;
+	}
+	await send();
+}
+
+// ---------------------------------------------------------------------------
 // getLog — read-only accessor
 // ---------------------------------------------------------------------------
 
@@ -189,47 +255,11 @@ export function updateLogEntryNote(entryId: string, note: string): void {
 }
 
 // ---------------------------------------------------------------------------
-// enrichOutcomeLinks
+// bindCommandLinks
 // ---------------------------------------------------------------------------
 
-/**
- * Enrich outcome HTML with entry-id and char-id on interactive links
- * so LogPanel click delegation can identify the entry and character.
- *
- * When `expId` is given (the expedition active at roll time), the
- * expedition-targeting links — `progress-link` and `countdown-link` — also get
- * `data-exp-id`, so clicking them later marks the expedition the entry was
- * rolled against, not whichever one happens to be active now. Character links
- * already bind this way via `data-char-id`.
- */
-export function enrichOutcomeLinks(
-	html: string,
-	entryId: string,
-	charId: string,
-	expId = '',
-	foeId = '',
-): string {
-	let out = html.replace(
-		/<a\s+class="(resource-link|debility-link|progress-link|countdown-link|initiative-link|menace-link|vanquish-foe-link|reset-track-link)"/g,
-		`<a data-entry-id="${entryId}" data-char-id="${charId}" class="$1"`,
-	);
-	if (expId) {
-		out = out.replace(
-			/(<a data-entry-id="[^"]*" data-char-id="[^"]*") class="(progress-link|countdown-link)"/g,
-			`$1 data-exp-id="${expId}" class="$2"`,
-		);
-	}
-	// Foe-targeting links bind to the foe rolled against so a later click acts on
-	// THAT foe (or no-ops if it's been deleted/vanquished) rather than whatever
-	// foe is active now. `[^>]*?` tolerates a data-exp-id already inserted above.
-	if (foeId) {
-		out = out.replace(
-			/(<a [^>]*?) class="(progress-link|menace-link|vanquish-foe-link)"/g,
-			`$1 data-foe-id="${foeId}" class="$2"`,
-		);
-	}
-	return out;
-}
+/** Bind an entry's command links to it: see #lib/commands/links.ts. */
+export { bindCommandLinks } from '#lib/commands/links.js';
 
 // ---------------------------------------------------------------------------
 // clearLog — optimistic + DELETE all
@@ -242,56 +272,12 @@ export function clearLog(): void {
 }
 
 // ---------------------------------------------------------------------------
-// XP Spend Bus
-// ---------------------------------------------------------------------------
-// LogPanel calls triggerXpSpend() when the user clicks an XP cost link.
-// CharacterSheet has a $effect that reads getXpSpendNonce() to subscribe
-// reactively, then calls drainXpSpend() to consume pending amounts.
-//
-// This avoids two failure modes of the previous Map-based approach:
-//   1. Handler lost when CharacterSheet unmounts (tab change) — items remain
-//      in the queue until the component re-mounts and drains them.
-//   2. $state mutation from a plain Map callback (outside Svelte's reactive
-//      context) not propagating through bind:value — here the mutation
-//      happens inside the $effect, which IS Svelte's reactive context.
-
-let _xpSpendNonce = $state(0);
-const _xpSpendQueue: Array<{ charId: string; amount: number }> = [];
-
-/** Read inside $effect to subscribe to XP spend events (reactive signal). */
-export function getXpSpendNonce(): number {
-	return _xpSpendNonce;
-}
-
-/** Queue an XP spend and signal all watching $effects. Called by LogPanel. */
-export function triggerXpSpend(charId: string, amount: number): void {
-	_xpSpendQueue.push({ charId, amount });
-	_xpSpendNonce++;
-}
-
-/**
- * Drain all queued XP spend amounts for a character and return the total.
- * Call this inside the $effect that reads getXpSpendNonce().
- */
-export function drainXpSpend(charId: string): number {
-	let total = 0;
-	let i = _xpSpendQueue.length;
-	while (i--) {
-		const item = _xpSpendQueue[i];
-		if (item.charId === charId) {
-			total += item.amount;
-			_xpSpendQueue.splice(i, 1);
-		}
-	}
-	return total;
-}
-
-// ---------------------------------------------------------------------------
 // Generalized Action Bus (resource changes, debility toggles)
 // ---------------------------------------------------------------------------
-// Same pattern as XP Spend Bus. LogPanel calls triggerAction() when the user
-// clicks a resource-link or debility-link. CharacterSheet $effect drains and
-// applies the mutation inside Svelte's reactive context.
+// The Moves dialog (Endure Harm's Apply) and LogPanel (a burn's momentum
+// reset) call triggerAction(); CharactersArea's $effect drains and applies
+// the change inside Svelte's reactive context. Log links are commands now
+// (#lib/commands/), which write values themselves.
 
 export interface LogAction {
 	charId: string;

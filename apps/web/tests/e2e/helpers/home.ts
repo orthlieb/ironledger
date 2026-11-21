@@ -91,7 +91,8 @@ export async function createCharacter(page: Page): Promise<void> {
 	await page.locator(`${CHAR_AREA} .ca-hdr-combobox`).click();
 	await page.locator('.cb-item--action', { hasText: /New character/i }).click();
 	await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
-	await page.locator('.confirm-modal .co-input').fill('E2E Character');
+	// The name box: a content pack's text fields in the dialog are .co-input too.
+	await page.locator('.confirm-modal [data-tour="new-char-name"] input').fill('E2E Character');
 	await page.locator('.confirm-modal .sa-field .dice-btn').click();
 	await page.locator('.confirm-modal .btn-primary').click();
 	await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
@@ -103,4 +104,22 @@ export async function createCharacter(page: Page): Promise<void> {
 export async function ensureCharacter(page: Page): Promise<void> {
 	if (await hasActiveCharacter(page)) return;
 	await createCharacter(page);
+}
+
+/**
+ * An area's header switcher shows the selected entry's icon, in its colour,
+ * the same as that entry's (checked) row in the open list.
+ */
+export async function expectSwitcherShowsActiveIcon(page: Page, trigger: string): Promise<void> {
+	const read = (el: Element) => ({
+		html: el.innerHTML,
+		color: (el as HTMLElement).style.getPropertyValue('--kind-color'),
+	});
+	const shown = await page.locator(`${trigger} .cb-item-icon`).evaluate(read);
+	await page.locator(trigger).click();
+	const row = page.locator('.cb-popover .cb-item:has(.cb-check svg) .cb-item-icon');
+	await expect(row).toBeVisible({ timeout: 3_000 });
+	expect(shown).toEqual(await row.evaluate(read));
+	await page.keyboard.press('Escape');
+	await expect(page.locator('.cb-popover')).toBeHidden({ timeout: 3_000 });
 }

@@ -152,6 +152,47 @@ clipped inside any `overflow: hidden/scroll` ancestor and doesn't show on touch.
 
 ---
 
+## Image drop targets — `use:dropImage`
+
+An image uploader also takes an image file dragged in from the desktop. Put
+`use:dropImage` (`#lib/actions/dropImage.ts`) on the element to drop on, and
+give it the same function the file input's change handler calls, so cropping,
+size limits and error messages stay in one place:
+
+```svelte
+<script>
+  import { dropImage, canDropFiles } from '#lib/actions/dropImage.js';
+  const dropHint = canDropFiles(); // mouse or trackpad: mention dropping
+</script>
+
+<div class="x-wrap" use:dropImage={{ ondrop: upload, disabled: uploading }}>…</div>
+
+<style>
+  /* The action sets data-drop-over while an image is over the element;
+     :global() because Svelte can't see an attribute set at runtime and
+     would strip the rule as unused. */
+  .x-wrap:global([data-drop-over]) {
+    outline: 2px dashed var(--text-accent);
+  }
+</style>
+```
+
+- Only drags that carry an image react: text, links, non-image files and the
+  app's own pointer drags get no highlight and the browser's "no drop" cursor.
+- The highlight survives moving across the element's children, and clears on
+  leave or drop.
+- Mention dropping in hints only where `canDropFiles()` is true; a touch
+  screen has nothing to drag from.
+- The root layout mounts `guardStrayFileDrops()`, so a file dropped beside a
+  target is ignored rather than opened by the browser in place of the app.
+
+In use: `PortraitUploader` (characters, NPCs, settlements, expeditions;
+dropping on a filled portrait replaces it) and the map's background
+(`.mp-body` in `MapDialog`). The import dialog's `.zip` drop zone predates
+the action and handles its own drag events.
+
+---
+
 ## Card Headers
 
 Used in: `CharacterSheet` (`.char-header`), `FoeCard` (`.fc-header`), `JourneyCard` (`.jc-header`), `SiteCard` (`.sc-header`)
@@ -697,16 +738,16 @@ nested state.
 
 ```svelte
 <MarkdownNotes
-  label="Bonds Formed"
-  bind:value={d.bondsFormed}
-  placeholder="Note significant bonds…"
+  label="Background"
+  bind:value={d.background}
+  placeholder="Origin, upbringing, major traits…"
 />
 ```
 
 Props: `value` (bindable), `editing?` (bindable, exposes the dialog
 state so parents can hide e.g. floating portraits during edit),
 `label?`, `placeholder?`, `rows?` (default 4), `oninput?`. Used by
-Characters (background, bondsFormed, lessonsLearned), VowCard,
+Characters (background), TrackNotesDialog (Bonds Formed, Lessons Learned), VowCard,
 ExpeditionsArea, CommunitiesArea (core + notes tab).
 
 ### `PortraitUploader` (`#lib/components/PortraitUploader.svelte`)
@@ -857,6 +898,14 @@ reserve **z-index 80+** for it so it wins over the app chrome:
 | Modal overlay  | `overlayZ(depth)` = `80 + 2n` | `.cm-overlay`, other alert-dialog scrims.                                                                                                                            |
 | App chrome     | `< 20`                        | Toolbars, sidebar.                                                                                                                                                   |
 
+**The backdrop's look is shared.** Every Dialog / AlertDialog overlay
+carries `class="dialog-overlay <prefix>-overlay"`: `.dialog-overlay`
+(`app.css`) draws the dimmed, lightly blurred layer the same for every
+modal, and the dialog's own `*-overlay` class stays as a hook for tests and
+local tweaks (the asset dialog's fade-in). The Lightbox adds
+`.dialog-overlay--dark` to frame a picture. Don't give a new dialog its own
+backdrop colour or blur.
+
 Popovers / menus sit **above** modal content on purpose: a
 `<Select>`, combobox, or `DropdownMenu` opened from inside a
 `ConfirmDialog` / `AlertDialog` still needs to render on top
@@ -947,6 +996,28 @@ pattern; the wrapper above is the default. If a call site needs
 something the wrapper can't express, add a prop to the wrapper rather
 than hand-rolling a fresh `Popover` + `Command` block.
 
+### Dropdown menus — spread `touchSafeTrigger()` on the trigger
+
+bits-ui's `DropdownMenu.Trigger` opens on a touch's pointerup, and also
+toggles on a click whose `detail` is 0 (meant for a screen reader's click).
+Some browsers follow a tap with just such a click, so the menu shuts the
+moment it opens. Give every `DropdownMenu.Trigger` its own guard, which
+drops the click that comes from a touch and leaves a mouse, key or screen
+reader alone:
+
+```svelte
+<script>
+  import { touchSafeTrigger } from '#lib/touchSafeTrigger.js';
+  const touchGuard = touchSafeTrigger();
+</script>
+
+<DropdownMenu.Trigger class="…" {...touchGuard}>…</DropdownMenu.Trigger>
+```
+
+The ☰ menu (`HamburgerMenu`) and the stat-array menu (`StatAllocator`)
+use it; `navigation.spec.ts` (☰ menu on a phone) checks a tap followed by
+that click leaves the menu open.
+
 ### Simple dropdown fields — `<Select>` wrapper
 
 For a plain form-field dropdown (a native `<select>` you'd
@@ -996,7 +1067,7 @@ outside-click; Escape still closes):
 ```svelte
 <AlertDialog.Root bind:open onOpenChange={…}>
   <AlertDialog.Portal to={portalTo}>
-    <AlertDialog.Overlay class="cm-overlay" />
+    <AlertDialog.Overlay class="dialog-overlay cm-overlay" />
     <AlertDialog.Content class="confirm-modal" style="--accent: …">
       <div class="cm-header">
         <AlertDialog.Title class="cm-title">…</AlertDialog.Title>

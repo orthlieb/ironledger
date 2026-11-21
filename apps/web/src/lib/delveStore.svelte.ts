@@ -14,6 +14,7 @@
 import type { OracleEntry } from './oracleStore.svelte.js';
 import { rollFromRangeTable } from './oracleStore.svelte.js';
 import type { DelveTheme, DelveDomain } from './types.js';
+import { fetchCatalogue } from '#lib/catalogueFetch.js';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -43,7 +44,7 @@ export async function loadDelveData(): Promise<void> {
 	if (_loaded || _loading) return;
 	_loading = true;
 	try {
-		const res = await fetch('/api/catalogue/delve');
+		const res = await fetchCatalogue('/api/catalogue/delve');
 		if (!res.ok) throw new Error(`Delve fetch failed: ${res.status}`);
 		_data = (await res.json()) as DelveData;
 		_loaded = true;

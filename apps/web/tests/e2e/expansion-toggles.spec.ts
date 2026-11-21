@@ -70,7 +70,7 @@ async function openSettings(page: Page): Promise<void> {
 	await page.locator('.hm-menu').waitFor({ state: 'visible', timeout: 3_000 });
 	await page.locator('.hm-item', { hasText: /settings/i }).click();
 	await expect(page.locator('.settings-dialog')).toBeVisible({ timeout: 3_000 });
-	// Settings is tabbed (Appearance / Dice / Expansions / AI); the expansion
+	// Settings is tabbed (Appearance / Dice / Expansions / AI / Account); the expansion
 	// toggles live behind the Expansions tab, so activate it.
 	await page.locator('.sd-tab', { hasText: /^Expansions$/ }).click();
 	await expect(page.locator('.sd-tab-panel:not([hidden])')).toBeVisible({ timeout: 3_000 });
@@ -256,14 +256,14 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				(window as any).__testLog.appendLog(
 					'E2E Delve link',
-					`<div>See <a class="move-link" data-id="move/discover-a-site">Discover a Site</a></div>`,
+					`<div>See <a class="cmd-link" data-cmd="/move discover-a-site" data-verb="move">Discover a Site</a></div>`,
 					id,
 				);
 			},
 			{ id: entryId },
 		);
 
-		const link = page.locator(`.log-entry[data-entry-id="${entryId}"] .move-link`);
+		const link = page.locator(`.log-entry[data-entry-id="${entryId}"] a.cmd-link`);
 		await expect(link).toBeVisible({ timeout: 5_000 });
 		await link.click();
 

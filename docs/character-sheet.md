@@ -6,7 +6,16 @@ Reference for the character sheet's fields and behaviour.
 > into a single area component: the sheet is now implemented in
 > **`apps/web/src/lib/components/v2/CharactersArea.svelte`** (with
 > `ResourceTile` / `MomentumTile` / `ProgressTrackPanel` / `AssetCard` /
-> `AssetPicker`). Component names referenced below — `CharacterSheet`,
+> `AssetPicker`). Three tabs have their own components under
+> `components/v2/sheet/`: **`SheetCore`** (initiative, stats with their
+> double-click edit and its dialogs, vitals, debilities, the tracks and their
+> notes dialogs), **`SheetVows`** and **`SheetAssets`** (the asset chits,
+> their counters and requirement fading). Each takes the live character
+> data and edits it in place, so CharactersArea's autosave sees the change;
+> what touches the rest of the area (the asset dialog, vow deletion and
+> forsaking, momentum's reset) goes back through a callback. Details is
+> `CharacterFields`; Background stays inline. Component names referenced
+> below — `CharacterSheet`,
 > `MeterControl`, `XpTrack`, `AssetsSection` — are the retired v1 names; the
 > field semantics still apply. The action buses (below) drain in
 > `CharactersArea`, not `CharacterSheet`.
@@ -21,6 +30,10 @@ Full character editor rendered in the "Characters" tab of the character detail p
 
 ## Sections
 
+The sheet's tabs: **Core** (initiative, stats, vitals, debilities, and the
+Bonds and Failures tracks), **Details** (the character fields below),
+**Background** (bio and portrait), **Vows** and **Assets**.
+
 ### Identity
 
 - **Name** — text input, synced to `character.name` (top-level DB column) as well as `data.name`.
@@ -33,12 +46,14 @@ Five `StatControl` components, one per stat. They're set in the New
 Character dialog (a starting array: 0 under Lodestar's Grim, up to 4 under
 its Challenging) and read out on the Core tab. A few path assets change a
 stat by an ability (Battle-Scarred, Shadow-Kin, Lorekeeper, Oathbreaker), so
-the Stats row's pen, after a warning that editing stats after creation is
-unusual (Yes / No), opens a draft of them, 0–4 (`STAT_MIN` / `STAT_MAX` in
-`rules/statArrays.ts`). Its check then lists what changed and asks to Apply
-it (one log entry), Discard it, or Cancel back to editing; with nothing
-changed it just reads them out again, as switching character does. An action roll's score (action
-die + stat + adds) is capped at 10 (`rules/actionScore.ts`).
+a double-click on a stat (a double-tap on a phone, timed by hand since iOS
+doesn't report one), after a warning that editing stats after creation is
+unusual (Yes / No), makes that stat a 0–4 field (`STAT_MIN` / `STAT_MAX` in
+`rules/statArrays.ts`). Leaving it (Enter, or focus moving on) lists the
+change and asks to Apply it (one log entry), Discard it, or Cancel back to
+the field; with nothing changed it just reads out again, as Escape or
+switching character does. An action roll's score (action die + stat + adds)
+is capped at 10 (`rules/actionScore.ts`).
 
 | Stat   | Color            | Key      |
 | ------ | ---------------- | -------- |
@@ -48,7 +63,12 @@ die + stat + adds) is capped at 10 (`rules/actionScore.ts`).
 | Shadow | `#a855f7` purple | `shadow` |
 | Wits   | `#f59e0b` amber  | `wits`   |
 
-Also shows **Touched** level (`pure / prime / second / third / feral`) and **Touched Animal** name (YRT homebrew).
+The core rules and extensions can add fields to a character, shown on the
+Details tab: Region of origin (core, no heading), and with YRT, under a YRT
+heading, Religion, Touched and Animal (Animal hidden while Touched is Pure).
+Changing one is logged (`Touched: Prime → Second`), and lowering Touched
+unmarks a Touched asset's abilities above the new limit. They're stored in
+`data.fields`; see [character-fields.md](character-fields.md).
 
 ### Resources (`MeterControl` components)
 
@@ -64,11 +84,18 @@ Also shows **Touched** level (`pure / prime / second / third / feral`) and **Tou
 
 - **XP** — 0–30, `XpTrack` component.
 - **Bonds** — 0–40 ticks across 10 boxes.
-- **Failures** — 0–40 ticks across 10 boxes.
+- **Failures** — 0–40 ticks across 10 boxes (with Delve on).
+
+Both sit on the Core tab. The note button at the end of each track (lit when
+there are notes) opens its notes in a dialog (`TrackNotesDialog`): Bonds
+Formed (`data.bondsFormed`) and Lessons Learned (`data.lessonsLearned`).
+Notes already written open rendered (click to edit); empty notes open in the
+textarea. Markdown works; Save (or Ctrl/Cmd+Enter) keeps the edit, Cancel
+drops it.
 
 ### Debilities (`DebilitiesSection`)
 
-Four groups of boolean toggles:
+On the Core tab, below Vitals. Groups of boolean toggles:
 
 | Group      | Flags                                   |
 | ---------- | --------------------------------------- |
@@ -120,10 +147,9 @@ interface CharacterData {
   iron: number;
   shadow: number;
   wits: number;
-  /** @deprecated migrated to Touched asset's customValues.touchedLevel */
-  touched?: TouchedLevel;
-  /** @deprecated migrated to Touched asset's customValues.animalName */
-  touchedAnimal?: string;
+  /** Extension fields (core: origin; YRT: religion, touched, touchedAnimal),
+   *  keyed by field id: an option id or text. */
+  fields?: Record<string, string>;
   momentum: number;
   health: number;
   spirit: number;
@@ -151,7 +177,6 @@ interface CharacterData {
   initiative?: number;
 }
 
-type TouchedLevel = 'pure' | 'prime' | 'second' | 'third' | 'feral';
 type VowDifficulty = 'troublesome' | 'dangerous' | 'formidable' | 'extreme' | 'epic';
 ```
 
@@ -204,7 +229,7 @@ A `$effect` reads `getXpSpendNonce()` and drains queued XP spend amounts via `dr
 
 A `$effect` reads `getActionNonce()` and drains queued actions via `drainActions(charId)`. Handles:
 
-- **Resource changes** (`type: 'resource'`): Applies delta to momentum, health, spirit, supply, mana, xp, bonds, or failures with proper clamping (e.g., momentum -6 to maxMomentum, health/spirit/supply 0-5).
+- **Resource changes** (`type: 'resource'`): Applies delta to momentum, health, spirit, supply, mana, xp, bonds, or failures with proper clamping (e.g., momentum -6 to maxMomentum, health/spirit/supply 0-5, xp 0-30; `resourceRange()` in `character.ts`).
 - **Debility toggles** (`type: 'debility'`): Sets debility flags (wounded, shaken, etc.) to the specified value.
 
 Both buses use the nonce-queue-drain pattern to ensure mutations happen inside Svelte's reactive context (`$effect`), not from external callbacks.

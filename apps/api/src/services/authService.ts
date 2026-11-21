@@ -11,9 +11,9 @@
 
 import argon2 from 'argon2';
 import { randomBytes } from 'crypto';
-import { eq, and, isNull } from 'drizzle-orm';
+import { eq, and, isNull, sql } from 'drizzle-orm';
 import { withUserContext, adminDb } from '../db/index.js';
-import { users, refreshTokens, authTokens, type User } from '../db/schema.js';
+import { users, refreshTokens, authTokens, userInvites, type User } from '../db/schema.js';
 import {
   signAccessToken,
   generateRefreshToken,
@@ -21,13 +21,13 @@ import {
   refreshTokenExpiresAt,
   generateAuthToken,
   hashToken,
+  VERIFY_LINK_TTL_MS,
 } from '../lib/tokens.js';
 import { assertPasswordNotPwned } from '../lib/hibp.js';
 import { sendVerificationEmail, sendPasswordResetEmail } from '../lib/mailer.js';
 import { getStatus as getMaintenanceStatus } from './maintenanceService.js';
 import { getStatus as getRegistrationLockStatus } from './registrationLockService.js';
 import { checkAndIncrement as checkRegistrationQuota } from './registrationQuotaService.js';
-import { autoLockAccount } from './adminService.js';
 import { redis } from '../server.js';
 import { config } from '../config.js';
 
@@ -123,7 +123,7 @@ export async function register(input: RegisterInput): Promise<void> {
   // We always hash the password (even if we're going to reject) to keep
   // timing consistent (prevents user enumeration via response time).
   const [existing] = await adminDb
-    .select({ id: users.id })
+    .select({ id: users.id, emailVerifiedAt: users.emailVerifiedAt, isActive: users.isActive })
     .from(users)
     .where(eq(users.email, email))
     .limit(1);
@@ -133,8 +133,14 @@ export async function register(input: RegisterInput): Promise<void> {
 
   if (existing) {
     // Return success silently — don't tell the caller the email is taken.
-    // The user will see "check your email" and notice no email arrives.
     // This prevents email enumeration via the registration endpoint.
+    // An account still waiting to be verified gets a fresh link: whoever
+    // registers again most likely lost the first email. The password
+    // given now is ignored; the one set at the first registration stands,
+    // and "Forgot password" works once the address is verified.
+    if (!existing.emailVerifiedAt && existing.isActive) {
+      await sendFreshVerificationLink(existing.id, email);
+    }
     return;
   }
 
@@ -171,12 +177,44 @@ export async function register(input: RegisterInput): Promise<void> {
 
   if (!newUser) throw new AuthError('Failed to create user', 'CREATE_FAILED', 500);
 
-  // Generate and store verification token
-  const { raw, hash, expiresAt } = generateAuthToken();
+  await sendFreshVerificationLink(newUser.id, email);
+}
 
-  await withUserContext(newUser.id, async (tx) => {
+// ---------------------------------------------------------------------------
+// Verification links — issue, and send again
+// ---------------------------------------------------------------------------
+
+/** Shortest gap between two verification emails to one account. */
+const VERIFY_RESEND_COOLDOWN_S = 60;
+
+/**
+ * Give an account a fresh 24-hour verification link and email it. Any
+ * earlier unused link stops working. At most one email a minute per
+ * account, so neither "Send a new link" nor registering again can flood
+ * an inbox; within the minute this silently does nothing.
+ */
+async function sendFreshVerificationLink(userId: string, email: string): Promise<void> {
+  if (redis) {
+    const first = await redis
+      .set(`verify_resend:${userId}`, '1', 'EX', VERIFY_RESEND_COOLDOWN_S, 'NX')
+      .catch(() => 'OK'); // Redis down: send anyway; the route's rate limit still applies
+    if (first !== 'OK') return;
+  }
+
+  const { raw, hash, expiresAt } = generateAuthToken(VERIFY_LINK_TTL_MS);
+
+  await withUserContext(userId, async (tx) => {
+    await tx
+      .delete(authTokens)
+      .where(
+        and(
+          eq(authTokens.userId, userId),
+          eq(authTokens.purpose, 'verify_email'),
+          isNull(authTokens.usedAt),
+        ),
+      );
     await tx.insert(authTokens).values({
-      userId: newUser.id,
+      userId,
       tokenHash: hash,
       purpose: 'verify_email',
       expiresAt,
@@ -187,11 +225,41 @@ export async function register(input: RegisterInput): Promise<void> {
   void sendVerificationEmail(email, raw).catch(console.error);
 }
 
+/**
+ * Send a new verification link to an account that hasn't verified its
+ * email yet. Silently does nothing for an unknown, verified or disabled
+ * address, so the caller can't tell which addresses have accounts.
+ */
+export async function resendVerification(email: string): Promise<void> {
+  const normalised = email.toLowerCase().trim();
+
+  if (!adminDb) return;
+
+  // Pre-auth lookup, no user context yet: adminDb, as in forgotPassword.
+  const [user] = await adminDb
+    .select({ id: users.id, emailVerifiedAt: users.emailVerifiedAt, isActive: users.isActive })
+    .from(users)
+    .where(eq(users.email, normalised))
+    .limit(1);
+
+  if (!user || user.emailVerifiedAt || !user.isActive) return;
+
+  await sendFreshVerificationLink(user.id, normalised);
+}
+
 // ---------------------------------------------------------------------------
 // verifyEmail
 // ---------------------------------------------------------------------------
 
-export async function verifyEmail(rawToken: string): Promise<AuthResult> {
+/**
+ * Mark an address verified. It proves only that the clicker can read that
+ * inbox, so it signs no one in: the password is asked for at log-in. If it
+ * did, whoever registered the address first, with a password of their own,
+ * would share the account with its owner once the owner clicked their link
+ * (pre-account takeover). The owner who didn't set that password uses
+ * "Forgot password", which works for unverified accounts too.
+ */
+export async function verifyEmail(rawToken: string): Promise<{ email: string }> {
   const tokenHash = hashToken(rawToken);
 
   // Find the token — we don't know the user yet so we can't use withUserContext.
@@ -209,48 +277,26 @@ export async function verifyEmail(rawToken: string): Promise<AuthResult> {
   if (token.expiresAt < new Date())
     throw new AuthError('This link has expired', 'TOKEN_EXPIRED', 400);
 
-  // Mark token used and verify the email in one transaction
-  const familyId = generateFamilyId();
-  const refresh = generateRefreshToken();
-  const expiresAt = refreshTokenExpiresAt();
-
-  let verifiedUser: Pick<User, 'id' | 'email' | 'role'>;
-
+  let email = '';
   await withUserContext(token.userId, async (tx) => {
-    // Mark token used
-    await tx.update(authTokens).set({ usedAt: new Date() }).where(eq(authTokens.id, token.id));
+    // Spend the token only if no one else just did (two clicks at once).
+    const [spent] = await tx
+      .update(authTokens)
+      .set({ usedAt: new Date() })
+      .where(and(eq(authTokens.id, token.id), isNull(authTokens.usedAt)))
+      .returning({ id: authTokens.id });
+    if (!spent) throw new AuthError('This link has already been used', 'TOKEN_USED', 400);
 
-    // Verify the email
     const [u] = await tx
       .update(users)
       .set({ emailVerifiedAt: new Date() })
       .where(eq(users.id, token.userId))
-      .returning({ id: users.id, email: users.email, role: users.role });
-
+      .returning({ email: users.email });
     if (!u) throw new AuthError('User not found', 'USER_NOT_FOUND', 500);
-    verifiedUser = u;
-
-    // Issue the first refresh token for this session
-    await tx.insert(refreshTokens).values({
-      userId: token.userId,
-      tokenHash: refresh.hash,
-      familyId,
-      expiresAt,
-    });
+    email = u.email;
   });
 
-  const accessToken = await signAccessToken(
-    verifiedUser!.id,
-    verifiedUser!.email,
-    verifiedUser!.role,
-  );
-
-  return {
-    user: verifiedUser!,
-    accessToken,
-    refreshToken: refresh.raw,
-    familyId,
-  };
+  return { email };
 }
 
 // ---------------------------------------------------------------------------
@@ -260,12 +306,33 @@ export async function verifyEmail(rawToken: string): Promise<AuthResult> {
 export interface LoginInput {
   email: string;
   password: string;
+  /** The client's address: failed sign-ins lock an address *from that IP*. */
+  ip?: string;
 }
+
+/** How long too many failed sign-ins lock an address from one IP. */
+const LOGIN_LOCK_S = 15 * 60;
 
 export async function login(input: LoginInput): Promise<AuthResult> {
   const email = input.email.toLowerCase().trim();
 
   if (!adminDb) throw new AuthError('Admin DB not configured', 'CONFIG_ERROR', 500);
+
+  // Too many failures for this address from this IP: refuse for a while. Keyed
+  // by address AND IP, and counted for unknown addresses too, so it neither
+  // lets anyone lock someone else out (the old permanent lock disabled the
+  // account itself, which only an admin could undo) nor reveals which
+  // addresses have accounts. The captcha and the route's per-IP rate limit
+  // still slow guessing across addresses.
+  const failKey = `login_fail:${email}:${input.ip ?? '-'}`;
+  const lockKey = `login_lock:${email}:${input.ip ?? '-'}`;
+  if (redis && (await redis.exists(lockKey).catch(() => 0))) {
+    throw new AuthError(
+      'Too many failed sign-ins from here. Please wait 15 minutes and try again.',
+      'LOGIN_LOCKED',
+      429,
+    );
+  }
 
   // Always fetch user + hash, even for unknown emails, to keep timing consistent.
   // Use adminDb: this is a pre-auth lookup — no user context exists yet, so the
@@ -285,16 +352,16 @@ export async function login(input: LoginInput): Promise<AuthResult> {
   }
 
   if (!user || !passwordValid) {
-    // Track consecutive failures for existing users to enable auto-lockout.
-    // We only track when the user exists but the password is wrong — locking
-    // out a non-existent account would silently do nothing anyway.
-    if (user && !passwordValid && redis) {
-      const failKey = `login_fail:${email}`;
-      const fails = await redis.incr(failKey);
-      await redis.expire(failKey, 30 * 60); // 30-minute sliding window
-      if (fails >= config.LOGIN_FAIL_LOCKOUT_THRESHOLD) {
-        await redis.del(failKey);
-        void autoLockAccount(user.id, user.email).catch(console.error);
+    if (redis) {
+      try {
+        const fails = await redis.incr(failKey);
+        if (fails === 1) await redis.expire(failKey, LOGIN_LOCK_S);
+        if (fails >= config.LOGIN_FAIL_LOCKOUT_THRESHOLD) {
+          await redis.set(lockKey, '1', 'EX', LOGIN_LOCK_S);
+          await redis.del(failKey);
+        }
+      } catch {
+        /* Redis down: no lock; captcha and rate limits still apply */
       }
     }
     throw new AuthError('Invalid email or password', 'INVALID_CREDENTIALS', 401);
@@ -326,7 +393,7 @@ export async function login(input: LoginInput): Promise<AuthResult> {
 
   // Clear any lingering failed-login counter on success
   if (redis) {
-    void redis.del(`login_fail:${email}`).catch(() => {});
+    void redis.del(failKey).catch(() => {});
   }
 
   // Issue tokens
@@ -470,12 +537,15 @@ export async function forgotPassword(email: string): Promise<void> {
   // Look up the user — always return success to prevent email enumeration.
   // Use adminDb: pre-auth lookup, no user context set.
   const [user] = await adminDb
-    .select({ id: users.id, emailVerifiedAt: users.emailVerifiedAt })
+    .select({ id: users.id })
     .from(users)
     .where(eq(users.email, normalised))
     .limit(1);
 
-  if (!user?.emailVerifiedAt) return; // silently do nothing
+  // Unverified accounts too: the link goes to the inbox, so using it proves
+  // ownership (resetPassword verifies the address). It's how an owner takes
+  // back an address someone else registered first, with their own password.
+  if (!user) return; // silently do nothing
 
   const { raw, hash, expiresAt } = generateAuthToken();
 
@@ -517,11 +587,29 @@ export async function resetPassword(rawToken: string, newPassword: string): Prom
   const passwordHash = await argon2.hash(newPassword, ARGON2_OPTIONS);
 
   await withUserContext(token.userId, async (tx) => {
-    // Mark token used
-    await tx.update(authTokens).set({ usedAt: new Date() }).where(eq(authTokens.id, token.id));
+    // Spend the token only if no one else just did (two submits at once).
+    const [spent] = await tx
+      .update(authTokens)
+      .set({ usedAt: new Date() })
+      .where(and(eq(authTokens.id, token.id), isNull(authTokens.usedAt)))
+      .returning({ id: authTokens.id });
+    if (!spent) throw new AuthError('This link has already been used', 'TOKEN_USED', 400);
 
-    // Update password
-    await tx.update(users).set({ passwordHash }).where(eq(users.id, token.userId));
+    // Update the password. The link came through the inbox, so the address is
+    // verified too (if it wasn't), and any other unused reset links go.
+    await tx
+      .update(users)
+      .set({ passwordHash, emailVerifiedAt: sql`coalesce(${users.emailVerifiedAt}, now())` })
+      .where(eq(users.id, token.userId));
+    await tx
+      .delete(authTokens)
+      .where(
+        and(
+          eq(authTokens.userId, token.userId),
+          eq(authTokens.purpose, 'reset_password'),
+          isNull(authTokens.usedAt),
+        ),
+      );
 
     // Revoke ALL refresh tokens for this user — forces re-login on all devices.
     // If someone reset the password, it may be because they were compromised.
@@ -529,5 +617,53 @@ export async function resetPassword(rawToken: string, newPassword: string): Prom
       .update(refreshTokens)
       .set({ revokedAt: new Date() })
       .where(and(eq(refreshTokens.userId, token.userId), isNull(refreshTokens.revokedAt)));
+  });
+}
+
+// ---------------------------------------------------------------------------
+// deleteAccount — a player deletes their own account
+// ---------------------------------------------------------------------------
+
+/**
+ * Delete the signed-in user's account and everything in it, after checking
+ * their password again. Every table holding their data cascades from
+ * `users` (characters, entities, portraits, maps, the log, AI settings,
+ * tokens); invitations sent to their address go too. The security log
+ * keeps its rows (no FK) until they age out.
+ *
+ * An admin can't delete their own account this way, so the site can't be
+ * left without one by accident: another admin removes the role first.
+ */
+export async function deleteAccount(userId: string, password: string): Promise<void> {
+  if (!adminDb) throw new AuthError('Admin DB not configured', 'CONFIG_ERROR', 500);
+
+  const [user] = await adminDb
+    .select({ email: users.email, passwordHash: users.passwordHash, role: users.role })
+    .from(users)
+    .where(eq(users.id, userId))
+    .limit(1);
+  if (!user) throw new AuthError('Account not found', 'ACCOUNT_ERROR', 404);
+
+  let passwordValid: boolean;
+  try {
+    passwordValid = await argon2.verify(user.passwordHash, password);
+  } catch {
+    passwordValid = false;
+  }
+  if (!passwordValid) {
+    throw new AuthError("That password isn't right.", 'WRONG_PASSWORD', 400);
+  }
+
+  if (user.role === 'admin') {
+    throw new AuthError(
+      "An admin account can't delete itself. Another admin can remove the admin role first.",
+      'ADMIN_ACCOUNT',
+      403,
+    );
+  }
+
+  await adminDb.transaction(async (tx) => {
+    await tx.delete(userInvites).where(eq(userInvites.email, user.email));
+    await tx.delete(users).where(eq(users.id, userId));
   });
 }

@@ -160,6 +160,34 @@ Two database roles:
 (SMS 2FA has SIM-swap risks and excludes users without phones). Email verification
 prevents throwaway registrations and ensures a working contact address.
 
+**Verifying an address signs no one in.** Clicking the link proves the clicker
+can read that inbox, not that they set the password: if it signed them in,
+whoever registered the address first, with a password of their own, would
+share the account with its owner once the owner verified it (pre-account
+takeover). So the player signs in after verifying, and "Forgot password" works
+for unverified accounts too; a reset link also verifies the address, which is
+how an owner takes back an address someone else registered first. The link
+opens a page with a **Verify my email** button rather than verifying on load,
+since mail scanners fetch links.
+
+**Failed sign-ins lock an address from one IP for 15 minutes**
+(`LOGIN_FAIL_LOCKOUT_THRESHOLD` failures, default 5). Counted for unknown
+addresses too, so a lock reveals nothing, and never touching the account
+itself: the old lock disabled the account outright, so anyone could lock out
+anyone, admins included, with five wrong passwords, and only an admin could
+undo it.
+
+**A lost verification email can always be replaced.** The link works for 24
+hours (a password-reset link, for 1). `/resend-verification` (`POST
+/api/v1/auth/resend-verification`, captcha and rate limited) sends a fresh link
+to an unverified account, and registering again with an unverified address does
+the same; either way the earlier link stops working, the password set at the
+first registration stands, and no extra daily sign-up place is used. One email a
+minute per account at most. Every answer is the same "if that address has an
+account…", so nothing reveals which addresses are registered. Logging in before
+verifying says so (the API's 403 carries `code: "EMAIL_UNVERIFIED"`) and links to
+the resend page with the address filled in.
+
 **Future:** TOTP (time-based one-time passwords via an authenticator app) can be
 added as an optional second factor without changing the core auth flow.
 

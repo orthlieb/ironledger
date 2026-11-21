@@ -105,6 +105,23 @@ describe('entryBodyToPrompt', () => {
 		expect(out).not.toContain('-1 supply');
 	});
 
+	it('treats a command link as a choice, and a move or oracle link as not', () => {
+		const html = `
+			<div class="move-outcome">
+				<strong>Weak Hit</strong>
+				<ul>
+					<li><s class="resource-spent">+1 momentum</s></li>
+					<li><a class="cmd-link" data-cmd="/supply--">-1 supply</a></li>
+					<li>Then <a class="cmd-link" data-cmd="/move endure-harm" data-verb="move">Endure Harm</a></li>
+				</ul>
+			</div>
+		`;
+		const out = entryBodyToPrompt(html, doc);
+		expect(out).toContain('+1 momentum');
+		expect(out).not.toContain('-1 supply');
+		expect(out).toContain('Then Endure Harm');
+	});
+
 	it('keeps plain-narrative <li> items (no action link)', () => {
 		const html = `
 			<ul>

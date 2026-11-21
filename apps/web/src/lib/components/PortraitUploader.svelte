@@ -16,12 +16,15 @@
 	 *     by the content hash); click opens a Lightbox with the same source.
 	 *   • A trash button clears the portrait (DELETE `endpoint`, then
 	 *     `oninput('')`).
+	 *   • An image file dragged from the desktop and dropped on it uploads
+	 *     the same way, empty or filled (it replaces the portrait there).
 	 *
 	 * After a successful upload the just-cropped data URL is shown immediately
 	 * as a local preview so there's no flash waiting for the round-trip GET.
 	 */
 	import { cropImageFile } from '#lib/imageCrop.js';
 	import { tooltip } from '#lib/actions/tooltip.js';
+	import { dropImage, canDropFiles } from '#lib/actions/dropImage.js';
 	import Lightbox from '#lib/components/Lightbox.svelte';
 	import trashSvg from '#icons/trash-solid.svg?raw';
 
@@ -65,10 +68,22 @@
 	// cache-busted endpoint URL. Empty when there's no portrait.
 	const src = $derived(localPreview || (etag ? `${endpoint}?v=${encodeURIComponent(etag)}` : ''));
 
-	async function onFile(e: Event) {
+	// Hints mention dropping only where a file can be dragged in (mouse or
+	// trackpad), not on touch screens.
+	const dropHint = canDropFiles();
+	let uploading = $state(false);
+
+	function onFile(e: Event) {
 		const input = e.target as HTMLInputElement;
 		const file = input.files?.[0];
-		if (!file || !endpoint) return;
+		input.value = ''; // allow re-selecting the same file
+		if (file) void upload(file);
+	}
+
+	/** Crop, upload and show `file`: from the file picker or a drop. */
+	async function upload(file: File) {
+		if (!endpoint || uploading) return;
+		uploading = true;
 		try {
 			const dataUrl = await cropImageFile(file);
 			localPreview = dataUrl; // optimistic — show it now
@@ -85,7 +100,7 @@
 			console.error('[PortraitUploader] upload failed', err);
 			localPreview = ''; // revert so we don't show an unsaved image
 		} finally {
-			input.value = ''; // allow re-selecting the same file
+			uploading = false;
 		}
 	}
 
@@ -102,17 +117,24 @@
 	}
 </script>
 
-<div class="pu-wrap" data-tour={tour}>
+<div
+	class="pu-wrap"
+	class:pu-wrap--filled={!!src}
+	data-tour={tour}
+	use:dropImage={{ ondrop: upload, disabled: uploading }}
+>
 	{#if src}
 		<!-- Filled state: image is a button that opens the lightbox. -->
 		<button
 			type="button"
 			class="pu-label pu-label--view"
 			onclick={() => (lightboxOpen = true)}
-			use:tooltip={'Click to enlarge'}
+			use:tooltip={dropHint ? 'Click to enlarge · drop an image to replace' : 'Click to enlarge'}
 			aria-label="View enlarged portrait"
 		>
-			<img class="pu-img" {src} {alt} loading="lazy" />
+			<!-- Not draggable: a drag of the portrait itself would carry it as a
+			     file and could land back on this drop target. -->
+			<img class="pu-img" {src} {alt} loading="lazy" draggable="false" />
 		</button>
 		<button
 			type="button"
@@ -123,7 +145,12 @@
 		>
 	{:else}
 		<!-- Empty state: label wraps the hidden file input; click opens it. -->
-		<label class="pu-label" use:tooltip={'Click to upload portrait'}>
+		<label
+			class="pu-label"
+			use:tooltip={dropHint
+				? 'Click or drop an image to upload a portrait'
+				: 'Click to upload portrait'}
+		>
 			<div class="pu-img pu-img--placeholder" aria-hidden="true">{@html placeholderSvg}</div>
 			<input
 				type="file"
@@ -182,6 +209,30 @@
 		width: 60%;
 		height: 60%;
 		fill: var(--text-dimmer);
+	}
+	/* An image dragged over it (use:dropImage sets data-drop-over). */
+	.pu-wrap:global([data-drop-over]) .pu-img {
+		outline: 2px dashed var(--text-accent);
+		outline-offset: 2px;
+		opacity: 0.45;
+	}
+	.pu-wrap:global([data-drop-over])::after {
+		content: 'Drop to upload';
+		position: absolute;
+		inset: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--text-accent);
+		background: color-mix(in srgb, var(--bg-card) 70%, transparent);
+		border-radius: 6px;
+		pointer-events: none;
+	}
+	.pu-wrap--filled:global([data-drop-over])::after {
+		content: 'Drop to replace';
 	}
 	.pu-input {
 		position: absolute;

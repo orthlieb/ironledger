@@ -133,6 +133,32 @@ You have been touched by YRT and exhibit animal traits. Roll on the YRT – Touc
 
 Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.
 
+## Touched, Ovine
+*Touched*
+
+Ovine-touched: a fleece that turns weather and edges, a knack for vanishing into a crowd, and eyes that miss little at your sides.
+
+You have been touched by YRT and exhibit animal traits. Roll on the YRT – Touched oracle to determine the extent and conditions of your nature.
+
+- ◯ **Fleece.** Your wool grows thick and greasy, and it turns weather and blades alike. When you Endure Harm from cold, wet, exposure, or a blow your fleece could catch (a glancing edge, a bite, a fall through brambles), add +1. On a strong hit, take +2 momentum instead of +1.
+- ◯ **Flock.** You move with a crowd the way a sheep moves with the flock, and eyes slide past you. When you Face Danger or Secure an Advantage by losing yourself in a crowd, a herd, or a column on the march, add +1, and you may roll +shadow (even if another stat would normally apply). On a strong hit, also take +1 momentum.
+- ◯ **Wide Sight.** Your pupils have gone wide and flat, and little at your sides escapes you. When you Face Danger to spot an ambush or a threat closing from the side, or Gather Information by watching a place, add +1. On a strong hit, also take +1 momentum.
+
+Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.
+
+## Touched, Trochiline
+*Touched*
+
+Trochiline-touched: fierce out of all proportion to your size, a shimmer that turns heads, and a body that sleeps cold and wakes mended.
+
+You have been touched by YRT and exhibit animal traits. Roll on the YRT – Touched oracle to determine the extent and conditions of your nature.
+
+- ◯ **Small and Fierce.** You go for the eyes of things ten times your size. When you Enter the Fray against a foe larger than you, add +1, and you may roll +edge (even if another stat would normally apply). On a strong hit, also take +1 momentum.
+- ◯ **Shimmer.** In good light your skin and hair throw back green and violet. When you Compel or Secure an Advantage by catching and holding attention (a flash at the right moment, a turn into the sun), add +1, and you may roll +heart (even if another stat would normally apply). On a strong hit, also take +1 momentum.
+- ◯ **Torpor.** Asleep, you go cold and still, and wake mended. When you Make Camp and choose to recuperate, take +2 health instead of +1.
+
+Your touched value determines how many abilities you may use: Prime — 1; Second — 2; Third or Feral — all 3.
+
 ## Cantrip
 *Ritual*
 

@@ -15,6 +15,7 @@
 // =============================================================================
 
 import type { CatalogueSource } from '#lib/types.js';
+import { fetchCatalogue } from '#lib/catalogueFetch.js';
 import {
 	isSourceEnabled,
 	loadExtensions,
@@ -114,8 +115,9 @@ export interface OracleRollResult {
 
 let _oracles: OracleFile[] = $state([]);
 let _orderMap: Record<string, number> = $state({});
-let _loading = $state(false);
 let _loaded = false;
+/** The fetch in flight, so a second caller waits for it too. */
+let _loading: Promise<void> | null = null;
 
 // ---------------------------------------------------------------------------
 // Fetch
@@ -188,11 +190,18 @@ export function registerOracles(list: OracleFile[], orderMap: Record<string, num
 
 /**
  * Fetch oracle catalogue from /api/catalogue/oracles and cache it for the session.
- * Idempotent — safe to call multiple times; only fetches once.
+ * Idempotent — safe to call multiple times; only fetches once. A call while
+ * the fetch is in flight waits for it.
  */
-export async function loadOracles(): Promise<void> {
-	if (_loaded || _loading) return;
-	_loading = true;
+export function loadOracles(): Promise<void> {
+	if (_loaded) return Promise.resolve();
+	_loading ??= fetchOracles().finally(() => {
+		_loading = null;
+	});
+	return _loading;
+}
+
+async function fetchOracles(): Promise<void> {
 	try {
 		// Fetch oracles + extensions in parallel — the extension registry
 		// carries the suppression list (Lodestar hides Delve's Feature Aspect
@@ -201,7 +210,7 @@ export async function loadOracles(): Promise<void> {
 		// will render one frame showing suppressed oracles before the
 		// registry lands. Both fetches happen in parallel — no serialization
 		// cost — but the store's public state waits for both.
-		const [res] = await Promise.all([fetch('/api/catalogue/oracles'), loadExtensions()]);
+		const [res] = await Promise.all([fetchCatalogue('/api/catalogue/oracles'), loadExtensions()]);
 		if (!res.ok) throw new Error(`Oracle fetch failed: ${res.status}`);
 
 		const json = (await res.json()) as { oracles: unknown[] };
@@ -225,8 +234,6 @@ export async function loadOracles(): Promise<void> {
 		registerOracles(files, orderMap);
 	} catch (err) {
 		console.error('[oracleStore] Failed to load oracles:', err);
-	} finally {
-		_loading = false;
 	}
 }
 

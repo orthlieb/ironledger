@@ -26,6 +26,8 @@ export interface CollisionItems {
 	journeys: string[];
 	sites: string[];
 	scenes: string[];
+	/** Foes, by the name their card shows (their own, else the catalogue's). */
+	foes: string[];
 }
 
 /** Lowercase + trim — the key used everywhere collisions are matched by name. */
