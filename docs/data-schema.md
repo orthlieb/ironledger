@@ -202,7 +202,10 @@ fields are authored in **markdown with command links**, rendered by
 
 The old `[label](scheme:path?value=…)` forms (`resource:`, `move:`,
 `progress:`, …) are gone: content was rewritten to commands, and the lint
-rejects the old forms. An old link saved in a log does nothing; its text stays.
+rejects any link whose target isn't a command or (in an oracle value) a
+`roll:` blank, since anything else shows as the text it was written as. Foe
+and delve-table text is plain, so the lint rejects any link there. An old link
+saved in a log does nothing; its text stays.
 
 ### Links are commands
 

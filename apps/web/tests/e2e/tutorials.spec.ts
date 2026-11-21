@@ -62,6 +62,7 @@ import {
 	setExpansions,
 } from './helpers/reset';
 import { settleHome, characterCount, activeCharacterName } from './helpers/home';
+import { loadDice, queueDice } from './helpers/dice';
 
 const POPOVER = '.driver-popover';
 
@@ -509,35 +510,13 @@ test.describe('Tutorial — Create your first foe, on a phone', () => {
 	});
 });
 
-/**
- * Load the dice: `rollDie` draws one Uint32 from crypto.getRandomValues per
- * die, so queued values come up in order (`roll()` queues them).
- */
-async function loadDice(page: Page) {
-	await page.addInitScript(() => {
-		const queue: number[] = [];
-		(window as unknown as { __dice: number[] }).__dice = queue;
-		const real = crypto.getRandomValues.bind(crypto);
-		crypto.getRandomValues = ((arr: Uint32Array) => {
-			if (queue.length && arr instanceof Uint32Array && arr.length === 1) {
-				arr[0] = queue.shift() ?? 0;
-				return arr;
-			}
-			return real(arr);
-		}) as typeof crypto.getRandomValues;
-	});
-}
-
 /** An action roll's dice: the action die, then the two challenge dice. */
 const STRONG = [6, 1, 1];
 const MISS = [1, 10, 10];
 
 /** Queue `dice` (faces) and press Roll Move. */
 async function roll(page: Page, dice: number[], tap = false) {
-	await page.evaluate(
-		(faces) => (window as unknown as { __dice: number[] }).__dice.push(...faces.map((f) => f - 1)),
-		dice,
-	);
+	await queueDice(page, dice);
 	await (tap ? target(page, 'move-roll').tap() : target(page, 'move-roll').click());
 }
 

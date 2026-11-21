@@ -20,26 +20,10 @@ import {
 } from './helpers/reset';
 import { settleHome } from './helpers/home';
 import { pickBitsUiOption } from './helpers/bits-ui';
+import { loadDice, queueDice } from './helpers/dice';
 
 const CHAR_AREA = '.home-area--characters';
 const DIALOG = '.moves-dialog';
-
-/** Load the dice: `rollDie` draws one Uint32 per die from
- *  crypto.getRandomValues, so queued values come up in order. */
-async function loadDice(page: Page) {
-	await page.addInitScript(() => {
-		const queue: number[] = [];
-		(window as unknown as { __dice: number[] }).__dice = queue;
-		const real = crypto.getRandomValues.bind(crypto);
-		crypto.getRandomValues = ((arr: Uint32Array) => {
-			if (queue.length && arr instanceof Uint32Array && arr.length === 1) {
-				arr[0] = queue.shift() ?? 0;
-				return arr;
-			}
-			return real(arr);
-		}) as typeof crypto.getRandomValues;
-	});
-}
 
 async function openHome(page: Page) {
 	await page.goto('/home');
@@ -181,9 +165,7 @@ test.describe('Moves that act on a vow or a companion', () => {
 		await openHome(page);
 		await openMove(page, 'make-camp');
 		// A strong hit: action die 6 (+3 supply), challenge dice 1 and 1.
-		await page.evaluate(() =>
-			(window as unknown as { __dice: number[] }).__dice.push(...[6, 1, 1].map((f) => f - 1)),
-		);
+		await queueDice(page, [6, 1, 1]);
 		await page.locator(`${DIALOG} [data-tour="move-roll"]`).click();
 		// The Make Camp entry, by its id: the heals log entries above it.
 		const top = page.locator('.log-entry').first();
@@ -261,9 +243,7 @@ test.describe('Moves that act on a vow or a companion', () => {
 		await openMove(page, 'companion-endure-harm');
 		await expect(page.locator(`${DIALOG} [data-tour="move-choose"]`)).toContainText('Ash');
 		// A strong hit: action die 6, challenge dice 1 and 1.
-		await page.evaluate(() =>
-			(window as unknown as { __dice: number[] }).__dice.push(...[6, 1, 1].map((f) => f - 1)),
-		);
+		await queueDice(page, [6, 1, 1]);
 		await page.locator(`${DIALOG} [data-tour="move-roll"]`).click();
 		const heal = page
 			.locator('.log-entry')
