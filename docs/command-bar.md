@@ -108,6 +108,13 @@ caught on `beforeinput`, which an Android keyboard finishing a word may not
 let us cancel: then the space lands and the input event swaps it for the
 suggestion.
 
+The input sits in a `<form>`, and its submit is Enter too. While an iPhone
+keyboard shows an inline prediction, Return sends the page no Enter key press,
+but it still submits the form. A key press that is sent cancels the submit, so
+one Return runs once. An Enter that confirms an input method's text
+(`isComposing`, or keyCode 229, which Safari sends after the composition
+ends) is the input method's: it runs nothing, and the Return after it does.
+
 ## How it's built
 
 Four modules under `apps/web/src/lib/commands/`, the first three pure:
