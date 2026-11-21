@@ -320,8 +320,9 @@ In move, asset and oracle text, a link's target is a command:
 A link in content uses ids and keywords (`foe`, `journey`, `site`, `scene`,
 `vow`, `companion`, `companions`, `allies`, `everyone`, `companion/hawk`),
 never display names. The content linter
-(`scripts/lint-dsl.mjs`) and the manifest checker parse every link's command
-and fail the build on one that doesn't parse or names nothing.
+(`scripts/lint-dsl.mjs`) parses every link's command and fails the build on
+one that doesn't parse or names nothing. (The manifest checker,
+`scripts/gen-extensions-manifest.mjs`, checks conditions, not links.)
 
 ### Clicking them
 
@@ -351,7 +352,10 @@ Links already in saved logs, in the old forms, stop doing anything; their
 text stays. Old backups imported later are the same. The content's old-form
 links (about 650, in `[label](scheme:path?value=…)` form) are rewritten to
 commands by a one-off script in the same change, and the linter then rejects
-the old form.
+the old form. The script missed End the Fight's `[Vanquish Foe](vanquish)`,
+a bare target with no scheme, which showed as written until it became
+`/foe.vanquished++`; the linter now rejects any target that isn't a command or
+a `roll:` blank.
 
 ## Conditions
 

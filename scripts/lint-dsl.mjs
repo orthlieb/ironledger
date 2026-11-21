@@ -7,8 +7,10 @@
 //    command (`[label](/momentum++)`, docs/command-language.md → Log links)
 //    that parses and names something: a move or oracle that exists, a value
 //    its owner has, an operator that fits it. Content names things by id or
-//    keyword, never by display name. The old `[label](scheme:…)` forms are
-//    refused; `[label](roll:…)` blanks in oracle values stay. Every
+//    keyword, never by display name. Any other target (an old
+//    `[label](scheme:…)` form, a bare word, a web address) is refused: it
+//    would show as written. `[label](roll:…)` blanks in oracle values stay.
+//    Foe and delve text is plain, so a link there is refused too. Every
 //    `[text]{.class}` span names a known class.
 //
 // 2. No raw HTML or JS in content. A blanket sweep walks EVERY string in EVERY
@@ -245,14 +247,16 @@ function scanText(text, cat, { strayHtml, self, verbsOnly }, errs) {
   if (typeof text !== 'string' || !text) return;
   for (const m of text.matchAll(LINK)) {
     const target = m[2];
-    let reason = null;
+    let reason;
     if (target.startsWith('/') && verbsOnly && parseCommand(target).kind !== 'verb')
       reason =
         "asset text links moves and oracles only: what an ability gives is the player's to take";
     else if (target.startsWith('/')) reason = checkCommand(target, cat, self);
     else if (target.startsWith('roll:')) reason = checkRoll(target.slice(5), cat);
-    else if (/^[a-z]+:/.test(target))
-      reason = `old link form: a link's target is a command now, e.g. [+1 momentum](/momentum++)`;
+    // Anything else (an old `scheme:` form, a bare word like `vanquish`, a
+    // web address) renders as the text it was written as: refuse it.
+    else
+      reason = `a link's target is a command, e.g. [+1 momentum](/momentum++); this one shows as written`;
     if (reason) errs.push({ token: m[0], reason });
   }
   for (const m of text.matchAll(SPAN)) {
@@ -344,9 +348,40 @@ async function main() {
   for (const { file, data } of oracles)
     for (const e of data.data ?? []) {
       const errs = [];
-      for (const v of Object.values(e)) scanText(v, cat, { strayHtml: false }, errs);
+      for (const v of Object.values(e)) {
+        scanText(v, cat, { strayHtml: false }, errs);
+        // The table (oracleStore → buildTableHtml) draws a value with a
+        // `roll:` blank, and every value of a compound table, as blanks
+        // only: a command link beside them would show as written.
+        if (typeof v !== 'string') continue;
+        const blanksOnly = data.tableType === 'compound' || /\]\(roll:/.test(v);
+        if (blanksOnly)
+          for (const m of v.matchAll(LINK))
+            if (!m[2].startsWith('roll:'))
+              errs.push({
+                token: m[0],
+                reason:
+                  data.tableType === 'compound'
+                    ? "a compound table's value holds roll: blanks only: the table shows a link as written"
+                    : 'a value with a roll: blank holds no other link: the table shows it as written',
+              });
+      }
       record(file, data.key, errs);
     }
+
+  // Foes and delve tables — plain text, no markdown links: a link would show
+  // as written.
+  for (const kind of ['foes', 'delve'])
+    for (const { file, data } of await loadAll(kind))
+      walkStrings(data, (s, where) => {
+        for (const m of s.matchAll(LINK))
+          failures.push({
+            file,
+            item: where,
+            token: m[0],
+            reason: `${kind === 'foes' ? 'foe' : 'delve-table'} text is plain: a link shows as written`,
+          });
+      });
 
   // Blanket guard — NO raw HTML anywhere in content data. Every content kind,
   // every nested string (so overrides, rarities, foe drives/tactics, delve

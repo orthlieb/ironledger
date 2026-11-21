@@ -13,7 +13,7 @@
 //                            resource via a clickable log entry.
 //   FLOOR_RULES            — a decrease that lands on the floor:
 //                            resource lands at its minimum, appends a note with
-//                            optional debility-link (supply → mark Unprepared).
+//                            optional command link (supply → /unprepared++).
 //   FLOOR_OVERFLOW_RULES   — a decrease of a value already at its floor:
 //                            resource is already at its minimum and additional
 //                            reduction is attempted; appends a cascade entry so
@@ -116,10 +116,10 @@ export const FLOOR_RULES: FloorRule[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Floor Overflow Rules  (LogPanel — resource-link click handler)
+// Floor Overflow Rules  (a command link's click, or a change on the sheet)
 // Fires when a resource is ALREADY at its minimum (currentVal <= floor) and
 // additional reduction is attempted (value < 0). Appends a cascade entry with
-// per-point clickable resource-links or a move-link for the player to resolve.
+// per-point command links or a /move link for the player to resolve.
 // ---------------------------------------------------------------------------
 
 export interface FloorOverflowRule {
@@ -204,7 +204,7 @@ export const FLOOR_OVERFLOW_RULES: FloorOverflowRule[] = [
 // Debility Cascade  (CharacterSheet — applyDebilityToggle)
 // When a debility is marked, maxMomentum drops by 1. If current momentum
 // exceeds the new cap, a clickable log entry is appended — the player must
-// click the resource-link to apply the reduction (consistent with all other
+// click its command link to apply the reduction (consistent with all other
 // resource changes in the app). The log HTML is built inline in CharacterSheet
 // since it requires runtime values (character.id, crypto.randomUUID()).
 // ---------------------------------------------------------------------------

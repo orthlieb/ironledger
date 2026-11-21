@@ -126,8 +126,9 @@ not raw HTML:
   [oracles.md → Template blanks](oracles.md#template-blanks--the-roll-dsl).
 
 Raw HTML is not allowed in DSL content — the build-time lint
-(`scripts/lint-dsl.mjs`) rejects it and validates every link's scheme, target,
-and args. A single item that genuinely needs raw HTML can set `"html": true` to
+(`scripts/lint-dsl.mjs`) rejects it and validates every link's command or
+`roll:` target and args; any other target is rejected, as it would show as
+written. Foe and delve-table text is plain: a link there is rejected too. A single item that genuinely needs raw HTML can set `"html": true` to
 opt out of `renderRich` (and the lint); avoid it unless a construct truly can't
 be expressed in the DSL.
 

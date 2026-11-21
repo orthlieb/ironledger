@@ -229,7 +229,11 @@ export async function seedCommunity(name = 'Seed Community', token?: string): Pr
  * customName.
  */
 export async function seedFoeEncounter(
-	{ name = 'Seed Foe', foeId = 'brigands' }: { name?: string; foeId?: string } = {},
+	{
+		name = 'Seed Foe',
+		foeId = 'brigands',
+		ticks = 0,
+	}: { name?: string; foeId?: string; ticks?: number } = {},
 	token?: string,
 ): Promise<string> {
 	const tok = token ?? (await getTestToken());
@@ -239,7 +243,7 @@ export async function seedFoeEncounter(
 		foeId,
 		quantity: 'few',
 		effectiveRank: 2,
-		ticks: 0,
+		ticks,
 		notes: '',
 		customName: name,
 		vanquished: false,
