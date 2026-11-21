@@ -348,7 +348,24 @@ async function main() {
   for (const { file, data } of oracles)
     for (const e of data.data ?? []) {
       const errs = [];
-      for (const v of Object.values(e)) scanText(v, cat, { strayHtml: false }, errs);
+      for (const v of Object.values(e)) {
+        scanText(v, cat, { strayHtml: false }, errs);
+        // The table (oracleStore → buildTableHtml) draws a value with a
+        // `roll:` blank, and every value of a compound table, as blanks
+        // only: a command link beside them would show as written.
+        if (typeof v !== 'string') continue;
+        const blanksOnly = data.tableType === 'compound' || /\]\(roll:/.test(v);
+        if (blanksOnly)
+          for (const m of v.matchAll(LINK))
+            if (!m[2].startsWith('roll:'))
+              errs.push({
+                token: m[0],
+                reason:
+                  data.tableType === 'compound'
+                    ? "a compound table's value holds roll: blanks only: the table shows a link as written"
+                    : 'a value with a roll: blank holds no other link: the table shows it as written',
+              });
+      }
       record(file, data.key, errs);
     }
 

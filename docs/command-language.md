@@ -320,8 +320,9 @@ In move, asset and oracle text, a link's target is a command:
 A link in content uses ids and keywords (`foe`, `journey`, `site`, `scene`,
 `vow`, `companion`, `companions`, `allies`, `everyone`, `companion/hawk`),
 never display names. The content linter
-(`scripts/lint-dsl.mjs`) and the manifest checker parse every link's command
-and fail the build on one that doesn't parse or names nothing.
+(`scripts/lint-dsl.mjs`) parses every link's command and fails the build on
+one that doesn't parse or names nothing. (The manifest checker,
+`scripts/gen-extensions-manifest.mjs`, checks conditions, not links.)
 
 ### Clicking them
 

@@ -273,6 +273,11 @@ A blank is a markdown link with the `roll:` scheme: `[label](roll:target?args)`.
 rolled value replaces the blank in the composed result. Blanks nest and are
 depth-guarded (≥ 5 stops).
 
+The reference table draws a value with a blank (and every value of a
+`compound` table) as blanks only, so such a value can't also hold a command
+link such as `[Face Danger](/move face-danger)`: the table would show it as
+written. `npm run lint:dsl` rejects one.
+
 ### `prefixSuffix` — combine a rolled prefix with a rolled suffix
 
 Each row's `value` is `{ prefix, suffix }`. A roll makes **two independent d100
