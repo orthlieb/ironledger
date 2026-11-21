@@ -61,7 +61,7 @@ _Foes: Necrotic Sea Hare_
 
 ### Escalating Defense
 
-Some foes carry a Gray-mana defense that builds up on each miss, making progress progressively harder to mark. Defense starts at **0** and increases by **1** on each Miss. As it builds, each progress mark puts in fewer ticks. You can always mark progress; but the more the armor consolidates, the less each mark counts.
+Some foes carry a Gray-mana defense that builds up on each miss, making progress progressively harder to mark. Defense starts at **0** and increases by **1** on each Miss. As it builds, each progress mark puts in fewer ticks. You can always mark progress, but the more the armor consolidates, the less each mark counts.
 
 - **On a Miss**, press **+** on the Escalating Defense spinner to increase defense by 1.
 - **You can still mark progress** at any time, but ticks per mark = `progressPerHit − currentDefense` (minimum 1).

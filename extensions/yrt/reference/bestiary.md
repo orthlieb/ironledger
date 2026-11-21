@@ -66,7 +66,7 @@ _Foes: Necrotic Sea Hare_
 
 ### Escalating Defense
 
-Some foes carry a Gray-mana defense that builds up on each miss, making progress progressively harder to mark. Defense starts at **0** and increases by **1** on each Miss. As it builds, each progress mark puts in fewer ticks. You can always mark progress; but the more the armor consolidates, the less each mark counts.
+Some foes carry a Gray-mana defense that builds up on each miss, making progress progressively harder to mark. Defense starts at **0** and increases by **1** on each Miss. As it builds, each progress mark puts in fewer ticks. You can always mark progress, but the more the armor consolidates, the less each mark counts.
 
 - **On a Miss**, press **+** on the Escalating Defense spinner to increase defense by 1.
 - **You can still mark progress** at any time, but ticks per mark = `progressPerHit − currentDefense` (minimum 1).
@@ -263,7 +263,7 @@ Strong emotion releases a burst of Amber-pattern activity in the human brain. At
 
 An echo always shows the same fragment. The same three steps, the same turn, the same fall. It cannot interact, cannot be addressed, cannot be hurt. But it is vivid: the observer experiences the scene as though they were present at the original moment, including smell and sound. People who recognise the figure can be permanently traumatised.
 
-Echoes fade. Most are gone within a generation. The strongest (a battle, a massacre, a single particularly violent death), can persist for centuries before they dissipate.
+Echoes fade. Most are gone within a generation. The strongest (a battle, a massacre, a single particularly violent death) can persist for centuries before they dissipate.
 
 ## 7. Ember Kite
 
@@ -294,7 +294,7 @@ Ember Kites are what happens when a raptor population nests for many generations
 
 The thermal release on impact is not fire. There are no flames, no ignition source, no visible effect until the moment of contact: at which point the stored heat transfers instantaneously into the target at a level sufficient to cause serious burns and ignite loose cloth or dry material. The bird itself is unharmed.
 
-Ember Kites are territorial and predictable in range. A bonded pair will hold a stretch of thermal-rich cliff or ridge for years and will attack anything that enters their territory without exception, regardless of size. Travellers who know what to look for (the rust-orange silhouettes circling high thermals, the absence of other birds in an area, the shimmer of heat distortion near certain outcroppings), can usually route around them.
+Ember Kites are territorial and predictable in range. A bonded pair will hold a stretch of thermal-rich cliff or ridge for years and will attack anything that enters their territory without exception, regardless of size. Travellers who know what to look for (the rust-orange silhouettes circling high thermals, the absence of other birds in an area, the shimmer of heat distortion near certain outcroppings) can usually route around them.
 
 Conclave surveyors treat Ember Kite sightings as a reliable early indicator of Crimson contamination. The birds do not cause the blight; they only live where it already exists.
 
@@ -818,5 +818,5 @@ The voices in the storm are echoes: Amber imprints from those who died in the or
 - **Tomb Walker vs Vow Walker:** Both are armoured constructs / armoured persons that defend a charge. They are mechanically distinct (Tomb Walker is a living person in a rig; Vow Walker is an empty reliquary shell with a remote handler) and visually distinct (Tomb Walker is gaunt and human-shaped under armour; Vow Walker is upright, ceramic-masked, eerily steady). No conflict.
 - **The Tainted vs Husk:** Both are altered living Ironlanders who have misused mana. They form a progression: Tainted (physically and cognitively degrading, Black-focused, still mostly themselves), then Husk (end-stage, post-humanity). A party that meets both across a campaign sees a coherent cautionary arc. They do not overlap mechanically in a single encounter.
 - **Carrion Mound vs Locus:** Deliberately inverted. A Locus _accretes_ matter and grows by pulling its surroundings in; a Carrion Mound _dissolves_ matter and grows by pulling its surroundings in. Visually and mechanically distinct despite the shared "slow-moving wild mana body" concept. Good paired encounter for GMs who want to teach players that wild mana isn't one thing.
-- **Rotwell vs Whispering Stones:** Both are contaminated sites rather than creatures. They are so different in flavour (a bad water source vs a circle of broadcasting stones) that no overlap risk exists; but they're worth naming together as the bestiary's two site-foes. A GM wanting a third in this niche could easily design one around Crimson or Luminous leakage.
+- **Rotwell vs Whispering Stones:** Both are contaminated sites rather than creatures. They are so different in flavour (a bad water source vs a circle of broadcasting stones) that no overlap risk exists, but they're worth naming together as the bestiary's two site-foes. A GM wanting a third in this niche could easily design one around Crimson or Luminous leakage.
 
