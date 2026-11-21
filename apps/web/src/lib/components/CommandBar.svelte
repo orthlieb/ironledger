@@ -17,6 +17,12 @@
 	 * input is empty; Enter runs a whole command, else takes the suggestion;
 	 * Esc clears. On a phone a tap on a row is Tab, a row of operator keys
 	 * sits under the suggestions, and a ↵ button by the input is Enter.
+	 *
+	 * The input sits in a form, and the form's submit is Enter too: an
+	 * iPhone's Return, while its keyboard shows an inline prediction, submits
+	 * the form without sending the page an Enter key press. An Enter that
+	 * confirms an input method's text (a Japanese conversion; keyCode 229) is
+	 * the input method's, not ours.
 	 */
 
 	import {
@@ -297,6 +303,14 @@
 		run();
 	}
 
+	/** The form's submit: Return on a phone keyboard that sent no Enter key
+	 *  press (an iPhone with a prediction showing). An Enter keydown cancels
+	 *  the submit, so one Return runs once. */
+	function onSubmit(e: SubmitEvent) {
+		e.preventDefault();
+		onEnter();
+	}
+
 	function stepHistory(dir: 1 | -1) {
 		const h = readHistory();
 		if (!h.length) return;
@@ -307,6 +321,9 @@
 	function handleKeydown(e: KeyboardEvent) {
 		const browsing = !input || (historyIdx >= 0 && input === readHistory()[historyIdx]);
 		if (e.key === 'Enter') {
+			// Confirming an input method's text: let it, and send nothing.
+			if (e.isComposing || e.keyCode === 229) return;
+			// Handled here, so the form doesn't submit as well.
 			e.preventDefault();
 			onEnter();
 		} else if (e.key === 'Tab' && highlighted && isCommand) {
@@ -434,7 +451,8 @@
 		</div>
 	{/if}
 
-	<div class="cb-row">
+	<!-- A form, so a phone keyboard's Return submits it (onSubmit). -->
+	<form class="cb-row" onsubmit={onSubmit}>
 		<span class="cb-caret" aria-hidden="true">›</span>
 		<div class="cb-field">
 			<input
@@ -478,7 +496,7 @@
 			aria-label="Command help"
 			onclick={() => helpDialogRef?.open()}>?</button
 		>
-	</div>
+	</form>
 </div>
 
 <CommandHelpDialog bind:this={helpDialogRef} />
