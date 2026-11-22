@@ -13,7 +13,8 @@
  *     does, Enter runs, ↑ recalls; /move and /help open their dialogs;
  *   • on a phone: the operator keys, a tap taking a suggestion, Space
  *     taking the grey rest of a word (Backspace straight after undoing it),
- *     and the ↵ button doing what Return does.
+ *     the ↵ button doing what Return does, and Return running the command
+ *     through the bar's form when the keyboard sends no Enter key press.
  */
 import { test, expect, type Page } from '@playwright/test';
 import {
@@ -451,5 +452,37 @@ test.describe('Command bar — on a phone', () => {
 		await expect(page.locator('.cb-status')).toHaveText('Momentum 2 → 3');
 		await expect(bar).toHaveValue('');
 		await expect(enter).toBeDisabled();
+	});
+
+	test('Return runs the command when the keyboard sends no Enter key press', async ({ page }) => {
+		await openHome(page);
+		const bar = page.locator('.cb-input');
+		await bar.tap();
+		await bar.pressSequentially('/momentum++');
+		// An Enter that confirms an input method's text (keyCode 229, as an
+		// iPhone's prediction sends) is the input method's: nothing runs.
+		await bar.evaluate((el) =>
+			el.dispatchEvent(
+				new KeyboardEvent('keydown', {
+					key: 'Enter',
+					keyCode: 229,
+					isComposing: true,
+					bubbles: true,
+					cancelable: true,
+				}),
+			),
+		);
+		await expect(bar).toHaveValue('/momentum++');
+		await expect(page.locator('.cb-status')).toHaveCount(0);
+		// The Return that follows submits the bar's form, as an iPhone's does
+		// with a prediction showing: it runs.
+		await bar.evaluate((el) => el.closest('form')!.requestSubmit());
+		await expect(page.locator('.cb-status')).toHaveText('Momentum 2 → 3');
+		await expect(bar).toHaveValue('');
+		// An Enter key press runs once: it doesn't submit the form as well.
+		await bar.pressSequentially('/momentum++');
+		await bar.press('Enter');
+		await expect(page.locator('.cb-status')).toHaveText('Momentum 3 → 4');
+		await expect(bar).toHaveValue('');
 	});
 });

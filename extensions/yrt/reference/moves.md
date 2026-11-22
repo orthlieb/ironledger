@@ -13,6 +13,8 @@ When you **attempt to cast a Conclave ritual:**
 3. **Roll to cast**: Treat the spell difficulty as one **challenge die**. Roll the second challenge die (1d10) normally. Roll your **action die** (1d6) adding any mana spent and any other bonuses.
 4. **Resolve the outcome.**
 
+**Preparing.** Before step 1 you may Secure an Advantage to ready yourself for a casting. On *that* roll, a strong hit adds +2 to the action roll of the first ritual you cast in the fight, a weak hit adds +1, and a miss subtracts 1.
+
 **Strong Hit:** The ritual works as intended, +1 momentum.
 
 **Weak Hit:** The ritual succeeds, but the outcome is degraded. Downgrade factors of the spell equal to the difference between the highest challenge die and your action score. If you cannot downgrade any further, the spell dissipates without effect. The mana is wasted.
