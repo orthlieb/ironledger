@@ -12,7 +12,7 @@
         "Appear in the Foe picker only while the Sample extension is enabled",
         "Show its bundled portrait when selected"
       ],
-      "description": "A construct that exists solely to demonstrate that an extension's foes — with their own bundled portrait shipped in extensions/sample/foes/images/ — load, merge, and filter through the catalogue like any base foe.",
+      "description": "A construct that exists solely to demonstrate that an extension's foes (with their own bundled portrait shipped in extensions/sample/foes/images/) load, merge, and filter through the catalogue like any base foe.",
       "source": "sample"
     }
   ]

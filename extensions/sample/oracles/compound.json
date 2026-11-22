@@ -3,7 +3,7 @@
   "title": "Sample – Compound Name",
   "category": "Other",
   "selectLabel": "Sample – Compound Name",
-  "description": "A compound oracle: roll a format, then fill each [oracleKey] blank by rolling that oracle. References the sample twoStep oracle to prove compounds compose recursively — no code.",
+  "description": "A compound oracle: roll a format, then fill each [oracleKey] blank by rolling that oracle. References the sample twoStep oracle to prove compounds compose recursively: no code.",
   "source": "sample",
   "tableType": "compound",
   "compound": "phrase",
