@@ -631,6 +631,16 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		expect(await readMomentum(page)).toBeLessThan(momBoosted);
 		await expect(entryById(page, burnId).locator('s.resource-spent')).toBeVisible();
 		await expect(entryById(page, rollId).locator('.roll-burn')).toBeVisible();
+		// The burn turns the miss into Strike's weak hit, whose links are live.
+		const roll = entryById(page, rollId);
+		await expect(roll.locator('.roll-outcome-weak')).toHaveText('Weak Hit');
+		await expect(roll.locator('a.cmd-link[data-cmd="/foe.progress++"]')).toHaveText(
+			'Inflict your harm',
+		);
+		await expect(roll.locator('a.cmd-link[data-cmd="/initiative=foe"]')).toHaveText(
+			'lose initiative',
+		);
+		await expect(roll).not.toContainText('](');
 	});
 
 	// ── Moves and oracles ───────────────────────────────────────────────────
