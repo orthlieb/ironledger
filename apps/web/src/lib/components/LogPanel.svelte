@@ -428,7 +428,7 @@
 	 * Event delegation for the links in log entries. Each is a command
 	 * (#lib/commands/links.ts): a click runs it against the entry's binding —
 	 * its character, foe, expedition, vow or companion — and strikes it
-	 * through once it has changed something. The command bar's status line
+	 * through once it has run, a value already so included. The command bar's status line
 	 * says what happened, or why it couldn't. Old link forms (saved before
 	 * links were commands) do nothing: their text stays.
 	 * Accepts both MouseEvent (desktop click) and TouchEvent (mobile touchend).

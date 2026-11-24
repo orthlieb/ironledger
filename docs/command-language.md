@@ -333,7 +333,10 @@ and, for a `/burn` offer, the roll it's offered on). Clicking it runs the
 command for that character, against that foe and expedition, not whatever is
 active now; a binding the entry didn't record (an oracle rolled with no foe)
 falls back to what's active. The log line is the one typing the command
-writes, and the link is struck through, spent.
+writes, and the link is struck through, spent. A value already what the link
+sets (You retain initiative, when you have it; Mark Shaken, when you're
+shaken) writes no log line, says so in the status line, and is spent all
+the same: what it asks for holds.
 
 A link runs only commands that change a value, `/burn`, `/move` and
 `/oracle` (and `/site.theme`, `/site.domain`, which open the site's picker).

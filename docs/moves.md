@@ -97,7 +97,8 @@ character, foe and expedition it was rolled for, plus the vow or companion
 the dialog asked for (`choose`, see
 [data-schema.md](data-schema.md#moves-that-act-on-a-vow-or-a-companion-choose))
 and Endure Harm's amount. A click in the log runs the command against those;
-a value link is struck through once it has changed something, a move or
+a value link is struck through once it has run (also when the value was
+already what it sets, as You retain initiative is when you have it), a move or
 oracle link opens its dialog.
 
 In the Moves dialog itself, outcome previews are read-only (their value

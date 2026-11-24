@@ -491,6 +491,49 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await expect(radio('Foe has initiative')).toBeVisible({ timeout: 5_000 });
 	});
 
+	test('a link whose value is already so is spent, with no log line', async ({ page }) => {
+		const charId = await goToHomeWithCharacter(page);
+		await ensureFoeExists(page);
+		const bar = page.locator('.cb-input');
+		const run = async (cmd: string) => {
+			await bar.fill(cmd);
+			await bar.press('Enter');
+		};
+		// You have initiative, and you're shaken.
+		await run('/initiative=me');
+		await expect(page.locator('.cb-status')).toHaveText(/^Initiative: (\w+ → Me|already Me)$/);
+		await run('/shaken++');
+		await expect(page.locator('.cb-status')).toHaveText(
+			/^Shaken: (Cleared → Marked|already Marked)$/,
+		);
+
+		const id = crypto.randomUUID();
+		await injectBound(
+			page,
+			'Strike',
+			`<p>${cmdLink('You retain initiative', '/initiative=me')}</p>` +
+				`<p>${cmdLink('Mark Shaken', '/shaken++')}</p>`,
+			id,
+			{ charId },
+		);
+		const entries = await page.locator('.log-entry').count();
+
+		await linkIn(page, id, '/initiative=me').click();
+		await expect(page.locator('.cb-status')).toHaveText('Initiative: already Me');
+		await linkIn(page, id, '/shaken++').click();
+		await expect(page.locator('.cb-status')).toHaveText('Shaken: already Marked');
+		await expect(entryById(page, id).locator('s.resource-spent')).toHaveText([
+			'You retain initiative',
+			'Mark Shaken',
+		]);
+		// Nothing changed, so nothing was logged.
+		await expect(page.locator('.log-entry')).toHaveCount(entries);
+
+		// Shaken lowers momentum's top: clear it for the tests after this one.
+		await run('/shaken--');
+		await expect(page.locator('.cb-status')).toHaveText('Shaken: Marked → Cleared');
+	});
+
 	// ── Foes and expeditions ────────────────────────────────────────────────
 
 	test('a vanquish link vanquishes the foe and is spent', async ({ page }) => {

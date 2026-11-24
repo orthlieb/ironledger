@@ -453,7 +453,7 @@ export function runPlan(p: Plan, ui: RunUi): RunResult {
 // ---------------------------------------------------------------------------
 
 export interface LinkResult extends RunResult {
-	/** It changed something: strike the link through. */
+	/** It ran (a value it sets already so counts): strike the link through. */
 	spend: boolean;
 }
 
@@ -484,8 +484,10 @@ export function runLink(cmd: string, bind: LinkBinding = {}): LinkResult {
 	switch (p.kind) {
 		case 'change':
 		case 'changes': {
+			// Spent even when it was already so (You retain initiative when you
+			// have it): what it asks for holds, so it isn't there to click again.
 			const r = runPlan(p, { openHelp: () => {} });
-			return { ...r, spend: r.ok && !p.nothing };
+			return { ...r, spend: r.ok };
 		}
 		case 'burn': {
 			const r = runBurn(bind.rollId);
