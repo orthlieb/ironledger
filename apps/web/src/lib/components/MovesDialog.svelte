@@ -28,7 +28,7 @@
 		d100Faces,
 		moveLogTitle,
 		moveMd,
-		moveOutcomeHtml,
+		moveOutcomeBlock,
 		outcomeHeaderHtml,
 		progressRollHtml,
 		resolveHarmLinks,
@@ -36,7 +36,6 @@
 		stripHtml,
 		tableRollHtml,
 		takeAHiatusHtml,
-		delveDepthsColumn,
 	} from '#lib/moveRoll.js';
 	import {
 		loadMoves,
@@ -254,11 +253,6 @@
 		isOracleRollMove
 			? (((selectedMove as Record<string, unknown>)['table'] as OracleOddsEntry[]) ?? [])
 			: ([] as OracleOddsEntry[]),
-	);
-
-	// Delve the Depths weak-hit oracle link detection
-	const isDelveDepthsMove = $derived(
-		!!(selectedMove && (selectedMove as Record<string, unknown>)['tableType'] === 'delveDepths'),
 	);
 
 	let spellDifficulty = $state(1);
@@ -584,20 +578,16 @@
 			matchNoteHtml(hits1, hits2, isMatch),
 		];
 
-		let outcomeHtml = moveOutcomeHtml(selectedMove, hits1, hits2);
-		if (outcomeHtml) {
-			outcomeHtml = resolveHarmLinks(outcomeHtml, {
-				moveId: selectedMove.id,
+		// The stat goes with it so Delve the Depths' weak-hit oracle opens on
+		// the stat's column; it's saved with the roll for a burn to do the same.
+		parts.push(
+			moveOutcomeBlock(selectedMove, hits1, hits2, {
 				foeHarm: effectiveHarm,
 				curHealth: resourceValue('health'),
 				curSpirit: resourceValue('spirit'),
-			});
-			// Delve the Depths weak hit: inject the rolled stat into the oracle-link so
-			// clicking it opens the oracle with the correct column pre-selected.
-			// Also append "(Edge column)" etc. to the link text.
-			if (isDelveDepthsMove) outcomeHtml = delveDepthsColumn(outcomeHtml, stat);
-			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
-		}
+				stat,
+			}),
+		);
 
 		// On a miss for a character move, offer +1 failure (Delve-only mechanic)
 		if (!hits1 && !hits2 && isSourceEnabled('delve')) {
@@ -629,6 +619,7 @@
 			c1,
 			c2,
 			charId: ctx.charId,
+			stat,
 			...(foeId ? { foeId } : {}),
 			...(expeditionId ? { expeditionId } : {}),
 			bind: entryBinding(),
@@ -694,16 +685,13 @@
 		}
 		parts.push(matchNoteHtml(eh1, eh2, isMatch));
 
-		let outcomeHtml = moveOutcomeHtml(selectedMove, eh1, eh2);
-		if (outcomeHtml) {
-			outcomeHtml = resolveHarmLinks(outcomeHtml, {
-				moveId: selectedMove.id,
+		parts.push(
+			moveOutcomeBlock(selectedMove, eh1, eh2, {
 				foeHarm: effectiveHarm,
 				curHealth: resourceValue('health'),
 				curSpirit: resourceValue('spirit'),
-			});
-			parts.push(`<div class="move-outcome">${outcomeHtml}</div>`);
-		}
+			}),
+		);
 
 		const html = bindCommandLinks(parts.join(''), entryId, entryBinding());
 
@@ -743,17 +731,11 @@
 		);
 
 		// Build body: outcome text + mandatory mana cost (always spent)
-		let bodyHtml = '';
-		let outcomeHtml = moveOutcomeHtml(selectedMove, hitsDiff, hitsC1);
-		if (outcomeHtml) {
-			outcomeHtml = resolveHarmLinks(outcomeHtml, {
-				moveId: selectedMove.id,
-				foeHarm: effectiveHarm,
-				curHealth: resourceValue('health'),
-				curSpirit: resourceValue('spirit'),
-			});
-			bodyHtml += `<div class="move-outcome">${outcomeHtml}</div>`;
-		}
+		let bodyHtml = moveOutcomeBlock(selectedMove, hitsDiff, hitsC1, {
+			foeHarm: effectiveHarm,
+			curHealth: resourceValue('health'),
+			curSpirit: resourceValue('spirit'),
+		});
 		if (mana > 0) {
 			bodyHtml += `<div class="move-outcome">${commandLinkHtml(`-${mana} mana`, `/mana-=${mana}`)} committed.</div>`;
 		}

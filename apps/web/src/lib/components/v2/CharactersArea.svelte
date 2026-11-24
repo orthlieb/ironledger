@@ -35,6 +35,7 @@
 	import { initialSelection, rememberSelection } from '#lib/rememberedSelection.js';
 	import { tooltip } from '#lib/actions/tooltip.js';
 	import { rollOracle, getOracles, findOracle } from '#lib/oracleStore.svelte.js';
+	import { oracleResultLogHtml } from '#lib/oracleLog.js';
 	import {
 		NAME_ORACLES,
 		defaultRandomizeFlags,
@@ -806,11 +807,10 @@
 		const col = usc >= 0 ? key.slice(usc + 1) : undefined;
 		const r = rollOracle(oracleKey, getOracles(), col ? { stat: col } : undefined);
 		newCharName = r.value ?? '';
-		if (r.value)
-			appendLog(
-				r.title,
-				`<div class="roll-line">Roll: d100 → ${r.roll}</div><div>Result: <strong>${r.value}</strong></div>`,
-			);
+		if (r.value) {
+			const entryId = crypto.randomUUID();
+			appendLog(r.title, oracleResultLogHtml(r, entryId), entryId);
+		}
 	}
 
 	/** Reset every draft field to its fresh-open state — called by

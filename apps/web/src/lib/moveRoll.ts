@@ -146,6 +146,34 @@ export function moveOutcomeHtml(m: MoveDefinition, hits1: boolean, hits2: boolea
 	return moveMd(m, raw);
 }
 
+/** What a move's outcome needs besides the move and the hits: the harm and
+ *  the character's health and spirit, and the stat rolled. */
+export interface OutcomeContext extends Omit<HarmContext, 'moveId'> {
+	/** The stat rolled: Delve the Depths' weak-hit oracle opens on its column. */
+	stat?: string;
+}
+
+/**
+ * A roll's outcome as the log shows it: the move's text for these hits,
+ * rendered, its harm links resolved, Delve the Depths' oracle link set to the
+ * stat's column, in a `.move-outcome` block. Empty when the move has no text
+ * for this outcome. A roll and a later burn both build the outcome here, so
+ * the burned outcome reads as a roll to that result would.
+ */
+export function moveOutcomeBlock(
+	m: MoveDefinition,
+	hits1: boolean,
+	hits2: boolean,
+	ctx: OutcomeContext = {},
+): string {
+	let html = moveOutcomeHtml(m, hits1, hits2);
+	if (!html) return '';
+	html = resolveHarmLinks(html, { ...ctx, moveId: m.id });
+	if (ctx.stat && (m as Record<string, unknown>).tableType === 'delveDepths')
+		html = delveDepthsColumn(html, ctx.stat);
+	return `<div class="move-outcome">${html}</div>`;
+}
+
 /** Who and where a move's log title names. */
 export interface TitleNames {
 	character: string;

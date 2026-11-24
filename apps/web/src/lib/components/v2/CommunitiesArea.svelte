@@ -74,6 +74,7 @@
 		findOracle,
 		resolveCharacterOracle,
 	} from '#lib/oracleStore.svelte.js';
+	import { oracleResultLogHtml } from '#lib/oracleLog.js';
 	import {
 		NAME_ORACLES,
 		defaultRandomizeFlags,
@@ -583,11 +584,8 @@
 			await loadOracles();
 			const result = rollOracle('settlementTrouble', getOracles());
 			if (!result.value) return;
-			appendLog(
-				result.title,
-				`<div class="roll-line">Roll: d100 → ${result.roll}</div>` +
-					`<div>Result: <strong>${result.value}</strong></div>`,
-			);
+			const entryId = crypto.randomUUID();
+			appendLog(result.title, oracleResultLogHtml(result, entryId), entryId);
 			updateCommunity({ trouble: result.value });
 		} finally {
 			rolling = false;
@@ -784,11 +782,10 @@
 		const col = usc >= 0 ? key.slice(usc + 1) : undefined;
 		const r = rollOracle(oracleKey, getOracles(), col ? { stat: col } : undefined);
 		newNpcName = r.value ?? '';
-		if (r.value)
-			appendLog(
-				r.title,
-				`<div class="roll-line">Roll: d100 → ${r.roll}</div><div>Result: <strong>${r.value}</strong></div>`,
-			);
+		if (r.value) {
+			const entryId = crypto.randomUUID();
+			appendLog(r.title, oracleResultLogHtml(r, entryId), entryId);
+		}
 	}
 
 	async function _commitNpc() {

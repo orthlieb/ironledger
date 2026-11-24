@@ -587,10 +587,18 @@ test.describe('Log interactive links (injected mock entries)', () => {
 
 	// ── Burn momentum ───────────────────────────────────────────────────────
 
-	test('a burn link resets momentum and shows the burn in the roll', async ({ page }) => {
-		const charId = await goToHomeWithCharacter(page);
-
-		// Momentum well above its reset.
+	/**
+	 * Raise momentum well above its reset, log a missed action roll (action 1
+	 * against 1 and 9) with its roll data and the offer to burn on it, then
+	 * click the offer: momentum (above 1) cancels the 1, making a weak hit.
+	 * The roll's entry id.
+	 */
+	async function burnAMiss(
+		page: Page,
+		charId: string,
+		title: string,
+		roll: { moveId: string; stat?: string },
+	): Promise<string> {
 		const boostId = crypto.randomUUID();
 		const momBefore = await readMomentum(page);
 		await injectBound(page, 'Boost', `<p>${cmdLink('+3 momentum', '/momentum+=3')}</p>`, boostId, {
@@ -599,20 +607,19 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await linkIn(page, boostId, '/momentum+=3').click();
 		const momBoosted = await waitMomentumChange(page, momBefore);
 
-		// A missed roll with its roll data, and the offer to burn on it.
 		const rollId = crypto.randomUUID();
 		await page.evaluate(
-			({ rollId, charId }) => {
+			({ rollId, charId, title, roll }) => {
 				// eslint-disable-next-line @typescript-eslint/no-explicit-any
 				(window as any).__testLog.appendLog(
-					'Strike',
+					title,
 					'<div class="roll-outcome roll-outcome-miss"><p>Miss — pay the price.</p></div>',
 					rollId,
 					null,
-					{ moveId: 'move/strike', actionScore: 1, c1: 1, c2: 9, charId },
+					{ ...roll, actionScore: 1, c1: 1, c2: 9, charId },
 				);
 			},
-			{ rollId, charId },
+			{ rollId, charId, title, roll },
 		);
 		const burnId = crypto.randomUUID();
 		await injectBound(
@@ -620,10 +627,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 			'Burn Momentum',
 			`<p>${cmdLink('burn momentum', '/burn')}</p>`,
 			burnId,
-			{
-				charId,
-				rollId,
-			},
+			{ charId, rollId },
 		);
 
 		await linkIn(page, burnId, '/burn').click();
@@ -631,9 +635,15 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		expect(await readMomentum(page)).toBeLessThan(momBoosted);
 		await expect(entryById(page, burnId).locator('s.resource-spent')).toBeVisible();
 		await expect(entryById(page, rollId).locator('.roll-burn')).toBeVisible();
+		await expect(entryById(page, rollId).locator('.roll-outcome-weak')).toHaveText('Weak Hit');
+		return rollId;
+	}
+
+	test('a burn link resets momentum and shows the burn in the roll', async ({ page }) => {
+		const charId = await goToHomeWithCharacter(page);
+		const rollId = await burnAMiss(page, charId, 'Strike', { moveId: 'move/strike' });
 		// The burn turns the miss into Strike's weak hit, whose links are live.
 		const roll = entryById(page, rollId);
-		await expect(roll.locator('.roll-outcome-weak')).toHaveText('Weak Hit');
 		await expect(roll.locator('a.cmd-link[data-cmd="/foe.progress++"]')).toHaveText(
 			'Inflict your harm',
 		);
@@ -641,6 +651,23 @@ test.describe('Log interactive links (injected mock entries)', () => {
 			'lose initiative',
 		);
 		await expect(roll).not.toContainText('](');
+	});
+
+	test('a burned Delve the Depths opens its weak-hit oracle on the stat’s column', async ({
+		page,
+	}) => {
+		const charId = await goToHomeWithCharacter(page);
+		const rollId = await burnAMiss(page, charId, 'Delve the Depths', {
+			moveId: 'move/delve-the-depths',
+			stat: 'shadow',
+		});
+		// As a roll to a weak hit would: the oracle link opens on Shadow.
+		await expect(
+			entryById(page, rollId).locator('a.cmd-link[data-cmd="/oracle delveDepths"]'),
+		).toHaveAttribute('data-stat', 'shadow');
+		await expect(
+			entryById(page, rollId).locator('a.cmd-link[data-cmd="/oracle delveDepths"]'),
+		).toHaveText('Delve the Depths Weak Hit Oracle (Shadow column)');
 	});
 
 	// ── Moves and oracles ───────────────────────────────────────────────────
