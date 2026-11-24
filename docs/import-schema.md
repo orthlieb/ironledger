@@ -419,6 +419,7 @@ the page has and the export overlay says so.
         "c1": 3,
         "c2": 9,
         "charId": "…",
+        "stat": "iron",
         "foeId": "…",
         "expeditionId": "…"
       }
@@ -432,7 +433,10 @@ the page has and the export overlay says so.
 sanitized on import (see [Import sanitization](#import-sanitization)).
 
 `roll` (present only on action-roll entries) carries `moveId`, `actionScore`,
-the two challenge dice (`c1`/`c2`), and `charId`. It also carries `foeId` /
+the two challenge dice (`c1`/`c2`), and `charId`, which a later burn of momentum
+reads. `stat` is the stat rolled, so a burned Delve the Depths opens its
+weak-hit oracle on that stat's column; a roll saved without it still burns, but
+its oracle link names no column. It also carries `foeId` /
 `expeditionId` when the move's title references `{foe}` / `{expedition}` (combat
 and journey/delve rolls) — these let the AI-story preface scan match those
 entities exactly instead of by name.

@@ -19,6 +19,9 @@ export interface RollMeta {
 	c1: number; // challenge die 1
 	c2: number; // challenge die 2
 	charId: string; // character who rolled
+	/** The stat rolled (`edge`, `iron`, …), so a burn's new outcome is built
+	 *  as the roll's was: Delve the Depths' oracle opens on its column. */
+	stat?: string;
 	/** Active foe encounter id — set on moves whose title references {foe} (combat).
 	 *  Lets the story preface scan match foes exactly instead of by name. */
 	foeId?: string;

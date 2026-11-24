@@ -7,7 +7,7 @@
 	 * Notes are attached per-entry and persist to localStorage.
 	 * Clearing the log requires confirmation via a native dialog (irreversible).
 	 */
-	import { outcomeClass, outcomeLabel, moveOutcomeHtml } from '#lib/moveRoll.js';
+	import { outcomeClass, outcomeLabel, moveOutcomeBlock } from '#lib/moveRoll.js';
 	import { inertBody } from '#lib/inertHtml.js';
 	import {
 		type LogEntry,
@@ -225,16 +225,20 @@
 			`</div>` +
 			matchNoteHtml(newHits1, newHits2, isMatch);
 
-		// The new outcome's text, its links bound as the roll's were.
+		// The new outcome's text, built as the roll builds it (moveOutcomeBlock)
+		// and its links bound as the roll's were.
 		const move = findMove(moveId);
-		let outcomeTextHtml = '';
-		if (move) {
-			const outcome = moveOutcomeHtml(move, newHits1, newHits2);
-			if (outcome) {
-				const bound = bindCommandLinks(outcome, entry.id, { charId, ...entry.roll.bind });
-				outcomeTextHtml = `<div class="move-outcome">${bound}</div>`;
-			}
-		}
+		const outcome = move
+			? moveOutcomeBlock(move, newHits1, newHits2, {
+					foeHarm: entry.roll.bind?.harm,
+					curHealth: ctx.data.health,
+					curSpirit: ctx.data.spirit,
+					stat: entry.roll.stat,
+				})
+			: '';
+		const outcomeTextHtml = outcome
+			? bindCommandLinks(outcome, entry.id, { charId, ...entry.roll.bind })
+			: '';
 
 		// Rebuild HTML: keep roll-line and roll-cancel, replace everything after
 		const existingHtml = entry.html;

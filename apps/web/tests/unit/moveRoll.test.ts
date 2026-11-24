@@ -14,6 +14,7 @@ import {
 	burnMomentumOffer,
 	d100Faces,
 	moveLogTitle,
+	moveOutcomeBlock,
 	outcomeClass,
 	outcomeHeaderHtml,
 	outcomeLabel,
@@ -272,6 +273,48 @@ describe('delveDepthsColumn', () => {
 			'<p>Roll on the <a class="cmd-link" data-cmd="/oracle delveDepths" data-verb="oracle">Delve the Depths Weak Hit Oracle</a>.</p>';
 		expect(delveDepthsColumn(html, 'edge')).toBe(
 			'<p>Roll on the <a class="cmd-link" data-cmd="/oracle delveDepths" data-verb="oracle" data-stat="edge">Delve the Depths Weak Hit Oracle (Edge column)</a>.</p>',
+		);
+	});
+});
+
+describe('moveOutcomeBlock', () => {
+	const delve = move({
+		id: 'move/delve-the-depths',
+		name: 'Delve the Depths',
+		tableType: 'delveDepths',
+		strong: 'You find an opening.',
+		weak: 'Roll on the [Delve the Depths Weak Hit Oracle](/oracle delveDepths).',
+	} as Partial<MoveDefinition>);
+
+	it('is the outcome text rendered in a move-outcome block, empty with no text', () => {
+		expect(moveOutcomeBlock(delve, true, true)).toBe(
+			'<div class="move-outcome"><p>You find an opening.</p></div>',
+		);
+		expect(moveOutcomeBlock(delve, false, false)).toBe('');
+	});
+
+	it('opens Delve the Depths’ weak-hit oracle on the stat’s column', () => {
+		const html = moveOutcomeBlock(delve, true, false, { stat: 'shadow' });
+		expect(html).toContain('data-cmd="/oracle delveDepths"');
+		expect(html).toContain(
+			'data-stat="shadow">Delve the Depths Weak Hit Oracle (Shadow column)</a>',
+		);
+		// Without the stat (a roll saved before it was kept), the link is plain.
+		expect(moveOutcomeBlock(delve, true, false)).not.toContain('data-stat');
+	});
+
+	it('leaves other moves’ links alone, stat or not', () => {
+		const other = move({ weak: 'Roll on the [oracle](/oracle delveDepths).' });
+		expect(moveOutcomeBlock(other, true, false, { stat: 'edge' })).not.toContain('data-stat');
+	});
+
+	it('resolves harm links as resolveHarmLinks does, for its own move', () => {
+		const endure = move({
+			id: 'move/endure-harm',
+			miss: 'Suffer [-harm health](/health-=harm).',
+		});
+		expect(moveOutcomeBlock(endure, false, false, { foeHarm: 2, curHealth: 4 })).toBe(
+			'<div class="move-outcome"><p>Suffer <span class="harm-amount">2 harm</span>.</p></div>',
 		);
 	});
 });
