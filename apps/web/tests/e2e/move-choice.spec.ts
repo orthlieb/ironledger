@@ -8,7 +8,8 @@
  * marks the chosen vow's menace (not a foe's progress); Companion Endure
  * Harm's "+1 health" heals the companion, not the character; Make Camp's
  * "any companions" heals every one; Take a Hiatus restores each to its
- * maximum.
+ * maximum. And the stat chosen for an action roll is saved with the roll
+ * (Face Danger, Heal, Endure Harm), so a burn can build its outcome on it.
  */
 import { test, expect, type Page } from '@playwright/test';
 import {
@@ -255,4 +256,41 @@ test.describe('Moves that act on a vow or a companion', () => {
 		// The first companion, Ash, is chosen: Bran is untouched.
 		await expect.poll(() => healths(page)).toEqual([['2', '2'], 3]);
 	});
+
+	// One move from each of three categories, each rolled with a stat other
+	// than the first one offered.
+	for (const [move, stat, title] of [
+		['face-danger', 'shadow', 'Bjorn faces danger using Shadow'],
+		['heal', 'iron', 'Bjorn heals using Iron'],
+		['endure-harm', 'iron', 'Bjorn endures harm using Iron'],
+	] as const) {
+		test(`${move} saves the stat chosen with the roll`, async ({ page }) => {
+			await loadDice(page);
+			await openHome(page);
+			await openMove(page, move);
+			await page
+				.locator(`${DIALOG} .md-stat-row-btn`, {
+					has: page.locator('.md-sname', { hasText: new RegExp(`^${stat}$`) }),
+				})
+				.click();
+			// A strong hit (action die 6, challenge dice 1 and 1): no burn offer.
+			await queueDice(page, [6, 1, 1]);
+			await page.locator(`${DIALOG} [data-tour="move-roll"]`).click();
+			const entry = page.locator('.log-entry', { hasText: title });
+			await expect(entry).toHaveCount(1, { timeout: 8_000 });
+			await expect(entry.locator('.roll-line')).toContainText(`${stat}[`);
+			const id = await entry.getAttribute('data-entry-id');
+			// As the server saved it, so a burn later builds its outcome the same.
+			await expect
+				.poll(() =>
+					page.evaluate(async (id) => {
+						const list = (await fetch('/api/session/log?limit=20', {
+							credentials: 'include',
+						}).then((r) => r.json())) as Array<{ id: string; roll?: { stat?: string } }>;
+						return list.find((e) => e.id === id)?.roll?.stat;
+					}, id),
+				)
+				.toBe(stat);
+		});
+	}
 });
