@@ -415,11 +415,11 @@ Moves with no `strong`/`weak`/`miss`, no `tableRoll`, and no `rarityRoll` are lo
 
 **Location:** one file per content pack:
 
-| Pack  | File                                         | Holds                                      |
-| ----- | -------------------------------------------- | ------------------------------------------ |
-| base  | `apps/api/data/assets/assets_ironsworn.json` | The Ironsworn assets (`rarities` is empty) |
-| Delve | `extensions/delve/assets/assets_delve.json`  | Rarities only (`assets` is empty)          |
-| Yrt   | `extensions/yrt/assets/assets.json`          | Touched, ritual and path assets; a rarity  |
+| Pack  | File                                         | Holds                                        |
+| ----- | -------------------------------------------- | -------------------------------------------- |
+| base  | `apps/api/data/assets/assets_ironsworn.json` | The Ironsworn assets (`rarities` is empty)   |
+| Delve | `extensions/delve/assets/assets_delve.json`  | The rarities, and the Stone Lizard companion |
+| Yrt   | `extensions/yrt/assets/assets.json`          | Touched, ritual and path assets; a rarity    |
 
 (The dev-only `sample` extension's `extensions/sample/assets/assets.json` is
 stripped from `core`.) Each file is an object with an `assets` array, a

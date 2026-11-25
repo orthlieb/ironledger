@@ -1,5 +1,52 @@
 {
-  "assets": [],
+  "assets": [
+    {
+      "id": "companion/stone-lizard",
+      "name": "Stone Lizard",
+      "category": "Companion",
+      "abilities": [
+        {
+          "enabled": false,
+          "name": "Instinctive",
+          "text": "When you [Delve the Depths](/move delve-the-depths) +wits by trusting the lizard’s instincts, you are forewarned. On a weak hit, roll twice on the [Delve the Depths](/oracle delveDepths) table and choose one result. If you then [Reveal a Danger](/move reveal-a-danger), take +1 momentum.",
+          "moves": ["move/delve-the-depths", "move/reveal-a-danger"]
+        },
+        {
+          "enabled": false,
+          "name": "Camouflaging",
+          "text": "When you [Face Danger](/move face-danger) by hiding or [Secure an Advantage](/move secure-an-advantage) by readying an ambush, add +lizard’s health.",
+          "moves": ["move/face-danger", "move/secure-an-advantage"]
+        },
+        {
+          "enabled": false,
+          "name": "Reactive",
+          "text": "When you [Clash](/move clash) and roll a 10 on a challenge die, the lizard joins the fray; reroll any dice.",
+          "moves": ["move/clash"]
+        }
+      ],
+      "summary": "Cave-wise lizard: senses what lies ahead, hides with you, joins the fray.",
+      "preamble": "Your lizard guides you into the depths.",
+      "postamble": "Inspired by Korokage.",
+      "customFields": [
+        {
+          "id": "companion-name",
+          "type": "string",
+          "label": "Companion Name"
+        },
+        {
+          "id": "health",
+          "type": "counter",
+          "label": "Health",
+          "position": "bottom",
+          "maxValue": 3,
+          "default": 3,
+          "icon": "heart",
+          "shortLabel": "Stone Lizard"
+        }
+      ],
+      "source": "delve"
+    }
+  ],
   "rarities": [
     {
       "id": "rarity/ayethins-journal",
