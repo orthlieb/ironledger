@@ -4,6 +4,7 @@
       "id": "companion/stone-lizard",
       "name": "Stone Lizard",
       "category": "Companion",
+      "icon": "asset-stone-lizard",
       "abilities": [
         {
           "enabled": false,
