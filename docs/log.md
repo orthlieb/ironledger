@@ -124,13 +124,15 @@ LogPanel delegates clicks on `a.cmd-link` to `runLink`
 | ------------------------------------------------ | ------------------------------------------------- | -------------- |
 | A value change (`/health--`, `/foe.progress+=2`) | Writes it through the value registry, logs, saves | Struck through |
 | `/burn`                                          | Burns momentum on the roll it was offered on      | Struck through |
-| `/site.theme`, `/site.domain`                    | Opens the site's picker                           | Struck through |
+| `/site.theme`, `/site.domain`                    | Opens the site's picker (it can be cancelled)     | Unchanged      |
 | `/move …`, `/oracle …`                           | Opens the dialog (any pack's, on or off)          | Unchanged      |
 
 The command bar's status line says what happened, or why a link couldn't run
 (the foe it was bound to is gone, the value is read-only): that link stays
-live. A link can't make something active, write a note, mark a story section
-or open help.
+live. A burn whose momentum has since fallen too low to improve its roll
+burns nothing: the status line says so and the offer is struck through, its
+moment passed. A link can't make something active, write a note, mark a story
+section or open help.
 
 Links saved before links were commands (`resource-link`, `progress-link`,
 `move-link`, …) do nothing now: their text stays, styled as plain text.

@@ -7,7 +7,12 @@
 	 * Notes are attached per-entry and persist to localStorage.
 	 * Clearing the log requires confirmation via a native dialog (irreversible).
 	 */
-	import { outcomeClass, outcomeLabel, moveOutcomeBlock } from '#lib/moveRoll.js';
+	import {
+		burnMomentumOffer,
+		outcomeClass,
+		outcomeLabel,
+		moveOutcomeBlock,
+	} from '#lib/moveRoll.js';
 	import { inertBody } from '#lib/inertHtml.js';
 	import {
 		type LogEntry,
@@ -151,31 +156,54 @@
 
 	/** Burn momentum on an action roll: the one a burn link was offered on,
 	 *  or, typed, the newest, if a burn is on offer for it (whose link is then
-	 *  spent). The message for the command bar, and whether it burned. */
+	 *  spent). Momentum since fallen too low to improve it burns nothing and
+	 *  spends the offer: its moment has passed. The message for the command
+	 *  bar, and whether it burned. */
 	function burnRoll(rollId?: string): [string, boolean] {
 		const entries = getLog();
 		const roll = rollId
 			? entries.find((x) => x.id === rollId)
 			: entries.find((x) => x.roll || x.html.includes('class="roll-burn"'));
+		const which = rollId ? 'that' : 'the newest';
 		if (!roll) return ['No action roll to burn momentum on.', false];
-		if (!roll.roll)
-			return [`Momentum is already burned on ${rollId ? 'that' : 'the newest'} roll.`, false];
-		let offer: { id: string; html: string } | undefined;
-		if (!rollId) {
-			offer = entries.find((x) => x.html.includes(`data-cmd="/burn"`) && offerFor(x.html, roll.id));
-			if (!offer) return ['Burning momentum wouldn’t improve the newest roll.', false];
-		}
+		if (!roll.roll) return [`Momentum is already burned on ${which} roll.`, false];
+		const offer = entries.find(
+			(x) => x.html.includes(`data-cmd="/burn"`) && offerFor(x.html, roll.id),
+		);
+		if (!rollId && !offer) return ['Burning momentum wouldn’t improve the newest roll.', false];
 		if (!ctx || ctx.charId !== roll.roll.charId)
 			return ['Make the character who rolled active to burn their momentum.', false];
-		if (ctx.data.momentum <= 0) return ['No momentum to burn.', false];
 		const mom = ctx.data.momentum;
-		const reset = momentumReset(ctx.data);
-		if (offer) {
-			const at = offerFor(offer.html, roll.id)!;
-			updateLogEntryHtml(offer.id, spendCommandLink(offer.html, at.index, '/burn'));
+		const { actionScore, c1, c2 } = roll.roll;
+		const improves = burnMomentumOffer({
+			momentum: mom,
+			cancelled: false,
+			c1,
+			c2,
+			hits1: actionScore > c1,
+			hits2: actionScore > c2,
+		});
+		if (!improves) {
+			if (offer) spendOffer(offer, roll.id);
+			return [
+				mom <= 0
+					? 'No momentum to burn: the offer is spent.'
+					: `Momentum ${mom} no longer improves ${which} roll: the offer is spent.`,
+				false,
+			];
 		}
+		const reset = momentumReset(ctx.data);
+		// A burn link's click spends it (LogPanel's click handler); typed, the
+		// offer is spent here.
+		if (!rollId && offer) spendOffer(offer, roll.id);
 		burnMomentum(roll);
 		return [`Burned momentum (${mom} → reset ${reset}).`, true];
+	}
+
+	/** Strike an entry's burn link for a roll through. */
+	function spendOffer(offer: { id: string; html: string }, rollId: string): void {
+		const at = offerFor(offer.html, rollId);
+		if (at) updateLogEntryHtml(offer.id, spendCommandLink(offer.html, at.index, '/burn'));
 	}
 
 	/** An entry's unspent burn link for a roll, and its place. */

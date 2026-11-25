@@ -343,7 +343,10 @@ A link runs only commands that change a value, `/burn`, `/move` and
 It can't make something active, write a note, mark a story section or open
 help. A link whose command can't run (a read-only field, an asset the
 character no longer has, a deleted foe) says why in the command bar's status
-line and stays unspent. A `/move` or `/oracle` link opens it even when its
+line and stays unspent. A link that opens something (`/move`, `/oracle`, a
+site's picker) stays live, since opening it changes nothing. A `/burn` offer
+whose momentum has since fallen too low to improve its roll burns nothing and
+is spent, its moment passed. A `/move` or `/oracle` link opens it even when its
 content pack is off, as a saved log can name one from a pack turned off
 since. Clicking does what the sheet would: the cascades (momentum lost past
 0 health, Face Death at 0, …) follow a link as they follow a change on the
