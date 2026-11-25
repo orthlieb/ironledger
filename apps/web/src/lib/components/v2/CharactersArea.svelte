@@ -131,6 +131,8 @@
 	let activeCard = $state<CardKey>('core');
 	let dialogOpen = $state(false);
 	let dialogEl = $state<HTMLElement | null>(null);
+	/** The AssetCard in the asset dialog: it focuses its Add or OK on open. */
+	let assetCardRef = $state<{ focusPrimary(): void } | null>(null);
 	let pickerOpen = $state(false);
 	let stackDepth = $state(1);
 	$effect(() => {
@@ -1145,6 +1147,13 @@
 					class="ca-asset-dialog"
 					data-tour="asset-card"
 					style="z-index: {contentZ(stackDepth)}"
+					onOpenAutoFocus={(e) => {
+						// Add (add mode) or OK (edit mode), not the header ✕ that
+						// bits-ui would pick as the first tabbable. setTimeout(0) so
+						// bits-ui finishes its own focus routine first.
+						e.preventDefault();
+						setTimeout(() => assetCardRef?.focusPrimary(), 0);
+					}}
 					onkeydown={(e) => {
 						// Enter = OK/Add (the primary action). Skip when the user is
 						// typing into a textarea (markdown notes), in which case
@@ -1170,6 +1179,7 @@
 					}}
 				>
 					<AssetCard
+						bind:this={assetCardRef}
 						bind:asset={dialogDraft}
 						definition={def}
 						characterXp={activeData.xp ?? 0}

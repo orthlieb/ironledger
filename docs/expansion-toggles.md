@@ -2,11 +2,11 @@
 
 Iron Ledger ships content from three sources:
 
-| Source  | Content                                                                                                          |
-| ------- | ---------------------------------------------------------------------------------------------------------------- |
-| `base`  | Core Ironsworn — always on                                                                                       |
-| `delve` | Ironsworn: Delve supplement (sites, themes, domains, rarities, monstrosity & feature/danger oracles, Delve foes) |
-| `yrt`   | Yrt homebrew expansion (Touched assets, mana, Conclave rituals, freeport denizens, YRT foes & oracles)           |
+| Source  | Content                                                                                                                                      |
+| ------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `base`  | Core Ironsworn — always on                                                                                                                   |
+| `delve` | Ironsworn: Delve supplement (sites, themes, domains, rarities, the Stone Lizard companion, monstrosity & feature/danger oracles, Delve foes) |
+| `yrt`   | Yrt homebrew expansion (Touched assets, mana, Conclave rituals, freeport denizens, YRT foes & oracles)                                       |
 
 Each user can toggle every extension (Delve, Lodestar, YRT, …) independently. The choices are kept **on the user's account**, so every device and browser they sign in on agrees: in `user_data.session_state.extensions`, a map of extension id → `true` / `false`, read and written through
 

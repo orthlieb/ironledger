@@ -454,9 +454,13 @@ test.describe('Characters area (v2)', () => {
 		const tile = page.locator('.picker-dialog .pick-tile:not(.pick-tile-owned)').first();
 		await expect(tile).toBeVisible({ timeout: 5_000 });
 		await tile.click();
-		// Editable AssetCard opens in add mode — click "Add" in its footer.
+		// Editable AssetCard opens in add mode, with the caret on "Add" in its
+		// footer (not the header ✕) — click it.
 		await expect(page.locator('.ca-asset-dialog')).toBeVisible({ timeout: 5_000 });
-		await page.locator('.ca-asset-dialog .asset-footer .btn-primary').click();
+		const add = page.locator('.ca-asset-dialog .asset-footer .btn-primary');
+		await expect(add).toHaveText('Add');
+		await expect(add).toBeFocused();
+		await add.click();
 		await expect(page.locator('.ca-asset-dialog')).not.toBeVisible({ timeout: 5_000 });
 		await expect(page.locator('.picker-dialog')).not.toBeVisible({ timeout: 5_000 });
 		await expect(assetCards).not.toHaveCount(assetsBefore, { timeout: 5_000 });
@@ -494,6 +498,8 @@ test.describe('Characters area (v2)', () => {
 		await assetCards.first().locator('.ca-asset-card-main').click();
 		const assetDialog = page.locator('.ca-asset-dialog').last();
 		await expect(assetDialog).toBeVisible({ timeout: 5_000 });
+		// An owned asset opens with the caret on OK, not the header ✕.
+		await expect(assetDialog.getByRole('button', { name: 'OK' })).toBeFocused();
 		await assetDialog.getByRole('button', { name: /^Delete/ }).click();
 		const confirm = page.locator('.confirm-modal').last();
 		await expect(confirm).toBeVisible({ timeout: 5_000 });

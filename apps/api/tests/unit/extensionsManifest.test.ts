@@ -90,13 +90,14 @@ describe('extensions.manifest.json', () => {
     }>;
     const delve = filesFor('delveTables');
 
-    // 78 base + 0 delve (delve ships only rarities) + 18 yrt = 96 (sample is
-    // dev-only, stripped from `core`). yrt went 13 → 15 with "Touched, Lupine"
-    // and "Touched, Marine", then 15 → 16 with "Touched, Vulpine" so the
-    // ninth Touched aspect in the oracle (fox-aspect Lupans) is playable, then
-    // 16 → 18 with "Touched, Ovine" (sheep) and "Touched, Trochiline"
-    // (hummingbird, now on the Touched Aspect oracle).
-    expect(assetData.flatMap((f) => f.assets)).toHaveLength(96);
+    // 78 base + 1 delve + 18 yrt = 97 (sample is dev-only, stripped from
+    // `core`). delve shipped only rarities until the Stone Lizard companion
+    // (a community asset by Shawn Tomkin), 0 → 1. yrt went 13 → 15 with
+    // "Touched, Lupine" and "Touched, Marine", then 15 → 16 with "Touched,
+    // Vulpine" so the ninth Touched aspect in the oracle (fox-aspect Lupans) is
+    // playable, then 16 → 18 with "Touched, Ovine" (sheep) and "Touched,
+    // Trochiline" (hummingbird, now on the Touched Aspect oracle).
+    expect(assetData.flatMap((f) => f.assets)).toHaveLength(97);
     expect(assetData.flatMap((f) => f.rarities ?? [])).toHaveLength(63);
     // 49 base/delve/yrt moves + 6 lodestar (Follow a Path, alternate End the Fight,
     // and four Scene moves: Begin the Scene, Face Danger, Secure an Advantage,
