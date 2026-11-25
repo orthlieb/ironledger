@@ -372,6 +372,7 @@
       "id": "companion/cave-lion",
       "name": "Cave Lion",
       "category": "Companion",
+      "icon": "asset-cave-lion",
       "abilities": [
         {
           "enabled": false,
