@@ -80,7 +80,7 @@
 				<form method="POST" class="auth-form">
 					<label class="field-group">
 						<span>Email</span>
-						<input type="email" name="email" required autocomplete="email" value={email} />
+						<input type="email" name="email" required autocomplete="email" defaultValue={email} />
 					</label>
 
 					<div class="captcha-wrap">

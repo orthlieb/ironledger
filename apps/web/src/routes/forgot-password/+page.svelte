@@ -80,7 +80,7 @@
 							name="email"
 							required
 							autocomplete="email"
-							value={form?.email ?? ''}
+							defaultValue={form?.email ?? ''}
 						/>
 					</label>
 
