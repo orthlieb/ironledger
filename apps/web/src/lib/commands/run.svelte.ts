@@ -453,7 +453,7 @@ export function runPlan(p: Plan, ui: RunUi): RunResult {
 // ---------------------------------------------------------------------------
 
 export interface LinkResult extends RunResult {
-	/** It changed something: strike the link through. */
+	/** It ran (a value it sets already so counts): strike the link through. */
 	spend: boolean;
 }
 
@@ -462,7 +462,8 @@ export interface LinkResult extends RunResult {
  * Clicking them). A link changes a value, burns momentum, opens a move or an
  * oracle, or opens a site's picker; anything else a command can do (make
  * something active, write a note, mark a story section, help) is the
- * command bar's. A link that can't run says why and stays unspent.
+ * command bar's. A link that can't run says why and stays unspent (a burn
+ * that would no longer improve its roll is spent by LogPanel, see burnRoll).
  */
 export function runLink(cmd: string, bind: LinkBinding = {}): LinkResult {
 	const w = buildWorld(bind);
@@ -484,8 +485,10 @@ export function runLink(cmd: string, bind: LinkBinding = {}): LinkResult {
 	switch (p.kind) {
 		case 'change':
 		case 'changes': {
+			// Spent even when it was already so (You retain initiative when you
+			// have it): what it asks for holds, so it isn't there to click again.
 			const r = runPlan(p, { openHelp: () => {} });
-			return { ...r, spend: r.ok && !p.nothing };
+			return { ...r, spend: r.ok };
 		}
 		case 'burn': {
 			const r = runBurn(bind.rollId);
@@ -502,9 +505,11 @@ export function runLink(cmd: string, bind: LinkBinding = {}): LinkResult {
 			);
 			return { ok: true, message: '', spend: false };
 		case 'show':
+			// Opening the picker changes nothing (it can be cancelled), so the
+			// link stays live, as a move's or an oracle's does.
 			if (p.picker) {
 				document.dispatchEvent(new CustomEvent('ironledger:site-picker', { detail: p.picker }));
-				return { ok: true, message: '', spend: true };
+				return { ok: true, message: '', spend: false };
 			}
 			return fail('A link changes a value or opens a move or an oracle; this one only names one.');
 		default:

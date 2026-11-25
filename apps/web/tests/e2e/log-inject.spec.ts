@@ -491,6 +491,49 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await expect(radio('Foe has initiative')).toBeVisible({ timeout: 5_000 });
 	});
 
+	test('a link whose value is already so is spent, with no log line', async ({ page }) => {
+		const charId = await goToHomeWithCharacter(page);
+		await ensureFoeExists(page);
+		const bar = page.locator('.cb-input');
+		const run = async (cmd: string) => {
+			await bar.fill(cmd);
+			await bar.press('Enter');
+		};
+		// You have initiative, and you're shaken.
+		await run('/initiative=me');
+		await expect(page.locator('.cb-status')).toHaveText(/^Initiative: (\w+ → Me|already Me)$/);
+		await run('/shaken++');
+		await expect(page.locator('.cb-status')).toHaveText(
+			/^Shaken: (Cleared → Marked|already Marked)$/,
+		);
+
+		const id = crypto.randomUUID();
+		await injectBound(
+			page,
+			'Strike',
+			`<p>${cmdLink('You retain initiative', '/initiative=me')}</p>` +
+				`<p>${cmdLink('Mark Shaken', '/shaken++')}</p>`,
+			id,
+			{ charId },
+		);
+		const entries = await page.locator('.log-entry').count();
+
+		await linkIn(page, id, '/initiative=me').click();
+		await expect(page.locator('.cb-status')).toHaveText('Initiative: already Me');
+		await linkIn(page, id, '/shaken++').click();
+		await expect(page.locator('.cb-status')).toHaveText('Shaken: already Marked');
+		await expect(entryById(page, id).locator('s.resource-spent')).toHaveText([
+			'You retain initiative',
+			'Mark Shaken',
+		]);
+		// Nothing changed, so nothing was logged.
+		await expect(page.locator('.log-entry')).toHaveCount(entries);
+
+		// Shaken lowers momentum's top: clear it for the tests after this one.
+		await run('/shaken--');
+		await expect(page.locator('.cb-status')).toHaveText('Shaken: Marked → Cleared');
+	});
+
 	// ── Foes and expeditions ────────────────────────────────────────────────
 
 	test('a vanquish link vanquishes the foe and is spent', async ({ page }) => {
@@ -653,6 +696,71 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await expect(roll).not.toContainText('](');
 	});
 
+	test('a burn offer whose momentum has since fallen burns nothing and is spent', async ({
+		page,
+	}) => {
+		const charId = await goToHomeWithCharacter(page);
+		const bar = page.locator('.cb-input');
+		const run = async (cmd: string) => {
+			await bar.fill(cmd);
+			await bar.press('Enter');
+		};
+		// A miss (action 1 against 1 and 9) and its offer: momentum above 1
+		// would cancel the 1. Momentum 1 now can't.
+		const missWithOffer = async () => {
+			const rollId = crypto.randomUUID();
+			await page.evaluate(
+				({ rollId, charId }) => {
+					// eslint-disable-next-line @typescript-eslint/no-explicit-any
+					(window as any).__testLog.appendLog(
+						'Strike',
+						'<div class="roll-outcome roll-outcome-miss"><p>Miss — pay the price.</p></div>',
+						rollId,
+						null,
+						{ moveId: 'move/strike', actionScore: 1, c1: 1, c2: 9, charId },
+					);
+				},
+				{ rollId, charId },
+			);
+			const offerId = crypto.randomUUID();
+			await injectBound(
+				page,
+				'Burn Momentum',
+				`<p>${cmdLink('burn momentum', '/burn')}</p>`,
+				offerId,
+				{ charId, rollId },
+			);
+			return { rollId, offerId };
+		};
+		await run('/momentum=1');
+		await expect(page.locator('.cb-status')).toHaveText(/^Momentum (-?\d+ → 1|: already 1)$/);
+
+		// Clicked.
+		const clicked = await missWithOffer();
+		await linkIn(page, clicked.offerId, '/burn').click();
+		await expect(page.locator('.cb-status')).toHaveText(
+			'Momentum 1 no longer improves that roll: the offer is spent.',
+		);
+		await expect(entryById(page, clicked.offerId).locator('s.resource-spent')).toHaveText(
+			'burn momentum',
+		);
+		await expect(entryById(page, clicked.rollId).locator('.roll-burn')).toHaveCount(0);
+		await expect(entryById(page, clicked.rollId).locator('.roll-outcome-miss')).toBeVisible();
+
+		// Typed: the newest roll's offer, the same.
+		const typed = await missWithOffer();
+		await run('/burn');
+		await expect(page.locator('.cb-status')).toHaveText(
+			'Momentum 1 no longer improves the newest roll: the offer is spent.',
+		);
+		await expect(entryById(page, typed.offerId).locator('s.resource-spent')).toHaveText(
+			'burn momentum',
+		);
+		await expect(entryById(page, typed.rollId).locator('.roll-burn')).toHaveCount(0);
+		expect(await readMomentum(page)).toBe(1);
+		await run('/momentum=2');
+	});
+
 	test('a burned Delve the Depths opens its weak-hit oracle on the stat’s column', async ({
 		page,
 	}) => {
@@ -705,6 +813,44 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		await linkIn(page, id, '/oracle region').click();
 		await expect(page.locator('.oracles-dialog')).toBeVisible({ timeout: 5_000 });
 		await page.keyboard.press('Escape');
+	});
+
+	test('a site’s Change Theme link opens its picker and stays live when cancelled', async ({
+		page,
+	}) => {
+		const charId = await goToHomeWithCharacter(page);
+		await page.locator(`${EXP_AREA} .ea-hdr-combobox`).click();
+		await page.locator('.cb-item--action', { hasText: /New Site/i }).click();
+		await expect(page.locator('.confirm-modal')).toBeVisible({ timeout: 5_000 });
+		await page.locator('.confirm-modal .co-input').first().fill('E2E Site');
+		await page.locator('.confirm-modal button:has-text("Create")').click();
+		await expect(page.locator('.confirm-modal')).not.toBeVisible({ timeout: 5_000 });
+		// The site's id, once its save has reached the session.
+		const siteId = () =>
+			page.evaluate(async () => {
+				const s = await fetch('/api/session', { credentials: 'include' }).then((r) => r.json());
+				const sites = (s.expeditions ?? []) as Array<{ id: string; type: string; name: string }>;
+				return sites.find((e) => e.type === 'site' && e.name === 'E2E Site')?.id ?? '';
+			});
+		await expect.poll(siteId, { timeout: 8_000 }).not.toBe('');
+		const expId = await siteId();
+
+		const id = crypto.randomUUID();
+		await injectBound(
+			page,
+			'Features',
+			`<div>Result: <strong>Something unusual</strong> ${cmdLink('Change Theme ↗', '/site.theme')}</div>`,
+			id,
+			{ charId, expId },
+		);
+		await linkIn(page, id, '/site.theme').click();
+		const picker = page.locator('.confirm-modal', { hasText: 'Change Theme' });
+		await expect(picker).toBeVisible({ timeout: 5_000 });
+		await picker.locator('button:has-text("Cancel")').click();
+		await expect(picker).not.toBeVisible({ timeout: 5_000 });
+		// Opening the picker changes nothing: the link is there to use again.
+		await expect(linkIn(page, id, '/site.theme')).toBeVisible();
+		await expect(entryById(page, id).locator('s.resource-spent')).toHaveCount(0);
 	});
 
 	// ── Old links ───────────────────────────────────────────────────────────

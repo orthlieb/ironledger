@@ -243,9 +243,11 @@ oracle), each link is bound to it (`bindCommandLinks`): the entry's id, its
 place in the entry, and the character, foe and expedition it was made for,
 plus the vow or companion its move chose and Endure Harm's amount. Clicking
 it runs the command against those, not whatever is active now; the log line
-is the one typing the command writes, and the link is struck through. A link
+is the one typing the command writes, and the link is struck through, also
+when the value was already what it sets (no log line then). A link
 that can't run (a deleted foe, a read-only field) says why in the command
-bar's status line and stays unspent.
+bar's status line and stays unspent. A link that opens something (a move, an
+oracle, a site's picker) stays live: opening it changes nothing.
 
 **Ranges.** A change is held to the value's range, and when an edge cuts it
 short the line names it: `+2 health` at 4 health logs

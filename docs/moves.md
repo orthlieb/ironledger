@@ -97,7 +97,8 @@ character, foe and expedition it was rolled for, plus the vow or companion
 the dialog asked for (`choose`, see
 [data-schema.md](data-schema.md#moves-that-act-on-a-vow-or-a-companion-choose))
 and Endure Harm's amount. A click in the log runs the command against those;
-a value link is struck through once it has changed something, a move or
+a value link is struck through once it has run (also when the value was
+already what it sets, as You retain initiative is when you have it), a move or
 oracle link opens its dialog.
 
 In the Moves dialog itself, outcome previews are read-only (their value
@@ -144,7 +145,7 @@ Moves that fail preconditions appear dimmed in the picker with a tooltip showing
 
 - **Phase 1** (complete): Browse, filter, roll, and log moves with 3D dice animation
 - **Phase 2** (complete): Interactive log links — 7 link types with click handlers, action bus for stat mutations, strikethrough for applied links
-- **Phase 3** (complete): Burn momentum — auto-appended "Momentum: Burn Available" log entry on action rolls where burn would upgrade the outcome; clicking it burns momentum and rewrites the outcome text in-place. The roll and the burn build the outcome with the same function (`moveOutcomeBlock` in `moveRoll.ts`: rendered text, harm links resolved, Delve the Depths' oracle on the column of the stat the roll saved), so a burned outcome reads as a roll to that result would
+- **Phase 3** (complete): Burn momentum — auto-appended "Momentum: Burn Available" log entry on action rolls where burn would upgrade the outcome; clicking it burns momentum and rewrites the outcome text in-place (if momentum has since fallen too low to improve the roll, it burns nothing and the offer is spent). The roll and the burn build the outcome with the same function (`moveOutcomeBlock` in `moveRoll.ts`: rendered text, harm links resolved, Delve the Depths' oracle on the column of the stat the roll saved), so a burned outcome reads as a roll to that result would
 
 ## Key Files
 
