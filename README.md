@@ -277,7 +277,7 @@ Feature docs are in the `docs/` directory:
 ## Credits
 
 - **[Ironsworn](https://ironswornrpg.com/)**, **[Ironsworn: Delve](https://ironswornrpg.com/)**, and **[Ironsworn: Lodestar](https://ironswornrpg.com/)** by Shawn Tomkin — licensed under [CC BY-NC-SA 4.0](https://creativecommons.org/licenses/by-nc-sa/4.0/). Game data sourced from [Datasworn](https://github.com/rsek/datasworn) by rsek. The Scene Challenge moves and official oracle names live in `extensions/lodestar/`.
-- The **Stone Lizard** companion (`extensions/delve/assets/`) — a Delve community asset by Shawn Tomkin and Korokage, shared on the Ironsworn Discord, with its card icon.
+- The **Stone Lizard** companion (`extensions/delve/assets/`) — a Delve community asset by Shawn Tomkin, shared on the Ironsworn Discord, inspired by Korokage.
 - **[game-icons.net](https://game-icons.net)** — game-themed SVG icons (CC BY 3.0)
 - **[Font Awesome](https://fontawesome.com)** — UI icons (Free tier, CC BY 4.0)
 - **[The Noun Project](https://thenounproject.com)** — additional UI icons

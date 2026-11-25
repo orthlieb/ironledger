@@ -27,7 +27,7 @@
       ],
       "summary": "Cave-wise lizard: senses what lies ahead, hides with you, joins the fray.",
       "preamble": "Your lizard guides you into the depths.",
-      "postamble": "By Shawn Tomkin and Korokage.",
+      "postamble": "Inspired by Korokage.",
       "customFields": [
         {
           "id": "companion-name",

@@ -92,7 +92,7 @@ describe('extensions.manifest.json', () => {
 
     // 78 base + 1 delve + 18 yrt = 97 (sample is dev-only, stripped from
     // `core`). delve shipped only rarities until the Stone Lizard companion
-    // (a community asset by Shawn Tomkin and Korokage), 0 → 1. yrt went 13 → 15 with
+    // (a community asset by Shawn Tomkin), 0 → 1. yrt went 13 → 15 with
     // "Touched, Lupine" and "Touched, Marine", then 15 → 16 with "Touched,
     // Vulpine" so the ninth Touched aspect in the oracle (fox-aspect Lupans) is
     // playable, then 16 → 18 with "Touched, Ovine" (sheep) and "Touched,
