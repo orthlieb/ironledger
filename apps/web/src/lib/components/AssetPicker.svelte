@@ -3,7 +3,8 @@
 	 * AssetPicker — modal dialog for browsing and adding assets to a character.
 	 *
 	 * Fixed-height dialog so it never jumps/resizes while filtering.
-	 * Category tabs + search box filter the list.
+	 * Assets are listed by category, then by name; category chips + search
+	 * box filter the list.
 	 * Tiles show precondition failures as disabled with tooltip.
 	 * Clicking an eligible tile shows an "Add X?" confirm dialog.
 	 */
@@ -20,6 +21,7 @@
 	import DialogHeader from '#lib/components/DialogHeader.svelte';
 	import { tooltip } from '#lib/actions/tooltip.js';
 	import { assetIcon } from '#lib/iconRegistry.js';
+	import { ASSET_CATEGORY_ORDER, sortAssets } from '#lib/assetOrder.js';
 
 	let {
 		ownedIds = [],
@@ -95,11 +97,14 @@
 	// ---------------------------------------------------------------------------
 	const hasActiveFilters = $derived(search.trim() !== '' || activeCategories.size > 0);
 
-	const visibleAssets = $derived(getVisibleAssets());
+	/** By category, then by name (#lib/assetOrder.ts): each pack's assets sit
+	 *  with their kind, not after the base ones. */
+	const visibleAssets = $derived(sortAssets(getVisibleAssets()));
 
-	/** Category chips only include categories represented in the visible catalogue. */
+	/** Category chips only include categories represented in the visible
+	 *  catalogue, in the grid's order. */
 	const visibleCategories = $derived(
-		(Object.keys(CAT_COLOR) as AssetCategory[]).filter((cat) =>
+		(ASSET_CATEGORY_ORDER as AssetCategory[]).filter((cat) =>
 			visibleAssets.some((a) => a.category === cat),
 		),
 	);
