@@ -12,6 +12,8 @@
 		required?: boolean;
 	}
 
+	// `value` is only the starting value, set as defaultValue so that hydration
+	// keeps a password typed before it.
 	let { name, label, autocomplete, minlength, value = '', required = true }: Props = $props();
 
 	let visible = $state(false);
@@ -26,7 +28,7 @@
 			{required}
 			{autocomplete}
 			{minlength}
-			{value}
+			defaultValue={value}
 			class="pw-input"
 		/>
 		<button

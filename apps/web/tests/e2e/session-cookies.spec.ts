@@ -19,8 +19,8 @@ import { API, adminToken, createVerifiedUser, deleteUserByEmail } from './helper
 async function signIn(page: Page, email: string, password: string, remember = false) {
 	await page.goto('/login');
 	if (remember) {
-		// A click before the page hydrates does nothing (and hydration clears
-		// typed fields), so tick the box first, retrying until it sticks.
+		// A click before the page hydrates does nothing, so tick the box,
+		// retrying until it sticks.
 		const box = page.getByRole('checkbox', { name: 'Remember me' });
 		await expect(async () => {
 			if (!(await box.isChecked())) await box.click();

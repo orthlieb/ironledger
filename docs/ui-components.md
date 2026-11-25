@@ -193,6 +193,26 @@ the action and handles its own drag events.
 
 ---
 
+## Server-rendered form fields — `defaultValue`, not `value`
+
+The log-in, register, forgot-password and new-link pages are plain
+`<form method="POST">` pages that take typing before their scripts load.
+Give such a field its starting value with `defaultValue`, not `value`:
+
+```svelte
+<input type="email" name="email" required defaultValue={form?.email ?? ''} />
+```
+
+The server renders both as the same `value="…"` attribute, but on hydration
+Svelte sets a `value={…}` field back to that value, wiping whatever was typed
+or autofilled before the page loaded. An emptied `required` field then stops
+the form from sending, and no message says why. `defaultValue` (and
+`bind:value`) keep what's there. `PasswordInput` passes its `value` prop as
+`defaultValue`. `tests/e2e/auth-forms.spec.ts` types into each page with its
+scripts held back and checks the typing survives.
+
+---
+
 ## Card Headers
 
 Used in: `CharacterSheet` (`.char-header`), `FoeCard` (`.fc-header`), `JourneyCard` (`.jc-header`), `SiteCard` (`.sc-header`)

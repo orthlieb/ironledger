@@ -67,7 +67,14 @@
 		<form method="POST" class="auth-form">
 			<label class="field-group">
 				<span>Email</span>
-				<input type="email" name="email" required autocomplete="email" value={form?.email ?? ''} />
+				<!-- defaultValue, not value: hydration would reset a value typed before it. -->
+				<input
+					type="email"
+					name="email"
+					required
+					autocomplete="email"
+					defaultValue={form?.email ?? ''}
+				/>
 			</label>
 
 			<PasswordInput name="password" label="Password" autocomplete="current-password" />
