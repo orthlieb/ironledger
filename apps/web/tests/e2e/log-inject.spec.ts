@@ -733,7 +733,8 @@ test.describe('Log interactive links (injected mock entries)', () => {
 			return { rollId, offerId };
 		};
 		await run('/momentum=1');
-		await expect(page.locator('.cb-status')).toHaveText(/^Momentum (-?\d+ → 1|: already 1)$/);
+		// "Momentum 4 → 1" (a negative is written −3), or "Momentum: already 1".
+		await expect(page.locator('.cb-status')).toHaveText(/^Momentum(?: [−-]?\d+ → 1|: already 1)$/);
 
 		// Clicked.
 		const clicked = await missWithOffer();
