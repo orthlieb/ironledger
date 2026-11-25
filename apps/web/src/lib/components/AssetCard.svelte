@@ -150,6 +150,15 @@
 	let selectionsOpen = $state(false);
 	let factorsOpen = $state(false);
 
+	/** The footer's primary button: Add (add mode) or OK (edit mode). */
+	let primaryEl = $state<HTMLButtonElement | null>(null);
+
+	/** Focus Add or OK. The dialog hosting the card calls this on open, so the
+	 *  caret lands on the button the player is about to press, not on ✕. */
+	export function focusPrimary(): void {
+		primaryEl?.focus({ preventScroll: true });
+	}
+
 	const enabledCount = $derived(asset.abilities.filter(Boolean).length);
 	const total = $derived(definition.abilities.length);
 	/** All rarities pinned to this asset id, filtered to those visible to the character —
@@ -808,13 +817,18 @@
 				onclick={onRemove}
 				aria-label="Delete {definition.name}">DELETE</button
 			>
-			<button class="btn btn-primary asset-footer-btn" onclick={onCommit}>OK</button>
+			<button class="btn btn-primary asset-footer-btn" bind:this={primaryEl} onclick={onCommit}
+				>OK</button
+			>
 		</div>
 	{:else}
 		<!-- Add-mode footer — single Add button on the right. X close discards. -->
 		<div class="asset-footer asset-footer--add">
-			<button class="btn btn-primary asset-footer-btn" onclick={onCommit} data-tour="asset-card-add"
-				>Add</button
+			<button
+				class="btn btn-primary asset-footer-btn"
+				bind:this={primaryEl}
+				onclick={onCommit}
+				data-tour="asset-card-add">Add</button
 			>
 		</div>
 	{/if}
