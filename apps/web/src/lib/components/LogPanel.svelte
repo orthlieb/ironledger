@@ -2,7 +2,9 @@
 	/**
 	 * LogPanel — displays the reactive session log for a single character.
 	 *
-	 * Entries are stored in localStorage and rendered newest-first.
+	 * Entries are stored in localStorage and rendered newest-first, or with the
+	 * newest at the bottom as a command line shows its output (Settings →
+	 * Appearance → Newest log entry, #lib/logOrderStore.svelte.ts).
 	 * Hovering an entry reveals delete and note-edit buttons (opacity 0 → 1).
 	 * Notes are attached per-entry and persist to localStorage.
 	 * Clearing the log requires confirmation via a native dialog (irreversible).
@@ -26,6 +28,7 @@
 	} from '#lib/log.svelte.js';
 	import { bindCommandLinks, readCommandLink, spendCommandLink } from '#lib/commands/links.js';
 	import { runLink, reportCommandResult } from '#lib/commands/run.svelte.js';
+	import { logOrder } from '#lib/logOrderStore.svelte.js';
 	import type { DiceCtx } from '#lib/diceContext.svelte.js';
 	import { headingText } from '#lib/fontStore.svelte.js';
 	import { matchNoteHtml } from '#lib/rollMatch.js';
@@ -84,11 +87,20 @@
 	let page = $state(0);
 	const totalPages = $derived(Math.max(1, Math.ceil(entries.length / PAGE_SIZE)));
 	const pagedEntries = $derived(entries.slice(page * PAGE_SIZE, (page + 1) * PAGE_SIZE));
+	/** The page as shown: newest first, or newest last when the newest goes at
+	 *  the bottom. Paging still starts from the newest page. */
+	const newestAtBottom = $derived(logOrder.newest === 'bottom');
+	const shownEntries = $derived(newestAtBottom ? [...pagedEntries].reverse() : pagedEntries);
 
 	/** Scroll container for the log entries — bound to the .log-entries div. */
 	let entriesEl = $state<HTMLDivElement | null>(null);
 
-	// Jump to page 0 AND scroll to the top when a new entry is prepended so the
+	/** Scroll to the newest entry's end of the list: the top, or the bottom. */
+	function scrollToNewest() {
+		if (entriesEl) entriesEl.scrollTop = newestAtBottom ? entriesEl.scrollHeight : 0;
+	}
+
+	// Jump to page 0 AND scroll to the newest entry when one is added so the
 	// user always sees it. Also clamp if the total pages shrink (e.g. after
 	// clear or bulk delete).
 	let _headEntryId = '';
@@ -97,12 +109,16 @@
 		if (headId && headId !== _headEntryId) {
 			_headEntryId = headId;
 			page = 0;
-			// Scroll to top after Svelte renders the new first page.
-			queueMicrotask(() => {
-				if (entriesEl) entriesEl.scrollTop = 0;
-			});
+			// Scroll after Svelte renders the new first page.
+			queueMicrotask(scrollToNewest);
 		}
 		if (page >= totalPages) page = Math.max(0, totalPages - 1);
+	});
+
+	// Turning the order round (Settings) brings the newest entry into view.
+	$effect(() => {
+		void newestAtBottom;
+		queueMicrotask(scrollToNewest);
 	});
 
 	// Per-entry editing state (entry id → draft note text)
@@ -555,6 +571,7 @@
 	<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 	<div
 		class="log-entries"
+		class:log-entries--newest-bottom={newestAtBottom}
 		role="log"
 		aria-live="polite"
 		aria-label="Session log"
@@ -570,7 +587,7 @@
 				<span>No entries yet. History waits patiently.<br />It will not wait forever.</span>
 			</div>
 		{:else}
-			{#each pagedEntries as entry (entry.id)}
+			{#each shownEntries as entry (entry.id)}
 				<div
 					class="log-entry"
 					class:log-entry-in-section={isEntryInSection(entry.id)}
@@ -902,6 +919,13 @@
 		display: flex;
 		flex-direction: column;
 		gap: 4px;
+	}
+	/* Newest at the bottom: a short log sits at the bottom too, the newest entry
+	   just above the command bar, as a command line's output does. An auto
+	   margin rather than justify-content: flex-end, which would put a long
+	   log's oldest entries out of scroll reach above the top. */
+	.log-entries--newest-bottom > .log-entry:first-child {
+		margin-top: auto;
 	}
 
 	.log-empty {

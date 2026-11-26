@@ -12,7 +12,7 @@ import type { LogEntry } from '#lib/log.svelte.js';
 import { parseStorySource } from '#lib/aiSerialize.js';
 import { htmlToMd, formatTicks } from '#lib/exportSerialize.js';
 
-/** Full session log as Markdown (newest first), each entry's HTML converted to
+/** Full session log as Markdown (oldest first), each entry's HTML converted to
  *  Markdown, with any note rendered as a blockquote. */
 export function logToMarkdown(entries: LogEntry[]): string {
 	if (entries.length === 0) return '# Session Log\n\n_No entries._\n';

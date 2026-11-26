@@ -102,7 +102,7 @@ export function drainActions(charId): LogAction[]; // Consume in CharacterSheet 
 Renders:
 
 - Header bar with "SESSION LOG" title, export-as-markdown button, and clear button.
-- Scrollable `<log role="log">` region listing entries in reverse-chronological order (newest at top).
+- Scrollable `<log role="log">` region listing entries newest at the top, or newest at the bottom as a command line prints its output (Settings → Appearance → **Newest log entry**: Top, the default, or Bottom). The choice is this browser's only (`localStorage['ironledger:log:newest']`, `#lib/logOrderStore.svelte.ts`) and changes only the order a page is shown in: the log is still stored newest-first, the first page is still the newest 50, and a new entry scrolls into view at whichever end the newest is. At the bottom, a short log sits at the bottom of the panel too, the newest entry just above the command bar. The ▲ / ▼ story markers keep their meaning (start, end), whichever way round the page is.
 - Each entry shows title, timestamp, edit/delete buttons, and rendered HTML content.
 - Per-entry notes with markdown support.
 - Empty state: `◊ NO ENTRIES YET.` with sub-text.

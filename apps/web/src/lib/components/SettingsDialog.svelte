@@ -4,6 +4,8 @@
 	 *
 	 * Owns:
 	 *   • Theme     — auto / dark / light (persisted to localStorage)
+	 *   • Log order — the newest entry at the top or the bottom (localStorage,
+	 *                 #lib/logOrderStore.svelte.ts)
 	 *   • 3D Dice   — on / off (persisted to localStorage via dice.ts)
 	 *   • Delve     — on / off (persisted via expansionStore)
 	 *   • YRT       — on / off (persisted via expansionStore)
@@ -63,6 +65,7 @@
 	import Select from '#lib/components/Select.svelte';
 	import ColorPicker from '#lib/components/ColorPicker.svelte';
 	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
+	import { logOrder, setLogNewest, type LogNewest } from '#lib/logOrderStore.svelte.js';
 	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
 	import diceD10Svg from '#icons/dice-d10-light.svg?raw';
 
@@ -334,6 +337,23 @@
 								ariaLabel="Color theme"
 								class="sd-select"
 							/>
+						</div>
+
+						<!-- Where the log's newest entry goes: the top (the default), or
+						     the bottom, as a command line prints its output. This
+						     browser only. -->
+						<div class="sd-row">
+							<span class="sd-label">Newest log entry</span>
+							<ToggleGroup.Root
+								type="single"
+								value={logOrder.newest}
+								onValueChange={(v) => v && setLogNewest(v as LogNewest)}
+								class="sd-seg"
+								aria-label="Where the newest log entry goes"
+							>
+								<ToggleGroup.Item value="top" class="sd-seg-btn">Top</ToggleGroup.Item>
+								<ToggleGroup.Item value="bottom" class="sd-seg-btn">Bottom</ToggleGroup.Item>
+							</ToggleGroup.Root>
 						</div>
 
 						<!-- Livery — heading font paired with a chrome palette. Picker

@@ -13,6 +13,7 @@ import type { LogEntry } from '../../src/lib/log.svelte.js';
 import {
 	entryBodyToPrompt,
 	serializeLogSection,
+	LOG_ORDER_NOTE,
 	estimateTokens,
 	buildStoryPreface,
 	castSummary,
@@ -185,9 +186,22 @@ describe('serializeLogSection', () => {
 		const a = entry('First', '<div>Alpha.</div>', '2026-07-08T12:00:00Z');
 		const b = entry('Second', '<div>Beta.</div>', '2026-07-08T12:01:00Z');
 		const out = serializeLogSection([b, a], doc); // stored newest-first
-		expect(out).toMatch(/## First — /);
-		expect(out).toMatch(/## Second — /);
+		expect(out).toMatch(/## 1\. First — /);
+		expect(out).toMatch(/## 2\. Second — /);
 		expect(out).toContain('\n\n');
+	});
+
+	it('says first which way the entries run, and numbers them from the earliest', () => {
+		// The log can be shown newest at the top or the bottom (a browser
+		// setting); the model reads the stored order, told which way it runs.
+		const a = entry('Set out', '<div>Alpha.</div>', '2026-07-08T12:00:00Z');
+		const b = entry('Made camp', '<div>Beta.</div>', '2026-07-08T12:01:00Z');
+		const c = entry('Fought', '<div>Gamma.</div>', '2026-07-08T12:02:00Z');
+		const out = serializeLogSection([c, b, a], doc); // stored newest-first
+		expect(out.startsWith(LOG_ORDER_NOTE + '\n\n')).toBe(true);
+		expect(LOG_ORDER_NOTE).toMatch(/entry 1 is the earliest/);
+		const titles = [...out.matchAll(/^## (\d+)\. (.+?) — /gm)].map((m) => `${m[1]} ${m[2]}`);
+		expect(titles).toEqual(['1 Set out', '2 Made camp', '3 Fought']);
 	});
 
 	it('appends the user note when present', () => {

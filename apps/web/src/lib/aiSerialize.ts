@@ -129,8 +129,9 @@ export function entryBodyToPrompt(html: string, doc: Document): string {
 	return lines.filter((l) => l.length > 0).join('\n');
 }
 
-/** Format a single entry as a titled block for the prompt. */
-export function serializeEntry(entry: LogEntry, doc: Document): string {
+/** Format a single entry as a titled block for the prompt; `n`, its place
+ *  in the section (1 the earliest), numbers the title. */
+export function serializeEntry(entry: LogEntry, doc: Document, n?: number): string {
 	const body = entryBodyToPrompt(entry.html, doc);
 	const time = new Date(entry.ts).toLocaleString(undefined, {
 		month: 'short',
@@ -138,7 +139,7 @@ export function serializeEntry(entry: LogEntry, doc: Document): string {
 		hour: '2-digit',
 		minute: '2-digit',
 	});
-	const parts = [`## ${entry.title} — ${time}`];
+	const parts = [`## ${n === undefined ? '' : `${n}. `}${entry.title} — ${time}`];
 	if (body) parts.push(body);
 	if (entry.note?.trim()) {
 		parts.push('');
@@ -147,16 +148,27 @@ export function serializeEntry(entry: LogEntry, doc: Document): string {
 	return parts.join('\n');
 }
 
+/** The events' first line, saying which way they run. The log can be shown
+ *  with its newest entry at the top or the bottom (Settings → Newest log
+ *  entry), so the model is told rather than left to guess, and each entry is
+ *  numbered from the earliest. */
+export const LOG_ORDER_NOTE =
+	'The log entries below are in the order they happened: entry 1 is the earliest, and each one after it happened later.';
+
 /**
  * Serialize a slice of the log (newest-first as stored) into chronological
- * prose input for the AI.
+ * prose input for the AI: the order note, then the entries numbered from the
+ * earliest. It works from the stored log, never from the page as shown, so
+ * the order the log is shown in doesn't change it.
  *
  * Pass the `document` from the browser (or a happy-dom document in tests).
  */
 export function serializeLogSection(entries: LogEntry[], doc: Document): string {
 	if (entries.length === 0) return '';
 	const chronological = [...entries].reverse();
-	return chronological.map((e) => serializeEntry(e, doc)).join('\n\n');
+	return [LOG_ORDER_NOTE, ...chronological.map((e, i) => serializeEntry(e, doc, i + 1))].join(
+		'\n\n',
+	);
 }
 
 /** Rough token estimate for the preview strip: ~4 chars per token. */
