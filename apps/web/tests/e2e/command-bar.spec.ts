@@ -240,6 +240,31 @@ test.describe('Command bar — the command language', () => {
 			]);
 	});
 
+	test('a read is output in the log, as a change is; a mistake writes nothing', async ({
+		page,
+	}) => {
+		await openHome(page);
+		await run(page, '/foe=Wolf');
+		const entries = page.locator('.log-entry');
+
+		await expect(await run(page, '/foe.progress')).toHaveText('Wolf: Progress: 2 boxes, 2 ticks');
+		const read = page.locator('.log-entry', { hasText: 'Wolf — Progress' }).first();
+		await expect(read).toContainText('Progress: 2 boxes, 2 ticks');
+
+		await expect(await run(page, '/foe')).toHaveText('Wolf (Dangerous foe): 2 boxes, 2 ticks');
+		await expect(logLine(page, 'Rank: Dangerous')).toContainText('Progress: 2 boxes, 2 ticks');
+
+		// A value already so says so in the log too.
+		await expect(await run(page, '/wounded--')).toHaveText('Wounded: already Cleared');
+		await expect(logLine(page, 'Wounded: already Cleared')).toBeVisible();
+
+		const n = await entries.count();
+		await expect(await run(page, '/Edad.health')).toHaveText(
+			'Unknown name "Edad". Did you mean Edda?',
+		);
+		await expect(entries).toHaveCount(n);
+	});
+
 	test('a content pack’s global field keeps its declared range; a read-only one is refused', async ({
 		page,
 	}) => {

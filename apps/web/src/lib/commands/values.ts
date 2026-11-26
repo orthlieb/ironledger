@@ -530,6 +530,65 @@ export function showValue(spec: ValueSpec): string {
 	return spec.kind === 'number' ? `${spec.label} ${v}` : `${spec.label}: ${v}`;
 }
 
+/** A value as one row of a log entry: "Progress" and "3 boxes, 2 ticks". */
+export interface ValueRow {
+	label: string;
+	value: string;
+}
+
+export function valueRow(spec: ValueSpec): ValueRow {
+	return { label: spec.label, value: valueText(spec) };
+}
+
+/** What reading an owner on its own logs, a row each: a character's health,
+ *  spirit, momentum and supply; a foe's rank and progress; an expedition's
+ *  rank, progress (and a scene's countdown); a vow's rank, progress and
+ *  menace; an asset's values. */
+export function ownerRows(owner: Owner, cat: Catalogue): ValueRow[] {
+	const status = (done: boolean, word: string): ValueRow[] =>
+		done ? [{ label: 'Status', value: word }] : [];
+	switch (owner.kind) {
+		case 'character': {
+			const vals = characterValues(owner, cat);
+			return ['health', 'spirit', 'momentum', 'supply']
+				.map((k) => vals.find((v) => v.key === k))
+				.filter((v): v is ValueSpec => !!v)
+				.map(valueRow);
+		}
+		case 'foe':
+			return [
+				{ label: 'Rank', value: cat.foe(owner.enc).rank },
+				{ label: 'Progress', value: trackText(owner.enc.ticks) },
+				...status(!!owner.enc.vanquished, 'Vanquished'),
+			];
+		case 'journey':
+		case 'site':
+		case 'scene': {
+			const e = owner.exp;
+			return [
+				{ label: 'Rank', value: cap(e.difficulty) },
+				{ label: 'Progress', value: trackText(e.ticks) },
+				...(e.type === 'scene' ? [{ label: 'Countdown', value: `${e.countdownFilled}/4` }] : []),
+				...status(!!e.complete, 'Complete'),
+			];
+		}
+		case 'vow': {
+			const v = owner.vow;
+			const st = vowStatus(v);
+			return [
+				{ label: 'Rank', value: cap(v.difficulty) },
+				{ label: 'Progress', value: trackText(v.ticks) },
+				{ label: 'Menace', value: `${v.menace ?? 0}/10` },
+				...status(st !== 'active', cap(st)),
+			];
+		}
+		case 'asset':
+			return valuesOf(owner, cat)
+				.filter((v) => v.kind !== 'notes')
+				.map(valueRow);
+	}
+}
+
 /** An owner's kind as a noun. */
 export const KIND_NOUN: Record<OwnerKind, string> = {
 	character: 'character',

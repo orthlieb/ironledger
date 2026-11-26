@@ -267,8 +267,13 @@ function cascade(
 }
 
 /** Make a planned change: write it, log it, save it, and cascade. */
-function runChange(p: Extract<Plan, { kind: 'change' }>): RunResult {
-	if (p.nothing) return { ok: true, message: p.summary };
+/** Make one change. Already so, nothing changes; typed, the log says so
+ *  (every command has output), but a link (`quiet`) is only struck through. */
+function runChange(p: Extract<Plan, { kind: 'change' }>, quiet = false): RunResult {
+	if (p.nothing) {
+		if (!quiet) appendLog(p.title, p.line);
+		return { ok: true, message: p.summary };
+	}
 	const { owner, spec } = p;
 	// The plan was made against the stores a moment ago; take the live value
 	// again in case something moved since.
@@ -400,8 +405,10 @@ function openMove(id: string, harm?: number): void {
 	else document.dispatchEvent(new CustomEvent('ironledger:open-move', { detail: { id, harm } }));
 }
 
-/** Carry out a plan. */
-export function runPlan(p: Plan, ui: RunUi): RunResult {
+/** Carry out a plan: a typed command's, or (`link`) a link's change. Every
+ *  typed command that runs has output in the log, a read as much as a
+ *  change; a mistake only says so in the status line. */
+export function runPlan(p: Plan, ui: RunUi, { link = false }: { link?: boolean } = {}): RunResult {
 	switch (p.kind) {
 		case 'empty':
 			return { ok: true, message: '' };
@@ -412,20 +419,22 @@ export function runPlan(p: Plan, ui: RunUi): RunResult {
 		case 'incomplete':
 			return { ok: false, message: p.message };
 		case 'show':
+			for (const e of p.log ?? []) appendLog(e.title, e.html);
 			if (p.picker)
 				document.dispatchEvent(new CustomEvent('ironledger:site-picker', { detail: p.picker }));
 			return { ok: true, message: p.text };
 		case 'change':
-			return runChange(p);
+			return runChange(p, link);
 		case 'changes':
 			// Each companion's change is its own entry, as if typed by name.
-			for (const c of p.changes) runChange(c);
+			for (const c of p.changes) runChange(c, link);
 			return { ok: true, message: p.summary };
 		case 'select': {
 			const o = p.owner;
 			if (o.kind === 'character') setActiveCharacterId(o.id);
 			else if (o.kind === 'foe') setActiveFoeId(o.id);
 			else setActiveExpeditionId(o.id);
+			appendLog(o.name, `<div>Now the active ${escHtml(o.kind)}.</div>`);
 			return { ok: true, message: `${p.summary}.` };
 		}
 		case 'move':
@@ -487,7 +496,7 @@ export function runLink(cmd: string, bind: LinkBinding = {}): LinkResult {
 		case 'changes': {
 			// Spent even when it was already so (You retain initiative when you
 			// have it): what it asks for holds, so it isn't there to click again.
-			const r = runPlan(p, { openHelp: () => {} });
+			const r = runPlan(p, { openHelp: () => {} }, { link: true });
 			return { ...r, spend: r.ok };
 		}
 		case 'burn': {
