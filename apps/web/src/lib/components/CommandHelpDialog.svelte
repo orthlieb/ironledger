@@ -56,7 +56,7 @@
 	/** One section per help topic, in HELP_TOPICS order. */
 	const SECTIONS: Record<string, Row[]> = {
 		values: [
-			{ syntax: '/health', hint: 'Show a value. Naming something only shows it.' },
+			{ syntax: '/health', hint: 'Read a value into the log. Naming something only reads it.' },
 			{ syntax: '/momentum++', hint: 'Add 1. On a true/false value, mark it (if it isn’t).' },
 			{
 				syntax: '/supply--',

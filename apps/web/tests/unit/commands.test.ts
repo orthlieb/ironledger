@@ -759,3 +759,79 @@ describe('me: you, the active character', () => {
 		expect(labels('/me.he')).toContain('health');
 	});
 });
+
+describe('reads: output in the log, as any command has', () => {
+	/** What a typed command logs when it reads. */
+	const logOf = (input: string, w = world()) => {
+		const p = plan(input, w);
+		return p.kind === 'show' ? (p.log ?? []) : [];
+	};
+
+	it('logs a value read under its owner and its name', () => {
+		expect(logOf('/foe.progress')).toEqual([
+			{ title: 'Wolf — Progress', html: '<div>Progress: <strong>2 boxes, 2 ticks</strong></div>' },
+		]);
+		expect(logOf('/health')).toEqual([
+			{ title: 'Bjorn — Health', html: '<div>Health: <strong>4/5</strong></div>' },
+		]);
+		expect(logOf('/Avenge Bjorn.progress')).toEqual([
+			{ title: 'Bjorn — Avenge Bjorn', html: '<div>Progress: <strong>2 boxes</strong></div>' },
+		]);
+	});
+
+	it('writes progress as boxes and ticks, leaving out the one there is none of', () => {
+		const track = (ticks: number) =>
+			logOf('/foe.progress', world({ foes: [foe('f1', 'Wolf', 2, ticks)] }))[0]!.html;
+		expect(track(4)).toContain('<strong>1 box</strong>');
+		expect(track(9)).toContain('<strong>2 boxes, 1 tick</strong>');
+		expect(track(3)).toContain('<strong>3 ticks</strong>');
+		expect(track(0)).toContain('<strong>0 boxes</strong>');
+	});
+
+	it('logs an owner read on its own, a line per value', () => {
+		expect(logOf('/foe')).toEqual([
+			{
+				title: 'Wolf',
+				html: '<div>Rank: <strong>Dangerous</strong></div><div>Progress: <strong>2 boxes, 2 ticks</strong></div>',
+			},
+		]);
+		const me = logOf('/me');
+		expect(me).toHaveLength(1);
+		expect(me[0]!.title).toBe('Bjorn');
+		expect(me[0]!.html).toMatch(/^<div>Health: <strong>4\/5<\/strong><\/div><div>Spirit: /);
+		expect(logOf('/Avenge Bjorn')[0]!.title).toBe('Bjorn — Avenge Bjorn');
+	});
+
+	it('logs each one of a group, as a change to each would be', () => {
+		expect(logOf('/everyone.momentum').map((e) => e.title)).toEqual([
+			'Bjorn — Momentum',
+			'Edda — Momentum',
+			'Wolf — Momentum',
+		]);
+	});
+
+	it('logs nothing when there is nothing to read', () => {
+		expect(logOf('/companions', world({ characters: [character('c1', 'Bjorn')] }))).toEqual([]);
+	});
+
+	it('says in the log that the one asked for is already active', () => {
+		expect(logOf('/foe=Wolf')).toEqual([
+			{ title: 'Wolf', html: '<div>Already the active foe.</div>' },
+		]);
+	});
+
+	it('gives a change to a value already so a line saying so', () => {
+		expect(plan('/wounded--', world())).toMatchObject({
+			kind: 'change',
+			nothing: true,
+			title: 'Bjorn — Wounded',
+			line: '<div>Wounded: already <strong>Cleared</strong></div>',
+		});
+	});
+
+	it('escapes what it writes', () => {
+		const w = world({ foes: [foe('f1', '<b>Wolf</b>', 2, 4)] });
+		expect(logOf('/foe', w)[0]!.title).toBe('<b>Wolf</b>');
+		expect(logOf('/foe.progress', w)[0]!.html).not.toContain('<b>');
+	});
+});

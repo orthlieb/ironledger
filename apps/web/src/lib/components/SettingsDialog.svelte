@@ -4,6 +4,8 @@
 	 *
 	 * Owns:
 	 *   • Theme     — auto / dark / light (persisted to localStorage)
+	 *   • Log order — the newest entry at the top or the bottom (localStorage,
+	 *                 #lib/logOrderStore.svelte.ts)
 	 *   • 3D Dice   — on / off (persisted to localStorage via dice.ts)
 	 *   • Delve     — on / off (persisted via expansionStore)
 	 *   • YRT       — on / off (persisted via expansionStore)
@@ -63,6 +65,7 @@
 	import Select from '#lib/components/Select.svelte';
 	import ColorPicker from '#lib/components/ColorPicker.svelte';
 	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
+	import { logOrder, setLogNewest, type LogNewest } from '#lib/logOrderStore.svelte.js';
 	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
 	import diceD10Svg from '#icons/dice-d10-light.svg?raw';
 
@@ -324,7 +327,24 @@
 					</Tabs.List>
 
 					<!-- ─── Appearance ─── -->
-					<Tabs.Content value="appearance" class="sd-tab-panel">
+					<Tabs.Content value="appearance" class="sd-tab-panel sd-tab-panel--appearance">
+						<!-- Where the log's newest entry goes: the top (the default), or
+						     the bottom, as a command line prints its output. This
+						     browser only. -->
+						<div class="sd-row">
+							<span class="sd-label">Newest log entry</span>
+							<ToggleGroup.Root
+								type="single"
+								value={logOrder.newest}
+								onValueChange={(v) => v && setLogNewest(v as LogNewest)}
+								class="sd-seg"
+								aria-label="Where the newest log entry goes"
+							>
+								<ToggleGroup.Item value="top" class="sd-seg-btn">Top</ToggleGroup.Item>
+								<ToggleGroup.Item value="bottom" class="sd-seg-btn">Bottom</ToggleGroup.Item>
+							</ToggleGroup.Root>
+						</div>
+
 						<div class="sd-row">
 							<span class="sd-label">Theme</span>
 							<Select
@@ -337,20 +357,24 @@
 						</div>
 
 						<!-- Livery — heading font paired with a chrome palette. Picker
-						     is a plain dropdown; a preview panel below shows the "Iron
-						     Ledger" nav mark on this livery's dark + light bg-page,
-						     with the livery's own display font + brand icon (falling
-						     back to the default sharp-axe when the livery ships no
-						     brand.svg). Reactive on fontDisplay — pick a different
-						     livery and the panel updates before the dialog closes. -->
+						     is a plain dropdown beside its label, as Theme's is; a
+						     preview panel below shows the "Iron Ledger" nav mark on
+						     this livery's dark + light bg-page, with the livery's own
+						     display font + brand icon (falling back to the default
+						     sharp-axe when the livery ships no brand.svg). Reactive on
+						     fontDisplay — pick a different livery and the panel
+						     updates before the dialog closes. -->
 						<div class="sd-row sd-row--stacked">
-							<span class="sd-label">Livery</span>
-							<Select
-								value={fontDisplay}
-								options={liveryOptions}
-								ariaLabel="Livery"
-								onchange={(v) => applyFont(v)}
-							/>
+							<div class="sd-row">
+								<span class="sd-label">Livery</span>
+								<Select
+									value={fontDisplay}
+									options={liveryOptions}
+									ariaLabel="Livery"
+									onchange={(v) => applyFont(v)}
+									class="sd-select"
+								/>
+							</div>
 							<div class="sd-livery-preview" data-font={activeLivery.id} aria-hidden="true">
 								<div
 									class="sd-livery-preview-panel"
@@ -690,8 +714,8 @@
 		align-items: center;
 		gap: 12px;
 	}
-	/* Livery row stacks: the label sits above the tile grid, and the tiles
-	   wrap freely instead of being crammed into a single-line control slot. */
+	/* Livery stacks: its label-and-dropdown row, with the preview panels
+	   under it at the dialog's full width. */
 	:global(.sd-row--stacked) {
 		flex-direction: column;
 		align-items: stretch;
@@ -703,6 +727,12 @@
 		font-weight: 600;
 		color: var(--text-muted);
 		min-width: 82px;
+	}
+	/* Appearance's labels are wider ("Newest log entry"), so its controls
+	   start further in, still in one column. Only there: the AI tab's
+	   four-way storyteller switch needs the room. */
+	:global(.sd-tab-panel--appearance .sd-label) {
+		min-width: 104px;
 	}
 
 	/* ── Livery preview panels ────────────────────────────────────────────

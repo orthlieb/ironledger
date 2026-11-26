@@ -24,7 +24,7 @@ normalized text back.
    `/story end` in the [command bar](command-bar.md)): two markers define the section — ▲ pins
    the oldest entry included, ▼ pins the newest. Semantics:
    - **Only ▲ set**: the section is open — it grows as new entries land at the
-     top of the log (equivalent to the old "record forward" behavior).
+     newest end of the log (equivalent to the old "record forward" behavior).
    - **Both ▲ and ▼ set**: the section is a fixed range between them, inclusive.
      The two marker ids are persisted to `localStorage` so a reload keeps the
      selection.
@@ -32,6 +32,14 @@ normalized text back.
    the log, or `/story write`): the captured section is serialized to prompt text, an
    optional preface is prepended, and the prompt is streamed to the active
    storyteller via `/api/ai/generate`. Live markdown preview.
+   The serializer (`serializeLogSection`) works from the stored log, oldest
+   entry first, never from the page as shown, so the log's display order
+   (Settings → Appearance → **Newest log entry**, top or bottom) doesn't change
+   what the model reads. It also says which way the entries run: the events
+   start with `LOG_ORDER_NOTE` ("…entry 1 is the earliest…"), and each entry's
+   heading is numbered from the earliest (`## 1. Face Danger — Jul 8, 12:01`).
+   That's in the prompt itself, not the Setup Instructions, so editing those
+   can't lose it.
 5. **Edit** (after streaming): toggle **Edit** on the output box to tweak the raw
    markdown before saving; **Preview** flips back to the rendered view.
 6. **Save to Log**: the prose is stored as a Story log entry (rendered markdown

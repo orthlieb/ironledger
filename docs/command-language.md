@@ -30,10 +30,20 @@ precondition objects are not kept as aliases.
 - **owner**: whose value. Left out, it's the active character's, or the
   party's for a party value (supply). Written before a dot: `Bjorn.health`,
   `foe.progress`, `Wolf.progress`, `hawk.health`.
-- **operator**: what to do with it. Left out, the command shows the value
+- **operator**: what to do with it. Left out, the command reads the value
   and changes nothing.
 
-Naming something only ever shows it. Only an operator changes anything.
+Naming something only ever reads it. Only an operator changes anything.
+
+Every command that runs has output in the log, as on a command line: a read
+as much as a change. `/foe.progress` writes an entry titled **Wolf —
+Progress** reading **Progress: 2 boxes, 2 ticks** (boxes, then ticks, each
+left out when there are none). An owner on its own (`/foe`, `/me`, a name)
+writes a line per value: a foe's rank and progress, a character's health,
+spirit, momentum and supply. A group (`/companions.health`) writes an entry
+for each. A value already what a change asks for says so
+(**Wounded: already Cleared**), and making something active says it is. A
+command that can't run writes nothing; it says why in the status line.
 
 Spaces are optional everywhere except inside names: `/momentum+=2`,
 `/momentum += 2` and `/ momentum += 2` are the same command. Case doesn't
@@ -48,7 +58,7 @@ contains a dot or an operator, or is also a keyword, goes in double quotes:
 
 | Operator | Meaning                                                                     | Example                          |
 | -------- | --------------------------------------------------------------------------- | -------------------------------- |
-| (none)   | Show the value in the status line. Logs nothing.                            | `/mana` → "Mana 3/10"            |
+| (none)   | Read the value: it's logged and said in the status line.                    | `/mana` → "Mana 3/10"            |
 | `++`     | Add 1. True/false: set true, only if it's false.                            | `/momentum++`, `/wounded++`      |
 | `--`     | Take away 1. True/false: set false, only if it's true.                      | `/supply--`, `/wounded--`        |
 | `+=n`    | Add `n`, a positive whole number. On a track, see [units](#kinds-of-value). | `/health+=2`, `/foe.progress+=2` |
@@ -335,8 +345,8 @@ active now; a binding the entry didn't record (an oracle rolled with no foe)
 falls back to what's active. The log line is the one typing the command
 writes, and the link is struck through, spent. A value already what the link
 sets (You retain initiative, when you have it; Mark Shaken, when you're
-shaken) writes no log line, says so in the status line, and is spent all
-the same: what it asks for holds.
+shaken) writes no log line (typed, it would), says so in the status line,
+and is spent all the same: what it asks for holds.
 
 A link runs only commands that change a value, `/burn`, `/move` and
 `/oracle` (and `/site.theme`, `/site.domain`, which open the site's picker).

@@ -25,9 +25,13 @@ import {
 import {
 	characterValues,
 	findValue,
+	ownerRows,
 	showOwner,
 	showValue,
+	valueRow,
+	valueText,
 	valuesOf,
+	type ValueRow,
 	type AssetOwner,
 	type Catalogue,
 	type CharacterOwner,
@@ -40,6 +44,7 @@ import {
 } from './values.js';
 import { planChange, type Harm } from './change.js';
 import type { CharacterData } from '#lib/types.js';
+import { escHtml } from '#lib/markdown.js';
 
 // ---------------------------------------------------------------------------
 // The world a command resolves against
@@ -143,12 +148,22 @@ export interface ChangePlan {
 	summary: string;
 }
 
+/** A log entry a command writes: its title and its lines (HTML). */
+export interface LogEntry {
+	title: string;
+	html: string;
+}
+
 export type Plan =
 	| { kind: 'empty' }
 	| { kind: 'note'; text: string; summary: string }
 	| {
 			kind: 'show';
 			text: string;
+			/** What it logs, typed: a read is output like any other command's
+			 *  ("Wolf — Progress" / "Progress: 3 boxes, 2 ticks"). None when
+			 *  there's nothing to read (no companions). */
+			log?: LogEntry[];
 			/** `/site.theme`: open the site's picker too. */
 			picker?: { expId: string; which: 'theme' | 'domain' };
 	  }
@@ -486,6 +501,29 @@ function logTitle(owner: Owner, spec: ValueSpec): string {
 	}
 }
 
+/** Rows as a log entry's lines, as a change's line reads:
+ *  "Progress: <strong>3 boxes, 2 ticks</strong>". */
+function rowsHtml(rows: ValueRow[]): string {
+	return rows
+		.map((r) => `<div>${escHtml(r.label)}: <strong>${escHtml(r.value)}</strong></div>`)
+		.join('');
+}
+
+/** A value read: "Wolf — Progress" / "Progress: 3 boxes, 2 ticks". */
+function readValue(owner: Owner, spec: ValueSpec): LogEntry {
+	return { title: logTitle(owner, spec), html: rowsHtml([valueRow(spec)]) };
+}
+
+/** An owner read on its own: its name (a vow's or an asset's after its
+ *  character's) and a line per value. */
+function readOwner(owner: Owner, cat: Catalogue): LogEntry {
+	const title =
+		owner.kind === 'vow' || owner.kind === 'asset'
+			? `${owner.character.name} — ${ownerLabel(owner)}`
+			: owner.name;
+	return { title, html: rowsHtml(ownerRows(owner, cat)) };
+}
+
 /** "Wolf: " before a summary about anything but the active character. */
 function prefix(owner: Owner, w: World): string {
 	if (owner.kind === 'character' && owner.id === w.activeCharacterId) return '';
@@ -501,9 +539,10 @@ function onValue(
 ): Plan {
 	if (!p.op) {
 		const text = prefix(owner, w) + showValue(spec);
+		const log = [readValue(owner, spec)];
 		if (owner.kind === 'site' && (spec.key === 'theme' || spec.key === 'domain'))
-			return { kind: 'show', text, picker: { expId: owner.id, which: spec.key } };
-		return { kind: 'show', text };
+			return { kind: 'show', text, log, picker: { expId: owner.id, which: spec.key } };
+		return { kind: 'show', text, log };
 	}
 	const r = planChange(spec, p.op, p.operand ?? '', activeHarm(w), p.operandQuoted);
 	if (!r.ok) return r.incomplete ? incomplete(r.message) : error(r.message);
@@ -516,7 +555,10 @@ function onValue(
 		wanted: r.wanted,
 		nothing: r.nothing,
 		title: logTitle(owner, spec),
-		line: r.line,
+		// Already so: typed, it still says so in the log (a link stays quiet).
+		line: r.nothing
+			? `<div>${escHtml(spec.label)}: already <strong>${escHtml(valueText(spec))}</strong></div>`
+			: r.line,
 		summary: prefix(owner, w) + r.summary,
 	};
 }
@@ -529,6 +571,7 @@ function onGroup(kw: GroupKeyword, p: Extract<Parsed, { kind: 'value' }>, w: Wor
 	if ('error' in list) return error(list.error);
 	const changes: ChangePlan[] = [];
 	const shown: string[] = [];
+	const log: LogEntry[] = [];
 	const named = (o: Owner, text: string) => (prefix(o, w) ? text : `${ownerLabel(o)}: ${text}`);
 	for (const o of list) {
 		const spec = findValue(o, p.value.text, w.cat);
@@ -536,10 +579,13 @@ function onGroup(kw: GroupKeyword, p: Extract<Parsed, { kind: 'value' }>, w: Wor
 		if (spec.party) return error(`${spec.label} is the party's: /${spec.key}${opText(p)}`);
 		const one = onValue(o, spec, p, w);
 		if (one.kind === 'change') changes.push({ ...one, summary: named(o, one.summary) });
-		else if (one.kind === 'show') shown.push(named(o, one.text));
-		else return one;
+		else if (one.kind === 'show') {
+			shown.push(named(o, one.text));
+			log.push(...(one.log ?? []));
+		} else return one;
 	}
-	if (!p.op) return { kind: 'show', text: shown.join('; ') };
+	// Each one read is its own entry, as each one changed is.
+	if (!p.op) return { kind: 'show', text: shown.join('; '), log };
 	return {
 		kind: 'changes',
 		changes,
@@ -559,7 +605,7 @@ function onKind(kind: SelectKind, p: Extract<Parsed, { kind: 'value' }>, w: Worl
 	if (!p.op) {
 		const o = resolveOwner({ ...p.value, text: kind, quoted: false }, w);
 		if ('error' in o) return error(o.error);
-		return { kind: 'show', text: showOwner(o, w.cat) };
+		return { kind: 'show', text: showOwner(o, w.cat), log: [readOwner(o, w.cat)] };
 	}
 	if (p.op !== '=')
 		return error(
@@ -605,7 +651,12 @@ function onKind(kind: SelectKind, p: Extract<Parsed, { kind: 'value' }>, w: Worl
 			: kind === 'foe'
 				? o.id === w.activeFoeId
 				: o.id === w.activeExpeditionId;
-	if (isActive) return { kind: 'show', text: `${o.name} is already the active ${kind}.` };
+	if (isActive)
+		return {
+			kind: 'show',
+			text: `${o.name} is already the active ${kind}.`,
+			log: [{ title: o.name, html: `<div>Already the active ${kind}.</div>` }],
+		};
 	return { kind: 'select', owner: o, summary: `${o.name} becomes the active ${kind}` };
 }
 
@@ -626,7 +677,7 @@ function onValueCommand(p: Extract<Parsed, { kind: 'value' }>, w: World): Plan {
 				`/me is you, the active character: choose another with /character=${p.operand ?? ''}`,
 			);
 		if (p.op) return error(`Change one of your values: /me.health${opText(p)}`);
-		return { kind: 'show', text: showOwner(ch, w.cat) };
+		return { kind: 'show', text: showOwner(ch, w.cat), log: [readOwner(ch, w.cat)] };
 	}
 	const group = p.owner ? groupKeyword(p.owner) : undefined;
 	if (group) return onGroup(group, p, w);
@@ -636,7 +687,11 @@ function onValueCommand(p: Extract<Parsed, { kind: 'value' }>, w: World): Plan {
 		if (p.op) return error(`Change one of their values: /${alone}.${eg}${opText(p)}`);
 		const list = groupOwners(alone, w);
 		if ('error' in list) return { kind: 'show', text: list.error };
-		return { kind: 'show', text: list.map((o) => showOwner(o, w.cat)).join('; ') };
+		return {
+			kind: 'show',
+			text: list.map((o) => showOwner(o, w.cat)).join('; '),
+			log: list.map((o) => readOwner(o, w.cat)),
+		};
 	}
 
 	if (p.owner) {
@@ -655,7 +710,7 @@ function onValueCommand(p: Extract<Parsed, { kind: 'value' }>, w: World): Plan {
 			const o = resolveOwner(p.value, w);
 			if ('error' in o) return error(o.error);
 			if (p.op) return error(`Change one of its values: /${t}.progress${opText(p)}`);
-			return { kind: 'show', text: showOwner(o, w.cat) };
+			return { kind: 'show', text: showOwner(o, w.cat), log: [readOwner(o, w.cat)] };
 		}
 		if (characterValueKeys(w.cat).some((k) => k.toLowerCase() === t)) {
 			const ch = activeCharacter(w);
@@ -683,7 +738,7 @@ function onValueCommand(p: Extract<Parsed, { kind: 'value' }>, w: World): Plan {
 			`${ownerLabel(owner)} is ${NOUN[owner.kind]}: change one of its values${eg ? `, e.g. /${ref}.${eg.key}${opText(p)}` : ''}${select}.`,
 		);
 	}
-	return { kind: 'show', text: showOwner(owner, w.cat) };
+	return { kind: 'show', text: showOwner(owner, w.cat), log: [readOwner(owner, w.cat)] };
 }
 
 // ── Verbs ─────────────────────────────────────────────────────────────────
