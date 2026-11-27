@@ -1,7 +1,11 @@
 <script lang="ts">
 	/**
-	 * /admin's Users tab: the sortable, paginated user table and its four
+	 * /admin's Users tab: the sortable, paginated list of users and its four
 	 * confirmations (promote, suspend / unsuspend, clear game data, delete).
+	 * A wide screen shows a table with sortable column headings; anything
+	 * narrower than 1100px (phones and tablets) shows a grid of cards, one
+	 * per user, with a sort picker above. Both read the same sorted page and
+	 * share the row's buttons.
 	 *
 	 * The page loads `users` and `stats`; both are bound, because this tab
 	 * changes them — deleting or wiping a user re-reads the totals the stat
@@ -14,7 +18,8 @@
 	import { admin } from '#lib/api.js';
 	import type { AdminUser, AdminStats } from '@ironledger/shared';
 	import { tooltip } from '#lib/actions/tooltip.js';
-	import AdminModal from './AdminModal.svelte';
+	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
+	import Select from '#lib/components/Select.svelte';
 
 	let {
 		active,
@@ -33,7 +38,19 @@
 	} = $props();
 
 	// ── Sort state ────────────────────────────────────────────────────────
-	let sortKey: keyof AdminUser = $state('email');
+	type SortKey = Exclude<keyof AdminUser, 'id'>;
+	const SORT_OPTIONS: { value: SortKey; label: string }[] = [
+		{ value: 'email', label: 'Email' },
+		{ value: 'displayName', label: 'Display name' },
+		{ value: 'role', label: 'Role' },
+		{ value: 'isActive', label: 'Active' },
+		{ value: 'lastLoginAt', label: 'Last login' },
+		{ value: 'createdAt', label: 'Created' },
+		{ value: 'characterCount', label: 'Characters' },
+		{ value: 'encounterCount', label: 'Encounters' },
+		{ value: 'expeditionCount', label: 'Expeditions' },
+	];
+	let sortKey: SortKey = $state('email');
 	let sortAsc = $state(true);
 
 	let sorted = $derived(
@@ -49,7 +66,7 @@
 		}),
 	);
 
-	function setSort(key: keyof AdminUser) {
+	function setSort(key: SortKey) {
 		if (sortKey === key) {
 			sortAsc = !sortAsc;
 		} else {
@@ -59,7 +76,7 @@
 		page = 1;
 	}
 
-	function sortIcon(key: keyof AdminUser): string {
+	function sortIcon(key: SortKey): string {
 		if (sortKey !== key) return '';
 		return sortAsc ? ' ▲' : ' ▼';
 	}
@@ -70,57 +87,68 @@
 	let totalPages = $derived(Math.max(1, Math.ceil(sorted.length / PAGE_SIZE)));
 	let paginated = $derived(sorted.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE));
 
-	// ── Confirm + delete user ─────────────────────────────────────────────
+	function shortDate(iso: string | null): string {
+		return iso ? new Date(iso).toLocaleDateString() : 'Never';
+	}
+
+	// ── Confirmations ─────────────────────────────────────────────────────
+	// Each button sets its target and opens its dialog; Cancel, ✕ and Escape
+	// clear the target again.
 	let deleteTarget: AdminUser | null = $state(null);
 	let promoteTarget: AdminUser | null = $state(null);
 	let suspendTarget: AdminUser | null = $state(null);
 	let clearDataTarget: AdminUser | null = $state(null);
-	let clearingData = $state(false);
+	let deleteConfirm = $state<ReturnType<typeof ConfirmDialog> | null>(null);
+	let promoteConfirm = $state<ReturnType<typeof ConfirmDialog> | null>(null);
+	let suspendConfirm = $state<ReturnType<typeof ConfirmDialog> | null>(null);
+	let clearDataConfirm = $state<ReturnType<typeof ConfirmDialog> | null>(null);
+	/** The user whose game data is being wiped; their Clear data button says so. */
+	let clearingId: string | null = $state(null);
 
 	async function confirmDelete() {
-		if (!deleteTarget) return;
+		const target = deleteTarget;
+		deleteTarget = null;
+		if (!target) return;
 		try {
-			await admin.deleteUser(deleteTarget.id);
-			users = users.filter((u) => u.id !== deleteTarget!.id);
-			deleteTarget = null;
+			await admin.deleteUser(target.id);
+			users = users.filter((u) => u.id !== target.id);
 			stats = await admin.getStats();
 		} catch (err) {
 			onerror(err instanceof Error ? err.message : 'Delete failed');
-			deleteTarget = null;
 		}
 	}
 
 	// ── Clear a user's game data (keep the account) ────────────────────────
 	async function confirmClearData() {
-		if (!clearDataTarget || clearingData) return;
-		clearingData = true;
+		const target = clearDataTarget;
+		clearDataTarget = null;
+		if (!target || clearingId) return;
+		clearingId = target.id;
 		try {
-			await admin.clearUserData(clearDataTarget.id);
-			clearDataTarget = null;
+			await admin.clearUserData(target.id);
 			// Counts (characters / encounters / expeditions) changed — refresh
 			// the row data + totals so the table reflects the wipe.
 			users = await admin.listUsers();
 			stats = await admin.getStats();
 		} catch (err) {
 			onerror(err instanceof Error ? err.message : 'Clear data failed');
-			clearDataTarget = null;
 		} finally {
-			clearingData = false;
+			clearingId = null;
 		}
 	}
 
 	// ── Suspend / unsuspend user ──────────────────────────────────────────
 	async function confirmSuspend() {
-		if (!suspendTarget) return;
+		const target = suspendTarget;
+		suspendTarget = null;
+		if (!target) return;
 		try {
-			const willSuspend = suspendTarget.isActive;
-			await admin.suspendUser(suspendTarget.id, willSuspend);
-			suspendTarget.isActive = !willSuspend;
+			const willSuspend = target.isActive;
+			await admin.suspendUser(target.id, willSuspend);
+			target.isActive = !willSuspend;
 			users = [...users];
-			suspendTarget = null;
 		} catch (err) {
 			onerror(err instanceof Error ? err.message : 'Suspend action failed');
-			suspendTarget = null;
 		}
 	}
 
@@ -132,6 +160,7 @@
 		// Promoting to admin is serious — show a confirmation dialog first.
 		if (user.role === 'user') {
 			promoteTarget = user;
+			promoteConfirm?.open();
 			return;
 		}
 		// Guard: never demote the last admin.
@@ -140,9 +169,9 @@
 	}
 
 	async function confirmPromote() {
-		if (!promoteTarget) return;
-		await applyRoleChange(promoteTarget, 'admin');
+		const target = promoteTarget;
 		promoteTarget = null;
+		if (target) await applyRoleChange(target, 'admin');
 	}
 
 	async function applyRoleChange(user: AdminUser, newRole: 'user' | 'admin') {
@@ -155,6 +184,62 @@
 		}
 	}
 </script>
+
+<!-- A user's four buttons, in the table's last column and at the foot of a card. -->
+{#snippet rowActions(user: AdminUser)}
+	{@const isLastAdmin = user.role === 'admin' && adminCount <= 1}
+	{@const isSelf = user.id === currentUserId}
+	<button
+		class="btn btn-icon"
+		use:tooltip={isLastAdmin
+			? 'Cannot demote the last admin'
+			: user.role === 'admin'
+				? 'Demote to user'
+				: 'Promote to admin'}
+		disabled={isLastAdmin}
+		onclick={() => toggleRole(user)}
+	>
+		{user.role === 'admin' ? 'Demote' : 'Promote'}
+	</button>
+	<button
+		class="btn btn-icon"
+		class:btn-warn={user.isActive && !isSelf}
+		class:btn-success={!user.isActive}
+		disabled={isSelf}
+		use:tooltip={isSelf
+			? 'Cannot suspend your own account'
+			: user.isActive
+				? 'Suspend user (immediately boots and blocks login)'
+				: 'Unsuspend user'}
+		onclick={() => {
+			suspendTarget = user;
+			suspendConfirm?.open();
+		}}
+	>
+		{user.isActive ? 'Suspend' : 'Unsuspend'}
+	</button>
+	<button
+		class="btn btn-icon btn-warn"
+		disabled={clearingId !== null}
+		use:tooltip={'Clear game data (characters, connections, expeditions, foes, maps, log) — keeps the account'}
+		onclick={() => {
+			clearDataTarget = user;
+			clearDataConfirm?.open();
+		}}
+	>
+		{clearingId === user.id ? 'Clearing…' : 'Clear data'}
+	</button>
+	<button
+		class="btn btn-icon btn-danger"
+		use:tooltip={'Delete user and all data'}
+		onclick={() => {
+			deleteTarget = user;
+			deleteConfirm?.open();
+		}}
+	>
+		Delete
+	</button>
+{/snippet}
 
 {#if active}
 	<div class="admin-table-wrap">
@@ -193,11 +278,9 @@
 			</thead>
 			<tbody>
 				{#each paginated as user (user.id)}
-					{@const isLastAdmin = user.role === 'admin' && adminCount <= 1}
-					{@const isSelf = user.id === currentUserId}
 					<tr>
-						<td>{user.email}</td>
-						<td class="td-display-name">{user.displayName}</td>
+						<td class="td-email">{user.email}</td>
+						<td class="td-name">{user.displayName}</td>
 						<td>
 							<span class="role-badge" class:role-admin={user.role === 'admin'}>
 								{user.role}
@@ -206,63 +289,68 @@
 						<td>
 							<span class="active-dot" class:active-yes={user.isActive}></span>
 						</td>
-						<td class="td-date"
-							>{user.lastLoginAt ? new Date(user.lastLoginAt).toLocaleDateString() : 'Never'}</td
-						>
-						<td class="td-date">{new Date(user.createdAt).toLocaleDateString()}</td>
+						<td class="td-date">{shortDate(user.lastLoginAt)}</td>
+						<td class="td-date">{shortDate(user.createdAt)}</td>
 						<td class="td-num">{user.characterCount}</td>
 						<td class="td-num">{user.encounterCount}</td>
 						<td class="td-num">{user.expeditionCount}</td>
 						<td class="td-actions">
-							<div class="td-actions-inner">
-								<button
-									class="btn btn-icon"
-									class:btn-dimmed={isLastAdmin}
-									use:tooltip={isLastAdmin
-										? 'Cannot demote the last admin'
-										: user.role === 'admin'
-											? 'Demote to user'
-											: 'Promote to admin'}
-									disabled={isLastAdmin}
-									onclick={() => toggleRole(user)}
-								>
-									{user.role === 'admin' ? 'Demote' : 'Promote'}
-								</button>
-								<button
-									class="btn btn-icon"
-									class:btn-warn={user.isActive && !isSelf}
-									class:btn-dimmed={isSelf}
-									disabled={isSelf}
-									use:tooltip={isSelf
-										? 'Cannot suspend your own account'
-										: user.isActive
-											? 'Suspend user (immediately boots and blocks login)'
-											: 'Unsuspend user'}
-									onclick={() => (suspendTarget = user)}
-								>
-									{user.isActive ? 'Suspend' : 'Unsuspend'}
-								</button>
-								<button
-									class="btn btn-icon btn-warn"
-									use:tooltip={'Clear game data (characters, connections, expeditions, foes, maps, log) — keeps the account'}
-									onclick={() => (clearDataTarget = user)}
-								>
-									Clear data
-								</button>
-								<button
-									class="btn btn-icon btn-danger"
-									use:tooltip={'Delete user and all data'}
-									onclick={() => (deleteTarget = user)}
-								>
-									Delete
-								</button>
-							</div>
+							<div class="td-actions-inner">{@render rowActions(user)}</div>
 						</td>
 					</tr>
 				{/each}
 			</tbody>
 		</table>
 	</div>
+
+	<!-- Narrow screens: a sort picker and one card per user, in place of the table. -->
+	<div class="uc-sort">
+		<Select
+			value={sortKey}
+			options={SORT_OPTIONS}
+			ariaLabel="Sort users by"
+			onchange={(v) => {
+				sortKey = v;
+				page = 1;
+			}}
+		/>
+		<button
+			class="btn btn-icon"
+			aria-label={sortAsc ? 'Ascending' : 'Descending'}
+			use:tooltip={sortAsc ? 'Ascending' : 'Descending'}
+			onclick={() => {
+				sortAsc = !sortAsc;
+				page = 1;
+			}}>{sortAsc ? '▲' : '▼'}</button
+		>
+	</div>
+	<ul class="user-cards">
+		{#each paginated as user (user.id)}
+			<li class="user-card">
+				<div class="uc-head">
+					<span
+						class="active-dot"
+						class:active-yes={user.isActive}
+						role="img"
+						aria-label={user.isActive ? 'Active' : 'Suspended'}
+					></span>
+					<span class="uc-email">{user.email}</span>
+					<span class="role-badge" class:role-admin={user.role === 'admin'}>{user.role}</span>
+				</div>
+				{#if user.displayName && user.displayName !== user.email}
+					<div class="uc-name">{user.displayName}</div>
+				{/if}
+				<div class="uc-meta">
+					Last login {shortDate(user.lastLoginAt)} · Created {shortDate(user.createdAt)}
+				</div>
+				<div class="uc-meta">
+					{user.characterCount} characters · {user.encounterCount} encounters · {user.expeditionCount}
+					expeditions
+				</div>
+				<div class="uc-actions">{@render rowActions(user)}</div>
+			</li>
+		{/each}
+	</ul>
 
 	<!-- Pagination -->
 	{#if totalPages > 1}
@@ -276,90 +364,74 @@
 	{/if}
 {/if}
 
-<!-- Delete confirmation dialog -->
-{#if deleteTarget}
-	<AdminModal onclose={() => (deleteTarget = null)}>
-		<h3>Delete User</h3>
-		<p>
-			Permanently delete <strong>{deleteTarget.email}</strong> and all their data? This cannot be undone.
-		</p>
-		{#snippet actions()}
-			<button class="btn" onclick={() => (deleteTarget = null)}>Cancel</button>
-			<button class="btn btn-danger" onclick={confirmDelete}>Delete</button>
-		{/snippet}
-	</AdminModal>
-{/if}
+<ConfirmDialog
+	bind:this={deleteConfirm}
+	title="Delete User"
+	confirmLabel="Delete"
+	onconfirm={confirmDelete}
+	oncancel={() => (deleteTarget = null)}
+>
+	<p class="adm-confirm-text">
+		Permanently delete <strong>{deleteTarget?.email}</strong> and all their data? This cannot be undone.
+	</p>
+</ConfirmDialog>
 
-<!-- Clear-user-data confirmation dialog -->
-{#if clearDataTarget}
-	<AdminModal onclose={() => !clearingData && (clearDataTarget = null)}>
-		<h3>Clear Game Data</h3>
-		<p>
-			Permanently wipe all game data for <strong>{clearDataTarget.email}</strong>: characters,
-			connections (communities, NPCs, places), expeditions, foes, campaign maps &amp; markers, the
-			session log, and portraits. This cannot be undone.
-		</p>
-		<p>
-			The account itself is <strong>kept</strong> — login, AI keys, and theme/preferences are preserved.
-		</p>
-		{#snippet actions()}
-			<button class="btn" disabled={clearingData} onclick={() => (clearDataTarget = null)}
-				>Cancel</button
-			>
-			<button class="btn btn-danger" disabled={clearingData} onclick={confirmClearData}>
-				{clearingData ? 'Clearing…' : 'Clear data'}
-			</button>
-		{/snippet}
-	</AdminModal>
-{/if}
+<ConfirmDialog
+	bind:this={clearDataConfirm}
+	title="Clear Game Data"
+	confirmLabel="Clear data"
+	onconfirm={confirmClearData}
+	oncancel={() => (clearDataTarget = null)}
+>
+	<p class="adm-confirm-text">
+		Permanently wipe all game data for <strong>{clearDataTarget?.email}</strong>: characters,
+		connections (communities, NPCs, places), expeditions, foes, campaign maps &amp; markers, the
+		session log, and portraits. This cannot be undone.
+	</p>
+	<p class="adm-confirm-text">
+		The account itself is <strong>kept</strong> — login, AI keys, and theme/preferences are preserved.
+	</p>
+</ConfirmDialog>
 
-<!-- Promote to admin confirmation dialog -->
-{#if promoteTarget}
-	<AdminModal onclose={() => (promoteTarget = null)}>
-		<h3>Promote to Admin</h3>
-		<p>
-			Grant admin privileges to <strong>{promoteTarget.email}</strong>?
-		</p>
-		<p class="modal-warning">
-			Admins can manage all users, view audit logs, and control maintenance mode. This should only
-			be granted to trusted team members.
-		</p>
-		{#snippet actions()}
-			<button class="btn" onclick={() => (promoteTarget = null)}>Cancel</button>
-			<button class="btn btn-danger" onclick={confirmPromote}>Promote</button>
-		{/snippet}
-	</AdminModal>
-{/if}
+<ConfirmDialog
+	bind:this={promoteConfirm}
+	title="Promote to Admin"
+	confirmLabel="Promote"
+	onconfirm={confirmPromote}
+	oncancel={() => (promoteTarget = null)}
+>
+	<p class="adm-confirm-text">
+		Grant admin privileges to <strong>{promoteTarget?.email}</strong>?
+	</p>
+	<p class="adm-confirm-text adm-confirm-warning">
+		Admins can manage all users, view audit logs, and control maintenance mode. This should only be
+		granted to trusted team members.
+	</p>
+</ConfirmDialog>
 
-<!-- Suspend / unsuspend confirmation dialog -->
-{#if suspendTarget}
-	{@const target = suspendTarget}
-	<!-- The actions snippet is a closure: TypeScript doesn't carry the #if's
-	     narrowing into it, so it reads `target`, the narrowed copy. -->
-	<AdminModal onclose={() => (suspendTarget = null)}>
-		{#if suspendTarget.isActive}
-			<h3>Suspend User</h3>
-			<p>
-				Suspend <strong>{suspendTarget.email}</strong>?
-			</p>
-			<p class="modal-warning">
-				Their active sessions will be revoked immediately and they will be unable to log in until
-				unsuspended.
-			</p>
-		{:else}
-			<h3>Unsuspend User</h3>
-			<p>
-				Re-enable access for <strong>{suspendTarget.email}</strong>?
-			</p>
-		{/if}
-		{#snippet actions()}
-			<button class="btn" onclick={() => (suspendTarget = null)}>Cancel</button>
-			<button class="btn {target.isActive ? 'btn-warn' : 'btn-success'}" onclick={confirmSuspend}>
-				{target.isActive ? 'Suspend' : 'Unsuspend'}
-			</button>
-		{/snippet}
-	</AdminModal>
-{/if}
+<ConfirmDialog
+	bind:this={suspendConfirm}
+	title={suspendTarget?.isActive === false ? 'Unsuspend User' : 'Suspend User'}
+	confirmLabel={suspendTarget?.isActive === false ? 'Unsuspend' : 'Suspend'}
+	confirmClass={suspendTarget?.isActive === false ? 'btn-success' : 'btn-warn'}
+	accentColor={suspendTarget?.isActive === false ? 'var(--color-success)' : 'var(--color-warning)'}
+	onconfirm={confirmSuspend}
+	oncancel={() => (suspendTarget = null)}
+>
+	{#if suspendTarget?.isActive === false}
+		<p class="adm-confirm-text">
+			Re-enable access for <strong>{suspendTarget.email}</strong>?
+		</p>
+	{:else}
+		<p class="adm-confirm-text">
+			Suspend <strong>{suspendTarget?.email}</strong>?
+		</p>
+		<p class="adm-confirm-text adm-confirm-warning">
+			Their active sessions will be revoked immediately and they will be unable to log in until
+			unsuspended.
+		</p>
+	{/if}
+</ConfirmDialog>
 
 <style>
 	/* ── Table ── */
@@ -401,6 +473,16 @@
 
 	.admin-table tbody tr:hover {
 		background: var(--bg-hover);
+	}
+
+	/* An email stays on one line (a break at its hyphens reads badly); the
+	   display name is the column that gives way when the table is short of
+	   room, wrapping at its spaces and, for one long word, inside it. */
+	.td-email {
+		white-space: nowrap;
+	}
+	.td-name {
+		overflow-wrap: anywhere;
 	}
 
 	.td-date {
@@ -450,6 +532,7 @@
 	/* Active dot */
 	.active-dot {
 		display: inline-block;
+		flex-shrink: 0;
 		width: 8px;
 		height: 8px;
 		border-radius: 50%;
@@ -458,6 +541,82 @@
 
 	.active-yes {
 		background: var(--color-success);
+	}
+
+	/* ── Cards (phones) ── */
+	.uc-sort {
+		display: flex;
+		align-items: center;
+		gap: 0.4rem;
+		margin-bottom: 0.6rem;
+	}
+	.uc-sort :global(.bui-select-trigger) {
+		flex: 1;
+		max-width: 320px;
+	}
+
+	.user-cards {
+		list-style: none;
+		padding: 0;
+		display: grid;
+		grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+		gap: 0.6rem;
+	}
+
+	.user-card {
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+		padding: 0.7rem 0.8rem;
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		background: var(--bg-card);
+		font-family: var(--font-ui);
+	}
+
+	.uc-head {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	.uc-email {
+		flex: 1;
+		min-width: 0;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--text);
+		overflow-wrap: anywhere;
+	}
+	.uc-name {
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		overflow-wrap: anywhere;
+	}
+	.uc-meta {
+		font-size: 0.72rem;
+		color: var(--text-dimmer);
+	}
+	/* At the foot of the card, so the buttons line up across a row of cards. */
+	.uc-actions {
+		display: flex;
+		flex-wrap: wrap;
+		gap: 0.3rem;
+		margin-top: auto;
+		padding-top: 0.3rem;
+	}
+
+	/* The table needs about 1100px for its ten columns, so narrower screens
+	   (phones and tablets, past mobile.md's 768px) get the cards. */
+	@media (max-width: 1099px) {
+		.admin-table-wrap {
+			display: none;
+		}
+	}
+	@media (min-width: 1100px) {
+		.uc-sort,
+		.user-cards {
+			display: none;
+		}
 	}
 
 	/* ── Pagination ── */
@@ -475,32 +634,20 @@
 		color: var(--text-muted);
 	}
 
-	/* Last-admin guard */
-	.btn-dimmed {
-		opacity: 0.35;
-		cursor: not-allowed;
+	/* ── Confirmation bodies ── */
+	.adm-confirm-text {
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+		line-height: 1.5;
+		color: var(--text-muted);
 	}
-
-	/* Caution box in the promote / suspend confirmations. Scoped here at
-	   (0,2,0), so AdminModal's `.modal p` (0,2,1) still sets its font-size,
-	   colour and bottom margin, as it always has. */
-	.modal-warning {
+	/* The caution box in the promote and suspend confirmations. */
+	.adm-confirm-warning {
 		font-size: 0.8rem;
 		color: var(--color-danger);
 		background: color-mix(in srgb, var(--color-danger) 10%, transparent);
 		border: 1px solid color-mix(in srgb, var(--color-danger) 30%, transparent);
 		border-radius: 4px;
 		padding: 8px 12px;
-		margin-top: 0.25rem;
-	}
-
-	.btn-warn {
-		background: #92400e;
-		color: #fde68a;
-		border: 1px solid #b45309;
-	}
-	.btn-warn:hover {
-		background: #b45309;
-		color: #fff;
 	}
 </style>

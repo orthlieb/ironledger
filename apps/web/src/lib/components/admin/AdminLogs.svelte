@@ -4,7 +4,8 @@
 	 * length, a text filter, rows that expand to the raw line) and the
 	 * confirmation that truncates the file. It loads each time the tab opens
 	 * and again whenever the file or length changes. Lines are parsed by
-	 * `parseLogLine` (`#lib/adminLogs.ts`).
+	 * `parseLogLine` (`#lib/adminLogs.ts`). A failed clear goes to `onerror`
+	 * for the page's ErrorBar.
 	 *
 	 * Like every admin tab it stays mounted while another tab is open and
 	 * renders only while `active`, so the chosen file, length and filter
@@ -14,13 +15,16 @@
 	import LoadingSpinner from '#lib/components/LoadingSpinner.svelte';
 	import { parseLogLine } from '#lib/adminLogs.js';
 	import rotateRightSvg from '#icons/arrow-rotate-right-solid.svg?raw';
-	import AdminModal from './AdminModal.svelte';
+	import { tooltip } from '#lib/actions/tooltip.js';
+	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
 
 	let {
 		active,
+		onerror,
 	}: {
 		/** The Logs tab is open. */
 		active: boolean;
+		onerror: (message: string) => void;
 	} = $props();
 
 	type LogFile = 'api-out' | 'api-error' | 'web-out' | 'web-error';
@@ -31,7 +35,7 @@
 	let logLineCount: 200 | 500 | 1000 = $state(200);
 	let expandedLine = $state<number | null>(null);
 	let logSearch = $state('');
-	let showClearLogConfirm = $state(false);
+	let clearLogConfirm = $state<ReturnType<typeof ConfirmDialog> | null>(null);
 	let clearLogLoading = $state(false);
 	let parsedLines = $derived(logLines.map(parseLogLine));
 	let filteredLines = $derived(
@@ -67,10 +71,9 @@
 		clearLogLoading = true;
 		try {
 			await admin.clearLog(logFile);
-			showClearLogConfirm = false;
 			await loadLogs(logFile, logLineCount);
-		} catch {
-			// leave the modal open on failure so the user can retry
+		} catch (err) {
+			onerror(err instanceof Error ? err.message : 'Failed to clear the log');
 		} finally {
 			clearLogLoading = false;
 		}
@@ -83,7 +86,7 @@
 	};
 
 	// Loads when the tab opens, and re-runs when the file or line count
-	// changes (the toolbar buttons also call loadLogs themselves).
+	// changes: the toolbar's file and length buttons only set them.
 	$effect(() => {
 		if (active) void loadLogs(logFile, logLineCount);
 	});
@@ -92,14 +95,11 @@
 {#if active}
 	<div class="logs-toolbar">
 		<div class="logs-file-btns">
-			{#each [['api-out', 'API stdout'], ['api-error', 'API stderr'], ['web-out', 'Web stdout'], ['web-error', 'Web stderr']] as const as [f, label]}
+			{#each Object.entries(LOG_FILE_LABELS) as [f, label]}
 				<button
 					class="btn btn-icon"
 					class:active={logFile === f}
-					onclick={() => {
-						logFile = f as typeof logFile;
-						void loadLogs(f as typeof logFile, logLineCount);
-					}}>{label}</button
+					onclick={() => (logFile = f as LogFile)}>{label}</button
 				>
 			{/each}
 		</div>
@@ -109,10 +109,7 @@
 					<button
 						class="btn btn-icon"
 						class:active={logLineCount === n}
-						onclick={() => {
-							logLineCount = n;
-							void loadLogs(logFile, n);
-						}}>{n} lines</button
+						onclick={() => (logLineCount = n)}>{n} lines</button
 					>
 				{/each}
 			</div>
@@ -122,11 +119,11 @@
 			</button>
 			<button
 				class="btn btn-icon btn-danger"
-				onclick={() => (showClearLogConfirm = true)}
-				disabled={logLoading || !logAvailable || logLines.length === 0}
-				title="Truncate this log file to zero bytes"
+				onclick={() => clearLogConfirm?.open()}
+				disabled={clearLogLoading || logLoading || !logAvailable || logLines.length === 0}
+				use:tooltip={'Truncate this log file to zero bytes'}
 			>
-				Clear
+				{clearLogLoading ? 'Clearing…' : 'Clear'}
 			</button>
 		</div>
 	</div>
@@ -188,22 +185,17 @@
 	{/if}
 {/if}
 
-<!-- Clear log confirmation dialog -->
-{#if showClearLogConfirm}
-	<AdminModal onclose={() => (showClearLogConfirm = false)}>
-		<h3 class="maint-modal-title">Clear log file</h3>
-		<p>
-			Truncate <strong>{LOG_FILE_LABELS[logFile]}</strong> (<code>{logFile}.log</code>) to zero
-			bytes? Existing log lines are lost; PM2 keeps writing to the same file.
-		</p>
-		{#snippet actions()}
-			<button class="btn" onclick={() => (showClearLogConfirm = false)}>Cancel</button>
-			<button class="btn btn-danger" disabled={clearLogLoading} onclick={confirmClearLog}>
-				{clearLogLoading ? 'Clearing…' : 'Clear'}
-			</button>
-		{/snippet}
-	</AdminModal>
-{/if}
+<ConfirmDialog
+	bind:this={clearLogConfirm}
+	title="Clear Log File"
+	confirmLabel="Clear"
+	onconfirm={confirmClearLog}
+>
+	<p class="adm-confirm-text">
+		Truncate <strong>{LOG_FILE_LABELS[logFile]}</strong> (<code>{logFile}.log</code>) to zero bytes?
+		Existing log lines are lost; PM2 keeps writing to the same file.
+	</p>
+</ConfirmDialog>
 
 <style>
 	/* ── Logs tab ── */
@@ -236,6 +228,17 @@
 		text-align: center;
 		padding: 2rem;
 	}
+	.adm-confirm-text {
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+		line-height: 1.5;
+		color: var(--text-muted);
+	}
+	.adm-confirm-text code {
+		font-family: var(--font-mono);
+		font-size: 0.8em;
+	}
+
 	.logs-unavailable code {
 		font-family: var(--font-mono);
 		font-size: 0.8em;
