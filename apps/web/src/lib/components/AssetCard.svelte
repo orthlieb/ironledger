@@ -10,6 +10,7 @@
 	import { findRaritiesForAsset, getGlobalCounterDef } from '#lib/assetStore.svelte.js';
 	import { computeAssetXpDiff } from '#lib/character.js';
 	import { assetIcon } from '#lib/iconRegistry.js';
+	import { assetCategoryColor } from '#lib/assetCategories.js';
 	import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
 	import {
 		fieldShown,
@@ -253,15 +254,7 @@
 		return canAfford(next, asset.rarityId);
 	}
 
-	// Category colour
-	const CAT_COLOR: Record<string, string> = {
-		'Combat Talent': 'var(--color-iron)',
-		Path: 'var(--color-edge)',
-		Companion: 'var(--color-heart)',
-		Ritual: 'var(--color-mana)',
-		Touched: 'var(--color-touched)',
-	};
-	const catColor = $derived(CAT_COLOR[definition.category] ?? 'var(--text-muted)');
+	const catColor = $derived(assetCategoryColor(definition.category));
 
 	/** Find the first counter customField on this asset definition. */
 	const counterField = $derived((definition.customFields ?? []).find((f) => f.type === 'counter'));

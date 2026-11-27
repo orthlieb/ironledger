@@ -1,9 +1,15 @@
 /**
- * The asset picker's order: by category, then by name, whatever pack an
- * asset comes from.
+ * The asset categories' order (the picker's: by category, then by name,
+ * whatever pack an asset comes from) and colours.
  */
 import { describe, it, expect } from 'vitest';
-import { ASSET_CATEGORY_ORDER, compareAssets, sortAssets } from '../../src/lib/assetOrder.js';
+import {
+	ASSET_CATEGORY_COLOR,
+	ASSET_CATEGORY_ORDER,
+	assetCategoryColor,
+	compareAssets,
+	sortAssets,
+} from '../../src/lib/assetCategories.js';
 import type { AssetDefinition } from '../../src/lib/types.js';
 
 type Item = Pick<AssetDefinition, 'category' | 'name'>;
@@ -82,5 +88,25 @@ describe('compareAssets', () => {
 			'Ritual',
 			'Touched',
 		]);
+	});
+});
+
+describe('assetCategoryColor', () => {
+	it('gives each category its colour', () => {
+		expect(assetCategoryColor('Combat Talent')).toBe('var(--color-iron)');
+		expect(assetCategoryColor('Companion')).toBe('var(--color-heart)');
+		expect(assetCategoryColor('Path')).toBe('var(--color-edge)');
+		expect(assetCategoryColor('Ritual')).toBe('var(--color-mana)');
+		expect(assetCategoryColor('Touched')).toBe('var(--color-touched)');
+	});
+
+	it('gives a category it doesn’t know, or none, the muted colour', () => {
+		expect(assetCategoryColor('Widget')).toBe('var(--text-muted)');
+		expect(assetCategoryColor(undefined)).toBe('var(--text-muted)');
+		expect(assetCategoryColor('')).toBe('var(--text-muted)');
+	});
+
+	it('colours every category in the order', () => {
+		expect(Object.keys(ASSET_CATEGORY_COLOR).sort()).toEqual([...ASSET_CATEGORY_ORDER].sort());
 	});
 });

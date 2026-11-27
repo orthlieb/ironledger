@@ -1,10 +1,13 @@
 /**
- * assetOrder — the order the asset picker lists assets in: by category, then
- * by name.
+ * assetCategories — the asset categories' order and colours, in one place.
  *
- * Each content pack's file lists its own assets, so in load order Delve's
- * Stone Lizard came after every base asset and YRT's paths and rituals after
- * the Touched. Sorting puts each asset with its kind.
+ * The picker lists assets by category, then by name. Each content pack's
+ * file lists its own assets, so in load order Delve's Stone Lizard came
+ * after every base asset and YRT's paths and rituals after the Touched.
+ * Sorting puts each asset with its kind.
+ *
+ * The colours tint an asset's card, its tab on the sheet, its tile in the
+ * picker and the picker's filter chips.
  */
 import type { AssetDefinition } from './types.js';
 
@@ -17,6 +20,21 @@ export const ASSET_CATEGORY_ORDER: readonly string[] = [
 	'Ritual',
 	'Touched',
 ];
+
+/** Each category's colour, as a CSS value. */
+export const ASSET_CATEGORY_COLOR: Readonly<Record<string, string>> = {
+	'Combat Talent': 'var(--color-iron)',
+	Companion: 'var(--color-heart)',
+	Path: 'var(--color-edge)',
+	Ritual: 'var(--color-mana)',
+	Touched: 'var(--color-touched)',
+};
+
+/** A category's colour; a category not listed (a content pack's own, or
+ *  none) gets the muted text colour. */
+export function assetCategoryColor(category: string | undefined): string {
+	return (category && ASSET_CATEGORY_COLOR[category]) || 'var(--text-muted)';
+}
 
 function categoryRank(category: string): number {
 	const i = ASSET_CATEGORY_ORDER.indexOf(category);
