@@ -148,8 +148,7 @@ export interface CharacterFieldDef {
 	writable?: boolean;
 	/** dropdown only: a value that isn't an option is kept as typed. */
 	custom?: boolean;
-	/** global only: the pill label in the context bar, and the icon. */
-	shortLabel?: string;
+	/** global only: the icon on its assets' counter. */
 	icon?: string;
 }
 
@@ -476,10 +475,6 @@ export interface CustomFieldDef {
 	id: string;
 	type: 'string' | 'counter' | 'radio' | 'dropdown' | 'switch' | 'markdown';
 	label: string;
-	/** Short label shown as a pill in the Global Context Bar (omit to hide from GCB). */
-	shortLabel?: string;
-	/** Tooltip text shown on hover in the Global Context Bar (falls back to asset def.name). */
-	tooltipLabel?: string;
 	position?: 'top' | 'bottom'; // default 'top'
 	default?: string | number;
 	// string

@@ -408,8 +408,7 @@
           "position": "bottom",
           "maxValue": 4,
           "default": 4,
-          "icon": "heart",
-          "shortLabel": "Cave Lion"
+          "icon": "heart"
         }
       ],
       "source": "base"
@@ -454,8 +453,7 @@
           "position": "bottom",
           "maxValue": 4,
           "default": 4,
-          "icon": "heart",
-          "shortLabel": "Giant Spider"
+          "icon": "heart"
         }
       ],
       "source": "base"
@@ -500,8 +498,7 @@
           "position": "bottom",
           "maxValue": 3,
           "default": 3,
-          "icon": "heart",
-          "shortLabel": "Hawk"
+          "icon": "heart"
         }
       ],
       "source": "base"
@@ -546,8 +543,7 @@
           "position": "bottom",
           "maxValue": 5,
           "default": 5,
-          "icon": "heart",
-          "shortLabel": "Horse"
+          "icon": "heart"
         }
       ],
       "source": "base"
@@ -592,8 +588,7 @@
           "position": "bottom",
           "maxValue": 4,
           "default": 4,
-          "icon": "heart",
-          "shortLabel": "Hound"
+          "icon": "heart"
         }
       ],
       "source": "base"
@@ -637,8 +632,7 @@
           "position": "bottom",
           "maxValue": 4,
           "default": 4,
-          "icon": "heart",
-          "shortLabel": "Kindred"
+          "icon": "heart"
         }
       ],
       "source": "base"
@@ -682,8 +676,7 @@
           "position": "bottom",
           "maxValue": 5,
           "default": 5,
-          "icon": "heart",
-          "shortLabel": "Mammoth"
+          "icon": "heart"
         }
       ],
       "source": "base"
@@ -727,8 +720,7 @@
           "position": "bottom",
           "maxValue": 3,
           "default": 3,
-          "icon": "heart",
-          "shortLabel": "Owl"
+          "icon": "heart"
         }
       ],
       "source": "base"
@@ -773,8 +765,7 @@
           "position": "bottom",
           "maxValue": 2,
           "default": 2,
-          "icon": "heart",
-          "shortLabel": "Raven"
+          "icon": "heart"
         }
       ],
       "source": "base"
@@ -819,8 +810,7 @@
           "position": "bottom",
           "maxValue": 5,
           "default": 5,
-          "icon": "heart",
-          "shortLabel": "Young Wyvern"
+          "icon": "heart"
         }
       ],
       "source": "base"
@@ -1838,8 +1828,7 @@
           "position": "bottom",
           "maxValue": [3, 6, 6],
           "default": 3,
-          "icon": "rock-golem",
-          "shortLabel": "Servant"
+          "icon": "rock-golem"
         }
       ],
       "source": "base"

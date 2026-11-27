@@ -449,7 +449,6 @@
           "id": "mana",
           "scope": "global",
           "label": "Mana",
-          "shortLabel": "Mana",
           "type": "counter",
           "maxValue": 10,
           "default": "0",

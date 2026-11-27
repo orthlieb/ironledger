@@ -186,9 +186,9 @@ export function toPublicExtension(e: ExtensionManifestEntry): PublicExtension {
 
 /**
  * An asset's field that refers to a global field (`{ "field": "mana",
- * "position": "bottom", "tooltipLabel": "Conclave Ritual" }`) becomes the
- * whole field: the declaration in extension.json (type, label, range,
- * default, icon, writable) with the asset's own placement and tooltip, and
+ * "position": "bottom" }`) becomes the whole field: the declaration in
+ * extension.json (type, label, range, default, icon, writable) with the
+ * asset's own placement, and
  * `global: true`, which the app reads as "one shared value per character".
  * gen-extensions-manifest checks that every reference names a declared
  * global field. Fields of the asset's own pass through as they are.

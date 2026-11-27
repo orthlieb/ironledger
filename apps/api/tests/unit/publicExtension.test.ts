@@ -190,7 +190,6 @@ describe('resolveAssetFields', () => {
         scope: 'global',
         type: 'counter',
         label: 'Mana',
-        shortLabel: 'Mana',
         maxValue: 10,
         default: '0',
         icon: 'mana',
@@ -202,7 +201,7 @@ describe('resolveAssetFields', () => {
     const ritual = {
       id: 'ritual/x',
       customFields: [
-        { field: 'mana', position: 'bottom', tooltipLabel: 'Conclave Ritual' },
+        { field: 'mana', position: 'bottom' },
         { id: 'notes', type: 'markdown', label: 'Notes' },
       ],
     };
@@ -211,12 +210,10 @@ describe('resolveAssetFields', () => {
       id: 'mana',
       type: 'counter',
       label: 'Mana',
-      shortLabel: 'Mana',
       maxValue: 10,
       default: 0,
       icon: 'mana',
       position: 'bottom',
-      tooltipLabel: 'Conclave Ritual',
       global: true,
     });
     expect(out.customFields[1]).toEqual(ritual.customFields[1]);
