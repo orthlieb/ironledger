@@ -2,8 +2,9 @@
 	/**
 	 * /admin's Invites tab: the send-an-invitation form (with the new link to
 	 * copy once it's sent) and the list of invitations, which loads each time
-	 * the tab opens and again after each create or revoke. Its errors stay in
-	 * the tab, under the form.
+	 * the tab opens and again after each create or revoke. The list is a table,
+	 * or on a phone (768px and under) one card per invitation. Its errors stay
+	 * in the tab, under the form.
 	 *
 	 * Like every admin tab it stays mounted while another tab is open and
 	 * renders only while `active`, so a half-typed invite and the last link
@@ -80,7 +81,18 @@
 	$effect(() => {
 		if (active) void loadInvites();
 	});
+
+	const shortDate = (iso: string) => new Date(iso).toLocaleDateString();
 </script>
+
+<!-- Revoke, for a pending invitation: in the table's last column and on its card. -->
+{#snippet revokeButton(inv: AdminInvite)}
+	{#if inv.status === 'pending'}
+		<button type="button" class="btn btn-sm" onclick={() => handleRevokeInvite(inv.id)}
+			>Revoke</button
+		>
+	{/if}
+{/snippet}
 
 {#if active}
 	<div class="invites-panel">
@@ -174,21 +186,32 @@
 								<td>
 									<span class="invite-status invite-status--{inv.status}">{inv.status}</span>
 								</td>
-								<td class="td-date">{new Date(inv.expiresAt).toLocaleDateString()}</td>
-								<td class="td-date">{new Date(inv.createdAt).toLocaleDateString()}</td>
-								<td>
-									{#if inv.status === 'pending'}
-										<button
-											type="button"
-											class="btn btn-sm"
-											onclick={() => handleRevokeInvite(inv.id)}>Revoke</button
-										>
-									{/if}
-								</td>
+								<td class="td-date">{shortDate(inv.expiresAt)}</td>
+								<td class="td-date">{shortDate(inv.createdAt)}</td>
+								<td>{@render revokeButton(inv)}</td>
 							</tr>
 						{/each}
 					</tbody>
 				</table>
+				<ul class="invite-cards">
+					{#each invites as inv (inv.id)}
+						<li class="invite-card">
+							<div class="ic-head">
+								<span class="ic-email">{inv.email}</span>
+								<span class="invite-status invite-status--{inv.status}">{inv.status}</span>
+							</div>
+							{#if inv.displayName}
+								<div class="ic-name">{inv.displayName}</div>
+							{/if}
+							<div class="ic-meta">
+								Expires {shortDate(inv.expiresAt)} · Created {shortDate(inv.createdAt)}
+							</div>
+							{#if inv.status === 'pending'}
+								<div class="ic-actions">{@render revokeButton(inv)}</div>
+							{/if}
+						</li>
+					{/each}
+				</ul>
 			{/if}
 		</section>
 	</div>
@@ -362,5 +385,61 @@
 	.btn-sm {
 		padding: 3px 10px;
 		font-size: 0.72rem;
+	}
+
+	/* ── Cards (phones) ── */
+	.invite-cards {
+		list-style: none;
+		padding: 0;
+		display: flex;
+		flex-direction: column;
+		gap: 0.6rem;
+	}
+	.invite-card {
+		display: flex;
+		flex-direction: column;
+		gap: 0.3rem;
+		padding: 0.7rem 0.8rem;
+		border: 1px solid var(--border);
+		border-radius: 6px;
+		background: var(--bg-card);
+		font-family: var(--font-ui);
+	}
+	.ic-head {
+		display: flex;
+		align-items: center;
+		gap: 0.5rem;
+	}
+	.ic-email {
+		flex: 1;
+		min-width: 0;
+		font-size: 0.85rem;
+		font-weight: 600;
+		color: var(--text);
+		overflow-wrap: anywhere;
+	}
+	.ic-name {
+		font-size: 0.8rem;
+		color: var(--text-muted);
+		overflow-wrap: anywhere;
+	}
+	.ic-meta {
+		font-size: 0.72rem;
+		color: var(--text-dimmer);
+	}
+	.ic-actions {
+		margin-top: 0.3rem;
+	}
+
+	/* The table, or on a phone (mobile.md's 768px) the cards. */
+	@media (max-width: 768px) {
+		.invites-table {
+			display: none;
+		}
+	}
+	@media (min-width: 769px) {
+		.invite-cards {
+			display: none;
+		}
 	}
 </style>

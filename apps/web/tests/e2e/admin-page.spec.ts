@@ -8,8 +8,9 @@
  *   - Every tab fills the page's width (the page used to shrink to its
  *     content, narrowing on Logs and Tools), and a new log length fetches
  *     the log once, not twice.
- *   - A phone gets one card per user instead of the table, and nothing on
- *     the page scrolls sideways.
+ *   - A phone gets one card per user and per invitation instead of the
+ *     tables (an invitation is sent and revoked from its card), and no tab
+ *     scrolls sideways.
  */
 import { test, expect, type Page } from '@playwright/test';
 import { adminToken, createVerifiedUser, deleteUserByEmail } from './helpers/admin';
@@ -104,18 +105,38 @@ test.describe('Admin dashboard', () => {
 		expect(fetches).toBe(1);
 	});
 
-	test('a phone gets cards, not the table, and nothing scrolls sideways', async ({ page }) => {
+	test('a phone gets cards, not tables, and no tab scrolls sideways', async ({ page }) => {
 		await page.setViewportSize({ width: 390, height: 844 });
 		await signInAsAdmin(page);
+
+		const sideways = () =>
+			page.locator('main.app-main').evaluate((el) => el.scrollWidth - el.clientWidth);
 
 		await expect(page.locator('.admin-table-wrap')).toBeHidden();
 		const card = page.locator('.user-card', { hasText: ADMIN_EMAIL });
 		await expect(card).toBeVisible();
 		await expect(card.getByRole('button', { name: 'Delete' })).toBeVisible();
+		expect(await sideways()).toBeLessThanOrEqual(0);
 
-		const overflow = await page
-			.locator('main.app-main')
-			.evaluate((el) => el.scrollWidth - el.clientWidth);
-		expect(overflow).toBeLessThanOrEqual(0);
+		// Send an invitation from the phone: it lists as a card, the sent-link
+		// box fits, and Revoke works from the card.
+		const invitee = `e2e-admin-phone-${Date.now()}@ironledger.test`;
+		await page.getByRole('tab', { name: 'Invites' }).click();
+		await page.getByPlaceholder('Where the invite is sent').fill(invitee);
+		await page.getByRole('button', { name: 'Send invite' }).click();
+		const invite = page.locator('.invite-card', { hasText: invitee });
+		await expect(invite).toContainText('pending');
+		await expect(page.locator('.invites-table')).toBeHidden();
+		expect(await sideways()).toBeLessThanOrEqual(0);
+		// Revoking expires the link (inviteService: the recipient sees "expired").
+		await invite.getByRole('button', { name: 'Revoke' }).click();
+		await expect(invite).toContainText('expired');
+		await expect(invite.getByRole('button', { name: 'Revoke' })).toHaveCount(0);
+
+		for (const tab of ['Logs', 'Tools']) {
+			await page.getByRole('tab', { name: tab }).click();
+			await expect(page.getByRole('tab', { name: tab })).toHaveAttribute('data-state', 'active');
+			expect(await sideways(), `${tab} scrolls sideways`).toBeLessThanOrEqual(0);
+		}
 	});
 });

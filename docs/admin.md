@@ -54,6 +54,14 @@ A sortable, paginated list of every user, 25 to a page.
 - **Clear data** wipes the user's game data (characters, connections, expeditions, foes, maps and markers, the log, portraits) and keeps the account.
 - **Delete** removes the user and all their `user_data` rows (characters, expeditions, communities, NPCs, refresh tokens, security events). It is not reversible.
 
+### Invites
+
+A form to send an invitation (email, optional display name) and the list of invitations sent.
+
+- **Send:** the recipient gets a 72-hour, single-use link to set a password; invitations bypass the registration lock. The new link is also shown, with a **Copy** button, in case the email doesn't arrive.
+- **List:** email, display name, status (pending, accepted, expired), expiry and creation dates. A table, or on a phone (768px and under) one card per invitation.
+- **Revoke** (pending only) expires the link at once; the recipient sees the same "expired" page as for a lapsed one.
+
 ### Logs
 
 Live PM2 log viewer.
