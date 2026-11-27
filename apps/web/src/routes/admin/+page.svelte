@@ -124,7 +124,7 @@
 				onerror={showError}
 			/>
 			<AdminInvites active={activeTab === 'invites'} />
-			<AdminLogs active={activeTab === 'logs'} />
+			<AdminLogs active={activeTab === 'logs'} onerror={showError} />
 			<AdminTools
 				active={activeTab === 'tools'}
 				bind:maintStatus
@@ -136,8 +136,13 @@
 </div>
 
 <style>
+	/* `main` is a flex column, where auto side margins shrink an item to
+	   its content: without the width the page narrowed to fit the Logs and
+	   Tools tabs and grew past a phone's screen to fit the users table.
+	   1280px leaves the users table room for its ten columns. */
 	.admin-page {
-		max-width: 1100px;
+		width: 100%;
+		max-width: 1280px;
 		margin: 0 auto;
 		padding: 1rem;
 	}

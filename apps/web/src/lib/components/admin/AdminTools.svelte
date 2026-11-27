@@ -40,7 +40,7 @@
 	import { untrack } from 'svelte';
 	import ErrorBar from '#lib/components/ErrorBar.svelte';
 	import { RadioGroup } from 'bits-ui';
-	import AdminModal from './AdminModal.svelte';
+	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
 
 	let {
 		active,
@@ -59,7 +59,7 @@
 	let maintMessage = $state('Scheduled maintenance');
 	let maintMinutes = $state(5);
 	let maintLoading = $state(false);
-	let showMaintConfirm = $state(false);
+	let maintConfirm = $state<ReturnType<typeof ConfirmDialog> | null>(null);
 	let maintCountdown = $state('');
 	let maintCountdownInterval: ReturnType<typeof setInterval> | undefined;
 
@@ -101,11 +101,9 @@
 		maintLoading = true;
 		try {
 			await admin.enableMaintenance({ message: maintMessage, minutesUntilShutdown: maintMinutes });
-			showMaintConfirm = false;
 			await refreshMaintStatus();
 		} catch (err) {
 			onerror(err instanceof Error ? err.message : 'Failed to enable maintenance');
-			showMaintConfirm = false;
 		} finally {
 			maintLoading = false;
 		}
@@ -208,7 +206,7 @@
 	// ── Registration lock ─────────────────────────────────────────────────
 	let regLockMessage = $state('New registrations are currently closed.');
 	let regLockLoading = $state(false);
-	let showRegLockConfirm = $state(false);
+	let regLockConfirm = $state<ReturnType<typeof ConfirmDialog> | null>(null);
 
 	async function refreshRegLockStatus() {
 		const status = await fetchRegLockStatus();
@@ -224,11 +222,9 @@
 				body: JSON.stringify({ message: regLockMessage }),
 			});
 			if (!res.ok) throw new Error('Failed to lock registration');
-			showRegLockConfirm = false;
 			await refreshRegLockStatus();
 		} catch (err) {
 			onerror(err instanceof Error ? err.message : 'Failed to lock registration');
-			showRegLockConfirm = false;
 		} finally {
 			regLockLoading = false;
 		}
@@ -312,7 +308,8 @@
 					<button
 						class="btn btn-danger"
 						disabled={maintLoading || !maintMessage.trim()}
-						onclick={() => (showMaintConfirm = true)}>Enable Maintenance Mode</button
+						onclick={() => maintConfirm?.open()}
+						>{maintLoading ? 'Enabling…' : 'Enable Maintenance Mode'}</button
 					>
 				</div>
 			{/if}
@@ -357,7 +354,8 @@
 					<button
 						class="btn btn-danger"
 						disabled={regLockLoading || !regLockMessage.trim()}
-						onclick={() => (showRegLockConfirm = true)}>Lock Registration</button
+						onclick={() => regLockConfirm?.open()}
+						>{regLockLoading ? 'Locking…' : 'Lock Registration'}</button
 					>
 				</div>
 			{/if}
@@ -517,41 +515,33 @@
 	</div>
 {/if}
 
-<!-- Lock registration confirmation dialog -->
-{#if showRegLockConfirm}
-	<AdminModal onclose={() => (showRegLockConfirm = false)}>
-		<h3 class="maint-modal-title">Lock Registration</h3>
-		<p>New users will be unable to create accounts. Existing users are unaffected.</p>
-		<p>Message: <strong>{regLockMessage}</strong></p>
-		{#snippet actions()}
-			<button class="btn" onclick={() => (showRegLockConfirm = false)}>Cancel</button>
-			<button class="btn btn-danger" disabled={regLockLoading} onclick={confirmEnableRegLock}>
-				{regLockLoading ? 'Locking...' : 'Lock'}
-			</button>
-		{/snippet}
-	</AdminModal>
-{/if}
+<ConfirmDialog
+	bind:this={regLockConfirm}
+	title="Lock Registration"
+	confirmLabel="Lock"
+	onconfirm={confirmEnableRegLock}
+>
+	<p class="adm-confirm-text">
+		New users will be unable to create accounts. Existing users are unaffected.
+	</p>
+	<p class="adm-confirm-text">Message: <strong>{regLockMessage}</strong></p>
+</ConfirmDialog>
 
-<!-- Enable maintenance confirmation dialog -->
-{#if showMaintConfirm}
-	<AdminModal onclose={() => (showMaintConfirm = false)}>
-		<h3 class="maint-modal-title">Enable Maintenance Mode</h3>
-		<p>
-			This will alert all users and revoke all active sessions. Non-admin users will be unable to
-			log in.
-		</p>
-		<p>
-			Message: <strong>{maintMessage}</strong><br />
-			Shutdown in: <strong>{maintMinutes} minute{maintMinutes === 1 ? '' : 's'}</strong>
-		</p>
-		{#snippet actions()}
-			<button class="btn" onclick={() => (showMaintConfirm = false)}>Cancel</button>
-			<button class="btn btn-danger" disabled={maintLoading} onclick={confirmEnableMaint}>
-				{maintLoading ? 'Enabling...' : 'Enable'}
-			</button>
-		{/snippet}
-	</AdminModal>
-{/if}
+<ConfirmDialog
+	bind:this={maintConfirm}
+	title="Enable Maintenance Mode"
+	confirmLabel="Enable"
+	onconfirm={confirmEnableMaint}
+>
+	<p class="adm-confirm-text">
+		This will alert all users and revoke all active sessions. Non-admin users will be unable to log
+		in.
+	</p>
+	<p class="adm-confirm-text">
+		Message: <strong>{maintMessage}</strong><br />
+		Shutdown in: <strong>{maintMinutes} minute{maintMinutes === 1 ? '' : 's'}</strong>
+	</p>
+</ConfirmDialog>
 
 <style>
 	/* ──────────────────────────────────────────────────────────────────────
@@ -623,6 +613,13 @@
 	.tools-tile-timer strong {
 		font-family: 'Roboto Mono', monospace;
 		font-weight: 700;
+	}
+
+	.adm-confirm-text {
+		font-family: var(--font-ui);
+		font-size: 0.85rem;
+		line-height: 1.5;
+		color: var(--text-muted);
 	}
 
 	.tools-tile-desc {

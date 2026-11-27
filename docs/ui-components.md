@@ -15,6 +15,14 @@ Toolbars use two button styles to signal action priority. Never invent a third s
 
 Icon buttons in toolbars use `btn icon-btn` (secondary by default). Add `btn-primary` when the action is frequently used.
 
+Outside toolbars, a button whose action has consequences is coloured by what it does (outline style, like `btn-primary`; all three are global in `app.css`):
+
+- `btn-danger` — destroys something: delete, truncate a log, lock everyone out.
+- `btn-warn` — disrupts but can be undone: suspend a user, clear their data.
+- `btn-success` — lifts a lock or a suspension: unsuspend, unlock, end maintenance.
+
+Pass the same class to `ConfirmDialog`'s `confirmClass` so the confirm button matches the one that opened it.
+
 ### Examples
 
 | Toolbar                                         | Primary (gold)             | Secondary (putty)                   |

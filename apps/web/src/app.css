@@ -397,6 +397,26 @@ select option {
 	background: var(--bg-hover);
 }
 
+/* Warn — a reversible but disruptive action (suspend a user, wipe their data) */
+.btn-warn {
+	background: var(--bg-control);
+	border-color: var(--color-warning);
+	color: var(--color-warning);
+}
+.btn-warn:hover:not(:disabled) {
+	background: var(--bg-hover);
+}
+
+/* Success — undoes a lock or suspension (unsuspend, unlock, end maintenance) */
+.btn-success {
+	background: var(--bg-control);
+	border-color: var(--color-success);
+	color: var(--color-success);
+}
+.btn-success:hover:not(:disabled) {
+	background: var(--bg-hover);
+}
+
 /* Dialog backdrop — the dimmed, lightly blurred layer behind every modal.
    Put it on the bits-ui Dialog.Overlay / AlertDialog.Overlay, beside the
    dialog's own *-overlay class (kept as a hook for tests and tweaks such as

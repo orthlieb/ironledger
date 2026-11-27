@@ -46,11 +46,21 @@ The admin panel has four tabs — **Users**, **Invites**, **Logs**, and **Tools*
 
 ### Users
 
-A sortable, paginated table of every user.
+A sortable, paginated list of every user, 25 to a page.
 
-- **Columns:** email, name, role, suspended flag, created-at, last-login-at, action menu
-- **Actions** (per user): promote to admin / demote to user, suspend / unsuspend, delete
+- **Wide screens (1100px and up):** a table with email, display name, role, an active dot, last login, created, and counts of characters, encounters and expeditions. Click a column heading to sort by it; click again to reverse.
+- **Narrower screens (tablets and phones):** a grid of cards, one per user, with the same facts and buttons. A sort picker and an ▲ / ▼ button above them stand in for the headings.
+- **Actions** (per user): promote to admin / demote to user, suspend / unsuspend, clear game data, delete. Every one but demote asks first in a confirmation (`ConfirmDialog`); you can't demote the last admin or suspend yourself. While a user's data is being cleared, their **Clear data** button reads _Clearing…_.
+- **Clear data** wipes the user's game data (characters, connections, expeditions, foes, maps and markers, the log, portraits) and keeps the account.
 - **Delete** removes the user and all their `user_data` rows (characters, expeditions, communities, NPCs, refresh tokens, security events). It is not reversible.
+
+### Invites
+
+A form to send an invitation (email, optional display name) and the list of invitations sent.
+
+- **Send:** the recipient gets a 72-hour, single-use link to set a password; invitations bypass the registration lock. The new link is also shown, with a **Copy** button, in case the email doesn't arrive.
+- **List:** email, display name, status (pending, accepted, expired), expiry and creation dates. A table, or on a phone (768px and under) one card per invitation.
+- **Revoke** (pending only) expires the link at once; the recipient sees the same "expired" page as for a lapsed one.
 
 ### Logs
 
@@ -60,7 +70,7 @@ Live PM2 log viewer.
 - **Tail size:** 1–2000 lines, default 200
 - **Implementation:** `readFile()` + split-on-newline + slice. There is no streaming / WebSocket; the panel polls.
 - **Filter:** client-side substring filter; expandable JSON rows when the line parses as JSON.
-- **Clear:** the toolbar's **Clear** button (disabled while the file is empty or unavailable) opens a confirm dialog naming the file, then `DELETE /api/v1/admin/logs?file=` truncates it to zero bytes via `fs.truncate` — keeps PM2's open file handle valid so the next write appends to the empty file. Logged as an `admin_clear_log` security event.
+- **Clear:** the toolbar's **Clear** button (disabled while the file is empty or unavailable) opens a confirm dialog naming the file; a failure shows in the page's error bar. Then `DELETE /api/v1/admin/logs?file=` truncates it to zero bytes via `fs.truncate` — keeps PM2's open file handle valid so the next write appends to the empty file. Logged as an `admin_clear_log` security event.
 
 ### Maintenance
 
@@ -148,7 +158,7 @@ An **admin** account can't delete itself this way (`ADMIN_ACCOUNT`), so the site
 | Component                 | File                                               | Purpose                                           |
 | ------------------------- | -------------------------------------------------- | ------------------------------------------------- |
 | Admin route               | `apps/web/src/routes/admin/+page.svelte`           | Page shell: first load, ErrorBar, tab bar         |
-| Admin tabs                | `apps/web/src/lib/components/admin/`               | Stats + graph, one component per tab, modal shell |
+| Admin tabs                | `apps/web/src/lib/components/admin/`               | Stats + graph, one component per tab              |
 | Log-line parser           | `apps/web/src/lib/adminLogs.ts`                    | Parses PM2 / pino log lines for the Logs tab      |
 | Admin API                 | `apps/api/src/routes/admin.ts`                     | Endpoint definitions                              |
 | Admin service             | `apps/api/src/services/adminService.ts`            | User CRUD + stats queries                         |
