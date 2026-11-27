@@ -18,6 +18,7 @@
 		buildTableHtml,
 		rollOracle,
 	} from '#lib/oracleStore.svelte.js';
+	import LoadingSpinner from '#lib/components/LoadingSpinner.svelte';
 	import { headingText } from '#lib/fontStore.svelte.js';
 	import { oracleCategoryIcon } from '#lib/iconRegistry.js';
 	import { oracleCategoryMeta } from '#lib/extensionCategories.svelte.js';
@@ -288,7 +289,7 @@
 				<!-- Tile grid -->
 				<div class="od-body">
 					{#if allOracles.length === 0}
-						<div class="od-loading">Loading oracles…</div>
+						<div class="od-loading"><LoadingSpinner label="Loading oracles…" /></div>
 					{:else}
 						{@const list = filteredOracles()}
 						{#if list.length === 0}

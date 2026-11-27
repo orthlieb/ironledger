@@ -210,8 +210,7 @@ export interface CharacterFieldDef {
   writable?: boolean;
   /** dropdown only: a value that isn't an option is kept as typed. */
   custom?: boolean;
-  /** global only: the pill label in the context bar, and the icon. */
-  shortLabel?: string;
+  /** global only: the icon on its assets' counter. */
   icon?: string;
   /** The oracle New Character's die rolls, by key. */
   roll?: { oracle: string; from?: string; column?: { field: string; from: string } };

@@ -283,8 +283,7 @@ function validateCharacterFields(id, m, oracles, core = new Map()) {
       for (const k of ['roll', 'if', 'placeholder'])
         if (f[k] !== undefined) throw new Error(`${at}: a global field has no ${k}`);
     } else {
-      for (const k of ['shortLabel', 'icon'])
-        if (f[k] !== undefined) throw new Error(`${at}: only a global field has a ${k}`);
+      if (f.icon !== undefined) throw new Error(`${at}: only a global field has an icon`);
     }
     if (RESERVED_NAMES.has(f.id))
       throw new Error(`${at}: the id is a built-in name or keyword in conditions`);
@@ -606,7 +605,7 @@ async function build() {
             throw new Error(
               `${at}: { "field": "${cf.field}" } is declared by ${owner}; an asset refers to its own pack's or base's`,
             );
-          for (const k of ['id', 'type', 'maxValue', 'default', 'icon', 'shortLabel', 'writable'])
+          for (const k of ['id', 'type', 'maxValue', 'default', 'icon', 'writable'])
             if (cf[k] !== undefined)
               throw new Error(
                 `${at}: { "field": "${cf.field}" } takes its ${k} from the declaration`,

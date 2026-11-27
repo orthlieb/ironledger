@@ -119,7 +119,7 @@ only — no content lists):
 }
 ```
 
-A **build step** (`scripts/gen-extensions-manifest.ts`, run as a prebuild) scans
+A **build step** (`scripts/gen-extensions-manifest.mjs`, run in `apps/api`'s `predev` / `prebuild`) scans
 `extensions/*/`, reads each `extension.json`, globs the content subfolders, and
 emits a combined generated manifest consumed by the API:
 
@@ -301,20 +301,20 @@ This is the extensibility unlock.
 
 ## 9. Code changes (bucket B) — file by file
 
-| File                                                | Change                                                                                                                                             |
-| --------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `packages/shared/src/index.ts`                      | `CatalogueSource` → `string` (or `type ExtensionId = string`); keep the override types.                                                            |
-| `apps/web/src/lib/types.ts`                         | Remove the duplicate `CatalogueSource`; import from shared.                                                                                        |
-| `apps/api/src/routes/catalogue.ts`                  | Replace hard-coded `assets_*/moves list/foes_*` with manifest-driven load; add `GET /extensions`.                                                  |
-| `apps/web/src/lib/expansionStore.svelte.ts`         | Dynamic registry map hydrated from `/catalogue/extensions`; per-id localStorage.                                                                   |
-| `apps/web/src/lib/components/SettingsDialog.svelte` | Render Expansions toggles from the registry.                                                                                                       |
-| `apps/web/src/lib/moveStore.svelte.ts`              | `'Yrt'` in the category-order array → derive/append extension categories.                                                                          |
-| `apps/web/src/lib/foeStore.svelte.ts`               | `SOURCE_ORDER` and the `foe.id.startsWith('yrt/')` inference → manifest-declared source + id-namespace.                                            |
-| `apps/web/src/lib/oracleStore.svelte.ts`            | The hard-coded yrt→source map → generic source from catalogue. **Leave the `yrtTouched` compound-roll logic (lines ~253, 461–480) baked in (D8).** |
-| `apps/web/src/lib/iconRegistry.ts`                  | Extend `import.meta.glob` to include `$extensions/*/icons/*.svg`.                                                                                  |
-| `apps/web/vite.config`                              | Add `$extensions` alias → repo `extensions/`.                                                                                                      |
-| **new** `scripts/gen-extensions-manifest.ts`        | Build-time manifest generator (§5) + foe-image copy (§6.2) + the lint (§10).                                                                       |
-| **new** `scripts/lint-extensions.ts`                | Build-time extension validator (§10) — may live inside the generator or as a sibling sharing its parsed manifest.                                  |
+| File                                                | Change                                                                                                                                                                                                                                                                                              |
+| --------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `packages/shared/src/index.ts`                      | `CatalogueSource` → `string` (or `type ExtensionId = string`); keep the override types.                                                                                                                                                                                                             |
+| `apps/web/src/lib/types.ts`                         | Remove the duplicate `CatalogueSource`; import from shared.                                                                                                                                                                                                                                         |
+| `apps/api/src/routes/catalogue.ts`                  | Replace hard-coded `assets_*/moves list/foes_*` with manifest-driven load; add `GET /extensions`.                                                                                                                                                                                                   |
+| `apps/web/src/lib/expansionStore.svelte.ts`         | Dynamic registry map hydrated from `/catalogue/extensions`; per-id localStorage.                                                                                                                                                                                                                    |
+| `apps/web/src/lib/components/SettingsDialog.svelte` | Render Expansions toggles from the registry.                                                                                                                                                                                                                                                        |
+| `apps/web/src/lib/moveStore.svelte.ts`              | `'Yrt'` in the category-order array → derive/append extension categories.                                                                                                                                                                                                                           |
+| `apps/web/src/lib/foeStore.svelte.ts`               | `SOURCE_ORDER` and the `foe.id.startsWith('yrt/')` inference → manifest-declared source + id-namespace.                                                                                                                                                                                             |
+| `apps/web/src/lib/oracleStore.svelte.ts`            | The hard-coded yrt→source map → generic source from catalogue. **Leave the `yrtTouched` compound-roll logic (lines ~253, 461–480) baked in (D8).**                                                                                                                                                  |
+| `apps/web/src/lib/iconRegistry.ts`                  | Extend `import.meta.glob` to include `$extensions/*/icons/*.svg`.                                                                                                                                                                                                                                   |
+| `apps/web/vite.config`                              | Add `$extensions` alias → repo `extensions/`.                                                                                                                                                                                                                                                       |
+| **new** `scripts/gen-extensions-manifest.mjs`       | Build-time manifest generator (§5) + foe-image copy (§6.2) + the structural half of the lint (§10): it fails the build on an `extension.json` whose id isn't its folder, a bad field declaration, a condition that names nothing, or a reference to an undeclared global field.                     |
+| **new** `scripts/lint-dsl.mjs`                      | The content half of the lint (§10): every link in moves / assets / oracles must be a command that parses and names something, and no content string may carry raw HTML. Runs in `apps/api`'s `predev` / `prebuild` and in CI (`npm run lint:dsl`). There is no separate extension-validator script. |
 
 ---
 

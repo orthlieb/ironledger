@@ -2,9 +2,9 @@
  * assetMatcherStore — finds which of a character's enabled asset abilities
  * reference a given move ID.
  *
- * Move refs are now embedded directly in each AssetDefinition.abilities[i].moves
- * (merged from the old asset-move-refs.json). No separate fetch is needed —
- * this module reads from the asset catalogue already loaded by assetStore.
+ * Each ability lists the moves it mentions in AssetDefinition.abilities[i].moves,
+ * so no separate fetch is needed: this module reads from the asset catalogue
+ * already loaded by assetStore.
  */
 
 import type { CharacterAsset, AssetDefinition } from '#lib/types.js';

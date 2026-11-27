@@ -7,7 +7,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { resetCharacters } from './helpers/reset';
-import { selectCharacterByName } from './helpers/home';
+import { selectCharacterByName, waitForArea } from './helpers/home';
 import { waitForSave } from './helpers/saves';
 
 const CHAR_AREA = '.home-area--characters';
@@ -36,22 +36,6 @@ async function createCharacter(page: import('@playwright/test').Page, name = 'E2
 }
 
 /**
- * Wait for the Characters area to finish its initial load.
- * The area renders one of: .ca-loading, .ca-empty, or .ca-body — wait for
- * loading to disappear and one of the other two to appear.
- */
-async function waitForCharactersLoaded(page: import('@playwright/test').Page) {
-	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 10_000 });
-	await page
-		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
-		.first()
-		.waitFor({ timeout: 10_000, state: 'attached' });
-	// Let initial loads + hydration settle before interacting — the header
-	// combobox trigger doesn't reliably open its popover mid-hydration.
-	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
-}
-
-/**
  * Switch to a specific Characters sub-tab (Core / Details / Background / Vows / Assets).
  */
 async function switchCharTab(page: import('@playwright/test').Page, label: string) {
@@ -63,7 +47,7 @@ async function switchCharTab(page: import('@playwright/test').Page, label: strin
  * auto-selects the first character on load. Returns the stage locator.
  */
 async function ensureCharacterSelected(page: import('@playwright/test').Page) {
-	await waitForCharactersLoaded(page);
+	await waitForArea(page, 'characters', { settle: true });
 	// A character is active iff its sub-tabs render. Create one if none.
 	if (
 		!(await page
@@ -116,7 +100,7 @@ test.describe('Characters area (v2)', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
-		await waitForCharactersLoaded(page);
+		await waitForArea(page, 'characters', { settle: true });
 	});
 
 	// ── Area loads ────────────────────────────────────────────────────────────
@@ -622,7 +606,7 @@ test.describe('Characters area (v2)', () => {
 		// after the reload (see below).
 		const charName = `Note Keeper ${marker}`;
 
-		await waitForCharactersLoaded(page);
+		await waitForArea(page, 'characters', { settle: true });
 		await createCharacter(page, charName);
 		await expect(page.locator(`${CHAR_COMBOBOX} .cb-value`)).toHaveText(charName);
 		const vow = await ensureVow(page);
@@ -645,7 +629,7 @@ test.describe('Characters area (v2)', () => {
 		// sort by updatedAt (every autosave bumps it), so the one just edited
 		// is usually not first. Select it by name before looking for the note.
 		await page.reload();
-		await waitForCharactersLoaded(page);
+		await waitForArea(page, 'characters', { settle: true });
 		await selectCharacterByName(page, charName);
 		await switchCharTab(page, 'Vows');
 
@@ -662,7 +646,7 @@ test.describe('Characters area (v2)', () => {
 		// it unloads (pageExit.ts), with keepalive requests that outlive it.
 		const marker = `note-unload-${Date.now()}`;
 		const charName = `Quick Reloader ${marker}`;
-		await waitForCharactersLoaded(page);
+		await waitForArea(page, 'characters', { settle: true });
 		await createCharacter(page, charName);
 		await expect(page.locator(`${CHAR_COMBOBOX} .cb-value`)).toHaveText(charName);
 		const vow = await ensureVow(page);
@@ -677,7 +661,7 @@ test.describe('Characters area (v2)', () => {
 		// never saved, and no number of reloads brings it back.)
 		await expect(async () => {
 			await page.reload();
-			await waitForCharactersLoaded(page);
+			await waitForArea(page, 'characters', { settle: true });
 			await selectCharacterByName(page, charName);
 			await switchCharTab(page, 'Vows');
 			await expect(restoredVow).toBeVisible({ timeout: 3_000 });
@@ -687,7 +671,7 @@ test.describe('Characters area (v2)', () => {
 	test('a reload re-opens the character you had open, not the first one', async ({ page }) => {
 		const stamp = Date.now();
 		const first = `First Comer ${stamp}`;
-		await waitForCharactersLoaded(page);
+		await waitForArea(page, 'characters', { settle: true });
 		await createCharacter(page, first);
 		await createCharacter(page, `Second Comer ${stamp}`);
 		// Go back to the first one and edit it. It's now the most recently
@@ -701,7 +685,7 @@ test.describe('Characters area (v2)', () => {
 		await saved;
 
 		await page.reload();
-		await waitForCharactersLoaded(page);
+		await waitForArea(page, 'characters', { settle: true });
 		await expect(page.locator(`${CHAR_COMBOBOX} .cb-value`)).toHaveText(first);
 	});
 

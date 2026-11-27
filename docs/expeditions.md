@@ -1,13 +1,12 @@
 # Expeditions
 
-> **⚠️ v2 note.** The standalone `JourneyCard` / `SiteCard` / `DelveTableDialog` components were merged into **`apps/web/src/lib/components/v2/ExpeditionsArea.svelte`** in the v2 rewrite. Component names + the file-inventory table below use the retired v1 names; the data model + behaviour still apply.
-
-Tracks journey and site expeditions. Expeditions represent the two types of progress-track-based travel/exploration in Ironsworn:
+Tracks journeys, sites and scenes. Expeditions come in three types (`ExpeditionType` in `apps/web/src/lib/types.ts`):
 
 - **Journey** — overland or sea travel toward a destination.
 - **Site** — a dangerous place (dungeon, lair, ruin) being delved.
+- **Scene** — see [Scene](#scene) below.
 
-Both use 10-box progress tracks with 4 ticks per box and a difficulty rank.
+Journeys and sites use 10-box progress tracks with 4 ticks per box and a difficulty rank.
 
 ---
 
@@ -60,38 +59,37 @@ Both types are stored in a single `expeditions` array using `type` as the discri
 
 ## UI Structure
 
-The Expeditions tab contains:
+The Expeditions area (`apps/web/src/lib/components/v2/ExpeditionsArea.svelte`) shows one expedition at a time:
 
-- **+ New Journey** / **+ New Site** buttons
-- Cards displayed in insertion order, intermixed
-- Collapsible cards (JourneyCard, SiteCard) following FoeCard/VowCard patterns
+- **Header** — the switcher (`Combobox`) lists every expedition A→Z with its type's glyph and colour, Journeys / Sites / Scenes filter pills, and the **+ New Journey…**, **+ New Site…** and **+ New Scene…** actions (each opens its New dialog). The gear opens `ExpeditionOptionsDialog` (rename, delete).
+- **Tabs** for the open expedition, below. While it's marked complete, everything on Core but the Status toggle is disabled, and so are the tab buttons (the gear still works).
 
-### JourneyCard
+Notes fields are click-to-edit **markdown** (`MarkdownNotes`, rendered by `renderNote()` from `#lib/markdown.js`: `**bold**`, `*italic*`, `# heading`, `- list`); textarea on click, rendered HTML on blur.
 
-- Name, difficulty selector
-- Click-to-edit **markdown** notes field — renders via `renderNote()` from `#lib/markdown.js` (supports `**bold**`, `*italic*`, `# heading`, `- list`); textarea on click, rendered HTML on blur
-- 10-box progress track with +/- buttons
-- Mark Complete toggle
+### Journey
 
-### SiteCard
+- **Core** — type and difficulty pills (difficulty is chosen in the New Journey dialog), the Active / Complete status toggle, the 10-box progress track with +/- buttons (`ProgressTrackPanel`), and the map chips (one per campaign-map marker linked to it)
+- **Description** — Summary (`shortDescription`, shown on its map marker's card) and Detailed description (`notes`), with the portrait floated right
 
-- Name, difficulty, objective fields
-- Click-to-edit **markdown** notes field (same `renderNote()` pattern as JourneyCard)
-- Theme + Domain selectors with **Features** and **Dangers** buttons inline
-  - Buttons open a DelveTableDialog showing the combined theme+domain oracle table
-  - Roll button performs a d100 roll with dice animation and session log entry
-  - Dialog closes after rolling
-- 12-cell denizen grid with:
+### Site
+
+- **Core** — pills and status as for a journey, then:
+  - **Theme** and **Domain** selects, each with a d6 (`.dice-btn`) for a random pick
+  - **Feature** and **Danger** selects listing the combined theme + domain table (`buildCombinedTable`), each with a d6 that rolls d100 on that table, writes a session log entry and sets the field. A 99 or 100 adds a Change Theme / Change Domain link to the entry (`/site.theme`, `/site.domain`, which open the site's picker). Both wait for a theme and a domain.
+  - Progress track and map chips
+- **Description** — Objective, then Summary and Detailed description as for a journey
+- **Denizens** — the 12-cell denizen grid:
   - d100 range labels and frequency indicators
   - Text input for each cell
-  - ⊕ button to pick a foe from the catalogue (opens FoePickerDialog in denizen mode);
+  - A **+** button to pick a foe from the catalogue (opens FoePickerDialog in denizen mode);
     the cell stores the foe's id and shows its name, so a renamed or translated
     foe still finds the same one. Typed text is kept as typed, and matches a foe
     by name (`findDenizenFoe` / `denizenLabel` in `foeStore.svelte.ts`)
-  - **Roll Denizen** button for d100 denizen roll with cell highlighting
-  - When a rolled denizen matches a foe in the catalogue, an **Add to Foes?** button appears
-- 10-box progress track with +/- buttons
-- Mark Complete toggle
+  - **Roll Denizen** opens `DenizenDialog` (a wrapper around `FoeRollDialog`), which rolls d100 on the site's denizens; when the result is a catalogue foe it offers **Add to Foes**
+
+### Scene
+
+- **Core** only — objective, consequences, status, progress track, the 4-segment countdown (`CountdownTrack`) and notes. Scenes aren't placed on maps.
 
 ---
 
@@ -99,9 +97,8 @@ The Expeditions tab contains:
 
 Sites are Delve content. When the **Delve** expansion toggle is off (per user, see [expansion-toggles.md](expansion-toggles.md)):
 
-- The **+ New Site** button is hidden (Journey creation still works).
-- The GCB Delve action buttons (feature/danger rolls, Roll Denizen) are hidden.
-- Existing `Site` records are **never deleted** — they keep rendering, including theme/domain change, denizen edits, progress marks, and DelveTableDialog rolls. Toggle gates new-site creation only.
+- **+ New Site…** is left out of the switcher's actions (Journey creation still works).
+- Existing `Site` records are **never deleted** — they keep rendering, including theme/domain change, feature/danger rolls, denizen edits and Roll Denizen, and progress marks. Toggle gates new-site creation only.
 - The `DELVE_THEMES` / `DELVE_DOMAINS` constants and the `/api/v1/catalogue/delve` endpoint stay loaded so existing sites resolve.
 
 Journeys are part of the base game and are unaffected by either toggle.
@@ -125,23 +122,23 @@ The store provides:
 
 ## Active expedition selection
 
-In v2, the expedition selector is inside the Expeditions area itself
-(`ExpeditionsArea.svelte`) — there is no GlobalContextBar. The left-hand
-list shows every expedition with type badge (Journey green / Site blue),
-difficulty, progress score, theme/domain (sites only), and a complete
-marker. Clicking an item makes it the active expedition; the stage on
-the right then renders the editable card.
+The expedition picked in the Expeditions area's switcher is the active one:
+ExpeditionsArea publishes it with `setActiveExpeditionId()`
+(`activeContext.svelte.ts`). The Moves dialog (wired in `+layout.svelte`)
+reads it for journey / site / scene conditions and progress rolls, and the
+command bar shows it as a chip in its type's colour and points commands such
+as `/site.theme` at it.
 
 ---
 
 ## Components
 
-| Component        | File                                 | Purpose                                 |
-| ---------------- | ------------------------------------ | --------------------------------------- |
-| JourneyCard      | `components/JourneyCard.svelte`      | Journey expedition card                 |
-| SiteCard         | `components/SiteCard.svelte`         | Delve site card with denizen grid       |
-| DelveTableDialog | `components/DelveTableDialog.svelte` | Combined feature/danger table with roll |
-| FoePickerDialog  | `components/FoePickerDialog.svelte`  | Foe picker (encounter + denizen modes)  |
+| Component               | File                                        | Purpose                                                                       |
+| ----------------------- | ------------------------------------------- | ----------------------------------------------------------------------------- |
+| ExpeditionsArea         | `components/v2/ExpeditionsArea.svelte`      | The Expeditions area: switcher, tabs, site feature/danger rolls, denizen grid |
+| ExpeditionOptionsDialog | `components/ExpeditionOptionsDialog.svelte` | Rename and delete an expedition                                               |
+| DenizenDialog           | `components/DenizenDialog.svelte`           | Roll Denizen (wraps `FoeRollDialog`)                                          |
+| FoePickerDialog         | `components/FoePickerDialog.svelte`         | Foe picker (encounter + denizen modes)                                        |
 
 ## Stores
 

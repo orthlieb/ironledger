@@ -15,10 +15,12 @@
 	import {
 		getEncounters,
 		isEncounterLoading,
+		isEncounterLoaded,
 		flushEncountersToApi,
 		removeEncounter,
 		addEncounter,
 	} from '#lib/encounterStore.svelte.js';
+	import LoadingSpinner from '#lib/components/LoadingSpinner.svelte';
 	import { setActiveFoeId } from '#lib/activeContext.svelte.js';
 	import { createDebouncedSave } from '#lib/debouncedSave.js';
 	import { initialSelection, rememberSelection } from '#lib/rememberedSelection.js';
@@ -71,7 +73,8 @@
 	let foePickerOpen = $state(false);
 
 	const encounters = $derived(getEncounters());
-	const loading = $derived(isEncounterLoading());
+	// The spinner until the first load has settled, not the empty state.
+	const loading = $derived(!isEncounterLoaded() || isEncounterLoading());
 
 	// Switcher combobox helpers — per-item label / nature glyph / nature colour.
 	function foeItemLabel(enc: (typeof encounters)[number]): string {
@@ -266,7 +269,7 @@
 	</header>
 
 	{#if loading}
-		<div class="fa-loading">Loading…</div>
+		<div class="fa-loading"><LoadingSpinner label="Loading…" /></div>
 	{:else if encounters.length === 0}
 		<div class="fa-empty">
 			<span class="fa-empty-icon" aria-hidden="true">{@html appIcon('foes')}</span>

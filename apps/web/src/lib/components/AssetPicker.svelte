@@ -9,6 +9,7 @@
 	 * Clicking an eligible tile shows an "Add X?" confirm dialog.
 	 */
 	import type { AssetCategory, AssetDefinition, CharacterData } from '#lib/types.js';
+	import LoadingSpinner from '#lib/components/LoadingSpinner.svelte';
 	import clearFiltersSvg from '#icons/filter-circle-xmark-solid.svg?raw';
 	import chevronUpSvg from '#icons/chevron-up-solid.svg?raw';
 	import chevronDownSvg from '#icons/chevron-down-solid.svg?raw';
@@ -21,7 +22,7 @@
 	import DialogHeader from '#lib/components/DialogHeader.svelte';
 	import { tooltip } from '#lib/actions/tooltip.js';
 	import { assetIcon } from '#lib/iconRegistry.js';
-	import { ASSET_CATEGORY_ORDER, sortAssets } from '#lib/assetOrder.js';
+	import { ASSET_CATEGORY_ORDER, assetCategoryColor, sortAssets } from '#lib/assetCategories.js';
 
 	let {
 		ownedIds = [],
@@ -34,17 +35,6 @@
 		onAdd: (assetId: string) => void;
 		onClose: () => void;
 	} = $props();
-
-	// ---------------------------------------------------------------------------
-	// Category colours — shared with AssetCard
-	// ---------------------------------------------------------------------------
-	export const CAT_COLOR: Record<string, string> = {
-		'Combat Talent': 'var(--color-iron)',
-		Path: 'var(--color-edge)',
-		Companion: 'var(--color-heart)',
-		Ritual: 'var(--color-mana)',
-		Touched: 'var(--color-touched)',
-	};
 
 	// ---------------------------------------------------------------------------
 	// Filter state
@@ -97,7 +87,7 @@
 	// ---------------------------------------------------------------------------
 	const hasActiveFilters = $derived(search.trim() !== '' || activeCategories.size > 0);
 
-	/** By category, then by name (#lib/assetOrder.ts): each pack's assets sit
+	/** By category, then by name (#lib/assetCategories.ts): each pack's assets sit
 	 *  with their kind, not after the base ones. */
 	const visibleAssets = $derived(sortAssets(getVisibleAssets()));
 
@@ -210,7 +200,7 @@
 								<button
 									class="ap-filter-tag"
 									class:active={activeCategories.has(cat)}
-									style="--tag-color: {CAT_COLOR[cat]}"
+									style="--tag-color: {assetCategoryColor(cat)}"
 									onclick={() => toggleCategory(cat)}>{cat}</button
 								>
 							{/each}
@@ -229,7 +219,7 @@
 			<!-- Scrollable body — only this part scrolls -->
 			<div class="picker-body" data-tour="asset-picker-grid">
 				{#if isAssetsLoading()}
-					<p class="picker-hint">Loading catalogue…</p>
+					<div class="picker-hint"><LoadingSpinner label="Loading catalogue…" /></div>
 				{:else if filtered.length === 0}
 					<p class="picker-hint">No assets match your search.</p>
 				{:else}
@@ -237,7 +227,7 @@
 						{#each filtered as asset (asset.id)}
 							{@const owned = ownedIds.includes(asset.id)}
 							{@const blocked = preconditionFailure(asset) ?? exclusiveGroupConflict(asset)}
-							{@const catColor = CAT_COLOR[asset.category] ?? 'var(--text-muted)'}
+							{@const catColor = assetCategoryColor(asset.category)}
 							<!-- svelte-ignore a11y_no_static_element_interactions -->
 							<div
 								class="pick-tile"

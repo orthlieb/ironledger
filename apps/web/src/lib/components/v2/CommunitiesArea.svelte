@@ -31,6 +31,7 @@
 		removeCommunity,
 		updateCommunityLocal,
 	} from '#lib/communityStore.svelte.js';
+	import LoadingSpinner from '#lib/components/LoadingSpinner.svelte';
 	import {
 		getNpcs,
 		isNpcLoaded,
@@ -435,7 +436,8 @@
 		if (n) updateNpcLocal({ ...n, within });
 		return 'npc';
 	}
-	const loading = $derived(isCommunityLoading());
+	// The spinner until the first load has settled, not the empty state.
+	const loading = $derived(!isCommunityLoaded() || isCommunityLoading());
 
 	/** Combined list — communities + NPCs, sorted by createdAt (oldest first). */
 	const entries = $derived<Entry[]>(
@@ -970,7 +972,7 @@
 	</header>
 
 	{#if loading}
-		<div class="cm-loading">Loading…</div>
+		<div class="cm-loading"><LoadingSpinner label="Loading…" /></div>
 	{:else if entries.length === 0}
 		<div class="cm-empty">
 			<span class="cm-empty-icon" aria-hidden="true">{@html appIcon('connections')}</span>

@@ -30,7 +30,8 @@
 	import iconNotes from '#icons/note-sticky-solid.svg?raw';
 	import { preloadDice } from '#lib/dice.js';
 	import { setAiDebug } from '#lib/aiSettings.svelte.js';
-	import { page } from '$app/state';
+	import { page, navigating } from '$app/state';
+	import LoadingSpinner from '#lib/components/LoadingSpinner.svelte';
 	import { goto } from '$app/navigation';
 	import {
 		headingText,
@@ -404,6 +405,15 @@
 	{@render children()}
 </main>
 
+<!-- A page change that takes a moment (its server load still running): the
+     livery's brand mark turning in the middle of the page. It fades in after a
+     beat, so a quick one never shows it, and lets clicks through. -->
+{#if navigating.to}
+	<div class="nav-loading">
+		<LoadingSpinner size={44} label="Loading…" />
+	</div>
+{/if}
+
 <SettingsDialog bind:this={settingsDialog} />
 <BugReportDialog bind:this={bugReportDialog} user={data.user} />
 
@@ -420,6 +430,24 @@
 <NotesDialog bind:this={notesDialogRef} />
 
 <style>
+	.nav-loading {
+		position: fixed;
+		inset: 0;
+		z-index: 2000;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		pointer-events: none;
+		background: color-mix(in srgb, var(--bg-page) 45%, transparent);
+		opacity: 0;
+		animation: nav-loading-in 0.2s ease-out 0.15s forwards;
+	}
+	@keyframes nav-loading-in {
+		to {
+			opacity: 1;
+		}
+	}
+
 	/* Span wrapper + SVG sizing for the sword brand icon */
 	.nav-brand-icon {
 		display: flex;

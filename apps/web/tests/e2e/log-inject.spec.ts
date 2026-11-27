@@ -23,21 +23,13 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetAll, resetFoes, resetExpansions, setExpansions } from './helpers/reset';
-import { settleHome, ensureCharacter } from './helpers/home';
+import { settleHome, ensureCharacter, waitForArea } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
 const FOE_AREA = '.home-area--foes';
 const EXP_AREA = '.home-area--expeditions';
 
 // ── Shared helpers ────────────────────────────────────────────────────────────
-
-async function waitForCharactersArea(page: Page) {
-	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page
-		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-}
 
 async function switchCharTab(page: Page, label: string) {
 	await page.locator(`${CHAR_AREA} .ca-tab`, { hasText: new RegExp(`^${label}$`, 'i') }).click();
@@ -50,7 +42,7 @@ async function switchCharTab(page: Page, label: string) {
  */
 async function goToHomeWithCharacter(page: Page): Promise<string> {
 	await page.goto('/home');
-	await waitForCharactersArea(page);
+	await waitForArea(page);
 	await settleHome(page);
 	await ensureCharacter(page);
 	return await getActiveCharId(page);
@@ -578,7 +570,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 		const charId = await goToHomeWithCharacter(page);
 		await resetFoes();
 		await page.reload();
-		await waitForCharactersArea(page);
+		await waitForArea(page);
 		await settleHome(page);
 
 		// Foe A (first), then Foe B (becomes active). The injected link is bound
@@ -878,7 +870,7 @@ test.describe('Log interactive links (injected mock entries)', () => {
 
 	test('cleanup: delete all foes, expeditions, and characters', async ({ page }) => {
 		await page.goto('/home');
-		await waitForCharactersArea(page);
+		await waitForArea(page);
 		await settleHome(page);
 
 		// Foes — delete the active foe via the gear → options → confirm.

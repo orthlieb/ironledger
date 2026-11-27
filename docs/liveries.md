@@ -108,9 +108,10 @@ the factory blue/red d6+d10 and black/white d100. Omitting `dice` is fine.
 ### Brand icon (optional) — `brand.svg`
 
 A livery may ship a single `brand.svg` next to its `livery.json`. When present,
-the nav-bar mark (the axe next to "Iron Ledger") **and** the browser tab
-favicon both switch to it while this livery is active. Absent → the default
-sharp-axe stays for both.
+the nav-bar mark (the axe next to "Iron Ledger"), the browser tab favicon
+**and** the loading spinner (`LoadingSpinner`, see `ui-components.md`) all
+switch to it while this livery is active. Absent → the default sharp-axe
+stays for all three.
 
 ```
 liveries/<id>/brand.svg

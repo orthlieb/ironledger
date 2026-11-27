@@ -20,21 +20,12 @@ import {
 	seedFoeEncounter,
 	setExpansions,
 } from './helpers/reset';
-import { expectSwitcherShowsActiveIcon, settleHome } from './helpers/home';
+import { expectSwitcherShowsActiveIcon, settleHome, waitForArea } from './helpers/home';
 import { loadDice, queueDice } from './helpers/dice';
 
 const FOE_AREA = '.home-area--foes';
 const FOE_HEADER = `${FOE_AREA} .fa-header`;
 const FOE_COMBOBOX = `${FOE_HEADER} .fa-hdr-combobox`;
-
-async function waitForFoesLoaded(page: Page) {
-	await expect(page.locator(`${FOE_AREA} .fa-loading`)).not.toBeVisible({ timeout: 10_000 });
-	await page
-		.locator(`${FOE_AREA} .fa-empty, ${FOE_AREA} .fa-body`)
-		.first()
-		.waitFor({ timeout: 10_000, state: 'attached' });
-	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
-}
 
 async function foeCount(page: Page): Promise<number> {
 	// data-foe-count lives on the inner .fa-area root, not the .home-area--foes wrapper.
@@ -77,7 +68,7 @@ test.describe('Foes area (v2)', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
-		await waitForFoesLoaded(page);
+		await waitForArea(page, 'foes', { settle: true });
 	});
 
 	test('shows header with the foe switcher combobox', async ({ page }) => {
@@ -160,7 +151,7 @@ test.describe('Foes switcher icon', () => {
 		page,
 	}) => {
 		await page.goto('/home');
-		await waitForFoesLoaded(page);
+		await waitForArea(page, 'foes', { settle: true });
 		const pick = async (name: string) => {
 			await page.locator(FOE_COMBOBOX).click();
 			await page.locator('.cb-popover .cb-item', { hasText: name }).click();
@@ -204,7 +195,7 @@ test.describe('End the Fight', () => {
 			await setExpansions({ lodestar });
 			await loadDice(page);
 			await page.goto('/home');
-			await waitForFoesLoaded(page);
+			await waitForArea(page, 'foes', { settle: true });
 			await settleHome(page);
 			const bar = page.locator('.cb-input');
 			await bar.fill(`/move ${move}`);

@@ -12,14 +12,13 @@
  * exercised implicitly by the store test.
  */
 import { test, expect } from '@playwright/test';
+import { waitForArea } from './helpers/home';
 
 const HOME_SHELL = '.home-shell';
 
 /** Wait for hydration by watching for the Characters area to load. */
 async function waitForHydrated(page: import('@playwright/test').Page) {
-	await expect(page.locator('.home-area--characters .ca-loading')).not.toBeVisible({
-		timeout: 12_000,
-	});
+	await waitForArea(page);
 	// The Alt+V keydown handler is wired in the root layout's onMount, which can
 	// land slightly after the characters area finishes loading — pressing before
 	// then drops the first keystroke. `data-view` on <html> is set in that same

@@ -5,8 +5,6 @@
 > are all still `place`/`places` — the rename is user-facing only, so code and
 > data below use `place`.
 
-> **⚠️ v2 note.** The standalone `CommunityCard` / `NpcCard` components were merged into **`apps/web/src/lib/components/v2/CommunitiesArea.svelte`** in the v2 rewrite. The card-component references below are retired v1 names; the data model + behaviour still apply.
-
 The Connections deck holds three distinct kinds of entry, each capturing a different thing:
 
 - **Community** — a **people** anchored to a location: a settlement, city, town, outpost, castle, nomad band. Named for the group, not the ground under their feet. Hobbiton.
@@ -256,38 +254,33 @@ Substitute `Npc` / `Place` for the same shape on the other two stores. Mutations
 
 ## UI Structure
 
-Communities tab toolbar:
+The Connections area (`apps/web/src/lib/components/v2/CommunitiesArea.svelte`) holds all three kinds and shows one entry at a time:
 
-| Button          | Style     | Action                                                                                                     |
-| --------------- | --------- | ---------------------------------------------------------------------------------------------------------- |
-| **Ask**         | primary   | Roll the active oracle (settlementName / settlementTrouble / etc., picked via a small in-toolbar dropdown) |
-| **+ Community** | primary   | Create a blank community, then optionally fill via Ask buttons inside the card                             |
-| **+ NPC**       | primary   | Create a blank NPC                                                                                         |
-| **Export**      | secondary | Download all communities + NPCs as JSON                                                                    |
+- **Header** — the switcher (`Combobox`) lists every entry A→Z with its kind's glyph and colour, **Settlements / NPCs / Landmarks** filter pills, and the **+ New Settlement…**, **+ New NPC…** and **+ New Landmark…** actions. Each opens a draggable `ConfirmDialog`: the name, a name oracle with its d6, and an **Also randomize** checklist rolled on Create. The gear opens `ConnectionOptionsDialog` (rename, delete).
+- **Core** tab — the kind's fields (see [Fields by expansion](#fields-by-expansion-base--delve--lodestar)), the Within picker (see Containment, above), and the Notes block (`situationalNotes`).
+- **Description** tab (**Background** for an NPC) — Summary (`shortDescription`; not for NPCs) and the Detailed description (`notes`), with the portrait floated right.
 
-Cards lay out in a 3-column responsive grid (1-col on mobile). See [ui-components.md § Toolbar Button Hierarchy](ui-components.md#toolbar-button-hierarchy) for the primary/secondary rules.
-
-Both `CommunityCard` and `NpcCard` follow the standard collapsible card pattern (header bar + collapsible body, sticky collapse state per [the GCB collapse spec](global-context-bar.md)).
+Export is ☰ → Export, with the rest of the campaign.
 
 ---
 
 ## Oracle-Powered Generation
 
-Each text field on a community or NPC has a small "ask oracle" button that rolls the relevant table and fills the field. Fields can also be edited freehand or re-rolled.
+The New Settlement, New NPC and New Landmark dialogs roll the name (the d6 beside the name oracle) and, on Create, each field ticked under **Also randomize**. On a settlement's Core tab, Trouble has its own d6 roll. Every field can also be typed freehand.
 
 ### Community fields → oracle keys
 
-Routed in `apps/web/src/routes/home/+page.svelte`:
+Rolled in `apps/web/src/lib/components/v2/CommunitiesArea.svelte`:
 
-| Field                 | Oracle key                                                                |
-| --------------------- | ------------------------------------------------------------------------- |
-| `name`                | `settlementName` or `settlementNameQuick` (50/50 split)                   |
-| `region`              | `region` (Ironlands) **or** `yrtRegion` when YRT region radio is selected |
-| `location`            | `location` (inland) **or** `coastalWatersLocation` (coastal radio)        |
-| `locationDescription` | `locationDescriptor`                                                      |
-| `trouble`             | `settlementTrouble`                                                       |
+| Field                 | Oracle key                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------- |
+| `name`                | `settlementName` or `settlementNameQuick` (the New Settlement dialog's name oracle)               |
+| `region`              | `region`, which resolves to `yrtRegion` while YRT is on (`resolveOracleKey`)                      |
+| `location`            | `location` (Inland) **or** `coastalWatersLocation` (Coastal Waters), the dialog's Location Oracle |
+| `locationDescription` | `locationDescriptor`                                                                              |
+| `trouble`             | `settlementTrouble`                                                                               |
 
-The **YRT** region radio is hidden when the YRT [expansion toggle](expansion-toggles.md) is off. Existing communities with YRT regions keep displaying their region label regardless.
+With YRT off, Region rolls from the base table. Existing communities with YRT regions keep displaying their region label regardless.
 
 ### NPC fields → oracle keys
 
@@ -304,23 +297,22 @@ The name oracle selection is sticky per session (`_pendingNpcNameOracle`).
 
 ## Notes Field
 
-Both cards render the `notes` field as **click-to-edit markdown** via `renderNote()` from `#lib/markdown.js` (the same pattern as Site/Journey notes — see [expeditions.md](expeditions.md)). Supports `**bold**`, `*italic*`, `# heading`, `- list`. No external markdown library; the renderer is a hand-rolled regex parser in `apps/web/src/lib/markdown.ts`.
+The Connections area renders the `notes` field (and `situationalNotes` and `shortDescription`) as **click-to-edit markdown** through `MarkdownNotes`, which uses `renderNote()` from `#lib/markdown.js` (the same pattern as Site/Journey notes — see [expeditions.md](expeditions.md)). Supports `**bold**`, `*italic*`, `# heading`, `- list`. No external markdown library; the renderer is a hand-rolled regex parser in `apps/web/src/lib/markdown.ts`.
 
 ---
 
 ## Portrait Field
 
-Portraits are **not** inlined in the entity JSON. The card uploads the cropped image to the content-addressed blob store via `PUT /api/session/{communities|npcs}/:id/portrait`, and the entity stores only `portraitEtag` (the content hash). The card renders `<img src="/api/session/:kind/:id/portrait?v=<etag>">`, which is cacheable and revalidates with an ETag (304). The legacy inline `imageUrl` base64 field is deprecated — accepted on import and re-embedded on export as the round-trip transport only (see [Portraits in import-schema.md](import-schema.md#portraits)).
+Portraits are **not** inlined in the entity JSON. `PortraitUploader` uploads the cropped image to the content-addressed blob store via `PUT /api/session/{communities|npcs|places}/:id/portrait`, and the entity stores only `portraitEtag` (the content hash). It renders `<img src="/api/session/:kind/:id/portrait?v=<etag>">`, which is cacheable and revalidates with an ETag (304). The legacy inline `imageUrl` base64 field is deprecated — accepted on import and re-embedded on export as the round-trip transport only (see [Portraits in import-schema.md](import-schema.md#portraits)).
 
 ---
 
 ## Components
 
-| Component                 | File                                  | Purpose                                    |
-| ------------------------- | ------------------------------------- | ------------------------------------------ |
-| CommunityCard             | `lib/components/CommunityCard.svelte` | Settlement card                            |
-| NpcCard                   | `lib/components/NpcCard.svelte`       | NPC card                                   |
-| (toolbar + creation flow) | `routes/home/+page.svelte`            | + buttons, Ask dropdown, region-type radio |
+| Component               | File                                            | Purpose                                                                |
+| ----------------------- | ----------------------------------------------- | ---------------------------------------------------------------------- |
+| CommunitiesArea         | `lib/components/v2/CommunitiesArea.svelte`      | The Connections area: switcher, New dialogs, Core and Description tabs |
+| ConnectionOptionsDialog | `lib/components/ConnectionOptionsDialog.svelte` | Rename and delete an entry                                             |
 
 ## Stores
 

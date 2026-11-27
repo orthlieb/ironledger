@@ -12,19 +12,9 @@
  */
 import { test, expect } from '@playwright/test';
 import { resetCharacters, seedCharacter } from './helpers/reset';
-import { settleHome, ensureCharacter } from './helpers/home';
-
-const CHAR_AREA = '.home-area--characters';
+import { settleHome, ensureCharacter, waitForArea } from './helpers/home';
 
 const APP_NAV = '.app-nav';
-
-async function waitForCharactersArea(page: import('@playwright/test').Page) {
-	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page
-		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-}
 
 test.describe('Adventure-action dialogs (v2)', () => {
 	test.beforeAll(async () => {
@@ -34,7 +24,7 @@ test.describe('Adventure-action dialogs (v2)', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
-		await waitForCharactersArea(page);
+		await waitForArea(page);
 		await settleHome(page);
 		await ensureCharacter(page);
 		await expect(page.locator(APP_NAV)).toBeVisible();

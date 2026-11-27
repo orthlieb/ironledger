@@ -10,7 +10,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetAll } from './helpers/reset';
-import { settleHome, ensureCharacter } from './helpers/home';
+import { settleHome, ensureCharacter, waitForArea } from './helpers/home';
 
 // ── Area constants ───────────────────────────────────────────────────────────
 
@@ -23,14 +23,6 @@ const EXP_AREA = '.home-area--expeditions';
 const FOE_AREA = '.home-area--foes';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-async function waitForHome(page: Page): Promise<void> {
-	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page
-		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-}
 
 /**
  * Click a tab, assert it becomes active, and assert a panel-content marker
@@ -61,7 +53,7 @@ test.describe('Tab accessibility — v2 areas', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
-		await waitForHome(page);
+		await waitForArea(page);
 	});
 
 	// ── Characters area ──────────────────────────────────────────────────────

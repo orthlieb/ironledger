@@ -10,23 +10,12 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetCommunities } from './helpers/reset';
-import { expectSwitcherShowsActiveIcon } from './helpers/home';
+import { expectSwitcherShowsActiveIcon, waitForArea } from './helpers/home';
 
 const CM_AREA = '.home-area--communities';
 const CM_HEADER = `${CM_AREA} .cm-header`;
 const CM_COMBOBOX = `${CM_HEADER} .cm-hdr-combobox`;
 const CM_ACTIONS = `${CM_AREA} .cm-header-actions`;
-
-async function waitForCommunitiesLoaded(page: Page) {
-	await expect(page.locator(`${CM_AREA} .cm-loading`)).not.toBeVisible({ timeout: 10_000 });
-	await page
-		.locator(`${CM_AREA} .cm-empty, ${CM_AREA} .cm-body`)
-		.first()
-		.waitFor({ timeout: 10_000, state: 'attached' });
-	// Let initial loads + hydration settle before interacting — the combobox
-	// trigger doesn't reliably open its popover mid-hydration.
-	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
-}
 
 /** Total connection count (communities + NPCs + places), read from the header. */
 async function entryCount(page: Page): Promise<number> {
@@ -71,7 +60,7 @@ test.describe('Connections area (v2)', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
-		await waitForCommunitiesLoaded(page);
+		await waitForArea(page, 'communities', { settle: true });
 	});
 
 	test('shows the connection switcher combobox', async ({ page }) => {
@@ -321,7 +310,7 @@ for (const scheme of ['dark', 'light'] as const) {
 			page,
 		}) => {
 			await page.goto('/home');
-			await waitForCommunitiesLoaded(page);
+			await waitForArea(page, 'communities', { settle: true });
 			await openNew(page, 'NPC');
 			await fillAndCreate(page, `Pale Wren (${scheme})`);
 

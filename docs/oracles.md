@@ -409,24 +409,24 @@ The detail view shows the full oracle table. Layout varies by entry count and or
 ## UI flow
 
 ```
-[Oracles] button (GlobalContextBar)
+[Ask] button (app nav, +layout.svelte)
     │
     ▼
-OraclesDialog
+OraclesDialog — picker view
   ├── Search input (free-text, filters on name + description)
   ├── Group filter tags (Core Ironsworn | Delve | Yrt) — toggle, multi-select
   └── Tile grid (sorted by oracle-order.json weight)
         │  Each tile: colour-coded group stripe, oracle name, description snippet (2-line clamp)
         ▼
-  OracleDetailDialog (on tile click)
+  OraclesDialog — detail view (on tile click)
     ├── Oracle title + description
     ├── Full table (rendered HTML)
-    └── [Cancel] [Roll] buttons
+    └── [Close] [Roll] buttons
           │  Roll button:
           │    1. Call rollOracle(key) → build result HTML
-          │    2. animateDice([d100])  → 3D dice animation (black + white d10s)
-          │    3. appendLog(title, html) → session log entry
-          │    4. Close both dialogs
+          │    2. Close the dialog
+          │    3. animateDice([d100])  → 3D dice animation (black + white d10s)
+          │    4. appendLog(title, html) → session log entry
 ```
 
 ---

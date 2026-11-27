@@ -41,8 +41,7 @@
           "position": "bottom",
           "maxValue": 3,
           "default": 3,
-          "icon": "heart",
-          "shortLabel": "Stone Lizard"
+          "icon": "heart"
         }
       ],
       "source": "delve"

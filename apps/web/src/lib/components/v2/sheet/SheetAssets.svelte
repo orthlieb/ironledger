@@ -14,6 +14,7 @@
 	import { fieldShown, fieldValue, findCharacterField } from '#lib/characterFields.svelte.js';
 	import { firstPreconditionFailure } from '#lib/preconditions.js';
 	import { assetIcon } from '#lib/iconRegistry.js';
+	import { assetCategoryColor } from '#lib/assetCategories.js';
 	import type { AssetDefinition, CharacterAsset, CharacterData } from '#lib/types.js';
 	import gemSvg from '#icons/gem-solid.svg?raw';
 	import swordSvg from '#icons/sword-solid.svg?raw';
@@ -56,15 +57,6 @@
 		mana: iconMana,
 		puppet: iconPuppet,
 		'rock-golem': iconGolem,
-	};
-
-	/** Category colour for asset tabs — mirrors AssetCard's CAT_COLOR. */
-	const CAT_COLOR: Record<string, string> = {
-		'Combat Talent': 'var(--color-iron)',
-		Path: 'var(--color-edge)',
-		Companion: 'var(--color-heart)',
-		Ritual: 'var(--color-mana)',
-		Touched: 'var(--color-touched)',
 	};
 
 	// Find the first `counter` custom field on the asset (e.g. Mana for
@@ -164,7 +156,7 @@
 	<div class="ca-asset-grid" aria-label="Assets" data-tour="char-assets">
 		{#each cd.assets ?? [] as a (a.assetId)}
 			{@const def = findAsset(a.assetId)}
-			{@const catColor = CAT_COLOR[def?.category ?? ''] ?? 'var(--text-muted)'}
+			{@const catColor = assetCategoryColor(def?.category)}
 			{@const counter = assetCounter(a, cd.globalValues)}
 			{@const display = assetFieldName(def) ?? assetDisplayName(a, def)}
 			{@const blocked = assetBlocked(def)}

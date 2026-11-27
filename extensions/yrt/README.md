@@ -247,14 +247,14 @@ Some Yrt foes inflict harm that starts low and worsens the longer the character 
 
 #### Foe definition fields
 
-| Field                      | Type    | Description                                                                                                                                 |
-| -------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `escalates`                | boolean | When `true`, the foe's harm is variable. The FoeCard renders a +/− counter instead of a static Harm badge.                                  |
-| `escalatingHarm`           | object  | _(Optional)_ Metadata documenting escalation rules for reference. Not read by the app at runtime: the UI derives caps from `effectiveRank`. |
-| `escalatingHarm.startHarm` | number  | Starting harm value (always `1`).                                                                                                           |
-| `escalatingHarm.trigger`   | string  | Narrative trigger key (e.g., `"miss-endure-harm"`).                                                                                         |
-| `escalatingHarm.rankCaps`  | object  | Maps rank number → maximum harm (e.g., `{ "1": 2, "2": 3, "3": 4, "4": 5, "5": 5 }`).                                                       |
-| `escalatingHarm.removal`   | string  | Prose description of how to remove the foe and reset escalation.                                                                            |
+| Field                      | Type    | Description                                                                                                                                  |
+| -------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| `escalates`                | boolean | When `true`, the foe's harm is variable. The Foes area's Core tab adds an Escalating Harm +/− counter, and its Harm badge reads `Harm: N ↑`. |
+| `escalatingHarm`           | object  | _(Optional)_ Metadata documenting escalation rules for reference. Not read by the app at runtime: the UI derives caps from `effectiveRank`.  |
+| `escalatingHarm.startHarm` | number  | Starting harm value (always `1`).                                                                                                            |
+| `escalatingHarm.trigger`   | string  | Narrative trigger key (e.g., `"miss-endure-harm"`).                                                                                          |
+| `escalatingHarm.rankCaps`  | object  | Maps rank number → maximum harm (e.g., `{ "1": 2, "2": 3, "3": 4, "4": 5, "5": 5 }`).                                                        |
+| `escalatingHarm.removal`   | string  | Prose description of how to remove the foe and reset escalation.                                                                             |
 
 ```json
 {
@@ -279,7 +279,7 @@ Some Yrt foes inflict harm that starts low and worsens the longer the character 
 
 #### Harm cap by effective rank
 
-The GCB derives the escalation ceiling from the encounter's `effectiveRank` (after quantity adjustment):
+The Foes area (`FoesArea.svelte`) derives the escalation ceiling from the encounter's `effectiveRank` (after quantity adjustment):
 
 | Effective Rank  | Cap |
 | --------------- | --- |
@@ -305,15 +305,15 @@ Some Yrt foes carry a Gray-mana defense that builds up on each miss, making prog
 
 #### Foe definition fields
 
-| Field                            | Type    | Description                                                                                                                              |
-| -------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `escalatesDefense`               | boolean | When `true`, the foe has an escalating defense. The FoeCard renders a +/− counter and shows a `Progress: N ↓` badge when defense > 0.    |
-| `escalatingDefense`              | object  | _(Optional)_ Metadata documenting defense rules for reference. Not read by the app at runtime: the UI derives caps from `effectiveRank`. |
-| `escalatingDefense.startDefense` | number  | Starting defense value (always `0`).                                                                                                     |
-| `escalatingDefense.trigger`      | string  | Narrative trigger key (e.g., `"miss"`).                                                                                                  |
-| `escalatingDefense.rankCaps`     | object  | Maps rank → max defense value (= `progressPerHit − 1`): `{ "1": 11, "2": 7, "3": 3, "4": 1, "5": 0 }`.                                   |
-| `escalatingDefense.minimum`      | number  | Minimum defense value (always `0`).                                                                                                      |
-| `escalatingDefense.removal`      | string  | Prose description of what happens when the encounter ends.                                                                               |
+| Field                            | Type    | Description                                                                                                                                                         |
+| -------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `escalatesDefense`               | boolean | When `true`, the foe has an escalating defense. The Foes area's Core tab adds an Escalating Defense +/− counter and shows a `Progress: N ↓` badge when defense > 0. |
+| `escalatingDefense`              | object  | _(Optional)_ Metadata documenting defense rules for reference. Not read by the app at runtime: the UI derives caps from `effectiveRank`.                            |
+| `escalatingDefense.startDefense` | number  | Starting defense value (always `0`).                                                                                                                                |
+| `escalatingDefense.trigger`      | string  | Narrative trigger key (e.g., `"miss"`).                                                                                                                             |
+| `escalatingDefense.rankCaps`     | object  | Maps rank → max defense value (= `progressPerHit − 1`): `{ "1": 11, "2": 7, "3": 3, "4": 1, "5": 0 }`.                                                              |
+| `escalatingDefense.minimum`      | number  | Minimum defense value (always `0`).                                                                                                                                 |
+| `escalatingDefense.removal`      | string  | Prose description of what happens when the encounter ends.                                                                                                          |
 
 ```json
 {

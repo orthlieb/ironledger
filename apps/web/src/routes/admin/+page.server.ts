@@ -1,9 +1,9 @@
 /**
  * /admin route guard.
  *
- * Admin UI lives entirely in +page.svelte and fetches its data client-side,
- * so this server load only enforces auth + role. Non-admins and unauthenticated
- * users are bounced out.
+ * The admin UI (+page.svelte and its tabs in #lib/components/admin/) fetches
+ * its data client-side, so this server load only enforces auth + role.
+ * Non-admins and unauthenticated users are bounced out.
  */
 import { redirect } from '@sveltejs/kit';
 import type { PageServerLoad } from './$types';

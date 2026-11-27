@@ -13,6 +13,7 @@
 	 */
 
 	import type { MoveDefinition } from '@ironledger/shared';
+	import LoadingSpinner from '#lib/components/LoadingSpinner.svelte';
 	import type { DiceCtx } from '#lib/diceContext.svelte.js';
 	import type { PreconditionContext } from '#lib/preconditions.js';
 	import { headingText } from '#lib/fontStore.svelte.js';
@@ -997,7 +998,7 @@
 				<!-- Tile grid grouped by category -->
 				<div class="md-body">
 					{#if moves.length === 0}
-						<div class="md-loading">Loading moves…</div>
+						<div class="md-loading"><LoadingSpinner label="Loading moves…" /></div>
 					{:else}
 						{@const list = filteredMoves()}
 						{#if list.length === 0}

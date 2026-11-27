@@ -551,8 +551,7 @@
       "customFields": [
         {
           "field": "mana",
-          "position": "bottom",
-          "tooltipLabel": "Conclave Ritual"
+          "position": "bottom"
         }
       ],
       "source": "yrt",
@@ -670,8 +669,7 @@
       "customFields": [
         {
           "field": "mana",
-          "position": "bottom",
-          "tooltipLabel": "Conclave Ritual"
+          "position": "bottom"
         }
       ],
       "source": "yrt",
@@ -785,8 +783,7 @@
       "customFields": [
         {
           "field": "mana",
-          "position": "bottom",
-          "tooltipLabel": "Conclave Ritual"
+          "position": "bottom"
         }
       ],
       "source": "yrt",
@@ -904,8 +901,7 @@
       "customFields": [
         {
           "field": "mana",
-          "position": "bottom",
-          "tooltipLabel": "Conclave Ritual"
+          "position": "bottom"
         }
       ],
       "source": "yrt",
@@ -946,7 +942,6 @@
           "id": "doses",
           "type": "counter",
           "label": "Doses",
-          "shortLabel": "Doses",
           "position": "bottom",
           "maxValue": 5,
           "icon": "skull-and-crossbones"

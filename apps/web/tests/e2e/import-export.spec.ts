@@ -23,7 +23,7 @@ import {
 	setExpansions,
 	resetExpansions,
 } from './helpers/reset';
-import { settleHome } from './helpers/home';
+import { gotoHome } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
 // The home page has a hidden file input marked with `data-import-root="home"`
@@ -66,17 +66,6 @@ async function expectImportError(
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-/** Navigate to /home and wait for the page to finish loading. */
-async function gotoHome(page: import('@playwright/test').Page) {
-	await page.goto('/home');
-	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page
-		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-	await settleHome(page);
-}
 
 /** Open Hamburger → Export. The dialog is a single filter+checklist that opens
  *  with every item selected and Zip as the default format. */

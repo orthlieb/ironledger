@@ -507,7 +507,6 @@ character and global fields:
     "scope": "global",
     "type": "counter",
     "label": "Mana",
-    "shortLabel": "Mana",
     "maxValue": 10,
     "default": "0",
     "icon": "mana"
@@ -536,7 +535,7 @@ An asset declares its own `asset` fields in `customFields`, as now (they
 take `writable` too). It refers to a `global` field rather than declaring it:
 
 ```jsonc
-"customFields": [{ "field": "mana", "position": "bottom", "tooltipLabel": "Conclave Ritual" }]
+"customFields": [{ "field": "mana", "position": "bottom" }]
 ```
 
 The four Conclave Rituals each refer to mana this way, so its maximum,

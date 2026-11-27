@@ -94,25 +94,24 @@ Hydration is synchronous on first import (with a `typeof window` guard for SSR).
 | `OraclesDialog`                 | Hides 25 Delve oracles (site-_, threat-_, monstrosity-_, feature-_, char-disposition, combat-event\*, trap) |
 | `FoePickerDialog`               | Hides ~45 entries from `foes_delve.json`                                                                    |
 | `AssetCard` (rarity slot)       | Hides the acquire-rarity affordance                                                                         |
-| Expeditions tab                 | Hides **+ New Site** (Journey creation still works)                                                         |
-| `GlobalContextBar`              | Hides feature/danger roll buttons and **Roll Denizen** action                                               |
-| `CharacterSheet`                | Hides the Failures track group                                                                              |
+| `ExpeditionsArea` switcher      | Leaves out **+ New Site…** (Journey creation still works)                                                   |
+| `SheetCore` (Core tab)          | Hides the Failures track                                                                                    |
 | `VowCard`                       | Hides the Threat + Menace controls; `ProgressTrack` is rendered with `dangerCount: 0`                       |
 | `MovesDialog` outcome rendering | Suppresses the `+1 failure` link on a miss                                                                  |
 
 ### YRT OFF
 
-| Surface           | Effect                                                                                       |
-| ----------------- | -------------------------------------------------------------------------------------------- |
-| `MovesDialog`     | Hides Yrt chip and `yrt.json` (Cast Conclave Ritual, etc.)                                   |
-| `OraclesDialog`   | Hides freeport-denizen, mana-backlash, touched-features, yrt-animal, yrt-region, yrt-touched |
-| `FoePickerDialog` | Hides Mana Wraith, Verdant Crawler (and every other YRT foe)                                 |
-| `AssetPicker`     | Hides Touched chip and YRT assets (2 Touched, 4 Ritual, 2 Path from `assets_yrt.json`)       |
-| Communities       | Hides the YRT radio in the region picker                                                     |
+| Surface           | Effect                                                                                          |
+| ----------------- | ----------------------------------------------------------------------------------------------- |
+| `MovesDialog`     | Hides Yrt chip and `yrt.json` (Cast Conclave Ritual, etc.)                                      |
+| `OraclesDialog`   | Hides freeport-denizen, mana-backlash, touched-features, yrt-animal, yrt-region, yrt-touched    |
+| `FoePickerDialog` | Hides Mana Wraith, Verdant Crawler (and every other YRT foe)                                    |
+| `AssetPicker`     | Hides Touched chip and YRT assets (2 Touched, 4 Ritual, 2 Path from `assets_yrt.json`)          |
+| Connections       | Region rolls from the base Region oracle (YRT's `yrtRegion` supersedes it only while YRT is on) |
 
 ### Always preserved
 
-- Existing `Site` records and the `/api/v1/catalogue/delve` endpoint (so `SiteCard` and `DelveTableDialog` resolve themes/domains)
+- Existing `Site` records and the `/api/v1/catalogue/delve` endpoint (so `ExpeditionsArea` still resolves a site's themes/domains, and its feature/danger rolls and Roll Denizen keep working)
 - `mana` global counter on existing characters — toggling YRT off doesn't strip globals; only new YRT asset acquisitions are gated
 - `touched` / `rarityCount` / `mana` precondition handlers continue to evaluate against character data so existing assets don't break
 - The base `mystic-backlash` oracle (`source: base`, not YRT)

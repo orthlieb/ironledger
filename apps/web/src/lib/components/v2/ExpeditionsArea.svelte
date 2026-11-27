@@ -13,10 +13,12 @@
 	import {
 		getExpeditions,
 		isExpeditionLoading,
+		isExpeditionLoaded,
 		persistExpeditionsNow,
 		removeExpedition,
 		addExpedition,
 	} from '#lib/expeditionStore.svelte.js';
+	import LoadingSpinner from '#lib/components/LoadingSpinner.svelte';
 	import type {
 		Expedition,
 		Journey,
@@ -190,7 +192,8 @@
 	let editingShortDesc = $state(false);
 
 	const expeditions = $derived(getExpeditions());
-	const loading = $derived(isExpeditionLoading());
+	// The spinner until the first load has settled, not the empty state.
+	const loading = $derived(!isExpeditionLoaded() || isExpeditionLoading());
 
 	// Open the expedition this device had open last, or else the first.
 	$effect(() => {
@@ -737,7 +740,7 @@
 	</header>
 
 	{#if loading}
-		<div class="ea-loading">Loading…</div>
+		<div class="ea-loading"><LoadingSpinner label="Loading…" /></div>
 	{:else if expeditions.length === 0}
 		<div class="ea-empty">
 			<span class="ea-empty-icon" aria-hidden="true">{@html appIcon('expeditions')}</span>

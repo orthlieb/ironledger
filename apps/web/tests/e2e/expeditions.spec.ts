@@ -12,7 +12,7 @@
  */
 import { test, expect } from '@playwright/test';
 import { resetExpeditions, resetFoes } from './helpers/reset';
-import { expectSwitcherShowsActiveIcon } from './helpers/home';
+import { expectSwitcherShowsActiveIcon, waitForArea } from './helpers/home';
 
 const EXP_AREA = '.home-area--expeditions';
 const EXP_HEADER = `${EXP_AREA} .ea-header`;
@@ -23,15 +23,6 @@ const EXP_COMBOBOX = `${EXP_HEADER} .ea-hdr-combobox`;
 const EXP_ACTIONS = `${EXP_AREA} .ea-header-actions`;
 
 const FOE_AREA = '.home-area--foes';
-
-async function waitForExpeditionsLoaded(page: import('@playwright/test').Page) {
-	await expect(page.locator(`${EXP_AREA} .ea-loading`)).not.toBeVisible({ timeout: 10_000 });
-	await page
-		.locator(`${EXP_AREA} .ea-empty, ${EXP_AREA} .ea-body`)
-		.first()
-		.waitFor({ timeout: 10_000, state: 'attached' });
-	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
-}
 
 async function switchExpTab(page: import('@playwright/test').Page, label: string) {
 	await page.locator(`${EXP_AREA} .ea-tab`, { hasText: new RegExp(`^${label}$`, 'i') }).click();
@@ -186,7 +177,7 @@ test.describe('Expeditions area (v2)', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
-		await waitForExpeditionsLoaded(page);
+		await waitForArea(page, 'expeditions', { settle: true });
 	});
 
 	test('shows the expedition switcher combobox in the header', async ({ page }) => {

@@ -16,10 +16,10 @@
  * Adventure tab; the "+ Site" button lives in the Expeditions area header.
  */
 import { test, expect, type Page } from '@playwright/test';
-import { ensureCharacter } from './helpers/home';
+import { ensureCharacter, waitForArea } from './helpers/home';
 import { resetCommunities, resetExpansions, setExpansions } from './helpers/reset';
+import { openSettings } from './helpers/settings';
 
-const CHAR_AREA = '.home-area--characters';
 const FOE_AREA = '.home-area--foes';
 const FOE_HEADER = `${FOE_AREA} .fa-header`;
 const EXP_AREA = '.home-area--expeditions';
@@ -49,7 +49,7 @@ async function setExpansionsOnAccount(
 		>,
 	);
 	await page.reload();
-	await waitForHome(page);
+	await waitForArea(page, 'characters', { settle: true });
 }
 
 /** Click a Settings toggle, and wait for its choice to reach the account. */
@@ -60,20 +60,6 @@ async function toggleAndSave(page: Page, label: string, state: 'On' | 'Off'): Pr
 		),
 		settingsToggleButton(page, label, state).click(),
 	]);
-}
-
-async function openSettings(page: Page): Promise<void> {
-	// HamburgerMenu is a bits-ui DropdownMenu — Content portals with class
-	// `.hm-menu`, items with `.hm-item`. The Trigger keeps its `.hamburger-btn`
-	// class from before the migration.
-	await page.locator('.hamburger-btn').click();
-	await page.locator('.hm-menu').waitFor({ state: 'visible', timeout: 3_000 });
-	await page.locator('.hm-item', { hasText: /settings/i }).click();
-	await expect(page.locator('.settings-dialog')).toBeVisible({ timeout: 3_000 });
-	// Settings is tabbed (Appearance / Dice / Expansions / AI / Account); the expansion
-	// toggles live behind the Expansions tab, so activate it.
-	await page.locator('.sd-tab', { hasText: /^Expansions$/ }).click();
-	await expect(page.locator('.sd-tab-panel:not([hidden])')).toBeVisible({ timeout: 3_000 });
 }
 
 function settingsToggleButton(page: Page, label: string, state: 'On' | 'Off') {
@@ -96,18 +82,9 @@ async function openOraclesDialog(page: Page): Promise<void> {
 	await expect(page.locator('.oracles-dialog')).toBeVisible({ timeout: 8_000 });
 }
 
-async function waitForHome(page: Page): Promise<void> {
-	await page.waitForLoadState('networkidle', { timeout: 15_000 });
-	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page
-		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-}
-
 async function goHome(page: Page): Promise<void> {
 	await page.goto('/home');
-	await waitForHome(page);
+	await waitForArea(page, 'characters', { settle: true });
 }
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
@@ -135,7 +112,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	// ── 1. Defaults ───────────────────────────────────────────────────────────
 
 	test('both expansions default to ON', async ({ page }) => {
-		await openSettings(page);
+		await openSettings(page, 'Expansions');
 		await expect(settingsToggleButton(page, 'Delve', 'On')).toHaveAttribute('data-state', 'on');
 		await expect(settingsToggleButton(page, 'YRT', 'On')).toHaveAttribute('data-state', 'on');
 	});
@@ -280,21 +257,21 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 	// ── 5. Persistence ────────────────────────────────────────────────────────
 
 	test('toggles persist across page reload', async ({ page }) => {
-		await openSettings(page);
+		await openSettings(page, 'Expansions');
 		await toggleAndSave(page, 'Delve', 'Off');
 		await toggleAndSave(page, 'YRT', 'Off');
 		await page.keyboard.press('Escape');
 		await page.reload();
-		await waitForHome(page);
+		await waitForArea(page, 'characters', { settle: true });
 
-		await openSettings(page);
+		await openSettings(page, 'Expansions');
 		await expect(settingsToggleButton(page, 'Delve', 'Off')).toHaveAttribute('data-state', 'on');
 		await expect(settingsToggleButton(page, 'YRT', 'Off')).toHaveAttribute('data-state', 'on');
 	});
 
 	test('toggles follow the user to another browser', async ({ page, browser }, testInfo) => {
 		// Made in this browser…
-		await openSettings(page);
+		await openSettings(page, 'Expansions');
 		await toggleAndSave(page, 'Delve', 'Off');
 		await page.keyboard.press('Escape');
 
@@ -303,7 +280,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		try {
 			const page2 = await other.newPage();
 			await goHome(page2);
-			await openSettings(page2);
+			await openSettings(page2, 'Expansions');
 			await expect(settingsToggleButton(page2, 'Delve', 'Off')).toHaveAttribute('data-state', 'on');
 			await expect(settingsToggleButton(page2, 'YRT', 'On')).toHaveAttribute('data-state', 'on');
 		} finally {
@@ -321,7 +298,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		});
 		await page.keyboard.press('Escape');
 
-		await openSettings(page);
+		await openSettings(page, 'Expansions');
 		await settingsToggleButton(page, 'Delve', 'On').click();
 		await page.keyboard.press('Escape');
 
@@ -417,7 +394,7 @@ test.describe('Expansion toggles — Delve / YRT', () => {
 		// yet, so the reload rehydrates a stub NPC and the "value survives reload"
 		// assertion below is testing nothing (element-not-found rather than
 		// element-with-empty-value).
-		await waitForHome(page);
+		await waitForArea(page, 'characters', { settle: true });
 		await setExpansionsOnAccount(page, { lodestar: false });
 
 		// After reload the same NPC is still the active card.

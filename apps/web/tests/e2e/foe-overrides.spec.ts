@@ -11,6 +11,7 @@
  */
 import { test, expect, type Page, type Route } from '@playwright/test';
 import { resetExpansions, setExpansions } from './helpers/reset';
+import { waitForArea } from './helpers/home';
 
 const FOE_AREA = '.home-area--foes';
 const FOE_HEADER = `${FOE_AREA} .fa-header`;
@@ -56,15 +57,6 @@ const FIXTURE_PAYLOAD = {
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-async function waitForHome(page: Page) {
-	// Foes area: wait for it to render either spines or the empty state.
-	await expect(page.locator(`${FOE_AREA} .fa-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page
-		.locator(`${FOE_AREA} .fa-empty, ${FOE_AREA} .fa-body`)
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-}
 
 /** Reset toggles for E2E: Delve to its default (on), YRT forced on. Production
  *  ships YRT with defaultEnabled:false; the "YRT on:" tests need it enabled.
@@ -133,10 +125,10 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 		// the fixture, not real data.
 		await stubFoesEndpoint(page);
 		await page.goto('/home');
-		await waitForHome(page);
+		await waitForArea(page, 'foes');
 		await resetToggles();
 		await page.reload();
-		await waitForHome(page);
+		await waitForArea(page, 'foes');
 	});
 
 	test('YRT on: excluded foe is hidden from the picker', async ({ page }) => {
@@ -153,7 +145,7 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 	test('YRT off: previously excluded foe reappears in the picker', async ({ page }) => {
 		await setToggles({ yrt: false });
 		await page.reload();
-		await waitForHome(page);
+		await waitForArea(page, 'foes');
 
 		await openFoePicker(page);
 		await expect(
@@ -181,7 +173,7 @@ test.describe('Foe overrides — expansion exclusion + addendum', () => {
 	test('YRT off: addendum is NOT shown even though the data is loaded', async ({ page }) => {
 		await setToggles({ yrt: false });
 		await page.reload();
-		await waitForHome(page);
+		await waitForArea(page, 'foes');
 
 		await openFoePicker(page);
 		await page

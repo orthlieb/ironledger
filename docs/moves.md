@@ -149,16 +149,16 @@ Moves that fail preconditions appear dimmed in the picker with a tooltip showing
 
 ## Key Files
 
-| File                                                  | Purpose                                                                                                   |
-| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| `apps/api/data/moves/*.json`                          | Move definitions (10 category files)                                                                      |
-| `apps/api/src/routes/catalogue.ts`                    | API endpoint serving moves                                                                                |
-| `apps/web/src/routes/api/catalogue/moves/+server.ts`  | BFF proxy with ETag caching                                                                               |
-| `apps/web/src/lib/moveStore.svelte.ts`                | Reactive data store                                                                                       |
-| `apps/web/src/lib/components/MovesDialog.svelte`      | Two-view dialog (picker + detail); `resolveTitle(move, stat?)` resolves `logTitle` templates at roll time |
-| `apps/web/src/lib/components/GlobalContextBar.svelte` | Moves button in action bar                                                                                |
-| `apps/web/src/lib/components/LogPanel.svelte`         | Move outcome CSS + click delegation for all link types                                                    |
-| `apps/web/src/lib/components/OraclesDialog.svelte`    | Oracle dialog (supports open with key)                                                                    |
-| `apps/web/src/lib/log.svelte.ts`                      | Session log store + XP spend bus + action bus                                                             |
-| `apps/web/src/lib/components/CharacterSheet.svelte`   | Consumes action bus for resource/debility changes                                                         |
-| `apps/web/src/lib/preconditions.ts`                   | Precondition evaluation engine                                                                            |
+| File                                                   | Purpose                                                                                                                                       |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/api/data/moves/*.json`                           | Move definitions (10 category files)                                                                                                          |
+| `apps/api/src/routes/catalogue.ts`                     | API endpoint serving moves                                                                                                                    |
+| `apps/web/src/routes/api/catalogue/moves/+server.ts`   | BFF proxy with ETag caching                                                                                                                   |
+| `apps/web/src/lib/moveStore.svelte.ts`                 | Reactive data store                                                                                                                           |
+| `apps/web/src/lib/components/MovesDialog.svelte`       | Two-view dialog (picker + detail); `resolveTitle(move, stat?)` resolves `logTitle` templates at roll time                                     |
+| `apps/web/src/routes/+layout.svelte`                   | Move button in the `.app-nav` toolbar; builds the dialog's condition and progress-track context from the active character, foe and expedition |
+| `apps/web/src/lib/components/LogPanel.svelte`          | Move outcome CSS + click delegation for all link types                                                                                        |
+| `apps/web/src/lib/components/OraclesDialog.svelte`     | Oracle dialog (supports open with key)                                                                                                        |
+| `apps/web/src/lib/log.svelte.ts`                       | Session log store + action bus                                                                                                                |
+| `apps/web/src/lib/components/v2/CharactersArea.svelte` | Consumes action bus for resource/debility changes                                                                                             |
+| `apps/web/src/lib/preconditions.ts`                    | Precondition evaluation engine                                                                                                                |

@@ -20,14 +20,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetAll } from './helpers/reset';
-
-async function waitForHome(page: Page): Promise<void> {
-	await page
-		.locator('[aria-label="Open the campaign map"]')
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
-}
+import { waitForMapButton } from './helpers/home';
 
 async function openMap(page: Page): Promise<void> {
 	await page.locator('[aria-label="Open the campaign map"]').first().click();
@@ -45,7 +38,7 @@ test.describe('Map dialog — fullscreen toggle (desktop)', () => {
 		await page.goto('/home');
 		await page.evaluate(() => localStorage.removeItem('ironledger:map:fullscreen'));
 		await page.reload();
-		await waitForHome(page);
+		await waitForMapButton(page);
 	});
 
 	test('title reads "Maps" and the fullscreen toggle is rendered', async ({ page }) => {
@@ -82,7 +75,7 @@ test.describe('Map dialog — fullscreen toggle (desktop)', () => {
 		expect(saved).toBe('1');
 
 		await page.reload();
-		await waitForHome(page);
+		await waitForMapButton(page);
 		await openMap(page);
 		// The re-opened dialog is fullscreen without another click.
 		await expect(page.locator('.mp-dialog')).toHaveClass(/mp-dialog--fullscreen/);
@@ -101,7 +94,7 @@ test.describe('Map dialog — mobile auto-fullscreen', () => {
 		// coincidentally on because a previous run flipped it.
 		await page.evaluate(() => localStorage.removeItem('ironledger:map:fullscreen'));
 		await page.reload();
-		await waitForHome(page);
+		await waitForMapButton(page);
 	});
 
 	test('no toggle is rendered; dialog auto-fullscreens; drag grip is hidden', async ({ page }) => {
