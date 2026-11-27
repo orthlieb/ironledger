@@ -20,22 +20,13 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetExpeditions } from './helpers/reset';
-import { selectExpeditionByName } from './helpers/home';
+import { selectExpeditionByName, waitForArea } from './helpers/home';
 import { waitForSave } from './helpers/saves';
 
 const EXP_AREA = '.home-area--expeditions';
 const EXP_HEADER = `${EXP_AREA} .ea-header`;
 const EXP_COMBOBOX = `${EXP_HEADER} .ea-hdr-combobox`;
 const EXP_ACTIONS = `${EXP_AREA} .ea-header-actions`;
-
-async function waitForExpeditionsLoaded(page: Page) {
-	await expect(page.locator(`${EXP_AREA} .ea-loading`)).not.toBeVisible({ timeout: 10_000 });
-	await page
-		.locator(`${EXP_AREA} .ea-empty, ${EXP_AREA} .ea-body`)
-		.first()
-		.waitFor({ timeout: 10_000, state: 'attached' });
-	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
-}
 
 async function expCount(page: Page): Promise<number> {
 	return Number((await page.locator(EXP_ACTIONS).getAttribute('data-exp-count')) ?? '0');
@@ -79,7 +70,7 @@ test.describe('Expeditions area (v2) — Scene Challenge', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
-		await waitForExpeditionsLoaded(page);
+		await waitForArea(page, 'expeditions', { settle: true });
 	});
 
 	test('the switcher opens the new-scene dialog with name, objective, and rank', async ({
@@ -170,7 +161,7 @@ test.describe('Expeditions area (v2) — Scene Challenge', () => {
 		await saved;
 
 		await page.reload();
-		await waitForExpeditionsLoaded(page);
+		await waitForArea(page, 'expeditions', { settle: true });
 		await selectExpeditionByName(page, name);
 		await expect(objectiveInput).toHaveValue('Convince the elder');
 		await expect(consequencesInput).toHaveValue('The village turns on us');
@@ -192,7 +183,7 @@ test.describe('Expeditions area (v2) — Scene Challenge', () => {
 		// never saved, and no number of reloads brings it back.)
 		await expect(async () => {
 			await page.reload();
-			await waitForExpeditionsLoaded(page);
+			await waitForArea(page, 'expeditions', { settle: true });
 			await selectExpeditionByName(page, name);
 			await expect(consequencesInput).toHaveValue('The bridge falls', { timeout: 3_000 });
 		}).toPass({ timeout: 30_000 });

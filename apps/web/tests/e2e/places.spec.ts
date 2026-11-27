@@ -12,20 +12,12 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetCommunities } from './helpers/reset';
+import { waitForArea } from './helpers/home';
 
 const CM_AREA = '.home-area--communities';
 const CM_HEADER = `${CM_AREA} .cm-header`;
 const CM_COMBOBOX = `${CM_HEADER} .cm-hdr-combobox`;
 const CM_ACTIONS = `${CM_AREA} .cm-header-actions`;
-
-async function waitForConnectionsLoaded(page: Page) {
-	await expect(page.locator(`${CM_AREA} .cm-loading`)).not.toBeVisible({ timeout: 10_000 });
-	await page
-		.locator(`${CM_AREA} .cm-empty, ${CM_AREA} .cm-body`)
-		.first()
-		.waitFor({ timeout: 10_000, state: 'attached' });
-	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
-}
 
 async function entryCount(page: Page): Promise<number> {
 	return Number((await page.locator(CM_ACTIONS).getAttribute('data-entry-count')) ?? '0');
@@ -63,7 +55,7 @@ test.describe('Landmarks (v2)', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
-		await waitForConnectionsLoaded(page);
+		await waitForArea(page, 'communities', { settle: true });
 	});
 
 	test('the switcher opens the New Landmark dialog', async ({ page }) => {

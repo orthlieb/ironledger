@@ -1,4 +1,5 @@
 import { test, expect } from '@playwright/test';
+import { gotoHome } from './helpers/home';
 
 /**
  * Modal picker dialogs must lock the underlying page's scroll.
@@ -24,17 +25,6 @@ test.use({ viewport: { width: 950, height: 844 } });
 const FOE_AREA = '.home-area--foes';
 const FOE_HEADER = `${FOE_AREA} .fa-header`;
 
-async function gotoHomeAndWait(page: import('@playwright/test').Page) {
-	await page.goto('/home');
-	await expect(page.locator(`${FOE_AREA} .fa-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page
-		.locator(`${FOE_AREA} .fa-empty, ${FOE_AREA} .fa-body`)
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-	// Combobox triggers are unreliable mid-hydration — let loads settle.
-	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
-}
-
 /** v2: open the foe picker via the header combobox → "+ New foe…". */
 async function openFoePicker(page: import('@playwright/test').Page) {
 	await page.locator(`${FOE_HEADER} .fa-hdr-combobox`).click();
@@ -42,7 +32,7 @@ async function openFoePicker(page: import('@playwright/test').Page) {
 }
 
 test.beforeEach(async ({ page }) => {
-	await gotoHomeAndWait(page);
+	await gotoHome(page, 'foes');
 });
 
 // v2 scroll-lock architecture (see CLAUDE.md): the dialog is a bits-ui

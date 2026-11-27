@@ -24,20 +24,13 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetAll, clearMapMarkers, getTestToken } from './helpers/reset';
+import { waitForMapButton } from './helpers/home';
 
 const V1 = 'http://127.0.0.1:3000/api/v1';
 
 // Tiny 1×1 PNG — same fixture other map specs use for a background.
 const TINY_PNG =
 	'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI6QAAAABJRU5ErkJggg==';
-
-async function waitForHome(page: Page): Promise<void> {
-	await page
-		.locator('[aria-label="Open the campaign map"]')
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
-}
 
 async function openMap(page: Page): Promise<void> {
 	await page.locator('[aria-label="Open the campaign map"]').first().click();
@@ -93,7 +86,7 @@ test.describe('Map ruler — scale enabled', () => {
 		// stray dot from the newest addition.
 		await clearMapMarkers();
 		await page.goto('/home');
-		await waitForHome(page);
+		await waitForMapButton(page);
 		await openMap(page);
 	});
 
@@ -302,7 +295,7 @@ test.describe('Map ruler — no scale', () => {
 		page,
 	}) => {
 		await page.goto('/home');
-		await waitForHome(page);
+		await waitForMapButton(page);
 		await openMap(page);
 
 		const rulerBtn = page.locator('[aria-label="Measure distance"]');

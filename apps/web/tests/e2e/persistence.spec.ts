@@ -17,6 +17,7 @@
 import { test, expect, request as playwrightRequest } from '@playwright/test';
 import { resetAll, seedNpc } from './helpers/reset';
 import type { Page } from '@playwright/test';
+import { waitForArea, settleHome } from './helpers/home';
 
 const API_BASE = 'http://127.0.0.1:3000';
 const TEST_EMAIL = 'test@ironledger.local';
@@ -62,45 +63,11 @@ async function loginAndGoHome(page: Page): Promise<void> {
 
 	await page.goto('/home');
 	await page.waitForURL(/\/home/, { timeout: 10_000 });
-	await waitForCharactersArea(page);
-	await settle(page);
+	await waitForArea(page);
+	await settleHome(page);
 }
 
 // ── Wait helpers ──────────────────────────────────────────────────────────────
-
-/** Let initial loads + hydration settle before interacting with comboboxes. */
-async function settle(page: Page): Promise<void> {
-	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
-}
-
-async function waitForCharactersArea(page: Page) {
-	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page
-		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-}
-async function waitForFoesArea(page: Page) {
-	await expect(page.locator(`${FOE_AREA} .fa-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page
-		.locator(`${FOE_AREA} .fa-empty, ${FOE_AREA} .fa-body`)
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-}
-async function waitForExpeditionsArea(page: Page) {
-	await expect(page.locator(`${EXP_AREA} .ea-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page
-		.locator(`${EXP_AREA} .ea-empty, ${EXP_AREA} .ea-body`)
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-}
-async function waitForCommunitiesArea(page: Page) {
-	await expect(page.locator(`${CM_AREA} .cm-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page
-		.locator(`${CM_AREA} .cm-empty, ${CM_AREA} .cm-body`)
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-}
 
 // ── Count helpers (live data-* attributes) ──────────────────────────────────
 
@@ -188,8 +155,8 @@ test.describe('Data persistence across logout / login (v2)', () => {
 
 	test('characters survive logout and login', async ({ page }) => {
 		await page.goto('/home');
-		await waitForCharactersArea(page);
-		await settle(page);
+		await waitForArea(page);
+		await settleHome(page);
 
 		if ((await charCount(page)) === 0) await createChar(page);
 		const expected = await charCount(page);
@@ -203,8 +170,8 @@ test.describe('Data persistence across logout / login (v2)', () => {
 
 	test('foe encounters survive logout and login', async ({ page }) => {
 		await page.goto('/home');
-		await waitForFoesArea(page);
-		await settle(page);
+		await waitForArea(page, 'foes');
+		await settleHome(page);
 
 		const before = await foeCount(page);
 		await addFoe(page);
@@ -213,15 +180,15 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await page.waitForTimeout(600);
 		await logout(page);
 		await loginAndGoHome(page);
-		await waitForFoesArea(page);
+		await waitForArea(page, 'foes');
 
 		expect(await foeCount(page)).toBe(before + 1);
 	});
 
 	test('expeditions (journeys) survive logout and login', async ({ page }) => {
 		await page.goto('/home');
-		await waitForExpeditionsArea(page);
-		await settle(page);
+		await waitForArea(page, 'expeditions');
+		await settleHome(page);
 
 		const before = await expCount(page);
 		await createJourney(page);
@@ -230,15 +197,15 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await page.waitForTimeout(600);
 		await logout(page);
 		await loginAndGoHome(page);
-		await waitForExpeditionsArea(page);
+		await waitForArea(page, 'expeditions');
 
 		expect(await expCount(page)).toBe(before + 1);
 	});
 
 	test('communities survive logout and login', async ({ page }) => {
 		await page.goto('/home');
-		await waitForCommunitiesArea(page);
-		await settle(page);
+		await waitForArea(page, 'communities');
+		await settleHome(page);
 
 		const before = await cmCount(page);
 		await createCommunity(page);
@@ -247,7 +214,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await page.waitForTimeout(600);
 		await logout(page);
 		await loginAndGoHome(page);
-		await waitForCommunitiesArea(page);
+		await waitForArea(page, 'communities');
 
 		expect(await cmCount(page)).toBe(before + 1);
 	});
@@ -256,11 +223,11 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		page,
 	}) => {
 		await page.goto('/home');
-		await waitForCharactersArea(page);
-		await waitForFoesArea(page);
-		await waitForExpeditionsArea(page);
-		await waitForCommunitiesArea(page);
-		await settle(page);
+		await waitForArea(page);
+		await waitForArea(page, 'foes');
+		await waitForArea(page, 'expeditions');
+		await waitForArea(page, 'communities');
+		await settleHome(page);
 
 		// Ensure at least one item in each area — the newest becomes active.
 		if ((await charCount(page)) === 0) await createChar(page);
@@ -278,9 +245,9 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await page.waitForTimeout(600);
 		await logout(page);
 		await loginAndGoHome(page);
-		await waitForFoesArea(page);
-		await waitForExpeditionsArea(page);
-		await waitForCommunitiesArea(page);
+		await waitForArea(page, 'foes');
+		await waitForArea(page, 'expeditions');
+		await waitForArea(page, 'communities');
 
 		expect(await activeName(page, CHAR_COMBOBOX)).toBe(activeChar);
 		expect(await activeName(page, FOE_COMBOBOX)).toBe(activeFoe);
@@ -290,8 +257,8 @@ test.describe('Data persistence across logout / login (v2)', () => {
 
 	test('session log entries survive logout and login', async ({ page }) => {
 		await page.goto('/home');
-		await waitForCharactersArea(page);
-		await settle(page);
+		await waitForArea(page);
+		await settleHome(page);
 
 		const uniqueText = `E2E persistence ${Date.now()}`;
 
@@ -323,8 +290,8 @@ test.describe('Data persistence across logout / login (v2)', () => {
 
 	test('foe vanquished status survives logout and login', async ({ page }) => {
 		await page.goto('/home');
-		await waitForFoesArea(page);
-		await settle(page);
+		await waitForArea(page, 'foes');
+		await settleHome(page);
 
 		if ((await foeCount(page)) === 0) await addFoe(page);
 		const vanq = page.locator(
@@ -337,7 +304,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await page.waitForTimeout(2000);
 		await logout(page);
 		await loginAndGoHome(page);
-		await waitForFoesArea(page);
+		await waitForArea(page, 'foes');
 
 		await expect(
 			page.locator(
@@ -348,8 +315,8 @@ test.describe('Data persistence across logout / login (v2)', () => {
 
 	test('expedition complete status survives logout and login', async ({ page }) => {
 		await page.goto('/home');
-		await waitForExpeditionsArea(page);
-		await settle(page);
+		await waitForArea(page, 'expeditions');
+		await settleHome(page);
 
 		if ((await expCount(page)) === 0) await createJourney(page);
 		const complete = page.locator(
@@ -362,7 +329,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await page.waitForTimeout(2000);
 		await logout(page);
 		await loginAndGoHome(page);
-		await waitForExpeditionsArea(page);
+		await waitForArea(page, 'expeditions');
 
 		await expect(
 			page.locator(
@@ -374,8 +341,8 @@ test.describe('Data persistence across logout / login (v2)', () => {
 	test('NPC deceased status survives logout and login', async ({ page }) => {
 		await seedNpc('Deceased Persist NPC');
 		await page.goto('/home');
-		await waitForCommunitiesArea(page);
-		await settle(page);
+		await waitForArea(page, 'communities');
+		await settleHome(page);
 
 		// Other connections may already exist, so explicitly select the NPC.
 		await selectConnection(page, 'Deceased Persist NPC');
@@ -389,7 +356,7 @@ test.describe('Data persistence across logout / login (v2)', () => {
 		await page.waitForTimeout(2000);
 		await logout(page);
 		await loginAndGoHome(page);
-		await waitForCommunitiesArea(page);
+		await waitForArea(page, 'communities');
 
 		await selectConnection(page, 'Deceased Persist NPC');
 		await expect(
@@ -401,8 +368,8 @@ test.describe('Data persistence across logout / login (v2)', () => {
 
 	test('cleanup: remove all foes, expeditions, and connections', async ({ page }) => {
 		await page.goto('/home');
-		await waitForFoesArea(page);
-		await settle(page);
+		await waitForArea(page, 'foes');
+		await settleHome(page);
 
 		for (let g = 0; g < 30 && (await foeCount(page)) > 0; g++) {
 			await page.locator(`${FOE_AREA} .fa-hdr-settings-btn`).click();

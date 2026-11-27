@@ -21,6 +21,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetAll, clearMapMarkers, fetchMaps } from './helpers/reset';
+import { waitForMapButton } from './helpers/home';
 
 // Tiny 1×1 red PNG — the background map-markers.spec uploads.
 const PNG_1X1 = Buffer.from(
@@ -29,14 +30,6 @@ const PNG_1X1 = Buffer.from(
 );
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-async function waitForHome(page: Page): Promise<void> {
-	await page
-		.locator('[aria-label="Open the campaign map"]')
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
-}
 
 /** Open the MapDialog and make sure the active map has a background. */
 async function openMap(page: Page): Promise<void> {
@@ -114,7 +107,7 @@ test.describe('Map markers — Buildings tab', () => {
 	test.beforeEach(async ({ page }) => {
 		await clearMapMarkers();
 		await page.goto('/home');
-		await waitForHome(page);
+		await waitForMapButton(page);
 		await openMap(page);
 		await placeMarker(page);
 	});
@@ -202,7 +195,7 @@ test.describe('Map markers — Buildings tab', () => {
 		// Full reload: the marker draws again, and its picker opens on the
 		// Buildings tab with the same building chosen.
 		await page.reload();
-		await waitForHome(page);
+		await waitForMapButton(page);
 		await openMap(page);
 		await expect(page.locator('.mp-marker')).toHaveCount(1);
 		await expect(page.locator('.mp-marker .mp-marker-icon')).toHaveCount(1, { timeout: 8_000 });

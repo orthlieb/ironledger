@@ -18,6 +18,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { zipSync, strToU8 } from 'fflate';
 import { getTestToken, resetAll } from './helpers/reset';
+import { waitForArea } from './helpers/home';
 
 // ── Test fixtures ────────────────────────────────────────────────────────────
 
@@ -141,25 +142,14 @@ function zipEnvelope(type: string, data: unknown): Buffer {
 
 async function gotoHome(page: Page) {
 	await page.goto('/home');
-	await expect(page.locator('.home-area--characters .ca-loading')).not.toBeVisible({
-		timeout: 12_000,
-	});
-	await page
-		.locator('.home-area--characters .ca-empty, .home-area--characters .ca-body')
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
+	await waitForArea(page);
 	// Imports write to the Communities/NPCs stores, so wait until that area
 	// has finished its own initial load before firing one — otherwise the
-	// first import of the suite can race store hydration.
-	await page
-		.locator('.home-area--communities .cm-empty, .home-area--communities .cm-row')
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-	// The import <input>'s change listener is wired once the page's initial
-	// store loads settle (see home/+page.svelte). Wait for the network to go
-	// idle so those loads are done — and the listener is attached — before any
-	// test fires an import, otherwise the first import can be dropped.
-	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
+	// first import of the suite can race store hydration. The import
+	// <input>'s change listener is wired once the page's initial store loads
+	// settle (see home/+page.svelte), so settle too, otherwise the first
+	// import can be dropped.
+	await waitForArea(page, 'communities', { settle: true });
 }
 
 /** Poll the session state until `predicate` holds, then continue. Each import

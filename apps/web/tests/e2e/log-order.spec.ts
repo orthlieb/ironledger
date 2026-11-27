@@ -8,6 +8,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { settleHome } from './helpers/home';
+import { openSettings } from './helpers/settings';
 
 async function openHome(page: Page) {
 	await page.goto('/home');
@@ -34,14 +35,7 @@ const shownIds = (page: Page) =>
 
 /** Settings → Appearance → Newest log entry → Top or Bottom. */
 async function setNewest(page: Page, where: 'Top' | 'Bottom') {
-	await expect(async () => {
-		await page.locator('.hamburger-btn').click();
-		await expect(page.locator('.hm-menu')).toBeVisible({ timeout: 1_000 });
-	}).toPass({ timeout: 10_000 });
-	await page.locator('.hm-item', { hasText: /settings/i }).click();
-	const dialog = page.locator('.settings-dialog');
-	await expect(dialog).toBeVisible();
-	await dialog.locator('.sd-tab', { hasText: /^Appearance$/ }).click();
+	const dialog = await openSettings(page, 'Appearance');
 	const row = dialog.locator('.sd-row', { hasText: 'Newest log entry' });
 	await row.locator('.sd-seg-btn', { hasText: where }).click();
 	await expect(row.locator('.sd-seg-btn', { hasText: where })).toHaveAttribute('data-state', 'on');

@@ -9,6 +9,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { adminToken, createVerifiedUser, deleteUserByEmail } from './helpers/admin';
+import { openSettings } from './helpers/settings';
 
 async function signIn(page: Page, email: string, password: string): Promise<void> {
 	await page.goto('/login');
@@ -37,13 +38,7 @@ test.describe('Delete my account', () => {
 		await signIn(page, email, password);
 		await page.waitForURL(/\/home/, { timeout: 15_000 });
 
-		// A click before the page has hydrated does nothing; retry until the menu opens.
-		await expect(async () => {
-			await page.locator('.hamburger-btn').click();
-			await expect(page.locator('.hm-menu')).toBeVisible({ timeout: 1_000 });
-		}).toPass({ timeout: 10_000 });
-		await page.locator('.hm-item', { hasText: /settings/i }).click();
-		await page.locator('.sd-tab', { hasText: /^Account$/ }).click();
+		await openSettings(page, 'Account');
 		await expect(page.getByRole('link', { name: 'privacy notice' })).toHaveAttribute(
 			'href',
 			'/privacy',

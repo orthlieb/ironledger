@@ -16,24 +16,13 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetAll } from './helpers/reset';
+import { waitForMapButton } from './helpers/home';
 
 // Tiny 1×1 red PNG — same fixture the expeditions spec uses.
 const PNG_1X1 = Buffer.from(
 	'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8/5+hHgAHggJ/PchI6QAAAABJRU5ErkJggg==',
 	'base64',
 );
-
-async function waitForHome(page: Page): Promise<void> {
-	// Wait for the top-nav Map button to attach, then for the page to
-	// settle: the button is in the server's HTML before the page hydrates,
-	// and a click before then does nothing (a slow dev server shows it).
-	// The other map specs wait the same way.
-	await page
-		.locator('[aria-label="Open the campaign map"]')
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
-}
 
 /** Open the shared MapDialog via the top-nav "Map" button, then upload
  *  a background image through the dialog's own "Add background image"
@@ -63,7 +52,7 @@ test.describe('MapDialog — smoke', () => {
 
 	test.beforeEach(async ({ page }) => {
 		await page.goto('/home');
-		await waitForHome(page);
+		await waitForMapButton(page);
 	});
 
 	test('opens from the top-nav Map button', async ({ page }) => {

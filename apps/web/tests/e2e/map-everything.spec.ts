@@ -19,6 +19,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { zipSync, strToU8 } from 'fflate';
 import { resetAll, clearAllMaps, fetchMaps } from './helpers/reset';
+import { waitForMapButton } from './helpers/home';
 
 // Narrow to the home page's hidden input (data-import-root) rather than any
 // `.zip` file input — the ImportDialog has its own `.imd-file` with the same
@@ -27,14 +28,6 @@ import { resetAll, clearAllMaps, fetchMaps } from './helpers/reset';
 const ZIP_INPUT = 'input[type="file"][data-import-root="home"]';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-async function waitForHome(page: Page): Promise<void> {
-	await page
-		.locator('[aria-label="Open the campaign map"]')
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
-}
 
 /** A minimal Everything zip whose only content is one STANDALONE map (no
  *  owner) named `mapName`, carrying a single marker. Used to prove the
@@ -88,7 +81,7 @@ test.describe('Everything import — standalone map dedupes by name (regression)
 		expect(await fetchMaps()).toHaveLength(0);
 
 		await page.goto('/home');
-		await waitForHome(page);
+		await waitForMapButton(page);
 
 		// 1st import: fresh session, no prompt — the standalone map is created.
 		await importZip(page, everythingZipWithStandaloneMap('Regional Overview', 'First Marker'));
@@ -126,7 +119,7 @@ test.describe('Everything import — standalone map dedupes by name (regression)
 		expect(await fetchMaps()).toHaveLength(0);
 
 		await page.goto('/home');
-		await waitForHome(page);
+		await waitForMapButton(page);
 
 		await importZip(page, everythingZipWithStandaloneMap('Regional Overview', 'First Marker'));
 		await expect.poll(async () => (await fetchMaps()).length, { timeout: 10_000 }).toBe(1);
@@ -160,7 +153,7 @@ test.describe('Everything import — standalone map dedupes by name (regression)
 		await resetAll();
 		await clearAllMaps();
 		await page.goto('/home');
-		await waitForHome(page);
+		await waitForMapButton(page);
 
 		// Two standalone maps to switch between. Import each separately so
 		// they end up as two distinct map rows.
@@ -219,7 +212,7 @@ test.describe('Everything import — standalone map dedupes by name (regression)
 		await resetAll();
 		await clearAllMaps();
 		await page.goto('/home');
-		await waitForHome(page);
+		await waitForMapButton(page);
 
 		// Open the ImportDialog from the menu so its `.imd-file` input is
 		// mounted and the double-fire path is in play.

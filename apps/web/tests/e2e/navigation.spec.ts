@@ -8,18 +8,15 @@
  * file exercise that switch.
  */
 import { test, expect } from '@playwright/test';
-import { settleHome } from './helpers/home';
+import { gotoHome, waitForArea } from './helpers/home';
+import { openSettings } from './helpers/settings';
 
 test.beforeEach(async ({ page }) => {
-	await page.goto('/home');
-	// Let the page hydrate first: on the dev server a click that lands before
+	// The Characters area finishing its first load proves the home page
+	// hydrated (the other areas finish around the same time); settling lets
+	// it finish hydrating, since on the dev server a click that lands before
 	// it does is lost (the Settings menu never opens).
-	await settleHome(page);
-	// Wait for the Characters area to finish initial load — proves the home
-	// page hydrated. The other areas finish around the same time.
-	await expect(page.locator('.home-area--characters .ca-loading')).not.toBeVisible({
-		timeout: 12_000,
-	});
+	await gotoHome(page);
 });
 
 test('page loads and shows all four home areas', async ({ page }) => {
@@ -40,9 +37,7 @@ test('log rail is visible alongside the areas', async ({ page }) => {
 });
 
 test('settings button opens settings dialog', async ({ page }) => {
-	await page.click('.hamburger-btn');
-	await page.locator('.hm-item', { hasText: /Settings/ }).click();
-	await expect(page.locator('.settings-dialog')).toBeVisible();
+	await openSettings(page);
 	await page.keyboard.press('Escape');
 	await expect(page.locator('.settings-dialog')).not.toBeVisible();
 });
@@ -55,12 +50,8 @@ test('settings button opens settings dialog', async ({ page }) => {
 test.describe('Mobile tab bar (≤900px)', () => {
 	test.beforeEach(async ({ page }) => {
 		await page.setViewportSize({ width: 800, height: 900 });
-		await page.goto('/home');
-		await expect(page.locator('.home-area--characters .ca-loading')).not.toBeVisible({
-			timeout: 12_000,
-		});
-		// Let hydration settle so mob-tab clicks register.
-		await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
+		// Settles too, so mob-tab clicks register.
+		await gotoHome(page);
 	});
 
 	test('characters tab is active by default and characters area is visible', async ({ page }) => {
@@ -85,9 +76,7 @@ test.describe('Mobile tab bar (≤900px)', () => {
 test('mobile tab bar is hidden at desktop widths (>900px)', async ({ page }) => {
 	await page.setViewportSize({ width: 1280, height: 900 });
 	await page.goto('/home');
-	await expect(page.locator('.home-area--characters .ca-loading')).not.toBeVisible({
-		timeout: 12_000,
-	});
+	await waitForArea(page);
 	await expect(page.locator('.mob-tabbar')).not.toBeVisible();
 });
 

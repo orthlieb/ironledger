@@ -7,24 +7,16 @@
  */
 import { test, expect } from '@playwright/test';
 import { resetCharacters } from './helpers/reset';
-import { settleHome, ensureCharacter as ensureChar } from './helpers/home';
+import { gotoHome, ensureCharacter as ensureChar } from './helpers/home';
 
 // Wipe characters before this file's tests so notes from prior runs don't bleed in.
 test.beforeAll(async () => {
 	await resetCharacters();
 });
 
-const CHAR_AREA = '.home-area--characters';
-
 /** Ensure a character exists in the v2 Characters area; auto-select handles activation. */
 async function ensureCharacter(page: import('@playwright/test').Page) {
-	await page.goto('/home');
-	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 10_000 });
-	await page
-		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
-		.first()
-		.waitFor({ timeout: 10_000, state: 'attached' });
-	await settleHome(page);
+	await gotoHome(page);
 	await ensureChar(page);
 }
 

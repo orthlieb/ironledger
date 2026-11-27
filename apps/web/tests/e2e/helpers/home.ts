@@ -18,6 +18,58 @@ export async function settleHome(page: Page): Promise<void> {
 	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
 }
 
+/** The four home areas, by their `.home-area--<area>` name. */
+export type HomeArea = 'characters' | 'expeditions' | 'foes' | 'communities';
+
+/** Each area's class prefix (`.ca-loading`, `.ca-empty`, `.ca-body`…). */
+const AREA_PREFIX: Record<HomeArea, string> = {
+	characters: 'ca',
+	expeditions: 'ea',
+	foes: 'fa',
+	communities: 'cm',
+};
+
+/**
+ * Wait for a home area's first load: its spinner (`.<p>-loading`) gone and
+ * its empty state or body attached. With `settle`, also wait for the page's
+ * loads and hydration to settle (settleHome), which a combobox trigger needs
+ * before it opens reliably.
+ */
+export async function waitForArea(
+	page: Page,
+	area: HomeArea = 'characters',
+	{ settle = false }: { settle?: boolean } = {},
+): Promise<void> {
+	const root = `.home-area--${area}`;
+	const p = AREA_PREFIX[area];
+	await expect(page.locator(`${root} .${p}-loading`)).not.toBeVisible({ timeout: 12_000 });
+	await page
+		.locator(`${root} .${p}-empty, ${root} .${p}-body`)
+		.first()
+		.waitFor({ timeout: 12_000, state: 'attached' });
+	if (settle) await settleHome(page);
+}
+
+/** Go to /home and wait for `area` (characters by default) to load and the
+ *  page to settle. */
+export async function gotoHome(page: Page, area: HomeArea = 'characters'): Promise<void> {
+	await page.goto('/home');
+	await waitForArea(page, area, { settle: true });
+}
+
+/**
+ * Wait for the top nav's Map button, then for the page to settle: the button
+ * is in the server's HTML before the page hydrates, and a click before then
+ * does nothing (a slow dev server shows it).
+ */
+export async function waitForMapButton(page: Page): Promise<void> {
+	await page
+		.locator('[aria-label="Open the campaign map"]')
+		.first()
+		.waitFor({ timeout: 12_000, state: 'attached' });
+	await settleHome(page);
+}
+
 /** True once a character is active (its sub-tabs have rendered). */
 export async function hasActiveCharacter(page: Page): Promise<boolean> {
 	return page

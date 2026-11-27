@@ -32,6 +32,7 @@
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetAll, clearMapMarkers } from './helpers/reset';
+import { waitForMapButton } from './helpers/home';
 
 // Tiny 1×1 red PNG — same fixture map.spec uses for a background.
 const PNG_1X1 = Buffer.from(
@@ -53,14 +54,6 @@ const SWATCHES = [
 ];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-async function waitForHome(page: Page): Promise<void> {
-	await page
-		.locator('[aria-label="Open the campaign map"]')
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
-}
 
 /** Open the shared MapDialog via the top-nav "Map" button. If the active
  *  map has no background yet, upload the 1×1 PNG through the dialog's
@@ -118,7 +111,7 @@ test.describe('Map markers — lifecycle', () => {
 	test.beforeEach(async ({ page }) => {
 		await clearMapMarkers(); // markers persist server-side — start each test clean
 		await page.goto('/home');
-		await waitForHome(page);
+		await waitForMapButton(page);
 		await openMap(page);
 	});
 
@@ -186,7 +179,7 @@ test.describe('Map markers — lifecycle', () => {
 
 		// Full reload — the marker must come back from the server.
 		await page.reload();
-		await waitForHome(page);
+		await waitForMapButton(page);
 		await openMap(page);
 
 		await expect(page.locator('.mp-marker')).toHaveCount(1);
@@ -207,7 +200,7 @@ test.describe('Map markers — lifecycle', () => {
 		await expect(page.locator('.mp-props-dialog')).not.toBeVisible();
 
 		await page.reload();
-		await waitForHome(page);
+		await waitForMapButton(page);
 		await openMap(page);
 		await expect(page.locator('.mp-marker')).toHaveCount(1);
 

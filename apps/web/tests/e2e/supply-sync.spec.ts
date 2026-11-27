@@ -15,32 +15,13 @@
 import { test, expect, type Page } from '@playwright/test';
 import { zipSync, strToU8 } from 'fflate';
 import { resetCharacters } from './helpers/reset';
-import {
-	settleHome,
-	createCharacter,
-	characterCount,
-	selectCharacterByIndex,
-} from './helpers/home';
+import { createCharacter, characterCount, selectCharacterByIndex, gotoHome } from './helpers/home';
 
 const CHAR_AREA = '.home-area--characters';
 
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
-
-async function waitForHome(page: Page) {
-	await expect(page.locator(`${CHAR_AREA} .ca-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page
-		.locator(`${CHAR_AREA} .ca-empty, ${CHAR_AREA} .ca-body`)
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-}
-
-async function gotoHome(page: Page) {
-	await page.goto('/home');
-	await waitForHome(page);
-	await settleHome(page);
-}
 
 async function switchCharTab(page: Page, label: string) {
 	await page.locator(`${CHAR_AREA} .ca-tab`, { hasText: new RegExp(`^${label}$`, 'i') }).click();

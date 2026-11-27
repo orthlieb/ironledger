@@ -14,6 +14,7 @@
 import { test, expect, type Page } from '@playwright/test';
 import { zipSync, strToU8 } from 'fflate';
 import { getTestToken, resetAll } from './helpers/reset';
+import { gotoHome } from './helpers/home';
 
 const API = 'http://127.0.0.1:3000/api/v1';
 const CM_AREA = '.home-area--communities';
@@ -57,16 +58,6 @@ async function readWorld(page: Page): Promise<{ communities: Row[]; places: Row[
 			npcs: (j.npcs ?? []) as never[],
 		};
 	});
-}
-
-async function gotoHome(page: Page) {
-	await page.goto('/home');
-	await expect(page.locator(`${CM_AREA} .cm-loading`)).not.toBeVisible({ timeout: 12_000 });
-	await page
-		.locator(`${CM_AREA} .cm-empty, ${CM_AREA} .cm-body`)
-		.first()
-		.waitFor({ timeout: 12_000, state: 'attached' });
-	await page.waitForLoadState('networkidle', { timeout: 12_000 }).catch(() => {});
 }
 
 // ── API seeding with explicit `within` links ───────────────────────────────────
@@ -154,7 +145,7 @@ test.describe('Containment rules', () => {
 	});
 
 	test('import: a settlement nested directly in a settlement lands top-level', async ({ page }) => {
-		await gotoHome(page);
+		await gotoHome(page, 'communities');
 		// Bravo carries a withinRef pointing at settlement Alpha — illegal.
 		await importCommunities(page, {
 			communities: [
@@ -184,7 +175,7 @@ test.describe('Containment rules', () => {
 	});
 
 	test('import: the deeper settlement on a two-settlement chain is detached', async ({ page }) => {
-		await gotoHome(page);
+		await gotoHome(page, 'communities');
 		// Alpha(settlement) ← Vale(landmark) ← Bravo(settlement). Vale-in-Alpha is
 		// legal; Bravo-in-Vale would put two settlements on one chain.
 		await importCommunities(page, {
@@ -238,7 +229,7 @@ test.describe('Containment rules', () => {
 		page,
 	}) => {
 		await seedPickerFixture();
-		await gotoHome(page);
+		await gotoHome(page, 'communities');
 		await switchTo(page, 'Bravo Town');
 		const popover = await openWithin(page);
 		const names = await popover.locator('.cb-item-name').allInnerTexts();
@@ -252,7 +243,7 @@ test.describe('Containment rules', () => {
 		page,
 	}) => {
 		await seedPickerFixture();
-		await gotoHome(page);
+		await gotoHome(page, 'communities');
 
 		// Bravo (settlement) can only nest under a landmark, so its picker lists
 		// landmarks only — one class — and the whole filter row is hidden.
