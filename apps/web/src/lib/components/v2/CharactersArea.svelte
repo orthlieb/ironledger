@@ -19,9 +19,11 @@
 	 * clicking one opens the v1 AssetCard in a dismissible dialog.
 	 */
 	import { untrack } from 'svelte';
+	import LoadingSpinner from '#lib/components/LoadingSpinner.svelte';
 	import {
 		getCharacters,
 		isCharacterLoading,
+		isCharacterLoaded,
 		createCharacter,
 		deleteCharacter,
 		flushCharacterToApi,
@@ -154,7 +156,9 @@
 	// Background card edit state
 	let editingBackground = $state(false);
 	const characters = $derived(getCharacters());
-	const loading = $derived(isCharacterLoading() || isAssetsLoading());
+	// Until the first load has settled (server render included), the spinner, not
+	// the empty state: a slow load never flashes "no characters" first.
+	const loading = $derived(!isCharacterLoaded() || isCharacterLoading() || isAssetsLoading());
 
 	// Once data has loaded, open the character this device had open last, or
 	// else the first (see rememberedSelection.ts).
@@ -1029,7 +1033,7 @@
 	</header>
 
 	{#if loading}
-		<div class="ca-loading">Loading…</div>
+		<div class="ca-loading"><LoadingSpinner label="Loading…" /></div>
 	{:else if characters.length === 0}
 		<div class="ca-empty">
 			<span class="ca-empty-icon" aria-hidden="true">{@html appIcon('characters')}</span>

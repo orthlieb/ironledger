@@ -24,6 +24,9 @@ import { fetchSession } from '#lib/sessionData.js';
 let _encounters: FoeEncounter[] = $state([]);
 let _loading = $state(false);
 let _loaded = false;
+/** First load finished (ok or not) — reactive, unlike `_loaded`: until it
+ *  has, the Foes area shows the loading spinner, not its empty state. */
+let _settled = $state(false);
 let _saving = $state(false);
 
 // Per-entity sync engine — diffs the live list against the server snapshot and
@@ -52,6 +55,7 @@ export async function loadEncounters(): Promise<void> {
 		console.error('[encounterStore] Failed to load encounters:', err);
 	} finally {
 		_loading = false;
+		_settled = true;
 	}
 }
 
@@ -62,6 +66,11 @@ export async function loadEncounters(): Promise<void> {
 /** All encounters, in insertion order. Reactive. */
 export function getEncounters(): FoeEncounter[] {
 	return _encounters;
+}
+
+/** Whether the first load has finished, whether it worked or not. */
+export function isEncounterLoaded(): boolean {
+	return _settled;
 }
 
 export function isEncounterLoading(): boolean {

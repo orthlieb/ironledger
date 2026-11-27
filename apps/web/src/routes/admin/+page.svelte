@@ -6,6 +6,7 @@
 		registrationQuota as quotaApi,
 		type RegistrationQuotaStatus,
 	} from '#lib/api.js';
+	import LoadingSpinner from '#lib/components/LoadingSpinner.svelte';
 	import type {
 		AdminUser,
 		AdminStats,
@@ -624,7 +625,7 @@
 	</div>
 
 	{#if loading}
-		<p class="admin-loading">Loading...</p>
+		<div class="admin-loading"><LoadingSpinner label="Loading…" /></div>
 	{:else}
 		<!-- Stats Cards -->
 		{#if stats}
@@ -678,7 +679,7 @@
 			</div>
 
 			{#if metricsLoading || !timeseries}
-				<div class="metrics-loading">Loading…</div>
+				<div class="metrics-loading"><LoadingSpinner label="Loading…" size={22} /></div>
 			{:else}
 				{@const buckets = timeseries.buckets}
 				{@const rawMax = Math.max(...buckets.map((b) => b.totalUsers), 1)}
@@ -1101,7 +1102,7 @@
 						configured for this environment.
 					</p>
 				{:else if logLoading}
-					<p class="logs-unavailable">Loading…</p>
+					<div class="logs-unavailable"><LoadingSpinner label="Loading…" size={22} /></div>
 				{:else if logLines.length === 0}
 					<p class="logs-unavailable">Log file is empty.</p>
 				{:else}

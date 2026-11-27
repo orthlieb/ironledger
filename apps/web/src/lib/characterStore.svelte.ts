@@ -28,6 +28,9 @@ import { allCharacterFields } from '#lib/characterFields.svelte.js';
 let _characters: CharacterFull[] = $state([]);
 let _loading = $state(false);
 let _loaded = false;
+/** First load finished (ok or not) — reactive, unlike `_loaded`: until it
+ *  has, the Characters area shows the loading spinner, not its empty state. */
+let _settled = $state(false);
 let _partySupply: number | null = $state(null);
 
 // ---------------------------------------------------------------------------
@@ -60,6 +63,7 @@ export async function loadCharacters(): Promise<void> {
 		throw err; // re-throw so caller can display an error
 	} finally {
 		_loading = false;
+		_settled = true;
 	}
 }
 
@@ -70,6 +74,11 @@ export async function loadCharacters(): Promise<void> {
 /** All characters, in insertion order. Reactive. */
 export function getCharacters(): CharacterFull[] {
 	return _characters;
+}
+
+/** Whether the first load has finished, whether it worked or not. */
+export function isCharacterLoaded(): boolean {
+	return _settled;
 }
 
 export function isCharacterLoading(): boolean {

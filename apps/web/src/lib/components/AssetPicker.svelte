@@ -9,6 +9,7 @@
 	 * Clicking an eligible tile shows an "Add X?" confirm dialog.
 	 */
 	import type { AssetCategory, AssetDefinition, CharacterData } from '#lib/types.js';
+	import LoadingSpinner from '#lib/components/LoadingSpinner.svelte';
 	import clearFiltersSvg from '#icons/filter-circle-xmark-solid.svg?raw';
 	import chevronUpSvg from '#icons/chevron-up-solid.svg?raw';
 	import chevronDownSvg from '#icons/chevron-down-solid.svg?raw';
@@ -229,7 +230,7 @@
 			<!-- Scrollable body — only this part scrolls -->
 			<div class="picker-body" data-tour="asset-picker-grid">
 				{#if isAssetsLoading()}
-					<p class="picker-hint">Loading catalogue…</p>
+					<div class="picker-hint"><LoadingSpinner label="Loading catalogue…" /></div>
 				{:else if filtered.length === 0}
 					<p class="picker-hint">No assets match your search.</p>
 				{:else}

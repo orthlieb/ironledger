@@ -16,6 +16,7 @@ export const loadExpeditions = store.load;
 /** All expeditions, in insertion order. Reactive. */
 export const getExpeditions = store.get;
 export const isExpeditionLoading = store.isLoading;
+export const isExpeditionLoaded = store.isLoaded;
 export const isExpeditionSaving = store.isSaving;
 /** Append a new expedition and persist. */
 export const addExpedition = store.add;

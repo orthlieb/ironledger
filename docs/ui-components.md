@@ -213,6 +213,54 @@ scripts held back and checks the typing survives.
 
 ---
 
+## Loading — `LoadingSpinner`
+
+Anything the app waits on shows `LoadingSpinner`
+(`#lib/components/LoadingSpinner.svelte`), not bare "Loading…" text. It turns
+the active livery's brand mark (the axe by default, Jack's pumpkin, Yorick's
+skull…; see `liveries.md` → "Brand icon"), tinted `--text-accent`, with an
+optional label under it.
+
+```svelte
+<script>
+  import LoadingSpinner from '#lib/components/LoadingSpinner.svelte';
+</script>
+
+<div class="ca-loading"><LoadingSpinner label="Loading…" /></div>
+<LoadingSpinner size={22} />
+<LoadingSpinner label="Saving" inline />
+```
+
+The first is an area's loading state; the second a smaller mark with no
+label ("Loading" is read out only); the third sits beside its label, for a
+line of text.
+
+**Props:** `label` (shown and read out; when left out, "Loading" is read out
+only), `size` (the mark's height in px, default 28), `inline` (mark beside the
+label instead of above it).
+
+- It fades in after 150 ms, so a load that's over quickly never flashes it.
+- With `prefers-reduced-motion` it pulses instead of turning.
+- It is `role="status"`, so a screen reader announces it.
+- Keep the area's own wrapper class (`.ca-loading`, `.md-loading`…) around it
+  for layout; tests wait on those classes going away.
+
+Where it shows:
+
+- **The home areas** (Characters, Expeditions, Foes, Connections) until their
+  first load settles. Each store keeps a "settled" flag for that
+  (`isCharacterLoaded()`, `isEncounterLoaded()`, `isExpeditionLoaded()`,
+  `isCommunityLoaded()`), so an area shows the spinner rather than flashing
+  its empty state before the load starts. A failed load settles too and falls
+  back to the empty state, so the spinner never turns forever.
+- **The Moves and Oracles dialogs, the asset picker and the admin page** while
+  their catalogues or figures load.
+- **Page changes:** `+layout.svelte` lays a faint veil with a larger spinner
+  over the page while SvelteKit's `navigating.to` is set. The veil takes no
+  clicks and, like the spinner, waits 150 ms before it shows.
+
+---
+
 ## Card Headers
 
 Used in: `CharacterSheet` (`.char-header`), `FoeCard` (`.fc-header`), `JourneyCard` (`.jc-header`), `SiteCard` (`.sc-header`)
