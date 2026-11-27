@@ -9,20 +9,21 @@ Implemented in `apps/web/src/lib/components/LogPanel.svelte` and `apps/web/src/l
 
 Records every significant change to the character during a play session (stat/resource edits, move outcomes, vow progress, etc.). Acts as a session history so the player can review what happened without reconstructing it from memory.
 
-The log is **ephemeral by default** — it tracks changes made in the current browser session. It does not persist to the database (no server round-trip). A "Clear" button resets it.
+The log is saved to the server as you play (one row per entry; see below), so it survives a reload and follows you to another device. The **Clear** button empties it, on the server too.
 
 ---
 
 ## Layout
 
-The log lives inside the **Adventure** tab in both layouts.
+The log is the `.home-log` aside on `/home` (`apps/web/src/routes/home/+page.svelte`): `LogPanel` with the `CommandBar` under it. It is always visible, beside or below the four areas (Characters, Foes, Expeditions, Connections).
 
-| Viewport           | Log position                                                                                                                                                                        |
-| ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Desktop (≥ 768 px) | Right-hand column of the Adventure tab, side-by-side with the GCB. Drag-to-resize horizontally; split persists in `localStorage['ironledger.adventureSplit']` (25–75%, default 50). |
-| Mobile (< 768 px)  | Bottom panel of the Adventure tab, below the GCB. Drag-to-resize vertically; split persists in `localStorage['il:adventure:split:mobile']` (20–95%, default 80% GCB / 20% log).     |
+| Layout                                           | Log position                                                                                                                                                                                                  |
+| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Desktop, **Grid** view (the default)             | Right-hand column beside the 2×2 grid of areas. Drag `.home-resize-handle` to resize (240–800 px); the width persists in `localStorage['il:home:logWidth:grid']` (default 25% of the window).                 |
+| Desktop, **Log** view                            | Right-hand column, with the areas tabbed on the left. Same handle and range; persists in `localStorage['il:home:logWidth:log']` (default 50%).                                                                |
+| Phones (≤ 900 px), and the desktop **Tabs** view | Bottom panel, below the tab bar and the active area. Drag `.mob-resize-handle` to resize (80 px to 70% of the window height); persists in `localStorage['il:home:mobLogHeight']` (default 25% of the height). |
 
-The log panel fills `calc(100dvh - 52px)` on desktop so it extends to the bottom of the viewport below the app nav. See [mobile.md § Adventure Split Panel](mobile.md#adventure-split-panel) for the mobile resize implementation.
+The desktop view is picked from ☰ → View (or Alt+V cycles it). The aside fills the height the home shell gives it, under the app nav. See [mobile.md § Resize handles + persistence](mobile.md#resize-handles--persistence) for the resize implementation.
 
 ---
 
@@ -73,29 +74,25 @@ export function updateLogEntryNote(entryId: string, note: string): void;
 export function clearLog(): void;
 ```
 
-The log is **global, not per-character** — one DB row per entry (JSONB), server-side, capped at 1000. Local state is optimistic and the source of truth for rendering; API calls are fire-and-forget. (The log functions previously took a `charId` first arg keyed against a per-character map; that was always called with a single `SESSION_LOG_ID` constant and was removed as dead code.) The `charId` on the buses below is unrelated — it's the real character a resource/XP action targets.
-
-#### XP Spend Bus
-
-```ts
-export function getXpSpendNonce(): number; // Read in $effect to subscribe
-export function triggerXpSpend(charId, amount); // Queue XP spend from LogPanel
-export function drainXpSpend(charId): number; // Consume in CharacterSheet $effect
-```
+The log is **global, not per-character** — one DB row per entry (JSONB), server-side, capped at 1000. Local state is optimistic and the source of truth for rendering; API calls are fire-and-forget. (The log functions previously took a `charId` first arg keyed against a per-character map; that was always called with a single `SESSION_LOG_ID` constant and was removed as dead code.) The `charId` on the action bus below is unrelated — it's the real character an action targets.
 
 #### Generalized Action Bus
 
 ```ts
 export interface LogAction {
   charId: string;
-  type: 'resource' | 'debility' | 'reset-track';
+  type: 'resource' | 'debility' | 'reset-track' | 'set' | 'initiative';
   key: string;
   value: number;
 }
 export function getActionNonce(): number; // Read in $effect to subscribe
-export function triggerAction(action: LogAction); // Queue from LogPanel click handlers
-export function drainActions(charId): LogAction[]; // Consume in CharacterSheet $effect
+export function triggerAction(action: LogAction); // Queue from MovesDialog (Endure Harm's Apply), LogPanel (a burn's momentum reset)
+export function drainActions(charId): LogAction[]; // Consume in CharactersArea's $effect
 ```
+
+Log links don't go through the bus: they are commands (below), which write
+values themselves. That includes an asset purchase's XP cost (`/xp-=n`);
+there is no separate XP-spend bus.
 
 ### `LogPanel.svelte`
 
@@ -170,30 +167,29 @@ its own line, `Health: 4 → 5 (+2, max 5)` (see
 
 ## CSS Structure
 
-The log pane in `+page.svelte`:
+The log aside in `routes/home/+page.svelte`:
 
 ```css
-/* Desktop */
-.log-pane {
-  position: sticky;
-  top: 52px;
-  height: calc(100dvh - 52px);
-  align-self: start;
+/* A flex column the home shell's grid sizes */
+.home-log {
+  background: var(--bg-inset);
+  border: 1px solid var(--border);
+  border-radius: 6px;
   overflow: hidden;
   display: flex;
   flex-direction: column;
 }
+/* LogPanel takes the space; CommandBar keeps its natural height under it
+   (it sets flex-shrink: 0 itself). */
+.home-log :global(.log-panel) {
+  flex: 1;
+  min-height: 0;
+}
 
-/* Mobile: hidden by default, shown when log tab active */
-.log-pane {
-  display: none;
-  height: calc(100dvh - 52px - 44px);
-}
-.page-layout.log-active .log-pane {
-  display: flex;
-}
-.page-layout.log-active .tab-body {
-  display: none;
+/* Tabs layout (phones, desktop Tabs view): log at the bottom */
+.home-shell--layout-tabs .home-log {
+  height: var(--mob-log-height, 25vh);
+  flex: none;
 }
 ```
 
@@ -285,8 +281,8 @@ manual invalidation.
 
 The whole selection surface is CSS-hidden below `768px` (matches
 [`mobile.md`](mobile.md)'s canonical breakpoint). Hover-revealed marker
-buttons are awkward on touch, and the log gets only ~20% of the viewport on
-mobile Adventure (per the split-panel default). The underlying `sectionStore`
+buttons are awkward on touch, and the log gets only ~25% of the screen height
+on a phone by default (`il:home:mobLogHeight`). The underlying `sectionStore`
 state is untouched; a section pinned on desktop stays highlighted (read-only)
 if the user switches to mobile.
 

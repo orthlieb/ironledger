@@ -2,14 +2,6 @@
 
 Canonical styles for shared UI patterns across the app.
 
-> **⚠️ v2 note.** The **GlobalContextBar** was removed in the v2 rewrite (see
-> [global-context-bar.md](global-context-bar.md)) — any `.gc-*` classes and
-> "GCB tile" references below are historical. Several card-pattern specs here
-> also predate v2's deck-of-cards layout, where the standalone card components
-> were merged into the `v2/*Area.svelte` hosts. The pill / badge / icon-button
-> style specs remain accurate; treat GCB- and card-component-specific structure
-> as reference for retired components.
-
 ---
 
 ## Toolbar Button Hierarchy
@@ -21,18 +13,20 @@ Toolbars use two button styles to signal action priority. Never invent a third s
 | **Primary**   | `btn btn-primary` | Gold border + gold text (`--text-accent` = `#e8a030`) on putty bg (`--bg-control` = `#1e1a10`) | Dark amber border + text (`--text-accent` = `#8a4e08`) on parchment bg (`--bg-control` = `#f0e9d8`) | Frequent actions — creating items, asking oracles |
 | **Secondary** | `btn`             | Muted text (`--text-muted` = `#9a886a`), border (`--border-mid` = `#574a32`) on putty bg       | Muted text (`--text-muted` = `#5a4e38`), border (`--border-mid` = `#b0a080`) on parchment bg        | Utility/infrequent — Export, Import, Clear        |
 
-Icon buttons in toolbars use `btn icon-btn` (secondary by default). Add `btn-primary` when the action is frequently used (e.g. Ask oracle on the Communities toolbar).
+Icon buttons in toolbars use `btn icon-btn` (secondary by default). Add `btn-primary` when the action is frequently used.
 
-### Examples by tab
+### Examples
 
-| Tab         | Primary (gold)          | Secondary (putty) |
-| ----------- | ----------------------- | ----------------- |
-| Characters  | + Character             | Import            |
-| Foes        | + Foe                   | —                 |
-| Expeditions | + Journey, + Site       | —                 |
-| Communities | Ask, + Community, + NPC | Export            |
-| Adventure   | Move, Ask, Roll, Note   | —                 |
-| Session Log | —                       | Export, Clear     |
+| Toolbar                                         | Primary (gold)             | Secondary (putty)                   |
+| ----------------------------------------------- | -------------------------- | ----------------------------------- |
+| App nav (`.app-nav` in `routes/+layout.svelte`) | Move, Ask, Roll, Map, Note | —                                   |
+| Characters header                               | —                          | + Vow, + Asset (icon buttons), gear |
+| Foes / Expeditions / Connections headers        | —                          | gear                                |
+| Log header (`LogPanel`)                         | —                          | Story, Clear                        |
+
+Creating things (+ New character…, + New foe…, + New Journey…, …) lives in
+each area's switcher (`Combobox` actions), not on a toolbar button. Import
+and Export are in the ☰ menu.
 
 > **Rule:** If a button opens a dialog or creates something the user will click many times per session, it should be primary. One-off or data-management actions (export, clear, import) stay secondary.
 
@@ -261,75 +255,59 @@ Where it shows:
 
 ---
 
-## Card Headers
+## Area Headers
 
-Used in: `CharacterSheet` (`.char-header`), `FoeCard` (`.fc-header`), `JourneyCard` (`.jc-header`), `SiteCard` (`.sc-header`)
+Used in: `CharactersArea` (`.ca-header`), `FoesArea` (`.fa-header`), `ExpeditionsArea` (`.ea-header`), `CommunitiesArea` (`.cm-header`); `LogPanel`'s `.log-header` matches their height, padding and background.
 
 ### Layout & Sizing
 
 ```css
 display: flex;
 align-items: center;
-gap: 8px;
-padding: 8px 12px;
-min-height: 55px; /* portrait (38px) + padding (16px) + border-bottom (1px) = 55px box-sizing:border-box */
-flex-wrap: wrap;
-background: var(--bg-inset);
+gap: 10px;
+min-height: var(--area-header-height); /* 38px, app.css */
+padding: 6px 12px;
 border-bottom: 1px solid var(--border);
+background: var(--bg-control);
+flex-shrink: 0;
+/* Named container so the title can hide when the area narrows */
+container-type: inline-size;
+container-name: area-header;
 ```
 
-### Collapsed State
+The header holds the area's icon and title (`.xx-title-icon`, `.xx-title`),
+then `.xx-header-actions` (`flex: 1; justify-content: flex-end; gap: 6px`)
+with the switcher and the buttons. The title is left out below 900px (the
+`showTitle` prop; the tab bar names the area there) and hidden by
+`@container area-header (max-width: 420px)` when the area gets narrow.
 
-When a card is collapsed, its body is hidden (`{#if !collapsed}`). Without removing the `border-bottom`, the header's bottom border overlaps the card's outer `border-bottom` at the same pixel, creating a double-line ("thick border") effect.
+### Switcher and Icon Buttons
 
-**Fix:** suppress the inner border when collapsed:
+The switcher (`Combobox` with `class="xx-hdr-combobox"`, styled
+`flex: 1 1 auto; min-width: 0`) takes up the shrink, truncating its label, so
+the buttons beside it never get pushed off. The gear is
+`btn btn-icon icon-btn xx-hdr-settings-btn`:
 
 ```css
-.char-card.collapsed .char-header {
-  border-bottom: none;
-}
-.foe-card.collapsed .fc-header {
-  border-bottom: none;
-}
-.jc-card.collapsed .jc-header {
-  border-bottom: none;
-}
-.sc-card.collapsed .sc-header {
-  border-bottom: none;
-}
-```
-
-**Required:** The root card `<div>` must bind the collapsed state as a class so the selector fires:
-
-```svelte
-<div class="foe-card" class:collapsed={collapsed} ...>
-```
-
-Using only `{#if !collapsed}` for the body is not sufficient — the root element must also receive the class.
-
-### Icon Buttons in Header
-
-The global `.btn-icon` style uses `padding: 4px 8px; min-width: 28px` — **not square**. Each card header overrides explicitly:
-
-```css
-.xx-header .icon-btn {
-  width: 26px;
-  height: 26px;
-  padding: 4px;
+:global(.xx-hdr-settings-btn) {
   flex-shrink: 0;
 }
-.xx-header .icon-btn :global(svg) {
+:global(.xx-hdr-settings-btn svg) {
   width: 13px;
   height: 13px;
   fill: currentColor;
 }
 ```
 
+The global `.btn-icon` style uses `padding: 4px 8px; min-width: 28px` — **not
+square**. The Characters header's + Vow / + Asset buttons
+(`.ca-hdr-icon-btn`) set `padding: 4px 6px` and a 12px glyph after a "+".
+
 ---
 
 ## Canonical Pill / Badge Style
 
-Used in: `FoeCard` (`.fc-badge`), `JourneyCard` (`.jc-badge`), `SiteCard` (`.sc-badge`), `GlobalContextBar` (`.gc-badge`, `.gc-debility-pill`, `.gc-asset-pill`)
+Used in: `FoesArea` (`.fa-badge`), `ExpeditionsArea` (`.ea-badge`)
 
 ### Base CSS
 
@@ -353,64 +331,52 @@ flex-shrink: 0;
 
 ### Colors by Type
 
-| Type                  | Background                                     | Color                          | Notes                   |
-| --------------------- | ---------------------------------------------- | ------------------------------ | ----------------------- |
-| Nature                | `{FOE_NATURE_COLORS[nature]}22`                | `{FOE_NATURE_COLORS[nature]}`  |                         |
-| Rank/Difficulty       | `{RANK_COLORS[n].bg}22`                        | `{RANK_COLORS[n].bg}`          |                         |
-| Quantity              | `rgba(255,255,255,0.08)`                       | `var(--text-muted)`            |                         |
-| Harm                  | `rgba(239,68,68,0.10)`                         | `#ef4444`                      | static                  |
-| Harm (escalating)     | `rgba(239,68,68,0.18)`                         | `#ef4444`                      | italic, `Harm: N ↑`     |
-| Progress/boxes        | `rgba(59,130,246,0.10)`                        | `#60a5fa`                      | static                  |
-| Progress (defense up) | `rgba(96,165,250,0.18)`                        | `#60a5fa`                      | italic, `Progress: N ↓` |
-| Journey type          | `rgba(52,211,153,0.15)`                        | `#34d399`                      |                         |
-| Site type             | `rgba(96,165,250,0.15)`                        | `#60a5fa`                      |                         |
-| Theme                 | `rgba(168,85,247,0.15)`                        | `#a855f7`                      |                         |
-| Domain                | `rgba(251,146,60,0.15)`                        | `#fb923c`                      |                         |
-| Debility              | `color-mix(in srgb, {color} 12%, transparent)` | `var(--color-danger)`          |                         |
-| Asset                 | `color-mix(in srgb, {color} 12%, transparent)` | `assetCategoryColor(category)` |                         |
+| Type                  | Background                      | Color                         | Notes                                   |
+| --------------------- | ------------------------------- | ----------------------------- | --------------------------------------- |
+| Nature                | `{FOE_NATURE_COLORS[nature]}22` | `{FOE_NATURE_COLORS[nature]}` |                                         |
+| Rank/Difficulty       | `{RANK_COLORS[n].bg}22`         | `{RANK_COLORS[n].bg}`         | difficulty: `border-color: transparent` |
+| Quantity              | `rgba(255,255,255,0.08)`        | `var(--text-muted)`           |                                         |
+| Harm                  | `rgba(239,68,68,0.10)`          | `#ef4444`                     | static                                  |
+| Harm (escalating)     | `rgba(239,68,68,0.18)`          | `#ef4444`                     | italic, `Harm: N ↑`                     |
+| Progress/boxes        | `rgba(59,130,246,0.10)`         | `#60a5fa`                     | static                                  |
+| Progress (defense up) | `rgba(96,165,250,0.18)`         | `#60a5fa`                     | italic, `Progress: N ↓`                 |
+| Journey type          | `rgba(228,170,40,0.15)`         | `#e4aa28`                     |                                         |
+| Site type             | `rgba(68,114,208,0.15)`         | `#4472d0`                     |                                         |
+| Scene type            | `rgba(126,87,194,0.15)`         | `#7e57c2`                     |                                         |
 
 ### Pill Order
 
-- **Foe:** nature → rank → quantity → harm (↑ italic when escalating) → progress (↓ italic when defense active)
-- **Journey (body top):** Journey (type) → difficulty
-- **Site (body top):** Site (type) → difficulty → theme → domain
-- **GCB character tile:** debilities → assets (below initiative toggle)
-- **GCB foe tile:** nature → rank → quantity → harm (↑ italic when escalating) → progress (↓ italic when defense active)
-- **GCB expedition tile:** type → difficulty → theme → domain
+- **Foe** (`FoesArea`, Core tab): nature → rank → quantity → harm (↑ italic when escalating) → progress (↓ italic when defense active)
+- **Journey / Site / Scene** (`ExpeditionsArea`, Core tab): type → difficulty
 
 ### Placement
 
-Pills live at the **top of the collapsible body**, NOT in the title bar. Title bar contains only: collapse btn · name · status icon · delete.
+Pills open the **Core tab**, NOT the area header. The header holds only the title, the switcher and the buttons (see [Area Headers](#area-headers)).
 
 ### Pill Row Container
 
 ```css
-.xx-pill-strip {
+.xx-pills-row {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
   align-items: center;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 8px;
 }
 ```
 
 ### Rank/Difficulty Badge Helper
 
-Copy into any component needing difficulty as a pill:
+Don't copy the rank colours into a component: `#lib/badgeStyles.ts` has the
+shared helpers, used by FoesArea, ExpeditionsArea, VowCard, FoePickerDialog
+and FoeRollDialog.
 
 ```typescript
-import { RANK_COLORS } from '#lib/foeStore.svelte.js';
-const DIFFICULTY_RANK: Record<string, number> = {
-  troublesome: 1,
-  dangerous: 2,
-  formidable: 3,
-  extreme: 4,
-  epic: 5,
-};
-function diffBadgeStyle(difficulty: string): string {
-  const rc = RANK_COLORS[DIFFICULTY_RANK[difficulty] ?? 2];
-  if (!rc) return '';
-  return `background: ${rc.bg}22; color: ${rc.bg}`;
-}
+import { rankBadgeStyle, difficultyBadgeStyle } from '#lib/badgeStyles.js';
+
+rankBadgeStyle(enc.effectiveRank); // 'background:{bg}22; color:{bg}'
+difficultyBadgeStyle(exp.difficulty); // the same, via DIFFICULTY_RANK (troublesome → 1 … epic → 5)
 ```
 
 `RANK_COLORS` is exported from `foeStore.svelte.ts`.
@@ -552,59 +518,14 @@ let filtersOpen = $state(false);
 
 ---
 
-## GCB Empty Tile Placeholder Icons
-
-Empty tiles in the GlobalContextBar display a placeholder `<img>` icon (loaded via URL, not inline SVG). Because the source images are dark silhouettes, they require a CSS filter chain to match the surrounding text colour on each theme.
-
-### Dark theme (default)
-
-Target colour: `--text-muted` ≈ `#96886D`
-
-Filter derivation (applied to a black source image):
-
-1. `invert(1)` — black → white
-2. `brightness(0.59)` — white → mid-gray (150, 150, 150)
-3. `sepia(1)` — gray → warm (203, 180, 141)
-4. `brightness(0.75)` — trim to (152, 135, 106) ≈ `#96886A`
-
-```css
-.gc-placeholder-img {
-  filter: invert(1) brightness(0.59) sepia(1) brightness(0.75);
-}
-.gc-tile-btn:hover .gc-placeholder-img {
-  filter: invert(1) brightness(0.59) sepia(1) brightness(0.9);
-}
-```
-
-### Light theme override
-
-Images are dark on a light background — no invert needed. Override restores original dark appearance at reduced opacity:
-
-```css
-.gc-placeholder-img {
-  opacity: 0.45;
-  filter: grayscale(0.45) brightness(0.75);
-}
-.gc-tile-btn:hover .gc-placeholder-img {
-  opacity: 0.65;
-  filter: grayscale(0.2) brightness(0.85);
-}
-```
-
-> **Rule:** Never use `opacity` alone on the dark theme placeholder — the source images are nearly black and will be invisible against a dark background regardless of opacity. Always use the `invert → brightness → sepia → brightness` filter chain.
-
----
-
 ## Section Labels
 
-A narrow vertical strip on the **left** side of a content area. Text runs bottom-to-top. Used for STATS, VITALS, DEBILITIES in `CharacterSheet` and "Current Scenario" in `GlobalContextBar`.
+A narrow vertical strip on the **left** side of a content row. Text runs bottom-to-top. Used for STATS, VITALS, DEBILITIES and TRACKS on the character sheet's Core tab (`SheetCore`, `.ca-side-label`).
 
-All side labels share the same typography and border — the only difference is how they self-align within their flex parent.
-
-### Base CSS (shared by all side labels)
+### Base CSS
 
 ```css
-.xx-side-label {
+.ca-side-label {
   writing-mode: vertical-rl;
   transform: rotate(180deg);
   font-family: var(--font-ui);
@@ -614,51 +535,43 @@ All side labels share the same typography and border — the only difference is 
   text-transform: uppercase;
   color: var(--text-dimmer);
   flex-shrink: 0;
+  align-self: stretch;
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Rotated 180°, so border-left shows on the label's visual RIGHT,
+     between the text and the row's content. */
   border-left: 1px solid var(--border);
-  padding-left: 4px;
+  padding-left: 6px;
+  padding-right: 2px;
 }
 ```
 
-### Variant A — compact row (`align-self: stretch`)
+`align-self: stretch` lets the border span the full row height as a continuous vertical rule.
 
-Used when the label sits alongside a compact, fixed-height row (STATS, VITALS, DEBILITIES). `align-self: stretch` lets the border-left span the full row height as a continuous vertical rule.
+### Row wrapper
 
 ```svelte
-<div class="xx-row-wrapper">
-  <div class="xx-side-label" style="align-self: stretch">STATS</div>
-  <div class="xx-content"><!-- stat tiles --></div>
+<div class="ca-stats-wrapper">
+  <div class="ca-side-label">Stats</div>
+  <div class="ca-stats-row"><!-- stat tiles --></div>
 </div>
 ```
 
 ```css
-.xx-row-wrapper {
+.ca-stats-wrapper,
+.ca-vitals-wrapper,
+.ca-debilities-wrapper,
+.ca-tracks-wrapper {
   display: flex;
-  align-items: center; /* or flex-start for multi-line content */
-  gap: 6px;
+  align-items: stretch;
+  gap: 8px;
+  border-top: 1px solid var(--border);
+  padding-top: 8px;
 }
 ```
 
-### Variant B — tall container (`align-self: stretch` + `margin`)
-
-Used when the label sits alongside a potentially tall container (e.g. the GCB tile area). `align-self: stretch` is still used so the border spans cleanly, but equal `margin` top and bottom prevents it from reaching the outer edges of the container. Set the margin to match the adjacent content area's vertical padding so the border aligns with the content bounds.
-
-```svelte
-<div class="xx-side-label" style="align-self: stretch; margin: 0.25rem 0">CURRENT SCENARIO</div>
-```
-
-```css
-.gc-scenario-heading {
-  /* …base properties… */
-  align-self: stretch;
-  margin: 0.25rem 0; /* match gc-layout vertical padding — equal top and bottom */
-  padding-left: 4px; /* border gap only, no top/bottom padding */
-}
-```
-
-> **Why not `align-self: center`?** With `writing-mode: vertical-rl`, flex auto-margins for centering don't always compute symmetrically across browsers. Explicit equal margins on a stretched element are more reliable.
+The top border separates each section from the one above it.
 
 ---
 

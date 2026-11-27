@@ -55,7 +55,8 @@ normalized text back.
 > **Mobile.** The whole selection surface (▲ / ▼ marker buttons, the Generate
 > button, and the floating strip) is hidden below `768px` (`mobile.md`'s
 > canonical breakpoint) — hover-revealed marker buttons are awkward on touch
-> and the log gets only 20% of the viewport by default (Adventure Split). The
+> and the log gets only the bottom quarter of a phone's screen by default
+> (`il:home:mobLogHeight`; see `log.md` → "Layout"). The
 > underlying `sectionStore` state is untouched, so if the user pins a section
 > on desktop and then flips to mobile, the entries stay highlighted (read-only)
 > but can't be mutated until they're back on a wider screen.

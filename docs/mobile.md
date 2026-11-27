@@ -68,12 +68,15 @@ Key points:
 Every split is drag-resizable (mouse **and** touch) and its size is persisted
 to `localStorage`:
 
-| Split                      | Handle                | Range                        | Default                       | Key                    |
-| -------------------------- | --------------------- | ---------------------------- | ----------------------------- | ---------------------- |
-| Desktop log width          | `.home-resize-handle` | 240 – 800 px                 | ⅓ of `innerWidth`             | `il:home:logWidth`     |
-| Desktop column 1 width     | `.col-resize-handle`  | ≥ 200 px each side           | half the available width      | `il:home:col1Width`    |
-| Desktop row split (shared) | `.row-resize-handle`  | ≥ 80 px each area            | half the column height        | `il:home:rowHeight`    |
-| Mobile log height          | `.mob-resize-handle`  | 80 px → 70% of `innerHeight` | 25% of `innerHeight` (`25vh`) | `il:home:mobLogHeight` |
+| Split                      | Handle                | Range                        | Default                                     | Key                                             |
+| -------------------------- | --------------------- | ---------------------------- | ------------------------------------------- | ----------------------------------------------- |
+| Desktop log width          | `.home-resize-handle` | 240 – 800 px                 | Grid view 25%, Log view 50% of `innerWidth` | `il:home:logWidth:grid`, `il:home:logWidth:log` |
+| Desktop column 1 width     | `.col-resize-handle`  | ≥ 200 px each side           | half the available width                    | `il:home:col1Width`                             |
+| Desktop row split (shared) | `.row-resize-handle`  | ≥ 80 px each area            | half the column height                      | `il:home:rowHeight`                             |
+| Mobile log height          | `.mob-resize-handle`  | 80 px → 70% of `innerHeight` | 25% of `innerHeight` (`25vh`)               | `il:home:mobLogHeight`                          |
+
+The log width is kept separately for the desktop Grid and Log views (☰ →
+View), so a dominant log in Log view doesn't carry over and swallow the grid.
 
 The row split is a **single shared value** so the Characters/Foes divider stays
 aligned with the Expeditions/Connections divider. Older exports used separate
@@ -144,7 +147,7 @@ swallow them entirely, others fire them on long-press but leave them stuck on
 the next tap. The project's canonical mechanism is the **`use:tooltip` action**
 (`apps/web/src/lib/actions/tooltip.ts`), which promotes the tip into the top
 layer via the Popover API so it works above dialogs and inside scrollable
-containers (like the GCB) without being clipped, and auto-shows on tap for
+containers (like a home area's card) without being clipped, and auto-shows on tap for
 touch. See [ui-components.md § Tooltips](ui-components.md#tooltips) and the
 CLAUDE.md note — new UI should always use this action, not native `title=`.
 

@@ -151,7 +151,7 @@ findings are surfaced as warnings, not errors, so they don't block CI.
 - Track settlements and the people who inhabit them
 - Oracle-powered random generation for community names, locations (inland/coastal), and NPC names (Ironlander, Elf, Giants, Varou, Trolls variants)
 - Free-form notes, region, trouble, and relationship fields per entry
-- 3-column responsive grid layout
+- Settlements, NPCs and Landmarks share one Connections area, switched from a searchable picker with a filter per kind
 
 ### Appearance & Liveries
 
@@ -162,12 +162,10 @@ findings are surfaced as warnings, not errors, so they don't block CI.
 
 ### Mobile Support
 
-- Responsive layout down to 360px; tested on Surface Duo (540px breakpoint for icon-only tabs)
-- Horizontal **swipe-to-switch-tab** on the home page (direction and distance thresholds filter out vertical scrolls and taps); opt out per-element with `data-no-swipe-tabs`
-- On Adventure, a drag-to-resize **split panel** replaces the desktop side-by-side layout: GCB on top, session log below, both scroll independently, split persists to localStorage
+- Responsive layout down to 360px; tested on Surface Duo
+- Below 900px the home page becomes a tab bar (Characters, Foes, Expeditions, Connections) over one area, with the session log pinned underneath; drag the divider to resize the log (its height persists to localStorage). See [docs/mobile.md](docs/mobile.md)
 - Picker dialogs (Foes, Moves, Oracles) size to `min(85dvh, 720px)` so they don't collapse behind mobile browser chrome
-- Collapsible glass search pill on Expeditions and Communities to reclaim toolbar space on narrow screens
-- Body scroll lock when modal pickers or the Adventure split panel are active
+- Body scroll lock while a modal picker is open
 
 ### Session Log
 
@@ -191,17 +189,17 @@ findings are surfaced as warnings, not errors, so they don't block CI.
 
 ### Initiative Tracking
 
-- Per-character initiative badges (sword/shield icons) on GCB and character sheet
-- Automatically clears when foe is deselected
+- Per-character initiative toggle (None / Foe shield / Character sword) on the character sheet's Core tab
+- Set by the initiative links in move outcomes (`/initiative=me`, `/initiative=foe`)
 
 ### Admin Panel _(admin users only)_
 
-Integrated into the home page as a dedicated **Admin** tab (screwdriver-wrench icon, only visible to admin-role users).
+A dedicated `/admin` page, reached from the **Admin** link in the top nav (only shown to admin-role users). See [docs/admin.md](docs/admin.md).
 
-- **Users tab** — sortable user table with pagination, role management (promote/demote/suspend), user delete
-- **Logs tab** — live PM2 server log viewer (API/web stdout & stderr), filter, expandable JSON rows
-- **Maintenance tab** — enable/disable maintenance mode with countdown, message, session revocation
-- **Registration tab** — lock/unlock new account creation with a custom message
+- **Users tab** — sortable user table with pagination, role management (promote/demote/suspend), clear a user's game data, user delete
+- **Invites tab** — invite someone by email and copy their sign-up link; revoke pending invites
+- **Logs tab** — live PM2 server log viewer (API/web stdout & stderr), filter, expandable JSON rows, clear a log
+- **Tools tab** — maintenance mode (countdown, message, session revocation), registration lock (with a custom message), a daily registration quota, and a broadcast banner for every user
 
 ### Maintenance Mode
 
@@ -262,7 +260,6 @@ Feature docs are in the `docs/` directory:
 | [expeditions.md](docs/expeditions.md)                       | Expeditions system (Journey, Delve Site, Scene Challenge)                |
 | [extensions.md](docs/extensions.md)                         | Extension system — content packs, build-time manifest                    |
 | [foes.md](docs/foes.md)                                     | Foes and encounters                                                      |
-| [global-context-bar.md](docs/global-context-bar.md)         | GlobalContextBar tile layout                                             |
 | [import-schema.md](docs/import-schema.md)                   | User-data export/import JSON (characters, expeditions, connections, log) |
 | [liveries.md](docs/liveries.md)                             | Liveries — drop-in font + chrome + dice theme packs                      |
 | [log.md](docs/log.md)                                       | Session log with interactive links                                       |

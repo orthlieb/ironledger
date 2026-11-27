@@ -2,29 +2,13 @@
 
 Reference for the character sheet's fields and behaviour.
 
-> **⚠️ v2 note.** The v2 UI rewrite dissolved the standalone card components
-> into a single area component: the sheet is now implemented in
-> **`apps/web/src/lib/components/v2/CharactersArea.svelte`** (with
-> `ResourceTile` / `MomentumTile` / `ProgressTrackPanel` / `AssetCard` /
-> `AssetPicker`). Three tabs have their own components under
-> `components/v2/sheet/`: **`SheetCore`** (initiative, stats with their
-> double-click edit and its dialogs, vitals, debilities, the tracks and their
-> notes dialogs), **`SheetVows`** and **`SheetAssets`** (the asset chits,
-> their counters and requirement fading). Each takes the live character
-> data and edits it in place, so CharactersArea's autosave sees the change;
-> what touches the rest of the area (the asset dialog, vow deletion and
-> forsaking, momentum's reset) goes back through a callback. Details is
-> `CharacterFields`; Background stays inline. Component names referenced
-> below — `CharacterSheet`,
-> `MeterControl`, `XpTrack`, `AssetsSection` — are the retired v1 names; the
-> field semantics still apply. The action buses (below) drain in
-> `CharactersArea`, not `CharacterSheet`.
-
 ---
 
 ## Purpose
 
-Full character editor rendered in the "Characters" tab of the character detail page. All edits are auto-saved to the API 1.5 s after the last change (debounced). State is a deep-reactive `$state` object mirroring the `data` JSONB column.
+Full character editor: the Characters area of the home page (`/home`). All edits are auto-saved to the API 1.5 s after the last change (debounced). The sheet edits the character's `data` object in the character store directly (a deep-reactive `$state` proxy mirroring the `data` JSONB column).
+
+The area is **`apps/web/src/lib/components/v2/CharactersArea.svelte`**. Three of its tabs have their own components under `components/v2/sheet/`: **`SheetCore`** (initiative, stats with their double-click edit and its dialogs, vitals, debilities, the tracks and their notes dialogs), **`SheetVows`** (a `VowCard` per vow) and **`SheetAssets`** (the asset chits, their counters and requirement fading). Each takes the live character data and edits it in place, so CharactersArea's autosave sees the change; what touches the rest of the area (the asset dialog, vow deletion and forsaking, momentum's reset) goes back through a callback. Details is `CharacterFields`; Background stays inline in CharactersArea. Clicking an asset chit opens `AssetCard` in a dialog; + Asset opens `AssetPicker`.
 
 ---
 
@@ -36,8 +20,8 @@ Bonds and Failures tracks), **Details** (the character fields below),
 
 ### Identity
 
-- **Name** — text input, synced to `character.name` (top-level DB column) as well as `data.name`.
-- **Background** — textarea for backstory/notes.
+- **Name** — given in the New Character dialog; changed in Character options (the gear in the area header). Stored in `data.name`, which the switcher reads (falling back to the top-level `character.name` column).
+- **Background** — click-to-edit markdown (`MarkdownNotes`) on the Background tab.
 - **Portrait** — click to upload a JPEG; uploaded to the content-addressed blob store via `PUT /api/characters/:id/portrait`. `data.portraitEtag` holds the content hash and the bytes are no longer inlined. See [Portraits in import-schema.md](import-schema.md#portraits).
 
 ### Core Stats (0–4)
@@ -70,19 +54,24 @@ Changing one is logged (`Touched: Prime → Second`), and lowering Touched
 unmarks a Touched asset's abilities above the new limit. They're stored in
 `data.fields`; see [character-fields.md](character-fields.md).
 
-### Resources (`MeterControl` components)
+### Vitals (`MomentumTile`, `ResourceTile`)
 
-| Resource | Range            | Notes                                                                                        |
-| -------- | ---------------- | -------------------------------------------------------------------------------------------- |
-| Momentum | –6 → maxMomentum | Max reduced by 1 per debility (min 0). Reset button burns momentum to `momentumReset` value. |
-| Health   | 0–5              | Blocked (locked at 0) when Wounded.                                                          |
-| Spirit   | 0–5              | Blocked when Shaken.                                                                         |
-| Supply   | 0–5              | Party-wide in the full app.                                                                  |
-| Mana     | 0–10             | YRT Conclave homebrew.                                                                       |
+On the Core tab, below Stats. Each tile carries its own +/− buttons.
 
-### Progress Tracks (`XpTrack` / `ProgressTrack`)
+| Resource   | Range            | Notes                                                                                        |
+| ---------- | ---------------- | -------------------------------------------------------------------------------------------- |
+| Momentum   | –6 → maxMomentum | Max reduced by 1 per debility (min 0). Reset button burns momentum to `momentumReset` value. |
+| Health     | 0–5              |                                                                                              |
+| Spirit     | 0–5              |                                                                                              |
+| Supply     | 0–5              | Party-wide: a change is written to every character (`setPartySupply`).                       |
+| Experience | 0–30             | `data.xp`.                                                                                   |
 
-- **XP** — 0–30, `XpTrack` component.
+Mana (0–10, YRT) isn't a vitals tile: it's YRT's global counter, kept in
+`data.globalValues.mana` and shown, with its ± buttons, on the chit of each
+asset that refers to it (Assets tab).
+
+### Progress Tracks (`ProgressTrackPanel`)
+
 - **Bonds** — 0–40 ticks across 10 boxes.
 - **Failures** — 0–40 ticks across 10 boxes (with Delve on).
 
@@ -115,20 +104,32 @@ Mark-progress ticks per difficulty:
 troublesome → 12 ticks  dangerous → 8  formidable → 4  extreme → 2  epic → 1
 ```
 
-### Assets (`AssetsSection`)
+### Assets (`SheetAssets`)
 
 Each asset references an `assetId` from the asset catalogue, with per-ability `enabled` booleans, an optional `rarityId`, and companion fields (`companionName`, `companionHealth`).
+
+### Initiative
+
+At the top of the Core tab: a None / Foe (shield) / Character (sword)
+toggle (`SegmentedRadio`), stored in `data.initiative` (0 / 2 / 1). Move
+outcomes set it through their initiative links (`/initiative=me`,
+`/initiative=foe`; see [command-language.md](command-language.md)), and the
+Moves dialog reads it for moves that require initiative (Strike's
+`initiative == me`).
 
 ---
 
 ## Header Controls
 
-| Control                   | Description                                                                   |
-| ------------------------- | ----------------------------------------------------------------------------- |
-| Collapse ▼/▶              | Hides/shows the full sheet body                                               |
-| Portrait                  | Click to upload; eye-slash button to remove                                   |
-| Export (file-export icon) | Downloads `{name}.zip` — the character's full data + portrait bytes           |
-| Delete (trash icon)       | Triggers delete confirmation; calls `onDelete` prop to submit the hidden form |
+| Control                  | Description                                                                          |
+| ------------------------ | ------------------------------------------------------------------------------------ |
+| Switcher (`Combobox`)    | Lists the characters; its **+ New character…** action opens the New Character dialog |
+| + Vow (link icon)        | Opens the New Vow dialog (name, difficulty)                                          |
+| + Asset (gem icon)       | Opens the Assets tab and the asset picker                                            |
+| Character options (gear) | `CharacterOptionsDialog`: rename, and delete (behind a confirmation)                 |
+
+The portrait is on the Background tab (`PortraitUploader`: click to upload,
+or drop an image). Export is ☰ → Export, with the rest of the campaign.
 
 ---
 
@@ -209,7 +210,7 @@ momentumReset(d); // 2 / 1 / 0 depending on debility count
 
 ## Auto-save Behaviour
 
-Changes to any field in `$state data` trigger a `$effect` watcher that starts/resets a 1500 ms debounce timer. On expiry the component calls `characters.update(id, { name, data })` via the API client. Save status is shown in the header: **Saving…** → **Saved** → **Save failed!**.
+A `$effect` in CharactersArea snapshots the active character's `data` deeply, so any change to it starts/resets a 1500 ms debounce (`createDebouncedSave()`, `debouncedSave.ts`). On expiry it calls `flushCharacterToApi(id)` (`characterStore.svelte.ts`), which sends `characters.update(id, { name, data })`. Switching character or leaving the page flushes the pending save at once. There is no save-status readout; a failed save is logged to the console.
 
 **Reloading or closing the tab inside the debounce doesn't lose the edit.** `src/lib/pageExit.ts` runs every pending save on `pagehide`, and when the page is hidden (on mobile a hidden page can be discarded without `pagehide`). The requests those saves start are sent `keepalive`, so the browser finishes them after the page is gone. This covers the shared debounce (`debouncedSave.ts`) behind all four home areas. For the session-collection stores it also covers `entitySync.ts`: on exit it sends every unsynced row at once instead of one request at a time.
 
@@ -219,30 +220,30 @@ Changes to any field in `$state data` trigger a `$effect` watcher that starts/re
 
 ## Action Bus Integration
 
-CharacterSheet consumes two reactive buses from `log.svelte.ts`:
-
-### XP Spend Bus
-
-A `$effect` reads `getXpSpendNonce()` and drains queued XP spend amounts via `drainXpSpend(charId)`. Triggered when the user clicks XP cost links in the session log.
-
-### Generalized Action Bus
+CharactersArea consumes the action bus from `log.svelte.ts`. The Moves dialog (Endure Harm's Apply), LogPanel (a burn's momentum reset) and the tutorials queue actions with `triggerAction()`; log links don't use it any more — they are commands (`#lib/commands/`), which write values themselves (an asset purchase's XP cost is a `/xp-=n` link).
 
 A `$effect` reads `getActionNonce()` and drains queued actions via `drainActions(charId)`. Handles:
 
 - **Resource changes** (`type: 'resource'`): Applies delta to momentum, health, spirit, supply, mana, xp, bonds, or failures with proper clamping (e.g., momentum -6 to maxMomentum, health/spirit/supply 0-5, xp 0-30; `resourceRange()` in `character.ts`).
 - **Debility toggles** (`type: 'debility'`): Sets debility flags (wounded, shaken, etc.) to the specified value.
+- **Track resets** (`type: 'reset-track'`), **absolute sets** (`type: 'set'`) and **initiative** (`type: 'initiative'`, 0 / 1 / 2).
 
-Both buses use the nonce-queue-drain pattern to ensure mutations happen inside Svelte's reactive context (`$effect`), not from external callbacks.
+Actions for the active character apply through the live data (with the floor and debility cascades); actions queued for another character are applied to a snapshot of its data and saved at once.
+
+The bus uses the nonce-queue-drain pattern to ensure mutations happen inside Svelte's reactive context (`$effect`), not from external callbacks.
 
 ---
 
 ## Icon Imports
 
-| Variable       | File                           | Used for       |
-| -------------- | ------------------------------ | -------------- |
-| `trashSvg`     | `#icons/trash-solid.svg?raw`   | Delete button  |
-| `iconHeart`    | `#icons/icon-heart.svg?raw`    | Health meter   |
-| `iconMomentum` | `#icons/icon-momentum.svg?raw` | Momentum meter |
-| `iconSpirit`   | `#icons/icon-spirit.svg?raw`   | Spirit meter   |
-| `iconSupply`   | `#icons/icon-supply.svg?raw`   | Supply meter   |
-| `iconMana`     | `#icons/icon-mana.svg?raw`     | Mana meter     |
+The Core tab's tiles (`SheetCore`, and `MomentumTile` for momentum):
+
+| Variable                 | File                                                                | Used for                       |
+| ------------------------ | ------------------------------------------------------------------- | ------------------------------ |
+| `momentumSvg`            | `#icons/icon-momentum.svg?raw`                                      | Momentum tile (`MomentumTile`) |
+| `iconHealth`             | `#icons/icon-health.svg?raw`                                        | Health tile                    |
+| `iconSpirit`             | `#icons/icon-spirit.svg?raw`                                        | Spirit tile                    |
+| `iconSupply`             | `#icons/icon-supply.svg?raw`                                        | Supply tile                    |
+| `iconStar`               | `#icons/star-solid.svg?raw`                                         | Experience tile                |
+| `swordSvg` / `shieldSvg` | `#icons/sword-solid.svg?raw` / `#icons/shield-halved-solid.svg?raw` | Initiative toggle              |
+| `iconNote`               | `#icons/note-sticky-solid.svg?raw`                                  | Bonds / Failures note buttons  |

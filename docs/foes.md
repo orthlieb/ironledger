@@ -1,7 +1,5 @@
 # Foes
 
-> **⚠️ v2 note.** The standalone `FoeCard` component was merged into **`apps/web/src/lib/components/v2/FoesArea.svelte`** in the v2 rewrite. The `FoeCard` references below are the retired v1 name; the data model + behaviour still apply.
-
 Tracks active combat encounters (foes). Each encounter record links to a foe definition from the foe catalogue and stores combat-specific state (progress track, custom name, vanquished flag).
 
 ---
@@ -89,17 +87,16 @@ The **Delve** and **YRT** [expansion toggles](expansion-toggles.md) filter which
 
 ## UI Structure
 
-The Foes tab contains:
+The Foes area (`apps/web/src/lib/components/v2/FoesArea.svelte`) shows one encounter at a time:
 
-- **+ New Foe** button — opens FoePickerDialog
-- Encounter cards (FoeCard) displayed in order, each showing:
-  - Foe portrait, name (custom or catalogue), nature/rank/quantity badges
-  - Pill strip: nature → rank → quantity → harm (↑ italic when escalating) → progress (↓ italic when defense active)
-  - Collapsible description with features, drives, and tactics
-  - **Escalating Harm** spinner (+/−) when `foeExtraFlag(foeDef, 'yrt', 'escalates')` — tracks `currentHarm`
-  - **Escalating Defense** spinner (+/−) when `foeExtraFlag(foeDef, 'yrt', 'escalatesDefense')` — tracks `currentDefense`
-  - 10-box progress track; +/− buttons show defense value and are always enabled by track state (defense only affects label, not enabled state)
-  - **Mark Vanquished** / **Return to Active** toggle
+- **Header** — the switcher (`Combobox`) lists the encounters, each with its foe's nature glyph and colour, and its **+ New foe…** action opens FoePickerDialog. The gear opens `FoeOptionsDialog` (rename — the encounter's `customName` — and delete).
+- **Core** tab:
+  - Pill row: nature → rank → quantity → harm (↑ italic when escalating) → progress (↓ italic when defense active)
+  - **Active** / **Vanquished** status toggle
+  - 10-box progress track (`ProgressTrackPanel`); its +/− buttons mark `progressPerHit − currentDefense` ticks and stay enabled by track state alone (defense only changes the step)
+  - **Escalating Harm** row (− / value / + / cap) when `foeExtraFlag(foeDef, 'yrt', 'escalates')` — tracks `currentHarm`
+  - **Escalating Defense** row (− / value / + / cap) when `foeExtraFlag(foeDef, 'yrt', 'escalatesDefense')` — tracks `currentDefense`
+- **Description** tab: the portrait (click to enlarge) floated right of the description, with any active expansion's addendum (`resolveFoeDescription`), then features, drives, and tactics
 
 ### FoePickerDialog
 
@@ -110,15 +107,9 @@ The Foes tab contains:
 
 ---
 
-## Global Context Integration
+## Active foe
 
-The **Foe tile** in GlobalContextBar shows the active encounter's portrait, name, nature (colored), rank, harm (↑ italic when escalating), progress (↓ italic when defense active), quantity (if not solo), initiative badge, and vanquished marker. The detail panel (below the description toggle) contains:
-
-- **Escalating Harm** spinner when `foeExtraFlag(foeDef, 'yrt', 'escalates')`
-- **Escalating Defense** spinner when `foeExtraFlag(foeDef, 'yrt', 'escalatesDefense')`
-- Mini progress track with +/− buttons (mirroring defense value when active)
-
-Clicking the tile opens a popover listing all encounters; selecting one updates the active foe. Initiative state (You/Foe) is displayed as a colored badge when set via move outcome links.
+The encounter open in the Foes area is the active foe: FoesArea publishes it with `setActiveFoeId()` (`activeContext.svelte.ts`). The Moves dialog (wired in `+layout.svelte`) reads it for foe conditions (`hasFoe`, which moves like Strike and Clash require), the foe's harm, and the combat progress roll; the command bar shows it as a chip in its nature colour and points `/foe.…` commands at it. A vanquished encounter counts as no foe. Initiative belongs to the character, on the sheet's Core tab (see [character-sheet.md](character-sheet.md#initiative)).
 
 ---
 
@@ -153,10 +144,11 @@ See [Yrt extension docs § Escalating Defense](../extensions/yrt/README.md#escal
 
 ## Components
 
-| Component       | File                                | Purpose                   |
-| --------------- | ----------------------------------- | ------------------------- |
-| FoeCard         | `components/FoeCard.svelte`         | Individual encounter card |
-| FoePickerDialog | `components/FoePickerDialog.svelte` | Foe selection dialog      |
+| Component        | File                                 | Purpose                                            |
+| ---------------- | ------------------------------------ | -------------------------------------------------- |
+| FoesArea         | `components/v2/FoesArea.svelte`      | The Foes area: switcher, Core and Description tabs |
+| FoeOptionsDialog | `components/FoeOptionsDialog.svelte` | Rename and delete an encounter                     |
+| FoePickerDialog  | `components/FoePickerDialog.svelte`  | Foe selection dialog                               |
 
 ## Stores
 

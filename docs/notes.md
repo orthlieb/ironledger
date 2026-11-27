@@ -12,7 +12,7 @@ During gameplay, players need to jot down observations, reminders, or narrative 
 
 ## UI
 
-The **Notes** button in the top-level app nav (`+layout.svelte`'s `.app-nav` toolbar — formerly the GlobalContextBar before its v2 removal) opens a centered modal dialog:
+The **Note** button in the top-level app nav (the `.app-nav` toolbar in `apps/web/src/routes/+layout.svelte`, beside Move / Ask / Roll / Map) opens a centered modal dialog:
 
 - Textarea with placeholder text and markdown hint
 - **Add to Log** button (disabled when empty)
@@ -53,11 +53,11 @@ Notes use the existing session log infrastructure — no new stores or API endpo
 
 ## Components
 
-| Component        | File                                 | Purpose                                       |
-| ---------------- | ------------------------------------ | --------------------------------------------- |
-| NotesDialog      | `components/NotesDialog.svelte`      | Modal dialog for typing notes                 |
-| GlobalContextBar | `components/GlobalContextBar.svelte` | Notes button triggers `onNotesClick` callback |
-| LogPanel         | `components/LogPanel.svelte`         | Renders note entries in the session log       |
+| Component   | File                            | Purpose                                                  |
+| ----------- | ------------------------------- | -------------------------------------------------------- |
+| NotesDialog | `components/NotesDialog.svelte` | Modal dialog for typing notes                            |
+| Root layout | `routes/+layout.svelte`         | The `.app-nav` Note button calls `notesDialogRef.open()` |
+| LogPanel    | `components/LogPanel.svelte`    | Renders note entries in the session log                  |
 
 ## Old App Reference
 
