@@ -509,10 +509,6 @@ each link rendering as `<a class="cmd-link" data-cmd="/move …" data-verb="move
   **Relevant Assets** panel reads to show the character's marked abilities
   that mention the move being rolled.
 
-`moves` replaced a separate index of the same lists,
-`apps/api/data/assets/asset-move-refs.json`, written by
-`generate_move_refs.py` in the same folder. Nothing reads either any more.
-
 ### Auto-Enabled Abilities
 
 When a character acquires an asset, each ability checkbox is pre-set to `ability.enabled`. The convention by category is:
