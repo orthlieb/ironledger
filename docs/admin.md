@@ -147,7 +147,9 @@ An **admin** account can't delete itself this way (`ADMIN_ACCOUNT`), so the site
 
 | Component                 | File                                               | Purpose                                           |
 | ------------------------- | -------------------------------------------------- | ------------------------------------------------- |
-| Admin route               | `apps/web/src/routes/admin/+page.svelte`           | Top-level admin tab UI                            |
+| Admin route               | `apps/web/src/routes/admin/+page.svelte`           | Page shell: first load, ErrorBar, tab bar         |
+| Admin tabs                | `apps/web/src/lib/components/admin/`               | Stats + graph, one component per tab, modal shell |
+| Log-line parser           | `apps/web/src/lib/adminLogs.ts`                    | Parses PM2 / pino log lines for the Logs tab      |
 | Admin API                 | `apps/api/src/routes/admin.ts`                     | Endpoint definitions                              |
 | Admin service             | `apps/api/src/services/adminService.ts`            | User CRUD + stats queries                         |
 | Maintenance service       | `apps/api/src/services/maintenanceService.ts`      | Redis-backed maintenance state + token revocation |
