@@ -474,18 +474,21 @@ Each ability object:
 | `text`    | string (md+DSL) | yes      | Ability description: markdown + the link DSL, with each move it names written as a `move:` link (see [Move Links in Ability Text](#move-links-in-ability-text)).                                                                                                       |
 | `name`    | string          | no       | Named ability (companions only, e.g., `"Scout"`, `"Bonded"`)                                                                                                                                                                                                           |
 | `moves`   | string[]        | no       | The moves the `text` links, as full ids (`"move/strike"`), in order of first appearance, without repeats. Omitted when the text links none. The Move dialog's **Relevant Assets** panel reads it. Nothing checks it against the text, so keep the two in step by hand. |
-| `log`     | string (md+DSL) | no       | _(Planned.)_ What the ability does to the character once, as one-time log links: written to the asset's log entry when the ability is marked. See [Ability log links](#ability-log-links-log).                                                                         |
-| `free`    | boolean         | no       | _(Planned.)_ `true` when the rules grant the ability rather than selling it, so marking it costs no XP (Oathbreaker's third ability, at redemption). See [Cost formula](#cost-formula).                                                                                |
+| `log`     | string (md+DSL) | no       | What the ability does to the character once, as one-time log links: written to the asset's log entry when the ability is marked. See [Ability log links](#ability-log-links-log).                                                                                      |
+| `free`    | boolean         | no       | `true` when the rules grant the ability rather than selling it, so marking it costs no XP (Oathbreaker's third ability, at redemption); the card tags it _No XP_. See [Cost formula](#cost-formula).                                                                   |
 
 ### Move Links in Ability Text
 
 Ability `text` (and `preamble` / `description`) use the same **markdown with
 command links** as move outcomes — a move reference is a `[label](/move <id>)` link. Click
 delegation is wired up in the asset dialog, so move and oracle links in asset
-ability text open them. Asset text links **moves and oracles only**: an
-asset never writes to the log. What an ability gives ("take +1 momentum on a
-hit", "you and your companions take +1 health") stays text, the player's to
-take (by hand, or with a command: `/companions.health++`). The Moves dialog's
+ability text open them. Asset text links **moves and oracles only**: the card's
+text never writes to the log. What an ability gives each time it's used ("take
++1 momentum on a hit", "you and your companions take +1 health") stays text,
+the player's to take (by hand, or with a command: `/companions.health++`).
+What an ability does once, when it's taken (a Path's stat change), is its
+`log`, written to the log when the ability is marked (see
+[Ability log links](#ability-log-links-log)). The Moves dialog's
 **Relevant Assets** row lists the marked abilities that name the move being
 made. The lint refuses a value link in asset text. See
 [Links are commands](#links-are-commands) for the forms.
@@ -537,11 +540,11 @@ through Advance, 3 XP each, spending each from its log link.
 
 The UI enforces XP requirements for asset-related actions:
 
-| Action                        | XP Cost                     | Gate                                                                |
-| ----------------------------- | --------------------------- | ------------------------------------------------------------------- |
-| Acquire a new asset           | 3 XP                        | None: `+ Asset` and the card's Add are always enabled               |
-| Enable a new ability checkbox | 2 XP (0 if `free`, planned) | Ability checkbox disabled when the dialog's total would exceed `xp` |
-| Unlock a rarity               | `rarity.xpCost` XP          | Rarity checkbox disabled when the dialog's total would exceed `xp`  |
+| Action                        | XP Cost            | Gate                                                                |
+| ----------------------------- | ------------------ | ------------------------------------------------------------------- |
+| Acquire a new asset           | 3 XP               | None: `+ Asset` and the card's Add are always enabled               |
+| Enable a new ability checkbox | 2 XP (0 if `free`) | Ability checkbox disabled when the dialog's total would exceed `xp` |
+| Unlock a rarity               | `rarity.xpCost` XP | Rarity checkbox disabled when the dialog's total would exceed `xp`  |
 
 "The dialog's total" is the whole diff for the open card (purchase, new
 abilities and rarity together; see the cost formula below), so a companion's
@@ -569,8 +572,8 @@ pattern:
    (see `computeAssetXpDiff` in `character.ts`), persists the draft
    over the live asset, copies `dialogGlobals` into
    `character.globalValues`, and emits ONE consolidated log entry with
-   ONE clickable XP-cost-link for the total, followed (once built) by the
-   `log` of each newly marked ability (see
+   ONE clickable XP-cost-link for the total, followed by the `log` of each
+   newly marked ability (see
    [Ability log links](#ability-log-links-log)). With no XP due and no
    `log` to write, **no log entry is written**.
 4. **On X / Cancel** — the draft is discarded; live character state is
@@ -584,7 +587,7 @@ it through, so it can't be spent twice.
 
 ```
 purchaseCost    = mode === 'add' ? 3 : 0
-newEnables      = count of indices where snapshot=false AND draft=true AND NOT ability.free  (free: planned)
+newEnables      = count of indices where snapshot=false AND draft=true AND NOT ability.free
 includedPick    = (purchaseCost > 0 && no ability marked in snapshot) ? 1 : 0
 rarityXp        = (draft.rarityId !== snapshot.rarityId && draft.rarityId) ? newRarity.xpCost : 0
 totalCost       = purchaseCost + max(0, newEnables - includedPick) * 2 + rarityXp
@@ -604,11 +607,12 @@ All asset log entries are titled `{characterName} — Assets` (e.g.,
 `Porcius Mona — Assets`). The body format is:
 
 - **Asset added** (mode = add): `Asset added: **Name** −N experience`
-  (XP link only present when `totalCost > 0`), then (planned) the `log` of
-  each ability it comes with.
+  (XP link only present when `totalCost > 0`), then the `log` of each
+  ability it comes with, one per line.
 - **Asset modified** (mode = edit): `Asset modified: **Name** −N experience`
-  (XP link only present when `totalCost > 0`), then (planned) the `log` of
-  each ability newly marked.
+  (XP link only present when `totalCost > 0`), then the `log` of each
+  ability newly marked, one per line. Marking a `free` ability with a `log`
+  (Oathbreaker's third) writes an entry with no XP link.
 - **Asset removed** (Delete button in edit mode): `Asset removed:
 **Name** _(Category)_` — no XP charge or refund.
 
@@ -617,11 +621,6 @@ asset card UI when expanded; the consolidated log entry shows the
 asset name only.
 
 ### Ability log links (`log`)
-
-> **Planned, not built yet.** This is how stat-changing abilities will work.
-> Until the code lands, the asset dialog writes no `log`, `free` isn't read,
-> and choice groups don't exist. Change a stat by double-clicking it on the
-> sheet, or with a command (`/edge-=1`), meanwhile.
 
 A few abilities change the character once, when you take them: four Path
 assets in base Ironsworn change a stat. An ability's `log` holds that change
@@ -639,10 +638,14 @@ its links back, and marking it again writes them again: nothing remembers
 that they were used, so that's the player's call.
 
 `text` stays the rules text shown on the card; `log` is only what goes in the
-log. Its links usually change a stat (`/edge--`); a choice between links
-("−1 edge or −1 iron") will need choice groups, which don't exist yet. Any
-link works: `/corrupted++` to mark a debility, `/move face-desolation` to open
-the move the ability sends you to.
+log. Its links usually change a stat (`/edge--`). A choice ("−1 edge or −1
+iron") is written as one link per option, as a move's outcome is: the player
+clicks the one they choose and leaves the rest. Any link works: `/corrupted++`
+to mark a debility, `/move face-desolation` to open the move the ability sends
+you to. The content linter (`npm run lint:dsl`) checks a `log`'s links as it
+checks a move's, and refuses a `free` that isn't `true`. The pieces:
+`abilityLogsToWrite` and `computeAssetXpDiff` in `apps/web/src/lib/character.ts`,
+called by the asset dialog's OK in `CharactersArea.svelte`.
 
 The four stat-changing abilities:
 

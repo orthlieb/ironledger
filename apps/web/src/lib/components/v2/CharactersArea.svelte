@@ -81,6 +81,7 @@
 		changeResource,
 		setResource,
 		computeAssetXpDiff,
+		abilityLogsToWrite,
 		STARTING_XP,
 		type ResourceChange,
 	} from '#lib/character.js';
@@ -623,10 +624,13 @@
 	}
 
 	/** OK / Add — diff the draft against the snapshot, log the consolidated
-	 *  XP cost (if any), and persist draft → live. */
+	 *  XP cost (if any) and the `log` of each newly marked ability, and
+	 *  persist draft → live. */
 	function commitAssetDialog() {
 		if (!dialogDraft || !activeData || !activeChar) return;
 
+		const def = findAsset(dialogDraft.assetId);
+		const defAbilities = def?.abilities ?? [];
 		const rarities = findRaritiesForAsset(dialogDraft.assetId);
 		const totalCost = computeAssetXpDiff({
 			snapshotAbilities: dialogSnapshotAbilities,
@@ -635,6 +639,13 @@
 			draftRarityId: dialogDraft.rarityId,
 			rarityXpCost: (id) => rarities.find((r) => r.id === id)?.xpCost ?? 0,
 			purchaseCost: dialogPurchaseCost,
+			freeAbilities: defAbilities.map((ab) => !!ab.free),
+		});
+		const abilityLogs = abilityLogsToWrite({
+			abilities: defAbilities,
+			snapshotAbilities: dialogSnapshotAbilities,
+			draftAbilities: dialogDraft.abilities,
+			mode: dialogMode,
 		});
 
 		// Persist draft → live
@@ -646,20 +657,21 @@
 		}
 		activeData.globalValues = dialogGlobals;
 
-		// Consolidated log entry — only when something costs XP.
-		if (totalCost > 0) {
-			const def = findAsset(dialogDraft.assetId);
+		// One consolidated log entry: the XP link for the total, then each
+		// newly marked ability's one-time links (docs/data-schema.md →
+		// Ability log links). Nothing due and nothing to log: no entry.
+		if (totalCost > 0 || abilityLogs.length > 0) {
 			const action = dialogMode === 'add' ? 'added' : 'modified';
 			const entryId = crypto.randomUUID();
-			const xpLink = commandLinkHtml(`−${totalCost} experience`, `/xp-=${totalCost}`, {
-				charId: activeChar.id,
-			});
+			const xpLink =
+				totalCost > 0 ? ' ' + commandLinkHtml(`−${totalCost} experience`, `/xp-=${totalCost}`) : '';
+			const head = `<div>Asset ${action}: <strong>${escHtml(def?.name ?? dialogDraft.assetId)}</strong>${xpLink}</div>`;
+			const logs = abilityLogs.map(
+				(md) => `<div class="asset-ability-log">${renderRich(md)}</div>`,
+			);
 			appendLog(
 				charTitle('Assets'),
-				bindCommandLinks(
-					`<div>Asset ${action}: <strong>${escHtml(def?.name ?? dialogDraft.assetId)}</strong> ${xpLink}</div>`,
-					entryId,
-				),
+				bindCommandLinks(head + logs.join(''), entryId, { charId: activeChar.id }),
 				entryId,
 			);
 		}

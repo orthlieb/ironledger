@@ -335,12 +335,24 @@ async function main() {
     for (const a of data.assets ?? []) {
       if (a.html) continue;
       const errs = [];
-      // An asset never writes to the log: its text links moves and oracles,
+      // An asset's text never writes to the log: it links moves and oracles,
       // and the Moves dialog lists the abilities that name the move made.
       const opts = { strayHtml: false, self: a, verbsOnly: true };
       scanText(a.preamble, cat, opts, errs);
       scanText(a.description, cat, opts, errs);
-      for (const ab of a.abilities ?? []) scanText(ab.text, cat, opts, errs);
+      for (const ab of a.abilities ?? []) {
+        scanText(ab.text, cat, opts, errs);
+        // An ability's `log` is what marking it does once, written to the
+        // asset's log entry: value links are its point, checked as a
+        // move's outcome links are.
+        if (ab.log !== undefined) {
+          if (typeof ab.log !== 'string' || !ab.log.trim())
+            errs.push({ token: 'log', reason: "an ability's log is non-empty text" });
+          else scanText(ab.log, cat, { strayHtml: false, self: a }, errs);
+        }
+        if (ab.free !== undefined && ab.free !== true)
+          errs.push({ token: `free: ${ab.free}`, reason: 'free is true or left out' });
+      }
       record(file, a.id, errs);
     }
 

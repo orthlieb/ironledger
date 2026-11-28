@@ -11,6 +11,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import {
 	computeAssetXpDiff,
+	abilityLogsToWrite,
 	assetDisplayName,
 	reconcileGlobalValues,
 } from '../../src/lib/character.js';
@@ -189,6 +190,42 @@ describe('computeAssetXpDiff', () => {
 			).toBe(2);
 		});
 	});
+	describe('a free ability (the rules grant it)', () => {
+		// Oathbreaker: the first comes with the asset, the third is free.
+		const free = [false, false, true];
+		it('costs nothing to mark on an asset already owned', () => {
+			expect(
+				computeAssetXpDiff({
+					snapshotAbilities: [true, false, false],
+					draftAbilities: [true, false, true],
+					rarityXpCost: noRarities,
+					purchaseCost: 0,
+					freeAbilities: free,
+				}),
+			).toBe(0);
+		});
+		it('still charges 2 for a paid ability marked with it', () => {
+			expect(
+				computeAssetXpDiff({
+					snapshotAbilities: [true, false, false],
+					draftAbilities: [true, true, true],
+					rarityXpCost: noRarities,
+					purchaseCost: 0,
+					freeAbilities: free,
+				}),
+			).toBe(2);
+		});
+		it('costs 2 like any other when not marked free', () => {
+			expect(
+				computeAssetXpDiff({
+					snapshotAbilities: [true, false, false],
+					draftAbilities: [true, false, true],
+					rarityXpCost: noRarities,
+					purchaseCost: 0,
+				}),
+			).toBe(2);
+		});
+	});
 	it('still charges 2 for a second ability on an asset that starts with one', () => {
 		expect(
 			computeAssetXpDiff({
@@ -198,6 +235,69 @@ describe('computeAssetXpDiff', () => {
 				purchaseCost: 3,
 			}),
 		).toBe(5);
+	});
+});
+
+// ---------------------------------------------------------------------------
+// abilityLogsToWrite — the one-time links an asset's log entry gets
+// ---------------------------------------------------------------------------
+
+describe('abilityLogsToWrite', () => {
+	const abilities = [{ log: 'first' }, {}, { log: '  third  ' }];
+
+	it('on adding an asset, writes the log of every ability it comes with', () => {
+		expect(
+			abilityLogsToWrite({
+				abilities,
+				snapshotAbilities: [true, false, false],
+				draftAbilities: [true, false, false],
+				mode: 'add',
+			}),
+		).toEqual(['first']);
+	});
+
+	it('on adding, also writes an ability marked in the dialog', () => {
+		expect(
+			abilityLogsToWrite({
+				abilities,
+				snapshotAbilities: [true, false, false],
+				draftAbilities: [true, false, true],
+				mode: 'add',
+			}),
+		).toEqual(['first', 'third']);
+	});
+
+	it('on adding, leaves out a default ability the player unmarked', () => {
+		expect(
+			abilityLogsToWrite({
+				abilities,
+				snapshotAbilities: [true, false, false],
+				draftAbilities: [false, true, false],
+				mode: 'add',
+			}),
+		).toEqual([]);
+	});
+
+	it('on editing, writes only the abilities marked since the dialog opened', () => {
+		expect(
+			abilityLogsToWrite({
+				abilities,
+				snapshotAbilities: [true, false, false],
+				draftAbilities: [true, true, true],
+				mode: 'edit',
+			}),
+		).toEqual(['third']);
+	});
+
+	it('on editing, an unmarked ability writes nothing', () => {
+		expect(
+			abilityLogsToWrite({
+				abilities,
+				snapshotAbilities: [true, false, true],
+				draftAbilities: [true, false, false],
+				mode: 'edit',
+			}),
+		).toEqual([]);
 	});
 });
 
