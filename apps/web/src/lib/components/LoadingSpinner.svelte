@@ -9,7 +9,7 @@
 	 * tells a screen reader what's loading.
 	 *
 	 * Props: `label` (shown, and read out; "Loading" when left out, read out
-	 * only), `size` (the mark's height in px, default 28), `inline` (beside
+	 * only), `size` (the mark's height in px, default 56), `inline` (beside
 	 * its label rather than above it, for a line of text).
 	 */
 	import axeSvg from '#icons/sharp-axe.svg?raw';
@@ -17,7 +17,7 @@
 
 	let {
 		label = '',
-		size = 28,
+		size = 56,
 		inline = false,
 	}: { label?: string; size?: number; inline?: boolean } = $props();
 </script>

@@ -95,7 +95,7 @@
 		</div>
 
 		{#if metricsLoading || !timeseries}
-			<div class="metrics-loading"><LoadingSpinner label="Loading…" size={22} /></div>
+			<div class="metrics-loading"><LoadingSpinner label="Loading…" size={44} /></div>
 		{:else}
 			{@const buckets = timeseries.buckets}
 			{@const rawMax = Math.max(...buckets.map((b) => b.totalUsers), 1)}

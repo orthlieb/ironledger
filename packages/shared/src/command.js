@@ -24,7 +24,6 @@ export const VERBS = /** @type {const} */ ([
   'roll',
   'note',
   'burn',
-  'discard',
   'story',
   'help',
 ]);
@@ -457,4 +456,4 @@ export const OWNER_KEYWORDS = /** @type {const} */ ([
 
 /** Verbs a link may run: anything else (note, story, help, roll) is the
  *  command bar's. */
-export const LINK_VERBS = /** @type {const} */ (['move', 'oracle', 'burn', 'discard']);
+export const LINK_VERBS = /** @type {const} */ (['move', 'oracle', 'burn']);

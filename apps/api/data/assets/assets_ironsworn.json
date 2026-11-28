@@ -1349,7 +1349,7 @@
           "enabled": false,
           "text": "When you [Fulfill Your Vow](/move fulfill-your-vow) on your marked quest and score a hit, you find redemption and automatically activate this ability at no cost. You may then improve one of your stats by +1 and discard this asset.",
           "free": true,
-          "log": "You find redemption. Improve one stat: [+1 edge](/edge++), [+1 heart](/heart++), [+1 iron](/iron++), [+1 shadow](/shadow++) or [+1 wits](/wits++); then [discard Oathbreaker](/discard path/oathbreaker).",
+          "log": "You find redemption. Improve one stat: [+1 edge](/edge++), [+1 heart](/heart++), [+1 iron](/iron++), [+1 shadow](/shadow++) or [+1 wits](/wits++); then discard Oathbreaker (Delete on its card).",
           "moves": ["move/fulfill-your-vow"]
         }
       ],

@@ -141,7 +141,7 @@
 			for this environment.
 		</p>
 	{:else if logLoading}
-		<div class="logs-unavailable"><LoadingSpinner label="Loading…" size={22} /></div>
+		<div class="logs-unavailable"><LoadingSpinner label="Loading…" size={44} /></div>
 	{:else if logLines.length === 0}
 		<p class="logs-unavailable">Log file is empty.</p>
 	{:else}

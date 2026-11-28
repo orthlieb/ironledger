@@ -229,7 +229,7 @@ optional label under it.
 </script>
 
 <div class="ca-loading"><LoadingSpinner label="Loading…" /></div>
-<LoadingSpinner size={22} />
+<LoadingSpinner size={44} />
 <LoadingSpinner label="Saving" inline />
 ```
 
@@ -238,7 +238,7 @@ label ("Loading" is read out only); the third sits beside its label, for a
 line of text.
 
 **Props:** `label` (shown and read out; when left out, "Loading" is read out
-only), `size` (the mark's height in px, default 28), `inline` (mark beside the
+only), `size` (the mark's height in px, default 56), `inline` (mark beside the
 label instead of above it).
 
 - It fades in after 150 ms, so a load that's over quickly never flashes it.

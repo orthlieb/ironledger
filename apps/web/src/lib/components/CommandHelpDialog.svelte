@@ -157,10 +157,6 @@
 			{ syntax: '/note …', hint: 'Add a note to the log. Plain text does the same.' },
 			{ syntax: '/burn', hint: 'Burn momentum on the newest action roll, when that improves it.' },
 			{
-				syntax: '/discard oathbreaker',
-				hint: 'Give up one of your assets, as Delete on its card does (by its name, id or the name you gave it). What it held goes with it.',
-			},
-			{
 				syntax: '/story start',
 				hint: 'Mark the newest log entry as the start of a story section; /story end marks its end; /story write opens Generate on it.',
 			},

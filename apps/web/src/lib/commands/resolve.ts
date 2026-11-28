@@ -181,8 +181,6 @@ export type Plan =
 	| { kind: 'oracle'; oracle: OracleRef; summary: string }
 	| { kind: 'roll'; groups: RollGroup[]; summary: string }
 	| { kind: 'burn'; summary: string }
-	/** `/discard oathbreaker`: the character gives up an asset. */
-	| { kind: 'discard'; owner: AssetOwner; summary: string }
 	| { kind: 'story'; action: 'start' | 'end' | 'write'; summary: string }
 	| { kind: 'help'; topic: string; summary: string }
 	| { kind: 'error'; message: string }
@@ -812,19 +810,6 @@ function onVerb(verb: Verb, arg: string, w: World): Plan {
 		case 'burn':
 			if (arg) return error('/burn takes nothing after it.');
 			return { kind: 'burn', summary: 'Burns momentum on the newest action roll' };
-		case 'discard': {
-			// One of the character's assets, by its name, id or given name.
-			if (!arg) return incomplete('Needs an asset: /discard oathbreaker');
-			const ch = activeCharacter(w);
-			if (!ch) return error('No active character.');
-			const asset = assetOwners(ch, w.cat).find((o) => sameName(o, arg));
-			if (!asset) return error(`${ch.name} has no ${arg}.`);
-			return {
-				kind: 'discard',
-				owner: asset,
-				summary: `Removes ${ownerLabel(asset)} from ${ch.name}`,
-			};
-		}
 		case 'story': {
 			if (!arg) return incomplete('Needs start, end or write: /story start');
 			const a = arg.toLowerCase();

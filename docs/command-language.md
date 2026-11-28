@@ -209,19 +209,18 @@ expedition is the scene Duel at Dawn".
 
 ### Verbs
 
-Eight commands do things that aren't values. A verb takes free text after
+Seven commands do things that aren't values. A verb takes free text after
 it, so operators don't apply.
 
-| Command                                      | Does                                                                                                                                                                                                                                              |
-| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `/move <name> [n]`                           | Opens the move. A number is the harm or amount it asks for (`/move endure harm 2`).                                                                                                                                                               |
-| `/oracle <name>`                             | Opens the oracle.                                                                                                                                                                                                                                 |
-| `/roll <dice>…`                              | Rolls dice: `/roll 2d10 1d6+2` (as today).                                                                                                                                                                                                        |
-| `/note <text>`                               | Adds a note. Text with no `/` in front does the same.                                                                                                                                                                                             |
-| `/burn`                                      | Burns momentum on the newest action roll.                                                                                                                                                                                                         |
-| `/discard <asset>`                           | Gives up one of the character's assets, as Delete on its card does: `/discard oathbreaker`. By its name, id or the name you gave it; in content, by id (`/discard path/oathbreaker`). What it held (a companion's health, its name) goes with it. |
-| `/story start`, `/story end`, `/story write` | Marks the start or end of a story section, or opens Generate on it.                                                                                                                                                                               |
-| `/help [topic]`                              | Opens the command help, on a topic if given (`/help progress`).                                                                                                                                                                                   |
+| Command                                      | Does                                                                                |
+| -------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `/move <name> [n]`                           | Opens the move. A number is the harm or amount it asks for (`/move endure harm 2`). |
+| `/oracle <name>`                             | Opens the oracle.                                                                   |
+| `/roll <dice>…`                              | Rolls dice: `/roll 2d10 1d6+2` (as today).                                          |
+| `/note <text>`                               | Adds a note. Text with no `/` in front does the same.                               |
+| `/burn`                                      | Burns momentum on the newest action roll.                                           |
+| `/story start`, `/story end`, `/story write` | Marks the start or end of a story section, or opens Generate on it.                 |
+| `/help [topic]`                              | Opens the command help, on a topic if given (`/help progress`).                     |
 
 ### Everything it does
 
@@ -235,7 +234,6 @@ it, so operators don't apply.
 | Debilities                                  | `/wounded++`, `/wounded--`, `/wounded!`                                                |
 | Initiative                                  | `/initiative=foe`, `/initiative=none`                                                  |
 | Burn momentum                               | `/burn`                                                                                |
-| Give up an asset                            | `/discard oathbreaker`                                                                 |
 | Content-pack fields                         | `/mana--`, `/hawk.health--`, `/Ash.health--`, `/touched`                               |
 | Another character's value                   | `/Bjorn.health-=2`                                                                     |
 | Make a character, foe or expedition active  | `/character=Bjorn`, `/foe=Wolf`, `/site=The Barrow`                                    |
@@ -350,15 +348,8 @@ sets (You retain initiative, when you have it; Mark Shaken, when you're
 shaken) writes no log line (typed, it would), says so in the status line,
 and is spent all the same: what it asks for holds.
 
-A link runs only commands that change a value, `/burn`, `/discard`, `/move`
-and `/oracle` (and `/site.theme`, `/site.domain`, which open the site's
-picker). A `/discard` link asks first, with the Delete Asset question the
-card's Delete asks (`AssetDiscardConfirm`, mounted in `+layout.svelte`):
-DELETE removes the asset from the character its entry was made for and
-spends the link; Cancel leaves both. An ability's `log` uses it where the
-rules say to discard the asset (Oathbreaker, at redemption). An asset's card
-text can't: it links moves and oracles only. Typed, `/discard` doesn't ask:
-the line typed is the intent.
+A link runs only commands that change a value, `/burn`, `/move` and
+`/oracle` (and `/site.theme`, `/site.domain`, which open the site's picker).
 It can't make something active, write a note, mark a story section or open
 help. A link whose command can't run (a read-only field, an asset the
 character no longer has, a deleted foe) says why in the command bar's status
