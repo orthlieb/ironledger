@@ -14,7 +14,14 @@ import type { Plan, World, MoveRef, OracleRef } from './resolve.js';
 import { companionOwners, ownerLabel, plan as planCommand } from './resolve.js';
 import type { CompanionHealth } from '#lib/moveRoll.js';
 import { bindCommandLinks, type LinkBinding } from './links.js';
-import type { Catalogue, CharacterOwner, ExpeditionOwner, FoeOwner, Owner } from './values.js';
+import type {
+	AssetOwner,
+	Catalogue,
+	CharacterOwner,
+	ExpeditionOwner,
+	FoeOwner,
+	Owner,
+} from './values.js';
 import { findValue } from './values.js';
 import {
 	getCharacters,
@@ -212,6 +219,23 @@ function characterOf(owner: Owner): CharacterOwner | undefined {
 	if (owner.kind === 'character') return owner;
 	if (owner.kind === 'vow' || owner.kind === 'asset') return owner.character;
 	return undefined;
+}
+
+/** `/discard`: take the asset off its character, as Delete on its card
+ *  does, and log the same line. What it held (a companion's health, its
+ *  name) goes with it. */
+function runDiscard(asset: AssetOwner): RunResult {
+	const ch = asset.character;
+	ch.data.assets = (ch.data.assets ?? []).filter((a) => a.assetId !== asset.id);
+	const category = asset.def?.category;
+	appendLog(
+		`${ch.name} — Assets`,
+		`<div>Asset removed: <strong>${escHtml(asset.name)}</strong>${
+			category ? ` <em>(${escHtml(category)})</em>` : ''
+		}</div>`,
+	);
+	save(ch);
+	return { ok: true, message: `${ch.name}: ${ownerLabel(asset)} removed.` };
 }
 
 /** Save the owner a change was made to. */
@@ -449,6 +473,8 @@ export function runPlan(p: Plan, ui: RunUi, { link = false }: { link?: boolean }
 			return runRoll(p);
 		case 'burn':
 			return runBurn();
+		case 'discard':
+			return runDiscard(p.owner);
 		case 'story':
 			return runStory(p.action);
 		case 'help':
@@ -501,6 +527,10 @@ export function runLink(cmd: string, bind: LinkBinding = {}): LinkResult {
 		}
 		case 'burn': {
 			const r = runBurn(bind.rollId);
+			return { ...r, spend: r.ok };
+		}
+		case 'discard': {
+			const r = runDiscard(p.owner);
 			return { ...r, spend: r.ok };
 		}
 		case 'move':

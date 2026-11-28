@@ -661,7 +661,7 @@ The four stat-changing abilities:
 
 // path/oathbreaker, ability 3
 "free": true,
-"log": "You find redemption. Improve one stat: [+1 edge](/edge++), [+1 heart](/heart++), [+1 iron](/iron++), [+1 shadow](/shadow++) or [+1 wits](/wits++); then discard Oathbreaker (Delete on its card)."
+"log": "You find redemption. Improve one stat: [+1 edge](/edge++), [+1 heart](/heart++), [+1 iron](/iron++), [+1 shadow](/shadow++) or [+1 wits](/wits++); then [discard Oathbreaker](/discard path/oathbreaker)."
 ```
 
 Battle-Scarred's "+2 to wits or heart, or +1 to each" is two single points,

@@ -477,6 +477,19 @@ describe('verbs', () => {
 		expect(says('/story later')).toBe('/story takes start, end or write, not "later".');
 	});
 
+	it('discards one of the character’s assets, by its name, id or given name', () => {
+		for (const s of ['/discard hawk', '/discard companion/hawk', '/discard Ash'])
+			expect(plan(s, world()), s).toMatchObject({
+				kind: 'discard',
+				owner: { id: 'companion/hawk', character: { id: 'c1' } },
+			});
+		expect(says('/discard Ash')).toBe('Removes Ash from Bjorn');
+		expect(says('/discard horse')).toBe('Bjorn has no horse.');
+		expect(plan('/discard', world()).kind).toBe('incomplete');
+		// In a link, the entry's character, whoever is active now.
+		expect(says('/discard hawk', world({ activeCharacterId: 'c2' }))).toBe('Edda has no hawk.');
+	});
+
 	it('says what’s missing from a command still being typed', () => {
 		expect(plan('/health+', world()).kind).toBe('incomplete');
 		expect(plan('/hawk.', world()).kind).toBe('incomplete');
@@ -495,6 +508,13 @@ const rowsOf = (input: string, w = world()) => suggest(input, w).rows;
 const labels = (input: string, w = world()) => rowsOf(input, w).map((r) => r.label);
 
 describe('typeahead', () => {
+	it('lists the character’s assets after /discard', () => {
+		expect(rowsOf('/discard ')).toMatchObject([
+			{ label: 'Ash', icon: 'asset', apply: '/discard Ash' },
+		]);
+		expect(labels('/disc')).toContain('discard');
+	});
+
 	it('starts with everything that can start a command, narrowed as it’s typed', () => {
 		const all = labels('/');
 		for (const l of ['foe', 'health', 'move', 'Wolf', 'Avenge Bjorn', 'Ash'])

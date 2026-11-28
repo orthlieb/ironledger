@@ -23,6 +23,8 @@ import {
 	plan,
 	activeCharacter,
 	activeExpedition,
+	assetOwners,
+	namesOf,
 	activeFoe,
 	groupKeyword,
 	groupOwners,
@@ -98,6 +100,7 @@ const VERB_HINTS: Record<Verb, string> = {
 	roll: 'roll dice…',
 	note: 'add a note…',
 	burn: 'burn momentum on the newest roll',
+	discard: 'give up one of your assets…',
 	story: 'mark a story section…',
 	help: 'the command help',
 };
@@ -436,6 +439,16 @@ function verbSlot(verb: Verb, arg: string, w: World): Suggestion[] {
 				icon: 'verb',
 				apply: `/story ${a}`,
 			}));
+		case 'discard': {
+			const ch = activeCharacter(w);
+			if (!ch) return [];
+			return ranked(assetOwners(ch, w.cat), arg, namesOf).map((a) => ({
+				label: ownerLabel(a),
+				detail: [a.given ? a.name : '', a.def?.category].filter(Boolean).join(' — '),
+				icon: 'asset',
+				apply: `/discard ${a.given || a.name}`,
+			}));
+		}
 		case 'help':
 			return ranked(HELP_TOPICS, arg, (t) => [t.id, t.label]).map((t) => ({
 				label: t.id,

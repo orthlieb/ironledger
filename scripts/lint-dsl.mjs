@@ -164,6 +164,10 @@ function checkCommand(cmd, cat, self) {
     if (!LINK_VERBS.includes(p.verb))
       return `a link can't run /${p.verb}: that's the command bar's`;
     if (p.verb === 'burn') return p.arg ? '/burn takes nothing after it' : null;
+    if (p.verb === 'discard') {
+      if (!p.arg) return 'name the asset by its id: /discard path/oathbreaker';
+      return cat.assets.has(p.arg) ? null : `unknown asset "${p.arg}" (write its id)`;
+    }
     if (p.verb === 'move') {
       const m = p.arg.match(/^(\S+)(?:\s+(\d+))?$/);
       if (!m) return 'write the move by its id: /move face-danger, or /move endure-harm 2';
@@ -242,13 +246,17 @@ function checkCommand(cmd, cat, self) {
   }
 }
 
+/** The verbs an asset's card text may link: it opens moves and oracles,
+ *  and never changes the character (`/discard` is for an ability's log). */
+const VERBS_IN_TEXT = new Set(['move', 'oracle']);
+
 // ── Scan one text blob; push {token, reason} errors ──────────────────────────
 function scanText(text, cat, { strayHtml, self, verbsOnly }, errs) {
   if (typeof text !== 'string' || !text) return;
   for (const m of text.matchAll(LINK)) {
     const target = m[2];
     let reason;
-    if (target.startsWith('/') && verbsOnly && parseCommand(target).kind !== 'verb')
+    if (target.startsWith('/') && verbsOnly && !VERBS_IN_TEXT.has(parseCommand(target).verb))
       reason =
         "asset text links moves and oracles only: what an ability gives is the player's to take";
     else if (target.startsWith('/')) reason = checkCommand(target, cat, self);

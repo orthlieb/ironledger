@@ -8,7 +8,8 @@
  *     is spent.
  *   - Oathbreaker's third ability is free: with no XP left it can still be
  *     marked (the paid second can't), costs nothing, and its redemption
- *     links land in an "Asset modified" entry with no XP link.
+ *     links land in an "Asset modified" entry with no XP link. Its
+ *     discard link (`/discard path/oathbreaker`) then removes the asset.
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetCharacters } from './helpers/reset';
@@ -115,5 +116,19 @@ test.describe('Asset ability log links and free abilities', () => {
 		await expect(entry).toContainText('You find redemption');
 		await expect(entry.locator('a.cmd-link[data-cmd^="/xp"]')).toHaveCount(0);
 		await expect(entry.locator('a.cmd-link[data-cmd="/shadow++"]')).toHaveCount(1);
+
+		// Its last link discards the asset, as Delete on its card would.
+		const discard = entry.locator('a.cmd-link[data-cmd="/discard path/oathbreaker"]');
+		await expect(discard).toHaveText('discard Oathbreaker');
+		await discard.click();
+		await expect(
+			page.locator(`${CHAR_AREA} .ca-asset-card`, { hasText: 'Oathbreaker' }),
+		).toHaveCount(0, { timeout: 5_000 });
+		await expect(
+			page.locator('.log-entry', { hasText: 'Asset removed: Oathbreaker (Path)' }).first(),
+		).toBeVisible();
+		await expect(entry.locator('s.resource-spent', { hasText: 'discard Oathbreaker' })).toHaveCount(
+			1,
+		);
 	});
 });
