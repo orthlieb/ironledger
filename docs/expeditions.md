@@ -59,7 +59,7 @@ Both types are stored in a single `expeditions` array using `type` as the discri
 
 ## UI Structure
 
-The Expeditions area (`apps/web/src/lib/components/v2/ExpeditionsArea.svelte`) shows one expedition at a time:
+The Expeditions area (`apps/web/src/lib/components/v2/ExpeditionsArea.svelte`) shows one expedition at a time. Its tabs have their own components under `components/v2/expeditions/`: **`ExpeditionCore`** (with a site's **`SiteFields`**: Theme / Domain / Feature / Danger and their rolls), **`ExpeditionDescription`** and **`SiteDenizens`**. Each edits through a callback, so ExpeditionsArea keeps every write and the save; it also keeps the field-row styles they share, the New and Change Theme / Domain dialogs, and Roll Denizen's `DenizenDialog`.
 
 - **Header** — the switcher (`Combobox`) lists every expedition A→Z with its type's glyph and colour, Journeys / Sites / Scenes filter pills, and the **+ New Journey…**, **+ New Site…** and **+ New Scene…** actions (each opens its New dialog). The gear opens `ExpeditionOptionsDialog` (rename, delete).
 - **Tabs** for the open expedition, below. While it's marked complete, everything on Core but the Status toggle is disabled, and so are the tab buttons (the gear still works).
@@ -133,12 +133,16 @@ as `/site.theme` at it.
 
 ## Components
 
-| Component               | File                                        | Purpose                                                                       |
-| ----------------------- | ------------------------------------------- | ----------------------------------------------------------------------------- |
-| ExpeditionsArea         | `components/v2/ExpeditionsArea.svelte`      | The Expeditions area: switcher, tabs, site feature/danger rolls, denizen grid |
-| ExpeditionOptionsDialog | `components/ExpeditionOptionsDialog.svelte` | Rename and delete an expedition                                               |
-| DenizenDialog           | `components/DenizenDialog.svelte`           | Roll Denizen (wraps `FoeRollDialog`)                                          |
-| FoePickerDialog         | `components/FoePickerDialog.svelte`         | Foe picker (encounter + denizen modes)                                        |
+| Component               | File                                                     | Purpose                                                                                                      |
+| ----------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| ExpeditionsArea         | `components/v2/ExpeditionsArea.svelte`                   | The Expeditions area: switcher, New dialogs, the tabs, every write and save, Change Theme / Domain           |
+| ExpeditionCore          | `components/v2/expeditions/ExpeditionCore.svelte`        | The Core tab: pills, status, a scene's objective, consequences, countdown and notes, the progress track, Map |
+| SiteFields              | `components/v2/expeditions/SiteFields.svelte`            | A site's Theme / Domain / Feature / Danger and their rolls                                                   |
+| ExpeditionDescription   | `components/v2/expeditions/ExpeditionDescription.svelte` | The Description tab: a site's objective, summary, portrait, description                                      |
+| SiteDenizens            | `components/v2/expeditions/SiteDenizens.svelte`          | A site's Denizens tab: Roll Denizen and the twelve cells                                                     |
+| ExpeditionOptionsDialog | `components/ExpeditionOptionsDialog.svelte`              | Rename and delete an expedition                                                                              |
+| DenizenDialog           | `components/DenizenDialog.svelte`                        | Roll Denizen (wraps `FoeRollDialog`)                                                                         |
+| FoePickerDialog         | `components/FoePickerDialog.svelte`                      | Foe picker (encounter + denizen modes)                                                                       |
 
 ## Stores
 

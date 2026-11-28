@@ -25,30 +25,27 @@
 		Site,
 		Scene,
 		VowDifficulty,
-		DelveTheme,
-		DelveDomain,
 		FoeDef,
 		FoeQuantity,
 		FoeEncounter,
 	} from '#lib/types.js';
-	import { EXPEDITION_MARK_TICKS, DENIZEN_CELLS, DELVE_THEMES, DELVE_DOMAINS } from '#lib/types.js';
+	import { DELVE_THEMES, DELVE_DOMAINS } from '#lib/types.js';
 	import Select from '#lib/components/Select.svelte';
-	import { difficultyBadgeStyle } from '#lib/badgeStyles.js';
 	import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
 	import { setActiveExpeditionId } from '#lib/activeContext.svelte.js';
 	import { createDebouncedSave } from '#lib/debouncedSave.js';
 	import { initialSelection, rememberSelection } from '#lib/rememberedSelection.js';
 	import { tooltip } from '#lib/actions/tooltip.js';
-	import { loadDelveData, buildCombinedTable } from '#lib/delveStore.svelte.js';
-	import { rollFromRangeTable, rollOracle, getOracles } from '#lib/oracleStore.svelte.js';
+	import { loadDelveData } from '#lib/delveStore.svelte.js';
+	import { rollOracle, getOracles } from '#lib/oracleStore.svelte.js';
 	import { appendLog } from '#lib/log.svelte.js';
-	import { bindCommandLinks, commandLinkHtml } from '#lib/commands/links.js';
 	import { addEncounter } from '#lib/encounterStore.svelte.js';
 	import { onMount } from 'svelte';
 
-	import ProgressTrackPanel from '#lib/components/ProgressTrackPanel.svelte';
-	import MarkdownNotes from '#lib/components/MarkdownNotes.svelte';
-	import PortraitUploader from '#lib/components/PortraitUploader.svelte';
+	import ExpeditionDescription from './expeditions/ExpeditionDescription.svelte';
+	import ExpeditionCore from './expeditions/ExpeditionCore.svelte';
+	import SiteDenizens from './expeditions/SiteDenizens.svelte';
+	import { DIFFICULTIES } from './expeditions/expeditions.js';
 	import FoePickerDialog from '#lib/components/FoePickerDialog.svelte';
 	import DenizenDialog from '#lib/components/DenizenDialog.svelte';
 	import ConfirmDialog from '#lib/components/ConfirmDialog.svelte';
@@ -63,15 +60,10 @@
 		type EntityMarkerRef,
 	} from '#lib/mapStore.svelte.js';
 	import { formatEntityId } from '#lib/mapEntityLinks.js';
-	import { denizenLabel } from '#lib/foeStore.svelte.js';
 	import iconGearSvg from '#icons/gear-solid.svg?raw';
-	import checkSvg from '#icons/circle-check-solid.svg?raw';
-	import locationSvg from '#icons/location-dot-solid.svg?raw';
-	import SegmentedRadio from '#lib/components/SegmentedRadio.svelte';
 	import { Tabs } from 'bits-ui';
 	import Combobox from '#lib/components/Combobox.svelte';
 	import { ENTITY_KIND_META } from '#lib/entityKinds.js';
-	import CountdownTrack from '#lib/components/CountdownTrack.svelte';
 	// Derived, so they follow the livery (a livery may ship its own).
 	const journeyPlaceholderSvg = $derived(ENTITY_KIND_META.journey.icon);
 	const sitePlaceholderSvg = $derived(ENTITY_KIND_META.site.icon);
@@ -103,13 +95,6 @@
 	// notes all live in Core (no separate Description tab, no portrait).
 	const SCENE_TAB_LABELS: { key: ExpTab; label: string }[] = [{ key: 'core', label: 'Core' }];
 
-	const DIFFICULTIES: { value: VowDifficulty; label: string }[] = [
-		{ value: 'troublesome', label: 'Troublesome' },
-		{ value: 'dangerous', label: 'Dangerous' },
-		{ value: 'formidable', label: 'Formidable' },
-		{ value: 'extreme', label: 'Extreme' },
-		{ value: 'epic', label: 'Epic' },
-	];
 	// A Scene's rank guidance (Begin the Scene) only spans the first three;
 	// the creator picker offers just those.
 	const SCENE_DIFFICULTIES = DIFFICULTIES.slice(0, 3);
@@ -208,9 +193,6 @@
 
 	const activeExp = $derived(expeditions.find((e) => e.id === activeExpId));
 	const activeSite = $derived<Site | null>(activeExp?.type === 'site' ? (activeExp as Site) : null);
-	const activeScene = $derived<Scene | null>(
-		activeExp?.type === 'scene' ? (activeExp as Scene) : null,
-	);
 
 	/** Display name for a spine / combobox — never blank so the popover
 	 *  and the trigger have something to render. */
@@ -267,11 +249,6 @@
 		void entityMarkerIndexState.index; // subscribe
 		return markersForEntity(formatEntityId(activeExp.type, activeExp.id));
 	});
-
-	/** Short "(x, y)" for marker chip labels — integers stay integer, else 2 dp. */
-	function fmtCoord(v: number): string {
-		return Number.isInteger(v) ? String(v) : v.toFixed(2);
-	}
 
 	/** Jump the dialog directly to a marker back-reference (the chips
 	 *  under the stage header). */
@@ -344,71 +321,6 @@
 	}
 	function confirmChangeDomain() {
 		if (newDomainValue) updateExp({ domain: newDomainValue as Site['domain'] });
-	}
-
-	// Combined feature / danger options for the inline combo boxes.
-	// Unique-by-value so the dropdown isn't full of repeats from overlapping
-	// theme + domain + common-dangers rolls.
-	const featureOptions = $derived.by<string[]>(() => {
-		if (!activeSite || !activeSite.theme || !activeSite.domain) return [];
-		const table = buildCombinedTable(
-			activeSite.theme as DelveTheme,
-			activeSite.domain as DelveDomain,
-			'features',
-		);
-		const seen = new Set<string>();
-		const out: string[] = [];
-		for (const e of table) {
-			const v = typeof e.value === 'string' ? e.value : String(e.value);
-			if (!seen.has(v)) {
-				seen.add(v);
-				out.push(v);
-			}
-		}
-		return out;
-	});
-	const dangerOptions = $derived.by<string[]>(() => {
-		if (!activeSite || !activeSite.theme || !activeSite.domain) return [];
-		const table = buildCombinedTable(
-			activeSite.theme as DelveTheme,
-			activeSite.domain as DelveDomain,
-			'dangers',
-		);
-		const seen = new Set<string>();
-		const out: string[] = [];
-		for (const e of table) {
-			const v = typeof e.value === 'string' ? e.value : String(e.value);
-			if (!seen.has(v)) {
-				seen.add(v);
-				out.push(v);
-			}
-		}
-		return out;
-	});
-
-	// Theme/Domain randomize — just pick a random entry from the master
-	// list. Guard on `rolling` (same flag Feature/Danger use) so clicks
-	// during an in-flight d100 animation are ignored — the buttons are
-	// also `disabled={rolling}`, but keyboard Space/Enter can still
-	// fire before Svelte reflects the disabled attribute on some
-	// browsers.
-	// Theme/Domain randomize rolls the weighted Site Nature oracle (d100 ranges),
-	// populates the site field, and logs the roll + its description.
-	function randomizeTheme() {
-		if (!activeSite || rolling) return;
-		const r = rollOracle('siteNatureTheme', getOracles());
-		const v = r.value;
-		if (!v) return;
-		updateExp({ theme: v as Site['theme'] });
-		appendLog(r.title || 'Site Theme', r.html);
-	}
-	function randomizeDomain() {
-		if (!activeSite || rolling) return;
-		const r = rollOracle('siteNatureDomain', getOracles());
-		const v = r.value;
-		if (!v) return;
-		updateExp({ domain: v as Site['domain'] });
-		appendLog(r.title || 'Site Domain', r.html);
 	}
 
 	function handleDenizenChange(index: number, value: string) {
@@ -560,93 +472,6 @@
 		if (activeExpId === id) activeExpId = null;
 	}
 
-	// Derived values shared across journey + site
-	const markTicks = $derived(activeExp ? EXPEDITION_MARK_TICKS[activeExp.difficulty] : 0);
-
-	function handleTrackChange(_o: number, n: number) {
-		updateExp({ ticks: n });
-	}
-
-	// ── Site oracle rolls ─────────────────────────────────────────────────
-	// Mirrors v1 GlobalContextBar.gcOpenFeatures / gcOpenDangers / gcRollDenizen.
-	// Disabled until the site has both a theme and a domain selected.
-	const expHasThemeAndDomain = $derived(
-		activeSite ? !!activeSite.theme && !!activeSite.domain : false,
-	);
-
-	async function rollFeature() {
-		if (!activeSite || !expHasThemeAndDomain || rolling) return;
-		rolling = true;
-		try {
-			// onMount fires loadDelveData() but doesn't await it; if the user
-			// picks theme+domain and clicks Random Feature before the fetch
-			// settles, buildCombinedTable returns [] and rollFromRangeTable
-			// crashes on the empty array. Await before reading.
-			await loadDelveData();
-			const site = activeSite;
-			const table = buildCombinedTable(
-				site.theme as DelveTheme,
-				site.domain as DelveDomain,
-				'features',
-			);
-			const result = rollFromRangeTable(table);
-			const valueStr = typeof result.value === 'string' ? result.value : String(result.value);
-			let resultHtml = `<div>Result: <strong>${valueStr}</strong>`;
-			if (result.roll === 99)
-				resultHtml += ` ${commandLinkHtml('Change Theme ↗', '/site.theme', { expId: site.id })}`;
-			if (result.roll === 100)
-				resultHtml += ` ${commandLinkHtml('Change Domain ↗', '/site.domain', { expId: site.id })}`;
-			resultHtml += '</div>';
-			const entryId = crypto.randomUUID();
-			appendLog(
-				`Features: ${site.theme} + ${site.domain}`,
-				bindCommandLinks(
-					`<div class="roll-line">Roll: d100 → ${result.roll}</div>` + resultHtml,
-					entryId,
-				),
-				entryId,
-			);
-			updateExp({ currentFeature: valueStr });
-		} finally {
-			rolling = false;
-		}
-	}
-
-	async function rollDanger() {
-		if (!activeSite || !expHasThemeAndDomain || rolling) return;
-		rolling = true;
-		try {
-			// Same race as rollFeature — see note there.
-			await loadDelveData();
-			const site = activeSite;
-			const table = buildCombinedTable(
-				site.theme as DelveTheme,
-				site.domain as DelveDomain,
-				'dangers',
-			);
-			const result = rollFromRangeTable(table);
-			const valueStr = typeof result.value === 'string' ? result.value : String(result.value);
-			let resultHtml = `<div>Result: <strong>${valueStr}</strong>`;
-			if (result.roll === 99)
-				resultHtml += ` ${commandLinkHtml('Change Theme ↗', '/site.theme', { expId: site.id })}`;
-			if (result.roll === 100)
-				resultHtml += ` ${commandLinkHtml('Change Domain ↗', '/site.domain', { expId: site.id })}`;
-			resultHtml += '</div>';
-			const entryId = crypto.randomUUID();
-			appendLog(
-				`Dangers: ${site.theme} + ${site.domain}`,
-				bindCommandLinks(
-					`<div class="roll-line">Roll: d100 → ${result.roll}</div>` + resultHtml,
-					entryId,
-				),
-				entryId,
-			);
-			updateExp({ currentDanger: valueStr });
-		} finally {
-			rolling = false;
-		}
-	}
-
 	function rollDenizen() {
 		if (!activeSite || rolling) return;
 		void denizenDialogRef?.open(activeSite);
@@ -772,345 +597,32 @@
 					</Tabs.Root>
 
 					<div class="deck-card ea-card" role="tabpanel">
-						<!-- ── Description / Notes — portrait floats right, prose wraps.
-						     Sites get an Objective row pinned to the top of Notes; it
-						     was previously in Core but lives more naturally next to the
-						     prose that elaborates on it. -->
 						{#if activeTab === 'description' || activeTab === 'notes'}
-							{#if activeSite}
-								<div class="ea-field-row ea-objective-row">
-									<label class="ea-field-label" for="ea-obj-{activeSite.id}">Objective</label>
-									<input
-										id="ea-obj-{activeSite.id}"
-										class="ea-input"
-										type="text"
-										placeholder="What are you seeking here?"
-										value={activeSite.objective}
-										oninput={(e) => updateExp({ objective: (e.target as HTMLInputElement).value })}
-									/>
-								</div>
-							{/if}
-							<!-- Summary (stored as shortDescription) — a line or two shown in
-							     the map's marker card; the long-form description follows. -->
-							{#if !editingNotes}
-								<div class="ea-short-desc">
-									<span class="ea-field-label">Summary</span>
-									<MarkdownNotes
-										bind:editing={editingShortDesc}
-										value={activeExp.shortDescription ?? ''}
-										oninput={(v) => updateExp({ shortDescription: v })}
-										placeholder="A line or two, shown when its map marker is selected…"
-										rows={3}
-									/>
-								</div>
-							{/if}
-							<!-- Heading sits above the section so the floated portrait starts
-							     below it instead of covering it. -->
-							<span class="ea-field-label ea-detail-label">Detailed description</span>
-							<div class="ea-desc-section" class:ea-desc-section--editing={editingNotes}>
-								<!-- Portrait floats right and the prose wraps around it; it's
-								     hidden while editing so the textarea fills the whole panel. -->
-								{#if !editingNotes}
-									<PortraitUploader
-										endpoint={`/api/session/expeditions/${activeExp.id}/portrait`}
-										etag={activeExp.portraitEtag ?? ''}
-										oninput={(etag) => updateExp({ portraitEtag: etag })}
-										placeholderSvg={placeholderImg}
-										alt={activeExp.name}
-									/>
-								{/if}
-
-								<MarkdownNotes
-									bind:editing={editingNotes}
-									value={activeExp.notes ?? ''}
-									oninput={(v) => updateExp({ notes: v })}
-									placeholder={activeExp.type === 'site'
-										? 'Discoveries, encounters, observations…'
-										: 'Waypoints, landmarks, perils encountered…'}
-									rows={6}
-								/>
-							</div>
-
-							<!-- ── Core — pills + objective + difficulty + progress + complete. ── -->
+							<ExpeditionDescription
+								exp={activeExp}
+								placeholderSvg={placeholderImg}
+								bind:editingNotes
+								bind:editingShortDesc
+								onupdate={updateExp}
+							/>
 						{:else if activeTab === 'core'}
-							<div class="ea-pills-row">
-								{#if activeExp.type === 'site'}
-									<span class="ea-badge ea-badge--site">Site</span>
-								{:else if activeExp.type === 'scene'}
-									<span class="ea-badge ea-badge--scene">Scene</span>
-								{:else}
-									<span class="ea-badge ea-badge--type">Journey</span>
-								{/if}
-								<span
-									class="ea-badge ea-badge--diff"
-									style={difficultyBadgeStyle(activeExp.difficulty)}
-								>
-									{DIFFICULTIES.find((d) => d.value === activeExp.difficulty)?.label ??
-										activeExp.difficulty}
-								</span>
-							</div>
-
-							<!-- Status toggle — Active / Complete. Sits right below the
-							     pills row (with a separator under it) so on Sites the
-							     status doesn't get buried at the bottom of the site
-							     fields. -->
-							<div class="ea-status-section">
-								<span class="ea-status-label">Status</span>
-								<SegmentedRadio
-									ariaLabel="Expedition status"
-									labels="always"
-									value={activeExp.complete ? 'complete' : 'active'}
-									onchange={(v) => updateExp({ complete: v === 'complete' })}
-									options={[
-										{
-											value: 'active',
-											icon: locationSvg,
-											text: 'Active',
-											label: 'Mark active',
-											tone: 'warn',
-										},
-										{
-											value: 'complete',
-											icon: checkSvg,
-											text: 'Complete',
-											label: 'Mark complete',
-											tone: 'go',
-										},
-									]}
-								/>
-							</div>
-
-							<!-- Core fields below the Status row disable (inert, not just
-							     dimmed) once the expedition is complete — only the Status
-							     radio above and the header gear stay clickable. -->
-							<div class="ea-locked" inert={activeExp.complete}>
-								{#if activeScene}
-									<!-- Scene: objective + consequences live on Core (no Description tab). -->
-									<div class="ea-field-row ea-objective-row">
-										<label class="ea-field-label" for="ea-obj-{activeScene.id}">Objective</label>
-										<input
-											id="ea-obj-{activeScene.id}"
-											class="ea-input"
-											type="text"
-											placeholder="What are you trying to accomplish?"
-											value={activeScene.objective}
-											oninput={(e) =>
-												updateExp({ objective: (e.target as HTMLInputElement).value })}
-										/>
-									</div>
-									<div class="ea-field-row ea-objective-row">
-										<label class="ea-field-label" for="ea-cons-{activeScene.id}">Consequences</label
-										>
-										<input
-											id="ea-cons-{activeScene.id}"
-											class="ea-input"
-											type="text"
-											placeholder="What happens if you fail or run out of time?"
-											value={activeScene.consequences}
-											oninput={(e) =>
-												updateExp({ consequences: (e.target as HTMLInputElement).value })}
-										/>
-									</div>
-								{/if}
-
-								{#if activeSite}
-									<!-- Theme / Domain / Feature / Danger — combo boxes with
-								     a d6 button on the right to randomize. Theme/Domain
-								     pick from the master lists; Feature/Danger pick from
-								     the current theme+domain combined table.  The dice
-								     button on Feature/Danger uses the rolled d100 path
-								     so the result still gets logged (and 99/100 still
-								     emit Change-Theme/Domain links). -->
-									<div class="ea-field-row">
-										<label class="ea-field-label" for="ea-theme-{activeSite.id}">Theme</label>
-										<Select
-											id="ea-theme-{activeSite.id}"
-											class="ea-select"
-											value={activeSite.theme}
-											options={DELVE_THEMES.map((t) => ({ value: t, label: t }))}
-											onchange={(v) => updateExp({ theme: v as Site['theme'] })}
-										/>
-										<button
-											class="dice-btn"
-											onclick={randomizeTheme}
-											disabled={rolling}
-											use:tooltip={'Pick a random theme'}
-											aria-label="Random theme">{@html diceD6Svg}</button
-										>
-									</div>
-									<div class="ea-field-row">
-										<label class="ea-field-label" for="ea-domain-{activeSite.id}">Domain</label>
-										<Select
-											id="ea-domain-{activeSite.id}"
-											class="ea-select"
-											value={activeSite.domain}
-											options={DELVE_DOMAINS.map((d) => ({ value: d, label: d }))}
-											onchange={(v) => updateExp({ domain: v as Site['domain'] })}
-										/>
-										<button
-											class="dice-btn"
-											onclick={randomizeDomain}
-											disabled={rolling}
-											use:tooltip={'Pick a random domain'}
-											aria-label="Random domain">{@html diceD6Svg}</button
-										>
-									</div>
-									<div class="ea-field-row">
-										<label class="ea-field-label" for="ea-feature-{activeSite.id}">Feature</label>
-										<Select
-											id="ea-feature-{activeSite.id}"
-											class="ea-select"
-											value={activeSite.currentFeature ?? ''}
-											disabled={!expHasThemeAndDomain}
-											placeholder="—"
-											options={[
-												{ value: '', label: '—' },
-												...featureOptions.map((f) => ({ value: f, label: f })),
-											]}
-											onchange={(v) => updateExp({ currentFeature: v })}
-										/>
-										<button
-											class="dice-btn"
-											onclick={rollFeature}
-											disabled={!expHasThemeAndDomain || rolling}
-											use:tooltip={expHasThemeAndDomain
-												? 'Roll for a feature'
-												: 'Set theme and domain first'}
-											aria-label="Random feature">{@html diceD6Svg}</button
-										>
-									</div>
-									<div class="ea-field-row">
-										<label class="ea-field-label" for="ea-danger-{activeSite.id}">Danger</label>
-										<Select
-											id="ea-danger-{activeSite.id}"
-											class="ea-select"
-											value={activeSite.currentDanger ?? ''}
-											disabled={!expHasThemeAndDomain}
-											placeholder="—"
-											options={[
-												{ value: '', label: '—' },
-												...dangerOptions.map((d) => ({ value: d, label: d })),
-											]}
-											onchange={(v) => updateExp({ currentDanger: v })}
-										/>
-										<button
-											class="dice-btn"
-											onclick={rollDanger}
-											disabled={!expHasThemeAndDomain || rolling}
-											use:tooltip={expHasThemeAndDomain
-												? 'Roll for a danger'
-												: 'Set theme and domain first'}
-											aria-label="Random danger">{@html diceD6Svg}</button
-										>
-									</div>
-								{/if}
-
-								<!-- Difficulty is set in the new-journey / new-site dialog,
-							     surfaced via the rank-coloured pill above. -->
-
-								<!-- Progress track -->
-								<div class="ea-section" data-tour="exp-progress">
-									<ProgressTrackPanel
-										label="Progress track"
-										value={activeExp.ticks}
-										color={activeColor}
-										step={markTicks}
-										showStep
-										onchange={handleTrackChange}
-									/>
-								</div>
-
-								<!-- Countdown track (scenes only) — the "running out of time" clock. -->
-								{#if activeScene}
-									<div class="ea-section">
-										<CountdownTrack
-											label="Countdown"
-											color={activeColor}
-											filled={activeScene.countdownFilled}
-											onchange={(_o, n) => updateExp({ countdownFilled: n })}
-										/>
-									</div>
-								{/if}
-
-								{#if activeScene}
-									<!-- Scene notes live on Core too (reusing the markdown notes editor). -->
-									<div class="ea-section ea-scene-notes">
-										<span class="ea-status-label">Notes</span>
-										<MarkdownNotes
-											bind:editing={editingNotes}
-											value={activeScene.notes ?? ''}
-											oninput={(v) => updateExp({ notes: v })}
-											placeholder="Beats, complications, what’s at stake…"
-											rows={5}
-										/>
-									</div>
-								{/if}
-
-								<!-- Map field: one chip per marker referencing this
-							     expedition. Multi-map is supported — the store
-							     returns refs across every map, chips wrap onto
-							     new rows via flex-wrap. Coord (x, y) lives in
-							     the tooltip; chip text is the map name only.
-							     Scenes are non-map-spatial, so this is hidden. -->
-								{#if activeExp.type !== 'scene'}
-									<div class="ea-section ea-mapref-section">
-										<span class="ea-mapref-label">Map</span>
-										<div class="ea-mapref-chips">
-											{#if activeExpMarkers.length === 0}
-												<span class="ea-mapref-empty">Not on any map</span>
-											{:else}
-												{#each activeExpMarkers as ref (ref.markerId)}
-													<button
-														class="ea-mapref-chip"
-														onclick={() => jumpToMarker(ref)}
-														use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName} — (${fmtCoord(ref.x)}, ${fmtCoord(ref.y)})`}
-														aria-label={`Jump to marker on ${ref.mapName}`}
-													>
-														<span class="ea-mapref-name">{ref.mapName}</span>
-													</button>
-												{/each}
-											{/if}
-										</div>
-									</div>
-								{/if}
-							</div>
-
-							<!-- ── Denizens — 12-cell d100 grid, foe picker per row. ── -->
+							<ExpeditionCore
+								exp={activeExp}
+								color={activeColor}
+								markers={activeExpMarkers}
+								bind:editingNotes
+								bind:rolling
+								onupdate={updateExp}
+								onjump={jumpToMarker}
+							/>
 						{:else if activeTab === 'denizens' && activeSite}
-							<div class="ea-denizen-top">
-								<button
-									class="btn btn-sm"
-									onclick={rollDenizen}
-									disabled={rolling}
-									use:tooltip={'Roll d100 for a denizen'}>Roll Denizen</button
-								>
-							</div>
-							<div class="ea-denizen-grid">
-								{#each DENIZEN_CELLS as cell, i (i)}
-									<div class="ea-denizen-cell">
-										<div class="ea-denizen-meta">
-											<span class="ea-denizen-freq">{cell.label}</span>
-											<span class="ea-denizen-range">{cell.range}</span>
-										</div>
-										<div class="ea-denizen-input-row">
-											<input
-												class="ea-denizen-input"
-												type="text"
-												placeholder="—"
-												value={denizenLabel(activeSite.denizens[i] ?? '')}
-												oninput={(e) =>
-													handleDenizenChange(i, (e.target as HTMLInputElement).value)}
-											/>
-											<button
-												class="ea-denizen-pick-btn"
-												onclick={() => openDenizenPicker(i)}
-												use:tooltip={'Pick a foe for this denizen'}
-												aria-label="Pick foe for denizen {i + 1}">+</button
-											>
-										</div>
-									</div>
-								{/each}
-							</div>
+							<SiteDenizens
+								site={activeSite}
+								{rolling}
+								onroll={rollDenizen}
+								onchange={handleDenizenChange}
+								onpick={openDenizenPicker}
+							/>
 						{/if}
 					</div>
 				</div>
@@ -1449,76 +961,6 @@
 	.ea-stage {
 		border-left: 3px solid var(--ea-nature, var(--text-muted));
 	}
-	/* Completed expeditions lock their editable fields (inert = actually
-	   disabled, not just dimmed). Only the Status radio + header gear stay
-	   live; the pills/status row above the locked region keep full opacity. */
-	.ea-locked {
-		display: flex;
-		flex-direction: column;
-		gap: 8px;
-	}
-	.ea-locked[inert] {
-		opacity: 0.55;
-	}
-	/* Map field — a labelled section below the Progress Track in the
-	   Core tab. One chip per marker referencing this expedition;
-	   click jumps into the map dialog at that marker. Hover surfaces
-	   the marker label + coordinates. Multi-map users get multiple
-	   chips that wrap onto new rows via `flex-wrap`. */
-	.ea-mapref-section {
-		display: flex;
-		align-items: flex-start;
-		gap: 12px;
-	}
-	.ea-mapref-label {
-		flex: 0 0 auto;
-		padding-top: 4px;
-		font-family: var(--font-ui);
-		font-size: 0.72rem;
-		font-weight: 700;
-		letter-spacing: 0.05em;
-		text-transform: uppercase;
-		color: var(--text-dimmer);
-	}
-	.ea-mapref-chips {
-		flex: 1 1 auto;
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-		align-items: center;
-	}
-	.ea-mapref-empty {
-		font-family: var(--font-ui);
-		font-size: 0.75rem;
-		font-style: italic;
-		color: var(--text-dimmer);
-	}
-	.ea-mapref-chip {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 2px 10px;
-		background: var(--bg-control);
-		border: 1px solid var(--border-mid);
-		border-radius: 12px;
-		font-family: var(--font-ui);
-		font-size: 0.75rem;
-		color: var(--text);
-		cursor: pointer;
-		max-width: 100%;
-		white-space: nowrap;
-	}
-	.ea-mapref-chip:hover {
-		border-color: var(--text-accent);
-		color: var(--text-accent);
-	}
-	.ea-mapref-name {
-		font-weight: 600;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		max-width: 12rem;
-	}
-
 	/* Header gear + combobox. Every fixed item pins `flex-shrink: 0` so
 	   the SegmentedRadio and map icon never squeeze into their content
 	   (which would clip on a narrow deck panel like iPad Air landscape).
@@ -1540,31 +982,6 @@
 		min-width: 0;
 	}
 
-	/* Status toggle (Active/Complete) lives above the progress track in
-	   the Core card. Label + SegmentedRadio, separator BELOW so the
-	   line reads as a section divider under the toggle rather than
-	   above it. */
-	.ea-status-section {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding-bottom: 8px;
-		border-bottom: 1px solid var(--border);
-	}
-	.ea-status-label {
-		font-family: var(--font-ui);
-		font-size: 0.7rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		color: var(--text-dimmer);
-	}
-	/* Scene notes on the Core tab — label stacked above the markdown editor. */
-	.ea-scene-notes {
-		display: flex;
-		flex-direction: column;
-		gap: 5px;
-	}
 	/* Type-icon glyph inside the popover items. */
 	:global(.ea-cmd-type-icon svg) {
 		fill: currentColor;
@@ -1618,90 +1035,25 @@
 	   overrides are needed at the base; the `.ea-stage--complete .ea-card`
 	   opacity rule above still targets this class. */
 
-	/* ── Description tab ── portrait floats right; notes wrap around it.
-	   flow-root contains the float; MarkdownNotes is forced to block flow so
-	   the prose wraps (it's normally a flex column = its own BFC). */
-	.ea-short-desc {
+	/* Field rows, shared with the tab components (expeditions/*), so global
+	   within the card. */
+	.ea-card :global(.ea-field-row) {
 		display: flex;
-		flex-direction: column;
-		gap: 4px;
-		margin-bottom: 12px;
-	}
-	.ea-detail-label {
-		display: block;
-		margin-bottom: 4px;
-		white-space: nowrap;
-	}
-	.ea-desc-section {
-		display: flow-root;
-	}
-	.ea-desc-section :global(.md-notes) {
-		display: block;
-	}
-	/* While editing, the portrait is hidden — let the textarea fill the whole
-	   panel (full width and height of the containing card). */
-	.ea-desc-section--editing {
-		display: flex;
-		flex-direction: column;
-		height: 100%;
-		min-height: 0;
-	}
-	.ea-desc-section--editing :global(.md-notes) {
-		display: flex;
-		flex-direction: column;
-		flex: 1;
-		min-height: 0;
-	}
-	.ea-desc-section--editing :global(.md-notes-input) {
-		flex: 1;
-		min-height: 0;
-	}
-
-	/* ── Core tab ── pills, difficulty selector, progress, complete. */
-	.ea-pills-row {
-		display: flex;
-		flex-wrap: wrap;
-		gap: 5px;
 		align-items: center;
-		border-bottom: 1px solid var(--border);
-		padding-bottom: 8px;
+		gap: 8px;
 	}
-	.ea-badge {
+	.ea-card :global(.ea-field-label) {
 		font-family: var(--font-ui);
-		font-size: 0.6rem;
+		font-size: 0.7rem;
 		font-weight: 600;
-		letter-spacing: 0.05em;
 		text-transform: uppercase;
-		padding: 2px 7px;
-		border-radius: 10px;
-		border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
-		line-height: 1;
-		white-space: nowrap;
-		flex-shrink: 0;
+		letter-spacing: 0.08em;
+		color: var(--text-dimmer);
+		min-width: 80px;
 	}
-	.ea-badge--type {
-		background: rgba(228, 170, 40, 0.15);
-		color: #e4aa28;
-	}
-	.ea-badge--site {
-		background: rgba(68, 114, 208, 0.15);
-		color: #4472d0;
-	}
-	.ea-badge--scene {
-		background: rgba(126, 87, 194, 0.15);
-		color: #7e57c2;
-	}
-	.ea-badge--diff {
-		border-color: transparent;
-	}
-
-	/* Inputs (text, select) for Site fields. */
-	.ea-input {
+	.ea-card :global(.ea-input) {
 		flex: 1;
-		/* Selects with long option text would otherwise force the field row
-		   wider than its flex share. min-width: 0 + width: 0 lets the flex
-		   item shrink to the row's available width and the chosen option
-		   ellipses inside the control. */
+		/* min-width: 0 + width: 0 let it shrink to its share of the row. */
 		min-width: 0;
 		width: 0;
 		font-family: var(--font-ui);
@@ -1713,114 +1065,12 @@
 		padding: 3px 8px;
 		outline: none;
 	}
-	.ea-input:focus {
+	.ea-card :global(.ea-input:focus) {
 		border-color: var(--text-accent);
 	}
-
-	/* Square d6 buttons beside the Theme/Domain/Feature/Danger combos use the
-	   global `.dice-btn` style (app.css) — the preferred d6 button. */
-
-	/* Roll Denizen button row at the top of the Denizens tab. Sibling of
-	   .ea-denizen-grid — card's 8 px gap already spaces them. */
-	.ea-denizen-top {
-		display: flex;
-		justify-content: flex-end;
-	}
-
-	/* Objective lives at the top of the Notes tab — the card's 8 px gap
-	   already spaces it from the description below, so no extra margin. */
-	.ea-objective-row {
+	/* A site's or scene's Objective: the card's gap spaces it. */
+	.ea-card :global(.ea-objective-row) {
 		margin: 0;
-	}
-
-	/* Denizens tab — 12-cell grid, always 2 columns × 6 rows. */
-	.ea-denizen-grid {
-		display: grid;
-		grid-template-columns: repeat(2, 1fr);
-		gap: 6px;
-	}
-	.ea-denizen-cell {
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-		padding: 6px 8px;
-		min-width: 0;
-		background: var(--bg-inset);
-		border: 1px solid var(--border);
-		border-radius: 4px;
-	}
-	.ea-denizen-meta {
-		display: flex;
-		justify-content: space-between;
-		font-family: var(--font-ui);
-		font-size: 0.6rem;
-		text-transform: uppercase;
-		letter-spacing: 0.06em;
-		color: var(--text-dimmer);
-	}
-	.ea-denizen-freq {
-		font-weight: 700;
-	}
-	.ea-denizen-input-row {
-		display: flex;
-		gap: 4px;
-	}
-	.ea-denizen-input {
-		flex: 1;
-		min-width: 0;
-		font-family: var(--font-ui);
-		font-size: 0.78rem;
-		color: var(--text);
-		background: transparent;
-		border: 1px solid var(--border);
-		border-radius: 3px;
-		padding: 2px 6px;
-		outline: none;
-	}
-	.ea-denizen-input:focus {
-		border-color: var(--text-accent);
-	}
-	.ea-denizen-pick-btn {
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		flex-shrink: 0;
-		width: 22px;
-		height: 22px;
-		padding: 0;
-		font-family: var(--font-ui);
-		font-size: 0.82rem;
-		font-weight: 600;
-		line-height: 1;
-		background: transparent;
-		border: 1px solid var(--border-mid);
-		border-radius: 3px;
-		color: var(--text-muted);
-		cursor: pointer;
-		transition:
-			background 0.12s,
-			color 0.12s,
-			border-color 0.12s;
-	}
-	.ea-denizen-pick-btn:hover {
-		background: var(--bg-hover);
-		color: var(--text-accent);
-		border-color: var(--text-accent);
-	}
-
-	.ea-field-row {
-		display: flex;
-		align-items: center;
-		gap: 8px;
-	}
-	.ea-field-label {
-		font-family: var(--font-ui);
-		font-size: 0.7rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		color: var(--text-dimmer);
-		min-width: 80px;
 	}
 	/* Threaded to bits-ui via `<Select class="ea-select">` (Change-
 	   Theme / Change-Domain dialogs) and `<Select class="ea-select">`
@@ -1844,12 +1094,6 @@
 		font-size: 0.75rem;
 		padding: 3px 6px;
 		min-height: 0;
-	}
-
-	.ea-section {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
 	}
 
 	/* New Site name field — input grows, dice button rolls the compound

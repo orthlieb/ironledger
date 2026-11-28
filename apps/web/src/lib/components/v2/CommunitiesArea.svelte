@@ -60,10 +60,19 @@
 		removePlace,
 		updatePlaceLocal,
 	} from '#lib/placeStore.svelte.js';
-	import type { Community, Npc, Place, NpcRelationship } from '#lib/types.js';
+	import type { Community, Npc, Place } from '#lib/types.js';
 	import Select from '#lib/components/Select.svelte';
 	import MarkdownNotes from '#lib/components/MarkdownNotes.svelte';
-	import PortraitUploader from '#lib/components/PortraitUploader.svelte';
+	import PlaceCore from './connections/PlaceCore.svelte';
+	import NpcCore from './connections/NpcCore.svelte';
+	import ConnectionDescription from './connections/ConnectionDescription.svelte';
+	import WithinField from './connections/WithinField.svelte';
+	import {
+		LODESTAR_SETTLEMENT_FIELDS,
+		type EntryKind,
+		type LodestarSettlementFieldKey,
+		type WithinItem,
+	} from './connections/connections.js';
 	import { isSourceEnabled, resolveOracleKey } from '#lib/expansionStore.svelte.js';
 	import { Tabs } from 'bits-ui';
 	import Combobox from '#lib/components/Combobox.svelte';
@@ -73,7 +82,6 @@
 		getOraclesByTag,
 		rollOracle,
 		findOracle,
-		resolveCharacterOracle,
 	} from '#lib/oracleStore.svelte.js';
 	import { oracleResultLogHtml } from '#lib/oracleLog.js';
 	import {
@@ -103,13 +111,9 @@
 	} from '#lib/mapStore.svelte.js';
 	import { formatEntityId } from '#lib/mapEntityLinks.js';
 	import iconGearSvg from '#icons/gear-solid.svg?raw';
-	import heartPulseSvg from '#icons/heart-pulse-solid.svg?raw';
-	import skullSvg from '#icons/skull-crossbones-solid.svg?raw';
-	import SegmentedRadio from '#lib/components/SegmentedRadio.svelte';
 	import { appIcon } from '#lib/liveryIcons.js';
 	import { ENTITY_KIND_META } from '#lib/entityKinds.js';
 	import diceD6Svg from '#icons/dice-d6-light.svg?raw';
-	import gotoSvg from '#icons/arrow-up-right-from-square-solid.svg?raw';
 	import { headingText } from '#lib/fontStore.svelte.js';
 
 	let { showTitle = true }: { showTitle?: boolean } = $props();
@@ -121,7 +125,6 @@
 	const NPC_COLOR = ENTITY_KIND_META.npc.color;
 	const PLACE_COLOR = ENTITY_KIND_META.place.color;
 
-	type EntryKind = 'community' | 'npc' | 'place';
 	type CommunityEntry = { kind: 'community'; id: string; createdAt: number; data: Community };
 	type NpcEntry = { kind: 'npc'; id: string; createdAt: number; data: Npc };
 	type PlaceEntry = { kind: 'place'; id: string; createdAt: number; data: Place };
@@ -138,12 +141,6 @@
 	}
 
 	type CmTab = 'core' | 'notes';
-
-	const RELATIONSHIPS: { value: NpcRelationship; label: string }[] = [
-		{ value: 'bond', label: 'Bond' },
-		{ value: 'neutral', label: 'Neutral' },
-		{ value: 'foe', label: 'Foe' },
-	];
 
 	let activeEntryId = $state<string | null>(null);
 	let activeTab = $state<CmTab>('core');
@@ -177,20 +174,9 @@
 	let newCommunityRollDescription = $state(true);
 	let newCommunityRollTrouble = $state(true);
 
-	// Lodestar settlement suite — six fields shown only under Lodestar (or when a
-	// settlement already has a value for one). Type / Condition / First Look are
-	// the book's "on reveal" set (default rolled on Create); Disposition /
-	// Projects / Cultural Touchstones are situational (default off — roll from the
-	// panel d6 when the fiction calls for it).
-	const LODESTAR_SETTLEMENT_FIELDS = [
-		{ key: 'type', label: 'Type' },
-		{ key: 'condition', label: 'Condition' },
-		{ key: 'firstLook', label: 'First Look' },
-		{ key: 'disposition', label: 'Disposition' },
-		{ key: 'projects', label: 'Projects' },
-		{ key: 'culturalTouchstones', label: 'Cultural Touchstones' },
-	] as const;
-	type LodestarSettlementFieldKey = (typeof LODESTAR_SETTLEMENT_FIELDS)[number]['key'];
+	// Lodestar's settlement fields (LODESTAR_SETTLEMENT_FIELDS): Type /
+	// Condition / First Look roll on Create by default; the situational three
+	// don't (roll them from the panel's d6 when the fiction calls for it).
 	let newCommunityRollLodestar = $state<Record<LodestarSettlementFieldKey, boolean>>({
 		type: true,
 		condition: true,
@@ -349,13 +335,6 @@
 	 *  descendants (a cycle guard), sorted by kind then name. Each carries a
 	 *  kind glyph + colour so settlements and landmarks read apart in a long
 	 *  list; "Nowhere" is the combobox's clearItem, not an option here. */
-	interface WithinItem {
-		ref: string;
-		label: string;
-		kind: EntryKind;
-		icon: string;
-		color: string;
-	}
 	const withinItems = $derived.by<WithinItem[]>(() => {
 		if (!activeEntry) return [];
 		const self = refOf(activeEntry.kind, activeEntry.id);
@@ -374,20 +353,8 @@
 				a.kind === b.kind ? a.label.localeCompare(b.label) : a.kind < b.kind ? -1 : 1,
 			);
 	});
-	// Kind-filter pills so the long settlement/landmark list narrows the same
-	// way the switcher does.
-	const WITHIN_PILLS: { key: string; label: string; color: string }[] = [
-		{ key: 'community', label: 'Settlements', color: ENTITY_KIND_META.community.color },
-		{ key: 'place', label: 'Landmarks', color: ENTITY_KIND_META.place.color },
-	];
+	// The Within picker's kind pills, kept across entries.
 	let withinFilter = $state<Set<string>>(new Set<string>());
-	/** Tooltip/label for the "go to parent" jump — names the container's kind,
-	 *  e.g. "Go to Settlement" / "Go to Landmark". (Containers are only ever
-	 *  settlements or landmarks; NPCs can't contain anything.) */
-	function goToWithinLabel(ref: string | undefined): string {
-		const kind = ref ? splitRef(ref)?.kind : undefined;
-		return `Go to ${kind ? kindLabelSingular(kind) : 'container'}`;
-	}
 	/** Re-parent the active entry. '' clears the link. Writes `within` and drops
 	 *  the legacy place field; region is now derived, so it isn't copied. The
 	 *  picker only ever offers eligible parents (see `withinItems`), but this
@@ -516,11 +483,6 @@
 			formatEntityId(activeEntry.kind as 'community' | 'place', activeEntry.data.id),
 		);
 	});
-
-	/** Short "(x, y)" for marker chip labels — integers stay integer, else 2 dp. */
-	function fmtCoord(v: number): string {
-		return Number.isInteger(v) ? String(v) : v.toFixed(2);
-	}
 
 	/** Jump the dialog directly to a marker back-reference (the chips
 	 *  under the stage header). */
@@ -672,14 +634,9 @@
 		return () => _save.flush();
 	});
 
-	function setNotes(value: string) {
-		if (activeEntry?.kind === 'community') updateCommunity({ notes: value });
-		else if (activeEntry?.kind === 'npc') updateNpc({ notes: value });
-		else if (activeEntry?.kind === 'place') updatePlace({ notes: value });
-	}
-	function setShortDescription(value: string) {
-		if (activeEntry?.kind === 'community') updateCommunity({ shortDescription: value });
-		else if (activeEntry?.kind === 'place') updatePlace({ shortDescription: value });
+	/** Patch whichever kind of entry is open (the Description tab's writes). */
+	function updateActive(patch: Partial<Community & Npc & Place>) {
+		if (activeEntry) Object.assign(activeEntry.data as object, patch);
 	}
 	function setSituationalNotes(value: string) {
 		if (activeEntry?.kind === 'community') updateCommunity({ situationalNotes: value });
@@ -929,6 +886,22 @@
 	}
 </script>
 
+<!-- The Within field, rendered by the Core tab of each kind. -->
+{#snippet withinField()}
+	{#if activeEntry}
+		<WithinField
+			id="cm-within-{activeEntry.id}"
+			tour={activeEntry.kind === 'npc' ? 'npc-within' : undefined}
+			items={withinItems}
+			value={activeWithinRef}
+			label={activeWithinRef ? refName(activeWithinRef) : ''}
+			bind:filters={withinFilter}
+			onselect={setWithin}
+			ongo={(id) => (activeEntryId = id)}
+		/>
+	{/if}
+{/snippet}
+
 <div class="cm-area">
 	<header class="cm-header">
 		{#if showTitle}
@@ -1001,379 +974,28 @@
 					<div class="deck-card cm-card" role="tabpanel" data-tour="cm-card">
 						{#if activeTab === 'core'}
 							{#if activeEntry.kind === 'community' || activeEntry.kind === 'place'}
-								{@const c = activeEntry.data}
-								{@const selfRef = refOf(activeEntry.kind, c.id)}
-								{@const nested = isNested(selfRef, containmentGraph)}
-								<div class="cm-field-row">
-									<label class="cm-field-label" for="cm-region-{c.id}">Region</label>
-									{#if nested}
-										{@const regionRoot = refName(
-											breadcrumbRefs(selfRef, containmentGraph)[0] ?? '',
-										)}
-										<!-- Region is inherited from the ROOT of the Within chain (the
-										     top-level entry), not the immediate parent — read-only here;
-										     edit it on that root entry. -->
-										<input
-											id="cm-region-{c.id}"
-											class="cm-input cm-input--readonly"
-											type="text"
-											disabled
-											value={effectiveRegion(selfRef, containmentGraph) ?? ''}
-											use:tooltip={regionRoot
-												? `Region comes from ${regionRoot}`
-												: 'Region comes from the top of this chain'}
-											placeholder="—"
-										/>
-									{:else}
-										<input
-											id="cm-region-{c.id}"
-											class="cm-input"
-											type="text"
-											value={c.region}
-											oninput={(e) =>
-												updateCommunityLike({ region: (e.target as HTMLInputElement).value })}
-											placeholder="Region…"
-										/>
-									{/if}
-								</div>
-								{#if activeEntry.kind === 'community'}
-									{@const s = activeEntry.data}
-									{#each LODESTAR_SETTLEMENT_FIELDS as f (f.key)}
-										{#if lodestarOn || s[f.key]}
-											<div class="cm-field-row">
-												<label class="cm-field-label" for="cm-{f.key}-{s.id}">{f.label}</label>
-												<input
-													id="cm-{f.key}-{s.id}"
-													class="cm-input"
-													type="text"
-													value={s[f.key] ?? ''}
-													oninput={(e) =>
-														updateCommunityLike({
-															[f.key]: (e.target as HTMLInputElement).value,
-														} as Partial<Community>)}
-													placeholder="{f.label}…"
-												/>
-											</div>
-										{/if}
-									{/each}
-								{/if}
-								<!-- Lodestar supersedes a settlement's Location + Descriptor with its
-								     own suite, so hide both under Lodestar even if legacy data still
-								     carries a value. Places (Landmarks) always show them. -->
-								{#if activeEntry.kind === 'place' || !lodestarOn}
-									<div class="cm-field-row">
-										<label class="cm-field-label" for="cm-location-{c.id}"
-											>{activeEntry.kind === 'place' ? 'Landmark' : 'Location'}</label
-										>
-										<input
-											id="cm-location-{c.id}"
-											class="cm-input"
-											type="text"
-											value={c.location}
-											oninput={(e) =>
-												updateCommunityLike({ location: (e.target as HTMLInputElement).value })}
-											placeholder={activeEntry.kind === 'place' ? 'Landmark…' : 'Location…'}
-										/>
-									</div>
-								{/if}
-								{#if activeEntry.kind === 'place' || !lodestarOn}
-									<div class="cm-field-row">
-										<label class="cm-field-label" for="cm-locdesc-{c.id}">Descriptor</label>
-										<input
-											id="cm-locdesc-{c.id}"
-											class="cm-input"
-											type="text"
-											value={c.locationDescription}
-											oninput={(e) =>
-												updateCommunityLike({
-													locationDescription: (e.target as HTMLInputElement).value,
-												})}
-											placeholder="Location descriptor…"
-										/>
-									</div>
-								{/if}
-								{#if activeEntry.kind === 'community' || c.trouble}
-									<div class="cm-field-row cm-field-row--trouble">
-										<label class="cm-field-label" for="cm-trouble-{c.id}">Trouble</label>
-										<input
-											id="cm-trouble-{c.id}"
-											class="cm-input"
-											type="text"
-											value={c.trouble}
-											oninput={(e) =>
-												updateCommunityLike({ trouble: (e.target as HTMLInputElement).value })}
-											placeholder={activeEntry.kind === 'place'
-												? 'Trouble…'
-												: 'Settlement trouble…'}
-										/>
-										{#if activeEntry.kind === 'community'}
-											<!-- Settlement Trouble oracle is community-only; places don't
-										     have their own trouble oracle yet, so the dice button
-										     is hidden for them. -->
-											<button
-												class="dice-btn"
-												type="button"
-												onclick={rollSettlementTrouble}
-												disabled={rolling}
-												use:tooltip={'Roll settlement trouble oracle'}
-												aria-label="Roll settlement trouble oracle">{@html diceD6Svg}</button
-											>
-										{/if}
-									</div>
-								{/if}
-								{#if activeEntry.kind === 'community' || activeEntry.kind === 'place'}
-									{@const children = childrenOf(refOf(activeEntry.kind, c.id))}
-									{#if children.length > 0}
-										<div class="cm-field-row cm-field-row--places">
-											<span class="cm-field-label">Contains</span>
-											<div class="cm-mapref-chips">
-												{#each children as ch (ch.kind + ch.id)}
-													<button
-														class="cm-mapref-chip cm-mapref-chip--entity"
-														type="button"
-														style:--chip-color={ENTITY_KIND_META[ch.kind].color}
-														onclick={() => (activeEntryId = ch.id)}
-														use:tooltip={`Go to this ${kindLabelSingular(ch.kind).toLowerCase()}`}
-														><span class="cm-mapref-glyph" aria-hidden="true"
-															>{@html ENTITY_KIND_META[ch.kind].icon}</span
-														><span class="cm-mapref-name">{ch.name || 'Untitled'}</span></button
-													>
-												{/each}
-											</div>
-										</div>
-									{/if}
-								{/if}
-								<!-- Within: the container this entry sits inside — any settlement or
-								     landmark except itself + its descendants. Positioned right above
-								     the Map field. -->
-								<div class="cm-field-row">
-									<label class="cm-field-label" for="cm-within-{c.id}">Within</label>
-									<Combobox
-										id="cm-within-{c.id}"
-										class="cm-within-select"
-										items={withinItems}
-										getKey={(o) => o.ref}
-										getLabel={(o) => o.label}
-										getIcon={(o) => o.icon}
-										getColor={(o) => o.color}
-										activeKey={activeWithinRef ?? ''}
-										onselect={(o) => setWithin(o.ref)}
-										triggerValue={activeWithinRef ? refName(activeWithinRef) : 'Nowhere'}
-										triggerIcon={activeWithinRef
-											? ENTITY_KIND_META[splitRef(activeWithinRef)?.kind ?? 'place'].icon
-											: undefined}
-										triggerColor={activeWithinRef
-											? ENTITY_KIND_META[splitRef(activeWithinRef)?.kind ?? 'place'].color
-											: undefined}
-										searchPlaceholder="Search settlements & landmarks…"
-										emptyText="No eligible containers."
-										ariaLabel="Within — the container this sits inside"
-										filterGroupLabel="Filter by container kind"
-										filters={WITHIN_PILLS}
-										bind:activeFilters={withinFilter}
-										filterOf={(o) => o.kind}
-										clearItem={{ label: 'Nowhere', onselect: () => setWithin('') }}
-									/>
-									{#if entityWithin(c)}
-										<button
-											class="cm-within-jump"
-											type="button"
-											onclick={() => (activeEntryId = splitRef(entityWithin(c) ?? '')?.id ?? null)}
-											use:tooltip={goToWithinLabel(entityWithin(c))}
-											aria-label={goToWithinLabel(entityWithin(c))}>{@html gotoSvg}</button
-										>
-									{/if}
-								</div>
-								<!-- Map field: one chip per marker referencing this
-								     community/place. Multi-map is supported natively —
-								     the store returns refs across all maps, chips wrap
-								     onto new rows via flex-wrap. Coord (x, y) lives in
-								     the tooltip; chip text is the map name only. -->
-								<div class="cm-field-row cm-field-row--map" data-tour="cm-map">
-									<span class="cm-field-label">Map</span>
-									<div class="cm-mapref-chips">
-										{#if activeEntryMarkers.length === 0}
-											<span class="cm-mapref-empty">Not on any map</span>
-										{:else}
-											{#each activeEntryMarkers as ref (ref.markerId)}
-												<button
-													class="cm-mapref-chip"
-													onclick={() => jumpToMarker(ref)}
-													use:tooltip={`Jump to "${ref.label || '(unlabeled)'}" on ${ref.mapName} — (${fmtCoord(ref.x)}, ${fmtCoord(ref.y)})`}
-													aria-label={`Jump to marker on ${ref.mapName}`}
-												>
-													<span class="cm-mapref-name">{ref.mapName}</span>
-												</button>
-											{/each}
-										{/if}
-									</div>
-								</div>
+								{@const selfRef = refOf(activeEntry.kind, activeEntry.id)}
+								<PlaceCore
+									kind={activeEntry.kind}
+									data={activeEntry.data}
+									{lodestarOn}
+									inherited={isNested(selfRef, containmentGraph)
+										? {
+												region: effectiveRegion(selfRef, containmentGraph) ?? '',
+												from: refName(breadcrumbRefs(selfRef, containmentGraph)[0] ?? ''),
+											}
+										: null}
+									contains={childrenOf(selfRef)}
+									markers={activeEntryMarkers}
+									{rolling}
+									within={withinField}
+									onupdate={updateCommunityLike}
+									onrolltrouble={rollSettlementTrouble}
+									ongo={(id) => (activeEntryId = id)}
+									onjump={jumpToMarker}
+								/>
 							{:else}
-								{@const n = activeEntry.data}
-								<!-- Status toggle — Alive / Deceased. Lives at the top of
-							     the NPC Core tab so the header can stay lean; mirrors
-							     the initiative line at the top of the Characters card. -->
-								<div class="cm-status-section">
-									<span class="cm-status-label">Status</span>
-									<SegmentedRadio
-										ariaLabel="NPC status"
-										labels="always"
-										value={(n as Npc).deceased ? 'deceased' : 'alive'}
-										onchange={(v) => updateNpc({ deceased: v === 'deceased' })}
-										options={[
-											{
-												value: 'alive',
-												icon: heartPulseSvg,
-												text: 'Alive',
-												label: 'Mark alive',
-												tone: 'go',
-											},
-											{
-												value: 'deceased',
-												icon: skullSvg,
-												text: 'Deceased',
-												label: 'Mark deceased',
-												tone: 'stop',
-											},
-										]}
-									/>
-								</div>
-								{#if n.firstLook || resolveCharacterOracle('firstLook')}
-									<div class="cm-field-row">
-										<label class="cm-field-label" for="cm-first-look-{n.id}">First Look</label>
-										<input
-											id="cm-first-look-{n.id}"
-											class="cm-input"
-											type="text"
-											value={n.firstLook ?? ''}
-											oninput={(e) =>
-												updateNpc({ firstLook: (e.target as HTMLInputElement).value })}
-											placeholder="How they strike you at first sight…"
-										/>
-									</div>
-								{/if}
-								{#if n.activity || resolveCharacterOracle('activity')}
-									<div class="cm-field-row">
-										<label class="cm-field-label" for="cm-activity-{n.id}">Activity</label>
-										<input
-											id="cm-activity-{n.id}"
-											class="cm-input"
-											type="text"
-											value={n.activity ?? ''}
-											oninput={(e) => updateNpc({ activity: (e.target as HTMLInputElement).value })}
-											placeholder="What they’re doing when you meet them…"
-										/>
-									</div>
-								{/if}
-								{#if n.disposition || resolveCharacterOracle('disposition')}
-									<div class="cm-field-row">
-										<label class="cm-field-label" for="cm-disposition-{n.id}">Disposition</label>
-										<input
-											id="cm-disposition-{n.id}"
-											class="cm-input"
-											type="text"
-											value={n.disposition ?? ''}
-											oninput={(e) =>
-												updateNpc({ disposition: (e.target as HTMLInputElement).value })}
-											placeholder="How they feel toward you…"
-										/>
-									</div>
-								{/if}
-								<div class="cm-field-row">
-									<label class="cm-field-label" for="cm-role-{n.id}">Role</label>
-									<input
-										id="cm-role-{n.id}"
-										class="cm-input"
-										type="text"
-										value={n.role}
-										oninput={(e) => updateNpc({ role: (e.target as HTMLInputElement).value })}
-										placeholder="What they do, their place in the world…"
-									/>
-								</div>
-								<div class="cm-field-row">
-									<label class="cm-field-label" for="cm-goal-{n.id}">Goal</label>
-									<input
-										id="cm-goal-{n.id}"
-										class="cm-input"
-										type="text"
-										value={n.goal}
-										oninput={(e) => updateNpc({ goal: (e.target as HTMLInputElement).value })}
-										placeholder="What they want…"
-									/>
-								</div>
-								<div class="cm-field-row">
-									<label class="cm-field-label" for="cm-desc-{n.id}">Revealed Details</label>
-									<input
-										id="cm-desc-{n.id}"
-										class="cm-input"
-										type="text"
-										value={n.descriptor}
-										oninput={(e) => updateNpc({ descriptor: (e.target as HTMLInputElement).value })}
-										placeholder="What you’ve learned about them…"
-									/>
-								</div>
-								<div class="cm-field-row">
-									<label class="cm-field-label" for="cm-rel-{n.id}">Relationship</label>
-									<Select
-										id="cm-rel-{n.id}"
-										class="cm-select"
-										value={n.relationship}
-										options={RELATIONSHIPS}
-										onchange={(v) => updateNpc({ relationship: v })}
-									/>
-								</div>
-								<div class="cm-field-row">
-									<label class="cm-field-label" for="cm-loc-{n.id}">Location</label>
-									<input
-										id="cm-loc-{n.id}"
-										class="cm-input"
-										type="text"
-										value={n.location}
-										oninput={(e) => updateNpc({ location: (e.target as HTMLInputElement).value })}
-										placeholder="Where to find them, in the place below…"
-									/>
-								</div>
-								<!-- Within: the structured container (settlement/landmark). Sits below
-								     the free-text Location, which is an unstructured sub-spot. -->
-								<div class="cm-field-row">
-									<label class="cm-field-label" for="cm-within-{n.id}">Within</label>
-									<Combobox
-										id="cm-within-{n.id}"
-										class="cm-within-select"
-										tour="npc-within"
-										items={withinItems}
-										getKey={(o) => o.ref}
-										getLabel={(o) => o.label}
-										getIcon={(o) => o.icon}
-										getColor={(o) => o.color}
-										activeKey={activeWithinRef ?? ''}
-										onselect={(o) => setWithin(o.ref)}
-										triggerValue={activeWithinRef ? refName(activeWithinRef) : 'Nowhere'}
-										triggerIcon={activeWithinRef
-											? ENTITY_KIND_META[splitRef(activeWithinRef)?.kind ?? 'place'].icon
-											: undefined}
-										triggerColor={activeWithinRef
-											? ENTITY_KIND_META[splitRef(activeWithinRef)?.kind ?? 'place'].color
-											: undefined}
-										searchPlaceholder="Search settlements & landmarks…"
-										emptyText="No eligible containers."
-										ariaLabel="Within — the container this sits inside"
-										filterGroupLabel="Filter by container kind"
-										filters={WITHIN_PILLS}
-										bind:activeFilters={withinFilter}
-										filterOf={(o) => o.kind}
-										clearItem={{ label: 'Nowhere', onselect: () => setWithin('') }}
-									/>
-									{#if entityWithin(n)}
-										<button
-											class="cm-within-jump"
-											type="button"
-											onclick={() => (activeEntryId = splitRef(entityWithin(n) ?? '')?.id ?? null)}
-											use:tooltip={goToWithinLabel(entityWithin(n))}
-											aria-label={goToWithinLabel(entityWithin(n))}>{@html gotoSvg}</button
-										>
-									{/if}
-								</div>
+								<NpcCore data={activeEntry.data} within={withinField} onupdate={updateNpc} />
 							{/if}
 
 							<!-- Situational notes — short notes about current conditions,
@@ -1394,62 +1016,13 @@
 								/>
 							</div>
 						{:else if activeTab === 'notes'}
-							<!-- Summary (stored as shortDescription) — a line or two shown in
-							     the map's marker card; the long-form description follows. NPCs
-							     keep the one Background field. -->
-							{#if activeEntry.kind !== 'npc' && !editingNotes}
-								<div class="cm-short-desc">
-									<span class="cm-field-label">Summary</span>
-									<MarkdownNotes
-										bind:editing={editingShortDesc}
-										value={activeEntry.data.shortDescription ?? ''}
-										oninput={(v) => setShortDescription(v)}
-										placeholder="A line or two, shown when its map marker is selected…"
-										rows={3}
-									/>
-								</div>
-							{/if}
-							{#if activeEntry.kind !== 'npc'}
-								<!-- Heading sits above the section so the floated portrait
-								     starts below it instead of covering it. -->
-								<span class="cm-field-label cm-detail-label">Detailed description</span>
-							{/if}
-							<div class="cm-notes-section" class:cm-notes-section--editing={editingNotes}>
-								<!-- Portrait floats right and the prose wraps around it; it's
-								     hidden while editing so the textarea fills the whole panel. -->
-								{#if !editingNotes}
-									<PortraitUploader
-										endpoint={`/api/session/${
-											activeEntry.kind === 'npc'
-												? 'npcs'
-												: activeEntry.kind === 'place'
-													? 'places'
-													: 'communities'
-										}/${activeEntry.data.id}/portrait`}
-										etag={activeEntry.data.portraitEtag ?? ''}
-										oninput={(etag) => {
-											if (activeEntry?.kind === 'community')
-												updateCommunity({ portraitEtag: etag });
-											else if (activeEntry?.kind === 'npc') updateNpc({ portraitEtag: etag });
-											else if (activeEntry?.kind === 'place') updatePlace({ portraitEtag: etag });
-										}}
-										placeholderSvg={iconFor(activeEntry.kind)}
-										alt={activeEntry.data.name}
-									/>
-								{/if}
-
-								<MarkdownNotes
-									bind:editing={editingNotes}
-									value={activeEntry.data.notes ?? ''}
-									oninput={(v) => setNotes(v)}
-									placeholder={activeEntry.kind === 'npc'
-										? 'Origin, upbringing, major traits…'
-										: activeEntry.kind === 'place'
-											? 'Physical features, atmosphere, notable details…'
-											: 'Description of this community…'}
-									rows={6}
-								/>
-							</div>
+							<ConnectionDescription
+								kind={activeEntry.kind}
+								data={activeEntry.data}
+								bind:editingNotes
+								bind:editingShortDesc
+								onupdate={updateActive}
+							/>
 						{/if}
 					</div>
 				</div>
@@ -1756,108 +1329,6 @@
 		padding-bottom: 6px;
 		min-height: 0;
 	}
-	/* Map field — the chip strip lives inside a `.cm-field-row` in
-	   the Core tab now (previously a header-level band). One chip per
-	   marker referencing this community/place; hover surfaces the
-	   marker label + coordinates. Multi-map users get multiple chips
-	   that wrap onto new rows via `flex-wrap`. */
-	.cm-mapref-chips {
-		flex: 1 1 auto;
-		display: flex;
-		flex-wrap: wrap;
-		gap: 6px;
-		align-items: center;
-	}
-	.cm-mapref-empty {
-		font-family: var(--font-ui);
-		font-size: 0.75rem;
-		font-style: italic;
-		color: var(--text-dimmer);
-	}
-	.cm-mapref-chip {
-		display: inline-flex;
-		align-items: center;
-		gap: 6px;
-		padding: 2px 10px;
-		background: var(--bg-control);
-		border: 1px solid var(--border-mid);
-		border-radius: 12px;
-		font-family: var(--font-ui);
-		font-size: 0.75rem;
-		color: var(--text);
-		cursor: pointer;
-		max-width: 100%;
-		white-space: nowrap;
-	}
-	.cm-mapref-chip:hover {
-		border-color: var(--text-accent);
-		color: var(--text-accent);
-	}
-	/* "Contains" chips are tinted with their kind colour (settlement / landmark),
-	   matching the kind icon shown inside them. */
-	.cm-mapref-chip--entity {
-		border-color: color-mix(in srgb, var(--chip-color) 55%, var(--border-mid));
-		color: var(--chip-color);
-	}
-	.cm-mapref-chip--entity:hover {
-		background: color-mix(in srgb, var(--chip-color) 12%, transparent);
-		border-color: var(--chip-color);
-		color: var(--chip-color);
-	}
-	.cm-mapref-glyph {
-		flex-shrink: 0;
-		display: inline-flex;
-		width: 12px;
-		height: 12px;
-		color: var(--chip-color);
-	}
-	.cm-mapref-glyph :global(svg) {
-		width: 100%;
-		height: 100%;
-		fill: currentColor;
-		display: block;
-	}
-	.cm-mapref-name {
-		font-weight: 600;
-		overflow: hidden;
-		text-overflow: ellipsis;
-		max-width: 12rem;
-	}
-
-	/* Places-here strip on a settlement panel + the jump-to-parent glyph on a
-	   nested place's Within row — both surface the withinSettlementId link. */
-	.cm-field-row--places {
-		align-items: flex-start;
-	}
-	.cm-within-jump {
-		flex: 0 0 auto;
-		display: inline-flex;
-		align-items: center;
-		justify-content: center;
-		/* Match the d6 roll button (.dice-btn, app.css): 22×22, 3px radius,
-		   transparent, centred in the field row rather than stretched. */
-		box-sizing: border-box;
-		width: 22px;
-		height: 22px;
-		align-self: center;
-		border: 1px solid var(--border-mid);
-		border-radius: 3px;
-		background: transparent;
-		color: var(--text-muted);
-		line-height: 1;
-		cursor: pointer;
-	}
-	.cm-within-jump :global(svg) {
-		width: 13px;
-		height: 13px;
-		fill: currentColor;
-		display: block;
-	}
-	.cm-within-jump:hover {
-		border-color: var(--text-accent);
-		color: var(--text-accent);
-	}
-
 	.cm-header {
 		display: flex;
 		align-items: center;
@@ -2009,48 +1480,6 @@
 		border-bottom-color: var(--text-accent);
 	}
 
-	.cm-short-desc {
-		display: flex;
-		flex-direction: column;
-		gap: 4px;
-		margin-bottom: 12px;
-	}
-	.cm-detail-label {
-		display: block;
-		margin-bottom: 4px;
-		white-space: nowrap;
-	}
-	.cm-notes-section {
-		/* flow-root contains the right-floated portrait so the section grows
-		   to hold it even when the prose is short. */
-		display: flow-root;
-	}
-	/* Description tab: let the prose wrap around the floated portrait.
-	   MarkdownNotes is normally a flex column — its own block-formatting
-	   context, which would sit beside the float instead of flowing around it.
-	   Force normal block flow here (scoped to this section) so text wraps. */
-	.cm-notes-section :global(.md-notes) {
-		display: block;
-	}
-	/* While editing, the portrait is hidden — let the textarea fill the whole
-	   panel (full width and height of the containing card). */
-	.cm-notes-section--editing {
-		display: flex;
-		flex-direction: column;
-		height: 100%;
-		min-height: 0;
-	}
-	.cm-notes-section--editing :global(.md-notes) {
-		display: flex;
-		flex-direction: column;
-		flex: 1;
-		min-height: 0;
-	}
-	.cm-notes-section--editing :global(.md-notes-input) {
-		flex: 1;
-		min-height: 0;
-	}
-
 	/* Core-tab notes block — same `notes` field as the Description tab,
 	   exposed at the bottom of Core for quick edits. The Description tab
 	   keeps its richer view (portrait + notes wrapping around it). */
@@ -2082,12 +1511,14 @@
 		display: block;
 		margin-bottom: 4px;
 	}
-	.cm-field-row {
+	/* Field rows, shared with the tab components (connections/*), so global
+	   within the card. */
+	.cm-card :global(.cm-field-row) {
 		display: flex;
 		align-items: center;
 		gap: 8px;
 	}
-	.cm-field-label {
+	.cm-card :global(.cm-field-label) {
 		font-family: var(--font-ui);
 		font-size: 0.7rem;
 		font-weight: 600;
@@ -2096,7 +1527,7 @@
 		color: var(--text-dimmer);
 		min-width: 90px;
 	}
-	.cm-input {
+	.cm-card :global(.cm-input) {
 		flex: 1;
 		font-family: var(--font-ui);
 		font-size: 0.78rem;
@@ -2107,14 +1538,14 @@
 		padding: 3px 8px;
 		outline: none;
 	}
-	.cm-input:focus {
+	.cm-card :global(.cm-input:focus) {
 		border-color: var(--text-accent);
 	}
 	/* A field showing an inherited (read-only) value — the Region of a nested
 	   entry. Grey the text so it reads as non-editable; `-webkit-text-fill-color`
 	   is required because WebKit ignores `color` on a disabled input. */
-	.cm-input--readonly,
-	.cm-input:disabled {
+	.cm-card :global(.cm-input--readonly),
+	.cm-card :global(.cm-input:disabled) {
 		color: var(--text-dimmer);
 		-webkit-text-fill-color: var(--text-dimmer);
 		background: var(--bg-control);
@@ -2136,36 +1567,10 @@
 		min-height: 0;
 	}
 
-	.cm-field-row--trouble {
-		align-items: center;
-	}
-
-	/* Square d6 button sitting next to the trouble input. Sized to match the
-	   Trouble-roll d6 uses the global `.dice-btn` style (app.css) — the
-	   preferred d6 button, shared with ExpeditionsArea. */
-
 	/* Prevent the status SegmentedRadio (NPCs) from clipping when the
 	   panel header is tight — combobox shrinks instead. */
 	.cm-header-actions :global(.sr) {
 		flex-shrink: 0;
-	}
-	/* NPC status toggle (Alive/Deceased) — lives at the top of the NPC
-	   Core tab. Same shape as CharactersArea's initiative row.
-	   Communities/Places don't get one since they have no status. */
-	.cm-status-section {
-		display: flex;
-		align-items: center;
-		gap: 0.5rem;
-		padding-bottom: 8px;
-		border-bottom: 1px solid var(--border);
-	}
-	.cm-status-label {
-		font-family: var(--font-ui);
-		font-size: 0.7rem;
-		font-weight: 600;
-		text-transform: uppercase;
-		letter-spacing: 0.08em;
-		color: var(--text-dimmer);
 	}
 	/* Header gear + combobox — sizing and svg tint. */
 	:global(.cm-hdr-settings-btn) {

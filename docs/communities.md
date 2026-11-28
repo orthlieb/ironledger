@@ -254,7 +254,7 @@ Substitute `Npc` / `Place` for the same shape on the other two stores. Mutations
 
 ## UI Structure
 
-The Connections area (`apps/web/src/lib/components/v2/CommunitiesArea.svelte`) holds all three kinds and shows one entry at a time:
+The Connections area (`apps/web/src/lib/components/v2/CommunitiesArea.svelte`) holds all three kinds and shows one entry at a time. Its tabs have their own components under `components/v2/connections/`: **`PlaceCore`** (a settlement's or landmark's Core fields), **`NpcCore`** (an NPC's), both with the shared **`WithinField`**, and **`ConnectionDescription`**. Each edits through a callback, so CommunitiesArea keeps every write and the save; it also keeps the Notes block under both Core tabs, the field-row styles they share, and the New dialogs.
 
 - **Header** — the switcher (`Combobox`) lists every entry A→Z with its kind's glyph and colour, **Settlements / NPCs / Landmarks** filter pills, and the **+ New Settlement…**, **+ New NPC…** and **+ New Landmark…** actions. Each opens a draggable `ConfirmDialog`: the name, a name oracle with its d6, and an **Also randomize** checklist rolled on Create. The gear opens `ConnectionOptionsDialog` (rename, delete).
 - **Core** tab — the kind's fields (see [Fields by expansion](#fields-by-expansion-base--delve--lodestar)), the Within picker (see Containment, above), and the Notes block (`situationalNotes`).
@@ -309,10 +309,14 @@ Portraits are **not** inlined in the entity JSON. `PortraitUploader` uploads the
 
 ## Components
 
-| Component               | File                                            | Purpose                                                                |
-| ----------------------- | ----------------------------------------------- | ---------------------------------------------------------------------- |
-| CommunitiesArea         | `lib/components/v2/CommunitiesArea.svelte`      | The Connections area: switcher, New dialogs, Core and Description tabs |
-| ConnectionOptionsDialog | `lib/components/ConnectionOptionsDialog.svelte` | Rename and delete an entry                                             |
+| Component               | File                                                         | Purpose                                                                                                             |
+| ----------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
+| CommunitiesArea         | `lib/components/v2/CommunitiesArea.svelte`                   | The Connections area: switcher, New dialogs, the tabs, every write and save                                         |
+| PlaceCore               | `lib/components/v2/connections/PlaceCore.svelte`             | A settlement's or landmark's Core tab: region (inherited when nested), Lodestar fields, trouble roll, Contains, Map |
+| NpcCore                 | `lib/components/v2/connections/NpcCore.svelte`               | An NPC's Core tab: status, the character oracles' fields, relationship, location                                    |
+| WithinField             | `lib/components/v2/connections/WithinField.svelte`           | The Within picker both Core tabs show, with its jump to the container                                               |
+| ConnectionDescription   | `lib/components/v2/connections/ConnectionDescription.svelte` | The Description (Background for an NPC) tab: summary, portrait, description                                         |
+| ConnectionOptionsDialog | `lib/components/ConnectionOptionsDialog.svelte`              | Rename and delete an entry                                                                                          |
 
 ## Stores
 

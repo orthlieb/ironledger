@@ -103,8 +103,8 @@
         }
       ],
       "strong": "This test has strengthened your bond. Choose one:\n- Take [+1 spirit](/spirit++).\n- Take [+2 momentum](/momentum+=2).",
-      "weak": "Your bond is fragile and you must prove your loyalty. Envision what they ask of you ([Ask the Oracle](/move ask-the-oracle) if unsure), and do it (or [Swear an Iron Vow](/move swear-an-iron-vow)). If you decline or fail, clear the bond and [Pay the Price](/move pay-the-price).",
-      "miss": "Or if you have no interest in maintaining this relationship, clear the bond and [Pay the Price](/move pay-the-price).",
+      "weak": "Your bond is fragile and you must prove your loyalty. Envision what they ask of you ([Ask the Oracle](/move ask-the-oracle) if unsure), and do it (or [Swear an Iron Vow](/move swear-an-iron-vow)). If you decline or fail, [clear the bond](/bonds--) and [Pay the Price](/move pay-the-price).",
+      "miss": "Or if you have no interest in maintaining this relationship, [clear the bond](/bonds--) and [Pay the Price](/move pay-the-price).",
       "notes": "Triggered by the fiction, not player choice. If something happens that would logically strain a meaningful relationship, this move is prompted. The miss text also applies if you simply have no interest in maintaining the relationship.",
       "preconditions": "character & bonds >= 1b",
       "source": "base",

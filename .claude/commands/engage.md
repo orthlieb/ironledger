@@ -39,7 +39,7 @@ npm run format:check
 # won't catch TypeScript errors like noUncheckedIndexedAccess,
 # missing return types, or wrong signatures across workspaces.
 npx tsc --noEmit --project apps/api/tsconfig.json
-npm run check --workspace=apps/web   # svelte-check (templates + .ts)
+npm run check --workspace=apps/web   # svelte-check, then tsc (src + tests)
 ```
 
 The web `check` script depends on `@ironledger/shared` being built;

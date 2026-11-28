@@ -11,7 +11,7 @@ export async function loadDice(page: Page) {
 		const queue: number[] = [];
 		(window as unknown as { __dice: number[] }).__dice = queue;
 		const real = crypto.getRandomValues.bind(crypto);
-		crypto.getRandomValues = ((arr: Uint32Array) => {
+		crypto.getRandomValues = ((arr: Uint32Array<ArrayBuffer>) => {
 			if (queue.length && arr instanceof Uint32Array && arr.length === 1) {
 				arr[0] = queue.shift() ?? 0;
 				return arr;
