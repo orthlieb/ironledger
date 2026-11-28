@@ -229,7 +229,7 @@ it, so operators don't apply.
 | Change momentum, health, spirit, supply, XP | `/momentum++`, `/health-=2`, `/supply+=1`, `/xp=12`                                    |
 | Take the foe's harm                         | `/health-=harm`                                                                        |
 | Spend XP                                    | `/xp-=3`                                                                               |
-| Bonds, failures                             | `/bonds++`, `/failures+=1b`, `/failures=0`                                             |
+| Bonds, failures                             | `/bonds++`, `/bonds--`, `/failures+=1b`, `/failures=0`                                 |
 | Stats                                       | `/edge=3`                                                                              |
 | Debilities                                  | `/wounded++`, `/wounded--`, `/wounded!`                                                |
 | Initiative                                  | `/initiative=foe`, `/initiative=none`                                                  |
