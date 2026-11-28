@@ -50,6 +50,7 @@ import { getOracles, getVisibleOracles } from '#lib/oracleStore.svelte.js';
 import { movePreconditionFailure, type PreconditionContext } from '#lib/preconditions.js';
 import { appendLog, sessionLog } from '#lib/log.svelte.js';
 import { renderNote, escHtml } from '#lib/markdown.js';
+import { forsakeVowHtml } from '#lib/vows.js';
 import { rollDie, animateDice, type DiceSpec } from '#lib/dice.js';
 import { getEndId, getStartId, hasSection, setEnd, setStart } from '#lib/sectionStore.svelte.js';
 import { capAbilitiesForField, maxMomentum } from '#lib/character.js';
@@ -321,6 +322,18 @@ function runChange(p: Extract<Plan, { kind: 'change' }>, quiet = false): RunResu
 		else setPartyFields({ [spec.key]: String(p.to) });
 	} else save(owner);
 	if (owner.kind === 'character' && ch) cascade(ch, spec.key, p.from, p.to, p.wanted);
+	// A vow forsaken: Endure Stress at its rank, as the card's Forsake logs.
+	if (owner.kind === 'vow' && spec.key === 'status' && p.to === 'forsaken') {
+		const entryId = crypto.randomUUID();
+		appendLog(
+			`${owner.character.name} — Vow`,
+			bindCommandLinks(forsakeVowHtml(owner.vow), entryId, {
+				charId: owner.character.id,
+				vowId: owner.vow.id,
+			}),
+			entryId,
+		);
+	}
 	// A companion's health taken past 0: the rest comes off momentum.
 	const asked = p.wanted ?? Number(p.to);
 	if (

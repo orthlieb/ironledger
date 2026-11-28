@@ -490,6 +490,10 @@ position in the string.
 | `theme`, `domain`                                                                             | site                           | list (Delve)                          | yes      |
 | `vowCount`, `assetCount`, `companionCount`, `rarityCount`                                     | character                      | counts                                | no       |
 
+Setting a vow's `status` to `forsaken` (typed, or by a link) also writes what
+the vow card's Forsake writes: "Forsook the iron vow **Avenge Bjorn**
+(Dangerous) — [Endure Stress](/move endure-stress 2) (−2) for its rank".
+
 ### Scopes
 
 A content pack's field has one of four scopes, which say whose it is:
@@ -566,7 +570,7 @@ move that acts on one asks for it in the Moves dialog:
 | ------------------------ | ----------- | ----------------------------------------------------------------------------- |
 | Reach a Milestone        | a vow       | `[mark progress](/vow.progress++)`                                            |
 | Fulfill Your Vow         | a vow       | Rolls against that vow's progress.                                            |
-| Forsake Your Vow         | a vow       | Endure Stress at that vow's rank.                                             |
+| Forsake Your Vow         | a vow       | Use Move forsakes it; the entry has Endure Stress at that vow's rank.         |
 | Advance a Threat (Delve) | a vow       | `[mark menace](/vow.menace++)`                                                |
 | Companion Endure Harm    | a companion | `[-harm health](/companion.health-=harm)`, `[+1 health](/companion.health++)` |
 

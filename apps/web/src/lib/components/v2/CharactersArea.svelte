@@ -110,10 +110,11 @@
 		type LogAction,
 	} from '#lib/log.svelte.js';
 	import { renderRich } from '#lib/dsl.js';
+	import { forsakeVowHtml } from '#lib/vows.js';
 	import { commandLinkHtml, readCommandLink } from '#lib/commands/links.js';
 	import { runLink, reportCommandResult } from '#lib/commands/run.svelte.js';
 	import { FLOOR_RULES, DEBILITY_MOMENTUM_TITLE } from '#lib/cascadeRules.js';
-	import { type Vow, type VowDifficulty, VOW_FORSAKE_STRESS } from '#lib/types.js';
+	import { type Vow, type VowDifficulty } from '#lib/types.js';
 	import iconGearSvg from '#icons/gear-solid.svg?raw';
 	import gemSvg from '#icons/gem-solid.svg?raw';
 	import linkSvg from '#icons/link-solid.svg?raw';
@@ -761,13 +762,8 @@
 	}
 	/** Forsaking a vow logs it with a link to Endure Stress at the vow's rank. */
 	function logForsakeVow(vow: Vow) {
-		const rank = VOW_FORSAKE_STRESS[vow.difficulty];
-		const label = VOW_DIFFICULTIES.find((d) => d.value === vow.difficulty)?.label ?? vow.difficulty;
-		const md =
-			`Forsook the iron vow **${vow.name || 'Unnamed Vow'}** (${label}) — ` +
-			`[Endure Stress](/move endure-stress ${rank}) (−${rank}) for its rank.`;
 		const entryId = crypto.randomUUID();
-		const html = bindCommandLinks(renderRich(md), entryId, {
+		const html = bindCommandLinks(forsakeVowHtml(vow), entryId, {
 			charId: activeCharId ?? undefined,
 			vowId: vow.id,
 		});

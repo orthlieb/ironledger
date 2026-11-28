@@ -79,6 +79,8 @@
 	import Select from '#lib/components/Select.svelte';
 	import { vowStatus } from '#lib/commands/values.js';
 	import { VOW_FORSAKE_STRESS, type Vow } from '#lib/types.js';
+	import { forsakeVowHtml } from '#lib/vows.js';
+	import { flushCharacterToApi } from '#lib/characterStore.svelte.js';
 	import { getRelevantAbilities } from '#lib/assetMatcherStore.svelte.js';
 	import { getActiveDebilityWarnings } from '#lib/debilityWarnings.js';
 	import { isSourceEnabled } from '#lib/expansionStore.svelte.js';
@@ -129,6 +131,10 @@
 	// active foe's rank when a move is opened, but is editable so the player can
 	// set it "as appropriate to the situation" (a fall, a trap, no foe at all).
 	let harmValue = $state(1);
+	/** No-roll moves with a Use Move whose entry the app writes (a move with a
+	 *  `logBody` has one too): Take a Hiatus from the character as it stands,
+	 *  Forsake Your Vow by forsaking the chosen vow. */
+	const USE_MOVES = new Set(['move/take-a-hiatus', 'move/forsake-your-vow']);
 	/** The moves that take an amount of harm or stress, with − + and Apply. */
 	const ENDURE_MOVES = new Set([
 		'move/endure-harm',
@@ -813,6 +819,20 @@
 	async function doApplyNoRollMove() {
 		if (!ctx || !selectedMove) return;
 
+		// Forsake Your Vow: the chosen vow is forsaken, and the entry carries
+		// Endure Stress at its rank, as the vow card's Forsake writes.
+		if (selectedMove.id === 'move/forsake-your-vow') {
+			const vow = chosenVow;
+			if (!vow) return;
+			vow.status = 'forsaken';
+			flushCharacterToApi(ctx.charId);
+			const entryId = crypto.randomUUID();
+			const enriched = bindCommandLinks(forsakeVowHtml(vow), entryId, entryBinding());
+			close();
+			appendLog(resolveTitle(selectedMove), enriched, entryId);
+			return;
+		}
+
 		// Take a Hiatus: the log body comes from the character as it stands.
 		if (selectedMove.id === 'move/take-a-hiatus') {
 			const entryId = crypto.randomUUID();
@@ -1410,9 +1430,10 @@
 								<button class="btn back-btn" onclick={backToPicker} style="margin-right: auto"
 									>Back</button
 								>
-								{#if selectedMove['logBody'] || selectedMove.id === 'move/take-a-hiatus'}
+								{#if selectedMove['logBody'] || USE_MOVES.has(selectedMove.id)}
 									<button
 										class="btn btn-primary md-roll-btn md-roll-btn--full"
+										disabled={selectedMove.id === 'move/forsake-your-vow' && !chosenVow}
 										onclick={doApplyNoRollMove}>Use Move</button
 									>
 								{/if}

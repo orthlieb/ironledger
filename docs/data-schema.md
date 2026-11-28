@@ -269,8 +269,11 @@ companion assets). The choice binds `vow` or `companion` in the move's links,
 and:
 
 - **Fulfill Your Vow** rolls against the chosen vow's progress.
-- **Forsake Your Vow**'s Endure Stress link carries the chosen vow's rank
-  (Troublesome 1 … Epic 5).
+- **Forsake Your Vow** has a Use Move: it marks the chosen vow forsaken and
+  logs the line the vow card's Forsake writes, its Endure Stress link at
+  the vow's rank (Troublesome 1 … Epic 5; `forsakeVowHtml` in
+  `apps/web/src/lib/vows.ts`, which the card and the command use too). The
+  trigger's Endure Stress link carries the rank as well.
 - **Reach a Milestone** marks the chosen vow's progress (`/vow.progress++`).
 - **Advance a Threat** (Delve) marks its menace (`/vow.menace++`).
 - **Companion Endure Harm** takes the harm off the chosen companion (its
