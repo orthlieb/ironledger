@@ -21,28 +21,30 @@ picked, each tutorial in a chunk of its own.
 | Create your first foe          | The switcher's "+ New foe…", searching and filtering the foe picker, choosing a foe, solo / pack / horde, its features, drives and tactics, Add to Foes, then its pills, marking progress and vanquishing it                                                                                                                                                   |
 | Fight your foe                 | With the active character and foe: vitals and initiative; Move → searching for Enter the Fray → a stat → Roll Move, then applying the outcome from the log's links; saying what you do, as a note in the log; Strike or Clash as initiative allows, and the harm marked on the foe's progress track; Endure Harm, applying it, rolling, and the health it cost |
 | Make camp and heal             | After a fight, with the active character: their vitals; Heal (a stat, the roll, its health and wounded links in the log); saying where you camp, as a note in the log; Make Camp (what it lets you choose, the roll, choosing from its links); the vitals again                                                                                                |
+| Type a command                 | The command bar with the active character: a line of plain text as a note; `/mom` and Tab (a tap on the row, on a phone) to `/momentum`, then `++` (the bar's ++ key on a phone) and Enter, and the change in the log; what else commands reach (the active foe and journey, moves, oracles, dice); ↑ for history and Esc (keyboards only); the ? help         |
 | Back up your campaign          | ☰ → Export…: what goes in (all of it, to start), Zip archive or Markdown, and a real export through its progress overlay; then ☰ → Import…, where a backup goes back in (left open when the tour ends)                                                                                                                                                       |
 
 ## Where things live
 
-| File                                            | What it holds                                                                                                                                           |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web/src/lib/tutorials/tour.ts`            | The runner: `TourStep`, `Tutorial`, `runTour()` on top of Driver.js                                                                                     |
-| `apps/web/src/lib/tutorials/tour.css`           | The popover in the house style; bits-ui menus above the tour's overlay                                                                                  |
-| `apps/web/src/lib/tutorials/index.ts`           | `TUTORIALS` (the menu's list) and `startTutorial(id)`                                                                                                   |
-| `apps/web/src/lib/tutorials/createCharacter.ts` | The Create a character tutorial                                                                                                                         |
-| `apps/web/src/lib/tutorials/addVow.ts`          | The Add your first vow tutorial                                                                                                                         |
-| `apps/web/src/lib/tutorials/addAssets.ts`       | The Add your assets tutorial                                                                                                                            |
-| `apps/web/src/lib/tutorials/startJourney.ts`    | The Start a journey tutorial                                                                                                                            |
-| `apps/web/src/lib/tutorials/addConnections.ts`  | The Add a settlement and an NPC tutorial                                                                                                                |
-| `apps/web/src/lib/tutorials/mapSettlement.ts`   | The Put your settlement on the map tutorial                                                                                                             |
-| `apps/web/src/lib/tutorials/createFoe.ts`       | The Create your first foe tutorial                                                                                                                      |
-| `apps/web/src/lib/tutorials/fightFoe.ts`        | The Fight your foe tutorial                                                                                                                             |
-| `apps/web/src/lib/tutorials/makeCamp.ts`        | The Make camp and heal tutorial                                                                                                                         |
-| `apps/web/src/lib/tutorials/backUp.ts`          | The Back up your campaign tutorial                                                                                                                      |
-| `apps/web/src/lib/tutorials/moves.ts`           | What the tutorials that make moves share: the rolls and notes made since the tour began, closing the Moves dialog, searching it, choosing a stat        |
-| `apps/web/src/lib/tutorials/keys.ts`            | Controls drawn into a step's text as they look (`MOVE`, `MAP`, `ADD_VOW`, `ADD_ASSET`, `ADD_MARKER`, `MENU`), for buttons that show an icon, not a word |
-| `apps/web/tests/e2e/tutorials.spec.ts`          | E2E tests that follow each tutorial as a player would                                                                                                   |
+| File                                            | What it holds                                                                                                                                                                   |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `apps/web/src/lib/tutorials/tour.ts`            | The runner: `TourStep`, `Tutorial`, `runTour()` on top of Driver.js                                                                                                             |
+| `apps/web/src/lib/tutorials/tour.css`           | The popover in the house style; bits-ui menus above the tour's overlay                                                                                                          |
+| `apps/web/src/lib/tutorials/index.ts`           | `TUTORIALS` (the menu's list) and `startTutorial(id)`                                                                                                                           |
+| `apps/web/src/lib/tutorials/createCharacter.ts` | The Create a character tutorial                                                                                                                                                 |
+| `apps/web/src/lib/tutorials/addVow.ts`          | The Add your first vow tutorial                                                                                                                                                 |
+| `apps/web/src/lib/tutorials/addAssets.ts`       | The Add your assets tutorial                                                                                                                                                    |
+| `apps/web/src/lib/tutorials/startJourney.ts`    | The Start a journey tutorial                                                                                                                                                    |
+| `apps/web/src/lib/tutorials/addConnections.ts`  | The Add a settlement and an NPC tutorial                                                                                                                                        |
+| `apps/web/src/lib/tutorials/mapSettlement.ts`   | The Put your settlement on the map tutorial                                                                                                                                     |
+| `apps/web/src/lib/tutorials/createFoe.ts`       | The Create your first foe tutorial                                                                                                                                              |
+| `apps/web/src/lib/tutorials/fightFoe.ts`        | The Fight your foe tutorial                                                                                                                                                     |
+| `apps/web/src/lib/tutorials/makeCamp.ts`        | The Make camp and heal tutorial                                                                                                                                                 |
+| `apps/web/src/lib/tutorials/typeCommand.ts`     | The Type a command tutorial                                                                                                                                                     |
+| `apps/web/src/lib/tutorials/backUp.ts`          | The Back up your campaign tutorial                                                                                                                                              |
+| `apps/web/src/lib/tutorials/moves.ts`           | What the tutorials that make moves share: the rolls and notes made since the tour began, closing the Moves dialog, searching it, choosing a stat                                |
+| `apps/web/src/lib/tutorials/keys.ts`            | Controls drawn into a step's text as they look (`MOVE`, `MAP`, `ADD_VOW`, `ADD_ASSET`, `ADD_MARKER`, `MENU`), for buttons that show an icon, not a word; `kbd('Tab')` for a key |
+| `apps/web/tests/e2e/tutorials.spec.ts`          | E2E tests that follow each tutorial as a player would                                                                                                                           |
 
 ## Writing a tutorial
 
@@ -84,17 +86,17 @@ A step is one of three kinds:
 
 Other step options:
 
-| Option                | Meaning                                                                                                                           |
-| --------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| `selector`            | A CSS selector in place of `target`, for what the app writes as HTML and can't tag (a log entry's link); the first match is used  |
-| `find: () => Element` | Or a function that finds it as the step is reached, for what's known only then: the roll just made, the move initiative allows    |
-| `pageClass`           | A class on `<body>` while the step shows, for `tour.css` to make room: `il-tour-log` grows a phone's log to show a whole roll     |
-| `when: () => boolean` | Leave the step out unless true, asked when the tour starts (YRT on, a tab hidden)                                                 |
-| `wait: ms`            | Wait for the target to appear (a dialog opening)                                                                                  |
-| `backIfGone`          | If the target leaves the screen (a list row filtered out, its dialog closed), go back to the nearest earlier step still on screen |
-| `optional`            | Skip the step when its target isn't there (a section only some foes have)                                                         |
-| `back`                | Show Back. Only where the step before is still on screen                                                                          |
-| `side`, `align`       | Where the popover sits                                                                                                            |
+| Option                | Meaning                                                                                                                                                                                                                                                                         |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `selector`            | A CSS selector in place of `target`, for what the app writes as HTML and can't tag (a log entry's link); the first match is used                                                                                                                                                |
+| `find: () => Element` | Or a function that finds it as the step is reached, for what's known only then: the roll just made, the move initiative allows                                                                                                                                                  |
+| `pageClass`           | A class on `<body>` while the step shows, for `tour.css` to make room: `il-tour-log` grows a phone's log to show a whole roll; `il-tour-cb` puts the command bar's suggestions in its box (they float above it), so the highlight takes them in and the popover sits above them |
+| `when: () => boolean` | Leave the step out unless true, asked when the tour starts (YRT on, a tab hidden)                                                                                                                                                                                               |
+| `wait: ms`            | Wait for the target to appear (a dialog opening)                                                                                                                                                                                                                                |
+| `backIfGone`          | If the target leaves the screen (a list row filtered out, its dialog closed), go back to the nearest earlier step still on screen                                                                                                                                               |
+| `optional`            | Skip the step when its target isn't there (a section only some foes have)                                                                                                                                                                                                       |
+| `back`                | Show Back. Only where the step before is still on screen                                                                                                                                                                                                                        |
+| `side`, `align`       | Where the popover sits                                                                                                                                                                                                                                                          |
 
 Name a control by what it shows. Where it's an icon with no word (the
 header's Move on a phone, the character's + ⛓ and + ◆), draw it into the
@@ -163,3 +165,13 @@ that follows it through using the real controls. Don't import a tutorial or
   mouse-down, so Next doesn't blur a field the player is typing in. A step
   that needs the field closed first (the bio editor) blurs it in its
   `beforeNext`.
+- **A field being typed in keeps its focus from step to step.** Driver
+  focuses the popover's first button as it shows each step; a text field
+  that had focus, inside the new step's target (the command bar), gets it
+  back with its caret where it was.
+- **Keys typed in a text field are the field's.** Driver listens on the
+  window: Tab cycles focus between its popover and the highlight, ← and →
+  step the tour, Escape ends it. From a text field, Tab and the arrows stop
+  short of it (Tab takes a suggestion, the arrows move the caret), and so
+  does an Escape that clears the field; Escape in an empty field still ends
+  the tour.

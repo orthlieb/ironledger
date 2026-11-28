@@ -133,8 +133,22 @@ body.driver-active [data-bits-floating-content-wrapper] * {
    log, where it's a strip under one panel (phones, tablets, the Tabs view),
    to show a whole roll with its links — the log can't be scrolled while
    one of its entries is highlighted. */
-body.il-tour-log .home-shell--layout-tabs .home-log {
+body.il-tour-log .home-shell--layout-tabs .home-log,
+body.il-tour-cb .home-shell--layout-tabs .home-log {
 	height: max(var(--mob-log-height, 25vh), 60vh) !important;
+}
+
+/* il-tour-cb: the command bar's suggestions float above it, outside its
+   box, where the step's popover would cover them and its highlight leave
+   them dim. In the bar's flow instead, the bar grows up to hold them; on a
+   phone the log strip it sits in grows too (above), to make the room. */
+body.il-tour-cb .cb .cb-sugg {
+	position: static;
+	max-height: 30vh;
+	margin: 0 0 2px;
+	border-bottom: 1px solid var(--border-mid);
+	border-radius: 6px;
+	box-shadow: none;
 }
 
 /* The 3D dice roll above the tour's overlay (driver's is z-index 10000, the
@@ -179,6 +193,15 @@ body.driver-active #il-dice-overlay {
 	font-size: 0.85rem;
 	font-weight: 700;
 	line-height: 1;
+}
+/* What to type, in a step's text: `/momentum`. */
+.driver-popover.il-tour code {
+	font-family: var(--font-mono, ui-monospace, monospace);
+	font-size: 0.85em;
+	padding: 0 4px;
+	border-radius: 3px;
+	background: var(--bg-inset);
+	color: var(--text);
 }
 /* The header hides its buttons' words on narrow screens; so does the key. */
 @media (max-width: 600px) {

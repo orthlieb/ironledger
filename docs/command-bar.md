@@ -9,6 +9,10 @@ value's rules and logged with the line a click on the sheet would write.
 The bar exists so a session doesn't have to leave the keyboard: prose →
 `/move strike` → `/foe.progress+=2` → `/health-=harm` → prose again.
 
+☰ → Tutorials → **Type a command** walks a player through it on the real
+bar: a note, a command built from the suggestions, its line in the log
+([tutorials.md](tutorials.md)).
+
 This page is how the bar works. The language itself (operators, units,
 owners, names, collisions) is specified in
 [command-language.md](command-language.md); the in-app help

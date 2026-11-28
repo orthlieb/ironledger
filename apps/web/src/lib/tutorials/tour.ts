@@ -171,6 +171,7 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 				stopWatch();
 				settled = false;
 				blurOutside(el);
+				keep = typingIn(el);
 				// Before driver scrolls to the target, so it scrolls by the room made.
 				if (s.pageClass) {
 					const c = s.pageClass;
@@ -203,6 +204,29 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 	 *  goes. In a dialog, onto the dialog itself, since its focus trap puts a
 	 *  plain blur straight back. A field inside the target (the one the step
 	 *  asks you to type in) keeps it. */
+	/** A text field the player is typing in, inside the step's target (the
+	 *  command bar, from one step to the next), and where its caret was.
+	 *  Driver focuses the popover's first button as it shows the popover;
+	 *  `onPopoverRender` hands the field its focus and caret back. */
+	let keep: { field: HTMLElement; start: number | null; end: number | null } | null = null;
+	function typingIn(el: Element | undefined): typeof keep {
+		const f = document.activeElement;
+		if (!(f instanceof HTMLElement) || !el?.contains(f) || !isTextField(f)) return null;
+		const input = f as HTMLInputElement;
+		return { field: f, start: input.selectionStart ?? null, end: input.selectionEnd ?? null };
+	}
+	function giveBackFocus() {
+		const k = keep;
+		if (!k) return;
+		// After driver's own focus call, which follows this hook.
+		window.setTimeout(() => {
+			if (!k.field.isConnected) return;
+			k.field.focus({ preventScroll: true });
+			if (k.start !== null && 'setSelectionRange' in k.field)
+				(k.field as HTMLInputElement).setSelectionRange(k.start, k.end ?? k.start);
+		}, 0);
+	}
+
 	function blurOutside(el: Element | undefined) {
 		const f = document.activeElement;
 		if (!(f instanceof HTMLElement) || el?.contains(f)) return;
@@ -330,8 +354,10 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 		stageRadius: 6,
 		popoverClass: 'il-tour',
 		smoothScroll: true,
+		onPopoverRender: giveBackFocus,
 		onDestroyed: () => {
 			stopWatch();
+			offKeys();
 			window.visualViewport?.removeEventListener('resize', onViewport);
 			window.visualViewport?.removeEventListener('scroll', onViewport);
 			if (active === d) active = null;
@@ -345,6 +371,45 @@ export async function runTour(steps: TourStep[]): Promise<void> {
 	}
 	window.visualViewport?.addEventListener('resize', onViewport);
 	window.visualViewport?.addEventListener('scroll', onViewport);
+	const offKeys = keepKeysInFields();
 	active = d;
 	d.drive();
+}
+
+const isTextField = (el: EventTarget | null): el is HTMLElement =>
+	el instanceof HTMLElement && el.matches('input, textarea, [contenteditable="true"]');
+
+/**
+ * Driver listens for keys on the window: Tab cycles focus between its
+ * popover and the highlighted element, ← and → step the tour, and Escape
+ * ends it. Typed in a text field (the command bar, a vow's name) they're
+ * the field's: Tab takes a suggestion, the arrows move the caret, Escape
+ * clears it. So such a key stops at the document, short of the window.
+ * Escape in a field already empty still ends the tour.
+ */
+function keepKeysInFields(): () => void {
+	let escCleared = false;
+	// Capture: before the field's own handler empties it.
+	const onKeydownCapture = (e: KeyboardEvent) => {
+		if (e.key === 'Escape')
+			escCleared =
+				isTextField(e.target) &&
+				((e.target as HTMLInputElement).value ?? e.target.textContent ?? '') !== '';
+	};
+	const onKeydown = (e: KeyboardEvent) => {
+		if (e.key === 'Tab' && isTextField(e.target)) e.stopPropagation();
+	};
+	const onKeyup = (e: KeyboardEvent) => {
+		if (!isTextField(e.target)) return;
+		if (e.key === 'ArrowLeft' || e.key === 'ArrowRight' || (e.key === 'Escape' && escCleared))
+			e.stopPropagation();
+	};
+	document.addEventListener('keydown', onKeydownCapture, true);
+	document.addEventListener('keydown', onKeydown);
+	document.addEventListener('keyup', onKeyup);
+	return () => {
+		document.removeEventListener('keydown', onKeydownCapture, true);
+		document.removeEventListener('keydown', onKeydown);
+		document.removeEventListener('keyup', onKeyup);
+	};
 }
