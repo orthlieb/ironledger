@@ -9,7 +9,8 @@
  *   - Oathbreaker's third ability is free: with no XP left it can still be
  *     marked (the paid second can't), costs nothing, and its redemption
  *     links land in an "Asset modified" entry with no XP link. Its
- *     discard link (`/discard path/oathbreaker`) then removes the asset.
+ *     discard link (`/discard path/oathbreaker`) asks first, as Delete on
+ *     the card does, and removes the asset on DELETE.
  */
 import { test, expect, type Page } from '@playwright/test';
 import { resetCharacters } from './helpers/reset';
@@ -117,13 +118,23 @@ test.describe('Asset ability log links and free abilities', () => {
 		await expect(entry.locator('a.cmd-link[data-cmd^="/xp"]')).toHaveCount(0);
 		await expect(entry.locator('a.cmd-link[data-cmd="/shadow++"]')).toHaveCount(1);
 
-		// Its last link discards the asset, as Delete on its card would.
+		// Its last link discards the asset, asking first as Delete on its card
+		// does. Cancel keeps the asset and leaves the link live.
 		const discard = entry.locator('a.cmd-link[data-cmd="/discard path/oathbreaker"]');
 		await expect(discard).toHaveText('discard Oathbreaker');
+		const card = page.locator(`${CHAR_AREA} .ca-asset-card`, { hasText: 'Oathbreaker' });
+		const confirm = page.locator('.confirm-modal', { hasText: 'Delete Asset' });
 		await discard.click();
-		await expect(
-			page.locator(`${CHAR_AREA} .ca-asset-card`, { hasText: 'Oathbreaker' }),
-		).toHaveCount(0, { timeout: 5_000 });
+		await expect(confirm).toContainText('Delete Oathbreaker from E2E Oathbreaker?');
+		await confirm.getByRole('button', { name: 'Cancel' }).click();
+		await expect(confirm).toHaveCount(0);
+		await expect(card).toHaveCount(1);
+		await expect(discard).toBeVisible();
+
+		// DELETE gives it up, logs it as the card's Delete does, and spends the link.
+		await discard.click();
+		await confirm.getByRole('button', { name: 'DELETE' }).click();
+		await expect(card).toHaveCount(0, { timeout: 5_000 });
 		await expect(
 			page.locator('.log-entry', { hasText: 'Asset removed: Oathbreaker (Path)' }).first(),
 		).toBeVisible();

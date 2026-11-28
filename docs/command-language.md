@@ -352,10 +352,13 @@ and is spent all the same: what it asks for holds.
 
 A link runs only commands that change a value, `/burn`, `/discard`, `/move`
 and `/oracle` (and `/site.theme`, `/site.domain`, which open the site's
-picker). A `/discard` link removes the asset from the character its entry
-was made for, and is spent; an ability's `log` uses it where the rules say
-to discard the asset (Oathbreaker, at redemption). An asset's card text
-can't: it links moves and oracles only.
+picker). A `/discard` link asks first, with the Delete Asset question the
+card's Delete asks (`AssetDiscardConfirm`, mounted in `+layout.svelte`):
+DELETE removes the asset from the character its entry was made for and
+spends the link; Cancel leaves both. An ability's `log` uses it where the
+rules say to discard the asset (Oathbreaker, at redemption). An asset's card
+text can't: it links moves and oracles only. Typed, `/discard` doesn't ask:
+the line typed is the intent.
 It can't make something active, write a note, mark a story section or open
 help. A link whose command can't run (a read-only field, an asset the
 character no longer has, a deleted foe) says why in the command bar's status

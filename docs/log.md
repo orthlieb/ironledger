@@ -117,13 +117,13 @@ vow, companion, harm and roll it was made with.
 LogPanel delegates clicks on `a.cmd-link` to `runLink`
 (`#lib/commands/run.svelte.ts`), which runs the command against that binding:
 
-| Command                                          | Does                                                                 | After          |
-| ------------------------------------------------ | -------------------------------------------------------------------- | -------------- |
-| A value change (`/health--`, `/foe.progress+=2`) | Writes it through the value registry, logs, saves                    | Struck through |
-| `/burn`                                          | Burns momentum on the roll it was offered on                         | Struck through |
-| `/discard …`                                     | Removes the asset from the entry's character, logs it as Delete does | Struck through |
-| `/site.theme`, `/site.domain`                    | Opens the site's picker (it can be cancelled)                        | Unchanged      |
-| `/move …`, `/oracle …`                           | Opens the dialog (any pack's, on or off)                             | Unchanged      |
+| Command                                          | Does                                                                                                | After                         |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------------- | ----------------------------- |
+| A value change (`/health--`, `/foe.progress+=2`) | Writes it through the value registry, logs, saves                                                   | Struck through                |
+| `/burn`                                          | Burns momentum on the roll it was offered on                                                        | Struck through                |
+| `/discard …`                                     | Asks as the card's Delete does; on DELETE, removes the asset from the entry's character and logs it | Struck through once confirmed |
+| `/site.theme`, `/site.domain`                    | Opens the site's picker (it can be cancelled)                                                       | Unchanged                     |
+| `/move …`, `/oracle …`                           | Opens the dialog (any pack's, on or off)                                                            | Unchanged                     |
 
 The command bar's status line says what happened, or why a link couldn't run
 (the foe it was bound to is gone, the value is read-only): that link stays

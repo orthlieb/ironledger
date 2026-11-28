@@ -226,6 +226,9 @@ function characterOf(owner: Owner): CharacterOwner | undefined {
  *  name) goes with it. */
 function runDiscard(asset: AssetOwner): RunResult {
 	const ch = asset.character;
+	// Gone already (deleted on its card while the question was open).
+	if (!(ch.data.assets ?? []).some((a) => a.assetId === asset.id))
+		return { ok: false, message: `${ch.name} has no ${ownerLabel(asset)}.` };
 	ch.data.assets = (ch.data.assets ?? []).filter((a) => a.assetId !== asset.id);
 	const category = asset.def?.category;
 	appendLog(
@@ -490,6 +493,16 @@ export function runPlan(p: Plan, ui: RunUi, { link = false }: { link?: boolean }
 export interface LinkResult extends RunResult {
 	/** It ran (a value it sets already so counts): strike the link through. */
 	spend: boolean;
+	/** It asks first (a /discard): the result once answered, spend and all. */
+	later?: Promise<LinkResult>;
+}
+
+/** What a /discard link asks (AssetDiscardConfirm shows it): whose asset,
+ *  and the answer, which gives the asset up on yes. */
+export interface DiscardRequest {
+	character: string;
+	asset: string;
+	answer: (yes: boolean) => void;
 }
 
 /**
@@ -530,8 +543,25 @@ export function runLink(cmd: string, bind: LinkBinding = {}): LinkResult {
 			return { ...r, spend: r.ok };
 		}
 		case 'discard': {
-			const r = runDiscard(p.owner);
-			return { ...r, spend: r.ok };
+			// As Delete on the card does, it asks first; spent once confirmed.
+			let answer: (yes: boolean) => void = () => {};
+			const later = new Promise<LinkResult>((resolve) => {
+				answer = (yes) => {
+					if (!yes) return resolve({ ok: false, message: '', spend: false });
+					const r = runDiscard(p.owner);
+					resolve({ ...r, spend: r.ok });
+				};
+			});
+			const req: DiscardRequest = {
+				character: p.owner.character.name,
+				asset: ownerLabel(p.owner),
+				answer,
+			};
+			const asked = !document.dispatchEvent(
+				new CustomEvent('ironledger:confirm-discard', { detail: req, cancelable: true }),
+			);
+			if (!asked) return fail('Delete the asset on its card.');
+			return { ok: true, message: '', spend: false, later };
 		}
 		case 'move':
 			openMove(p.move.id, p.amount ?? (bind.harm !== undefined ? bind.harm : undefined));

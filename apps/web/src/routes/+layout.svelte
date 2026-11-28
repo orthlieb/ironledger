@@ -15,6 +15,7 @@
 	import OraclesDialog from '#lib/components/OraclesDialog.svelte';
 	import DiceRollerDialog from '#lib/components/DiceRollerDialog.svelte';
 	import NotesDialog from '#lib/components/NotesDialog.svelte';
+	import AssetDiscardConfirm from '#lib/components/AssetDiscardConfirm.svelte';
 	import { system } from '#lib/api.js';
 	import { getActiveDiceCtx } from '#lib/diceContext.svelte.js';
 	import { getActiveFoeId, getActiveExpeditionId } from '#lib/activeContext.svelte.js';
@@ -426,6 +427,8 @@
 	{progressContext}
 />
 <OraclesDialog bind:this={oraclesDialogRef} />
+<!-- What a /discard link in the log asks first (#lib/commands/run.svelte.ts). -->
+<AssetDiscardConfirm />
 <DiceRollerDialog bind:this={diceRollerRef} ctx={activeDiceCtx} />
 <NotesDialog bind:this={notesDialogRef} />
 
