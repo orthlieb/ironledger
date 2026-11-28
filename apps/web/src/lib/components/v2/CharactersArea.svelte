@@ -81,6 +81,7 @@
 		changeResource,
 		setResource,
 		computeAssetXpDiff,
+		abilityLogsToWrite,
 		STARTING_XP,
 		type ResourceChange,
 	} from '#lib/character.js';
@@ -109,10 +110,11 @@
 		type LogAction,
 	} from '#lib/log.svelte.js';
 	import { renderRich } from '#lib/dsl.js';
+	import { forsakeVowHtml } from '#lib/vows.js';
 	import { commandLinkHtml, readCommandLink } from '#lib/commands/links.js';
 	import { runLink, reportCommandResult } from '#lib/commands/run.svelte.js';
 	import { FLOOR_RULES, DEBILITY_MOMENTUM_TITLE } from '#lib/cascadeRules.js';
-	import { type Vow, type VowDifficulty, VOW_FORSAKE_STRESS } from '#lib/types.js';
+	import { type Vow, type VowDifficulty } from '#lib/types.js';
 	import iconGearSvg from '#icons/gear-solid.svg?raw';
 	import gemSvg from '#icons/gem-solid.svg?raw';
 	import linkSvg from '#icons/link-solid.svg?raw';
@@ -623,10 +625,13 @@
 	}
 
 	/** OK / Add — diff the draft against the snapshot, log the consolidated
-	 *  XP cost (if any), and persist draft → live. */
+	 *  XP cost (if any) and the `log` of each newly marked ability, and
+	 *  persist draft → live. */
 	function commitAssetDialog() {
 		if (!dialogDraft || !activeData || !activeChar) return;
 
+		const def = findAsset(dialogDraft.assetId);
+		const defAbilities = def?.abilities ?? [];
 		const rarities = findRaritiesForAsset(dialogDraft.assetId);
 		const totalCost = computeAssetXpDiff({
 			snapshotAbilities: dialogSnapshotAbilities,
@@ -635,6 +640,13 @@
 			draftRarityId: dialogDraft.rarityId,
 			rarityXpCost: (id) => rarities.find((r) => r.id === id)?.xpCost ?? 0,
 			purchaseCost: dialogPurchaseCost,
+			freeAbilities: defAbilities.map((ab) => !!ab.free),
+		});
+		const abilityLogs = abilityLogsToWrite({
+			abilities: defAbilities,
+			snapshotAbilities: dialogSnapshotAbilities,
+			draftAbilities: dialogDraft.abilities,
+			mode: dialogMode,
 		});
 
 		// Persist draft → live
@@ -646,20 +658,21 @@
 		}
 		activeData.globalValues = dialogGlobals;
 
-		// Consolidated log entry — only when something costs XP.
-		if (totalCost > 0) {
-			const def = findAsset(dialogDraft.assetId);
+		// One consolidated log entry: the XP link for the total, then each
+		// newly marked ability's one-time links (docs/data-schema.md →
+		// Ability log links). Nothing due and nothing to log: no entry.
+		if (totalCost > 0 || abilityLogs.length > 0) {
 			const action = dialogMode === 'add' ? 'added' : 'modified';
 			const entryId = crypto.randomUUID();
-			const xpLink = commandLinkHtml(`−${totalCost} experience`, `/xp-=${totalCost}`, {
-				charId: activeChar.id,
-			});
+			const xpLink =
+				totalCost > 0 ? ' ' + commandLinkHtml(`−${totalCost} experience`, `/xp-=${totalCost}`) : '';
+			const head = `<div>Asset ${action}: <strong>${escHtml(def?.name ?? dialogDraft.assetId)}</strong>${xpLink}</div>`;
+			const logs = abilityLogs.map(
+				(md) => `<div class="asset-ability-log">${renderRich(md)}</div>`,
+			);
 			appendLog(
 				charTitle('Assets'),
-				bindCommandLinks(
-					`<div>Asset ${action}: <strong>${escHtml(def?.name ?? dialogDraft.assetId)}</strong> ${xpLink}</div>`,
-					entryId,
-				),
+				bindCommandLinks(head + logs.join(''), entryId, { charId: activeChar.id }),
 				entryId,
 			);
 		}
@@ -749,13 +762,8 @@
 	}
 	/** Forsaking a vow logs it with a link to Endure Stress at the vow's rank. */
 	function logForsakeVow(vow: Vow) {
-		const rank = VOW_FORSAKE_STRESS[vow.difficulty];
-		const label = VOW_DIFFICULTIES.find((d) => d.value === vow.difficulty)?.label ?? vow.difficulty;
-		const md =
-			`Forsook the iron vow **${vow.name || 'Unnamed Vow'}** (${label}) — ` +
-			`[Endure Stress](/move endure-stress ${rank}) (−${rank}) for its rank.`;
 		const entryId = crypto.randomUUID();
-		const html = bindCommandLinks(renderRich(md), entryId, {
+		const html = bindCommandLinks(forsakeVowHtml(vow), entryId, {
 			charId: activeCharId ?? undefined,
 			vowId: vow.id,
 		});

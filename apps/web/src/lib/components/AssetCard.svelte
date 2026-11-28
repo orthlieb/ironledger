@@ -243,6 +243,7 @@
 			draftRarityId: rarityId,
 			rarityXpCost: (id) => visibleRarities.find((r) => r.id === id)?.xpCost ?? 0,
 			purchaseCost,
+			freeAbilities: definition.abilities.map((ab) => !!ab.free),
 		});
 		return cost <= characterXp;
 	}
@@ -499,6 +500,12 @@
 							<span class="ability-name">{ab.name}.</span>
 						{/if}
 						{@html abilityHtml(ab.text)}
+						{#if ab.free}
+							<span
+								class="ability-free"
+								use:tooltip={'The rules grant this ability: marking it costs no XP'}>No XP</span
+							>
+						{/if}
 					</div>
 				</label>
 			{/each}
@@ -1105,6 +1112,20 @@
 	}
 	.ability-text :global(li) {
 		margin-bottom: 2px;
+	}
+
+	/* A `free` ability's tag (Oathbreaker's third). */
+	.ability-free {
+		display: inline-block;
+		margin-top: 3px;
+		padding: 0 6px;
+		border: 1px solid var(--border-mid);
+		border-radius: 3px;
+		font-size: 0.66rem;
+		font-weight: 600;
+		letter-spacing: 0.05em;
+		text-transform: uppercase;
+		color: var(--text-dimmer);
 	}
 
 	.ability-name {

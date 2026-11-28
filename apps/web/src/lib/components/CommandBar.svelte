@@ -492,6 +492,7 @@
 		<button
 			class="cb-help-btn"
 			type="button"
+			data-tour="cb-help"
 			use:tooltip={'Command help'}
 			aria-label="Command help"
 			onclick={() => helpDialogRef?.open()}>?</button

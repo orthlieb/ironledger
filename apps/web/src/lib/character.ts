@@ -290,6 +290,8 @@ export function assetDisplayName(
  *   • An asset that comes with no ability marked — a companion, whose
  *     starting ability you choose — includes that first pick in its
  *     purchase: Advance prices a new asset at 3 XP, not 3 + 2.
+ *   • A `free` ability (the rules grant it: Oathbreaker's third) costs
+ *     nothing to mark.
  *
  * Pure function — exposed for unit testing the snapshot/diff edge cases.
  */
@@ -302,6 +304,8 @@ export function computeAssetXpDiff(args: {
 	rarityXpCost: (id: string) => number;
 	/** 3 in add mode (new asset purchase), 0 in edit mode. */
 	purchaseCost: number;
+	/** Per ability, whether it's `free`. */
+	freeAbilities?: readonly boolean[];
 }): number {
 	const {
 		snapshotAbilities,
@@ -310,10 +314,11 @@ export function computeAssetXpDiff(args: {
 		draftRarityId,
 		rarityXpCost,
 		purchaseCost,
+		freeAbilities = [],
 	} = args;
 	let newEnables = 0;
 	for (let i = 0; i < draftAbilities.length; i++) {
-		if (!snapshotAbilities[i] && draftAbilities[i]) newEnables++;
+		if (!snapshotAbilities[i] && draftAbilities[i] && !freeAbilities[i]) newEnables++;
 	}
 	let rarityXp = 0;
 	if (draftRarityId !== snapshotRarityId && draftRarityId) {
@@ -322,6 +327,29 @@ export function computeAssetXpDiff(args: {
 	// Buying an asset with nothing marked: its first pick comes with it.
 	const includedPick = purchaseCost > 0 && !snapshotAbilities.some(Boolean) ? 1 : 0;
 	return purchaseCost + Math.max(0, newEnables - includedPick) * 2 + rarityXp;
+}
+
+/**
+ * The `log` of each ability the asset dialog's OK writes, in ability order
+ * (docs/data-schema.md → Ability log links): on adding an asset, every
+ * ability it's added with (a Path's first among them); on editing one,
+ * every ability marked since the dialog opened. Unmarking takes nothing
+ * back, and marking again writes the links again.
+ */
+export function abilityLogsToWrite(args: {
+	abilities: readonly { log?: string }[];
+	snapshotAbilities: readonly boolean[];
+	draftAbilities: readonly boolean[];
+	mode: 'add' | 'edit';
+}): string[] {
+	const { abilities, snapshotAbilities, draftAbilities, mode } = args;
+	const out: string[] = [];
+	abilities.forEach((ab, i) => {
+		const log = ab.log?.trim();
+		if (!log || !draftAbilities[i]) return;
+		if (mode === 'add' || !snapshotAbilities[i]) out.push(log);
+	});
+	return out;
 }
 
 /**

@@ -497,6 +497,13 @@ export interface AssetAbility {
 	name?: string;
 	/** Move IDs referenced in this ability's text (e.g. ["move/strike", "move/clash"]). */
 	moves?: string[];
+	/** What the ability does to the character once, as one-time log links
+	 *  (markdown + commands): written to the asset's log entry when the
+	 *  ability is marked. See docs/data-schema.md → Ability log links. */
+	log?: string;
+	/** The rules grant the ability rather than sell it: marking it costs no
+	 *  XP (Oathbreaker's third, at redemption). */
+	free?: boolean;
 }
 
 export interface AssetDefinition {

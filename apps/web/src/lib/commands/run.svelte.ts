@@ -14,7 +14,14 @@ import type { Plan, World, MoveRef, OracleRef } from './resolve.js';
 import { companionOwners, ownerLabel, plan as planCommand } from './resolve.js';
 import type { CompanionHealth } from '#lib/moveRoll.js';
 import { bindCommandLinks, type LinkBinding } from './links.js';
-import type { Catalogue, CharacterOwner, ExpeditionOwner, FoeOwner, Owner } from './values.js';
+import type {
+	AssetOwner,
+	Catalogue,
+	CharacterOwner,
+	ExpeditionOwner,
+	FoeOwner,
+	Owner,
+} from './values.js';
 import { findValue } from './values.js';
 import {
 	getCharacters,
@@ -43,6 +50,7 @@ import { getOracles, getVisibleOracles } from '#lib/oracleStore.svelte.js';
 import { movePreconditionFailure, type PreconditionContext } from '#lib/preconditions.js';
 import { appendLog, sessionLog } from '#lib/log.svelte.js';
 import { renderNote, escHtml } from '#lib/markdown.js';
+import { forsakeVowHtml } from '#lib/vows.js';
 import { rollDie, animateDice, type DiceSpec } from '#lib/dice.js';
 import { getEndId, getStartId, hasSection, setEnd, setStart } from '#lib/sectionStore.svelte.js';
 import { capAbilitiesForField, maxMomentum } from '#lib/character.js';
@@ -214,6 +222,26 @@ function characterOf(owner: Owner): CharacterOwner | undefined {
 	return undefined;
 }
 
+/** `/discard`: take the asset off its character, as Delete on its card
+ *  does, and log the same line. What it held (a companion's health, its
+ *  name) goes with it. */
+function runDiscard(asset: AssetOwner): RunResult {
+	const ch = asset.character;
+	// Gone already (deleted on its card while the question was open).
+	if (!(ch.data.assets ?? []).some((a) => a.assetId === asset.id))
+		return { ok: false, message: `${ch.name} has no ${ownerLabel(asset)}.` };
+	ch.data.assets = (ch.data.assets ?? []).filter((a) => a.assetId !== asset.id);
+	const category = asset.def?.category;
+	appendLog(
+		`${ch.name} — Assets`,
+		`<div>Asset removed: <strong>${escHtml(asset.name)}</strong>${
+			category ? ` <em>(${escHtml(category)})</em>` : ''
+		}</div>`,
+	);
+	save(ch);
+	return { ok: true, message: `${ch.name}: ${ownerLabel(asset)} removed.` };
+}
+
 /** Save the owner a change was made to. */
 function save(owner: Owner): void {
 	const ch = characterOf(owner);
@@ -294,6 +322,18 @@ function runChange(p: Extract<Plan, { kind: 'change' }>, quiet = false): RunResu
 		else setPartyFields({ [spec.key]: String(p.to) });
 	} else save(owner);
 	if (owner.kind === 'character' && ch) cascade(ch, spec.key, p.from, p.to, p.wanted);
+	// A vow forsaken: Endure Stress at its rank, as the card's Forsake logs.
+	if (owner.kind === 'vow' && spec.key === 'status' && p.to === 'forsaken') {
+		const entryId = crypto.randomUUID();
+		appendLog(
+			`${owner.character.name} — Vow`,
+			bindCommandLinks(forsakeVowHtml(owner.vow), entryId, {
+				charId: owner.character.id,
+				vowId: owner.vow.id,
+			}),
+			entryId,
+		);
+	}
 	// A companion's health taken past 0: the rest comes off momentum.
 	const asked = p.wanted ?? Number(p.to);
 	if (
@@ -449,6 +489,8 @@ export function runPlan(p: Plan, ui: RunUi, { link = false }: { link?: boolean }
 			return runRoll(p);
 		case 'burn':
 			return runBurn();
+		case 'discard':
+			return runDiscard(p.owner);
 		case 'story':
 			return runStory(p.action);
 		case 'help':
@@ -464,6 +506,16 @@ export function runPlan(p: Plan, ui: RunUi, { link = false }: { link?: boolean }
 export interface LinkResult extends RunResult {
 	/** It ran (a value it sets already so counts): strike the link through. */
 	spend: boolean;
+	/** It asks first (a /discard): the result once answered, spend and all. */
+	later?: Promise<LinkResult>;
+}
+
+/** What a /discard link asks (AssetDiscardConfirm shows it): whose asset,
+ *  and the answer, which gives the asset up on yes. */
+export interface DiscardRequest {
+	character: string;
+	asset: string;
+	answer: (yes: boolean) => void;
 }
 
 /**
@@ -502,6 +554,27 @@ export function runLink(cmd: string, bind: LinkBinding = {}): LinkResult {
 		case 'burn': {
 			const r = runBurn(bind.rollId);
 			return { ...r, spend: r.ok };
+		}
+		case 'discard': {
+			// As Delete on the card does, it asks first; spent once confirmed.
+			let answer: (yes: boolean) => void = () => {};
+			const later = new Promise<LinkResult>((resolve) => {
+				answer = (yes) => {
+					if (!yes) return resolve({ ok: false, message: '', spend: false });
+					const r = runDiscard(p.owner);
+					resolve({ ...r, spend: r.ok });
+				};
+			});
+			const req: DiscardRequest = {
+				character: p.owner.character.name,
+				asset: ownerLabel(p.owner),
+				answer,
+			};
+			const asked = !document.dispatchEvent(
+				new CustomEvent('ironledger:confirm-discard', { detail: req, cancelable: true }),
+			);
+			if (!asked) return fail('Delete the asset on its card.');
+			return { ok: true, message: '', spend: false, later };
 		}
 		case 'move':
 			openMove(p.move.id, p.amount ?? (bind.harm !== undefined ? bind.harm : undefined));

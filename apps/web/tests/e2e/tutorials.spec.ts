@@ -772,6 +772,84 @@ test.describe('Tutorial — Make camp and heal, on a phone', () => {
 });
 
 /**
+ * Type a command, from its first step to Done: a note; `/mom` and Tab (a
+ * tap on the row, on a phone) to `/momentum`; `++` and Enter (the bar's ++
+ * key and ↵, on a phone); the change in the log; on to the help.
+ */
+async function typeCommand(page: Page, total: number, phone = false) {
+	const press = (l: Locator) => (phone ? l.tap() : l.click());
+	const n = (i: number) => `${i} of ${total}`;
+	const bar = target(page, 'log-note').locator('input.cb-input');
+
+	await expectStep(page, 'The command bar', n(1));
+	await next(page);
+
+	await expectStep(page, 'Write a note', n(2));
+	await press(bar);
+	await bar.fill('Brand steps into the longhouse.');
+	await bar.press('Enter');
+	await expectStep(page, 'Start a command', n(3));
+	await expect(page.locator('.log-entry', { hasText: 'steps into the longhouse' })).toHaveCount(1);
+
+	await bar.pressSequentially('/mom');
+	if (phone) await press(page.locator('.cb-sugg-btn', { hasText: /momentum/i }).first());
+	else await bar.press('Tab');
+	await expect(bar).toHaveValue('/momentum');
+
+	await expectStep(page, 'Change it', n(4));
+	if (phone) {
+		await press(page.locator('.cb-op', { hasText: '++' }));
+		await press(page.locator('.cb-enter-btn'));
+	} else {
+		await bar.pressSequentially('++');
+		await bar.press('Enter');
+	}
+	await expectStep(page, 'In the log', n(5));
+	await expect(highlighted(page)).toContainText(/Momentum: \d+ → \d+/);
+	await next(page);
+
+	await expectStep(page, 'And more', n(6));
+	await next(page);
+	if (!phone) {
+		await expectStep(page, 'Again, and away', n(7));
+		await next(page);
+	}
+	await expectStep(page, 'Every command', n(total));
+	await next(page);
+	await expect(page.locator(POPOVER)).toHaveCount(0);
+}
+
+test.describe('Tutorial — Type a command', () => {
+	test.beforeAll(async () => {
+		await resetCharacters();
+		await resetLog();
+		await seedCharacter('Brand');
+	});
+
+	test('writes a note, then raises momentum from the suggestions', async ({ page }) => {
+		await openHome(page, false);
+		await startTutorial(page, 'Type a command');
+		await typeCommand(page, 8);
+	});
+});
+
+test.describe('Tutorial — Type a command, on a phone', () => {
+	test.use({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true });
+
+	test.beforeAll(async () => {
+		await resetCharacters();
+		await resetLog();
+		await seedCharacter('Brand');
+	});
+
+	test('taps the suggestion and the bar’s own keys', async ({ page }) => {
+		await openHome(page, false);
+		await startTutorial(page, 'Type a command');
+		await typeCommand(page, 7, true);
+	});
+});
+
+/**
  * Start a journey, from its switcher step to Done: "To the Havens" at the
  * default difficulty (Dangerous: 2 boxes a waypoint), a note, then
  * Undertake a Journey for a strong hit whose progress Next marks.

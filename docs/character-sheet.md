@@ -29,8 +29,10 @@ Bonds and Failures tracks), **Details** (the character fields below),
 Five `StatControl` components, one per stat. They're set in the New
 Character dialog (a starting array: 0 under Lodestar's Grim, up to 4 under
 its Challenging) and read out on the Core tab. A few path assets change a
-stat by an ability (Battle-Scarred, Shadow-Kin, Lorekeeper, Oathbreaker), so
-a double-click on a stat (a double-tap on a phone, timed by hand since iOS
+stat by an ability (Battle-Scarred, Shadow-Kin, Lorekeeper, Oathbreaker):
+marking the ability writes its stat links to the log (see
+[data-schema.md → Ability log links](data-schema.md#ability-log-links-log)),
+where a click makes the change. For anything else, a double-click on a stat (a double-tap on a phone, timed by hand since iOS
 doesn't report one), after a warning that editing stats after creation is
 unusual (Yes / No), makes that stat a 0–4 field (`STAT_MIN` / `STAT_MAX` in
 `rules/statArrays.ts`). Leaving it (Enter, or focus moving on) lists the

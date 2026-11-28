@@ -63,6 +63,11 @@ export const TUTORIALS: readonly TutorialEntry[] = [
 		load: () => import('./makeCamp.js').then((m) => m.makeCamp),
 	},
 	{
+		id: 'type-command',
+		title: 'Type a command',
+		load: () => import('./typeCommand.js').then((m) => m.typeCommand),
+	},
+	{
 		id: 'back-up',
 		title: 'Back up your campaign',
 		load: () => import('./backUp.js').then((m) => m.backUp),

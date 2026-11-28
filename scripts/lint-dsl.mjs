@@ -164,6 +164,10 @@ function checkCommand(cmd, cat, self) {
     if (!LINK_VERBS.includes(p.verb))
       return `a link can't run /${p.verb}: that's the command bar's`;
     if (p.verb === 'burn') return p.arg ? '/burn takes nothing after it' : null;
+    if (p.verb === 'discard') {
+      if (!p.arg) return 'name the asset by its id: /discard path/oathbreaker';
+      return cat.assets.has(p.arg) ? null : `unknown asset "${p.arg}" (write its id)`;
+    }
     if (p.verb === 'move') {
       const m = p.arg.match(/^(\S+)(?:\s+(\d+))?$/);
       if (!m) return 'write the move by its id: /move face-danger, or /move endure-harm 2';
@@ -242,13 +246,17 @@ function checkCommand(cmd, cat, self) {
   }
 }
 
+/** The verbs an asset's card text may link: it opens moves and oracles,
+ *  and never changes the character (`/discard` is for an ability's log). */
+const VERBS_IN_TEXT = new Set(['move', 'oracle']);
+
 // ── Scan one text blob; push {token, reason} errors ──────────────────────────
 function scanText(text, cat, { strayHtml, self, verbsOnly }, errs) {
   if (typeof text !== 'string' || !text) return;
   for (const m of text.matchAll(LINK)) {
     const target = m[2];
     let reason;
-    if (target.startsWith('/') && verbsOnly && parseCommand(target).kind !== 'verb')
+    if (target.startsWith('/') && verbsOnly && !VERBS_IN_TEXT.has(parseCommand(target).verb))
       reason =
         "asset text links moves and oracles only: what an ability gives is the player's to take";
     else if (target.startsWith('/')) reason = checkCommand(target, cat, self);
@@ -335,12 +343,24 @@ async function main() {
     for (const a of data.assets ?? []) {
       if (a.html) continue;
       const errs = [];
-      // An asset never writes to the log: its text links moves and oracles,
+      // An asset's text never writes to the log: it links moves and oracles,
       // and the Moves dialog lists the abilities that name the move made.
       const opts = { strayHtml: false, self: a, verbsOnly: true };
       scanText(a.preamble, cat, opts, errs);
       scanText(a.description, cat, opts, errs);
-      for (const ab of a.abilities ?? []) scanText(ab.text, cat, opts, errs);
+      for (const ab of a.abilities ?? []) {
+        scanText(ab.text, cat, opts, errs);
+        // An ability's `log` is what marking it does once, written to the
+        // asset's log entry: value links are its point, checked as a
+        // move's outcome links are.
+        if (ab.log !== undefined) {
+          if (typeof ab.log !== 'string' || !ab.log.trim())
+            errs.push({ token: 'log', reason: "an ability's log is non-empty text" });
+          else scanText(ab.log, cat, { strayHtml: false, self: a }, errs);
+        }
+        if (ab.free !== undefined && ab.free !== true)
+          errs.push({ token: `free: ${ab.free}`, reason: 'free is true or left out' });
+      }
       record(file, a.id, errs);
     }
 

@@ -902,7 +902,8 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "You focus your energies: Reduce your edge or iron by 1 and add +2 to wits or heart, or +1 to each (to a maximum of +4)."
+          "text": "You focus your energies: Reduce your edge or iron by 1 and add +2 to wits or heart, or +1 to each (to a maximum of +4).",
+          "log": "You focus your energies: [−1 edge](/edge--) or [−1 iron](/iron--); then one point to [+1 wits](/wits++) or [+1 heart](/heart++), and another to [+1 wits](/wits++) or [+1 heart](/heart++) (to a maximum of +4)."
         },
         {
           "enabled": false,
@@ -1274,6 +1275,7 @@
         {
           "enabled": false,
           "text": "One time only, you may browse the archive’s forbidden depths. If you do, raise your wits by 1 and roll an action die. On 1-3, you must also mark corrupted or [Face Desolation](/move face-desolation) (ignoring momentum).",
+          "log": "When you browse the archive's forbidden depths: [+1 wits](/wits++), and roll an action die. On 1–3, also [mark corrupted](/corrupted++) or [Face Desolation](/move face-desolation) (ignoring momentum).",
           "moves": ["move/face-desolation"]
         }
       ],
@@ -1346,6 +1348,8 @@
         {
           "enabled": false,
           "text": "When you [Fulfill Your Vow](/move fulfill-your-vow) on your marked quest and score a hit, you find redemption and automatically activate this ability at no cost. You may then improve one of your stats by +1 and discard this asset.",
+          "free": true,
+          "log": "You find redemption. Improve one stat: [+1 edge](/edge++), [+1 heart](/heart++), [+1 iron](/iron++), [+1 shadow](/shadow++) or [+1 wits](/wits++); then [discard Oathbreaker](/discard path/oathbreaker).",
           "moves": ["move/fulfill-your-vow"]
         }
       ],
@@ -1481,7 +1485,8 @@
       "abilities": [
         {
           "enabled": true,
-          "text": "You harden your heart: Reduce your heart stat by 1 and add up to +2 to shadow (to a maximum of +4)."
+          "text": "You harden your heart: Reduce your heart stat by 1 and add up to +2 to shadow (to a maximum of +4).",
+          "log": "You harden your heart: [−1 heart](/heart--), then up to +2 shadow: [+1 shadow](/shadow++) [+1 shadow](/shadow++) (to a maximum of +4)."
         },
         {
           "enabled": false,

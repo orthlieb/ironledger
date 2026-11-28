@@ -37,3 +37,7 @@ export const MENU = key(
 	'Menu',
 	'<svg viewBox="0 0 16 16"><rect y="2" width="16" height="2" rx="1" fill="currentColor"/><rect y="7" width="16" height="2" rx="1" fill="currentColor"/><rect y="12" width="16" height="2" rx="1" fill="currentColor"/></svg>',
 );
+
+/** A keyboard key, or a key in the command bar, by its label: Tab, Enter,
+ *  ↑, ++, ↵. */
+export const kbd = (label: string) => key(label, label);
