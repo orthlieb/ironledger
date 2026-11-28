@@ -17,7 +17,7 @@
 		"build": "vite build",
 		"preview": "vite preview",
 		"precheck": "npm run build:shared && npm run build:map-icons && npm run gen:liveries",
-		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json && tsc --noEmit -p tsconfig.json",
 		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"pretest": "npm run build:shared && npm run build:map-icons",
 		"test": "vitest run",

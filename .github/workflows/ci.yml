@@ -87,8 +87,11 @@ jobs:
 
       # svelte-check catches .svelte template + .ts file errors that the
       # API-only tsc gate misses (e.g. the `await`-in-non-async-arrow bug
-      # in passkey.ts that silently broke the deploy for 36 hours).
-      - name: svelte-check (web)
+      # in passkey.ts that silently broke the deploy for 36 hours). The
+      # script then runs plain `tsc` over the same tsconfig (src and the
+      # Playwright tests), which catches errors svelte-check lets through,
+      # such as the typed-array mismatch the dice helper once carried.
+      - name: svelte-check + tsc (web)
         run: npm run check --workspace=apps/web
 
       # The web app's own unit tests (apps/web/tests/unit: the DSL, map
