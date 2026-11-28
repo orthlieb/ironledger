@@ -27,7 +27,7 @@
 		triggerAction,
 	} from '#lib/log.svelte.js';
 	import { bindCommandLinks, readCommandLink, spendCommandLink } from '#lib/commands/links.js';
-	import { runLink, reportCommandResult, type LinkResult } from '#lib/commands/run.svelte.js';
+	import { runLink, reportCommandResult } from '#lib/commands/run.svelte.js';
 	import { logOrder } from '#lib/logOrderStore.svelte.js';
 	import type { DiceCtx } from '#lib/diceContext.svelte.js';
 	import { headingText } from '#lib/fontStore.svelte.js';
@@ -483,17 +483,12 @@
 		if (!link || link.closest('.resource-spent')) return;
 		e.preventDefault();
 		const { cmd, bind, entryId, index } = readCommandLink(link);
-		const done = (r: LinkResult) => {
-			if (r.spend && entryId) {
-				const entry = sessionLog.entries.find((x) => x.id === entryId);
-				if (entry) updateLogEntryHtml(entryId, spendCommandLink(entry.html, index, cmd));
-			}
-			reportCommandResult(r);
-		};
 		const r = runLink(cmd, bind);
-		// A link that asks first (a /discard's confirmation) is spent once answered.
-		if (r.later) void r.later.then(done);
-		else done(r);
+		if (r.spend && entryId) {
+			const entry = sessionLog.entries.find((x) => x.id === entryId);
+			if (entry) updateLogEntryHtml(entryId, spendCommandLink(entry.html, index, cmd));
+		}
+		reportCommandResult(r);
 	}
 
 	/** Selector for the links a fast tap acts on (touchend). */
